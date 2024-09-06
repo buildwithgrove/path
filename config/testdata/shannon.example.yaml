@@ -1,0 +1,31 @@
+# For a shannon gateway, the following config is required:
+shannon_config:
+  full_node_config:
+    rpc_url: "https://rpc-url.io"
+    grpc_config:
+      host_port: "grpc-url.io:443"
+    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
+    gateway_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
+    delegated_app_addresses:
+      - "pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0"
+      - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
+
+# services is required. At least one service must be configured and the
+# id field is required. Service config is optional and allows configuration of the service.
+services:
+  "0021":
+    alias: "eth-mainnet"
+    request_timeout: "3000ms"
+  "0001": # Example of a service with no additional configuration
+
+# router_config is optional and allows configuration of the router settings.
+router_config:
+  port: 8080
+  max_request_body_size: 512000
+  read_timeout: "5000ms"
+  write_timeout: "5000ms"
+  idle_timeout: "5000ms"
+
+# user_data_config is required if user data is to be stored in a database.
+user_data_config:
+  db_connection_string: "postgres://user:password@localhost:5432/database"
