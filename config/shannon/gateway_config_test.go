@@ -3,9 +3,9 @@ package shannon
 import (
 	"testing"
 
-	shannonRelayer "github.com/pokt-foundation/portal-middleware/relayer/shannon"
-
 	"github.com/stretchr/testify/require"
+
+	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
 )
 
 func Test_Validate(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/pokt-foundation/portal-middleware/gateway"
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 const (
