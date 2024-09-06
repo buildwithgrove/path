@@ -12,7 +12,7 @@ shannon_config:
     rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com # replace with your full node rpc url
     grpc_config:
       host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 # replace with your full node grpc host/port
-    gateway_address: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 # replace with your gateway private key
-    gateway_private_key: pokt15vzxjqklzjtlz7lahe8z2dfe9nm5vxwwmscne4 # replace with your gateway address
+    gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 # replace with your gateway private key
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw # replace with your gateway address
     delegated_app_addresses: # replace with the list of apps that are delegated to the gateway
-      - pokt1d8fae8f295a303d686abd7f17c1584a67a3a4a
+      - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87
