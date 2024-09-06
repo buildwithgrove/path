@@ -1,0 +1,34 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Don't commit binaries
+bin
+
+# Do not allow a multi-moduled projected
+go.work.sum
+
+# Config
+config.yaml
+config.*.yaml
+.config.yaml
+.config.test.yaml
+
+# Macos
+.DS_Store
+**/.DS_Store
+
+# Development
+.vscode
+.env
+.idea/
+.mise.local.toml
