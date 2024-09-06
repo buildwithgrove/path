@@ -16,7 +16,7 @@ import (
 // It is defined in the `relayer` package and not the `service` package
 // because `service` is intended to handle off-chain details, while
 // `relayer` handles onchain details. See discussion here for more:
-// https://github.com/pokt-foundation/portal-middleware/pull/767#discussion_r1722001685
+// https://github.com/buildwithgrove/path/pull/767#discussion_r1722001685
 type ServiceID string
 
 // AppAddr is used as the unique identifier on an onchain application.

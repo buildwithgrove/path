@@ -6,7 +6,7 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // By fulfilling the relayer package Endpoint interface, the endpoint struct below allows

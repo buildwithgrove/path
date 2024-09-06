@@ -8,7 +8,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // Gateway performs end-to-end handling of all service requests

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pokt-foundation/portal-middleware/gateway"
-	"github.com/pokt-foundation/portal-middleware/qos/evm"
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/qos/evm"
+	"github.com/buildwithgrove/path/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 

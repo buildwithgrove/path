@@ -8,11 +8,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/pokt-foundation/portal-middleware/config/morse"
-	"github.com/pokt-foundation/portal-middleware/config/shannon"
-	"github.com/pokt-foundation/portal-middleware/config/utils"
-	"github.com/pokt-foundation/portal-middleware/relayer"
-	"github.com/pokt-foundation/portal-middleware/request"
+	"github.com/buildwithgrove/path/config/morse"
+	"github.com/buildwithgrove/path/config/shannon"
+	"github.com/buildwithgrove/path/config/utils"
+	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/request"
 )
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */

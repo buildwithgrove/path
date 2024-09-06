@@ -3,7 +3,7 @@ package morse
 import (
 	"github.com/pokt-foundation/pocket-go/provider"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // The relayer package's App interface is fulfilled by the app struct below.

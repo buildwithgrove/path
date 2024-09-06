@@ -3,7 +3,7 @@ package shannon
 import (
 	"testing"
 
-	shannonRelayer "github.com/pokt-foundation/portal-middleware/relayer/shannon"
+	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
 
 	"github.com/stretchr/testify/require"
 )

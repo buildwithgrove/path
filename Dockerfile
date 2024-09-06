@@ -1,7 +1,7 @@
 FROM golang:1.22.3-alpine3.19 AS builder
 RUN apk add --no-cache git
 
-WORKDIR /go/src/github.com/pokt-foundation/portal-middleware
+WORKDIR /go/src/github.com/buildwithgrove/path
 COPY . .
 RUN apk add --no-cache make build-base
 RUN go build -o /go/bin/path ./cmd/main.go

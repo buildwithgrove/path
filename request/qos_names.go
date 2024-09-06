@@ -1,6 +1,6 @@
 package request
 
-import "github.com/pokt-foundation/portal-middleware/relayer"
+import "github.com/buildwithgrove/path/relayer"
 
 // SupportedServicesToQoSServiceName is a map of service IDs to the QoS Service that will be used
 // to perform request parsing, response building, and endpoint selection for the given service ID.

@@ -9,7 +9,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/pokt-foundation/portal-middleware/config"
+	"github.com/buildwithgrove/path/config"
 )
 
 const (
