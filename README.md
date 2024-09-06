@@ -1,6 +1,6 @@
 <div align="center">
 <h1>PATH<br/>Path API & Toolkit Harness.</h1>
-<img src=".github/grove_logo.png" alt="Grove logo" width="500"/>
+<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Stacked-1.png" alt="Grove logo" width="500"/>
 
 </div>
 <br/>

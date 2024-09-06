@@ -10,7 +10,7 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
