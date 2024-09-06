@@ -21,7 +21,7 @@ jobs:
 
       - name: update E2E config from secrets
         env:
-          GATEWAY_PRIVATE_KEY: ${{ secrets.GatewayPrivateKey }}
+          GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
         run: ./e2e/scripts/update_config_from_secrets.sh
 
       - name: Run E2E Tests
