@@ -3,8 +3,9 @@ package config
 import (
 	"fmt"
 
-	"github.com/pokt-foundation/portal-middleware/config/utils"
 	"gopkg.in/yaml.v3"
+
+	"github.com/buildwithgrove/path/config/utils"
 )
 
 /* --------------------------------- User Data Config Struct -------------------------------- */

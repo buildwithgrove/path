@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/pokt-foundation/pocket-go/provider"
-	"github.com/pokt-foundation/portal-middleware/config/utils"
+
+	"github.com/buildwithgrove/path/config/utils"
 )
 
 // AATVersion is the current version of the Application Authentication Token (AAT).

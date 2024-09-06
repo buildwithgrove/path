@@ -19,10 +19,10 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pokt-foundation/portal-middleware/config"
-	"github.com/pokt-foundation/portal-middleware/relayer"
-	"github.com/pokt-foundation/portal-middleware/relayer/shannon"
-	"github.com/pokt-foundation/portal-middleware/request"
+	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/relayer/shannon"
+	"github.com/buildwithgrove/path/request"
 )
 
 const configPath = ".config.test.yaml"

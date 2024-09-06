@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/pokt-foundation/pocket-go/provider"
-	"github.com/pokt-foundation/portal-middleware/config/morse"
-	"github.com/pokt-foundation/portal-middleware/config/shannon"
-	"github.com/pokt-foundation/portal-middleware/relayer"
-	morseRelayer "github.com/pokt-foundation/portal-middleware/relayer/morse"
-	shannonRelayer "github.com/pokt-foundation/portal-middleware/relayer/shannon"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/config/morse"
+	"github.com/buildwithgrove/path/config/shannon"
+	"github.com/buildwithgrove/path/relayer"
+	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
+	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
 )
 
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {

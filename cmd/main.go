@@ -8,13 +8,13 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
-	"github.com/pokt-foundation/portal-middleware/config"
-	"github.com/pokt-foundation/portal-middleware/gateway"
-	"github.com/pokt-foundation/portal-middleware/relayer"
-	"github.com/pokt-foundation/portal-middleware/relayer/morse"
-	"github.com/pokt-foundation/portal-middleware/relayer/shannon"
-	"github.com/pokt-foundation/portal-middleware/request"
-	"github.com/pokt-foundation/portal-middleware/router"
+	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/relayer/morse"
+	"github.com/buildwithgrove/path/relayer/shannon"
+	"github.com/buildwithgrove/path/request"
+	"github.com/buildwithgrove/path/router"
 )
 
 const configPath = ".config.yaml"

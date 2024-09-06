@@ -3,7 +3,7 @@ package shannon
 import (
 	"gopkg.in/yaml.v3"
 
-	shannonRelayer "github.com/pokt-foundation/portal-middleware/relayer/shannon"
+	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
 )
 
 // Fields that are unmarshaled from the config YAML must be capitalized.

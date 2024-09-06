@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // HTTPRequestParser is used, in handling an HTTP service request, to extract
