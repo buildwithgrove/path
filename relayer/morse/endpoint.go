@@ -5,7 +5,7 @@ import (
 
 	"github.com/pokt-foundation/pocket-go/provider"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // The relayer package's Endpoint interface is fulfilled by the endpoint struct below, which allows

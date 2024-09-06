@@ -3,9 +3,9 @@ package morse
 import (
 	"testing"
 
+	"github.com/buildwithgrove/path/relayer"
+	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
 	"github.com/pokt-foundation/pocket-go/provider"
-	"github.com/pokt-foundation/portal-middleware/relayer"
-	morseRelayer "github.com/pokt-foundation/portal-middleware/relayer/morse"
 	"github.com/stretchr/testify/require"
 )
 

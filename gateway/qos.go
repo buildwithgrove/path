@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
