@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/pokt-foundation/portal-middleware/config/utils"
+	"github.com/buildwithgrove/path/config/utils"
 	"gopkg.in/yaml.v3"
 )
 

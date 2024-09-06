@@ -1,7 +1,7 @@
 package shannon
 
 import (
-	"github.com/pokt-foundation/portal-middleware/relayer"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's App interface is fulfilled by the app struct below.

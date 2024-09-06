@@ -1,4 +1,4 @@
-module github.com/pokt-foundation/portal-middleware
+module github.com/buildwithgrove/path
 
 go 1.22.3
 

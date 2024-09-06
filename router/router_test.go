@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pokt-foundation/portal-middleware/config"
+	"github.com/buildwithgrove/path/config"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
 	"github.com/stretchr/testify/mock"
