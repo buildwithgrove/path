@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/relayer"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 /* --------------------------------- QoS Service Name Enum -------------------------------- */

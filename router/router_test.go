@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/buildwithgrove/path/config"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/config"
 )
 
 func newTestRouter(t *testing.T) (*router, *mockGateway, *httptest.Server) {

@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pokt-foundation/pocket-go/provider"
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/utils"
 	"github.com/buildwithgrove/path/relayer"
 	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
-	"github.com/pokt-foundation/pocket-go/provider"
 )
 
 const (

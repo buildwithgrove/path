@@ -3,8 +3,9 @@ package morse
 import (
 	"fmt"
 
-	"github.com/buildwithgrove/path/config/utils"
 	sdk "github.com/pokt-foundation/pocket-go/provider"
+
+	"github.com/buildwithgrove/path/config/utils"
 )
 
 // AATVersion is the current version of the Application Authentication Token (AAT).

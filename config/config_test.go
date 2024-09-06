@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pokt-foundation/pocket-go/provider"
+	"github.com/stretchr/testify/require"
+
 	"github.com/buildwithgrove/path/config/morse"
 	"github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/relayer"
 	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
 	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
-	"github.com/pokt-foundation/pocket-go/provider"
-
-	"github.com/stretchr/testify/require"
 )
 
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
