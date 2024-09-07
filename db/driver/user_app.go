@@ -2,6 +2,8 @@ package driver
 
 type UserAppID string
 type AccountID string
+type WhitelistType string
+type WhitelistValue string
 
 type UserApp struct {
 	ID                UserAppID
@@ -10,10 +12,10 @@ type UserApp struct {
 	SecretKey         string
 	SecretKeyRequired bool
 	ThroughputLimit   int32
-	Whitelists        map[string]map[string]struct{}
+	Whitelists        map[WhitelistType]map[WhitelistValue]struct{}
 }
 
-func (a *UserApp) IsWhitelisted(whitelistType, value string) bool {
+func (a *UserApp) IsWhitelisted(whitelistType WhitelistType, value WhitelistValue) bool {
 	whitelistValues, ok := a.Whitelists[whitelistType]
 	if !ok {
 		return false

@@ -10,14 +10,14 @@ func Test_IsWhitelisted(t *testing.T) {
 	tests := []struct {
 		name           string
 		app            UserApp
-		whitelistType  string
-		whitelistValue string
+		whitelistType  WhitelistType
+		whitelistValue WhitelistValue
 		expected       bool
 	}{
 		{
 			name: "should return true if origin is whitelisted",
 			app: UserApp{
-				Whitelists: map[string]map[string]struct{}{
+				Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 					"origins": {"origin1": {}},
 				},
 			},
@@ -28,7 +28,7 @@ func Test_IsWhitelisted(t *testing.T) {
 		{
 			name: "should return false if origin is not whitelisted",
 			app: UserApp{
-				Whitelists: map[string]map[string]struct{}{
+				Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 					"origins": {},
 				},
 			},

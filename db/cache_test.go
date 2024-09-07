@@ -155,7 +155,7 @@ func getTestUserApps() map[driver.UserAppID]driver.UserApp {
 			SecretKey:         "secret_1",
 			SecretKeyRequired: true,
 			ThroughputLimit:   30,
-			Whitelists: map[string]map[string]struct{}{
+			Whitelists: map[driver.WhitelistType]map[driver.WhitelistValue]struct{}{
 				"origins":   {"origin_1": {}},
 				"contracts": {"contract_1": {}},
 			},
@@ -167,7 +167,7 @@ func getTestUserApps() map[driver.UserAppID]driver.UserApp {
 			SecretKey:         "secret_2",
 			SecretKeyRequired: true,
 			ThroughputLimit:   0,
-			Whitelists: map[string]map[string]struct{}{
+			Whitelists: map[driver.WhitelistType]map[driver.WhitelistValue]struct{}{
 				"origins":   {"origin_2": {}},
 				"contracts": {"contract_2": {}},
 			},

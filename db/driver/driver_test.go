@@ -49,7 +49,7 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:         "secret_key_1",
 					SecretKeyRequired: true,
 					ThroughputLimit:   30,
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"services": {"service_1": {}},
 					},
 				},
@@ -59,7 +59,7 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					PlanType:          "PLAN_UNLIMITED",
 					SecretKey:         "secret_key_2",
 					SecretKeyRequired: true,
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"contracts": {"contract_1": {}},
 					},
 				},
@@ -70,7 +70,7 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:         "secret_key_3",
 					SecretKeyRequired: true,
 					ThroughputLimit:   30,
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"methods": {"method_1": {}},
 					},
 				},
@@ -79,7 +79,7 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					AccountID:       "account_1",
 					PlanType:        "PLAN_FREE",
 					ThroughputLimit: 30,
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"origins": {"origin_1": {}},
 					},
 				},
@@ -87,7 +87,7 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					ID:        "user_app_5",
 					AccountID: "account_2",
 					PlanType:  "PLAN_UNLIMITED",
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"user_agents": {"user_agent_1": {}},
 					},
 				},
@@ -158,7 +158,7 @@ func Test_convertToUserApps(t *testing.T) {
 					SecretKey:         "secret1",
 					SecretKeyRequired: true,
 					ThroughputLimit:   1000,
-					Whitelists: map[string]map[string]struct{}{
+					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
 						"origins":     {"origin_1": {}},
 						"user_agents": {"user_agent_1": {}},
 						"services":    {"service_1": {}},

@@ -78,7 +78,7 @@ func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[UserAp
 	apps := make(map[UserAppID]UserApp, len(rows))
 
 	for _, row := range rows {
-		var whitelists map[string]map[string]struct{}
+		var whitelists map[WhitelistType]map[WhitelistValue]struct{}
 		if err := json.Unmarshal(row.Whitelists, &whitelists); err != nil {
 			return nil, err
 		}
