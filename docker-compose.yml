@@ -16,3 +16,19 @@ services:
       - ./cmd/.config.yaml:/app/.config.yaml
     command: ["./path"]
     # TODO_IMPROVE: add a health check that looks for component ready states from the /healthz endpoint
+
+  db:
+    image: postgres:latest
+    container_name: db
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - ./db/driver/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_PASSWORD: pgpassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+      retries: 3

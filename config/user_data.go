@@ -2,31 +2,19 @@ package config
 
 import (
 	"fmt"
-
-	"gopkg.in/yaml.v3"
+	"time"
 
 	"github.com/buildwithgrove/path/config/utils"
 )
+
+const defaultCacheRefreshInterval = 5 * time.Minute
 
 /* --------------------------------- User Data Config Struct -------------------------------- */
 
 // UserDataConfig contains user data configuration settings.
 type UserDataConfig struct {
-	DBConnectionString string `yaml:"db_connection_string"`
-}
-
-// UnmarshalYAML is a custom unmarshaller for UserDataConfig.
-func (c *UserDataConfig) UnmarshalYAML(value *yaml.Node) error {
-	// Temp alias to avoid recursion; this is the recommend pattern for Go YAML custom unmarshalers
-	type temp UserDataConfig
-	var val struct {
-		temp `yaml:",inline"`
-	}
-	if err := value.Decode(&val); err != nil {
-		return err
-	}
-	*c = UserDataConfig(val.temp)
-	return c.validate()
+	DBConnectionString   string        `yaml:"db_connection_string"`
+	CacheRefreshInterval time.Duration `yaml:"cache_refresh_interval"`
 }
 
 /* --------------------------------- User Data Config Private Helpers -------------------------------- */
@@ -36,4 +24,10 @@ func (c *UserDataConfig) validate() error {
 		return fmt.Errorf("invalid DB connection string: %s", c.DBConnectionString)
 	}
 	return nil
+}
+
+func (c *UserDataConfig) hydrateDefaults() {
+	if c.CacheRefreshInterval == 0 {
+		c.CacheRefreshInterval = defaultCacheRefreshInterval
+	}
 }
