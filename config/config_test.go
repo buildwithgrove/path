@@ -68,7 +68,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					IdleTimeout:        5000 * time.Millisecond,
 				},
 				UserData: UserDataConfig{
-					DBConnectionString: "postgres://user:password@localhost:5432/database",
+					DBConnectionString:   "postgres://user:password@localhost:5432/database",
+					CacheRefreshInterval: defaultCacheRefreshInterval,
 				},
 				serviceAliases: map[string]relayer.ServiceID{
 					"eth-mainnet": "0021",
@@ -109,7 +110,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					IdleTimeout:        5000 * time.Millisecond,
 				},
 				UserData: UserDataConfig{
-					DBConnectionString: "postgres://user:password@localhost:5432/database",
+					DBConnectionString:   "postgres://user:password@localhost:5432/database",
+					CacheRefreshInterval: defaultCacheRefreshInterval,
 				},
 				serviceAliases: map[string]relayer.ServiceID{
 					"eth-mainnet": "0021",

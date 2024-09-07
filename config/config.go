@@ -55,7 +55,7 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 	// hydrate required fields and set defaults for optional fields
 	config.hydrateServiceAliases()
 	config.hydrateRouterConfig()
-
+	config.hydrateUserDataConfig()
 	return config, config.validate()
 }
 
@@ -117,6 +117,10 @@ func (c *GatewayConfig) hydrateRouterConfig() {
 	c.Router.hydrateRouterDefaults()
 }
 
+func (c *GatewayConfig) hydrateUserDataConfig() {
+	c.UserData.hydrateDefaults()
+}
+
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */
 
 func (c GatewayConfig) validate() error {
@@ -124,6 +128,9 @@ func (c GatewayConfig) validate() error {
 		return err
 	}
 	if err := c.validateServiceConfig(); err != nil {
+		return err
+	}
+	if err := c.UserData.validate(); err != nil {
 		return err
 	}
 
