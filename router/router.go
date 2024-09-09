@@ -63,7 +63,7 @@ func (r *router) handleRoutes() {
 }
 
 // Start starts the API server on the specified port
-func (r *router) Start(ctx context.Context) error {
+func (r *router) Start() error {
 	server := &http.Server{
 		Addr:           fmt.Sprintf(":%d", r.config.Port),
 		Handler:        r.mux,
