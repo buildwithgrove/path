@@ -78,6 +78,9 @@ func main() {
 		log.Fatalf("failed to create request parser: %v", err)
 	}
 
+	// TODO_NEXT: init DB connection (only if user data config is enabled)
+	// TODO_NEXT: init user data handler after DB and pass to gateway
+
 	relayer := &relayer.Relayer{Protocol: protocol}
 
 	gateway := &gateway.Gateway{
@@ -85,7 +88,7 @@ func main() {
 		Relayer:           relayer,
 	}
 
-	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), logger)
+	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.UserDataEnabled(), logger)
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}

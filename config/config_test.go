@@ -67,7 +67,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
 				},
-				UserData: UserDataConfig{
+				UserData: &UserDataConfig{
 					DBConnectionString:   "postgres://user:password@localhost:5432/database",
 					CacheRefreshInterval: defaultCacheRefreshInterval,
 				},
@@ -109,7 +109,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
 				},
-				UserData: UserDataConfig{
+				UserData: &UserDataConfig{
 					DBConnectionString:   "postgres://user:password@localhost:5432/database",
 					CacheRefreshInterval: defaultCacheRefreshInterval,
 				},

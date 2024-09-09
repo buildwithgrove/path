@@ -1,0 +1,158 @@
+type: object
+properties:
+  # NOTE: Exactly one of either "morse_config" or "shannon_config" must be present
+
+  # TODO_FUTURE: a single PATH deployment can support multiple protocols in theory, but
+  # this is not currently supported in order to simplify deployment. In the future, we
+  # may look into supporting multiple protocols within a single deployment.
+
+  # Morse Configuration (required for Morse gateways)
+  morse_config:
+    type: object
+    properties:
+      full_node_config:
+        type: object
+        properties:
+          url:
+            type: string
+            pattern: "^(http|https)://.*$"
+          relay_signing_key:
+            type: string
+            pattern: "^[0-9a-fA-F]{64}$"
+          http_config:
+            type: object
+            properties:
+              retries:
+                type: integer
+              timeout:
+                type: string
+              transport:
+                type: object
+                properties:
+                  max_conns_per_host:
+                    type: integer
+                  max_idle_conns_per_host:
+                    type: integer
+                  max_idle_conns:
+                    type: integer
+                  idle_conn_timeout:
+                    type: string
+                  dial_timeout:
+                    type: string
+                  keep_alive:
+                    type: string
+          request_config:
+            type: object
+            properties:
+              retries:
+                type: integer
+        required:
+          - url
+      signed_aats:
+        type: object
+        patternProperties:
+          "^[0-9a-fA-F]{40}$":
+            type: object
+            properties:
+              client_public_key:
+                type: string
+                pattern: "^[0-9a-fA-F]{64}$"
+              application_public_key:
+                type: string
+                pattern: "^[0-9a-fA-F]{64}$"
+              application_signature:
+                type: string
+                pattern: "^[0-9a-fA-F]{128}$"
+            required:
+              - client_public_key
+              - application_public_key
+              - application_signature
+
+  # Shannon Configuration (required for Shannon gateways)
+  shannon_config:
+    type: object
+    properties:
+      full_node_config:
+        type: object
+        properties:
+          rpc_url:
+            type: string
+            pattern: "^(http|https)://.*$"
+          grpc_config:
+            type: object
+            properties:
+              host_port:
+                type: string
+                pattern: "^[^:]+:[0-9]+$"
+              insecure:
+                type: boolean
+                default: false
+              base_delay:
+                type: string
+              max_delay:
+                type: string
+              min_connect_timeout:
+                type: string
+              keep_alive_time:
+                type: string
+              keep_alive_timeout:
+                type: string
+            required:
+              - host_port
+          gateway_address:
+            type: string
+            pattern: "^pokt1[0-9a-zA-Z]{43}$"
+          gateway_private_key:
+            type: string
+            pattern: "^[0-9a-fA-F]{64}$"
+          delegated_app_addresses:
+            type: array
+            items:
+              type: string
+              pattern: "^pokt1[0-9a-zA-Z]{43}$"
+        required:
+          - rpc_url
+          - grpc_config
+          - gateway_address
+          - gateway_private_key
+          - delegated_app_addresses
+
+  # Services Configuration (required)
+  services:
+    type: object
+    patternProperties:
+      "^[a-zA-Z0-9]+$":
+      type: object
+        properties:
+          alias:
+            type: string
+          request_timeout:
+            type: string
+
+  # Router Configuration (optional)
+  router_config:
+    type: object
+    properties:
+      port:
+        type: integer
+      max_request_body_size:
+        type: integer
+      read_timeout:
+        type: string
+      write_timeout:
+        type: string
+      idle_timeout:
+        type: string
+
+  # User Data Configuration (optional)
+  user_data_config:
+    type: object
+    properties:
+      db_connection_string:
+        type: string
+        pattern: "^(postgres)://.*$"
+      cache_refresh_interval:
+        type: string
+
+required:
+  - services

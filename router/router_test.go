@@ -15,12 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/user"
 )
 
-func newTestRouter(t *testing.T) (*router, *mockGateway, *httptest.Server) {
+func newTestRouter(t *testing.T, userDataEnabled bool) (*router, *mockGateway, *httptest.Server) {
 	mockGateway := newMockGateway(t)
 
-	r := NewRouter(mockGateway, config.RouterConfig{}, polyzero.NewLogger())
+	r := NewRouter(mockGateway, config.RouterConfig{}, userDataEnabled, polyzero.NewLogger())
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 
@@ -44,7 +45,7 @@ func Test_handleHealthz(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			_, _, ts := newTestRouter(t)
+			_, _, ts := newTestRouter(t, false)
 
 			// Create request
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/healthz", ts.URL), nil)
@@ -68,17 +69,27 @@ func Test_handleHealthz(t *testing.T) {
 
 func Test_handleHTTPServiceRequest(t *testing.T) {
 	tests := []struct {
-		name           string
-		payload        string
-		expectedBytes  []byte
-		expectedStatus int
-		expectedError  error
+		name            string
+		userDataEnabled bool
+		userAppID       user.UserAppID
+		payload         string
+		expectedBytes   []byte
+		expectedStatus  int
+		expectedError   error
 	}{
 		{
 			name:           "should perform a service request successfully",
 			payload:        `{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}`,
 			expectedBytes:  []byte(`{"jsonrpc": "2.0", "id": 1, "result": "0x10d4f"}`),
 			expectedStatus: http.StatusOK,
+		},
+		{
+			name:            "should set user app ID in context",
+			payload:         `{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}`,
+			expectedBytes:   []byte(`{"jsonrpc": "2.0", "id": 1, "result": "0x10d4f"}`),
+			expectedStatus:  http.StatusOK,
+			userDataEnabled: true,
+			userAppID:       "user_app_1",
 		},
 		{
 			name:           "should fail if service request handler returns an error",
@@ -93,7 +104,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			_, mockGateway, ts := newTestRouter(t)
+			_, mockGateway, ts := newTestRouter(t, test.userDataEnabled)
 
 			mockGateway.On("HandleHTTPServiceRequest", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 				w := args.Get(2).(http.ResponseWriter)
@@ -105,7 +116,12 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 				}
 			}).Return(test.expectedError)
 
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v1", ts.URL), strings.NewReader(test.payload))
+			url := fmt.Sprintf("%s/v1", ts.URL)
+			if test.userDataEnabled {
+				url = fmt.Sprintf("%s/v1/%s", ts.URL, test.userAppID)
+			}
+
+			req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(test.payload))
 			c.NoError(err)
 
 			client := &http.Client{}

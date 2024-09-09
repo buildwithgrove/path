@@ -10,6 +10,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
+	reqCtx "github.com/buildwithgrove/path/request/context"
 )
 
 const (
@@ -17,12 +18,15 @@ const (
 	defaultImageTag = "development"
 )
 
+const userAppIDPathParam = "userAppID"
+
 type (
 	router struct {
-		mux     *http.ServeMux
-		gateway gateway
-		config  config.RouterConfig
-		logger  polylog.Logger
+		mux             *http.ServeMux
+		gateway         gateway
+		config          config.RouterConfig
+		userDataEnabled bool
+		logger          polylog.Logger
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
@@ -32,12 +36,13 @@ type (
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, config config.RouterConfig, logger polylog.Logger) *router {
+func NewRouter(gateway gateway, config config.RouterConfig, userDataEnabled bool, logger polylog.Logger) *router {
 	r := &router{
-		mux:     http.NewServeMux(),
-		gateway: gateway,
-		config:  config,
-		logger:  logger.With("package", "router"),
+		mux:             http.NewServeMux(),
+		gateway:         gateway,
+		config:          config,
+		userDataEnabled: userDataEnabled,
+		logger:          logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
@@ -47,8 +52,14 @@ func (r *router) handleRoutes() {
 	// GET /healthz - handleHealthz returns a simple health check response
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.handleHealthz))
 
-	// * /v1 - handles service requests
-	r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
+	// * /v1... - is the entrypoint for all service requests
+	if r.userDataEnabled {
+		// * /v1/{userAppID} - handles service requests for a specific user app ID only
+		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequestWithUserAppID))
+	} else {
+		// * /v1 - handles service requests without any user data handling
+		r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
+	}
 }
 
 // Start starts the API server on the specified port
@@ -132,8 +143,24 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// * - /v1 - handleServiceRequest sets the request ID and HTTP details in the request context
-// from the HTTP request and passes it to the gateway handler, which processes the request.
+// * - /v1/{userAppID} - handleServiceRequestWithUserAppID sets the HTTP details and user app ID
+// in the request context and passes it to the gateway handler, which processes the request.
+func (r *router) handleServiceRequestWithUserAppID(w http.ResponseWriter, req *http.Request) {
+	userAppID := req.PathValue(userAppIDPathParam)
+	if userAppID == "" {
+		// TODO_TECHDEBT: return proper HTTP error response
+		r.logger.Error().Msg("user app ID is required")
+		http.Error(w, "user app ID is required", http.StatusBadRequest)
+		return
+	}
+
+	ctx := reqCtx.SetCtxFromRequest(req.Context(), req, userAppID)
+
+	r.gateway.HandleHTTPServiceRequest(ctx, req, w)
+}
+
+// * - /v1 - handleServiceRequest passes the HTTP request to the gateway handler without any user app ID
+// or request ID set in the request context. This means to no user authentication or rate limiting is applied.
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
 	r.gateway.HandleHTTPServiceRequest(req.Context(), req, w)
 }

@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/relayer"
+	reqCtx "github.com/buildwithgrove/path/request/context"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -22,6 +23,7 @@ type Gateway struct {
 	HTTPRequestParser
 	*relayer.Relayer
 	RequestResponseObserver
+	UserRequestAuthenticator
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -46,8 +48,14 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// TODO_INCOMPLETE: add request response observation and uncomment the following line when implemented.
 	// defer g.RequestResponseObserver.ObserveReqRes(ctx, httpReq, httpRes)
 
-	// TODO_TECHDEBT: add request authentication: e.g. using a portal app ID extracted from the HTTP request's path.
-	// This is currently out of scope since the gateway MVP is to accept all incoming HTTP requests.
+	// If the request ctx contains a userAppID, authenticate the request. This performs user data auth
+	// and rate limiting auth. If the req fails authentication an HTTPResponse error is returned to the user.
+	if userAppID := reqCtx.GetUserAppIDFromCtx(ctx); userAppID != "" {
+		if authFailedResp := g.UserRequestAuthenticator.AuthenticateReq(ctx, httpReq); authFailedResp != nil {
+			g.writeResponse(ctx, authFailedResp, w)
+			return
+		}
+	}
 
 	// Extract the service ID and find the target service's corresponding QoS instance.
 	serviceID, serviceQoS, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)

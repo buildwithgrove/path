@@ -46,3 +46,8 @@ type HTTPRequestParser interface {
 //	   "polygon":  qos.Evm{},
 //	   "solana":   qos.Solana{},
 //	}
+
+// TODO_NEXT: implement UserRequestAuthenticator in a separate package, e.g. `userdata`.
+type UserRequestAuthenticator interface {
+	AuthenticateReq(context.Context, *http.Request) HTTPResponse
+}
