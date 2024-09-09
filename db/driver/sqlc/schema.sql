@@ -1,7 +1,7 @@
 CREATE TABLE plans (
     id SERIAL PRIMARY KEY,
     type VARCHAR(255) NOT NULL UNIQUE,
-    throughput_limit INT NOT NULL
+    rate_limit_throughput INT NOT NULL
 );
 CREATE TABLE accounts (
     id VARCHAR(24) PRIMARY KEY,

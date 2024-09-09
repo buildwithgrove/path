@@ -149,12 +149,12 @@ func newTestCache(t *testing.T, userApps map[user.UserAppID]user.UserApp) (*cach
 func getTestUserApps() map[user.UserAppID]user.UserApp {
 	return map[user.UserAppID]user.UserApp{
 		"user_app_1": {
-			ID:                "user_app_1",
-			AccountID:         "account_1",
-			PlanType:          "PLAN_FREE",
-			SecretKey:         "secret_1",
-			SecretKeyRequired: true,
-			ThroughputLimit:   30,
+			ID:                  "user_app_1",
+			AccountID:           "account_1",
+			PlanType:            "PLAN_FREE",
+			SecretKey:           "secret_1",
+			SecretKeyRequired:   true,
+			RateLimitThroughput: 30,
 			Allowlists: map[user.AllowlistType]map[string]struct{}{
 				user.AllowlistTypeOrigins:   {"origin_1": {}},
 				user.AllowlistTypeContracts: {"contract_1": {}},
@@ -166,7 +166,6 @@ func getTestUserApps() map[user.UserAppID]user.UserApp {
 			PlanType:          "PLAN_UNLIMITED",
 			SecretKey:         "secret_2",
 			SecretKeyRequired: true,
-			ThroughputLimit:   0,
 			Allowlists: map[user.AllowlistType]map[string]struct{}{
 				user.AllowlistTypeOrigins:   {"origin_2": {}},
 				user.AllowlistTypeContracts: {"contract_2": {}},
