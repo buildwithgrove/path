@@ -10,18 +10,19 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/db/driver"
+	"github.com/buildwithgrove/path/user"
 )
 
 type (
 	cache struct {
-		userApps             map[driver.UserAppID]driver.UserApp
+		userApps             map[user.UserAppID]user.UserApp
 		db                   dbDriver
 		cacheRefreshInterval time.Duration
 		mu                   sync.RWMutex
 		logger               polylog.Logger
 	}
 	dbDriver interface {
-		GetUserApps(ctx context.Context) (map[driver.UserAppID]driver.UserApp, error)
+		GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error)
 	}
 )
 
@@ -33,7 +34,7 @@ func NewCache(config config.UserDataConfig, logger polylog.Logger) (*cache, func
 	}
 
 	cache := &cache{
-		userApps:             make(map[driver.UserAppID]driver.UserApp),
+		userApps:             make(map[user.UserAppID]user.UserApp),
 		db:                   db,
 		cacheRefreshInterval: config.CacheRefreshInterval,
 		mu:                   sync.RWMutex{},
@@ -49,7 +50,7 @@ func NewCache(config config.UserDataConfig, logger polylog.Logger) (*cache, func
 	return cache, cleanup, nil
 }
 
-func (c *cache) GetUserApp(ctx context.Context, userAppID driver.UserAppID) (driver.UserApp, bool) {
+func (c *cache) GetUserApp(ctx context.Context, userAppID user.UserAppID) (user.UserApp, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

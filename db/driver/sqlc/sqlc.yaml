@@ -15,3 +15,6 @@ sql:
         output_models_file_name: models.generated.go
         output_querier_file_name: querier.generated.go
         output_files_suffix: .generated
+        overrides:
+          - db_type: "allowlist_type"
+            go_type: "github.com/buildwithgrove/path/user.AllowlistType"

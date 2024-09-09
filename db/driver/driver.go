@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/buildwithgrove/path/user"
 )
 
 // The PostgresDriver struct satisfies the Driver interface which defines all database driver methods
@@ -30,9 +32,9 @@ func NewPostgresDriver(connectionString string) (*PostgresDriver, func() error, 
 		return nil, nil, err
 	}
 
-	pool, err := createAndConfigurePool(config)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("pgxpool.NewWithConfig: %v", err)
 	}
 
 	cleanup := func() error {
@@ -48,24 +50,9 @@ func NewPostgresDriver(connectionString string) (*PostgresDriver, func() error, 
 	return driver, cleanup, nil
 }
 
-// Configures the connection pool with custom enums
-func createAndConfigurePool(config *pgxpool.Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		return nil, fmt.Errorf("pgxpool.NewWithConfig: %v", err)
-	}
-
-	return pool, nil
-}
-
-// Ping ensures the database connection is healthy
-func (d *PostgresDriver) Ping(ctx context.Context) error {
-	return d.DB.Ping(ctx)
-}
-
 /* ---------- UserApp Funcs ---------- */
 
-func (d *PostgresDriver) GetUserApps(ctx context.Context) (map[UserAppID]UserApp, error) {
+func (d *PostgresDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error) {
 	rows, err := d.Queries.SelectUserApps(ctx)
 	if err != nil {
 		return nil, err
@@ -74,23 +61,23 @@ func (d *PostgresDriver) GetUserApps(ctx context.Context) (map[UserAppID]UserApp
 	return d.convertToUserApps(rows)
 }
 
-func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[UserAppID]UserApp, error) {
-	apps := make(map[UserAppID]UserApp, len(rows))
+func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.UserAppID]user.UserApp, error) {
+	apps := make(map[user.UserAppID]user.UserApp, len(rows))
 
 	for _, row := range rows {
-		var whitelists map[WhitelistType]map[WhitelistValue]struct{}
-		if err := json.Unmarshal(row.Whitelists, &whitelists); err != nil {
+		var allowlists map[user.AllowlistType]map[string]struct{}
+		if err := json.Unmarshal(row.Allowlists, &allowlists); err != nil {
 			return nil, err
 		}
 
-		app := UserApp{
-			ID:                UserAppID(row.ID),
-			AccountID:         AccountID(row.AccountID.String),
+		app := user.UserApp{
+			ID:                user.UserAppID(row.ID),
+			AccountID:         user.AccountID(row.AccountID.String),
 			PlanType:          row.Plan.String,
 			SecretKey:         row.SecretKey.String,
 			SecretKeyRequired: row.SecretKeyRequired.Bool,
-			ThroughputLimit:   row.ThroughputLimit.Int32,
-			Whitelists:        whitelists,
+			ThroughputLimit:   int(row.ThroughputLimit.Int32),
+			Allowlists:        allowlists,
 		}
 
 		apps[app.ID] = app

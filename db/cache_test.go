@@ -11,15 +11,15 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	driver "github.com/buildwithgrove/path/db/driver"
+	"github.com/buildwithgrove/path/user"
 )
 
 func Test_GetUserApp(t *testing.T) {
 	tests := []struct {
 		name       string
-		userAppID  driver.UserAppID
-		mockReturn map[driver.UserAppID]driver.UserApp
-		expected   driver.UserApp
+		userAppID  user.UserAppID
+		mockReturn map[user.UserAppID]user.UserApp
+		expected   user.UserApp
 		found      bool
 	}{
 		{
@@ -40,7 +40,7 @@ func Test_GetUserApp(t *testing.T) {
 			name:       "should return false when user app not found",
 			userAppID:  "user_app_3",
 			mockReturn: getTestUserApps(),
-			expected:   driver.UserApp{},
+			expected:   user.UserApp{},
 			found:      false,
 		},
 	}
@@ -61,18 +61,18 @@ func Test_GetUserApp(t *testing.T) {
 func Test_cacheRefreshHandler(t *testing.T) {
 	tests := []struct {
 		name       string
-		mockReturn map[driver.UserAppID]driver.UserApp
-		expected   map[driver.UserAppID]driver.UserApp
+		mockReturn map[user.UserAppID]user.UserApp
+		expected   map[user.UserAppID]user.UserApp
 	}{
 		{
 			name:       "should refresh cache with new data",
-			mockReturn: map[driver.UserAppID]driver.UserApp{"user_app_1": {ID: "user_app_1"}},
-			expected:   map[driver.UserAppID]driver.UserApp{"user_app_1": {ID: "user_app_1"}},
+			mockReturn: map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
+			expected:   map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
 		},
 		{
 			name:       "should handle empty cache refresh",
-			mockReturn: map[driver.UserAppID]driver.UserApp{},
-			expected:   map[driver.UserAppID]driver.UserApp{},
+			mockReturn: map[user.UserAppID]user.UserApp{},
+			expected:   map[user.UserAppID]user.UserApp{},
 		},
 	}
 
@@ -96,18 +96,18 @@ func Test_cacheRefreshHandler(t *testing.T) {
 func Test_setCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		mockReturn map[driver.UserAppID]driver.UserApp
-		expected   map[driver.UserAppID]driver.UserApp
+		mockReturn map[user.UserAppID]user.UserApp
+		expected   map[user.UserAppID]user.UserApp
 	}{
 		{
 			name:       "should set cache with user apps",
-			mockReturn: map[driver.UserAppID]driver.UserApp{"user_app_1": {ID: "user_app_1"}},
-			expected:   map[driver.UserAppID]driver.UserApp{"user_app_1": {ID: "user_app_1"}},
+			mockReturn: map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
+			expected:   map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
 		},
 		{
 			name:       "should handle empty user apps",
-			mockReturn: map[driver.UserAppID]driver.UserApp{},
-			expected:   map[driver.UserAppID]driver.UserApp{},
+			mockReturn: map[user.UserAppID]user.UserApp{},
+			expected:   map[user.UserAppID]user.UserApp{},
 		},
 	}
 
@@ -124,11 +124,11 @@ func Test_setCache(t *testing.T) {
 	}
 }
 
-func newTestCache(t *testing.T, userApps map[driver.UserAppID]driver.UserApp) (*cache, error) {
+func newTestCache(t *testing.T, userApps map[user.UserAppID]user.UserApp) (*cache, error) {
 	mockDb := newMockDbDriver(t)
 
 	cache := &cache{
-		userApps:             make(map[driver.UserAppID]driver.UserApp),
+		userApps:             make(map[user.UserAppID]user.UserApp),
 		db:                   mockDb,
 		cacheRefreshInterval: time.Minute,
 		mu:                   sync.RWMutex{},
@@ -146,8 +146,8 @@ func newTestCache(t *testing.T, userApps map[driver.UserAppID]driver.UserApp) (*
 	return cache, nil
 }
 
-func getTestUserApps() map[driver.UserAppID]driver.UserApp {
-	return map[driver.UserAppID]driver.UserApp{
+func getTestUserApps() map[user.UserAppID]user.UserApp {
+	return map[user.UserAppID]user.UserApp{
 		"user_app_1": {
 			ID:                "user_app_1",
 			AccountID:         "account_1",
@@ -155,9 +155,9 @@ func getTestUserApps() map[driver.UserAppID]driver.UserApp {
 			SecretKey:         "secret_1",
 			SecretKeyRequired: true,
 			ThroughputLimit:   30,
-			Whitelists: map[driver.WhitelistType]map[driver.WhitelistValue]struct{}{
-				"origins":   {"origin_1": {}},
-				"contracts": {"contract_1": {}},
+			Allowlists: map[user.AllowlistType]map[string]struct{}{
+				user.AllowlistTypeOrigins:   {"origin_1": {}},
+				user.AllowlistTypeContracts: {"contract_1": {}},
 			},
 		},
 		"user_app_2": {
@@ -167,9 +167,9 @@ func getTestUserApps() map[driver.UserAppID]driver.UserApp {
 			SecretKey:         "secret_2",
 			SecretKeyRequired: true,
 			ThroughputLimit:   0,
-			Whitelists: map[driver.WhitelistType]map[driver.WhitelistValue]struct{}{
-				"origins":   {"origin_2": {}},
-				"contracts": {"contract_2": {}},
+			Allowlists: map[user.AllowlistType]map[string]struct{}{
+				user.AllowlistTypeOrigins:   {"origin_2": {}},
+				user.AllowlistTypeContracts: {"contract_2": {}},
 			},
 		},
 	}
@@ -183,22 +183,22 @@ type mockDbDriver struct {
 }
 
 // GetUserApps provides a mock function with given fields: ctx
-func (_m *mockDbDriver) GetUserApps(ctx context.Context) (map[driver.UserAppID]driver.UserApp, error) {
+func (_m *mockDbDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error) {
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserApps")
 	}
 
-	var r0 map[driver.UserAppID]driver.UserApp
+	var r0 map[user.UserAppID]user.UserApp
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (map[driver.UserAppID]driver.UserApp, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) (map[user.UserAppID]user.UserApp, error)); ok {
 		return rf(ctx)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) map[driver.UserAppID]driver.UserApp); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) map[user.UserAppID]user.UserApp); ok {
 		r0 = rf(ctx)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(map[driver.UserAppID]driver.UserApp)
+		r0 = ret.Get(0).(map[user.UserAppID]user.UserApp)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
