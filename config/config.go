@@ -138,8 +138,10 @@ func (c GatewayConfig) validate() error {
 	if err := c.validateServiceConfig(); err != nil {
 		return err
 	}
-	if err := c.UserData.validate(); err != nil {
-		return err
+	if c.UserData != nil {
+		if err := c.UserData.validate(); err != nil {
+			return err
+		}
 	}
 
 	return nil
