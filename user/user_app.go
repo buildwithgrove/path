@@ -2,15 +2,24 @@ package user
 
 type UserAppID string
 type AccountID string
+type AllowlistType string
+
+const (
+	AllowlistTypeContracts  AllowlistType = "contracts"
+	AllowlistTypeMethods    AllowlistType = "methods"
+	AllowlistTypeOrigins    AllowlistType = "origins"
+	AllowlistTypeServices   AllowlistType = "services"
+	AllowlistTypeUserAgents AllowlistType = "user_agents"
+)
 
 type UserApp struct {
-	ID                UserAppID
-	AccountID         AccountID
-	PlanType          string
-	SecretKey         string
-	SecretKeyRequired bool
-	ThroughputLimit   int
-	Allowlists        map[AllowlistType]map[string]struct{}
+	ID                  UserAppID
+	AccountID           AccountID
+	PlanType            string
+	SecretKey           string
+	SecretKeyRequired   bool
+	RateLimitThroughput int
+	Allowlists          map[AllowlistType]map[string]struct{}
 }
 
 func (a *UserApp) IsContractAllowed(contractID string) bool {
@@ -56,23 +65,4 @@ func (a *UserApp) IsUserAgentAllowed(userAgent string) bool {
 	}
 	_, ok = allowlistValues[userAgent]
 	return ok
-}
-
-type AllowlistType string
-
-const (
-	AllowlistTypeContracts  AllowlistType = "contracts"
-	AllowlistTypeMethods    AllowlistType = "methods"
-	AllowlistTypeOrigins    AllowlistType = "origins"
-	AllowlistTypeServices   AllowlistType = "services"
-	AllowlistTypeUserAgents AllowlistType = "user_agents"
-)
-
-func (a *AllowlistType) IsValid() bool {
-	switch *a {
-	case AllowlistTypeContracts, AllowlistTypeMethods, AllowlistTypeOrigins, AllowlistTypeServices, AllowlistTypeUserAgents:
-		return true
-	default:
-		return false
-	}
 }

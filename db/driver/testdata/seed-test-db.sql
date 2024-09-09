@@ -1,6 +1,6 @@
-INSERT INTO plans (type, throughput_limit)
-VALUES ('PLAN_FREE', 30),
-    ('PLAN_UNLIMITED', 0);
+INSERT INTO plans (type, rate_limit_throughput, rate_limit_capacity)
+VALUES ('PLAN_FREE', 30, 100000),
+    ('PLAN_UNLIMITED', 0, 0);
 INSERT INTO accounts (id, plan_type)
 VALUES ('account_1', 'PLAN_FREE'),
     ('account_2', 'PLAN_UNLIMITED'),
