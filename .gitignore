@@ -30,3 +30,7 @@ go.work.sum
 .env
 .idea/
 .mise.local.toml
+
+# tmp directory
+tmp
+tmp/*
