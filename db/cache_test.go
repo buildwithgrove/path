@@ -155,7 +155,6 @@ func getTestUserApps() map[user.UserAppID]user.UserApp {
 			SecretKey:           "secret_1",
 			SecretKeyRequired:   true,
 			RateLimitThroughput: 30,
-			RateLimitCapacity:   100_000,
 			Allowlists: map[user.AllowlistType]map[string]struct{}{
 				user.AllowlistTypeOrigins:   {"origin_1": {}},
 				user.AllowlistTypeContracts: {"contract_1": {}},

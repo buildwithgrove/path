@@ -19,7 +19,6 @@ type UserApp struct {
 	SecretKey           string
 	SecretKeyRequired   bool
 	RateLimitThroughput int
-	RateLimitCapacity   int
 	Allowlists          map[AllowlistType]map[string]struct{}
 }
 
