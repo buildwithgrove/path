@@ -5,9 +5,16 @@
 </div>
 <br/>
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/run-e2e-tests.yml)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/buildwithgrove/path)
+![GitHub Release](https://img.shields.io/github/v/release/:user/:repo)
+
+
+
 # Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [Releases](#path-releases)
 - [Quickstart (Shannon)](#quickstart-shannon)
 - [Configuration](#configuration)
   - [Configuration File](#configuration-file)
@@ -23,6 +30,10 @@
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
+
+## Path Releases
+
+Path releases provide a Docker image you can start using right away to bootstrap your Path gateway without the need of building your own image. Head over to [releases](https://github.com/buildwithgrove/path/releases) to download it.
 
 ## Quickstart (Shannon)
 
