@@ -46,7 +46,7 @@ func (r *invalidResp) GetHTTPHeaders() map[string]string {
 	return map[string]string{}
 }
 
-// AuthenticateReq authenticates a service request made by a user. It performas all required validation, including:
+// AuthenticateReq authenticates a service request made by a user. It performs all required validation on the service request, including:
 // secret key authentication if the user app requires a secret key,
 // allowlist validation if the user app has an allowlist configured,
 // and throughput rate limiting if the user app is for a plan with a throughput limit configured.
