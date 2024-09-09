@@ -71,13 +71,14 @@ func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.U
 		}
 
 		app := user.UserApp{
-			ID:                user.UserAppID(row.ID),
-			AccountID:         user.AccountID(row.AccountID.String),
-			PlanType:          row.Plan.String,
-			SecretKey:         row.SecretKey.String,
-			SecretKeyRequired: row.SecretKeyRequired.Bool,
-			ThroughputLimit:   int(row.ThroughputLimit.Int32),
-			Allowlists:        allowlists,
+			ID:                  user.UserAppID(row.ID),
+			AccountID:           user.AccountID(row.AccountID.String),
+			PlanType:            row.Plan.String,
+			SecretKey:           row.SecretKey.String,
+			SecretKeyRequired:   row.SecretKeyRequired.Bool,
+			RateLimitThroughput: int(row.RateLimitThroughput.Int32),
+			RateLimitCapacity:   int(row.RateLimitCapacity.Int32),
+			Allowlists:          allowlists,
 		}
 
 		apps[app.ID] = app
