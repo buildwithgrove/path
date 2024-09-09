@@ -51,7 +51,6 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:           "secret_key_1",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					RateLimitCapacity:   100_000,
 					Allowlists: map[user.AllowlistType]map[string]struct{}{
 						user.AllowlistTypeServices: {"service_1": {}},
 					},
@@ -73,7 +72,6 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:           "secret_key_3",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					RateLimitCapacity:   100_000,
 					Allowlists: map[user.AllowlistType]map[string]struct{}{
 						user.AllowlistTypeMethods: {"method_1": {}},
 					},
@@ -83,7 +81,6 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					AccountID:           "account_1",
 					PlanType:            "PLAN_FREE",
 					RateLimitThroughput: 30,
-					RateLimitCapacity:   100_000,
 					Allowlists: map[user.AllowlistType]map[string]struct{}{
 						user.AllowlistTypeOrigins: {"origin_1": {}},
 					},
@@ -153,7 +150,6 @@ func Test_convertToUserApps(t *testing.T) {
 					}`),
 					Plan:                pgtype.Text{String: "plan1", Valid: true},
 					RateLimitThroughput: pgtype.Int4{Int32: 30, Valid: true},
-					RateLimitCapacity:   pgtype.Int4{Int32: 100_000, Valid: true},
 				},
 			},
 			expected: map[user.UserAppID]user.UserApp{
@@ -164,7 +160,6 @@ func Test_convertToUserApps(t *testing.T) {
 					SecretKey:           "secret1",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					RateLimitCapacity:   100_000,
 					Allowlists: map[user.AllowlistType]map[string]struct{}{
 						user.AllowlistTypeOrigins:    {"origin_1": {}},
 						user.AllowlistTypeUserAgents: {"user_agent_1": {}},
@@ -187,7 +182,6 @@ func Test_convertToUserApps(t *testing.T) {
 					Allowlists:          json.RawMessage(`invalid`),
 					Plan:                pgtype.Text{String: "plan1", Valid: true},
 					RateLimitThroughput: pgtype.Int4{Int32: 30, Valid: true},
-					RateLimitCapacity:   pgtype.Int4{Int32: 100_000, Valid: true},
 				},
 			},
 			expected: nil,

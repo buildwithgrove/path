@@ -77,7 +77,6 @@ func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.U
 			SecretKey:           row.SecretKey.String,
 			SecretKeyRequired:   row.SecretKeyRequired.Bool,
 			RateLimitThroughput: int(row.RateLimitThroughput.Int32),
-			RateLimitCapacity:   int(row.RateLimitCapacity.Int32),
 			Allowlists:          allowlists,
 		}
 

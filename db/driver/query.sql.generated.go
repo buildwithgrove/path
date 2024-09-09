@@ -26,16 +26,14 @@ SELECT u.id,
         '{}'::jsonb
     )::jsonb AS allowlists,
     a.plan_type AS plan,
-    p.rate_limit_throughput,
-    p.rate_limit_capacity
+    p.rate_limit_throughput
 FROM user_apps u
     LEFT JOIN user_app_allowlists w ON u.id = w.user_app_id
     LEFT JOIN accounts a ON u.account_id = a.id
     LEFT JOIN plans p ON a.plan_type = p.type
 GROUP BY u.id,
     a.plan_type,
-    p.rate_limit_throughput,
-    p.rate_limit_capacity
+    p.rate_limit_throughput
 `
 
 type SelectUserAppsRow struct {
@@ -46,7 +44,6 @@ type SelectUserAppsRow struct {
 	Allowlists          []byte      `json:"allowlists"`
 	Plan                pgtype.Text `json:"plan"`
 	RateLimitThroughput pgtype.Int4 `json:"rate_limit_throughput"`
-	RateLimitCapacity   pgtype.Int4 `json:"rate_limit_capacity"`
 }
 
 func (q *Queries) SelectUserApps(ctx context.Context) ([]SelectUserAppsRow, error) {
@@ -66,7 +63,6 @@ func (q *Queries) SelectUserApps(ctx context.Context) ([]SelectUserAppsRow, erro
 			&i.Allowlists,
 			&i.Plan,
 			&i.RateLimitThroughput,
-			&i.RateLimitCapacity,
 		); err != nil {
 			return nil, err
 		}
