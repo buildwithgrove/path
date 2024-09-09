@@ -5,7 +5,7 @@
 </div>
 <br/>
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/run-e2e-tests.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/build-and-push.yml)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/buildwithgrove/path)
 ![GitHub Release](https://img.shields.io/github/v/release/:user/:repo)
 

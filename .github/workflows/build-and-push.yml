@@ -2,7 +2,8 @@ name: Publish image to GitHub Container Registry
 
 on:
   push:
-    branches: ["main"]
+    ## TODO: Switch back to main once tested
+    branches: ["feat/path_docker_images"]
 
 jobs:
   publish-image:
