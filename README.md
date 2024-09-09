@@ -12,6 +12,7 @@
 - [Configuration](#configuration)
 - [Running PATH](#running-path)
 - [E2E Tests](#e2e-tests)
+- [User Data](#user-data)
 
 ## Introduction
 
@@ -177,3 +178,82 @@ make test_unit
 # Shannon E2E test only
 make test_e2e_shannon_relay
 ```
+
+## User Data
+
+By default, PATH does not associate user data with service requests.
+
+You may opt to enable user data config to unlock the ability to associate a user with a service request.
+
+This is required for:
+
+- User specified app settings
+- Metering and billing of service requests
+- Rate limiting of service requests by throughput and/or capacity
+
+### Updated Endpoint
+
+Enabling user data will modify the endpoint for service requests to require a user app ID identifier at the end of the URL path.
+
+For example:
+
+```bash
+http://eth-mainnet.localhost:3000/v1/{user_app_id}
+```
+
+The default endpoint of `/v1` will no longer function without a user app ID.
+
+### Database Configuration
+
+To enable user data, you must set up a Postgres database and populate the `.config.yaml` file's `user_data_config` field with the connection string.
+
+```yaml
+user_data_config:
+  db_connection_string: "postgres://user:password@localhost:5432/database"
+```
+
+An example Postgres Docker configuration is included in the [docker-compose.yml](./docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**
+
+### Database Schema
+
+[Base Schema SQL File](./db/driver/sqlc/schema.sql)
+
+```mermaid
+erDiagram
+    PLANS {
+        int id
+        varchar type
+        int rate_limit_throughput
+        int rate_limit_capacity
+        enum rate_limit_capacity_period
+    }
+
+    ACCOUNTS {
+        varchar id
+        varchar plan_type
+    }
+
+    USER_APPS {
+        varchar id
+        varchar account_id
+        varchar secret_key
+        boolean secret_key_required
+    }
+
+    USER_APP_ALLOWLISTS {
+        int id
+        varchar user_app_id
+        enum allowlist_type
+        varchar value
+    }
+
+    PLANS ||--o{ ACCOUNTS : "plan_type"
+    ACCOUNTS ||--o{ USER_APPS : "account_id"
+    USER_APPS ||--o{ USER_APP_ALLOWLISTS : "user_app_id"
+```
+
+A base schema is provided with the minimal tables and columns required to enable user data handling in PATH.
+
+These tables should not be modified; instead, any additional functionality required by the gateway operator for managing user data should be added by extending the base tables and columns provided in this schema.
+
+For example, it is up to the gateway operator to decide how they wish to manage their gateway's user data, user accounts, subscription plans, authentication, etc.
