@@ -146,11 +146,12 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// * - /v1 or /v1/{userAppID} - handleServiceRequest passes the HTTP request to the gateway handler
+// * - /v1  - user data not enabled: handles requests for all user app IDs
+// * - /v1/{userAppID} - user data enabled: handles requests for a specific user app ID only
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	// for the case of /v1/{userAppID}, set the user app ID and HTTP details in the context
+	// if user data is enabled set the user app ID and HTTP details in request ctx
 	if userAppID := req.PathValue(userAppIDPathParam); userAppID != "" {
 		ctx = reqCtx.SetCtxFromRequest(ctx, req, userAppID)
 	}

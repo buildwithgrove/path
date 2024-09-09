@@ -50,7 +50,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// If the request ctx contains a userAppID, authenticate the request. This performs user data auth
 	// and rate limiting auth. If the req fails authentication an HTTPResponse error is returned to the user.
-	if appID := reqCtx.GetUserAppIDFromCtx(ctx); appID != "" {
+	if appID := reqCtx.GetUserAppIDFromCtx(ctx); appID != "" && g.UserRequestAuthenticator != nil {
 		if authFailedResp := g.UserRequestAuthenticator.AuthenticateReq(ctx, httpReq, appID); authFailedResp != nil {
 			g.writeResponse(ctx, authFailedResp, w)
 			return
