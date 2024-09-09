@@ -79,13 +79,13 @@ func main() {
 	}
 
 	// TODO_NEXT: init DB connection (only if user data config is enabled)
-	// TODO_NEXT: init user data handler after DB and pass to gateway
 
 	relayer := &relayer.Relayer{Protocol: protocol}
 
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
+		// TODO_NEXT: init user data handler with user data cache and pass to gateway
 	}
 
 	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.UserDataEnabled(), logger)
@@ -93,7 +93,7 @@ func main() {
 		log.Fatalf("failed to create API router: %v", err)
 	}
 
-	if err := apiRouter.Start(context.Background()); err != nil {
+	if err := apiRouter.Start(); err != nil {
 		log.Fatalf("failed to start API router: %v", err)
 	}
 }
