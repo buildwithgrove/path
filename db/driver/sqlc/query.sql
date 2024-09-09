@@ -11,11 +11,11 @@ SELECT u.id,
             WHERE w.user_app_id IS NOT NULL
         ),
         '{}'::jsonb
-    )::jsonb AS whitelists,
+    )::jsonb AS allowlists,
     a.plan_type AS plan,
     p.throughput_limit
 FROM user_apps u
-    LEFT JOIN user_app_whitelists w ON u.id = w.user_app_id
+    LEFT JOIN user_app_allowlists w ON u.id = w.user_app_id
     LEFT JOIN accounts a ON u.account_id = a.id
     LEFT JOIN plans p ON a.plan_type = p.type
 GROUP BY u.id,

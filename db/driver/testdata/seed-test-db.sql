@@ -11,15 +11,9 @@ VALUES ('user_app_1', 'account_1', 'secret_key_1', TRUE),
     ('user_app_3', 'account_3', 'secret_key_3', TRUE),
     ('user_app_4', 'account_1', NULL, FALSE),
     ('user_app_5', 'account_2', NULL, FALSE);
-INSERT INTO whitelist_types (type)
-VALUES ('services'),
-    ('contracts'),
-    ('methods'),
-    ('origins'),
-    ('user_agents');
-INSERT INTO user_app_whitelists (user_app_id, type, value)
-VALUES ('user_app_1', 'services', 'service_1'),
-    ('user_app_2', 'contracts', 'contract_1'),
+INSERT INTO user_app_allowlists (user_app_id, type, value)
+VALUES ('user_app_2', 'contracts', 'contract_1'),
     ('user_app_3', 'methods', 'method_1'),
     ('user_app_4', 'origins', 'origin_1'),
+    ('user_app_1', 'services', 'service_1'),
     ('user_app_5', 'user_agents', 'user_agent_1');

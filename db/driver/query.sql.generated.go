@@ -24,11 +24,11 @@ SELECT u.id,
             WHERE w.user_app_id IS NOT NULL
         ),
         '{}'::jsonb
-    )::jsonb AS whitelists,
+    )::jsonb AS allowlists,
     a.plan_type AS plan,
     p.throughput_limit
 FROM user_apps u
-    LEFT JOIN user_app_whitelists w ON u.id = w.user_app_id
+    LEFT JOIN user_app_allowlists w ON u.id = w.user_app_id
     LEFT JOIN accounts a ON u.account_id = a.id
     LEFT JOIN plans p ON a.plan_type = p.type
 GROUP BY u.id,
@@ -41,7 +41,7 @@ type SelectUserAppsRow struct {
 	AccountID         pgtype.Text `json:"account_id"`
 	SecretKey         pgtype.Text `json:"secret_key"`
 	SecretKeyRequired pgtype.Bool `json:"secret_key_required"`
-	Whitelists        []byte      `json:"whitelists"`
+	Allowlists        []byte      `json:"allowlists"`
 	Plan              pgtype.Text `json:"plan"`
 	ThroughputLimit   pgtype.Int4 `json:"throughput_limit"`
 }
@@ -60,7 +60,7 @@ func (q *Queries) SelectUserApps(ctx context.Context) ([]SelectUserAppsRow, erro
 			&i.AccountID,
 			&i.SecretKey,
 			&i.SecretKeyRequired,
-			&i.Whitelists,
+			&i.Allowlists,
 			&i.Plan,
 			&i.ThroughputLimit,
 		); err != nil {

@@ -16,6 +16,8 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/user"
 )
 
 var connectionString string
@@ -37,11 +39,11 @@ func TestMain(m *testing.M) {
 func Test_Integration_GetUserApps(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected map[UserAppID]UserApp
+		expected map[user.UserAppID]user.UserApp
 	}{
 		{
 			name: "should retrieve all user apps correctly",
-			expected: map[UserAppID]UserApp{
+			expected: map[user.UserAppID]user.UserApp{
 				"user_app_1": {
 					ID:                "user_app_1",
 					AccountID:         "account_1",
@@ -49,8 +51,8 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:         "secret_key_1",
 					SecretKeyRequired: true,
 					ThroughputLimit:   30,
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"services": {"service_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeServices: {"service_1": {}},
 					},
 				},
 				"user_app_2": {
@@ -59,8 +61,8 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					PlanType:          "PLAN_UNLIMITED",
 					SecretKey:         "secret_key_2",
 					SecretKeyRequired: true,
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"contracts": {"contract_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeContracts: {"contract_1": {}},
 					},
 				},
 				"user_app_3": {
@@ -70,8 +72,8 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:         "secret_key_3",
 					SecretKeyRequired: true,
 					ThroughputLimit:   30,
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"methods": {"method_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeMethods: {"method_1": {}},
 					},
 				},
 				"user_app_4": {
@@ -79,16 +81,16 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					AccountID:       "account_1",
 					PlanType:        "PLAN_FREE",
 					ThroughputLimit: 30,
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"origins": {"origin_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeOrigins: {"origin_1": {}},
 					},
 				},
 				"user_app_5": {
 					ID:        "user_app_5",
 					AccountID: "account_2",
 					PlanType:  "PLAN_UNLIMITED",
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"user_agents": {"user_agent_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeUserAgents: {"user_agent_1": {}},
 					},
 				},
 			},
@@ -118,7 +120,7 @@ func Test_convertToUserApps(t *testing.T) {
 	tests := []struct {
 		name     string
 		rows     []SelectUserAppsRow
-		expected map[UserAppID]UserApp
+		expected map[user.UserAppID]user.UserApp
 		wantErr  bool
 	}{
 		{
@@ -129,7 +131,7 @@ func Test_convertToUserApps(t *testing.T) {
 					AccountID:         pgtype.Text{String: "acc1", Valid: true},
 					SecretKey:         pgtype.Text{String: "secret1", Valid: true},
 					SecretKeyRequired: pgtype.Bool{Bool: true, Valid: true},
-					Whitelists: json.RawMessage(`{
+					Allowlists: json.RawMessage(`{
 						"origins": {
 							"origin_1": {}
 						},
@@ -150,7 +152,7 @@ func Test_convertToUserApps(t *testing.T) {
 					ThroughputLimit: pgtype.Int4{Int32: 1000, Valid: true},
 				},
 			},
-			expected: map[UserAppID]UserApp{
+			expected: map[user.UserAppID]user.UserApp{
 				"app1": {
 					ID:                "app1",
 					AccountID:         "acc1",
@@ -158,26 +160,26 @@ func Test_convertToUserApps(t *testing.T) {
 					SecretKey:         "secret1",
 					SecretKeyRequired: true,
 					ThroughputLimit:   1000,
-					Whitelists: map[WhitelistType]map[WhitelistValue]struct{}{
-						"origins":     {"origin_1": {}},
-						"user_agents": {"user_agent_1": {}},
-						"services":    {"service_1": {}},
-						"contracts":   {"contract_1": {}},
-						"methods":     {"method_1": {}},
+					Allowlists: map[user.AllowlistType]map[string]struct{}{
+						user.AllowlistTypeOrigins:    {"origin_1": {}},
+						user.AllowlistTypeUserAgents: {"user_agent_1": {}},
+						user.AllowlistTypeServices:   {"service_1": {}},
+						user.AllowlistTypeContracts:  {"contract_1": {}},
+						user.AllowlistTypeMethods:    {"method_1": {}},
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "should return error on invalid whitelists JSON",
+			name: "should return error on invalid allowlists JSON",
 			rows: []SelectUserAppsRow{
 				{
 					ID:                "app1",
 					AccountID:         pgtype.Text{String: "acc1", Valid: true},
 					SecretKey:         pgtype.Text{String: "secret1", Valid: true},
 					SecretKeyRequired: pgtype.Bool{Bool: true, Valid: true},
-					Whitelists:        json.RawMessage(`invalid`),
+					Allowlists:        json.RawMessage(`invalid`),
 					Plan:              pgtype.Text{String: "plan1", Valid: true},
 					ThroughputLimit:   pgtype.Int4{Int32: 1000, Valid: true},
 				},
@@ -207,7 +209,7 @@ const (
 	containerName      = "db"
 	containerRepo      = "postgres"
 	containerTag       = "14"
-	user               = "postgres"
+	dbUser             = "postgres"
 	password           = "pgpassword"
 	db                 = "postgres"
 	connStringFormat   = "postgres://%s:%s@%s/%s?sslmode=disable"
@@ -218,7 +220,7 @@ const (
 )
 
 var (
-	containerEnvUser     = fmt.Sprintf("POSTGRES_USER=%s", user)
+	containerEnvUser     = fmt.Sprintf("POSTGRES_USER=%s", dbUser)
 	containerEnvPassword = fmt.Sprintf("POSTGRES_PASSWORD=%s", password)
 	containerEnvDB       = fmt.Sprintf("POSTGRES_DB=%s", db)
 	schemaDockerPath     = filepath.Join(os.Getenv("PWD"), schemaLocation) + fmt.Sprintf(dockerEntrypoint, "1")
@@ -265,7 +267,7 @@ func setupPostgresDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 	}
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
-	databaseURL := fmt.Sprintf(connStringFormat, user, password, hostAndPort, db)
+	databaseURL := fmt.Sprintf(connStringFormat, dbUser, password, hostAndPort, db)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {
