@@ -3,8 +3,6 @@ package context
 import (
 	"context"
 	"net/http"
-
-	"github.com/buildwithgrove/path/user"
 )
 
 type ctxKey string
@@ -35,7 +33,7 @@ func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string)
 		UserAgent: req.Header.Get("User-Agent"),
 		SecretKey: req.Header.Get("Authorization"),
 	})
-	ctx = context.WithValue(ctx, ctxKeyUserAppID, user.UserAppID(userAppID))
+	ctx = context.WithValue(ctx, ctxKeyUserAppID, userAppID)
 	return ctx
 }
 
@@ -48,8 +46,8 @@ func GetHTTPDetailsFromCtx(ctx context.Context) HttpDetails {
 	return HttpDetails{}
 }
 
-func GetUserAppIDFromCtx(ctx context.Context) user.UserAppID {
-	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(user.UserAppID); ok {
+func GetUserAppIDFromCtx(ctx context.Context) string {
+	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(string); ok {
 		return userAppID
 	}
 	return ""
