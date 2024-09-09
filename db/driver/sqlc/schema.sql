@@ -1,7 +1,20 @@
+CREATE TYPE rate_limit_capacity_period AS ENUM ('daily', 'weekly', 'monthly');
 CREATE TABLE plans (
     id SERIAL PRIMARY KEY,
     type VARCHAR(255) NOT NULL UNIQUE,
-    rate_limit_throughput INT NOT NULL
+    rate_limit_throughput INT,
+    rate_limit_capacity INT,
+    rate_limit_capacity_period rate_limit_capacity_period,
+    CHECK (
+        (
+            rate_limit_capacity IS NOT NULL
+            AND rate_limit_capacity_period IS NOT NULL
+        )
+        OR (
+            rate_limit_capacity IS NULL
+            AND rate_limit_capacity_period IS NULL
+        )
+    )
 );
 CREATE TABLE accounts (
     id VARCHAR(24) PRIMARY KEY,
