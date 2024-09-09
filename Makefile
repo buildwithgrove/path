@@ -15,15 +15,15 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up
 path_up: ## Run docker compose up
-	docker compose up -d
+	docker compose up -d path_gateway
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build
-	docker compose up -d --build
+	docker compose up -d --build path_gateway
 
 .PHONY: path_down
 path_down: ## Run docker compose down
-	docker compose down
+	docker compose down path_gateway
 
 #########################
 ### Test Make Targets ###
@@ -67,3 +67,4 @@ copy_test_config: ## copies the example test configuration yaml file to .gitigno
 .PHONY: sqlc_generate
 sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
 	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
+	
