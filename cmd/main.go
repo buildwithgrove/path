@@ -11,12 +11,14 @@ import (
 	"github.com/buildwithgrove/path/config"
 	morseConfig "github.com/buildwithgrove/path/config/morse"
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
+	"github.com/buildwithgrove/path/db"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
+	"github.com/buildwithgrove/path/user"
 )
 
 const configPath = ".config.yaml"
@@ -44,6 +46,9 @@ func main() {
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
+	}
+	if config.UserDataEnabled() {
+		gateway.UserRequestAuthenticator = getUserReqAuthenticator(config, logger)
 	}
 
 	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.UserDataEnabled(), logger)
@@ -100,4 +105,17 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	}
 
 	return protocol, nil
+}
+
+func getUserReqAuthenticator(config config.GatewayConfig, logger polylog.Logger) gateway.UserRequestAuthenticator {
+	if userDataConfig := config.GetUserDataConfig(); userDataConfig != nil {
+		cache, cleanup, err := db.NewCache(*userDataConfig, logger)
+		if err != nil {
+			log.Fatalf("failed to create user data cache: %v", err)
+		}
+		defer cleanup()
+
+		return &user.RequestAuthenticator{Cache: cache}
+	}
+	return nil
 }
