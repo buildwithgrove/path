@@ -26,24 +26,27 @@ SELECT u.id,
         '{}'::jsonb
     )::jsonb AS allowlists,
     a.plan_type AS plan,
-    p.throughput_limit
+    p.rate_limit_throughput,
+    p.rate_limit_capacity
 FROM user_apps u
     LEFT JOIN user_app_allowlists w ON u.id = w.user_app_id
     LEFT JOIN accounts a ON u.account_id = a.id
     LEFT JOIN plans p ON a.plan_type = p.type
 GROUP BY u.id,
     a.plan_type,
-    p.throughput_limit
+    p.rate_limit_throughput,
+    p.rate_limit_capacity
 `
 
 type SelectUserAppsRow struct {
-	ID                string      `json:"id"`
-	AccountID         pgtype.Text `json:"account_id"`
-	SecretKey         pgtype.Text `json:"secret_key"`
-	SecretKeyRequired pgtype.Bool `json:"secret_key_required"`
-	Allowlists        []byte      `json:"allowlists"`
-	Plan              pgtype.Text `json:"plan"`
-	ThroughputLimit   pgtype.Int4 `json:"throughput_limit"`
+	ID                  string      `json:"id"`
+	AccountID           pgtype.Text `json:"account_id"`
+	SecretKey           pgtype.Text `json:"secret_key"`
+	SecretKeyRequired   pgtype.Bool `json:"secret_key_required"`
+	Allowlists          []byte      `json:"allowlists"`
+	Plan                pgtype.Text `json:"plan"`
+	RateLimitThroughput pgtype.Int4 `json:"rate_limit_throughput"`
+	RateLimitCapacity   pgtype.Int4 `json:"rate_limit_capacity"`
 }
 
 func (q *Queries) SelectUserApps(ctx context.Context) ([]SelectUserAppsRow, error) {
@@ -62,7 +65,8 @@ func (q *Queries) SelectUserApps(ctx context.Context) ([]SelectUserAppsRow, erro
 			&i.SecretKeyRequired,
 			&i.Allowlists,
 			&i.Plan,
-			&i.ThroughputLimit,
+			&i.RateLimitThroughput,
+			&i.RateLimitCapacity,
 		); err != nil {
 			return nil, err
 		}
