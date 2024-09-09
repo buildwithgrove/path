@@ -135,7 +135,7 @@ func Test_isSecretKeyValid(t *testing.T) {
 	}
 }
 
-func Test_authFailResp(t *testing.T) {
+func Test_invalidResp(t *testing.T) {
 	tests := []struct {
 		name            string
 		resp            *invalidResp
