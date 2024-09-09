@@ -1,5 +1,5 @@
 <div align="center">
-<h1>PATH<br/>Path API & Toolkit Harness.</h1>
+<h1>PATH<br/>Path API & Toolkit Harness</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 
 </div>
@@ -10,12 +10,17 @@
 - [Introduction](#introduction)
 - [Quickstart (Shannon)](#quickstart-shannon)
 - [Configuration](#configuration)
+  - [Configuration File](#configuration-file)
+    - [Example Configuration Format](#example-configuration-format)
 - [Running PATH](#running-path)
+  - [Setup Config YAML](#setup-config-yaml)
+  - [Start the Container](#start-the-container)
 - [E2E Tests](#e2e-tests)
+  - [Running Tests](#running-tests)
 
 ## Introduction
 
-PATH (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
+**PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
 
@@ -30,6 +35,9 @@ It provides various tools and libraries to streamline the integration and intera
    Run `make copy_config` to copy the example configuration file to `cmd/.config.yaml`.
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
+
+   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
 3. Start the PATH Container
 
