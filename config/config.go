@@ -57,7 +57,9 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 	// hydrate required fields and set defaults for optional fields
 	config.hydrateServiceAliases()
 	config.hydrateRouterConfig()
-	config.hydrateUserDataConfig()
+	if config.UserDataEnabled() {
+		config.hydrateUserDataConfig()
+	}
 
 	return config, config.validate()
 }

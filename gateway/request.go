@@ -49,5 +49,5 @@ type HTTPRequestParser interface {
 
 // TODO_NEXT: implement UserRequestAuthenticator in a separate package, e.g. `userdata`.
 type UserRequestAuthenticator interface {
-	AuthenticateReq(context.Context, *http.Request) HTTPResponse
+	AuthenticateReq(context.Context, *http.Request, string) HTTPResponse
 }

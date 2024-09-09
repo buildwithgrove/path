@@ -55,7 +55,7 @@ func (r *router) handleRoutes() {
 	// * /v1... - is the entrypoint for all service requests
 	if r.userDataEnabled {
 		// * /v1/{userAppID} - handles service requests for a specific user app ID only
-		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequestWithUserAppID))
+		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequest))
 	} else {
 		// * /v1 - handles service requests without any user data handling
 		r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
@@ -74,6 +74,9 @@ func (r *router) Start() error {
 	}
 
 	r.logger.Info().Msgf("PATH gateway running on port %d", r.config.Port)
+	if r.userDataEnabled {
+		r.logger.Info().Msg("user data enabled")
+	}
 
 	if err := server.ListenAndServe(); err != nil {
 		return err
@@ -143,24 +146,14 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// * - /v1/{userAppID} - handleServiceRequestWithUserAppID sets the HTTP details and user app ID
-// in the request context and passes it to the gateway handler, which processes the request.
-func (r *router) handleServiceRequestWithUserAppID(w http.ResponseWriter, req *http.Request) {
-	userAppID := req.PathValue(userAppIDPathParam)
-	if userAppID == "" {
-		// TODO_TECHDEBT: return proper HTTP error response
-		r.logger.Error().Msg("user app ID is required")
-		http.Error(w, "user app ID is required", http.StatusBadRequest)
-		return
+// * - /v1 or /v1/{userAppID} - handleServiceRequest passes the HTTP request to the gateway handler
+func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	// for the case of /v1/{userAppID}, set the user app ID and HTTP details in the context
+	if userAppID := req.PathValue(userAppIDPathParam); userAppID != "" {
+		ctx = reqCtx.SetCtxFromRequest(ctx, req, userAppID)
 	}
 
-	ctx := reqCtx.SetCtxFromRequest(req.Context(), req, userAppID)
-
 	r.gateway.HandleHTTPServiceRequest(ctx, req, w)
-}
-
-// * - /v1 - handleServiceRequest passes the HTTP request to the gateway handler without any user app ID
-// or request ID set in the request context. This means to no user authentication or rate limiting is applied.
-func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
-	r.gateway.HandleHTTPServiceRequest(req.Context(), req, w)
 }
