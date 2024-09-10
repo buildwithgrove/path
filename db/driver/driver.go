@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/buildwithgrove/path/db"
@@ -33,6 +34,12 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 	config, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// Enforce that connections are read-only, as PATH does not make any modifications to the database.
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		_, err := conn.Exec(ctx, "SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
+		return err
 	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
