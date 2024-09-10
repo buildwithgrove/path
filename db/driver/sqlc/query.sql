@@ -1,3 +1,7 @@
+-- This file is used by SQLC to autogenerate the Go code needed by the database driver. 
+-- It contains all queries used for fetching user data by the Gateway.
+-- See: https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html#schema-and-queries
+-- 
 -- name: SelectUserApps :many
 SELECT u.id,
     u.account_id,

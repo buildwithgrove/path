@@ -11,18 +11,17 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type (
-	cache struct {
-		userApps             map[user.UserAppID]user.UserApp
-		db                   Driver
-		cacheRefreshInterval time.Duration
-		mu                   sync.RWMutex
-		logger               polylog.Logger
-	}
-	Driver interface {
-		GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error)
-	}
-)
+type cache struct {
+	userApps             map[user.UserAppID]user.UserApp
+	db                   Driver
+	cacheRefreshInterval time.Duration
+	mu                   sync.RWMutex
+	logger               polylog.Logger
+}
+
+type Driver interface {
+	GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error)
+}
 
 func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*cache, error) {
 	cache := &cache{

@@ -1,3 +1,7 @@
+-- This file is used by SQLC to autogenerate the Go code needed by the database driver. 
+-- It contains all tables required for storing user data needed by the Gateway.
+-- See: https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html#schema-and-queries
+--
 CREATE TYPE rate_limit_capacity_period AS ENUM ('daily', 'weekly', 'monthly');
 CREATE TABLE plans (
     id SERIAL PRIMARY KEY,
