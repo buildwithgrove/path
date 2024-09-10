@@ -9,6 +9,7 @@ require (
 	github.com/pokt-network/poktroll v0.0.6
 	github.com/pokt-network/shannon-sdk v0.0.0-20240820141308-b7f38438e330
 	github.com/stretchr/testify v1.9.0
+	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.65.0
 )
 
