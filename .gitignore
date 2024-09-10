@@ -31,6 +31,6 @@ go.work.sum
 .idea/
 .mise.local.toml
 
-# tmp directory
+# tmp dir
 tmp
 tmp/*

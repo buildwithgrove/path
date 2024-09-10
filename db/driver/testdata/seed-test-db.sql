@@ -1,3 +1,5 @@
+-- This file updates the ephemeral Docker Postres test database initialized in db/driver/driver_test.go
+-- with just enough data to run the test of the database driver using an actual Postgres DB instance.
 INSERT INTO plans (type, rate_limit_throughput)
 VALUES ('PLAN_FREE', 30),
     ('PLAN_UNLIMITED', 0);
