@@ -81,6 +81,8 @@ type Response struct {
 // - Morse: in the relayer/morse package, and
 // - Shannon: in the relayer/shannon package.
 type Protocol interface {
+	Name() string
+	IsReady() bool
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
 }

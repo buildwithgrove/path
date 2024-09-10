@@ -60,6 +60,14 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
+func (p *Protocol) Name() string {
+	return "shannon-protocol"
+}
+
+func (p *Protocol) IsReady() bool {
+	return len(p.appCache) > 0 && len(p.sessionCache) > 0
+}
+
 func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
 	apps, found := p.serviceApps(serviceID)
 	if !found {

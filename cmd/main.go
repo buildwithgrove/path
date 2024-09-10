@@ -85,12 +85,20 @@ func main() {
 		Relayer:           relayer,
 	}
 
-	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), logger)
+	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
+	// Unavailable status; once all components are ready, it will return a 200 OK status.
+	// health check components must implement the router.HealthCheckComponent
+	// interface to be able to signal they are ready to service requests.
+	healthCheckComponents := []router.HealthCheckComponent{
+		protocol,
+	}
+
+	apiRouter := router.NewRouter(gateway, healthCheckComponents, config.GetRouterConfig(), logger)
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}
 
-	if err := apiRouter.Start(context.Background()); err != nil {
+	if err := apiRouter.Start(); err != nil {
 		log.Fatalf("failed to start API router: %v", err)
 	}
 }
