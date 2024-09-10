@@ -191,7 +191,7 @@ func Test_convertToUserApps(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			driver := &PostgresDriver{}
+			driver := &postgresDriver{}
 			apps, err := driver.convertToUserApps(test.rows)
 			if test.wantErr {
 				require.Error(t, err)
@@ -211,7 +211,7 @@ const (
 	containerTag       = "14"
 	dbUser             = "postgres"
 	password           = "pgpassword"
-	db                 = "postgres"
+	dbName             = "postgres"
 	connStringFormat   = "postgres://%s:%s@%s/%s?sslmode=disable"
 	schemaLocation     = "./sqlc/schema.sql"
 	seedTestDBLocation = "./testdata/seed-test-db.sql"
@@ -222,7 +222,7 @@ const (
 var (
 	containerEnvUser     = fmt.Sprintf("POSTGRES_USER=%s", dbUser)
 	containerEnvPassword = fmt.Sprintf("POSTGRES_PASSWORD=%s", password)
-	containerEnvDB       = fmt.Sprintf("POSTGRES_DB=%s", db)
+	containerEnvDB       = fmt.Sprintf("POSTGRES_DB=%s", dbName)
 	schemaDockerPath     = filepath.Join(os.Getenv("PWD"), schemaLocation) + fmt.Sprintf(dockerEntrypoint, "1")
 	seedTestDBDockerPath = filepath.Join(os.Getenv("PWD"), seedTestDBLocation) + fmt.Sprintf(dockerEntrypoint, "2")
 )
@@ -267,7 +267,7 @@ func setupPostgresDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 	}
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
-	databaseURL := fmt.Sprintf(connStringFormat, dbUser, password, hostAndPort, db)
+	databaseURL := fmt.Sprintf(connStringFormat, dbUser, password, hostAndPort, dbName)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {

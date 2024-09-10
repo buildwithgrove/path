@@ -7,14 +7,17 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/buildwithgrove/path/db"
 	"github.com/buildwithgrove/path/user"
 )
 
-// The PostgresDriver struct satisfies the Driver interface which defines all database driver methods
-type PostgresDriver struct {
+// The postgresDriver struct satisfies the db.Driver interface defined in the cache in the db package.
+type postgresDriver struct {
 	*Queries
 	DB *pgxpool.Pool
 }
+
+var _ db.Driver = &postgresDriver{}
 
 /* ---------- Postgres Connection Funcs ---------- */
 
@@ -26,7 +29,7 @@ NewPostgresDriver
 - Creates an instance of PostgresDriver using the provided pgx connection.
 - Returns the created PostgresDriver instance.
 */
-func NewPostgresDriver(connectionString string) (*PostgresDriver, func() error, error) {
+func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, error) {
 	config, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return nil, nil, err
@@ -42,7 +45,7 @@ func NewPostgresDriver(connectionString string) (*PostgresDriver, func() error, 
 		return nil
 	}
 
-	driver := &PostgresDriver{
+	driver := &postgresDriver{
 		Queries: New(pool),
 		DB:      pool,
 	}
@@ -52,7 +55,7 @@ func NewPostgresDriver(connectionString string) (*PostgresDriver, func() error, 
 
 /* ---------- UserApp Funcs ---------- */
 
-func (d *PostgresDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error) {
+func (d *postgresDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error) {
 	rows, err := d.Queries.SelectUserApps(ctx)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func (d *PostgresDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]us
 	return d.convertToUserApps(rows)
 }
 
-func (d *PostgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.UserAppID]user.UserApp, error) {
+func (d *postgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.UserAppID]user.UserApp, error) {
 	apps := make(map[user.UserAppID]user.UserApp, len(rows))
 
 	for _, row := range rows {
