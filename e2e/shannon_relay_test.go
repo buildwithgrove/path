@@ -71,6 +71,8 @@ func Test_ShannonRelay(t *testing.T) {
 			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathPort, test.reqPath)
 
 			client := &http.Client{}
+
+			// Send a service request to the PATH container running in Docker.
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
