@@ -57,7 +57,7 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 	// hydrate required fields and set defaults for optional fields
 	config.hydrateServiceAliases()
 	config.hydrateRouterConfig()
-	if config.UserDataEnabled() {
+	if config.IsUserDataEnabled() {
 		config.hydrateUserDataConfig()
 	}
 
@@ -79,7 +79,7 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 }
 
 // UserDataEnabled returns true if user data handling is enabled for the Gateway.
-func (c GatewayConfig) UserDataEnabled() bool {
+func (c GatewayConfig) IsUserDataEnabled() bool {
 	return c.UserData != nil
 }
 
@@ -140,7 +140,7 @@ func (c GatewayConfig) validate() error {
 	if err := c.validateServiceConfig(); err != nil {
 		return err
 	}
-	if c.UserData != nil {
+	if c.IsUserDataEnabled() {
 		if err := c.UserData.validate(); err != nil {
 			return err
 		}
