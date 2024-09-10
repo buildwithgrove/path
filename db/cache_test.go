@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -48,7 +46,11 @@ func Test_GetUserApp(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
-			cache, err := newTestCache(t, test.mockReturn)
+
+			mockDb := newMockDbDriver(t)
+			mockDb.On("GetUserApps", mock.Anything).Return(test.mockReturn, nil)
+
+			cache, err := NewCache(mockDb, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			userApp, found := cache.GetUserApp(context.Background(), test.userAppID)
@@ -79,7 +81,11 @@ func Test_cacheRefreshHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
-			cache, err := newTestCache(t, test.mockReturn)
+
+			mockDb := newMockDbDriver(t)
+			mockDb.On("GetUserApps", mock.Anything).Return(test.mockReturn, nil)
+
+			cache, err := NewCache(mockDb, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			cache.cacheRefreshInterval = time.Millisecond * 10
@@ -114,7 +120,11 @@ func Test_setCache(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
-			cache, err := newTestCache(t, test.mockReturn)
+
+			mockDb := newMockDbDriver(t)
+			mockDb.On("GetUserApps", mock.Anything).Return(test.mockReturn, nil)
+
+			cache, err := NewCache(mockDb, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			err = cache.setCache(context.Background())
@@ -122,28 +132,6 @@ func Test_setCache(t *testing.T) {
 			c.Equal(test.expected, cache.userApps)
 		})
 	}
-}
-
-func newTestCache(t *testing.T, userApps map[user.UserAppID]user.UserApp) (*cache, error) {
-	mockDb := newMockDbDriver(t)
-
-	cache := &cache{
-		userApps:             make(map[user.UserAppID]user.UserApp),
-		db:                   mockDb,
-		cacheRefreshInterval: time.Minute,
-		mu:                   sync.RWMutex{},
-		logger:               polyzero.NewLogger(),
-	}
-
-	mockDb.On("GetUserApps", mock.Anything).Return(userApps, nil)
-
-	if err := cache.setCache(context.Background()); err != nil {
-		return nil, fmt.Errorf("failed to set cache: %w", err)
-	}
-
-	go cache.cacheRefreshHandler(context.Background())
-
-	return cache, nil
 }
 
 func getTestUserApps() map[user.UserAppID]user.UserApp {
