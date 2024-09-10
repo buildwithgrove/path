@@ -15,4 +15,9 @@ services:
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
     command: ["./path"]
-    # TODO_IMPROVE: add a health check that looks for component ready states from the /healthz endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      

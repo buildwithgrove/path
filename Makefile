@@ -38,7 +38,7 @@ test_unit: ## Run all unit tests
   
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -tags=e2e -count=1 -run TestShannonRelay 
+	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay 
 
 ################################
 ### Copy Config Make Targets ###

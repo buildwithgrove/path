@@ -1,58 +1,69 @@
-//go:build e2e
-
 package e2e
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
+	"log"
 	"net/http"
-	"net/url"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
 	"testing"
-	"time"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
+	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/docker"
 	"github.com/stretchr/testify/require"
-
-	"github.com/buildwithgrove/path/config"
-	"github.com/buildwithgrove/path/relayer"
-	"github.com/buildwithgrove/path/relayer/shannon"
-	"github.com/buildwithgrove/path/request"
 )
 
-const configPath = ".config.test.yaml"
+// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
+// This allows a subdomain to be specified without modifying /etc/hosts.
+// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
+const localdevMe = "localdev.me"
 
-var testTimeout = 20 * time.Second
+// When the ephemeral PATH Docker container is running it exposes a dynamically
+// assigned port. This global variable is used to capture the port number.
+var pathPort string
 
-// TODO_INCOMPLETE: add an action to the CI for running E2E tests, which at the minimum
-// includes using the e2e tag and defining secrets to be used as environment variables, e.g. gateway/signer private key and address.
-//
+func TestMain(m *testing.M) {
+	// Initialize the ephemeral PATH Docker container
+	pool, resource, containerPort := setupPathDocker()
+
+	// Assign the port the container is listening on to the global variable
+	pathPort = containerPort
+
+	// Run PATH E2E Shannon relay tests
+	exitCode := m.Run()
+
+	// Cleanup the ephemeral PATH Docker container
+	cleanupPathDocker(m, pool, resource)
+
+	// Exit with the test result
+	os.Exit(exitCode)
+}
+
 // TODO_IMPROVE: use gocuke (github.com/regen-network/gocuke) for defining and running E2E tests.
-func TestShannonRelay(t *testing.T) {
+func Test_ShannonRelay(t *testing.T) {
 	tests := []struct {
-		name      string
-		serviceID relayer.ServiceID
-		relayID   string
-		httpReq   *http.Request
+		name         string
+		reqMethod    string
+		reqPath      string
+		serviceID    string
+		serviceAlias string
+		relayID      string
+		body         string
 	}{
 		{
-			name:      "should successfully relay eth_blockNumber for eth-mainnet (0021)",
-			serviceID: "gatewaye2e",
-			relayID:   "1001",
-			httpReq: &http.Request{
-				Method: http.MethodPost,
-				Host:   "test-service.gateway.pokt.network",
-				URL:    &url.URL{Path: "/v1"},
-				Header: http.Header{"Content-Type": []string{"application/json"}},
-				Body: io.NopCloser(bytes.NewBuffer([]byte(
-					`{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
-				))),
-			},
+			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			reqMethod:    http.MethodPost,
+			reqPath:      "/v1",
+			serviceID:    "gatewaye2e",
+			serviceAlias: "test-service",
+			relayID:      "1001",
+			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
 	}
 
@@ -60,46 +71,33 @@ func TestShannonRelay(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			logger := polyzero.NewLogger()
+			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathPort, test.reqPath)
 
-			// Initialize all required components.
-			config, err := config.LoadGatewayConfigFromYAML(configPath)
+			client := &http.Client{}
+			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
+			req.Header.Set("Content-Type", "application/json")
 
-			requestParser, err := request.NewParser(config, logger)
-			c.NoError(err)
-
-			ctx := test.httpReq.Context()
-
-			serviceID, qosService, err := requestParser.GetQoSService(ctx, test.httpReq)
-			c.NoError(err)
-
-			// service ID parsed from alias should match the test service ID
-			c.Equal(test.serviceID, serviceID)
-
-			gatewayRelayer, err := getTestRelayer(serviceID, config, logger)
-			c.NoError(err)
-
-			// Prepare the relay payload.
-			payload, err := qosService.ParseHTTPRequest(ctx, test.httpReq)
-			c.NoError(err)
-
-			// Send the relay request to the gateway.
-			// The relay is attempted 10 times before failing.
-			// TODO_TECHDEBT: improve the error handling and retry mechanism.
 			var success bool
 			var allErrors []error
 			for i := 0; i < 10; i++ {
-				response, err := gatewayRelayer.SendRelay(ctx, test.serviceID, payload, randomEndpointSelector{})
+				resp, err := client.Do(req)
 				if err != nil {
-					allErrors = append(allErrors, err)
+					allErrors = append(allErrors, fmt.Errorf("request error: %v", err))
+					continue
+				}
+				defer resp.Body.Close()
+
+				bodyBytes, err := io.ReadAll(resp.Body)
+				if err != nil {
+					allErrors = append(allErrors, fmt.Errorf("response read error: %v", err))
 					continue
 				}
 
-				// TODO_TECHDEBT: use the service package to parse and validate the response.
-				err = validateJsonRpcResponse(test.relayID, response.Bytes)
+				err = validateJsonRpcResponse(test.relayID, bodyBytes)
 				if err != nil {
-					allErrors = append(allErrors, fmt.Errorf("validation error: %v --- %s", err, string(response.Bytes)))
+					allErrors = append(allErrors, fmt.Errorf("validation error: %v --- %s", err, string(bodyBytes)))
 					continue
 				}
 
@@ -117,43 +115,6 @@ func TestShannonRelay(t *testing.T) {
 			c.True(success)
 		})
 	}
-}
-
-// getTestRelayer initializes a shannon fullnode from the config, initializes the protocol,
-// and waits for onchain data to be fetched. It will timeout if the protocol does not
-// fetch onchain data within the test timeout period to avoid hanging the test.
-func getTestRelayer(serviceID relayer.ServiceID, config config.GatewayConfig, logger polylog.Logger) (relayer.Relayer, error) {
-	shannonConfig := config.GetShannonConfig()
-	if shannonConfig == nil {
-		return relayer.Relayer{}, fmt.Errorf("shannon config not found")
-	}
-
-	fullNode, err := shannon.NewFullNode(shannonConfig.FullNodeConfig, logger)
-	if err != nil {
-		return relayer.Relayer{}, err
-	}
-
-	protocol, err := shannon.NewProtocol(context.Background(), fullNode)
-	if err != nil {
-		return relayer.Relayer{}, err
-	}
-
-	// Wait for onchain data to be fetched by the initialized shannon protocol.
-	startTime := time.Now()
-	cacheHasEndpoints := false
-
-	for !cacheHasEndpoints {
-
-		endpoints, err := protocol.Endpoints(serviceID)
-		cacheHasEndpoints = len(endpoints) > 0 && err == nil
-
-		if time.Since(startTime) > testTimeout {
-			return relayer.Relayer{}, fmt.Errorf("timeout waiting for protocol data")
-		}
-		<-time.After(500 * time.Millisecond)
-	}
-
-	return relayer.Relayer{Protocol: protocol}, nil
 }
 
 // TODO_TECHDEBT: delete (NOT MOVE) this function and implement a proper JSONRPC validator in the service package.
@@ -193,25 +154,92 @@ func validateJsonRpcResponse(expectedID string, response []byte) error {
 	return nil
 }
 
-// randomEndpointSelector is used to fulfill the relayer's requirement for an
-// EndpointSelector, through random selection of an endpoint among available ones.
-var _ relayer.EndpointSelector = randomEndpointSelector{}
+/* -------------------- Dockertest Ephemeral PATH Container Setup -------------------- */
 
-type randomEndpointSelector struct{}
+const (
+	containerName        = "path"
+	internalPathPort     = "3000"
+	dockerfilePath       = "../Dockerfile"
+	configFilePath       = "./.config.test.yaml"
+	configMountPoint     = ":/app/.config.yaml"
+	containerEnvImageTag = "IMAGE_TAG=test"
+	containerExtraHost   = "host.docker.internal:host-gateway"
+	timeoutSeconds       = 120
+)
 
-func (r randomEndpointSelector) Select(allEndpoints map[relayer.AppAddr][]relayer.Endpoint) (relayer.AppAddr, relayer.EndpointAddr, error) {
-	if len(allEndpoints) == 0 {
-		return "", "", fmt.Errorf("endpointSelector: no endpoint available")
+var (
+	containerConfigMount     = filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+	containerPortAndProtocol = internalPathPort + "/tcp"
+)
+
+func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
+	opts := &dockertest.RunOptions{
+		Name:         containerName,
+		Mounts:       []string{containerConfigMount},
+		Env:          []string{containerEnvImageTag},
+		ExposedPorts: []string{containerPortAndProtocol},
+		ExtraHosts:   []string{containerExtraHost},
 	}
 
-	// return the first app from the list, and a random endpoint matching the app.
-	for appAddr, endpoints := range allEndpoints {
-		if len(endpoints) == 0 {
-			return "", "", fmt.Errorf("endpointSelector: no endpoints found for app %s", appAddr)
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		fmt.Printf("Could not construct pool: %s", err)
+		os.Exit(1)
+	}
+	resource, err := pool.BuildAndRunWithOptions(dockerfilePath, opts, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+	})
+	if err != nil {
+		fmt.Printf("Could not start resource: %s", err)
+		os.Exit(1)
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for sig := range c {
+			fmt.Printf("exit signal %d received\n", sig)
+			if err := pool.Purge(resource); err != nil {
+				fmt.Printf("could not purge resource: %s", err)
+			}
+		}
+	}()
+
+	if err := resource.Expire(timeoutSeconds); err != nil {
+		fmt.Printf("[ERROR] Failed to set expiration on docker container: %v", err)
+		os.Exit(1)
+	}
+
+	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
+
+	poolRetryChan := make(chan struct{}, 1)
+	retryConnectFn := func() error {
+		resp, err := http.Get(healthCheckURL)
+		if err != nil {
+			return fmt.Errorf("unable to connect to health check endpoint: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("health check endpoint returned non-200 status: %d", resp.StatusCode)
 		}
 
-		return appAddr, endpoints[rand.Intn(len(endpoints))].Addr(), nil
+		poolRetryChan <- struct{}{}
+		return nil
+	}
+	if err = pool.Retry(retryConnectFn); err != nil {
+		fmt.Printf("could not connect to docker: %s", err)
+		os.Exit(1)
 	}
 
-	return "", "", fmt.Errorf("endpointSelector: could not find any endpoints")
+	<-poolRetryChan
+
+	return pool, resource, resource.GetPort(containerPortAndProtocol)
+}
+
+func cleanupPathDocker(_ *testing.M, pool *dockertest.Pool, resource *dockertest.Resource) {
+	if err := pool.Purge(resource); err != nil {
+		log.Fatalf("could not purge resource: %s", err)
+	}
 }
