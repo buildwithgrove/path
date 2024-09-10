@@ -33,6 +33,7 @@ func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.
 	}
 
 	if err := cache.setCache(context.Background()); err != nil {
+		cache.logger.Error().Err(err).Msg("failed to set cache")
 		return nil, fmt.Errorf("failed to set cache: %w", err)
 	}
 
@@ -65,6 +66,8 @@ func (c *cache) setCache(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get user apps: %w", err)
 	}
+
+	c.logger.Info().Msgf("successfully set cache with %d user apps", len(userApps))
 
 	c.mu.Lock()
 	c.userApps = userApps

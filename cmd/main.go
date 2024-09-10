@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -29,17 +28,17 @@ func main() {
 
 	config, err := config.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		panic(fmt.Sprintf("failed to load config: %v", err))
 	}
 
 	protocol, err := getProtocol(config, logger)
 	if err != nil {
-		log.Fatalf("failed to create protocol: %v", err)
+		panic(fmt.Sprintf("failed to create protocol: %v", err))
 	}
 
 	requestParser, err := request.NewParser(config, logger)
 	if err != nil {
-		log.Fatalf("failed to create request parser: %v", err)
+		panic(fmt.Sprintf("failed to create request parser: %v", err))
 	}
 
 	relayer := &relayer.Relayer{Protocol: protocol}
@@ -51,7 +50,7 @@ func main() {
 	if config.IsUserDataEnabled() {
 		userReqAuthenticator, cleanup, err := getUserReqAuthenticator(config.GetUserDataConfig(), logger)
 		if err != nil {
-			log.Fatalf("failed to create user request authenticator: %v", err)
+			panic(fmt.Sprintf("failed to create user request authenticator: %v", err))
 		}
 		defer cleanup()
 
@@ -59,12 +58,9 @@ func main() {
 	}
 
 	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.IsUserDataEnabled(), logger)
-	if err != nil {
-		log.Fatalf("failed to create API router: %v", err)
-	}
 
 	if err := apiRouter.Start(); err != nil {
-		log.Fatalf("failed to start API router: %v", err)
+		panic(fmt.Sprintf("failed to start API router: %v", err))
 	}
 }
 
