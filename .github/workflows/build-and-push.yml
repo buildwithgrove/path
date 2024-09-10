@@ -2,13 +2,14 @@ name: Publish image to GitHub Container Registry
 
 on:
   workflow_run:
-    workflows: [go-test]
+    workflows: [Run E2E Tests]
     types:
       - completed
 
 jobs:
-  publish-image:
+  on-success:
     runs-on: ubuntu-22.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout project
         uses: actions/checkout@v3
