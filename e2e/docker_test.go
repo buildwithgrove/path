@@ -73,6 +73,7 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 		os.Exit(1)
 	}
 
+	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
 
 	poolRetryChan := make(chan struct{}, 1)
@@ -83,10 +84,12 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 		}
 		defer resp.Body.Close()
 
+		// the health check endpoint returns a 200 OK status if the service is ready
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("health check endpoint returned non-200 status: %d", resp.StatusCode)
 		}
 
+		// notify the pool that the health check was successful
 		poolRetryChan <- struct{}{}
 		return nil
 	}
