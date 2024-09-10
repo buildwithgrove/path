@@ -15,10 +15,17 @@ const (
 	statusNotReady healthCheckStatus = "initializing"
 )
 
+// HealthCheckComponent is an interface that must be implemented
+// by components that need to report their health status
+type HealthCheckComponent interface {
+	Name() string
+	IsReady() bool
+}
+
 type (
-	HealthCheckComponent interface {
-		Name() string
-		IsReady() bool
+	healthCheck struct {
+		components []HealthCheckComponent
+		logger     polylog.Logger
 	}
 	healthCheckJSON struct {
 		Status      healthCheckStatus `json:"status"`
@@ -26,11 +33,14 @@ type (
 		ReadyStates map[string]bool   `json:"readyStates,omitempty"`
 	}
 )
-type healthCheck struct {
-	components []HealthCheckComponent
-	logger     polylog.Logger
-}
 
+// healthCheckHandler returns the health status of PATH as a JSON response.
+//
+// It will return a 200 OK status code if all components are ready or
+// a 503 Service Unavailable status code if any component is not ready.
+//
+// The image tag is set to the value of the IMAGE_TAG environment variable, which is
+// passed to the Docker image as a build argument at build time.
 func (c *healthCheck) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 	readyStates := c.getComponentReadyStates()
 	status := getStatus(readyStates)
