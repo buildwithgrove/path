@@ -189,19 +189,19 @@ make test_e2e_shannon_relay
 
 ## User Data
 
-By default, PATH does not associate user data with service requests.
+By default, PATH does not associate user data with service requests (i.e. relays).
 
-You may opt to enable user data config to unlock the ability to associate a user with a service request.
+You may opt to enable user data config to unlock the ability to associate a specific user with a particular service request.
 
 This is required for:
 
-- User specified app settings
-- Metering and billing of service requests
-- Rate limiting of service requests by throughput and/or capacity
+- User-specified app settings (e.g. XXX)
+- Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
+- Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
 
 ### Updated Endpoint
 
-Enabling user data will modify the endpoint for service requests to require a user app ID identifier at the end of the URL path.
+Enabling user data will modify the endpoint for service requests to require a user app identifier at the end of the URL path.
 
 For example:
 

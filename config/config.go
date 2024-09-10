@@ -79,7 +79,7 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 }
 
 // UserDataEnabled returns true if user data handling is enabled for the Gateway.
-func (c GatewayConfig) UserDataEnabled() bool {
+func (c GatewayConfig) IsUserDataEnabled() bool {
 	return c.UserData != nil
 }
 
