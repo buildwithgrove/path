@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// TODO_DISCUSS: should wecreate a common errors package for all errors?
+	// TODO_DISCUSS: should we create a common errors package for all errors?
 	// TODO_IMPROVE: define specific error codes for all errors
 	parserErrorCode     = -32000
 	parserErrorTemplate = `{"jsonrpc":"2.0","id":"0","error":{"code":%d,"message":"%s"}}`
@@ -71,24 +71,6 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 	return &ParserErrorResponse{err: err.Error()}
 }
 
-/* Parser Error Response */
-
-type ParserErrorResponse struct {
-	err string
-}
-
-func (r *ParserErrorResponse) GetPayload() []byte {
-	return []byte(fmt.Sprintf(parserErrorTemplate, parserErrorCode, r.err))
-}
-
-func (r *ParserErrorResponse) GetHTTPStatusCode() int {
-	return http.StatusBadRequest
-}
-
-func (r *ParserErrorResponse) GetHTTPHeaders() map[string]string {
-	return map[string]string{}
-}
-
 // getServiceID gets the service ID from the request host
 // eg. host = "eth-mainnet.gateway.pokt.network" -> serviceID = "eth-mainnet"
 func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
@@ -107,4 +89,22 @@ func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
 	}
 
 	return serviceID, nil
+}
+
+/* Parser Error Response */
+
+type ParserErrorResponse struct {
+	err string
+}
+
+func (r *ParserErrorResponse) GetPayload() []byte {
+	return []byte(fmt.Sprintf(parserErrorTemplate, parserErrorCode, r.err))
+}
+
+func (r *ParserErrorResponse) GetHTTPStatusCode() int {
+	return http.StatusBadRequest
+}
+
+func (r *ParserErrorResponse) GetHTTPHeaders() map[string]string {
+	return map[string]string{}
 }
