@@ -83,8 +83,11 @@ func (c GatewayConfig) IsUserDataEnabled() bool {
 	return c.UserData != nil
 }
 
-func (c GatewayConfig) GetUserDataConfig() *UserDataConfig {
-	return c.UserData
+func (c GatewayConfig) GetUserDataConfig() UserDataConfig {
+	if c.UserData == nil {
+		return UserDataConfig{}
+	}
+	return *c.UserData
 }
 
 // GetServiceIDFromAlias retrieves the ServiceID associated with a given service alias.

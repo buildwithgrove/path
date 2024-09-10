@@ -12,6 +12,7 @@ import (
 	morseConfig "github.com/buildwithgrove/path/config/morse"
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/db"
+	"github.com/buildwithgrove/path/db/driver"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
@@ -47,8 +48,14 @@ func main() {
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
 	}
-	if config.UserDataEnabled() {
-		gateway.UserRequestAuthenticator = getUserReqAuthenticator(config, logger)
+	if config.IsUserDataEnabled() {
+		userReqAuthenticator, cleanup, err := getUserReqAuthenticator(config.GetUserDataConfig(), logger)
+		if err != nil {
+			log.Fatalf("failed to create user request authenticator: %v", err)
+		}
+		defer cleanup()
+
+		gateway.UserRequestAuthenticator = userReqAuthenticator
 	}
 
 	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.IsUserDataEnabled(), logger)
@@ -107,15 +114,16 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	return protocol, nil
 }
 
-func getUserReqAuthenticator(config config.GatewayConfig, logger polylog.Logger) gateway.UserRequestAuthenticator {
-	if userDataConfig := config.GetUserDataConfig(); userDataConfig != nil {
-		cache, cleanup, err := db.NewCache(*userDataConfig, logger)
-		if err != nil {
-			log.Fatalf("failed to create user data cache: %v", err)
-		}
-		defer cleanup()
-
-		return &user.RequestAuthenticator{Cache: cache}
+func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthenticator, func() error, error) {
+	dbDriver, cleanup, err := driver.NewPostgresDriver(config.DBConnectionString)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create postgres driver: %v", err)
 	}
-	return nil
+
+	cache, err := db.NewCache(dbDriver, config.CacheRefreshInterval, logger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
+	}
+
+	return &user.RequestAuthenticator{Cache: cache}, cleanup, nil
 }
