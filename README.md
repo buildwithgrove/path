@@ -195,7 +195,7 @@ You may opt to enable user data config to unlock the ability to associate a spec
 
 This is required for:
 
-- User-specified app settings (e.g. XXX)
+- User-specified app settings (e.g. secret key, allowlists, etc.)
 - Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
 - Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
 
