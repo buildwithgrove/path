@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -53,14 +54,30 @@ func main() {
 			panic(fmt.Sprintf("failed to create user request authenticator: %v", err))
 		}
 		defer cleanup()
-
 		gateway.UserRequestAuthenticator = userReqAuthenticator
 	}
 
-	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.IsUserDataEnabled(), logger)
+	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
+	// Unavailable status; once all components are ready, it will return a 200 OK status.
+	// health check components must implement the router.HealthCheckComponent
+	// interface to be able to signal they are ready to service requests.
+	healthCheckComponents := []router.HealthCheckComponent{
+		protocol,
+	}
+
+	apiRouter := router.NewRouter(router.RouterParams{
+		Gateway:               gateway,
+		HealthCheckComponents: healthCheckComponents,
+		Config:                config.GetRouterConfig(),
+		UserDataEnabled:       config.IsUserDataEnabled(),
+		Logger:                logger,
+	})
+	if err != nil {
+		log.Fatalf("failed to create API router: %v", err)
+	}
 
 	if err := apiRouter.Start(); err != nil {
-		panic(fmt.Sprintf("failed to start API router: %v", err))
+		log.Fatalf("failed to start API router: %v", err)
 	}
 }
 

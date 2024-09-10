@@ -2,10 +2,8 @@ package router
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -22,38 +20,49 @@ const userAppIDPathParam = "userAppID"
 
 type (
 	router struct {
-		mux             *http.ServeMux
-		gateway         gateway
-		config          config.RouterConfig
-		userDataEnabled bool
-		logger          polylog.Logger
+		mux         *http.ServeMux
+		gateway     gateway
+		healthCheck *healthCheck
+		config      config.RouterConfig
+		logger      polylog.Logger
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
 )
 
+type RouterParams struct {
+	Gateway               gateway
+	HealthCheckComponents []HealthCheckComponent
+	Config                config.RouterConfig
+	UserDataEnabled       bool
+	Logger                polylog.Logger
+}
+
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, config config.RouterConfig, userDataEnabled bool, logger polylog.Logger) *router {
+func NewRouter(params RouterParams) *router {
 	r := &router{
-		mux:             http.NewServeMux(),
-		gateway:         gateway,
-		config:          config,
-		userDataEnabled: userDataEnabled,
-		logger:          logger.With("package", "router"),
+		mux:     http.NewServeMux(),
+		gateway: params.Gateway,
+		healthCheck: &healthCheck{
+			components: params.HealthCheckComponents,
+			logger:     params.Logger,
+		},
+		config: params.Config,
+		logger: params.Logger.With("package", "router"),
 	}
-	r.handleRoutes()
+	r.handleRoutes(params.UserDataEnabled)
 	return r
 }
 
-func (r *router) handleRoutes() {
+func (r *router) handleRoutes(userDataEnabled bool) {
 	// GET /healthz - handleHealthz returns a simple health check response
-	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.handleHealthz))
+	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthCheck.healthCheckHandler))
 
 	// * /v1... - is the entrypoint for all service requests
-	if r.userDataEnabled {
+	if userDataEnabled {
 		// * /v1/{userAppID} - handles service requests for a specific user app ID only
 		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequest))
 	} else {
@@ -74,9 +83,6 @@ func (r *router) Start() error {
 	}
 
 	r.logger.Info().Msgf("PATH gateway running on port %d", r.config.Port)
-	if r.userDataEnabled {
-		r.logger.Info().Msg("user data enabled")
-	}
 
 	if err := server.ListenAndServe(); err != nil {
 		return err
@@ -116,36 +122,8 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 /* --------------------------------- Handlers -------------------------------- */
 
-// GET - /healthz - handleHealthz returns a simple health check response
-func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
-
-	imageTag := os.Getenv(imageTagEnvVar)
-	if imageTag == "" {
-		imageTag = defaultImageTag
-	}
-
-	// TODO_IMPROVE: return component ready states for components that must initialize before the service is ready
-	responseBytes, err := json.Marshal(struct {
-		Status   string `json:"status"`
-		ImageTag string `json:"imageTag"`
-	}{
-		Status:   "ok",
-		ImageTag: imageTag,
-	})
-	if err != nil {
-		r.logger.Error().Str("error", err.Error()).Msg("error marshalling health check response")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = w.Write(responseBytes)
-	if err != nil {
-		r.logger.Error().Str("error", err.Error()).Msg("error writing health check response")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-}
-
+// handleServiceRequest sets the request ID and HTTP details in the request context
+// from the HTTP request and passes it to the gateway handler, which processes the request.
 // * - /v1  - user data not enabled: handles requests for all user app IDs
 // * - /v1/{userAppID} - user data enabled: handles requests for a specific user app ID only
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
