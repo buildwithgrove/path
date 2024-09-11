@@ -19,7 +19,7 @@ import (
 	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/path/user/authenticator"
 )
 
 const configPath = ".config.yaml"
@@ -127,6 +127,8 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	return protocol, nil
 }
 
+const redisAddr = "localhost:6379"
+
 func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthenticator, func() error, error) {
 	dbDriver, cleanup, err := driver.NewPostgresDriver(config.DBConnectionString)
 	if err != nil {
@@ -138,5 +140,5 @@ func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}
 
-	return user.NewRequestAuthenticator(cache), cleanup, nil
+	return authenticator.NewRequestAuthenticator(cache, redisAddr, logger), cleanup, nil
 }

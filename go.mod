@@ -3,11 +3,13 @@ module github.com/buildwithgrove/path
 go 1.22.3
 
 require (
+	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.0.6
 	github.com/pokt-network/shannon-sdk v0.0.0-20240820141308-b7f38438e330
+	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
 	golang.org/x/time v0.5.0
@@ -90,6 +92,7 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/cli v27.0.3+incompatible // indirect
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect

@@ -12,9 +12,9 @@ const (
 	ctxKeyUserAppID   ctxKey = "user_app_id"
 )
 
-// HttpDetails contains HTTP details from an http.Request to be used
+// HTTPDetails contains HTTP details from an http.Request to be used
 // throughout the service request lifecycle, including the auth token, if set.
-type HttpDetails struct {
+type HTTPDetails struct {
 	Method    string
 	Path      string
 	Origin    string
@@ -26,7 +26,7 @@ type HttpDetails struct {
 // http.Request and returns the updated context to be used in the service
 // request lifecycle. This data is used for user app-specific request authentication.
 func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string) context.Context {
-	ctx = context.WithValue(ctx, ctxKeyHttpDetails, HttpDetails{
+	ctx = context.WithValue(ctx, ctxKeyHttpDetails, HTTPDetails{
 		Method:    req.Method,
 		Path:      req.URL.Path,
 		Origin:    req.Header.Get("Origin"),
@@ -39,11 +39,11 @@ func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string)
 
 /* --------------------------------- Getters -------------------------------- */
 
-func GetHTTPDetailsFromCtx(ctx context.Context) HttpDetails {
-	if httpDetails, ok := ctx.Value(ctxKeyHttpDetails).(HttpDetails); ok {
+func GetHTTPDetailsFromCtx(ctx context.Context) HTTPDetails {
+	if httpDetails, ok := ctx.Value(ctxKeyHttpDetails).(HTTPDetails); ok {
 		return httpDetails
 	}
-	return HttpDetails{}
+	return HTTPDetails{}
 }
 
 func GetUserAppIDFromCtx(ctx context.Context) string {
