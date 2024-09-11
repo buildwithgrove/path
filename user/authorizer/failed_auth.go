@@ -1,4 +1,4 @@
-package authenticator
+package authorizer
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 // TODO_IMPROVE - use correct "id" field in response
 // TODO_IMPROVE - formalize error codes
-var failedAuthTemplate = `{"jsonrpc":"2.0","error":{"code":%d,"message":"%s"},"id":0}`
+var failedAuthTemplate = `{"jsonrpc":"2.0","error":{"code":%d,"message":"unauthorized: %s"},"id":0}`
 
 var (
 	userAppNotFoundCode = -32005

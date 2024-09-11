@@ -1,4 +1,4 @@
-package authenticator
+package authorizer
 
 import (
 	"context"
@@ -11,23 +11,23 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type rateLimitAuthenticator struct {
-	limiter *redis_rate.Limiter
-	logger  polylog.Logger
+type rateLimiter struct {
+	throughputLimiter *redis_rate.Limiter
+	logger            polylog.Logger
 }
 
-func newRateLimitAuthenticator(redisAddr string, logger polylog.Logger) *rateLimitAuthenticator {
+func newRateLimiter(redisAddr string, logger polylog.Logger) *rateLimiter {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
 
-	return &rateLimitAuthenticator{
-		limiter: redis_rate.NewLimiter(rdb),
-		logger:  logger.With("component", "rate_limit_authenticator"),
+	return &rateLimiter{
+		throughputLimiter: redis_rate.NewLimiter(rdb),
+		logger:            logger.With("component", "rate_limit_authenticator"),
 	}
 }
 
-func (a *rateLimitAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
+func (a *rateLimiter) authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
 
 	if throughputLimited := a.authThroughputLimit(ctx, userApp); throughputLimited != nil {
 		return throughputLimited
@@ -36,12 +36,14 @@ func (a *rateLimitAuthenticator) authenticate(ctx context.Context, reqDetails re
 	return nil
 }
 
-func (a *rateLimitAuthenticator) authThroughputLimit(ctx context.Context, userApp user.UserApp) *failedAuth {
+func (a *rateLimiter) authThroughputLimit(ctx context.Context, userApp user.UserApp) *failedAuth {
 	if userApp.RateLimitThroughput == 0 {
 		return nil
 	}
 
-	res, err := a.limiter.Allow(ctx, string(userApp.ID), redis_rate.PerSecond(userApp.RateLimitThroughput))
+	userAppThroughputLimit := redis_rate.PerSecond(userApp.RateLimitThroughput)
+
+	res, err := a.throughputLimiter.Allow(ctx, string(userApp.ID), userAppThroughputLimit)
 	if err != nil {
 		a.logger.Error().Err(err).Msg("redis error: failed to check throughput limit")
 		// TODO_IMPROVE - what should we do in case of redis error?

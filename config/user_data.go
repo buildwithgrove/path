@@ -18,7 +18,7 @@ const defaultCacheRefreshInterval = 5 * time.Minute
 // contain user data for the Gateway. A cache refresh interval may also be set.
 type UserDataConfig struct {
 	DBConnectionString   string        `yaml:"db_connection_string"`
-	RedisAddress         string        `yaml:"redis_address"`
+	RedisHostPort        string        `yaml:"redis_host_port"`
 	CacheRefreshInterval time.Duration `yaml:"cache_refresh_interval"`
 }
 

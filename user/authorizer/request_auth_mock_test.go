@@ -6,8 +6,8 @@
 //	mockgen -source=request_authenticator.go -destination=request_auth_mock_test.go -package=authenticator
 //
 
-// package authenticator is a generated GoMock package.
-package authenticator
+// package authorizer is a generated GoMock package.
+package authorizer
 
 import (
 	context "context"

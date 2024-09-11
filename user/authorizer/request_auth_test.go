@@ -1,4 +1,4 @@
-package authenticator
+package authorizer
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-func Test_AuthenticateReq(t *testing.T) {
+func Test_AuthorizeRequest(t *testing.T) {
 	tests := []struct {
 		name           string
 		userAppID      user.UserAppID
@@ -24,7 +24,7 @@ func Test_AuthenticateReq(t *testing.T) {
 		expectedResult gateway.HTTPResponse
 	}{
 		{
-			name:      "should authenticate valid user app ID",
+			name:      "should authorize valid user app ID",
 			userAppID: "user_app_1",
 			userApp: user.UserApp{
 				ID:                "user_app_1",
@@ -40,7 +40,7 @@ func Test_AuthenticateReq(t *testing.T) {
 			expectedResult: nil,
 		},
 		{
-			name:      "should not authenticate user app ID when app does not exist",
+			name:      "should not authorize user app ID when app does not exist",
 			userAppID: "user_app_2",
 			req: &http.Request{
 				URL:    &url.URL{Path: "/v1/user_app_2"},
@@ -51,7 +51,7 @@ func Test_AuthenticateReq(t *testing.T) {
 			expectedResult: &userAppNotFound,
 		},
 		{
-			name:      "should not authenticate missing secret key",
+			name:      "should not authorize missing secret key",
 			userAppID: "user_app_3",
 			req: &http.Request{
 				URL: &url.URL{Path: "/v1/user_app_3"},
@@ -66,7 +66,7 @@ func Test_AuthenticateReq(t *testing.T) {
 			expectedResult: &userAuthFailSecretKeyRequired,
 		},
 		{
-			name:      "should not authenticate invalid secret key",
+			name:      "should not authorize invalid secret key",
 			userAppID: "user_app_4",
 			req: &http.Request{
 				URL:    &url.URL{Path: "/v1/user_app_4"},
@@ -95,15 +95,15 @@ func Test_AuthenticateReq(t *testing.T) {
 
 			logger := polyzero.NewLogger()
 
-			authenticator := &RequestAuthenticator{
+			authorizer := &RequestAuthorizer{
 				cache: mockCache,
-				authenticators: []authenticator{
+				authorizers: []authorizer{
 					newUserAppAuthenticator(logger),
 					// TODO_IMPROVE: add test cases for rate limiting
 				},
 			}
 
-			result := authenticator.AuthenticateReq(ctx, test.req, test.userAppID)
+			result := authorizer.AuthorizeRequest(ctx, test.req, test.userAppID)
 			c.Equal(test.expectedResult, result)
 		})
 	}

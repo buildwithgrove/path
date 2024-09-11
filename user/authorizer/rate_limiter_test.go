@@ -1,4 +1,4 @@
-package authenticator
+package authorizer
 
 import (
 	"context"
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func Test_authenticate(t *testing.T) {
+func Test_authorize(t *testing.T) {
 	tests := []struct {
 		name           string
 		userApp        user.UserApp
@@ -65,12 +65,12 @@ func Test_authenticate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			authenticator := newRateLimitAuthenticator(redisAddr, polyzero.NewLogger())
+			authenticator := newRateLimiter(redisAddr, polyzero.NewLogger())
 
 			results := make(chan *failedAuth, test.requests)
 			for i := 0; i < test.requests; i++ {
 				go func() {
-					result := authenticator.authenticate(context.Background(), reqCtx.HTTPDetails{}, test.userApp)
+					result := authenticator.authorizeRequest(context.Background(), reqCtx.HTTPDetails{}, test.userApp)
 					results <- result
 				}()
 			}
@@ -120,7 +120,7 @@ func Test_authThroughputLimit(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			authenticator := newRateLimitAuthenticator(redisAddr, polyzero.NewLogger())
+			authenticator := newRateLimiter(redisAddr, polyzero.NewLogger())
 
 			results := make(chan *failedAuth, test.requests)
 			for i := 0; i < test.requests; i++ {

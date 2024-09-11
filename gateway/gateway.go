@@ -23,7 +23,7 @@ type Gateway struct {
 	HTTPRequestParser
 	*relayer.Relayer
 	RequestResponseObserver
-	UserRequestAuthenticator
+	UserRequestAuthorizer
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -50,8 +50,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// If the request ctx contains a userAppID, authenticate the request. This performs user data and rate limiting auth.
 	// If the req fails authentication an error implementing the HTTPResponse interface is returned to the user.
-	if appID := reqCtx.GetUserAppIDFromCtx(ctx); appID != "" && g.UserRequestAuthenticator != nil {
-		if authFailedResp := g.UserRequestAuthenticator.AuthenticateReq(ctx, httpReq, appID); authFailedResp != nil {
+	if appID := reqCtx.GetUserAppIDFromCtx(ctx); appID != "" && g.UserRequestAuthorizer != nil {
+		if authFailedResp := g.UserRequestAuthorizer.AuthorizeRequest(ctx, httpReq, appID); authFailedResp != nil {
 			g.writeResponse(ctx, authFailedResp, w)
 			return
 		}

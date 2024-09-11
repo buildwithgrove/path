@@ -1,4 +1,4 @@
-package authenticator
+package authorizer
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func newUserAppAuthenticator(logger polylog.Logger) *userAppAuthenticator {
 	}
 }
 
-func (a *userAppAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
+func (a *userAppAuthenticator) authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
 
 	if failedSecretKeyAuth := authSecretKey(reqDetails, userApp); failedSecretKeyAuth != nil {
 		return failedSecretKeyAuth

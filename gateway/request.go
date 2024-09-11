@@ -49,6 +49,6 @@ type HTTPRequestParser interface {
 //	}
 
 // UserRequestAuthenticator is used to authenticate service requests made by users.
-type UserRequestAuthenticator interface {
-	AuthenticateReq(context.Context, *http.Request, user.UserAppID) HTTPResponse
+type UserRequestAuthorizer interface {
+	AuthorizeRequest(context.Context, *http.Request, user.UserAppID) HTTPResponse
 }

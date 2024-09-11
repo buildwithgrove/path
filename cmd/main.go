@@ -19,7 +19,7 @@ import (
 	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
-	"github.com/buildwithgrove/path/user/authenticator"
+	"github.com/buildwithgrove/path/user/authorizer"
 )
 
 const configPath = ".config.yaml"
@@ -49,12 +49,12 @@ func main() {
 		Relayer:           relayer,
 	}
 	if config.IsUserDataEnabled() {
-		userReqAuthenticator, cleanup, err := getUserReqAuthenticator(config.GetUserDataConfig(), logger)
+		userReqAuthorizer, cleanup, err := getUserReqAuthorizer(config.GetUserDataConfig(), logger)
 		if err != nil {
-			panic(fmt.Sprintf("failed to create user request authenticator: %v", err))
+			panic(fmt.Sprintf("failed to create user request authorizer: %v", err))
 		}
 		defer cleanup()
-		gateway.UserRequestAuthenticator = userReqAuthenticator
+		gateway.UserRequestAuthorizer = userReqAuthorizer
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
@@ -127,9 +127,7 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	return protocol, nil
 }
 
-const redisAddr = "localhost:6379"
-
-func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthenticator, func() error, error) {
+func getUserReqAuthorizer(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthorizer, func() error, error) {
 	dbDriver, cleanup, err := driver.NewPostgresDriver(config.DBConnectionString)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create postgres driver: %v", err)
@@ -140,5 +138,5 @@ func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}
 
-	return authenticator.NewRequestAuthenticator(cache, redisAddr, logger), cleanup, nil
+	return authorizer.NewRequestAuthorizer(cache, config.RedisHostPort, logger), cleanup, nil
 }

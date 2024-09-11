@@ -151,6 +151,9 @@ properties:
       db_connection_string:
         type: string
         pattern: "^(postgres)://.*$"
+      redis_host_port:
+        type: string
+        pattern: "^[^:]+:[0-9]+$"
       cache_refresh_interval:
         type: string
 
