@@ -128,7 +128,7 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 }
 
 func getUserReqAuthorizer(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthorizer, func() error, error) {
-	dbDriver, cleanup, err := driver.NewPostgresDriver(config.DBConnectionString)
+	dbDriver, cleanup, err := driver.NewPostgresDriver(config.PostgresConnectionString)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create postgres driver: %v", err)
 	}

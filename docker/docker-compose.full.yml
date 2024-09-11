@@ -1,8 +1,12 @@
+# This docker compose file is used to run Path in a local development environment,
+# as well as all the dependencies needed to use the user data features:
+# - a Postgres database
+# - a Redis instance
 services:
   path_gateway:
     container_name: path_gateway
     build:
-      context: .
+      context: ..
       args:
         IMAGE_TAG: ${IMAGE_TAG:-development}
     ports:
@@ -11,6 +15,9 @@ services:
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
     command: ["./path"]
+    depends_on:
+      - db
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
       interval: 5s
@@ -27,7 +34,7 @@ services:
       - 5432:5432
     volumes:
       # Initializes the database with the minimum required tables from the base schema.
-      - ./db/driver/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../db/driver/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
       # For local development, persist the database data in a .gitignore'd tmp directory.
       - ./tmp/db:/var/lib/postgresql/data
     environment:
@@ -44,4 +51,10 @@ services:
     ports:
       - "6379:6379"
     volumes:
+      # For local development, persist the redis data in a .gitignore'd tmp directory.
       - ./tmp/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5

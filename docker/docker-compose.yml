@@ -1,0 +1,20 @@
+# This docker compose file is used to run Path in a local development environment,
+# without the dependencies needed to use the user data features.
+services:
+  path_gateway:
+    container_name: path_gateway
+    build:
+      context: ..
+      args:
+        IMAGE_TAG: ${IMAGE_TAG:-development}
+    ports:
+      # TODO_IMPROVE: Update the port to match the actual value defined in the config yaml
+      - "3000:3000"
+    volumes:
+      - ./cmd/.config.yaml:/app/.config.yaml
+    command: ["./path"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 10s
+      retries: 5

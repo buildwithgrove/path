@@ -9,25 +9,34 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
-#############################
-### Run Path Make Targets ###
-#############################
+#######################################
+### Run Path in Docker Make Targets ###
+#######################################
 
 .PHONY: path_up
-path_up: ## Run docker compose up -d path_gateway
-	docker compose up -d path_gateway
-
-.PHONY: path_up_user_data
-path_up_user_data: ## Run docker compose up for all containers
-	docker compose up -d
+path_up: ## Run docker compose -f docker/docker-compose.yml up -d
+	docker compose -f docker/docker-compose.yml up -d
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build
-	docker compose up -d --build path_gateway
+	docker compose -f docker/docker-compose.yml up -d --build
+
+.PHONY: path_up_full
+path_up_full: ## Run docker compose -f docker/docker-compose.full.yml up -d
+	docker compose -f docker/docker-compose.full.yml up -d
+
+.PHONY: path_up_build_full
+path_up_build_full: ## Run docker compose up with build
+	docker compose -f docker/docker-compose.full.yml up -d --build
+
+.PHONY: path_up_deps
+path_up_deps: ## Run docker compose up for only the dependencies
+	docker compose -f docker/docker-compose.full.yml up -d db redis
 
 .PHONY: path_down
-path_down: ## Run docker compose down
-	docker compose down path_gateway
+path_down: ## Run docker compose down for any running containers
+	docker compose -f docker/docker-compose.yml down
+	docker compose -f docker/docker-compose.full.yml down
 
 #########################
 ### Test Make Targets ###
