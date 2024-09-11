@@ -25,7 +25,7 @@ type (
 		GetUserApp(ctx context.Context, userAppID user.UserAppID) (user.UserApp, bool)
 	}
 	authenticator interface {
-		authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *invalidResp
+		authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth
 	}
 )
 
@@ -33,7 +33,7 @@ func NewRequestAuthenticator(cache cache, redisAddr string, logger polylog.Logge
 	return &RequestAuthenticator{
 		cache: cache,
 		authenticators: []authenticator{
-			newUserAuthenticator(logger),
+			newUserAppAuthenticator(logger),
 			newRateLimitAuthenticator(redisAddr, logger),
 		},
 		logger: logger.With("component", "request_authenticator"),
@@ -42,10 +42,8 @@ func NewRequestAuthenticator(cache cache, redisAddr string, logger polylog.Logge
 
 // AuthenticateReq erforms authentication using all configured authenticators on the service request.
 //
-// It returns an invalidResp struct containing a failure message to be returned
-// to the client if authentication fails.
-func (a *RequestAuthenticator) AuthenticateReq(ctx context.Context, req *http.Request, appID string) gateway.HTTPResponse {
-	userAppID := user.UserAppID(appID)
+// It returns a failedAuth struct with and error message and 401 status code to the client if auth fails or nil if auth succeeds.
+func (a *RequestAuthenticator) AuthenticateReq(ctx context.Context, req *http.Request, userAppID user.UserAppID) gateway.HTTPResponse {
 
 	reqDetails := reqCtx.GetHTTPDetailsFromCtx(ctx)
 

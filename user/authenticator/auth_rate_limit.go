@@ -27,7 +27,7 @@ func newRateLimitAuthenticator(redisAddr string, logger polylog.Logger) *rateLim
 	}
 }
 
-func (a *rateLimitAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *invalidResp {
+func (a *rateLimitAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
 
 	if throughputLimited := a.authThroughputLimit(ctx, userApp); throughputLimited != nil {
 		return throughputLimited
@@ -36,7 +36,7 @@ func (a *rateLimitAuthenticator) authenticate(ctx context.Context, reqDetails re
 	return nil
 }
 
-func (a *rateLimitAuthenticator) authThroughputLimit(ctx context.Context, userApp user.UserApp) *invalidResp {
+func (a *rateLimitAuthenticator) authThroughputLimit(ctx context.Context, userApp user.UserApp) *failedAuth {
 	if userApp.RateLimitThroughput == 0 {
 		return nil
 	}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/user"
 )
 
 // HTTPRequestParser is used, in handling an HTTP service request, to extract
@@ -49,5 +50,5 @@ type HTTPRequestParser interface {
 
 // UserRequestAuthenticator is used to authenticate service requests made by users.
 type UserRequestAuthenticator interface {
-	AuthenticateReq(context.Context, *http.Request, string) HTTPResponse
+	AuthenticateReq(context.Context, *http.Request, user.UserAppID) HTTPResponse
 }

@@ -88,7 +88,7 @@ func Test_AuthenticateReq(t *testing.T) {
 			c := require.New(t)
 			ctrl := gomock.NewController(t)
 
-			ctx := reqCtx.SetCtxFromRequest(test.req.Context(), test.req, string(test.userAppID))
+			ctx := reqCtx.SetCtxFromRequest(test.req.Context(), test.req, test.userAppID)
 
 			mockCache := NewMockcache(ctrl)
 			mockCache.EXPECT().GetUserApp(ctx, test.userAppID).Return(test.userApp, test.appExists)
@@ -98,40 +98,13 @@ func Test_AuthenticateReq(t *testing.T) {
 			authenticator := &RequestAuthenticator{
 				cache: mockCache,
 				authenticators: []authenticator{
-					newUserAuthenticator(logger),
+					newUserAppAuthenticator(logger),
 					// TODO_IMPROVE: add test cases for rate limiting
 				},
 			}
 
-			result := authenticator.AuthenticateReq(ctx, test.req, string(test.userAppID))
+			result := authenticator.AuthenticateReq(ctx, test.req, test.userAppID)
 			c.Equal(test.expectedResult, result)
-		})
-	}
-}
-
-func Test_invalidResp(t *testing.T) {
-	tests := []struct {
-		name            string
-		resp            *invalidResp
-		expectedBody    []byte
-		expectedStatus  int
-		expectedHeaders map[string]string
-	}{
-		{
-			name:            "should return correct values",
-			resp:            &invalidResp{body: "there was a button. I pushed it."},
-			expectedBody:    []byte("there was a button. I pushed it."),
-			expectedStatus:  http.StatusUnauthorized,
-			expectedHeaders: map[string]string{},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			c := require.New(t)
-			c.Equal(test.expectedBody, test.resp.GetPayload())
-			c.Equal(test.expectedStatus, test.resp.GetHTTPStatusCode())
-			c.Equal(test.expectedHeaders, test.resp.GetHTTPHeaders())
 		})
 	}
 }

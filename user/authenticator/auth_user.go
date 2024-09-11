@@ -9,17 +9,17 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type userAuthenticator struct {
+type userAppAuthenticator struct {
 	logger polylog.Logger
 }
 
-func newUserAuthenticator(logger polylog.Logger) *userAuthenticator {
-	return &userAuthenticator{
+func newUserAppAuthenticator(logger polylog.Logger) *userAppAuthenticator {
+	return &userAppAuthenticator{
 		logger: logger.With("component", "user_authenticator"),
 	}
 }
 
-func (a *userAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *invalidResp {
+func (a *userAppAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
 
 	if failedSecretKeyAuth := authSecretKey(reqDetails, userApp); failedSecretKeyAuth != nil {
 		return failedSecretKeyAuth
@@ -28,7 +28,7 @@ func (a *userAuthenticator) authenticate(ctx context.Context, reqDetails reqCtx.
 	return nil
 }
 
-func authSecretKey(reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *invalidResp {
+func authSecretKey(reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
 	if userApp.SecretKeyRequired {
 		if reqDetails.SecretKey == "" {
 			return &userAuthFailSecretKeyRequired

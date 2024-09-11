@@ -9,6 +9,7 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	reqCtx "github.com/buildwithgrove/path/request/context"
+	"github.com/buildwithgrove/path/user"
 )
 
 const (
@@ -130,8 +131,8 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 	ctx := req.Context()
 
 	// if user data is enabled set the user app ID and HTTP details in request ctx
-	if userAppID := req.PathValue(userAppIDPathParam); userAppID != "" {
-		ctx = reqCtx.SetCtxFromRequest(ctx, req, userAppID)
+	if appID := req.PathValue(userAppIDPathParam); appID != "" {
+		ctx = reqCtx.SetCtxFromRequest(ctx, req, user.UserAppID(appID))
 	}
 
 	r.gateway.HandleHTTPServiceRequest(ctx, req, w)

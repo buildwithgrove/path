@@ -14,7 +14,7 @@ func Test_authSecretKey(t *testing.T) {
 		name           string
 		reqDetails     reqCtx.HTTPDetails
 		userApp        user.UserApp
-		expectedResult *invalidResp
+		expectedResult *failedAuth
 	}{
 		{
 			name: "should return nil for valid secret key",

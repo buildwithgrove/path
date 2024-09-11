@@ -38,7 +38,7 @@ func Test_authenticate(t *testing.T) {
 	tests := []struct {
 		name           string
 		userApp        user.UserApp
-		expectedResult *invalidResp
+		expectedResult *failedAuth
 		requests       int
 	}{
 		{
@@ -67,7 +67,7 @@ func Test_authenticate(t *testing.T) {
 
 			authenticator := newRateLimitAuthenticator(redisAddr, polyzero.NewLogger())
 
-			results := make(chan *invalidResp, test.requests)
+			results := make(chan *failedAuth, test.requests)
 			for i := 0; i < test.requests; i++ {
 				go func() {
 					result := authenticator.authenticate(context.Background(), reqCtx.HTTPDetails{}, test.userApp)
@@ -75,7 +75,7 @@ func Test_authenticate(t *testing.T) {
 				}()
 			}
 
-			var limitedResp *invalidResp
+			var limitedResp *failedAuth
 			for i := 0; i < test.requests; i++ {
 				result := <-results
 				if result != nil {
@@ -93,7 +93,7 @@ func Test_authThroughputLimit(t *testing.T) {
 	tests := []struct {
 		name           string
 		userApp        user.UserApp
-		expectedResult *invalidResp
+		expectedResult *failedAuth
 		requests       int
 	}{
 		{
@@ -122,7 +122,7 @@ func Test_authThroughputLimit(t *testing.T) {
 
 			authenticator := newRateLimitAuthenticator(redisAddr, polyzero.NewLogger())
 
-			results := make(chan *invalidResp, test.requests)
+			results := make(chan *failedAuth, test.requests)
 			for i := 0; i < test.requests; i++ {
 				go func() {
 					result := authenticator.authThroughputLimit(context.Background(), test.userApp)
@@ -130,7 +130,7 @@ func Test_authThroughputLimit(t *testing.T) {
 				}()
 			}
 
-			var limitedResp *invalidResp
+			var limitedResp *failedAuth
 			for i := 0; i < test.requests; i++ {
 				result := <-results
 				if result != nil {

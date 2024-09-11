@@ -3,6 +3,8 @@ package context
 import (
 	"context"
 	"net/http"
+
+	"github.com/buildwithgrove/path/user"
 )
 
 type ctxKey string
@@ -25,7 +27,7 @@ type HTTPDetails struct {
 // SetCtxFromRequest sets HTTP details and user app ID in the context from an
 // http.Request and returns the updated context to be used in the service
 // request lifecycle. This data is used for user app-specific request authentication.
-func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string) context.Context {
+func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID user.UserAppID) context.Context {
 	ctx = context.WithValue(ctx, ctxKeyHttpDetails, HTTPDetails{
 		Method:    req.Method,
 		Path:      req.URL.Path,
@@ -46,8 +48,8 @@ func GetHTTPDetailsFromCtx(ctx context.Context) HTTPDetails {
 	return HTTPDetails{}
 }
 
-func GetUserAppIDFromCtx(ctx context.Context) string {
-	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(string); ok {
+func GetUserAppIDFromCtx(ctx context.Context) user.UserAppID {
+	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(user.UserAppID); ok {
 		return userAppID
 	}
 	return ""
