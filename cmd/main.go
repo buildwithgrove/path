@@ -18,7 +18,7 @@ import (
 	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/path/user/authenticator"
 )
 
 const configPath = ".config.yaml"
@@ -53,11 +53,18 @@ func main() {
 			panic(fmt.Sprintf("failed to create user request authenticator: %v", err))
 		}
 		defer cleanup()
-
 		gateway.UserRequestAuthenticator = userReqAuthenticator
 	}
 
-	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.IsUserDataEnabled(), logger)
+	apiRouter := router.NewRouter(router.RouterParams{
+		Gateway:         gateway,
+		Config:          config.GetRouterConfig(),
+		UserDataEnabled: config.IsUserDataEnabled(),
+		Logger:          logger,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to create API router: %v", err))
+	}
 
 	if err := apiRouter.Start(); err != nil {
 		panic(fmt.Sprintf("failed to start API router: %v", err))
@@ -121,5 +128,5 @@ func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}
 
-	return &user.RequestAuthenticator{Cache: cache}, cleanup, nil
+	return authenticator.NewRequestAuthenticator(cache, logger), cleanup, nil
 }

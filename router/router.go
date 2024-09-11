@@ -11,6 +11,7 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	reqCtx "github.com/buildwithgrove/path/request/context"
+	"github.com/buildwithgrove/path/user"
 )
 
 const (
@@ -22,38 +23,43 @@ const userAppIDPathParam = "userAppID"
 
 type (
 	router struct {
-		mux             *http.ServeMux
-		gateway         gateway
-		config          config.RouterConfig
-		userDataEnabled bool
-		logger          polylog.Logger
+		mux     *http.ServeMux
+		gateway gateway
+		config  config.RouterConfig
+		logger  polylog.Logger
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
 )
 
+type RouterParams struct {
+	Gateway         gateway
+	Config          config.RouterConfig
+	UserDataEnabled bool
+	Logger          polylog.Logger
+}
+
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, config config.RouterConfig, userDataEnabled bool, logger polylog.Logger) *router {
+func NewRouter(params RouterParams) *router {
 	r := &router{
-		mux:             http.NewServeMux(),
-		gateway:         gateway,
-		config:          config,
-		userDataEnabled: userDataEnabled,
-		logger:          logger.With("package", "router"),
+		mux:     http.NewServeMux(),
+		gateway: params.Gateway,
+		config:  params.Config,
+		logger:  params.Logger.With("package", "router"),
 	}
-	r.handleRoutes()
+	r.handleRoutes(params.UserDataEnabled)
 	return r
 }
 
-func (r *router) handleRoutes() {
+func (r *router) handleRoutes(userDataEnabled bool) {
 	// GET /healthz - handleHealthz returns a simple health check response
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.handleHealthz))
 
 	// * /v1... - is the entrypoint for all service requests
-	if r.userDataEnabled {
+	if userDataEnabled {
 		// * /v1/{userAppID} - handles service requests for a specific user app ID only
 		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequest))
 	} else {
@@ -74,9 +80,6 @@ func (r *router) Start() error {
 	}
 
 	r.logger.Info().Msgf("PATH gateway running on port %d", r.config.Port)
-	if r.userDataEnabled {
-		r.logger.Info().Msg("user data enabled")
-	}
 
 	if err := server.ListenAndServe(); err != nil {
 		return err
@@ -146,14 +149,16 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// handleServiceRequest sets the request ID and HTTP details in the request context
+// from the HTTP request and passes it to the gateway handler, which processes the request.
 // * - /v1  - user data not enabled: handles requests for all user app IDs
 // * - /v1/{userAppID} - user data enabled: handles requests for a specific user app ID only
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	// if user data is enabled set the user app ID and HTTP details in request ctx
-	if userAppID := req.PathValue(userAppIDPathParam); userAppID != "" {
-		ctx = reqCtx.SetCtxFromRequest(ctx, req, userAppID)
+	if appID := req.PathValue(userAppIDPathParam); appID != "" {
+		ctx = reqCtx.SetCtxFromRequest(ctx, req, user.UserAppID(appID))
 	}
 
 	r.gateway.HandleHTTPServiceRequest(ctx, req, w)

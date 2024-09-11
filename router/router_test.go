@@ -21,7 +21,12 @@ import (
 func newTestRouter(t *testing.T, userDataEnabled bool) (*router, *mockGateway, *httptest.Server) {
 	mockGateway := newMockGateway(t)
 
-	r := NewRouter(mockGateway, config.RouterConfig{}, userDataEnabled, polyzero.NewLogger())
+	r := NewRouter(RouterParams{
+		Gateway:         mockGateway,
+		Config:          config.RouterConfig{},
+		UserDataEnabled: userDataEnabled,
+		Logger:          polyzero.NewLogger(),
+	})
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 
