@@ -14,8 +14,12 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 
 .PHONY: path_up
-path_up: ## Run docker compose up
+path_up: ## Run docker compose up -d path_gateway
 	docker compose up -d path_gateway
+
+.PHONY: path_up_user_data
+path_up_user_data: ## Run docker compose up for all containers
+	docker compose up -d
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build

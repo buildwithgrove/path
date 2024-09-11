@@ -16,16 +16,27 @@ var (
 	authFailUserAppNotFound   = invalidResp{body: fmt.Sprintf(invalidRespTemplate, authFailCode, "user app not found")}
 	authFailSecretKeyRequired = invalidResp{body: fmt.Sprintf(invalidRespTemplate, authFailCode, "secret key is required")}
 	authFailInvalidSecretKey  = invalidResp{body: fmt.Sprintf(invalidRespTemplate, authFailCode, "invalid secret key")}
+
+	rateLimitExceededCode   = -32007
+	throughputLimitExceeded = invalidResp{body: fmt.Sprintf(invalidRespTemplate, rateLimitExceededCode, "throughput limit exceeded")}
 )
 
 // user.RequestAuthenticator is used to authenticate service requests by users.
 // It performs authentication and allowlist validation on requests and returns a
 // failure response message to the client when authentication fails.
 type RequestAuthenticator struct {
-	Cache cache
+	Cache             cache
+	throughputLimiter *limiterManager
 }
 type cache interface {
 	GetUserApp(ctx context.Context, userAppID UserAppID) (UserApp, bool)
+}
+
+func NewRequestAuthenticator(cache cache) *RequestAuthenticator {
+	return &RequestAuthenticator{
+		Cache:             cache,
+		throughputLimiter: newLimiterManager(),
+	}
 }
 
 // invalidResp contains a response body for an authentication failure to be
@@ -63,10 +74,22 @@ func (a *RequestAuthenticator) AuthenticateReq(ctx context.Context, req *http.Re
 		return &authFailUserAppNotFound
 	}
 
+	// TODO - move user auth to own func
 	if userApp.SecretKeyRequired {
 		if invalidResp := isSecretKeyValid(reqDetails.SecretKey, userApp.SecretKey); invalidResp != nil {
 			return invalidResp
 		}
+	}
+
+	// TODO - move rate limit auth to own func
+	if userApp.RateLimitThroughput > 0 {
+		if limiter := a.throughputLimiter.getLimiter(userAppID, userApp.RateLimitThroughput); limiter != nil {
+			if !limiter.Allow() {
+				fmt.Println("rate limit exceeded")
+				return &throughputLimitExceeded
+			}
+		}
+		fmt.Println("rate limit not exceeded")
 	}
 
 	return nil

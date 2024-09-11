@@ -138,5 +138,5 @@ func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}
 
-	return &user.RequestAuthenticator{Cache: cache}, cleanup, nil
+	return user.NewRequestAuthenticator(cache), cleanup, nil
 }

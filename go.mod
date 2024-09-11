@@ -10,6 +10,7 @@ require (
 	github.com/pokt-network/shannon-sdk v0.0.0-20240820141308-b7f38438e330
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
+	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.65.0
 )
 
@@ -220,7 +221,6 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240709173604-40e1e62336c5 // indirect
