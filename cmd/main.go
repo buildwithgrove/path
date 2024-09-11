@@ -46,7 +46,12 @@ func main() {
 		Relayer:           relayer,
 	}
 
-	apiRouter := router.NewRouter(gateway, config.GetRouterConfig(), config.IsUserDataEnabled(), logger)
+	apiRouter := router.NewRouter(router.RouterParams{
+		Gateway:         gateway,
+		Config:          config.GetRouterConfig(),
+		UserDataEnabled: config.IsUserDataEnabled(),
+		Logger:          logger,
+	})
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}
