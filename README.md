@@ -212,7 +212,7 @@ This is required for:
 
 ### 6.1 Updated Endpoint
 
-Enabling user data will modify the endpoint for service requests to require a user app identifier at the end of the URL path.
+Enabling user data will modify the endpoint for service requests to require an endpoint identifier at the end of the URL path.
 
 For example:
 

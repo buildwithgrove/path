@@ -17,16 +17,16 @@ import (
 func Test_AuthorizeRequest(t *testing.T) {
 	tests := []struct {
 		name           string
-		userAppID      user.EndpointID
-		userApp        user.GatewayEndpoint
+		endpointID     user.EndpointID
+		endpoint       user.GatewayEndpoint
 		req            *http.Request
 		appExists      bool
 		expectedResult gateway.HTTPResponse
 	}{
 		{
-			name:      "should authenticate valid user app ID",
-			userAppID: "user_app_1",
-			userApp: user.GatewayEndpoint{
+			name:       "should authorize valid gateway endpoint ID",
+			endpointID: "user_app_1",
+			endpoint: user.GatewayEndpoint{
 				EndpointID: "user_app_1",
 				Auth: user.Auth{
 					APIKeyRequired: true,
@@ -44,23 +44,23 @@ func Test_AuthorizeRequest(t *testing.T) {
 			expectedResult: nil,
 		},
 		{
-			name:      "should not authenticate user app ID when app does not exist",
-			userAppID: "user_app_2",
+			name:       "should not authorize gateway endpoint ID when app does not exist",
+			endpointID: "user_app_2",
 			req: &http.Request{
 				URL:    &url.URL{Path: "/v1/user_app_2"},
 				Header: http.Header{"Authorization": []string{"user_app_2"}},
 			},
-			userApp:        user.GatewayEndpoint{},
+			endpoint:       user.GatewayEndpoint{},
 			appExists:      false,
-			expectedResult: &userAppNotFound,
+			expectedResult: &endpointNotFound,
 		},
 		{
-			name:      "should not authenticate missing secret key",
-			userAppID: "user_app_3",
+			name:       "should not authorize missing secret key",
+			endpointID: "user_app_3",
 			req: &http.Request{
 				URL: &url.URL{Path: "/v1/user_app_3"},
 			},
-			userApp: user.GatewayEndpoint{
+			endpoint: user.GatewayEndpoint{
 				EndpointID: "user_app_3",
 				Auth: user.Auth{
 					APIKeyRequired: true,
@@ -74,13 +74,13 @@ func Test_AuthorizeRequest(t *testing.T) {
 			expectedResult: &userAuthFailAPIKeyRequired,
 		},
 		{
-			name:      "should not authenticate invalid secret key",
-			userAppID: "user_app_4",
+			name:       "should not authorize invalid secret key",
+			endpointID: "user_app_4",
 			req: &http.Request{
 				URL:    &url.URL{Path: "/v1/user_app_4"},
 				Header: http.Header{"Authorization": []string{"user_app_whoops"}},
 			},
-			userApp: user.GatewayEndpoint{
+			endpoint: user.GatewayEndpoint{
 				EndpointID: "user_app_4",
 				Auth: user.Auth{
 					APIKeyRequired: true,
@@ -100,10 +100,10 @@ func Test_AuthorizeRequest(t *testing.T) {
 			c := require.New(t)
 			ctrl := gomock.NewController(t)
 
-			ctx := reqCtx.SetCtxFromRequest(test.req.Context(), test.req, test.userAppID)
+			ctx := reqCtx.SetCtxFromRequest(test.req.Context(), test.req, test.endpointID)
 
 			mockCache := NewMockcache(ctrl)
-			mockCache.EXPECT().GetGatewayEndpoint(ctx, test.userAppID).Return(test.userApp, test.appExists)
+			mockCache.EXPECT().GetGatewayEndpoint(ctx, test.endpointID).Return(test.endpoint, test.appExists)
 
 			logger := polyzero.NewLogger()
 
@@ -115,7 +115,7 @@ func Test_AuthorizeRequest(t *testing.T) {
 				},
 			}
 
-			result := authorizer.AuthorizeRequest(ctx, test.req, test.userAppID)
+			result := authorizer.AuthorizeRequest(ctx, test.req, test.endpointID)
 			c.Equal(test.expectedResult, result)
 		})
 	}

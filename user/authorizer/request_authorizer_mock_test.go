@@ -42,16 +42,16 @@ func (m *Mockcache) EXPECT() *MockcacheMockRecorder {
 }
 
 // GetGatewayEndpoint mocks base method.
-func (m *Mockcache) GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool) {
+func (m *Mockcache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGatewayEndpoint", ctx, userAppID)
+	ret := m.ctrl.Call(m, "GetGatewayEndpoint", ctx, endpointID)
 	ret0, _ := ret[0].(user.GatewayEndpoint)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetGatewayEndpoint indicates an expected call of GetGatewayEndpoint.
-func (mr *MockcacheMockRecorder) GetGatewayEndpoint(ctx, userAppID any) *gomock.Call {
+func (mr *MockcacheMockRecorder) GetGatewayEndpoint(ctx, endpointID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayEndpoint", reflect.TypeOf((*Mockcache)(nil).GetGatewayEndpoint), ctx, userAppID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayEndpoint", reflect.TypeOf((*Mockcache)(nil).GetGatewayEndpoint), ctx, endpointID)
 }

@@ -62,9 +62,6 @@ func main() {
 		UserDataEnabled: config.IsUserDataEnabled(),
 		Logger:          logger,
 	})
-	if err != nil {
-		panic(fmt.Sprintf("failed to create API router: %v", err))
-	}
 
 	if err := apiRouter.Start(); err != nil {
 		panic(fmt.Sprintf("failed to start API router: %v", err))
