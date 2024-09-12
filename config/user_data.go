@@ -17,15 +17,17 @@ const defaultCacheRefreshInterval = 5 * time.Minute
 // The DB connection string must be for a valid Postgres database, which will
 // contain user data for the Gateway. A cache refresh interval may also be set.
 type UserDataConfig struct {
-	DBConnectionString   string        `yaml:"db_connection_string"`
+	PostgresConnectionString string `yaml:"postgres_connection_string"`
+	// The interval at which the local user data cache should be refreshed from the
+	// connected Postgres DB. Must be set in valid YAML time syntax, eg 30s, 5m, etc.
 	CacheRefreshInterval time.Duration `yaml:"cache_refresh_interval"`
 }
 
 /* --------------------------------- User Data Config Private Helpers -------------------------------- */
 
 func (c *UserDataConfig) validate() error {
-	if !utils.IsValidDBConnectionString(c.DBConnectionString) {
-		return fmt.Errorf("invalid DB connection string: %s", c.DBConnectionString)
+	if !utils.IsValidPostgresConnectionString(c.PostgresConnectionString) {
+		return fmt.Errorf("invalid DB connection string: %s", c.PostgresConnectionString)
 	}
 	return nil
 }

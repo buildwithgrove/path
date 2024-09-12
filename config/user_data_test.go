@@ -14,12 +14,12 @@ func TestUserDataConfig_validate(t *testing.T) {
 	}{
 		{
 			name:    "should validate correct DB connection string",
-			config:  UserDataConfig{DBConnectionString: "postgres://user:password@localhost:5432/database"},
+			config:  UserDataConfig{PostgresConnectionString: "postgres://user:password@localhost:5432/database"},
 			wantErr: false,
 		},
 		{
 			name:    "should fail for incorrect DB connection string",
-			config:  UserDataConfig{DBConnectionString: "invalid_connection_string"},
+			config:  UserDataConfig{PostgresConnectionString: "invalid_connection_string"},
 			wantErr: true,
 		},
 	}

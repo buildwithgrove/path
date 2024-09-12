@@ -6,8 +6,8 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-// DBDriver is a general purpose interface that is expected to be implemented by
-// each specific database (e.g. postgres, sqlite, MySQL, etc) driver.
+// DBDriver is a general purpose interface that must be implemented by any database (e.g. postgres, sqlite, MySQL, etc) driver.
 type DBDriver interface {
+	// GetGatewayEndpoints returns all GatewayEndpoints in the database and is used to set the in-memory cache.
 	GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error)
 }

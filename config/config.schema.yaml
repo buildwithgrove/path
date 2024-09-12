@@ -148,7 +148,7 @@ properties:
   user_data_config:
     type: object
     properties:
-      db_connection_string:
+      postgres_connection_string:
         type: string
         pattern: "^(postgres)://.*$"
       cache_refresh_interval:

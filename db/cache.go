@@ -11,8 +11,8 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-// cache is an in-memory cache that stores gateway endpoints and their associated data.
-type cache struct {
+// userDataCache is an in-memory cache that stores gateway endpoints and their associated data.
+type userDataCache struct {
 	db DBDriver
 
 	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
@@ -22,13 +22,15 @@ type cache struct {
 	logger polylog.Logger
 }
 
-func NewCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*cache, error) {
-	cache := &cache{
+func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*userDataCache, error) {
+	cache := &userDataCache{
+		db: driver,
+
 		gatewayEndpoints:     make(map[user.EndpointID]user.GatewayEndpoint),
-		db:                   driver,
 		cacheRefreshInterval: cacheRefreshInterval,
 		mu:                   sync.RWMutex{},
-		logger:               logger,
+
+		logger: logger.With("component", "user_data_cache"),
 	}
 
 	if err := cache.setCache(context.Background()); err != nil {
@@ -40,7 +42,7 @@ func NewCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylo
 	return cache, nil
 }
 
-func (c *cache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
+func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -48,7 +50,7 @@ func (c *cache) GetGatewayEndpoint(ctx context.Context, endpointID user.Endpoint
 	return gatewayEndpoint, ok
 }
 
-func (c *cache) cacheRefreshHandler(ctx context.Context) {
+func (c *userDataCache) cacheRefreshHandler(ctx context.Context) {
 	for {
 		<-time.After(c.cacheRefreshInterval)
 
@@ -59,7 +61,7 @@ func (c *cache) cacheRefreshHandler(ctx context.Context) {
 	}
 }
 
-func (c *cache) setCache(ctx context.Context) error {
+func (c *userDataCache) setCache(ctx context.Context) error {
 	gatewayEndpoints, err := c.db.GetGatewayEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get gateway endpoints: %w", err)
