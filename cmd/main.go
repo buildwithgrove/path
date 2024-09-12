@@ -12,7 +12,7 @@ import (
 	morseConfig "github.com/buildwithgrove/path/config/morse"
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/db"
-	"github.com/buildwithgrove/path/db/driver"
+	"github.com/buildwithgrove/path/db/postgres"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
@@ -72,9 +72,6 @@ func main() {
 		UserDataEnabled:       config.IsUserDataEnabled(),
 		Logger:                logger,
 	})
-	if err != nil {
-		log.Fatalf("failed to create API router: %v", err)
-	}
 
 	if err := apiRouter.Start(); err != nil {
 		log.Fatalf("failed to start API router: %v", err)
@@ -128,12 +125,12 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 }
 
 func getUserReqAuthorizer(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthorizer, func() error, error) {
-	dbDriver, cleanup, err := driver.NewPostgresDriver(config.PostgresConnectionString)
+	dbDriver, cleanup, err := postgres.NewPostgresDriver(config.PostgresConnectionString)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create postgres driver: %v", err)
 	}
 
-	cache, err := db.NewCache(dbDriver, config.CacheRefreshInterval, logger)
+	cache, err := db.NewUserDataCache(dbDriver, config.CacheRefreshInterval, logger)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}

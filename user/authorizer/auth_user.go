@@ -9,32 +9,32 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type userAppAuthenticator struct {
+type userAppAuthorizer struct {
 	logger polylog.Logger
 }
 
-func newUserAppAuthenticator(logger polylog.Logger) *userAppAuthenticator {
-	return &userAppAuthenticator{
-		logger: logger.With("component", "user_authenticator"),
+func newGatewayEndpointAuthorizer(logger polylog.Logger) *userAppAuthorizer {
+	return &userAppAuthorizer{
+		logger: logger.With("component", "user_authorizer"),
 	}
 }
 
-func (a *userAppAuthenticator) authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
+func (a *userAppAuthorizer) authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.GatewayEndpoint) *failedAuth {
 
-	if failedSecretKeyAuth := authSecretKey(reqDetails, userApp); failedSecretKeyAuth != nil {
-		return failedSecretKeyAuth
+	if failedAPIKeyAuth := authAPIKey(reqDetails, userApp); failedAPIKeyAuth != nil {
+		return failedAPIKeyAuth
 	}
 
 	return nil
 }
 
-func authSecretKey(reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth {
-	if userApp.SecretKeyRequired {
-		if reqDetails.SecretKey == "" {
-			return &userAuthFailSecretKeyRequired
+func authAPIKey(reqDetails reqCtx.HTTPDetails, userApp user.GatewayEndpoint) *failedAuth {
+	if apiKey, authRequired := userApp.GetAuth(); authRequired {
+		if reqDetails.APIKey == "" {
+			return &userAuthFailAPIKeyRequired
 		}
-		if reqDetails.SecretKey != userApp.SecretKey {
-			return &userAuthFailInvalidSecretKey
+		if reqDetails.APIKey != apiKey {
+			return &userAuthFailInvalidAPIKey
 		}
 	}
 

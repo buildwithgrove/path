@@ -11,25 +11,26 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type cache struct {
-	userApps             map[user.UserAppID]user.UserApp
-	db                   Driver
+// userDataCache is an in-memory cache that stores gateway endpoints and their associated data.
+type userDataCache struct {
+	db DBDriver
+
+	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
 	cacheRefreshInterval time.Duration
 	mu                   sync.RWMutex
-	logger               polylog.Logger
+
+	logger polylog.Logger
 }
 
-type Driver interface {
-	GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error)
-}
+func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*userDataCache, error) {
+	cache := &userDataCache{
+		db: driver,
 
-func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*cache, error) {
-	cache := &cache{
-		userApps:             make(map[user.UserAppID]user.UserApp),
-		db:                   driver,
+		gatewayEndpoints:     make(map[user.EndpointID]user.GatewayEndpoint),
 		cacheRefreshInterval: cacheRefreshInterval,
 		mu:                   sync.RWMutex{},
-		logger:               logger,
+
+		logger: logger.With("component", "user_data_cache"),
 	}
 
 	if err := cache.setCache(context.Background()); err != nil {
@@ -42,15 +43,15 @@ func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.
 	return cache, nil
 }
 
-func (c *cache) GetUserApp(ctx context.Context, userAppID user.UserAppID) (user.UserApp, bool) {
+func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	userApp, ok := c.userApps[userAppID]
-	return userApp, ok
+	gatewayEndpoint, ok := c.gatewayEndpoints[endpointID]
+	return gatewayEndpoint, ok
 }
 
-func (c *cache) cacheRefreshHandler(ctx context.Context) {
+func (c *userDataCache) cacheRefreshHandler(ctx context.Context) {
 	for {
 		<-time.After(c.cacheRefreshInterval)
 
@@ -61,16 +62,16 @@ func (c *cache) cacheRefreshHandler(ctx context.Context) {
 	}
 }
 
-func (c *cache) setCache(ctx context.Context) error {
-	userApps, err := c.db.GetUserApps(ctx)
+func (c *userDataCache) setCache(ctx context.Context) error {
+	gatewayEndpoints, err := c.db.GetGatewayEndpoints(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get user apps: %w", err)
+		return fmt.Errorf("failed to get gateway endpoints: %w", err)
 	}
 
-	c.logger.Info().Msgf("successfully set cache with %d user apps", len(userApps))
+	c.logger.Info().Msgf("successfully set cache with %d gateway endpoints", len(gatewayEndpoints))
 
 	c.mu.Lock()
-	c.userApps = userApps
+	c.gatewayEndpoints = gatewayEndpoints
 	c.mu.Unlock()
 
 	return nil

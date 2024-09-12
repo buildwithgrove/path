@@ -78,7 +78,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 	tests := []struct {
 		name            string
 		userDataEnabled bool
-		userAppID       user.UserAppID
+		endpointID      user.EndpointID
 		payload         string
 		expectedBytes   []byte
 		expectedStatus  int
@@ -91,12 +91,12 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:            "should set user app ID in context",
+			name:            "should set gateway endpoint ID in context",
 			payload:         `{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}`,
 			expectedBytes:   []byte(`{"jsonrpc": "2.0", "id": 1, "result": "0x10d4f"}`),
 			expectedStatus:  http.StatusOK,
 			userDataEnabled: true,
-			userAppID:       "user_app_1",
+			endpointID:      "user_app_1",
 		},
 		{
 			name:           "should fail if service request handler returns an error",
@@ -122,11 +122,12 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 						http.Error(w, "failed to send service request: some error", http.StatusInternalServerError)
 					}
 					return test.expectedError
-				})
+				},
+			)
 
 			url := fmt.Sprintf("%s/v1", ts.URL)
 			if test.userDataEnabled {
-				url = fmt.Sprintf("%s/v1/%s", ts.URL, test.userAppID)
+				url = fmt.Sprintf("%s/v1/%s", ts.URL, test.endpointID)
 			}
 
 			req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(test.payload))

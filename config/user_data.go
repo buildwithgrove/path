@@ -11,15 +11,19 @@ const defaultCacheRefreshInterval = 5 * time.Minute
 
 /* --------------------------------- User Data Config Struct -------------------------------- */
 
-// UserDataConfig contains user data configuration settings, which are only relevant if user data handling
-// is enabled for the gateway by setting the 'user_data_config' field in the config YAML file.
+// UserDataConfig contains user data configuration settings. This is off by default.
 //
-// The DB connection string must be for a valid Postgres database, which will
-// contain user data for the Gateway. A cache refresh interval may also be set.
+// If the 'user_data_config' field in the config YAML is set, the related features will become active.
 type UserDataConfig struct {
-	PostgresConnectionString string        `yaml:"postgres_connection_string"`
-	RedisHostPort            string        `yaml:"redis_host_port"`
-	CacheRefreshInterval     time.Duration `yaml:"cache_refresh_interval"`
+	// The connection string must be for a valid Postgres database, which will
+	// contain user data for the Gateway.
+	PostgresConnectionString string `yaml:"postgres_connection_string"`
+	// RedisHostPort must be a valid `host:port` string for a Redis instance that
+	// is used for coordinating rate limiting across multiple PATH instances.
+	RedisHostPort string `yaml:"redis_host_port"`
+	// The interval at which the local user data cache should be refreshed from the
+	// connected Postgres DB. Must be set in valid YAML time syntax, eg 30s, 5m, etc.
+	CacheRefreshInterval time.Duration `yaml:"cache_refresh_interval"`
 }
 
 /* --------------------------------- User Data Config Private Helpers -------------------------------- */

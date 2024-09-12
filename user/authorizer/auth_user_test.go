@@ -9,52 +9,58 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-func Test_authSecretKey(t *testing.T) {
+func Test_authAPIKey(t *testing.T) {
 	tests := []struct {
 		name           string
 		reqDetails     reqCtx.HTTPDetails
-		userApp        user.UserApp
+		userApp        user.GatewayEndpoint
 		expectedResult *failedAuth
 	}{
 		{
 			name: "should return nil for valid secret key",
 			reqDetails: reqCtx.HTTPDetails{
-				SecretKey: "validKey",
+				APIKey: "validKey",
 			},
-			userApp: user.UserApp{
-				SecretKeyRequired: true,
-				SecretKey:         "validKey",
+			userApp: user.GatewayEndpoint{
+				Auth: user.Auth{
+					APIKeyRequired: true,
+					APIKey:         "validKey",
+				},
 			},
 			expectedResult: nil,
 		},
 		{
-			name: "should return authFailSecretKeyRequired for empty request secret key",
+			name: "should return authFailAPIKeyRequired for empty request secret key",
 			reqDetails: reqCtx.HTTPDetails{
-				SecretKey: "",
+				APIKey: "",
 			},
-			userApp: user.UserApp{
-				SecretKeyRequired: true,
-				SecretKey:         "validKey",
+			userApp: user.GatewayEndpoint{
+				Auth: user.Auth{
+					APIKeyRequired: true,
+					APIKey:         "validKey",
+				},
 			},
-			expectedResult: &userAuthFailSecretKeyRequired,
+			expectedResult: &userAuthFailAPIKeyRequired,
 		},
 		{
-			name: "should return authFailInvalidSecretKey for invalid request secret key",
+			name: "should return authFailInvalidAPIKey for invalid request secret key",
 			reqDetails: reqCtx.HTTPDetails{
-				SecretKey: "invalidKey",
+				APIKey: "invalidKey",
 			},
-			userApp: user.UserApp{
-				SecretKeyRequired: true,
-				SecretKey:         "validKey",
+			userApp: user.GatewayEndpoint{
+				Auth: user.Auth{
+					APIKeyRequired: true,
+					APIKey:         "validKey",
+				},
 			},
-			expectedResult: &userAuthFailInvalidSecretKey,
+			expectedResult: &userAuthFailInvalidAPIKey,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
-			result := authSecretKey(test.reqDetails, test.userApp)
+			result := authAPIKey(test.reqDetails, test.userApp)
 			c.Equal(test.expectedResult, result)
 		})
 	}

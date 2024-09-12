@@ -11,9 +11,9 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-// user.RequestAuthorizer is used to authorize service requests by users.
-// It performs user data authentication and rate limiting on requests and
-// returns a gateway.HTTPResponse error message to the client if auth fails.
+// user.RequestAuthorizer is used to authenticate service requests by users.
+// It performs authorization and allowlist validation on requests and returns a
+// failure response message to the client when authorization fails.
 type RequestAuthorizer struct {
 	cache       cache
 	authorizers []authorizer
@@ -22,10 +22,10 @@ type RequestAuthorizer struct {
 
 type (
 	cache interface {
-		GetUserApp(ctx context.Context, userAppID user.UserAppID) (user.UserApp, bool)
+		GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool)
 	}
 	authorizer interface {
-		authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.UserApp) *failedAuth
+		authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.GatewayEndpoint) *failedAuth
 	}
 )
 
@@ -33,21 +33,21 @@ func NewRequestAuthorizer(cache cache, redisAddr string, logger polylog.Logger) 
 	return &RequestAuthorizer{
 		cache: cache,
 		authorizers: []authorizer{
-			newUserAppAuthenticator(logger),
+			newGatewayEndpointAuthorizer(logger),
 			newRateLimiter(redisAddr, logger),
 		},
 		logger: logger.With("component", "request_authorizer"),
 	}
 }
 
-// AuthorizeRequest performs authorization using all configured authenticators on the service request.
+// AuthorizeRequest performs authorization using all configured authorizers on the service request.
 //
 // It returns a failedAuth struct with and error message and 401 status code to the client if auth fails or nil if auth succeeds.
-func (a *RequestAuthorizer) AuthorizeRequest(ctx context.Context, req *http.Request, userAppID user.UserAppID) gateway.HTTPResponse {
+func (a *RequestAuthorizer) AuthorizeRequest(ctx context.Context, req *http.Request, userAppID user.EndpointID) gateway.HTTPResponse {
 
 	reqDetails := reqCtx.GetHTTPDetailsFromCtx(ctx)
 
-	userApp, ok := a.cache.GetUserApp(ctx, userAppID)
+	userApp, ok := a.cache.GetGatewayEndpoint(ctx, userAppID)
 	if !ok {
 		return &userAppNotFound
 	}

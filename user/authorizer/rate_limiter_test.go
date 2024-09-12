@@ -37,24 +37,28 @@ func TestMain(m *testing.M) {
 func Test_authorize(t *testing.T) {
 	tests := []struct {
 		name           string
-		userApp        user.UserApp
+		userApp        user.GatewayEndpoint
 		expectedResult *failedAuth
 		requests       int
 	}{
 		{
 			name: "should allow request within rate limit",
-			userApp: user.UserApp{
-				ID:                  "user_app_1",
-				RateLimitThroughput: 30,
+			userApp: user.GatewayEndpoint{
+				EndpointID: "user_app_1",
+				RateLimiting: user.RateLimiting{
+					ThroughputLimit: 30,
+				},
 			},
 			expectedResult: nil,
 			requests:       30,
 		},
 		{
 			name: "should block request exceeding rate limit",
-			userApp: user.UserApp{
-				ID:                  "user_app_2",
-				RateLimitThroughput: 30,
+			userApp: user.GatewayEndpoint{
+				EndpointID: "user_app_2",
+				RateLimiting: user.RateLimiting{
+					ThroughputLimit: 30,
+				},
 			},
 			expectedResult: &throughputLimitExceeded,
 			requests:       40,
@@ -92,24 +96,28 @@ func Test_authorize(t *testing.T) {
 func Test_authThroughputLimit(t *testing.T) {
 	tests := []struct {
 		name           string
-		userApp        user.UserApp
+		userApp        user.GatewayEndpoint
 		expectedResult *failedAuth
 		requests       int
 	}{
 		{
 			name: "should allow request within rate limit",
-			userApp: user.UserApp{
-				ID:                  "user_app_3",
-				RateLimitThroughput: 30,
+			userApp: user.GatewayEndpoint{
+				EndpointID: "user_app_3",
+				RateLimiting: user.RateLimiting{
+					ThroughputLimit: 30,
+				},
 			},
 			expectedResult: nil,
 			requests:       30,
 		},
 		{
 			name: "should block request exceeding rate limit",
-			userApp: user.UserApp{
-				ID:                  "user_app_4",
-				RateLimitThroughput: 30,
+			userApp: user.GatewayEndpoint{
+				EndpointID: "user_app_4",
+				RateLimiting: user.RateLimiting{
+					ThroughputLimit: 30,
+				},
 			},
 			expectedResult: &throughputLimitExceeded,
 			requests:       40,

@@ -7,30 +7,30 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 )
 
-// TODO_IMPROVE - use correct "id" field in response
-// TODO_IMPROVE - formalize error codes
-var failedAuthTemplate = `{"jsonrpc":"2.0","error":{"code":%d,"message":"unauthorized: %s"},"id":0}`
+// TODO_TECHDEBT - use the original "id" field from the request in JSON-RPC 2.0 response
+var failedAuthTemplate = `{"jsonrpc":"2.0","error":{"code":%d,"message":"%s"},"id":0}`
 
 var (
-	userAppNotFoundCode = -32005
+	userAppNotFoundCode = http.StatusNotFound
 	userAppNotFound     = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAppNotFoundCode, "user app not found")}
 )
 var (
-	userAuthFailCode              = -32006
-	userAuthFailSecretKeyRequired = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAuthFailCode, "secret key is required")}
-	userAuthFailInvalidSecretKey  = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAuthFailCode, "invalid secret key")}
+	userAuthFailCode           = http.StatusUnauthorized
+	userAuthFailAPIKeyRequired = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAuthFailCode, "secret key is required")}
+	userAuthFailInvalidAPIKey  = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAuthFailCode, "invalid secret key")}
 )
 var (
-	rateLimitExceededCode   = -32007
+	rateLimitExceededCode   = http.StatusTooManyRequests
 	throughputLimitExceeded = failedAuth{body: fmt.Sprintf(failedAuthTemplate, rateLimitExceededCode, "throughput limit exceeded")}
 )
 
-// failedAuth contains a response body for an authentication failure to be
-// returned to the client. It satisfies the gateway.HTTPResponse interface.
+// failedAuth contains a JSON-RPC 2.0 response body, including an error code and message,
+// for an authentication failure to be returned to the client.
 type failedAuth struct {
 	body string
 }
 
+// failedAuth satisfies the gateway.HTTPResponse interface.
 var _ gateway.HTTPResponse = &failedAuth{}
 
 func (r *failedAuth) GetPayload() []byte {

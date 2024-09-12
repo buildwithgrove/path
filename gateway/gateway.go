@@ -48,10 +48,11 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// TODO_INCOMPLETE: add request response observation and uncomment the following line when implemented.
 	// defer g.RequestResponseObserver.ObserveReqRes(ctx, httpReq, httpRes)
 
-	// If the request ctx contains a userAppID, authenticate the request. This performs user data and rate limiting auth.
-	// If the req fails authentication an error implementing the HTTPResponse interface is returned to the user.
-	if appID := reqCtx.GetUserAppIDFromCtx(ctx); appID != "" && g.UserRequestAuthorizer != nil {
-		if authFailedResp := g.UserRequestAuthorizer.AuthorizeRequest(ctx, httpReq, appID); authFailedResp != nil {
+	// If the request ctx contains an endpointID, authenticate the request. This performs authorization
+	// for both user data and rate limiting. If the req fails authentication it returns a struct that satisfies
+	// the `HTTPResponse` interface and contains an error message that is returned to the user.
+	if endpointID := reqCtx.GetEndpointIDFromCtx(ctx); endpointID != "" && g.UserRequestAuthorizer != nil {
+		if authFailedResp := g.UserRequestAuthorizer.AuthorizeRequest(ctx, httpReq, endpointID); authFailedResp != nil {
 			g.writeResponse(ctx, authFailedResp, w)
 			return
 		}
