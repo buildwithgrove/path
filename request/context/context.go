@@ -3,13 +3,15 @@ package context
 import (
 	"context"
 	"net/http"
+
+	"github.com/buildwithgrove/path/user"
 )
 
 type ctxKey string
 
 const (
 	ctxKeyHttpDetails ctxKey = "http_details"
-	ctxKeyUserAppID   ctxKey = "user_app_id"
+	ctxKeyEndpointID  ctxKey = "endpoint_id"
 )
 
 // HttpDetails contains HTTP details from an http.Request to be used
@@ -22,10 +24,10 @@ type HttpDetails struct {
 	SecretKey string
 }
 
-// SetCtxFromRequest sets HTTP details and user app ID in the context from an
+// SetCtxFromRequest sets HTTP details and gateway endpoint ID in the context from an
 // http.Request and returns the updated context to be used in the service
 // request lifecycle. This data is used for user app-specific request authentication.
-func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string) context.Context {
+func SetCtxFromRequest(ctx context.Context, req *http.Request, endpointID user.EndpointID) context.Context {
 	ctx = context.WithValue(ctx, ctxKeyHttpDetails, HttpDetails{
 		Method:    req.Method,
 		Path:      req.URL.Path,
@@ -33,7 +35,7 @@ func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID string)
 		UserAgent: req.Header.Get("User-Agent"),
 		SecretKey: req.Header.Get("Authorization"),
 	})
-	ctx = context.WithValue(ctx, ctxKeyUserAppID, userAppID)
+	ctx = context.WithValue(ctx, ctxKeyEndpointID, endpointID)
 	return ctx
 }
 
@@ -46,9 +48,9 @@ func GetHTTPDetailsFromCtx(ctx context.Context) HttpDetails {
 	return HttpDetails{}
 }
 
-func GetUserAppIDFromCtx(ctx context.Context) string {
-	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(string); ok {
-		return userAppID
+func GetEndpointIDFromCtx(ctx context.Context) user.EndpointID {
+	if endpointID, ok := ctx.Value(ctxKeyEndpointID).(user.EndpointID); ok {
+		return endpointID
 	}
 	return ""
 }

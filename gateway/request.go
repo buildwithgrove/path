@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/user"
 )
 
 // HTTPRequestParser is used, in handling an HTTP service request, to extract
@@ -47,7 +48,7 @@ type HTTPRequestParser interface {
 //	   "solana":   qos.Solana{},
 //	}
 
-// TODO_NEXT: implement UserRequestAuthenticator in a separate package, e.g. `userdata`.
-type UserRequestAuthenticator interface {
-	AuthenticateReq(context.Context, *http.Request, string) HTTPResponse
+// TODO_NEXT: implement UserRequestAuthorizer in a separate package, e.g. `user/authorizer“.
+type UserRequestAuthorizer interface {
+	AuthorizeRequest(context.Context, *http.Request, user.EndpointID) HTTPResponse
 }

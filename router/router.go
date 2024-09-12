@@ -11,6 +11,7 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	reqCtx "github.com/buildwithgrove/path/request/context"
+	"github.com/buildwithgrove/path/user"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 	defaultImageTag = "development"
 )
 
-const userAppIDPathParam = "userAppID"
+const endpointIDPathParam = "endpoint_id"
 
 type (
 	router struct {
@@ -59,8 +60,8 @@ func (r *router) handleRoutes(userDataEnabled bool) {
 
 	// * /v1... - is the entrypoint for all service requests
 	if userDataEnabled {
-		// * /v1/{userAppID} - handles service requests for a specific user app ID only
-		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", userAppIDPathParam), r.corsMiddleware(r.handleServiceRequest))
+		// * /v1/{endpoint_id} - handles service requests for a specific gateway endpoint ID only
+		r.mux.HandleFunc(fmt.Sprintf("/v1/{%s}", endpointIDPathParam), r.corsMiddleware(r.handleServiceRequest))
 	} else {
 		// * /v1 - handles service requests without any user data handling
 		r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
@@ -150,14 +151,14 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 
 // handleServiceRequest sets the request ID and HTTP details in the request context
 // from the HTTP request and passes it to the gateway handler, which processes the request.
-// * - /v1  - user data not enabled: handles requests for all user app IDs
-// * - /v1/{userAppID} - user data enabled: handles requests for a specific user app ID only
+// * - /v1  - user data not enabled: handles requests for all gateway endpoint IDs
+// * - /v1/{endpoint_id} - user data enabled: handles requests for a specific gateway endpoint ID only
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	// if user data is enabled set the user app ID and HTTP details in request ctx
-	if userAppID := req.PathValue(userAppIDPathParam); userAppID != "" {
-		ctx = reqCtx.SetCtxFromRequest(ctx, req, userAppID)
+	// if user data is enabled set the gateway endpoint ID and HTTP details in request ctx
+	if endpointID := req.PathValue(endpointIDPathParam); endpointID != "" {
+		ctx = reqCtx.SetCtxFromRequest(ctx, req, user.EndpointID(endpointID))
 	}
 
 	r.gateway.HandleHTTPServiceRequest(ctx, req, w)

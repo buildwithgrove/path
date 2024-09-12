@@ -220,7 +220,7 @@ For example:
 http://eth-mainnet.localhost:3000/v1/{user_app_id}
 ```
 
-The default endpoint of `/v1` will no longer function without a user app ID.
+The default endpoint of `/v1` will no longer function without a gateway endpoint ID.
 
 ### 6.2 Database Configuration
 
