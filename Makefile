@@ -9,21 +9,29 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
+###############################
+### Quickstart Make Targets ###
+###############################
+
+.PHONY: quickstart
+quickstart: ## Run the quickstart script
+	./scripts/quickstart.sh
+
 #############################
 ### Run Path Make Targets ###
 #############################
 
 .PHONY: path_up
 path_up: ## Run docker compose up
-	docker compose up -d
+	docker compose -f ./docker/docker-compose.yml up -d
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build
-	docker compose up -d --build
+	docker compose -f ./docker/docker-compose.yml up -d --build
 
 .PHONY: path_down
 path_down: ## Run docker compose down
-	docker compose down
+	docker compose -f ./docker/docker-compose.yml down
 
 #########################
 ### Test Make Targets ###

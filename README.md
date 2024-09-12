@@ -26,30 +26,18 @@ It provides various tools and libraries to streamline the integration and intera
 
 ## Quickstart (Shannon)
 
-1. Stake Apps and Gateway
+1. 🌿 Run the Quickstart Script
 
-   Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
+   ```sh
+   make quickstart
+   ```
 
-2. Populate Config File
-
-   Run `make copy_config` to copy the example configuration file to `cmd/.config.yaml`.
-
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
-
-   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
-
-3. Start the PATH Container
-
-   Run `make path_up` to start the PATH container.
+2. 🚀 Send Relays
 
    _Example request to the PATH service:_
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
-       -X POST \
-       -H "Content-Type: application/json" \
-       -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+   curl http://eth-mainnet.localhost:3000/v1 -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
    _For detailed instructions on running PATH, see the [Running PATH](#running-path) section._
