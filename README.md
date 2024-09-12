@@ -6,6 +6,7 @@
 <br/>
 
 - [1. Introduction](#1-introduction)
+  - [1.1 Prerequisites](#11-prerequisites)
 - [2. Quickstart (Shannon)](#2-quickstart-shannon)
 - [3. Configuration](#3-configuration)
   - [3.1 Configuration File](#31-configuration-file)
@@ -25,6 +26,15 @@
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
+
+### 1.1 Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+
+**Required For Development:**
+
+- [SQLC](https://docs.sqlc.dev/)
+- [Mockgen](https://github.com/uber-go/mock)
 
 ## 2. Quickstart (Shannon)
 
