@@ -30,8 +30,9 @@ const (
 /* --------------------------------- QoS Service Provider -------------------------------- */
 
 var (
-	ErrServiceIDNotEnabled     = errors.New("service ID %s not enabled")
-	ErrServiceNameNotSupported = errors.New("service name %s not supported")
+	errNoServiceIDProvided     = errors.New("no service ID provided")
+	errServiceIDNotEnabled     = errors.New("service ID not enabled")
+	errServiceNameNotSupported = errors.New("service name not supported")
 )
 
 type (
@@ -58,7 +59,7 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 
 		serviceName, ok := supportedServicesToQoSServiceName[serviceID]
 		if !ok {
-			return nil, fmt.Errorf(ErrServiceIDNotEnabled.Error(), serviceID)
+			return nil, fmt.Errorf(errServiceIDNotEnabled.Error(), serviceID)
 		}
 
 		switch serviceName {
@@ -69,7 +70,7 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 		case ServiceNamePOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 		default:
-			return nil, fmt.Errorf(ErrServiceNameNotSupported.Error(), serviceName)
+			return nil, errServiceNameNotSupported
 		}
 	}
 
@@ -82,7 +83,7 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 func (p *qosServiceProvider) GetQoSService(serviceID relayer.ServiceID) (gateway.QoSService, error) {
 	qosService, ok := p.qosServices[serviceID]
 	if !ok {
-		return nil, fmt.Errorf(ErrServiceIDNotEnabled.Error(), serviceID)
+		return nil, errServiceIDNotEnabled
 	}
 	return qosService, nil
 }
