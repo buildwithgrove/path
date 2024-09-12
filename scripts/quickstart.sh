@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 clear
 echo "🌿 Welcome to PATH. This will guide you through the steps to start the service."
 echo "🐳 In order to proceed, Docker must be installed and running on your machine."
@@ -8,6 +9,13 @@ read proceed
 
 if [[ "$proceed" != "y" ]]; then
   echo "❌ Setup aborted."
+  exit 1
+fi
+
+CONFIG_YAML="./cmd/.config.yaml"
+
+if [[ -f "$CONFIG_YAML" ]]; then
+  echo "❌ Configuration file already exists. Setup aborted."
   exit 1
 fi
 
@@ -112,7 +120,6 @@ done
 clear
 echo "📂 Running make copy_config..."
 make copy_config
-CONFIG_YAML="./cmd/.config.yaml"
 
 sed -i '' "s|^\([[:space:]]*\)rpc_url:.*|\1rpc_url: $rpc_url|g" "$CONFIG_YAML"
 sed -i '' "s|^\([[:space:]]*\)host_port:.*|\1host_port: $host_port|g" "$CONFIG_YAML"
@@ -124,9 +131,6 @@ awk '/gateway_private_key:/ {print; print "    delegated_app_addresses:\n      -
 if [[ "$use_tls" == "y" ]]; then
   sed -i '' "/^\([[:space:]]*\)insecure:/d" "$CONFIG_YAML"
 fi
-
-clear
-echo "🎉 Config YAML setup complete."
 
 echo "🌿 Starting PATH service... "
 make path_up
@@ -142,10 +146,11 @@ while [[ $elapsed -lt $timeout ]]; do
     echo "🌿 PATH Service is now running!"
     echo "You may now send service requests for service '0021' (eth-mainnet) using http://eth-mainnet.localhost:3000/v1"
     echo ""
-    echo "Example service request using cURL:"
+    echo "💡 Example service request using cURL:"
     echo 'curl http://eth-mainnet.localhost:3000/v1 -d "{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }"'
     echo ""
-    echo "🌱 To enable additional services, edit the 'services' section of the .config.yaml file and restart the PATH service using 'make path_down && make path_up'."
+    echo "🌱 To enable additional services, edit the 'services' section of the .config.yaml file and restart the PATH service using 'make path_restart'."
+    echo ""
     echo "💚 Happy relaying!"
     exit 0
   fi
