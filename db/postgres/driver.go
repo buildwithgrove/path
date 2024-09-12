@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -12,13 +11,13 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-// The postgresDriver struct satisfies the db.Driver interface defined in the cache in the db package.
+// The postgresDriver struct satisfies the db.Driver interface defined in the db package.
 type postgresDriver struct {
 	*Queries
 	DB *pgxpool.Pool
 }
 
-var _ db.Driver = &postgresDriver{}
+var _ db.DBDriver = &postgresDriver{}
 
 /* ---------- Postgres Connection Funcs ---------- */
 
@@ -62,36 +61,38 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 
 /* ---------- UserApp Funcs ---------- */
 
-func (d *postgresDriver) GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error) {
-	rows, err := d.Queries.SelectUserApps(ctx)
+func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
+	rows, err := d.Queries.SelectGatewayEndpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return d.convertToUserApps(rows)
+	return d.convertToGatewayEndpoints(rows)
 }
 
-func (d *postgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.UserAppID]user.UserApp, error) {
-	apps := make(map[user.UserAppID]user.UserApp, len(rows))
+func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[user.EndpointID]user.GatewayEndpoint, error) {
+	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
 
 	for _, row := range rows {
-		var allowlists map[user.AllowlistType]map[string]struct{}
-		if err := json.Unmarshal(row.Allowlists, &allowlists); err != nil {
-			return nil, err
+		gatewayEndpoint := user.GatewayEndpoint{
+			EndpointID: user.EndpointID(row.ID),
+			Auth: user.Auth{
+				APIKey:         row.ApiKey.String,
+				APIKeyRequired: row.ApiKeyRequired.Bool,
+			},
+			UserAccount: user.UserAccount{
+				AccountID: user.AccountID(row.AccountID.String),
+				PlanType:  user.PlanType(row.Plan.String),
+			},
+			RateLimiting: user.RateLimiting{
+				ThroughputLimit:     int(row.RateLimitThroughput.Int32),
+				CapacityLimit:       int(row.RateLimitCapacity.Int32),
+				CapacityLimitPeriod: user.CapacityLimitPeriod(row.RateLimitCapacityPeriod.RateLimitCapacityPeriod),
+			},
 		}
 
-		app := user.UserApp{
-			ID:                  user.UserAppID(row.ID),
-			AccountID:           user.AccountID(row.AccountID.String),
-			PlanType:            user.PlanType(row.Plan.String),
-			SecretKey:           row.SecretKey.String,
-			SecretKeyRequired:   row.SecretKeyRequired.Bool,
-			RateLimitThroughput: int(row.RateLimitThroughput.Int32),
-			Allowlists:          allowlists,
-		}
-
-		apps[app.ID] = app
+		gatewayEndpoints[gatewayEndpoint.EndpointID] = gatewayEndpoint
 	}
 
-	return apps, nil
+	return gatewayEndpoints, nil
 }

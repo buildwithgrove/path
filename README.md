@@ -5,27 +5,38 @@
 </div>
 <br/>
 
-# Table of Contents <!-- omit in toc -->
+- [1. Introduction](#1-introduction)
+  - [1.1 Prerequisites](#11-prerequisites)
+- [2. Quickstart (Shannon)](#2-quickstart-shannon)
+- [3. Configuration](#3-configuration)
+  - [3.1 Configuration File](#31-configuration-file)
+  - [3.2 Example Configuration Format](#32-example-configuration-format)
+- [4. Running PATH](#4-running-path)
+  - [4.1 Setup Config YAML](#41-setup-config-yaml)
+  - [4.2 Start the Container](#42-start-the-container)
+- [5. E2E Tests](#5-e2e-tests)
+  - [5.1 Running Tests](#51-running-tests)
+- [6. User Data](#6-user-data)
+  - [6.1 Updated Endpoint](#61-updated-endpoint)
+  - [6.2 Database Configuration](#62-database-configuration)
+  - [6.3 Database Schema](#63-database-schema)
 
-- [Introduction](#introduction)
-- [Quickstart (Shannon)](#quickstart-shannon)
-- [Configuration](#configuration)
-  - [Configuration File](#configuration-file)
-    - [Example Configuration Format](#example-configuration-format)
-- [Running PATH](#running-path)
-  - [Setup Config YAML](#setup-config-yaml)
-  - [Start the Container](#start-the-container)
-- [E2E Tests](#e2e-tests)
-  - [Running Tests](#running-tests)
-- [User Data](#user-data)
-
-## Introduction
+## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
 
-## Quickstart (Shannon)
+### 1.1 Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+
+**Required For Development:**
+
+- [SQLC](https://docs.sqlc.dev/)
+- [Mockgen](https://github.com/uber-go/mock)
+
+## 2. Quickstart (Shannon)
 
 1. Stake Apps and Gateway
 
@@ -55,9 +66,9 @@ It provides various tools and libraries to streamline the integration and intera
 
    _For detailed instructions on running PATH, see the [Running PATH](#running-path) section._
 
-## Configuration
+## 3. Configuration
 
-### Configuration File
+### 3.1 Configuration File
 
 The configuration for PATH is defined in a YAML file, which should be named `.config.yaml`.
 
@@ -92,7 +103,7 @@ The configuration is divided into several sections:
    - _Required only if the gateway operator wishes to associate user data with requests._
    - Configures the PostgreSQL database connection string.
 
-#### Example Configuration Format
+### 3.2 Example Configuration Format
 
 ```yaml
 shannon_config:
@@ -116,9 +127,9 @@ services:
   - [Shannon](./cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](./config/config.schema.yaml)
 
-## Running PATH
+## 4. Running PATH
 
-#### Setup Config YAML
+### 4.1 Setup Config YAML
 
 - The PATH service requires the config YAML file to be populated.
 
@@ -134,7 +145,7 @@ services:
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-#### Start the Container
+### 4.2 Start the Container
 
 1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
 
@@ -154,7 +165,7 @@ services:
    make path_down
    ```
 
-## E2E Tests
+## 5. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
@@ -172,7 +183,7 @@ Currently, the E2E tests are configured to run against the Shannon testnet.
 
 Future work will include adding support for other protocols.
 
-### Running Tests
+### 5.1 Running Tests
 
 To run the tests, use the following `make` targets:
 
@@ -187,7 +198,7 @@ make test_unit
 make test_e2e_shannon_relay
 ```
 
-## User Data
+## 6. User Data
 
 By default, PATH does not associate user data with service requests (i.e. relays).
 
@@ -195,11 +206,11 @@ You may opt to enable user data config to unlock the ability to associate a spec
 
 This is required for:
 
-- User-specified app settings (e.g. secret key, allowlists, etc.)
+- User-specified app settings (e.g. secret key, etc.)
 - Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
 - Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
 
-### Updated Endpoint
+### 6.1 Updated Endpoint
 
 Enabling user data will modify the endpoint for service requests to require a user app identifier at the end of the URL path.
 
@@ -209,20 +220,20 @@ For example:
 http://eth-mainnet.localhost:3000/v1/{user_app_id}
 ```
 
-The default endpoint of `/v1` will no longer function without a user app ID.
+The default endpoint of `/v1` will no longer function without a gateway endpoint ID.
 
-### Database Configuration
+### 6.2 Database Configuration
 
 To enable user data, you must set up a Postgres database and populate the `.config.yaml` file's `user_data_config` field with the connection string.
 
 ```yaml
 user_data_config:
-  db_connection_string: "postgres://user:password@localhost:5432/database"
+  postgres_connection_string: "postgres://user:password@localhost:5432/database"
 ```
 
 An example Postgres Docker configuration is included in the [docker-compose.yml](./docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**
 
-### Database Schema
+### 6.3 Database Schema
 
 [Base Schema SQL File](./db/driver/sqlc/schema.sql)
 
@@ -248,16 +259,8 @@ erDiagram
         boolean secret_key_required
     }
 
-    USER_APP_ALLOWLISTS {
-        int id
-        varchar user_app_id
-        enum allowlist_type
-        varchar value
-    }
-
     PLANS ||--o{ ACCOUNTS : "plan_type"
     ACCOUNTS ||--o{ USER_APPS : "account_id"
-    USER_APPS ||--o{ USER_APP_ALLOWLISTS : "user_app_id"
 ```
 
 A base schema is provided with the minimal tables and columns required to enable user data handling in PATH.

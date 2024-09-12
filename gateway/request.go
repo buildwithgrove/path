@@ -48,7 +48,7 @@ type HTTPRequestParser interface {
 //	   "solana":   qos.Solana{},
 //	}
 
-// UserRequestAuthenticator is used to authenticate service requests made by users.
-type UserRequestAuthenticator interface {
-	AuthenticateReq(context.Context, *http.Request, user.UserAppID) HTTPResponse
+// TODO_NEXT: implement UserRequestAuthorizer in a separate package, e.g. `user/authorizer“.
+type UserRequestAuthorizer interface {
+	AuthorizeRequest(context.Context, *http.Request, user.EndpointID) HTTPResponse
 }

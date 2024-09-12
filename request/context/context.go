@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/buildwithgrove/path/user"
 )
@@ -10,8 +11,8 @@ import (
 type ctxKey string
 
 const (
-	ctxKeyHttpDetails ctxKey = "http_details"
-	ctxKeyUserAppID   ctxKey = "user_app_id"
+	ctxKeyHTTPDetails ctxKey = "http_details"
+	ctxKeyEndpointID  ctxKey = "endpoint_id"
 )
 
 // HTTPDetails contains HTTP details from an http.Request to be used
@@ -21,36 +22,44 @@ type HTTPDetails struct {
 	Path      string
 	Origin    string
 	UserAgent string
-	SecretKey string
+	APIKey    string
 }
 
-// SetCtxFromRequest sets HTTP details and user app ID in the context from an
+// SetCtxFromRequest sets HTTP details and gateway endpoint ID in the context from an
 // http.Request and returns the updated context to be used in the service
 // request lifecycle. This data is used for user app-specific request authentication.
-func SetCtxFromRequest(ctx context.Context, req *http.Request, userAppID user.UserAppID) context.Context {
-	ctx = context.WithValue(ctx, ctxKeyHttpDetails, HTTPDetails{
+func SetCtxFromRequest(ctx context.Context, req *http.Request, endpointID user.EndpointID) context.Context {
+	ctx = context.WithValue(ctx, ctxKeyHTTPDetails, HTTPDetails{
 		Method:    req.Method,
 		Path:      req.URL.Path,
 		Origin:    req.Header.Get("Origin"),
 		UserAgent: req.Header.Get("User-Agent"),
-		SecretKey: req.Header.Get("Authorization"),
+		APIKey:    getAPIKeyFromAuthHeader(req),
 	})
-	ctx = context.WithValue(ctx, ctxKeyUserAppID, userAppID)
+	ctx = context.WithValue(ctx, ctxKeyEndpointID, endpointID)
 	return ctx
+}
+
+// allow setting the API key in the header both on its own or with the "Bearer " prefix
+func getAPIKeyFromAuthHeader(req *http.Request) string {
+	if authHeader := req.Header.Get("Authorization"); authHeader != "" {
+		return strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
+	}
+	return ""
 }
 
 /* --------------------------------- Getters -------------------------------- */
 
 func GetHTTPDetailsFromCtx(ctx context.Context) HTTPDetails {
-	if httpDetails, ok := ctx.Value(ctxKeyHttpDetails).(HTTPDetails); ok {
+	if httpDetails, ok := ctx.Value(ctxKeyHTTPDetails).(HTTPDetails); ok {
 		return httpDetails
 	}
 	return HTTPDetails{}
 }
 
-func GetUserAppIDFromCtx(ctx context.Context) user.UserAppID {
-	if userAppID, ok := ctx.Value(ctxKeyUserAppID).(user.UserAppID); ok {
-		return userAppID
+func GetEndpointIDFromCtx(ctx context.Context) user.EndpointID {
+	if endpointID, ok := ctx.Value(ctxKeyEndpointID).(user.EndpointID); ok {
+		return endpointID
 	}
 	return ""
 }
