@@ -12,33 +12,33 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-func Test_GetUserApp(t *testing.T) {
+func Test_GetGatewayEndpoint(t *testing.T) {
 	tests := []struct {
 		name       string
-		userAppID  user.UserAppID
-		mockReturn map[user.UserAppID]user.UserApp
-		expected   user.UserApp
+		endpointID user.EndpointID
+		mockReturn map[user.EndpointID]user.GatewayEndpoint
+		expected   user.GatewayEndpoint
 		found      bool
 	}{
 		{
-			name:       "should return user app when found",
-			userAppID:  "user_app_1",
-			mockReturn: getTestUserApps(),
-			expected:   getTestUserApps()["user_app_1"],
+			name:       "should return gateway endpoint when found",
+			endpointID: "endpoint_1",
+			mockReturn: getTestGatewayEndpoints(),
+			expected:   getTestGatewayEndpoints()["endpoint_1"],
 			found:      true,
 		},
 		{
-			name:       "should return different user app when found",
-			userAppID:  "user_app_2",
-			mockReturn: getTestUserApps(),
-			expected:   getTestUserApps()["user_app_2"],
+			name:       "should return different gateway endpoint when found",
+			endpointID: "endpoint_2",
+			mockReturn: getTestGatewayEndpoints(),
+			expected:   getTestGatewayEndpoints()["endpoint_2"],
 			found:      true,
 		},
 		{
-			name:       "should return false when user app not found",
-			userAppID:  "user_app_3",
-			mockReturn: getTestUserApps(),
-			expected:   user.UserApp{},
+			name:       "should return false when gateway endpoint not found",
+			endpointID: "endpoint_3",
+			mockReturn: getTestGatewayEndpoints(),
+			expected:   user.GatewayEndpoint{},
 			found:      false,
 		},
 	}
@@ -48,15 +48,15 @@ func Test_GetUserApp(t *testing.T) {
 			c := require.New(t)
 			ctrl := gomock.NewController(t)
 
-			mockDB := NewMockDriver(ctrl)
-			mockDB.EXPECT().GetUserApps(gomock.Any()).Return(test.mockReturn, nil)
+			mockDB := NewMockDBDriver(ctrl)
+			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil)
 
 			cache, err := NewCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
-			userApp, found := cache.GetUserApp(context.Background(), test.userAppID)
+			gatewayEndpoint, found := cache.GetGatewayEndpoint(context.Background(), test.endpointID)
 			c.Equal(test.found, found)
-			c.Equal(test.expected, userApp)
+			c.Equal(test.expected, gatewayEndpoint)
 		})
 	}
 }
@@ -64,18 +64,18 @@ func Test_GetUserApp(t *testing.T) {
 func Test_cacheRefreshHandler(t *testing.T) {
 	tests := []struct {
 		name       string
-		mockReturn map[user.UserAppID]user.UserApp
-		expected   map[user.UserAppID]user.UserApp
+		mockReturn map[user.EndpointID]user.GatewayEndpoint
+		expected   map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
 			name:       "should refresh cache with new data",
-			mockReturn: map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
-			expected:   map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 		},
 		{
 			name:       "should handle empty cache refresh",
-			mockReturn: map[user.UserAppID]user.UserApp{},
-			expected:   map[user.UserAppID]user.UserApp{},
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{},
 		},
 	}
 
@@ -84,8 +84,8 @@ func Test_cacheRefreshHandler(t *testing.T) {
 			c := require.New(t)
 			ctrl := gomock.NewController(t)
 
-			mockDB := NewMockDriver(ctrl)
-			mockDB.EXPECT().GetUserApps(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
+			mockDB := NewMockDBDriver(ctrl)
+			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
 			cache, err := NewCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
@@ -96,7 +96,7 @@ func Test_cacheRefreshHandler(t *testing.T) {
 
 			time.Sleep(time.Millisecond * 20)
 
-			c.Equal(test.expected, cache.userApps)
+			c.Equal(test.expected, cache.gatewayEndpoints)
 		})
 	}
 }
@@ -104,18 +104,18 @@ func Test_cacheRefreshHandler(t *testing.T) {
 func Test_setCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		mockReturn map[user.UserAppID]user.UserApp
-		expected   map[user.UserAppID]user.UserApp
+		mockReturn map[user.EndpointID]user.GatewayEndpoint
+		expected   map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
-			name:       "should set cache with user apps",
-			mockReturn: map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
-			expected:   map[user.UserAppID]user.UserApp{"user_app_1": {ID: "user_app_1"}},
+			name:       "should set cache with gateway endpoints",
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 		},
 		{
-			name:       "should handle empty user apps",
-			mockReturn: map[user.UserAppID]user.UserApp{},
-			expected:   map[user.UserAppID]user.UserApp{},
+			name:       "should handle empty gateway endpoints",
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{},
 		},
 	}
 
@@ -124,35 +124,50 @@ func Test_setCache(t *testing.T) {
 			c := require.New(t)
 			ctrl := gomock.NewController(t)
 
-			mockDB := NewMockDriver(ctrl)
-			mockDB.EXPECT().GetUserApps(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
+			mockDB := NewMockDBDriver(ctrl)
+			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
 			cache, err := NewCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			err = cache.setCache(context.Background())
 			c.NoError(err)
-			c.Equal(test.expected, cache.userApps)
+			c.Equal(test.expected, cache.gatewayEndpoints)
 		})
 	}
 }
 
-func getTestUserApps() map[user.UserAppID]user.UserApp {
-	return map[user.UserAppID]user.UserApp{
-		"user_app_1": {
-			ID:                  "user_app_1",
-			AccountID:           "account_1",
-			PlanType:            "PLAN_FREE",
-			SecretKey:           "secret_1",
-			SecretKeyRequired:   true,
-			RateLimitThroughput: 30,
+func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
+	return map[user.EndpointID]user.GatewayEndpoint{
+		"endpoint_1": {
+			EndpointID: "endpoint_1",
+			Auth: user.Auth{
+				APIKey:         "api_key_1",
+				APIKeyRequired: true,
+			},
+			UserAccount: user.UserAccount{
+				AccountID: "account_1",
+				PlanType:  "PLAN_FREE",
+			},
+			RateLimiting: user.RateLimiting{
+				ThroughputLimit: 30,
+				CapacityLimit:   100,
+			},
 		},
-		"user_app_2": {
-			ID:                "user_app_2",
-			AccountID:         "account_2",
-			PlanType:          "PLAN_UNLIMITED",
-			SecretKey:         "secret_2",
-			SecretKeyRequired: true,
+		"endpoint_2": {
+			EndpointID: "endpoint_2",
+			Auth: user.Auth{
+				APIKey:         "api_key_2",
+				APIKeyRequired: true,
+			},
+			UserAccount: user.UserAccount{
+				AccountID: "account_2",
+				PlanType:  "PLAN_UNLIMITED",
+			},
+			RateLimiting: user.RateLimiting{
+				ThroughputLimit: 50,
+				CapacityLimit:   200,
+			},
 		},
 	}
 }
