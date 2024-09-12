@@ -40,7 +40,7 @@ func SetCtxFromRequest(ctx context.Context, req *http.Request, endpointID user.E
 	return ctx
 }
 
-// allow setting the API key in the header both on its own or with the "Bearer " prefix
+// getAPIKeyFromAuthHeader allows setting the API key in the header both on its own or with the "Bearer " prefix.
 func getAPIKeyFromAuthHeader(req *http.Request) string {
 	if authHeader := req.Header.Get("Authorization"); authHeader != "" {
 		return strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
