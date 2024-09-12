@@ -27,7 +27,7 @@ type HTTPDetails struct {
 
 // SetCtxFromRequest sets HTTP details and gateway endpoint ID in the context from an
 // http.Request and returns the updated context to be used in the service
-// request lifecycle. This data is used for user app-specific request authentication.
+// request lifecycle. This data is used for gaendpoint-specific request authentication.
 func SetCtxFromRequest(ctx context.Context, req *http.Request, endpointID user.EndpointID) context.Context {
 	ctx = context.WithValue(ctx, ctxKeyHTTPDetails, HTTPDetails{
 		Method:    req.Method,

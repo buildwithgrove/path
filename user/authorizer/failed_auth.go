@@ -11,8 +11,8 @@ import (
 var failedAuthTemplate = `{"jsonrpc":"2.0","error":{"code":%d,"message":"%s"},"id":0}`
 
 var (
-	userAppNotFoundCode = http.StatusNotFound
-	userAppNotFound     = failedAuth{body: fmt.Sprintf(failedAuthTemplate, userAppNotFoundCode, "user app not found")}
+	endpointNotFoundCode = http.StatusNotFound
+	endpointNotFound     = failedAuth{body: fmt.Sprintf(failedAuthTemplate, endpointNotFoundCode, "endpoint not found")}
 )
 var (
 	userAuthFailCode           = http.StatusUnauthorized
@@ -34,7 +34,7 @@ func (r *failedAuth) GetPayload() []byte {
 }
 
 func (r *failedAuth) GetHTTPStatusCode() int {
-	return http.StatusUnauthorized
+	return http.StatusOK // The JSON-RPC 2.0
 }
 
 func (r *failedAuth) GetHTTPHeaders() map[string]string {

@@ -13,7 +13,7 @@ func Test_authAPIKey(t *testing.T) {
 	tests := []struct {
 		name           string
 		reqDetails     reqCtx.HTTPDetails
-		userApp        user.GatewayEndpoint
+		endpoint       user.GatewayEndpoint
 		expectedResult *failedAuth
 	}{
 		{
@@ -21,7 +21,7 @@ func Test_authAPIKey(t *testing.T) {
 			reqDetails: reqCtx.HTTPDetails{
 				APIKey: "validKey",
 			},
-			userApp: user.GatewayEndpoint{
+			endpoint: user.GatewayEndpoint{
 				Auth: user.Auth{
 					APIKeyRequired: true,
 					APIKey:         "validKey",
@@ -34,7 +34,7 @@ func Test_authAPIKey(t *testing.T) {
 			reqDetails: reqCtx.HTTPDetails{
 				APIKey: "",
 			},
-			userApp: user.GatewayEndpoint{
+			endpoint: user.GatewayEndpoint{
 				Auth: user.Auth{
 					APIKeyRequired: true,
 					APIKey:         "validKey",
@@ -47,7 +47,7 @@ func Test_authAPIKey(t *testing.T) {
 			reqDetails: reqCtx.HTTPDetails{
 				APIKey: "invalidKey",
 			},
-			userApp: user.GatewayEndpoint{
+			endpoint: user.GatewayEndpoint{
 				Auth: user.Auth{
 					APIKeyRequired: true,
 					APIKey:         "validKey",
@@ -60,7 +60,7 @@ func Test_authAPIKey(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
-			result := authAPIKey(test.reqDetails, test.userApp)
+			result := authAPIKey(test.reqDetails, test.endpoint)
 			c.Equal(test.expectedResult, result)
 		})
 	}

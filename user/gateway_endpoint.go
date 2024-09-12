@@ -6,7 +6,7 @@ type EndpointID string
 // A unique identifier for a user's account, which identifies the account that owns the GatewayEndpoint.
 type AccountID string
 
-// The pricing plan type for a user app's Account. Used for metering and billing purposes.
+// The pricing plan type for an Account. Used for metering and billing purposes.
 type PlanType string
 
 // A GatewayEndpoint represents a user account's endpoint, which has two primary functions:

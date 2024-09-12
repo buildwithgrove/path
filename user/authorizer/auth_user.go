@@ -9,27 +9,27 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
-type userAppAuthorizer struct {
+type endpointAuthorizer struct {
 	logger polylog.Logger
 }
 
-func newGatewayEndpointAuthorizer(logger polylog.Logger) *userAppAuthorizer {
-	return &userAppAuthorizer{
+func newGatewayEndpointAuthorizer(logger polylog.Logger) *endpointAuthorizer {
+	return &endpointAuthorizer{
 		logger: logger.With("component", "user_authorizer"),
 	}
 }
 
-func (a *userAppAuthorizer) authenticate(ctx context.Context, reqDetails reqCtx.HTTPDetails, userApp user.GatewayEndpoint) *failedAuth {
+func (a *endpointAuthorizer) authorizeRequest(ctx context.Context, reqDetails reqCtx.HTTPDetails, endpoint user.GatewayEndpoint) *failedAuth {
 
-	if failedAPIKeyAuth := authAPIKey(reqDetails, userApp); failedAPIKeyAuth != nil {
+	if failedAPIKeyAuth := authAPIKey(reqDetails, endpoint); failedAPIKeyAuth != nil {
 		return failedAPIKeyAuth
 	}
 
 	return nil
 }
 
-func authAPIKey(reqDetails reqCtx.HTTPDetails, userApp user.GatewayEndpoint) *failedAuth {
-	if apiKey, authRequired := userApp.GetAuth(); authRequired {
+func authAPIKey(reqDetails reqCtx.HTTPDetails, endpoint user.GatewayEndpoint) *failedAuth {
+	if apiKey, authRequired := endpoint.GetAuth(); authRequired {
 		if reqDetails.APIKey == "" {
 			return &userAuthFailAPIKeyRequired
 		}
