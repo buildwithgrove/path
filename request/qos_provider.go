@@ -1,7 +1,6 @@
 package request
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -28,12 +27,6 @@ const (
 )
 
 /* --------------------------------- QoS Service Provider -------------------------------- */
-
-var (
-	errNoServiceIDProvided     = errors.New("no service ID provided")
-	errServiceIDNotEnabled     = errors.New("service ID not enabled")
-	errServiceNameNotSupported = errors.New("service name not supported")
-)
 
 type (
 	qosServiceProvider struct {
