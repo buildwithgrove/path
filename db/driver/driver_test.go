@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -51,9 +50,6 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:           "secret_key_1",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeServices: {"service_1": {}},
-					},
 				},
 				"user_app_2": {
 					ID:                "user_app_2",
@@ -61,9 +57,6 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					PlanType:          "PLAN_UNLIMITED",
 					SecretKey:         "secret_key_2",
 					SecretKeyRequired: true,
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeContracts: {"contract_1": {}},
-					},
 				},
 				"user_app_3": {
 					ID:                  "user_app_3",
@@ -72,26 +65,17 @@ func Test_Integration_GetUserApps(t *testing.T) {
 					SecretKey:           "secret_key_3",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeMethods: {"method_1": {}},
-					},
 				},
 				"user_app_4": {
 					ID:                  "user_app_4",
 					AccountID:           "account_1",
 					PlanType:            "PLAN_FREE",
 					RateLimitThroughput: 30,
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeOrigins: {"origin_1": {}},
-					},
 				},
 				"user_app_5": {
 					ID:        "user_app_5",
 					AccountID: "account_2",
 					PlanType:  "PLAN_UNLIMITED",
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeUserAgents: {"user_agent_1": {}},
-					},
 				},
 			},
 		},
@@ -127,27 +111,10 @@ func Test_convertToUserApps(t *testing.T) {
 			name: "should convert rows to portal apps successfully",
 			rows: []SelectUserAppsRow{
 				{
-					ID:                "app1",
-					AccountID:         pgtype.Text{String: "acc1", Valid: true},
-					SecretKey:         pgtype.Text{String: "secret1", Valid: true},
-					SecretKeyRequired: pgtype.Bool{Bool: true, Valid: true},
-					Allowlists: json.RawMessage(`{
-						"origins": {
-							"origin_1": {}
-						},
-						"user_agents": {
-							"user_agent_1": {}
-						},
-						"services": {
-							"service_1": {}
-						},
-						"contracts": {
-							"contract_1": {}
-						},
-						"methods": {
-							"method_1": {}
-						}
-					}`),
+					ID:                  "app1",
+					AccountID:           pgtype.Text{String: "acc1", Valid: true},
+					SecretKey:           pgtype.Text{String: "secret1", Valid: true},
+					SecretKeyRequired:   pgtype.Bool{Bool: true, Valid: true},
 					Plan:                pgtype.Text{String: "plan1", Valid: true},
 					RateLimitThroughput: pgtype.Int4{Int32: 30, Valid: true},
 				},
@@ -160,32 +127,9 @@ func Test_convertToUserApps(t *testing.T) {
 					SecretKey:           "secret1",
 					SecretKeyRequired:   true,
 					RateLimitThroughput: 30,
-					Allowlists: map[user.AllowlistType]map[string]struct{}{
-						user.AllowlistTypeOrigins:    {"origin_1": {}},
-						user.AllowlistTypeUserAgents: {"user_agent_1": {}},
-						user.AllowlistTypeServices:   {"service_1": {}},
-						user.AllowlistTypeContracts:  {"contract_1": {}},
-						user.AllowlistTypeMethods:    {"method_1": {}},
-					},
 				},
 			},
 			wantErr: false,
-		},
-		{
-			name: "should return error on invalid allowlists JSON",
-			rows: []SelectUserAppsRow{
-				{
-					ID:                  "app1",
-					AccountID:           pgtype.Text{String: "acc1", Valid: true},
-					SecretKey:           pgtype.Text{String: "secret1", Valid: true},
-					SecretKeyRequired:   pgtype.Bool{Bool: true, Valid: true},
-					Allowlists:          json.RawMessage(`invalid`),
-					Plan:                pgtype.Text{String: "plan1", Valid: true},
-					RateLimitThroughput: pgtype.Int4{Int32: 30, Valid: true},
-				},
-			},
-			expected: nil,
-			wantErr:  true,
 		},
 	}
 

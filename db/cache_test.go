@@ -146,10 +146,6 @@ func getTestUserApps() map[user.UserAppID]user.UserApp {
 			SecretKey:           "secret_1",
 			SecretKeyRequired:   true,
 			RateLimitThroughput: 30,
-			Allowlists: map[user.AllowlistType]map[string]struct{}{
-				user.AllowlistTypeOrigins:   {"origin_1": {}},
-				user.AllowlistTypeContracts: {"contract_1": {}},
-			},
 		},
 		"user_app_2": {
 			ID:                "user_app_2",
@@ -157,10 +153,6 @@ func getTestUserApps() map[user.UserAppID]user.UserApp {
 			PlanType:          "PLAN_UNLIMITED",
 			SecretKey:         "secret_2",
 			SecretKeyRequired: true,
-			Allowlists: map[user.AllowlistType]map[string]struct{}{
-				user.AllowlistTypeOrigins:   {"origin_2": {}},
-				user.AllowlistTypeContracts: {"contract_2": {}},
-			},
 		},
 	}
 }
