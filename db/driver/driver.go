@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -75,11 +74,6 @@ func (d *postgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.U
 	apps := make(map[user.UserAppID]user.UserApp, len(rows))
 
 	for _, row := range rows {
-		var allowlists map[user.AllowlistType]map[string]struct{}
-		if err := json.Unmarshal(row.Allowlists, &allowlists); err != nil {
-			return nil, err
-		}
-
 		app := user.UserApp{
 			ID:                  user.UserAppID(row.ID),
 			AccountID:           user.AccountID(row.AccountID.String),
@@ -87,7 +81,6 @@ func (d *postgresDriver) convertToUserApps(rows []SelectUserAppsRow) (map[user.U
 			SecretKey:           row.SecretKey.String,
 			SecretKeyRequired:   row.SecretKeyRequired.Bool,
 			RateLimitThroughput: int(row.RateLimitThroughput.Int32),
-			Allowlists:          allowlists,
 		}
 
 		apps[app.ID] = app

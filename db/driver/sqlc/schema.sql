@@ -30,17 +30,3 @@ CREATE TABLE user_apps (
     secret_key VARCHAR(255),
     secret_key_required BOOLEAN DEFAULT FALSE
 );
-CREATE TYPE allowlist_type AS ENUM (
-    'contracts',
-    'methods',
-    'origins',
-    'services',
-    'user_agents'
-);
-CREATE TABLE user_app_allowlists (
-    id SERIAL PRIMARY KEY,
-    user_app_id VARCHAR(24) NOT NULL REFERENCES user_apps(id) ON DELETE CASCADE,
-    type allowlist_type NOT NULL,
-    value VARCHAR(255) NOT NULL,
-    UNIQUE (user_app_id, type, value)
-);

@@ -196,7 +196,7 @@ You may opt to enable user data config to unlock the ability to associate a spec
 
 This is required for:
 
-- User-specified app settings (e.g. secret key, allowlists, etc.)
+- User-specified app settings (e.g. secret key, etc.)
 - Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
 - Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
 
@@ -249,16 +249,8 @@ erDiagram
         boolean secret_key_required
     }
 
-    USER_APP_ALLOWLISTS {
-        int id
-        varchar user_app_id
-        enum allowlist_type
-        varchar value
-    }
-
     PLANS ||--o{ ACCOUNTS : "plan_type"
     ACCOUNTS ||--o{ USER_APPS : "account_id"
-    USER_APPS ||--o{ USER_APP_ALLOWLISTS : "user_app_id"
 ```
 
 A base schema is provided with the minimal tables and columns required to enable user data handling in PATH.
