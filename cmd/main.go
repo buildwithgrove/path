@@ -11,14 +11,14 @@ import (
 	morseConfig "github.com/buildwithgrove/path/config/morse"
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/db"
-	"github.com/buildwithgrove/path/db/driver"
+	"github.com/buildwithgrove/path/db/postgres"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
-	"github.com/buildwithgrove/path/user/authenticator"
+	"github.com/buildwithgrove/path/user/authorizer"
 )
 
 const configPath = ".config.yaml"
@@ -48,12 +48,12 @@ func main() {
 		Relayer:           relayer,
 	}
 	if config.IsUserDataEnabled() {
-		userReqAuthenticator, cleanup, err := getUserReqAuthenticator(config.GetUserDataConfig(), logger)
+		userReqAuthorizer, cleanup, err := getUserReqAuthorizer(config.GetUserDataConfig(), logger)
 		if err != nil {
-			panic(fmt.Sprintf("failed to create user request authenticator: %v", err))
+			panic(fmt.Sprintf("failed to create user request authorizer: %v", err))
 		}
 		defer cleanup()
-		gateway.UserRequestAuthenticator = userReqAuthenticator
+		gateway.UserRequestAuthorizer = userReqAuthorizer
 	}
 
 	apiRouter := router.NewRouter(router.RouterParams{
@@ -117,16 +117,16 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	return protocol, nil
 }
 
-func getUserReqAuthenticator(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthenticator, func() error, error) {
-	dbDriver, cleanup, err := driver.NewPostgresDriver(config.DBConnectionString)
+func getUserReqAuthorizer(config config.UserDataConfig, logger polylog.Logger) (gateway.UserRequestAuthorizer, func() error, error) {
+	dbDriver, cleanup, err := postgres.NewPostgresDriver(config.PostgresConnectionString)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create postgres driver: %v", err)
 	}
 
-	cache, err := db.NewCache(dbDriver, config.CacheRefreshInterval, logger)
+	cache, err := db.NewUserDataCache(dbDriver, config.CacheRefreshInterval, logger)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create user data cache: %v", err)
 	}
 
-	return authenticator.NewRequestAuthenticator(cache, logger), cleanup, nil
+	return authorizer.NewRequestAuthorizer(cache, logger), cleanup, nil
 }

@@ -6,7 +6,7 @@ sql:
     queries: "query.sql"
     gen:
       go:
-        package: "driver"
+        package: "postgres"
         sql_package: "pgx/v5"
         out: ".."
         emit_json_tags: true
