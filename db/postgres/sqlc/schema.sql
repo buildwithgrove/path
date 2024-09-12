@@ -20,13 +20,13 @@ CREATE TABLE plans (
         )
     )
 );
-CREATE TABLE accounts (
+CREATE TABLE user_accounts (
     id VARCHAR(24) PRIMARY KEY,
     plan_type VARCHAR(255) NOT NULL REFERENCES plans(type)
 );
-CREATE TABLE user_apps (
+CREATE TABLE gateway_endpoints (
     id VARCHAR(24) PRIMARY KEY,
-    account_id VARCHAR(24) REFERENCES accounts(id) ON DELETE CASCADE,
-    secret_key VARCHAR(255),
-    secret_key_required BOOLEAN DEFAULT FALSE
+    account_id VARCHAR(24) REFERENCES user_accounts(id) ON DELETE CASCADE,
+    api_key VARCHAR(255),
+    api_key_required BOOLEAN DEFAULT FALSE
 );

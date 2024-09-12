@@ -35,47 +35,91 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func Test_Integration_GetUserApps(t *testing.T) {
+func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected map[user.UserAppID]user.UserApp
+		expected map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
-			name: "should retrieve all user apps correctly",
-			expected: map[user.UserAppID]user.UserApp{
-				"user_app_1": {
-					ID:                  "user_app_1",
-					AccountID:           "account_1",
-					PlanType:            "PLAN_FREE",
-					SecretKey:           "secret_key_1",
-					SecretKeyRequired:   true,
-					RateLimitThroughput: 30,
+			name: "should retrieve all gateway endpoints correctly",
+			expected: map[user.EndpointID]user.GatewayEndpoint{
+				"endpoint_1": {
+					EndpointID: "endpoint_1",
+					Auth: user.Auth{
+						APIKey:         "api_key_1",
+						APIKeyRequired: true,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_1",
+						PlanType:  "PLAN_FREE",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit:     30,
+						CapacityLimit:       100000,
+						CapacityLimitPeriod: "daily",
+					},
 				},
-				"user_app_2": {
-					ID:                "user_app_2",
-					AccountID:         "account_2",
-					PlanType:          "PLAN_UNLIMITED",
-					SecretKey:         "secret_key_2",
-					SecretKeyRequired: true,
+				"endpoint_2": {
+					EndpointID: "endpoint_2",
+					Auth: user.Auth{
+						APIKey:         "api_key_2",
+						APIKeyRequired: true,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_2",
+						PlanType:  "PLAN_UNLIMITED",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit: 0,
+						CapacityLimit:   0,
+					},
 				},
-				"user_app_3": {
-					ID:                  "user_app_3",
-					AccountID:           "account_3",
-					PlanType:            "PLAN_FREE",
-					SecretKey:           "secret_key_3",
-					SecretKeyRequired:   true,
-					RateLimitThroughput: 30,
+				"endpoint_3": {
+					EndpointID: "endpoint_3",
+					Auth: user.Auth{
+						APIKey:         "api_key_3",
+						APIKeyRequired: true,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_3",
+						PlanType:  "PLAN_FREE",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit:     30,
+						CapacityLimit:       100000,
+						CapacityLimitPeriod: "daily",
+					},
 				},
-				"user_app_4": {
-					ID:                  "user_app_4",
-					AccountID:           "account_1",
-					PlanType:            "PLAN_FREE",
-					RateLimitThroughput: 30,
+				"endpoint_4": {
+					EndpointID: "endpoint_4",
+					Auth: user.Auth{
+						APIKey:         "",
+						APIKeyRequired: false,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_1",
+						PlanType:  "PLAN_FREE",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit:     30,
+						CapacityLimit:       100000,
+						CapacityLimitPeriod: "daily",
+					},
 				},
-				"user_app_5": {
-					ID:        "user_app_5",
-					AccountID: "account_2",
-					PlanType:  "PLAN_UNLIMITED",
+				"endpoint_5": {
+					EndpointID: "endpoint_5",
+					Auth: user.Auth{
+						APIKey:         "",
+						APIKeyRequired: false,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_2",
+						PlanType:  "PLAN_UNLIMITED",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit: 0,
+						CapacityLimit:   0,
+					},
 				},
 			},
 		},
@@ -93,40 +137,50 @@ func Test_Integration_GetUserApps(t *testing.T) {
 			c.NoError(err)
 			defer cleanup()
 
-			apps, err := driver.GetUserApps(context.Background())
+			endpoints, err := driver.GetGatewayEndpoints(context.Background())
 			c.NoError(err)
-			c.Equal(test.expected, apps)
+			c.Equal(test.expected, endpoints)
 		})
 	}
 }
 
-func Test_convertToUserApps(t *testing.T) {
+func Test_convertToGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
-		rows     []SelectUserAppsRow
-		expected map[user.UserAppID]user.UserApp
+		rows     []SelectGatewayEndpointsRow
+		expected map[user.EndpointID]user.GatewayEndpoint
 		wantErr  bool
 	}{
 		{
-			name: "should convert rows to portal apps successfully",
-			rows: []SelectUserAppsRow{
+			name: "should convert rows to gateway endpoints successfully",
+			rows: []SelectGatewayEndpointsRow{
 				{
-					ID:                  "app1",
-					AccountID:           pgtype.Text{String: "acc1", Valid: true},
-					SecretKey:           pgtype.Text{String: "secret1", Valid: true},
-					SecretKeyRequired:   pgtype.Bool{Bool: true, Valid: true},
-					Plan:                pgtype.Text{String: "plan1", Valid: true},
-					RateLimitThroughput: pgtype.Int4{Int32: 30, Valid: true},
+					ID:                      "endpoint_1",
+					AccountID:               pgtype.Text{String: "account_1", Valid: true},
+					ApiKey:                  pgtype.Text{String: "api_key_1", Valid: true},
+					ApiKeyRequired:          pgtype.Bool{Bool: true, Valid: true},
+					Plan:                    pgtype.Text{String: "PLAN_FREE", Valid: true},
+					RateLimitThroughput:     pgtype.Int4{Int32: 30, Valid: true},
+					RateLimitCapacity:       pgtype.Int4{Int32: 100000, Valid: true},
+					RateLimitCapacityPeriod: NullRateLimitCapacityPeriod{RateLimitCapacityPeriod: "daily", Valid: true},
 				},
 			},
-			expected: map[user.UserAppID]user.UserApp{
-				"app1": {
-					ID:                  "app1",
-					AccountID:           "acc1",
-					PlanType:            "plan1",
-					SecretKey:           "secret1",
-					SecretKeyRequired:   true,
-					RateLimitThroughput: 30,
+			expected: map[user.EndpointID]user.GatewayEndpoint{
+				"endpoint_1": {
+					EndpointID: "endpoint_1",
+					Auth: user.Auth{
+						APIKey:         "api_key_1",
+						APIKeyRequired: true,
+					},
+					UserAccount: user.UserAccount{
+						AccountID: "account_1",
+						PlanType:  "PLAN_FREE",
+					},
+					RateLimiting: user.RateLimiting{
+						ThroughputLimit:     30,
+						CapacityLimit:       100000,
+						CapacityLimitPeriod: "daily",
+					},
 				},
 			},
 			wantErr: false,
@@ -136,12 +190,12 @@ func Test_convertToUserApps(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			driver := &postgresDriver{}
-			apps, err := driver.convertToUserApps(test.rows)
+			endpoints, err := driver.convertToGatewayEndpoints(test.rows)
 			if test.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, test.expected, apps)
+				require.Equal(t, test.expected, endpoints)
 			}
 		})
 	}

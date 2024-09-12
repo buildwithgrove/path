@@ -11,21 +11,20 @@ import (
 	"github.com/buildwithgrove/path/user"
 )
 
+// cache is an in-memory cache that stores gateway endpoints and their associated data.
 type cache struct {
-	userApps             map[user.UserAppID]user.UserApp
-	db                   Driver
+	db DBDriver
+
+	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
 	cacheRefreshInterval time.Duration
 	mu                   sync.RWMutex
-	logger               polylog.Logger
+
+	logger polylog.Logger
 }
 
-type Driver interface {
-	GetUserApps(ctx context.Context) (map[user.UserAppID]user.UserApp, error)
-}
-
-func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*cache, error) {
+func NewCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*cache, error) {
 	cache := &cache{
-		userApps:             make(map[user.UserAppID]user.UserApp),
+		gatewayEndpoints:     make(map[user.EndpointID]user.GatewayEndpoint),
 		db:                   driver,
 		cacheRefreshInterval: cacheRefreshInterval,
 		mu:                   sync.RWMutex{},
@@ -41,12 +40,12 @@ func NewCache(driver Driver, cacheRefreshInterval time.Duration, logger polylog.
 	return cache, nil
 }
 
-func (c *cache) GetUserApp(ctx context.Context, userAppID user.UserAppID) (user.UserApp, bool) {
+func (c *cache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	userApp, ok := c.userApps[userAppID]
-	return userApp, ok
+	gatewayEndpoint, ok := c.gatewayEndpoints[endpointID]
+	return gatewayEndpoint, ok
 }
 
 func (c *cache) cacheRefreshHandler(ctx context.Context) {
@@ -61,13 +60,13 @@ func (c *cache) cacheRefreshHandler(ctx context.Context) {
 }
 
 func (c *cache) setCache(ctx context.Context) error {
-	userApps, err := c.db.GetUserApps(ctx)
+	gatewayEndpoints, err := c.db.GetGatewayEndpoints(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get user apps: %w", err)
+		return fmt.Errorf("failed to get gateway endpoints: %w", err)
 	}
 
 	c.mu.Lock()
-	c.userApps = userApps
+	c.gatewayEndpoints = gatewayEndpoints
 	c.mu.Unlock()
 
 	return nil
