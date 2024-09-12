@@ -15,15 +15,15 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up
 path_up: ## Run docker compose up
-	docker compose up -d path_gateway
+	docker compose -f ./docker/docker-compose.yml up -d
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build
-	docker compose up -d --build path_gateway
+	docker compose -f ./docker/docker-compose.yml up -d --build
 
 .PHONY: path_down
 path_down: ## Run docker compose down
-	docker compose down path_gateway
+	docker compose -f ./docker/docker-compose.yml down
 
 #########################
 ### Test Make Targets ###

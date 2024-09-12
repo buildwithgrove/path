@@ -59,7 +59,7 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 	return driver, cleanup, nil
 }
 
-/* ---------- UserApp Funcs ---------- */
+/* ---------- Query Funcs ---------- */
 
 func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
 	rows, err := d.Queries.SelectGatewayEndpoints(ctx)

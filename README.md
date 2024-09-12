@@ -212,15 +212,15 @@ This is required for:
 
 ### 6.1 Updated Endpoint
 
-Enabling user data will modify the endpoint for service requests to require a user app identifier at the end of the URL path.
+Enabling user data will modify the endpoint for service requests to require a gateway endpoint ID at the end of the URL path.
 
 For example:
 
 ```bash
-http://eth-mainnet.localhost:3000/v1/{user_app_id}
+http://eth-mainnet.localhost:3000/v1/{endpoint_id}
 ```
 
-The default endpoint of `/v1` will no longer function without a user app ID.
+The default endpoint of `/v1` will no longer function without a gateway endpoint ID.
 
 ### 6.2 Database Configuration
 
@@ -231,7 +231,7 @@ user_data_config:
   postgres_connection_string: "postgres://user:password@localhost:5432/database"
 ```
 
-An example Postgres Docker configuration is included in the [docker-compose.yml](./docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**
+An example Postgres Docker configuration is included in the [docker-compose.yml](./docker/docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**
 
 ### 6.3 Database Schema
 
@@ -247,20 +247,20 @@ erDiagram
         enum rate_limit_capacity_period
     }
 
-    ACCOUNTS {
+    USER_ACCOUNTS {
         varchar id
         varchar plan_type
     }
 
-    USER_APPS {
+    GATEWAY_ENDPOINTS {
         varchar id
         varchar account_id
-        varchar secret_key
-        boolean secret_key_required
+        varchar api_key
+        boolean api_key_required
     }
 
-    PLANS ||--o{ ACCOUNTS : "plan_type"
-    ACCOUNTS ||--o{ USER_APPS : "account_id"
+    PLANS ||--o{ USER_ACCOUNTS : "plan_type"
+    USER_ACCOUNTS ||--o{ GATEWAY_ENDPOINTS : "account_id"
 ```
 
 A base schema is provided with the minimal tables and columns required to enable user data handling in PATH.
