@@ -1,6 +1,3 @@
-// Package request provides a struct for setting and retrieving service
-// request details from the context during the relay request lifecycle.
-//
 // The responsibility of the `request` package is to extract the service ID and find the target service's corresponding QoS instance.
 // See: https://github.com/buildwithgrove/path/blob/e0067eb0f9ab0956127c952980b09909a795b300/gateway/gateway.go#L52C2-L52C45
 //
