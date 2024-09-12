@@ -218,7 +218,7 @@ To enable user data, you must set up a Postgres database and populate the `.conf
 
 ```yaml
 user_data_config:
-  db_connection_string: "postgres://user:password@localhost:5432/database"
+  postgres_connection_string: "postgres://user:password@localhost:5432/database"
 ```
 
 An example Postgres Docker configuration is included in the [docker-compose.yml](./docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**

@@ -46,9 +46,19 @@ type UserAccount struct {
 	PlanType PlanType
 }
 
+// The rate limiting settings for a GatewayEndpoint.
+type RateLimiting struct {
+	// ThroughputLimit refers to rate limiting per-second.
+	ThroughputLimit int
+	// CapacityLimit refers to rate limiting over longer periods, such as a day, week or month.
+	CapacityLimit int
+	// The period over which the CapacityLimit is enforced. One of `daily`, `weekly` or `monthly`.
+	CapacityLimitPeriod CapacityLimitPeriod
+}
+
 // CapacityLimitPeriod is the period over which the capacity limit is enforced.
-// For example: CapacityLimit=100,000 and CapacityLimitPeriod=monthly
-// enforces a limit of 100,000 requests per month.
+// For example: CapacityLimit=`100,000` and CapacityLimitPeriod=`daily`
+// enforces a rate limit of 100,000 requests per day.
 type CapacityLimitPeriod string
 
 const (
@@ -57,12 +67,14 @@ const (
 	CapacityLimitPeriodMonthly CapacityLimitPeriod = "monthly"
 )
 
-// The rate limiting settings for a GatewayEndpoint.
-type RateLimiting struct {
-	// The throughput rate limit for GatewayEndpoint, in requests per second.
-	ThroughputLimit int
-	// The capacity limit for GatewayEndpoint.
-	CapacityLimit int
-	// The period over which the capacity limit is enforced.
-	CapacityLimitPeriod CapacityLimitPeriod
+func (e *GatewayEndpoint) GetAuth() (string, bool) {
+	return e.Auth.APIKey, e.Auth.APIKeyRequired
+}
+
+func (e *GatewayEndpoint) GetThroughputLimit() int {
+	return e.RateLimiting.ThroughputLimit
+}
+
+func (e *GatewayEndpoint) GetCapacityLimit() (int, CapacityLimitPeriod) {
+	return e.RateLimiting.CapacityLimit, e.RateLimiting.CapacityLimitPeriod
 }
