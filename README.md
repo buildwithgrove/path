@@ -206,7 +206,7 @@ You may opt to enable user data config to unlock the ability to associate a spec
 
 This is required for:
 
-- User-specified app settings (e.g. secret key, etc.)
+- User-specified app settings (e.g. api auth keys, etc.)
 - Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
 - Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
 
@@ -217,7 +217,7 @@ Enabling user data will modify the endpoint for service requests to require a ga
 For example:
 
 ```bash
-http://eth-mainnet.localhost:3000/v1/{endpoint_id}
+http://eth-mainnet.localhost:3000/v1/{gateway_endpoint_id}
 ```
 
 The default endpoint of `/v1` will no longer function without a gateway endpoint ID.
