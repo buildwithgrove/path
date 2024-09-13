@@ -16,8 +16,8 @@ type userDataCache struct {
 	db DBDriver
 
 	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
-	cacheRefreshInterval time.Duration
 	gatewayEndpointsMu   sync.RWMutex
+	cacheRefreshInterval time.Duration
 
 	logger polylog.Logger
 }
