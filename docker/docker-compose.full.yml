@@ -7,6 +7,8 @@ services:
         IMAGE_TAG: ${IMAGE_TAG:-development}
     ports:
       # TODO_IMPROVE: Update the port to match the actual value defined in the config yaml
+      # The port is a configurable value so we should find a way to dynamically set the exposed
+      # port in the docker compose from the value set in the config YAML.
       - "3000:3000"
     extra_hosts:
       # Allows host machine to access the docker container; required if the
@@ -17,7 +19,7 @@ services:
     command: ["./path"]
     depends_on:
       - db
-    # TODO_IMPROVE: add a health check that looks for component ready states from the /healthz endpoint
+    # TODO_UPNEXT(#20): add a health check that looks for component ready states from the /healthz endpoint
 
   # This DB container is provided for local development. It is not recommended
   # for production use. Operator should set up their own secure DB instance.
