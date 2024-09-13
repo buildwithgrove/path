@@ -61,10 +61,15 @@ type Protocol struct {
 }
 
 func (p *Protocol) Name() string {
-	return "shannon-protocol"
+	return "pokt-shannon"
 }
 
-func (p *Protocol) IsReady() bool {
+func (p *Protocol) IsAlive() bool {
+	p.appCacheMu.RLock()
+	defer p.appCacheMu.RUnlock()
+	p.sessionCacheMu.RLock()
+	defer p.sessionCacheMu.RUnlock()
+
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 

@@ -81,10 +81,16 @@ type Response struct {
 // - Morse: in the relayer/morse package, and
 // - Shannon: in the relayer/shannon package.
 type Protocol interface {
-	Name() string
-	IsReady() bool
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
+	ProtocolCache
+}
+
+// ProtocolCache reports if the protocol's cache is warm,
+// i.e. if it has the required data to serve requests.
+type ProtocolCache interface {
+	Name() string
+	IsAlive() bool
 }
 
 // EndpointSelector defines the functionality that the user of a relayer needs to provide,

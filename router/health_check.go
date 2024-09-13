@@ -5,32 +5,53 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/buildwithgrove/path/relayer/morse"
+	"github.com/buildwithgrove/path/relayer/shannon"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+// HealthCheck is an interface that must be implemented
+// by components that need to report their health status
+type HealthCheck interface {
+	// Name returns the name of the component being checked.
+	Name() string
+	// IsAlive returns true if the component is healthy, otherwise false.
+	IsAlive() bool
+}
+
+// All components that implement the HealthCheck interface must be registered here.
+var _ HealthCheck = &morse.Protocol{}
+var _ HealthCheck = &shannon.Protocol{}
+
+// One of `ready` or `not_ready`.
 type healthCheckStatus string
 
 const (
-	statusReady    healthCheckStatus = "ok"
-	statusNotReady healthCheckStatus = "initializing"
+	// StatusReady indicates that all PATH components are ready
+	statusReady healthCheckStatus = "ready"
+	// StatusNotReady indicates that one or more PATH components
+	// are still initializing, ie. warming up caches, etc.
+	statusNotReady healthCheckStatus = "not_ready"
 )
 
-// HealthCheckComponent is an interface that must be implemented
-// by components that need to report their health status
-type HealthCheckComponent interface {
-	Name() string
-	IsReady() bool
-}
-
 type (
-	healthCheck struct {
-		components []HealthCheckComponent
+	// The healthChecker struct is used to check the health of all PATH
+	// components that require startup time to warm up their caches, etc.
+	healthChecker struct {
+		components []HealthCheck
 		logger     polylog.Logger
 	}
+	// healthCheckJSON is the JSON structure of the response body
+	// returned by the `/healthz` endpoint along with the status code.
 	healthCheckJSON struct {
-		Status      healthCheckStatus `json:"status"`
-		ImageTag    string            `json:"imageTag"`
-		ReadyStates map[string]bool   `json:"readyStates,omitempty"`
+		// Status is either "ready" or "not_ready". "not_ready" indicates
+		// that the service is still warming up its caches, etc.
+		Status healthCheckStatus `json:"status"`
+		// ImageTag is the semver tag of the PATH Docker image, eg. `v0.0.1`
+		// Will default to `development` if not set in the image.
+		ImageTag string `json:"imageTag"`
+		// ReadyStates is a map of component names to their ready status
+		ReadyStates map[string]bool `json:"readyStates,omitempty"`
 	}
 )
 
@@ -41,7 +62,7 @@ type (
 //
 // The image tag is set to the value of the IMAGE_TAG environment variable, which is
 // passed to the Docker image as a build argument at build time.
-func (c *healthCheck) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
+func (c *healthChecker) healthzHandler(w http.ResponseWriter, req *http.Request) {
 	readyStates := c.getComponentReadyStates()
 	status := getStatus(readyStates)
 
@@ -62,7 +83,8 @@ func (c *healthCheck) healthCheckHandler(w http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (c *healthCheck) getHealthCheckResponse(status healthCheckStatus, readyStates map[string]bool) []byte {
+// getHealthCheckResponse returns the health check JSON response body as bytes
+func (c *healthChecker) getHealthCheckResponse(status healthCheckStatus, readyStates map[string]bool) []byte {
 	imageTag := os.Getenv(imageTagEnvVar)
 	if imageTag == "" {
 		imageTag = defaultImageTag
@@ -81,14 +103,16 @@ func (c *healthCheck) getHealthCheckResponse(status healthCheckStatus, readyStat
 	return responseBytes
 }
 
-func (c *healthCheck) getComponentReadyStates() map[string]bool {
+// getComponentReadyStates returns a map of component names to their ready status
+func (c *healthChecker) getComponentReadyStates() map[string]bool {
 	readyStates := make(map[string]bool)
 	for _, component := range c.components {
-		readyStates[component.Name()] = component.IsReady()
+		readyStates[component.Name()] = component.IsAlive()
 	}
 	return readyStates
 }
 
+// getStatus returns false if any component is not ready, otherwise true
 func getStatus(readyStates map[string]bool) healthCheckStatus {
 	for _, ready := range readyStates {
 		if !ready {

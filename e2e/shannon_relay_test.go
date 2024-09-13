@@ -41,7 +41,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-// TODO_IMPROVE: use gocuke (github.com/regen-network/gocuke) for defining and running E2E tests.
 func Test_ShannonRelay(t *testing.T) {
 	tests := []struct {
 		name         string

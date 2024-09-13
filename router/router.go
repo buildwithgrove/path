@@ -17,38 +17,51 @@ const (
 
 type (
 	router struct {
-		mux         *http.ServeMux
-		gateway     gateway
-		healthCheck *healthCheck
-		config      config.RouterConfig
-		logger      polylog.Logger
+		mux           *http.ServeMux
+		gateway       gateway
+		healthChecker *healthChecker
+
+		config config.RouterConfig
+
+		logger polylog.Logger
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
 )
 
+type RouterParams struct {
+	Gateway                 gateway
+	HealthCheckerComponents []HealthCheck
+
+	Config config.RouterConfig
+
+	Logger polylog.Logger
+}
+
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, healthCheckComponents []HealthCheckComponent, config config.RouterConfig, logger polylog.Logger) *router {
+func NewRouter(params RouterParams) *router {
 	r := &router{
 		mux:     http.NewServeMux(),
-		gateway: gateway,
-		healthCheck: &healthCheck{
-			components: healthCheckComponents,
-			logger:     logger,
+		gateway: params.Gateway,
+		healthChecker: &healthChecker{
+			components: params.HealthCheckerComponents,
+			logger:     params.Logger,
 		},
-		config: config,
-		logger: logger.With("package", "router"),
+
+		config: params.Config,
+
+		logger: params.Logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
 }
 
 func (r *router) handleRoutes() {
-	// GET /healthz - handleHealthz returns a simple health check response
-	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthCheck.healthCheckHandler))
+	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
+	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.healthzHandler))
 
 	// * /v1 - handles service requests
 	r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
