@@ -9,6 +9,8 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
+# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
+
 #############################
 ### Run Path Make Targets ###
 #############################
