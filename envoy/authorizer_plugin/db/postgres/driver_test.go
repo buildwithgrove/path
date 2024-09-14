@@ -1,3 +1,5 @@
+//go:build authorizer_plugin
+
 package postgres
 
 import (
@@ -16,7 +18,7 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/path-authorizer/user"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 var connectionString string

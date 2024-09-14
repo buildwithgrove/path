@@ -1,3 +1,5 @@
+//go:build authorizer_plugin
+
 package user
 
 // A unique identifier for a user account's endpoint. It must be passed as the last path segment of the service request URL.

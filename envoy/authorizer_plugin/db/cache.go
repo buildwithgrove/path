@@ -1,3 +1,5 @@
+//go:build authorizer_plugin
+
 package db
 
 import (
@@ -8,7 +10,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path-authorizer/user"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 // userDataCache is an in-memory cache that stores gateway endpoints and their associated data.

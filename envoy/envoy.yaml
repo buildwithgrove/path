@@ -4,7 +4,7 @@ static_resources:
       address:
         socket_address:
           address: 0.0.0.0
-          port_value: 8080  # Ensure this matches your desired port
+          port_value: 8080
       filter_chains:
         - filters:
             - name: envoy.filters.network.http_connection_manager
@@ -19,9 +19,9 @@ static_resources:
                   - name: envoy.filters.http.golang
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                      library_id: path-authorizer
+                      library_id: authorizer-plugin
                       library_path: "/lib/authorizer.so"
-                      plugin_name: path-authorizer
+                      plugin_name: authorizer-plugin
                       plugin_config:
                         "@type": type.googleapis.com/xds.type.v3.TypedStruct
                         value:

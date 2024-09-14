@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY ./envoy .
 WORKDIR /app/authorizer_plugin
-RUN GOFLAGS=-buildvcs=false go build -o /app/lib/path-authorizer.so -buildmode=c-shared *.go
+RUN GOFLAGS=-buildvcs=false go build -tags authorizer_plugin -o /app/lib/path-authorizer.so -buildmode=c-shared *.go
 
 FROM envoyproxy/envoy:contrib-v1.30-latest
 

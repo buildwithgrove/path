@@ -1,3 +1,5 @@
+//go:build authorizer_plugin
+
 package postgres
 
 import (
@@ -7,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/buildwithgrove/path-authorizer/db"
-	"github.com/buildwithgrove/path-authorizer/user"
+	"github.com/buildwithgrove/authorizer-plugin/db"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 // The postgresDriver struct satisfies the db.Driver interface defined in the db package.

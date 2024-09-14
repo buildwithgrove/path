@@ -1,9 +1,11 @@
+//go:build authorizer_plugin
+
 package db
 
 import (
 	"context"
 
-	"github.com/buildwithgrove/path-authorizer/user"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 // DBDriver is a general purpose interface that must be implemented by any database (e.g. postgres, sqlite, MySQL, etc) driver.
