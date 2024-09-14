@@ -23,17 +23,17 @@ services:
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
     command: ["./path"]
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - path_network
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 40s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - path_network
 
   # This DB container is provided for local development. It is not recommended
   # for production use. Operator should set up their own secure DB instance.
@@ -45,9 +45,9 @@ services:
       - 5432:5432
     volumes:
       # Initializes the database with the minimum required tables from the base schema.
-      - ./envoy/authorizer/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./envoy/authorizer_plugin/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
       # For local development, persist the database data in a .gitignore'd tmp directory.
-      - ./envoy/authorizer/tmp/db:/var/lib/postgresql/data
+      - ./tmp/db:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: pgpassword
       POSTGRES_DB: postgres

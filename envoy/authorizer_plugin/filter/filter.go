@@ -1,17 +1,19 @@
+//go:build authorizer_plugin
+
 package filter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ardikabs/gonvoy"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
-	"github.com/buildwithgrove/path-authorizer/db"
-	"github.com/buildwithgrove/path-authorizer/db/postgres"
-	"github.com/buildwithgrove/path-authorizer/filter/handler"
-	"github.com/buildwithgrove/path-authorizer/user"
+	"github.com/buildwithgrove/authorizer-plugin/db"
+	"github.com/buildwithgrove/authorizer-plugin/db/postgres"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 const (
@@ -19,6 +21,25 @@ const (
 	cacheRefreshInterval     = 1 * time.Minute
 )
 
+type cache interface {
+	GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool)
+}
+
+type Config struct {
+	ParentOnly     string            `json:"parent_only,omitempty"`
+	RequestHeaders map[string]string `json:"request_headers,omitempty" envoy:"mergeable,preserve_root"`
+	Invalid        bool              `json:"invalid,omitempty" envoy:"mergeable"`
+}
+
+func (c *Config) Validate() error {
+	if c.Invalid {
+		return errors.New("invalid is enabled, hence this error returned")
+	}
+
+	return nil
+}
+
+// TODO_IMPROVE: figure out how to pass to handler struct to avoid global variable
 var globalCache cache
 
 func init() {
@@ -33,6 +54,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
 	globalCache = cache
 
 	gonvoy.RunHttpFilter(new(Filter), gonvoy.ConfigOptions{
@@ -41,16 +63,12 @@ func init() {
 	})
 }
 
-type cache interface {
-	GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool)
-}
-
 type Filter struct{}
 
 var _ gonvoy.HttpFilter = &Filter{}
 
 func (f *Filter) Name() string {
-	return "path-authorizer"
+	return "authorizer-plugin"
 }
 
 func (f *Filter) OnBegin(c gonvoy.RuntimeContext, ctrl gonvoy.HttpFilterController) error {
@@ -60,7 +78,7 @@ func (f *Filter) OnBegin(c gonvoy.RuntimeContext, ctrl gonvoy.HttpFilterControll
 		return fmt.Errorf("unexpected configuration type %T, expecting %T", fcfg, cfg)
 	}
 
-	ctrl.AddHandler(&handler.Handler{Cache: globalCache})
+	ctrl.AddHandler(&AuthorizationHandler{})
 
 	return nil
 }

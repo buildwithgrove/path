@@ -1,11 +1,12 @@
+//go:build authorizer_plugin
+
 package main
 
 import (
-	_ "github.com/buildwithgrove/path-authorizer/db"
-	_ "github.com/buildwithgrove/path-authorizer/db/postgres"
-	_ "github.com/buildwithgrove/path-authorizer/filter"
-	_ "github.com/buildwithgrove/path-authorizer/filter/handler"
-	_ "github.com/buildwithgrove/path-authorizer/user"
+	_ "github.com/buildwithgrove/authorizer-plugin/db"
+	_ "github.com/buildwithgrove/authorizer-plugin/db/postgres"
+	_ "github.com/buildwithgrove/authorizer-plugin/filter"
+	_ "github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 func main() {}

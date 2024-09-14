@@ -1,35 +1,31 @@
-package handler
+//go:build authorizer_plugin
+
+package filter
 
 import (
-	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/ardikabs/gonvoy"
-	"github.com/buildwithgrove/path-authorizer/user"
+
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
-type Handler struct {
+type AuthorizationHandler struct {
 	gonvoy.PassthroughHttpFilterHandler
-	Cache cache
 }
 
-type cache interface {
-	GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool)
-}
+const jsonError = `{"code":%d,"message":"%s"}`
 
-func (h *Handler) OnRequestHeader(c gonvoy.Context) error {
-	if h.Cache == nil {
-		return fmt.Errorf("cache is not initialized")
-	}
-
+func (h *AuthorizationHandler) OnRequestHeader(c gonvoy.Context) error {
 	req := c.Request()
 
 	endpointID := user.EndpointID(extractV1Path(req.URL.Path))
 
-	gatewayEndpoint, ok := h.Cache.GetGatewayEndpoint(req.Context(), endpointID)
+	gatewayEndpoint, ok := globalCache.GetGatewayEndpoint(req.Context(), endpointID)
 	if !ok {
-		return fmt.Errorf("gateway endpoint not found")
+		return c.JSON(http.StatusNotFound, []byte(fmt.Sprintf(jsonError, http.StatusNotFound, fmt.Sprintf("endpoint %s not found", endpointID))), nil)
 	}
 
 	c.RequestHeader().Add("x-endpoint-id", string(gatewayEndpoint.EndpointID))
@@ -40,7 +36,7 @@ func (h *Handler) OnRequestHeader(c gonvoy.Context) error {
 	return nil
 }
 
-func (h *Handler) OnResponseHeader(c gonvoy.Context) error {
+func (h *AuthorizationHandler) OnResponseHeader(c gonvoy.Context) error {
 	return nil
 }
 
