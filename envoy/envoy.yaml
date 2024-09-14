@@ -16,6 +16,16 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
+                  - name: envoy.filters.http.golang
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+                      library_id: path-authorizer
+                      library_path: "/lib/authorizer.so"
+                      plugin_name: path-authorizer
+                      plugin_config:
+                        "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                        value:
+                          parent_only: parent-bar
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -35,19 +45,12 @@ static_resources:
                             prefix: "/v1"
                           route:
                             cluster: path_gateway_service
-                            prefix_rewrite: "/v1"
-            - name: envoy.filters.http.golang
-              typed_config:
-                "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                library_id: go-simple-extension
-                library_path: "/lib/filter.so"
-                plugin_name: myfilter
-                plugin_config:
-                  "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                  value:
-                    parent_only: parent-bar
-                    request_headers:
-                      foo: bar
+                            regex_rewrite:
+                              pattern:
+                                google_re2: {}
+                                regex: "^/v1/(.*)"
+                              substitution: "/v1"
+
   clusters:
     - name: path_gateway_service
       connect_timeout: 0.25s
@@ -62,4 +65,3 @@ static_resources:
                     socket_address:
                       address: path_gateway
                       port_value: 3000
-                      

@@ -1,4 +1,19 @@
 services:
+  envoy_proxy:
+    container_name: envoy_proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy
+    ports:
+      - "8080:8080"
+    depends_on:
+      path_gateway:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - path_network
+
   path_gateway:
     container_name: path_gateway
     build:
@@ -8,6 +23,9 @@ services:
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
     command: ["./path"]
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - path_network
     healthcheck:
@@ -17,16 +35,26 @@ services:
       retries: 5
       start_period: 40s
 
-  envoy:
-    image: envoyproxy/envoy:v1.28.6
-    container_name: envoy
-    volumes:
-      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
+  # This DB container is provided for local development. It is not recommended
+  # for production use. Operator should set up their own secure DB instance.
+  db:
+    image: postgres:latest
+    container_name: db
+    restart: always
     ports:
-      - "8080:8080"
-    depends_on:
-      path_gateway:
-        condition: service_healthy
+      - 5432:5432
+    volumes:
+      # Initializes the database with the minimum required tables from the base schema.
+      - ./envoy/authorizer/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      # For local development, persist the database data in a .gitignore'd tmp directory.
+      - ./envoy/authorizer/tmp/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: pgpassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+      retries: 3
     networks:
       - path_network
 

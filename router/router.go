@@ -135,5 +135,13 @@ func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
 // * - /v1 - handleServiceRequest sets the request ID and HTTP details in the request context
 // from the HTTP request and passes it to the gateway handler, which processes the request.
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
+
+	// TEMP DEBUG
+	fmt.Println("Request headers: x-endpoint-id=", req.Header.Get("x-endpoint-id"))
+	fmt.Println("Request headers: x-account-id=", req.Header.Get("x-account-id"))
+	fmt.Println("Request headers: x-plan=", req.Header.Get("x-plan"))
+	fmt.Println("Request headers: x-rate-limit-throughput=", req.Header.Get("x-rate-limit-throughput"))
+	// TEMP DEBUG
+
 	r.gateway.HandleHTTPServiceRequest(req.Context(), req, w)
 }
