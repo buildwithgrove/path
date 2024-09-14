@@ -36,7 +36,18 @@ static_resources:
                           route:
                             cluster: path_gateway_service
                             prefix_rewrite: "/v1"
-
+            - name: envoy.filters.http.golang
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+                library_id: go-simple-extension
+                library_path: "/lib/filter.so"
+                plugin_name: myfilter
+                plugin_config:
+                  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                  value:
+                    parent_only: parent-bar
+                    request_headers:
+                      foo: bar
   clusters:
     - name: path_gateway_service
       connect_timeout: 0.25s
