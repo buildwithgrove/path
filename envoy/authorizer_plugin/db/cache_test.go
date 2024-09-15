@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 func Test_GetGatewayEndpoint(t *testing.T) {

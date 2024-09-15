@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 var connectionString string

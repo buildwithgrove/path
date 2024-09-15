@@ -19,8 +19,8 @@ go.work.sum
 
 # Config
 .config.yaml
+.config.authorizer.yaml
 .config.test.yaml
-.config.plugin.yaml
 
 # Macos
 .DS_Store
