@@ -9,14 +9,6 @@ RUN GOFLAGS=-buildvcs=false go build -tags authorizer_plugin -o /app/lib/path-au
 
 FROM envoyproxy/envoy:contrib-v1.30-latest
 
-ENV DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | tee /etc/apt/apt.conf.d/keep-cache \
-    && apt-get -qq update -y \
-    && apt-get -qq install --no-install-recommends -y curl
-
 COPY --from=builder /app/lib/path-authorizer.so /lib/authorizer.so
 COPY --from=builder /app/authorizer_plugin/.config.authorizer.yaml /etc/authorizer.yaml
 ENV CONFIG_PATH=/etc/authorizer.yaml
