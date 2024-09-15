@@ -4,8 +4,10 @@ go 1.23.0
 
 toolchain go1.23.1
 
+replace github.com/commoddity/gonvoy v0.0.3-dev => ../../../gonvoy
+
 require (
-	github.com/commoddity/gonvoy v0.0.1-dev
+	github.com/commoddity/gonvoy v0.0.3-dev
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-network/poktroll v0.0.8
