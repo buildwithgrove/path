@@ -14,8 +14,8 @@ github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK3
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b h1:ga8SEFjZ60pxLcmhnThWgvH2wg8376yUJmPhEH4H3kw=
 github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b/go.mod h1:W+zGtBO5Y1IgJhy4+A9GOqVhqLpfZi+vwmdNXUehLA8=
-github.com/commoddity/gonvoy v0.0.1-dev h1:Y8KNElM11ur5uEWxk0+zO1UqKU5+WykfB7LjeQY2e1A=
-github.com/commoddity/gonvoy v0.0.1-dev/go.mod h1:amFlkzPuG6+Moz0yrIpt49x2jciQ2GO3WL+W6kOTPrY=
+github.com/commoddity/gonvoy v0.0.3-dev h1:2y/KS8HSt+7IxD9UM3ePZtDP9bak1GsDReyvbRJtODg=
+github.com/commoddity/gonvoy v0.0.3-dev/go.mod h1:amFlkzPuG6+Moz0yrIpt49x2jciQ2GO3WL+W6kOTPrY=
 github.com/containerd/continuity v0.4.3 h1:6HVkalIp+2u1ZLH1J/pYX2oBVXlJZvh1X1A7bEZ9Su8=
 github.com/containerd/continuity v0.4.3/go.mod h1:F6PTNCKepoxEaXLQp3wDAjygEnImnZ/7o4JzpodfroQ=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
