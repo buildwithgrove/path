@@ -5,7 +5,6 @@ package filter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ardikabs/gonvoy"
@@ -20,6 +19,8 @@ const (
 	postgresConnectionString = "postgres://postgres:pgpassword@db:5432/postgres?sslmode=disable"
 	cacheRefreshInterval     = 1 * time.Minute
 )
+
+const filterName = "authorizer-plugin"
 
 type cache interface {
 	GetGatewayEndpoint(ctx context.Context, userAppID user.EndpointID) (user.GatewayEndpoint, bool)
@@ -39,9 +40,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// TODO_IMPROVE: figure out how to pass to handler struct to avoid global variable
-var globalCache cache
-
 func init() {
 	logger := polyzero.NewLogger()
 
@@ -55,30 +53,29 @@ func init() {
 		panic(err)
 	}
 
-	globalCache = cache
+	filterFactory := func() gonvoy.HttpFilter {
+		return &Filter{
+			cache: cache,
+		}
+	}
 
-	gonvoy.RunHttpFilter(new(Filter), gonvoy.ConfigOptions{
+	gonvoy.RunHttpFilter(filterName, filterFactory, gonvoy.ConfigOptions{
 		FilterConfig:            new(Config),
 		DisableStrictBodyAccess: true,
 	})
 }
 
-type Filter struct{}
+type Filter struct {
+	cache cache
+}
 
 var _ gonvoy.HttpFilter = &Filter{}
 
-func (f *Filter) Name() string {
-	return "authorizer-plugin"
-}
-
 func (f *Filter) OnBegin(c gonvoy.RuntimeContext, ctrl gonvoy.HttpFilterController) error {
-	fcfg := c.GetFilterConfig()
-	cfg, ok := fcfg.(*Config)
-	if !ok {
-		return fmt.Errorf("unexpected configuration type %T, expecting %T", fcfg, cfg)
-	}
 
-	ctrl.AddHandler(&AuthorizationHandler{})
+	ctrl.AddHandler(&AuthorizationHandler{
+		cache: f.cache,
+	})
 
 	return nil
 }
