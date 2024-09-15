@@ -1,0 +1,2 @@
+postgres_connection_string: "postgres://postgres:pgpassword@db:5432/postgres?sslmode=disable"
+cache_refresh_interval: 5m

@@ -1,5 +1,3 @@
-//go:build authorizer_plugin
-
 package postgres
 
 import (
@@ -61,8 +59,9 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 	return driver, cleanup, nil
 }
 
-/* ---------- UserApp Funcs ---------- */
+/* ---------- Query Funcs ---------- */
 
+// GetGatewayEndpoints retrieves all GatewayEndpoints from the database and returns them as a map.
 func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
 	rows, err := d.Queries.SelectGatewayEndpoints(ctx)
 	if err != nil {
@@ -72,6 +71,8 @@ func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.Endp
 	return d.convertToGatewayEndpoints(rows)
 }
 
+// convertToGatewayEndpoints converts a slice of the SelectGatewayEndpointsRow struct fetched from
+// the database to a map of the user.GatewayEndpoint struct that is used throughout the repo.
 func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[user.EndpointID]user.GatewayEndpoint, error) {
 	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
 
