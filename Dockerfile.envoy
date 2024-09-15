@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get -qq install --no-install-recommends -y curl
 
 COPY --from=builder /app/lib/path-authorizer.so /lib/authorizer.so
-COPY --from=builder /app/authorizer_plugin/.config.plugin.yaml /etc/authorizer.yaml
+COPY --from=builder /app/authorizer_plugin/.config.authorizer.yaml /etc/authorizer.yaml
 ENV CONFIG_PATH=/etc/authorizer.yaml
 
 COPY --from=builder /app/envoy.yaml /etc/envoy.yaml
