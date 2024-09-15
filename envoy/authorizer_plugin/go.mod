@@ -4,6 +4,8 @@ go 1.23.0
 
 toolchain go1.23.1
 
+replace github.com/ardikabs/gonvoy v0.3.5 => ../../../envoy-examples/gonvoy
+
 require (
 	github.com/ardikabs/gonvoy v0.3.5
 	github.com/jackc/pgx/v5 v5.7.1
@@ -27,7 +29,7 @@ require (
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/envoyproxy/envoy v1.29.4 // indirect
+	github.com/envoyproxy/envoy v1.30.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect

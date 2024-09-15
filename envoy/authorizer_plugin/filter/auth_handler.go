@@ -14,6 +14,7 @@ import (
 
 type AuthorizationHandler struct {
 	gonvoy.PassthroughHttpFilterHandler
+	cache cache
 }
 
 const jsonError = `{"code":%d,"message":"%s"}`
@@ -23,7 +24,7 @@ func (h *AuthorizationHandler) OnRequestHeader(c gonvoy.Context) error {
 
 	endpointID := user.EndpointID(extractV1Path(req.URL.Path))
 
-	gatewayEndpoint, ok := globalCache.GetGatewayEndpoint(req.Context(), endpointID)
+	gatewayEndpoint, ok := h.cache.GetGatewayEndpoint(req.Context(), endpointID)
 	if !ok {
 		return c.JSON(http.StatusNotFound, []byte(fmt.Sprintf(jsonError, http.StatusNotFound, fmt.Sprintf("endpoint %s not found", endpointID))), nil)
 	}
