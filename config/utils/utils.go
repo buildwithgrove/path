@@ -30,10 +30,3 @@ func IsValidURL(s string) bool {
 	}
 	return u.Scheme == "http" || u.Scheme == "https"
 }
-
-// IsValidDBConnectionString checks if a string is a valid PostgreSQL connection string.
-func IsValidDBConnectionString(s string) bool {
-	// Regular expression to match a valid PostgreSQL connection string
-	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
-	return dbConnStringRegex.MatchString(s)
-}

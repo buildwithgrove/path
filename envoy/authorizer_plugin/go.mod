@@ -4,15 +4,14 @@ go 1.23.0
 
 toolchain go1.23.1
 
-replace github.com/ardikabs/gonvoy v0.3.5 => ../../../envoy-examples/gonvoy
-
 require (
-	github.com/ardikabs/gonvoy v0.3.5
+	github.com/commoddity/gonvoy v0.0.1-dev
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-network/poktroll v0.0.8
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -63,5 +62,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240709173604-40e1e62336c5 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

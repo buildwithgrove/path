@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ardikabs/gonvoy"
+	"github.com/commoddity/gonvoy"
 
 	"github.com/buildwithgrove/authorizer-plugin/user"
 )
 
 type AuthorizationHandler struct {
 	gonvoy.PassthroughHttpFilterHandler
-	cache cache
+	cache userDataCache
 }
 
 const jsonError = `{"code":%d,"message":"%s"}`
@@ -28,6 +28,8 @@ func (h *AuthorizationHandler) OnRequestHeader(c gonvoy.Context) error {
 	if !ok {
 		return c.JSON(http.StatusNotFound, []byte(fmt.Sprintf(jsonError, http.StatusNotFound, fmt.Sprintf("endpoint %s not found", endpointID))), nil)
 	}
+
+	// TODO_NEXT - implement authorization logic
 
 	c.RequestHeader().Add("x-endpoint-id", string(gatewayEndpoint.EndpointID))
 	c.RequestHeader().Add("x-account-id", string(gatewayEndpoint.UserAccount.AccountID))

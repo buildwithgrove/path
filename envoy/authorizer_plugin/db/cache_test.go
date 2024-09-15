@@ -1,5 +1,3 @@
-//go:build authorizer_plugin
-
 package db
 
 import (
@@ -11,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/authorizer-plugin/user"
+	"github.com/buildwithgrove/path/user"
 )
 
 func Test_GetGatewayEndpoint(t *testing.T) {
@@ -103,14 +101,14 @@ func Test_cacheRefreshHandler(t *testing.T) {
 	}
 }
 
-func Test_setCache(t *testing.T) {
+func Test_updateCache(t *testing.T) {
 	tests := []struct {
 		name       string
 		mockReturn map[user.EndpointID]user.GatewayEndpoint
 		expected   map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
-			name:       "should set cache with gateway endpoints",
+			name:       "should update cache with gateway endpoints",
 			mockReturn: map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 			expected:   map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 		},
@@ -132,7 +130,7 @@ func Test_setCache(t *testing.T) {
 			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
-			err = cache.setCache(context.Background())
+			err = cache.updateCache(context.Background())
 			c.NoError(err)
 			c.Equal(test.expected, cache.gatewayEndpoints)
 		})

@@ -1,5 +1,3 @@
-//go:build authorizer_plugin
-
 package db
 
 import (
