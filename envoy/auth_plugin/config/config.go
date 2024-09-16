@@ -1,3 +1,5 @@
+//go:build auth_plugin
+
 package config
 
 import (

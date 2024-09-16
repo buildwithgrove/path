@@ -4,13 +4,13 @@ FROM golang:1.23.1 AS builder
 WORKDIR /app
 
 COPY ./envoy .
-WORKDIR /app/authorizer_plugin
-RUN GOFLAGS=-buildvcs=false go build -tags authorizer_plugin -o /app/lib/authorizer_plugin.so -buildmode=c-shared *.go
+WORKDIR /app/auth_plugin
+RUN GOFLAGS=-buildvcs=false go build -tags auth_plugin -o /app/lib/auth_plugin.so -buildmode=c-shared *.go
 
-FROM envoyproxy/envoy:contrib-v1.30-latest
+FROM envoyproxy/envoy:contrib-v1.31-latest
 
-COPY --from=builder /app/lib/authorizer_plugin.so /lib/authorizer.so
-COPY --from=builder /app/authorizer_plugin/.config.authorizer.yaml /etc/authorizer.yaml
+COPY --from=builder /app/lib/auth_plugin.so /lib/authorizer.so
+COPY --from=builder /app/auth_plugin/.config.authorizer.yaml /etc/authorizer.yaml
 ENV CONFIG_PATH=/etc/authorizer.yaml
 
 COPY --from=builder /app/envoy.yaml /etc/envoy.yaml
