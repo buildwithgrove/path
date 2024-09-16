@@ -47,16 +47,17 @@ func getErrString(err errorResponse) string {
 
 // Sync Errors - these errors are used to stop the filter chain by returning a api.StatusType, which is returned by DecodeHeaders
 
-func sendErrPathNotProvided(callbacks api.FilterProcessCallbacks) api.StatusType {
+func sendErrPathNotProvided(callbacks api.FilterCallbackHandler) api.StatusType {
 	return sendErrResponse(callbacks, errPathNotProvided)
 }
 
-func sendErrEndpointIDNotProvided(callbacks api.FilterProcessCallbacks) api.StatusType {
+func sendErrEndpointIDNotProvided(callbacks api.FilterCallbackHandler) api.StatusType {
 	return sendErrResponse(callbacks, errEndpointIDNotProvided)
 }
 
-func sendErrResponse(callbacks api.FilterProcessCallbacks, err errorResponse) api.StatusType {
-	callbacks.SendLocalReply(err.code, getErrString(err), nil, 0, "if endpoint not found, return 404")
+func sendErrResponse(callbacks api.FilterCallbackHandler, err errorResponse) api.StatusType {
+	decoderCallbacks := callbacks.DecoderFilterCallbacks()
+	decoderCallbacks.SendLocalReply(err.code, getErrString(err), nil, 0, "")
 	return api.LocalReply
 }
 
@@ -77,6 +78,5 @@ func sendAsyncErrAPIKeyInvalid(callbacks api.FilterCallbackHandler) {
 
 func sendAsyncErrResponse(callbacks api.FilterCallbackHandler, err errorResponse) {
 	decoderCallbacks := callbacks.DecoderFilterCallbacks()
-	decoderCallbacks.SendLocalReply(err.code, getErrString(err), nil, 0, "if endpoint not found, return 404")
-	decoderCallbacks.Continue(api.LocalReply)
+	decoderCallbacks.SendLocalReply(err.code, getErrString(err), nil, 0, "")
 }
