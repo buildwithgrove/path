@@ -9,9 +9,9 @@ RUN GOFLAGS=-buildvcs=false go build -tags auth_plugin -o /app/lib/auth_plugin.s
 
 FROM envoyproxy/envoy:contrib-v1.31-latest
 
-COPY --from=builder /app/lib/auth_plugin.so /lib/authorizer.so
-COPY --from=builder /app/auth_plugin/.config.authorizer.yaml /etc/authorizer.yaml
-ENV CONFIG_PATH=/etc/authorizer.yaml
+COPY --from=builder /app/lib/auth_plugin.so /lib/auth_plugin.so
+COPY --from=builder /app/auth_plugin/.config.auth_plugin.yaml /etc/auth_plugin.yaml
+ENV CONFIG_PATH=/etc/auth_plugin.yaml
 
 COPY --from=builder /app/envoy.yaml /etc/envoy.yaml
 

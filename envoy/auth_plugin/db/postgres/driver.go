@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/buildwithgrove/authorizer-plugin/db"
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/db"
+	"github.com/buildwithgrove/auth-plugin/types"
 )
 
 // The postgresDriver struct satisfies the db.Driver interface defined in the db package.

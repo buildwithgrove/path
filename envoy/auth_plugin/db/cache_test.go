@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/types"
 )
 
 func Test_GetGatewayEndpoint(t *testing.T) {
@@ -56,7 +56,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
-			gatewayEndpoint, found := cache.GetGatewayEndpoint(context.Background(), test.endpointID)
+			gatewayEndpoint, found := cache.GetGatewayEndpoint(test.endpointID)
 			c.Equal(test.found, found)
 			c.Equal(test.expected, gatewayEndpoint)
 		})

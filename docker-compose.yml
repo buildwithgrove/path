@@ -45,7 +45,7 @@ services:
       - 5432:5432
     volumes:
       # Initializes the database with the minimum required tables from the base schema.
-      - ./envoy/authorizer_plugin/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./envoy/auth_plugin/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
       # For local development, persist the database data in a .gitignore'd tmp directory.
       - ./tmp/db:/var/lib/postgresql/data
     environment:

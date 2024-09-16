@@ -17,7 +17,7 @@ func Test_LoadAuthorizerPluginConfigFromYAML(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "should load valid authorizer plugin config without error",
+			name:     "should load valid auth plugin config without error",
 			filePath: "./testdata/plugin.example.yaml",
 			want: AuthorizerPluginConfig{
 				PostgresConnectionString: "postgres://user:password@localhost:5432/database",
