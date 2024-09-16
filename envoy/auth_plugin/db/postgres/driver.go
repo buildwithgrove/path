@@ -1,3 +1,5 @@
+//go:build auth_plugin
+
 package postgres
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/buildwithgrove/authorizer-plugin/db"
-	"github.com/buildwithgrove/authorizer-plugin/user"
+	"github.com/buildwithgrove/authorizer-plugin/types"
 )
 
 // The postgresDriver struct satisfies the db.Driver interface defined in the db package.
@@ -62,7 +64,7 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 /* ---------- Query Funcs ---------- */
 
 // GetGatewayEndpoints retrieves all GatewayEndpoints from the database and returns them as a map.
-func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
+func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[types.EndpointID]types.GatewayEndpoint, error) {
 	rows, err := d.Queries.SelectGatewayEndpoints(ctx)
 	if err != nil {
 		return nil, err
@@ -72,25 +74,25 @@ func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.Endp
 }
 
 // convertToGatewayEndpoints converts a slice of the SelectGatewayEndpointsRow struct fetched from
-// the database to a map of the user.GatewayEndpoint struct that is used throughout the repo.
-func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[user.EndpointID]user.GatewayEndpoint, error) {
-	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
+// the database to a map of the types.GatewayEndpoint struct that is used throughout the repo.
+func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[types.EndpointID]types.GatewayEndpoint, error) {
+	gatewayEndpoints := make(map[types.EndpointID]types.GatewayEndpoint, len(rows))
 
 	for _, row := range rows {
-		gatewayEndpoint := user.GatewayEndpoint{
-			EndpointID: user.EndpointID(row.ID),
-			Auth: user.Auth{
+		gatewayEndpoint := types.GatewayEndpoint{
+			EndpointID: types.EndpointID(row.ID),
+			Auth: types.Auth{
 				APIKey:         row.ApiKey.String,
 				APIKeyRequired: row.ApiKeyRequired.Bool,
 			},
-			UserAccount: user.UserAccount{
-				AccountID: user.AccountID(row.AccountID.String),
-				PlanType:  user.PlanType(row.Plan.String),
+			UserAccount: types.UserAccount{
+				AccountID: types.AccountID(row.AccountID.String),
+				PlanType:  types.PlanType(row.Plan.String),
 			},
-			RateLimiting: user.RateLimiting{
+			RateLimiting: types.RateLimiting{
 				ThroughputLimit:     int(row.RateLimitThroughput.Int32),
 				CapacityLimit:       int(row.RateLimitCapacity.Int32),
-				CapacityLimitPeriod: user.CapacityLimitPeriod(row.RateLimitCapacityPeriod.RateLimitCapacityPeriod),
+				CapacityLimitPeriod: types.CapacityLimitPeriod(row.RateLimitCapacityPeriod.RateLimitCapacityPeriod),
 			},
 		}
 

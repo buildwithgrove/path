@@ -1,3 +1,5 @@
+//go:build auth_plugin
+
 package db
 
 import (
@@ -8,14 +10,14 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/authorizer-plugin/user"
+	"github.com/buildwithgrove/authorizer-plugin/types"
 )
 
 // userDataCache is an in-memory cache that stores gateway endpoints and their associated data.
 type userDataCache struct {
 	db DBDriver
 
-	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
+	gatewayEndpoints     map[types.EndpointID]types.GatewayEndpoint
 	gatewayEndpointsMu   sync.RWMutex
 	cacheRefreshInterval time.Duration
 
@@ -26,7 +28,7 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 	cache := &userDataCache{
 		db: driver,
 
-		gatewayEndpoints:     make(map[user.EndpointID]user.GatewayEndpoint),
+		gatewayEndpoints:     make(map[types.EndpointID]types.GatewayEndpoint),
 		cacheRefreshInterval: cacheRefreshInterval,
 		gatewayEndpointsMu:   sync.RWMutex{},
 
@@ -42,7 +44,7 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 	return cache, nil
 }
 
-func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
+func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID types.EndpointID) (types.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 

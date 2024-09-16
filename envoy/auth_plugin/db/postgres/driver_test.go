@@ -1,3 +1,5 @@
+//go:build auth_plugin
+
 package postgres
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/authorizer-plugin/user"
+	"github.com/buildwithgrove/authorizer-plugin/types"
 )
 
 var connectionString string
@@ -29,22 +31,22 @@ func TestMain(m *testing.M) {
 func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected map[user.EndpointID]user.GatewayEndpoint
+		expected map[types.EndpointID]types.GatewayEndpoint
 	}{
 		{
 			name: "should retrieve all gateway endpoints correctly",
-			expected: map[user.EndpointID]user.GatewayEndpoint{
+			expected: map[types.EndpointID]types.GatewayEndpoint{
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "api_key_1",
 						APIKeyRequired: true,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -52,30 +54,30 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_2": {
 					EndpointID: "endpoint_2",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "api_key_2",
 						APIKeyRequired: true,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit: 0,
 						CapacityLimit:   0,
 					},
 				},
 				"endpoint_3": {
 					EndpointID: "endpoint_3",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "api_key_3",
 						APIKeyRequired: true,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_3",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -83,15 +85,15 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_4": {
 					EndpointID: "endpoint_4",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "",
 						APIKeyRequired: false,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -99,15 +101,15 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_5": {
 					EndpointID: "endpoint_5",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "",
 						APIKeyRequired: false,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit: 0,
 						CapacityLimit:   0,
 					},
@@ -139,7 +141,7 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
 		rows     []SelectGatewayEndpointsRow
-		expected map[user.EndpointID]user.GatewayEndpoint
+		expected map[types.EndpointID]types.GatewayEndpoint
 		wantErr  bool
 	}{
 		{
@@ -156,18 +158,18 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 					RateLimitCapacityPeriod: NullRateLimitCapacityPeriod{RateLimitCapacityPeriod: "daily", Valid: true},
 				},
 			},
-			expected: map[user.EndpointID]user.GatewayEndpoint{
+			expected: map[types.EndpointID]types.GatewayEndpoint{
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
-					Auth: user.Auth{
+					Auth: types.Auth{
 						APIKey:         "api_key_1",
 						APIKeyRequired: true,
 					},
-					UserAccount: user.UserAccount{
+					UserAccount: types.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: user.RateLimiting{
+					RateLimiting: types.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",

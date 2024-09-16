@@ -3,6 +3,8 @@
 //   sqlc v1.25.0
 // source: query.sql
 
+//go:build auth_plugin
+
 package postgres
 
 import (
