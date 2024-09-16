@@ -17,7 +17,7 @@ import (
 
 	gomock "go.uber.org/mock/gomock"
 	
-	types "github.com/buildwithgrove/authorizer-plugin/types"
+	types "github.com/buildwithgrove/auth-plugin/types"
 )
 
 // MockDBDriver is a mock of DBDriver interface.

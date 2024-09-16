@@ -15,7 +15,7 @@ const defaultCacheRefreshInterval = 5 * time.Minute
 
 /* ---------------------------------  Authorizer Plugin Config Struct -------------------------------- */
 
-// AuthorizerPluginConfig contains the configuration for the authorizer plugin.
+// AuthorizerPluginConfig contains the configuration for the authorize plugin.
 type AuthorizerPluginConfig struct {
 	PostgresConnectionString string        `yaml:"postgres_connection_string"`
 	CacheRefreshInterval     time.Duration `yaml:"cache_refresh_interval"`

@@ -5,7 +5,7 @@ package db
 import (
 	"context"
 
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/types"
 )
 
 // DBDriver is a general purpose interface that must be implemented by any database (e.g. postgres, sqlite, MySQL, etc) driver.

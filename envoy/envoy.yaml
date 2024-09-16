@@ -19,9 +19,9 @@ static_resources:
                   - name: envoy.filters.http.golang
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                      library_id: authorizer-plugin
-                      library_path: "/lib/authorizer.so"
-                      plugin_name: authorizer-plugin
+                      library_id: auth-plugin
+                      library_path: "/lib/auth_plugin.so"
+                      plugin_name: auth-plugin
                       plugin_config:
                         "@type": type.googleapis.com/xds.type.v3.TypedStruct
                         value:
@@ -65,4 +65,3 @@ static_resources:
                     socket_address:
                       address: path_gateway
                       port_value: 3000
-                      

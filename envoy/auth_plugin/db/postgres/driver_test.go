@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/types"
 )
 
 var connectionString string

@@ -10,7 +10,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/types"
 )
 
 // userDataCache is an in-memory cache that stores gateway endpoints and their associated data.
@@ -44,7 +44,7 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 	return cache, nil
 }
 
-func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID types.EndpointID) (types.GatewayEndpoint, bool) {
+func (c *userDataCache) GetGatewayEndpoint(endpointID types.EndpointID) (types.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 

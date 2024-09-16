@@ -1,4 +1,4 @@
-module github.com/buildwithgrove/authorizer-plugin
+module github.com/buildwithgrove/auth-plugin
 
 go 1.23.0
 
