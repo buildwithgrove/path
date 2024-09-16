@@ -65,3 +65,4 @@ static_resources:
                     socket_address:
                       address: path_gateway
                       port_value: 3000
+                      
