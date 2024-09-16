@@ -3,7 +3,6 @@
 package filter
 
 import (
-	"context"
 	"os"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
@@ -13,16 +12,10 @@ import (
 	"github.com/buildwithgrove/authorizer-plugin/config"
 	"github.com/buildwithgrove/authorizer-plugin/db"
 	"github.com/buildwithgrove/authorizer-plugin/db/postgres"
-	"github.com/buildwithgrove/authorizer-plugin/types"
+	"github.com/buildwithgrove/authorizer-plugin/filter"
 )
 
 const filterName = "authorizer-plugin"
-
-type (
-	userDataCache interface {
-		GetGatewayEndpoint(ctx context.Context, userAppID types.EndpointID) (types.GatewayEndpoint, bool)
-	}
-)
 
 func init() {
 	logger := polyzero.NewLogger()
@@ -48,16 +41,18 @@ func init() {
 	}
 
 	filterFactoryFunc := func(c interface{}, callbacks api.FilterCallbackHandler) api.StreamFilter {
-		conf, ok := c.(*envoyConfig)
+		conf, ok := c.(*filter.EnvoyConfig)
 		if !ok {
 			panic("unexpected config type")
 		}
-		return &filter{
-			callbacks: callbacks,
-			config:    conf,
-			cache:     cache,
+		return &filter.HTTPFilter{
+			Cache:     cache,
+			Callbacks: callbacks,
+			Config:    conf,
 		}
 	}
 
-	envoyhttp.RegisterHttpFilterFactoryAndConfigParser(filterName, filterFactoryFunc, &parser{})
+	envoyhttp.RegisterHttpFilterFactoryAndConfigParser(filterName, filterFactoryFunc, &filter.Parser{})
 }
+
+func main() {}
