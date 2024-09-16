@@ -139,7 +139,6 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 	// TEMP DEBUG
 	fmt.Println("Request headers: x-endpoint-id=", req.Header.Get("x-endpoint-id"))
 	fmt.Println("Request headers: x-account-id=", req.Header.Get("x-account-id"))
-	fmt.Println("Request headers: x-plan=", req.Header.Get("x-plan"))
 	fmt.Println("Request headers: x-rate-limit-throughput=", req.Header.Get("x-rate-limit-throughput"))
 	// TEMP DEBUG
 

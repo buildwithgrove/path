@@ -11,25 +11,39 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
-// The callbacks in the filter, like `DecodeHeaders`, can be implemented on demand.
-// Because api.PassThroughStreamFilter provides a default implementation.
+// The HTTPFilter struct implements the Envoy filter interface and is responsible
+// for authorizing and settings headers for requests to the PATH service.
 type HTTPFilter struct {
 	api.PassThroughStreamFilter
 
 	Callbacks api.FilterCallbackHandler
 	Config    *EnvoyConfig
-	Cache     userDataCache
+
+	Cache userDataCache
 }
 
+// The userDataCache contains an in-memory cache of GatewayEndpoints
+// and their associated data from the connected Postgres database.
 type userDataCache interface {
-	GetGatewayEndpoint(ctx context.Context, userAppID types.EndpointID) (types.GatewayEndpoint, bool)
+	GetGatewayEndpoint(context.Context, types.EndpointID) (types.GatewayEndpoint, bool)
 }
 
-// Callbacks which are called in request path
-// The endStream is true if the request doesn't have body
-func (f *HTTPFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
-	path, ok := header.Get(":path")
-	if !ok || path == "" {
+/* --------------------------------- DecodeHeaders -------------------------------- */
+
+// All processing of the request headers is done in DecodeHeaders. This includes:
+//
+// - extracting the endpoint ID from the path
+//
+// - performing authorization checks on the request
+//
+// - setting the appropriate headers (x-endpoint-id, x-account-id, x-rate-limit-throughput)
+//
+// - continuing the filter chain or sending an error response
+//
+// endStream is true if the request doesn't have a body.
+func (f *HTTPFilter) DecodeHeaders(req api.RequestHeaderMap, endStream bool) api.StatusType {
+	path := req.Path()
+	if path == "" {
 		return sendErrPathNotProvided(f.Callbacks.DecoderFilterCallbacks())
 	}
 
@@ -50,24 +64,50 @@ func (f *HTTPFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) 
 	go func() {
 		defer f.Callbacks.DecoderFilterCallbacks().RecoverPanic()
 
+		// TODO_IMPROVE - move all auth handling to own files/structs
+
+		// First, get the gateway endpoint from the cache and return an error if not found
 		gatewayEndpoint, ok := f.Cache.GetGatewayEndpoint(context.Background(), endpointID)
 		if !ok {
-			sendAsyncErrResponse(f.Callbacks.DecoderFilterCallbacks(), errEndpointNotFound)
+			sendAsyncErrEndpointNotFound(f.Callbacks)
 		}
 
-		header.Set("x-endpoint-id", string(gatewayEndpoint.EndpointID))
-		header.Set("x-account-id", string(gatewayEndpoint.UserAccount.AccountID))
-		header.Set("x-plan", string(gatewayEndpoint.UserAccount.PlanType))
-		header.Set("x-rate-limit-throughput", fmt.Sprintf("%d", gatewayEndpoint.RateLimiting.ThroughputLimit))
+		// Then, check if the API key is required and valid
+		if apiKey, authRequired := gatewayEndpoint.GetAuth(); authRequired {
 
-		// Continue the filter
+			// If the API key is required, check if it is provided in the req auth header
+			reqAPIKey, ok := req.Get("Authorization")
+			if !ok || reqAPIKey == "" {
+				sendAsyncErrAPIKeyRequired(f.Callbacks)
+			}
+
+			// If the API key in the req header does not match the endpoint's API key, return an error
+			if reqAPIKey != apiKey {
+				sendAsyncErrAPIKeyInvalid(f.Callbacks)
+			}
+		}
+
+		// Set endpoint ID in the headers
+		req.Set("x-endpoint-id", string(gatewayEndpoint.EndpointID))
+		req.Set("x-account-id", string(gatewayEndpoint.UserAccount.AccountID))
+
+		// Set rate limiting headers if the gateway endpoint has a throughput limit
+		if gatewayEndpoint.RateLimiting.ThroughputLimit > 0 {
+			req.Set("x-rate-limit-throughput", fmt.Sprintf("%d", gatewayEndpoint.RateLimiting.ThroughputLimit))
+		}
+
+		// Continue the filter and forward the request to the PATH service
 		f.Callbacks.DecoderFilterCallbacks().Continue(api.Continue)
 	}()
 
-	// suspend the filter
+	// suspend the filter while the background goroutine that handles GatewayEndpoint auth is running
 	return api.Running
 }
 
+// extractEndpointID extracts the endpoint ID from the URL path.
+// The endpoint ID is the part of the path after "/v1/" and is used to identify the GatewayEndpoint.
+//
+// TODO_IMPROVE - see if there is a better way to extract the endpoint ID from the path.
 func extractEndpointID(urlPath string) (types.EndpointID, bool) {
 	const prefix = "/v1/"
 	if strings.HasPrefix(urlPath, prefix) {
@@ -76,7 +116,7 @@ func extractEndpointID(urlPath string) (types.EndpointID, bool) {
 	return "", false
 }
 
-/* --------------------------------- Unused -------------------------------- */
+/* --------------------------------- Unused - Only to satisfy interface -------------------------------- */
 
 // DecodeData might be called multiple times during handling the request body.
 // The endStream is true when handling the last piece of the body.

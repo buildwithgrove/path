@@ -16,7 +16,7 @@ type Parser struct{}
 
 // Parse the filter configuration. We can call the ConfigCallbackHandler to control the filter's
 // behavior
-func (p *parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
+func (p *Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
 	configStruct := &xds.TypedStruct{}
 	if err := any.UnmarshalTo(configStruct); err != nil {
 		return nil, err
