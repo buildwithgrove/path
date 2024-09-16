@@ -8,12 +8,11 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-type envoyConfig struct {
+type EnvoyConfig struct {
 	echoBody string
 }
 
-type parser struct {
-}
+type Parser struct{}
 
 // Parse the filter configuration. We can call the ConfigCallbackHandler to control the filter's
 // behavior
@@ -24,7 +23,7 @@ func (p *parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (int
 	}
 
 	// v := configStruct.Value
-	conf := &envoyConfig{}
+	conf := &EnvoyConfig{}
 	// prefix, ok := v.AsMap()["prefix_localreply_body"]
 	// if !ok {
 	// 	return nil, errors.New("missing prefix_localreply_body")
@@ -38,9 +37,9 @@ func (p *parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (int
 }
 
 // Merge configuration from the inherited parent configuration
-func (p *parser) Merge(parent interface{}, child interface{}) interface{} {
-	parentConfig := parent.(*envoyConfig)
-	childConfig := child.(*envoyConfig)
+func (p *Parser) Merge(parent interface{}, child interface{}) interface{} {
+	parentConfig := parent.(*EnvoyConfig)
+	childConfig := child.(*EnvoyConfig)
 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
@@ -49,16 +48,3 @@ func (p *parser) Merge(parent interface{}, child interface{}) interface{} {
 	}
 	return &newConfig
 }
-
-func filterFactory(c interface{}, callbacks api.FilterCallbackHandler) api.StreamFilter {
-	conf, ok := c.(*envoyConfig)
-	if !ok {
-		panic("unexpected config type")
-	}
-	return &filter{
-		callbacks: callbacks,
-		config:    conf,
-	}
-}
-
-func main() {}
