@@ -37,7 +37,15 @@ It provides various tools and libraries to streamline the integration and intera
 
 ## Path Releases
 
-Path releases provide a Docker image you can start using right away to bootstrap your Path gateway without the need of building your own image. Head over to [releases](https://github.com/buildwithgrove/path/releases) to download it.
+Path releases provide a Docker image you can start using right away to bootstrap your Path gateway without the need of building your own image. Images are available in our [Packages](https://github.com/buildwithgrove/path/pkgs/container/path) page. You can pull them directly using the following command:
+
+```sh
+docker pull ghcr.io/buildwithgrove/path
+```
+
+Additionally, our releases contain additional information about what's up with updates/fixes. Head over to [releases](https://github.com/buildwithgrove/path/releases) to check them out.
+
+
 
 ## Quickstart (Shannon)
 
