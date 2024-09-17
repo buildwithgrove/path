@@ -2,7 +2,7 @@ services:
   path_gateway:
     container_name: path_gateway
     build:
-      context: ..
+      context: .
       args:
         IMAGE_TAG: ${IMAGE_TAG:-development}
     ports:
