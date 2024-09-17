@@ -29,15 +29,21 @@ type (
 	}
 )
 
+type RouterParams struct {
+	Gateway gateway
+	Config  config.RouterConfig
+	Logger  polylog.Logger
+}
+
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, config config.RouterConfig, logger polylog.Logger) *router {
+func NewRouter(params RouterParams) *router {
 	r := &router{
 		mux:     http.NewServeMux(),
-		gateway: gateway,
-		config:  config,
-		logger:  logger.With("package", "router"),
+		gateway: params.Gateway,
+		config:  params.Config,
+		logger:  params.Logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
@@ -52,7 +58,7 @@ func (r *router) handleRoutes() {
 }
 
 // Start starts the API server on the specified port
-func (r *router) Start(ctx context.Context) error {
+func (r *router) Start() error {
 	server := &http.Server{
 		Addr:           fmt.Sprintf(":%d", r.config.Port),
 		Handler:        r.mux,
