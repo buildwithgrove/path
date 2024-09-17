@@ -15,10 +15,18 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up
 path_up: ## Run docker compose up
-	docker compose up -d
+	docker compose up -d --no-deps path_gateway
 
 .PHONY: path_up_build
 path_up_build: ## Run docker compose up with build
+	docker compose up -d --build --no-deps path_gateway
+
+.PHONY: path_up_auth
+path_up_auth: ## Run docker compose up with auth
+	docker compose up -d
+
+.PHONY: path_up_build_auth
+path_up_build_auth: ## Run docker compose up with build and auth
 	docker compose up -d --build
 
 .PHONY: path_down

@@ -49,8 +49,9 @@ type Authorizer interface {
 /* --------------------------------- Service Request Processing -------------------------------- */
 
 const (
-	reqHeaderEndpointID = "x-endpoint-id"
-	reqHeaderThroughput = "x-rate-limit-throughput"
+	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
+	reqHeaderRateLimitEndpointID = "x-rl-endpoint-id" // Set only on service requests that should be rate limited
+	reqHeaderRateLimitThroughput = "x-rl-throughput"  // Set only on service requests that should be rate limited
 )
 
 // All processing of the service request is done in DecodeHeaders. This includes:
@@ -59,7 +60,7 @@ const (
 //
 // - performing authorization checks on the request
 //
-// - setting the appropriate headers (x-endpoint-id, x-account-id, x-rate-limit-throughput)
+// - setting the appropriate headers (x-endpoint-id, x-rl-endpoint-id, x-rl-throughput)
 //
 // - sending an error response if the request is not valid
 //
@@ -143,7 +144,8 @@ func (f *HTTPFilter) setHeaders(req api.RequestHeaderMap, gatewayEndpoint types.
 
 	// Set rate limit headers if the gateway endpoint should be rate limited
 	if gatewayEndpoint.RateLimiting.ThroughputLimit > 0 {
-		req.Set(reqHeaderThroughput, fmt.Sprintf("%d", gatewayEndpoint.RateLimiting.ThroughputLimit))
+		req.Set(reqHeaderRateLimitEndpointID, string(gatewayEndpoint.EndpointID))
+		req.Set(reqHeaderRateLimitThroughput, fmt.Sprintf("%d", gatewayEndpoint.RateLimiting.ThroughputLimit))
 	}
 }
 
