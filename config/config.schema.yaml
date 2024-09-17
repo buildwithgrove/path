@@ -144,15 +144,5 @@ properties:
       idle_timeout:
         type: string
 
-  # User Data Configuration (optional)
-  user_data_config:
-    type: object
-    properties:
-      postgres_connection_string:
-        type: string
-        pattern: "^(postgres)://.*$"
-      cache_refresh_interval:
-        type: string
-
 required:
   - services

@@ -28,9 +28,6 @@ type (
 
 		Services map[relayer.ServiceID]ServiceConfig `yaml:"services"`
 		Router   RouterConfig                        `yaml:"router_config"`
-		// UserDataConfig is optional and only used if user data handling is enabled
-		// for the gateway by setting the 'user_data_config' field in the config YAML file.
-		UserData *UserDataConfig `yaml:"user_data_config"`
 
 		// A map from human readable aliases (e.g. eth-mainnet) to service ID (e.g. 0021)
 		serviceAliases map[string]relayer.ServiceID
@@ -57,9 +54,6 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 	// hydrate required fields and set defaults for optional fields
 	config.hydrateServiceAliases()
 	config.hydrateRouterConfig()
-	if config.IsUserDataEnabled() {
-		config.hydrateUserDataConfig()
-	}
 
 	return config, config.validate()
 }
@@ -76,15 +70,6 @@ func (c GatewayConfig) GetMorseConfig() *morse.MorseGatewayConfig {
 
 func (c GatewayConfig) GetRouterConfig() RouterConfig {
 	return c.Router
-}
-
-// UserDataEnabled returns true if user data handling is enabled for the Gateway.
-func (c GatewayConfig) IsUserDataEnabled() bool {
-	return c.UserData != nil
-}
-
-func (c GatewayConfig) GetUserDataConfig() *UserDataConfig {
-	return c.UserData
 }
 
 // GetServiceIDFromAlias retrieves the ServiceID associated with a given service alias.
@@ -127,10 +112,6 @@ func (c *GatewayConfig) hydrateRouterConfig() {
 	c.Router.hydrateRouterDefaults()
 }
 
-func (c *GatewayConfig) hydrateUserDataConfig() {
-	c.UserData.hydrateDefaults()
-}
-
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */
 
 func (c GatewayConfig) validate() error {
@@ -139,11 +120,6 @@ func (c GatewayConfig) validate() error {
 	}
 	if err := c.validateServiceConfig(); err != nil {
 		return err
-	}
-	if c.IsUserDataEnabled() {
-		if err := c.UserData.validate(); err != nil {
-			return err
-		}
 	}
 
 	return nil

@@ -16,10 +16,6 @@
   - [4.2 Start the Container](#42-start-the-container)
 - [5. E2E Tests](#5-e2e-tests)
   - [5.1 Running Tests](#51-running-tests)
-- [6. User Data](#6-user-data)
-  - [6.1 Updated Endpoint](#61-updated-endpoint)
-  - [6.2 Database Configuration](#62-database-configuration)
-  - [6.3 Database Schema](#63-database-schema)
 
 ## 1. Introduction
 
@@ -98,10 +94,6 @@ The configuration is divided into several sections:
 
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
-
-5. **User Data Configuration (`user_data_config`)**:
-   - _Required only if the gateway operator wishes to associate user data with requests._
-   - Configures the PostgreSQL database connection string.
 
 ### 3.2 Example Configuration Format
 
@@ -197,74 +189,3 @@ make test_unit
 # Shannon E2E test only
 make test_e2e_shannon_relay
 ```
-
-## 6. User Data
-
-By default, PATH does not associate user data with service requests (i.e. relays).
-
-You may opt to enable user data config to unlock the ability to associate a specific user with a particular service request.
-
-This is required for:
-
-- User-specified app settings (e.g. api auth keys, etc.)
-- Metering and billing of service requests (e.g. charging users $2 per 1 million requests)
-- Rate limiting of service requests by throughput (e.g. 30 req / second) and/or capacity (e.g. 1M req / month)
-
-### 6.1 Updated Endpoint
-
-Enabling user data will modify the endpoint for service requests to require a gateway endpoint ID at the end of the URL path.
-
-For example:
-
-```bash
-http://eth-mainnet.localhost:3000/v1/{gateway_endpoint_id}
-```
-
-The default endpoint of `/v1` will no longer function without a gateway endpoint ID.
-
-### 6.2 Database Configuration
-
-To enable user data, you must set up a Postgres database and populate the `.config.yaml` file's `user_data_config` field with the connection string.
-
-```yaml
-user_data_config:
-  postgres_connection_string: "postgres://user:password@localhost:5432/database"
-```
-
-An example Postgres Docker configuration is included in the [docker-compose.yml](./docker/docker-compose.yml) file at the root of this repository. **However, this configuration is not recommended for production use.**
-
-### 6.3 Database Schema
-
-[Base Schema SQL File](./db/driver/sqlc/schema.sql)
-
-```mermaid
-erDiagram
-    PLANS {
-        int id
-        varchar type
-        int rate_limit_throughput
-        int rate_limit_capacity
-        enum rate_limit_capacity_period
-    }
-
-    USER_ACCOUNTS {
-        varchar id
-        varchar plan_type
-    }
-
-    GATEWAY_ENDPOINTS {
-        varchar id
-        varchar account_id
-        varchar api_key
-        boolean api_key_required
-    }
-
-    PLANS ||--o{ USER_ACCOUNTS : "plan_type"
-    USER_ACCOUNTS ||--o{ GATEWAY_ENDPOINTS : "account_id"
-```
-
-A base schema is provided with the minimal tables and columns required to enable user data handling in PATH.
-
-These tables should not be modified; instead, any additional functionality required by the gateway operator for managing user data should be added by extending the base tables and columns provided in this schema.
-
-For example, it is up to the gateway operator to decide how they wish to manage their gateway's user data, user accounts, subscription plans, authentication, etc.
