@@ -8,18 +8,18 @@ on:
 
 env:
   GO_VERSION: "1.22.3"
-  RUNNER: "ubuntu-22.04"
+  LINUX_VERSION: "ubuntu-22.04"
 
 jobs:
   linter:
     name: Run golangci-lint
-    runs-on: ${RUNNER}
+    runs-on: $LINUX_VERSION
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ${GO_VERSION}
+          go-version: $GO_VERSION
 
       - name: Setup Git Authentication
         run: |
@@ -33,13 +33,13 @@ jobs:
 
   unit-testing:
     name: Run unit tests
-    runs-on: ${RUNNER}
+    runs-on: $LINUX_VERSION
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ${GO_VERSION}
+          go-version: $GO_VERSION
 
       - name: Setup Git Authentication
         run: |
@@ -50,7 +50,7 @@ jobs:
 
   test-docker-build:
     name: Test build of Docker image
-    runs-on: ${RUNNER}
+    runs-on: $LINUX_VERSION
     steps:
       - uses: docker/build-push-action@v2
         with:
@@ -62,14 +62,14 @@ jobs:
           tags: test-build
 
   e2e-testing:
-    runs-on: ${RUNNER}
+    runs-on: $LINUX_VERSION
     steps:
       - uses: actions/checkout@v4
       
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${GO_VERSION}
+          go-version: $GO_VERSION
 
       - name: copy E2E config
         run: make copy_test_config
@@ -87,7 +87,7 @@ jobs:
       - linter
       - unit-testing
       - e2e-testing
-    runs-on: ${RUNNER}
+    runs-on: $LINUX_VERSION
     steps:
       - name: Checkout project
         uses: actions/checkout@v3
