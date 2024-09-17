@@ -13,10 +13,10 @@
   - [Configuration File](#configuration-file)
     - [Example Configuration Format](#example-configuration-format)
 - [Running PATH](#running-path)
-  - [Setup Config YAML](#setup-config-yaml)
-  - [Start the Container](#start-the-container)
+    - [Setup Config YAML](#setup-config-yaml)
+    - [Start the Container](#start-the-container)
 - [E2E Tests](#e2e-tests)
-  - [Running Tests](#running-tests)
+    - [Running Tests](#running-tests)
 
 ## Introduction
 
@@ -32,9 +32,9 @@ It provides various tools and libraries to streamline the integration and intera
 
 2. Populate Config File
 
-   Run `make copy_config` to copy the example configuration file to `cmd/.config.yaml`.
+   Run `make copy_config` to copy the example configuration file to `cmd/path/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
+   Update the configuration file `cmd/path/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
    \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
    to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
