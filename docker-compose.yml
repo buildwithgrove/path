@@ -1,28 +1,20 @@
 services:
-  envoy_proxy:
-    container_name: envoy_proxy
-    build:
-      context: .
-      dockerfile: Dockerfile.envoy
-    ports:
-      - "8080:8080"
-    depends_on:
-      path_gateway:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    networks:
-      - path_network
-
+  # ---------- PATH Gateway Service ----------
+  # This is the main PATH service that handles service requests.
+  #
+  # It sits behind the Envoy proxy.
   path_gateway:
     container_name: path_gateway
     build:
       context: .
       args:
         IMAGE_TAG: ${IMAGE_TAG:-development}
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
-    command: ["./path"]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
       interval: 30s
@@ -35,12 +27,76 @@ services:
     networks:
       - path_network
 
-  # This DB container is provided for local development. It is not recommended
+  # ---------- Envoy Proxy ----------
+  # This is the Envoy proxy that sits in front of the PATH Gateway Service.
+  #
+  # This container is built from `Dockerfile.envoy`, which:
+  # - mounts the Envoy configuration YAML
+  # - builds & mounts the Go Auth Plugin 
+  #
+  # Request Authorization and Rate Limiting is handled by the Envoy proxy.
+  # - Authorization is handled by the Go Auth Plugin, mounted in the Envoy image.
+  # - Rate limiting is handled by the `ratelimit` container.
+  envoy_proxy:
+    container_name: envoy_proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy
+    ports:
+      - "3001:3001"
+    depends_on:
+      path_gateway:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - path_network
+
+  # ---------- Envoy Rate Limiting Service ----------
+  # The Envoy Rate Limiting Service is used to rate limit service requests.
+  #
+  # It is used in conjunction with the Envoy proxy to handle request rate limiting.
+  #
+  # It connects to a Redis instance to coordinate rate limit among all services.
+  ratelimit:
+    container_name: ratelimit
+    image: envoyproxy/ratelimit:master
+    command: /bin/ratelimit
+    expose:
+      - "8081"
+    volumes:
+      - ./envoy/ratelimit.yaml:/data/ratelimit/config/config.yaml
+    environment:
+      - USE_STATSD=false
+      - LOG_LEVEL=error
+      - REDIS_SOCKET_TYPE=tcp
+      - REDIS_URL=redis:6379
+      - RUNTIME_ROOT=/data
+      - RUNTIME_SUBDIRECTORY=ratelimit
+      - RUNTIME_WATCH_ROOT=false
+      - CONFIG_TYPE=FILE
+    depends_on:
+      path_gateway:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - path_network
+
+  # ---------- Postgres DB ----------
+  # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
+  # user-specific authorization settings and rate limiting. 
+  #
+  # It is connected to by the Go Auth Plugin which runs in the `envoy_proxy` container.
+  #
+  # NOTE - This DB container is provided for local development. It is not recommended
   # for production use. Operator should set up their own secure DB instance.
   db:
     image: postgres:latest
     container_name: db
     restart: always
+    expose:
+      - "5432"
     ports:
       - 5432:5432
     volumes:
@@ -58,5 +114,21 @@ services:
     networks:
       - path_network
 
+  # ---------- Redis Cache ----------
+  # The Redis Cache is used to coordinate rate limiting among all services.
+  # It is used in conjunction with the Envoy Rate Limiting Service.
+  redis:
+    container_name: redis
+    image: redis:alpine
+    expose:
+      - "6379"
+    networks:
+      - path_network
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      retries: 3
+
+# ---------- Docker Network ----------
 networks:
   path_network:

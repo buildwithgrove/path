@@ -15,4 +15,4 @@ ENV CONFIG_PATH=/etc/auth_plugin.yaml
 
 COPY --from=builder /app/envoy.yaml /etc/envoy.yaml
 
-CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy.yaml"]
+CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy.yaml", "--log-level", "error"]
