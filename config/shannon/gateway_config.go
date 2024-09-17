@@ -28,5 +28,7 @@ func (c *ShannonGatewayConfig) UnmarshalYAML(value *yaml.Node) error {
 
 // validate checks if the configuration is valid after loading it from the YAML file.
 func (c ShannonGatewayConfig) Validate() error {
+	// TODO_IMPROVE: implement YAML validation for all fields in the config,
+	// including regex for GRPC host/port, etc.
 	return c.FullNodeConfig.Validate()
 }

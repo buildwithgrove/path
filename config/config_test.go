@@ -67,9 +67,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
 				},
-				UserData: UserDataConfig{
-					DBConnectionString: "postgres://user:password@localhost:5432/database",
-				},
 				serviceAliases: map[string]relayer.ServiceID{
 					"eth-mainnet": "0021",
 				},
@@ -107,9 +104,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					ReadTimeout:        5000 * time.Millisecond,
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
-				},
-				UserData: UserDataConfig{
-					DBConnectionString: "postgres://user:password@localhost:5432/database",
 				},
 				serviceAliases: map[string]relayer.ServiceID{
 					"eth-mainnet": "0021",
@@ -309,7 +303,6 @@ func Test_GetServiceIDFromAlias(t *testing.T) {
 
 func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	c.Equal(want.Router, got.Router)
-	c.Equal(want.UserData, got.UserData)
 	if want.MorseConfig != nil {
 		compareMorseFullNodeConfig(c, want.MorseConfig.FullNodeConfig, got.MorseConfig.FullNodeConfig)
 		c.Equal(want.MorseConfig.SignedAATs, got.MorseConfig.SignedAATs)

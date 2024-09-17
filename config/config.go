@@ -28,7 +28,6 @@ type (
 
 		Services map[relayer.ServiceID]ServiceConfig `yaml:"services"`
 		Router   RouterConfig                        `yaml:"router_config"`
-		UserData UserDataConfig                      `yaml:"user_data_config"`
 
 		// A map from human readable aliases (e.g. eth-mainnet) to service ID (e.g. 0021)
 		serviceAliases map[string]relayer.ServiceID
@@ -71,10 +70,6 @@ func (c GatewayConfig) GetMorseConfig() *morse.MorseGatewayConfig {
 
 func (c GatewayConfig) GetRouterConfig() RouterConfig {
 	return c.Router
-}
-
-func (c GatewayConfig) GetUserDataConfig() UserDataConfig {
-	return c.UserData
 }
 
 // GetServiceIDFromAlias retrieves the ServiceID associated with a given service alias.

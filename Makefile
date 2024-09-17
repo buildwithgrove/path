@@ -46,8 +46,8 @@ test_e2e_shannon_relay: ## Run an E2E shannon relay test
 
 .PHONY: copy_config
 copy_config: ## copies the example configuration yaml file to .gitignored .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./cmd/path/.config.yaml ]; then \
+		cp ./cmd/path/.config.example.yaml ./cmd/path/.config.yaml; \
 	else \
 		echo ".config.yaml already exists, not overwriting."; \
 	fi

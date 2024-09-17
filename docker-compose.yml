@@ -13,6 +13,6 @@ services:
       # full node RPC and gRPC URLs are running or port forwarded to localhost.
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./cmd/.config.yaml:/app/.config.yaml
+      - ./cmd/path/.config.yaml:/app/.config.yaml
     command: ["./path"]
     # TODO_IMPROVE: add a health check that looks for component ready states from the /healthz endpoint
