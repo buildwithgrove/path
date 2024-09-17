@@ -54,7 +54,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
-			gatewayEndpoint, found := cache.GetGatewayEndpoint(context.Background(), test.endpointID)
+			gatewayEndpoint, found := cache.GetGatewayEndpoint(test.endpointID)
 			c.Equal(test.found, found)
 			c.Equal(test.expected, gatewayEndpoint)
 		})

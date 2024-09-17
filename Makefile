@@ -68,11 +68,12 @@ copy_test_config: ## copies the example test configuration yaml file to .gitigno
 		echo ".config.test.yaml already exists, not overwriting."; \
 	fi
 
-#######################
-### SQLC Generation ###
-#######################
+###############################
+### Generation Make Targets ###
+###############################
 
 .PHONY: sqlc_generate
 sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
 	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
-	
+
+# TODO_IMPROVE - add a make target for generating mocks 

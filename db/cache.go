@@ -22,6 +22,8 @@ type userDataCache struct {
 	logger polylog.Logger
 }
 
+// NewUserDataCache creates a new user data cache, which stores GatewayEndpoints in memory for fast access.
+// It refreshes the cache from the Postgres database connection at the specified interval.
 func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*userDataCache, error) {
 	cache := &userDataCache{
 		db: driver,
@@ -33,6 +35,7 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 		logger: logger.With("component", "user_data_cache"),
 	}
 
+	// Initialize the cache with the GatewayEndpoints from the Postgres database.
 	if err := cache.updateCache(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to set cache: %w", err)
 	}
@@ -42,7 +45,8 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 	return cache, nil
 }
 
-func (c *userDataCache) GetGatewayEndpoint(ctx context.Context, endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
+// GetGatewayEndpoint returns a GatewayEndpoint from the cache and a bool indicating if it exists in the cache.
+func (c *userDataCache) GetGatewayEndpoint(endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 
@@ -61,6 +65,9 @@ func (c *userDataCache) cacheRefreshHandler(ctx context.Context) {
 	}
 }
 
+// updateCache fetches the GatewayEndpoints from the Postgres database and sets them in the cache.
+// TODO_IMPROVE(@commoddity) - set up a Postgres listener to update the cache when
+// the GatewayEndpoints change, rather than having to poll the database on an interval.
 func (c *userDataCache) updateCache(ctx context.Context) error {
 	gatewayEndpoints, err := c.db.GetGatewayEndpoints(ctx)
 	if err != nil {
