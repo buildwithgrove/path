@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -98,4 +99,13 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 	}
 
 	return gatewayEndpoints, nil
+}
+
+/* ---------- Helper Funcs ---------- */
+
+// IsValidPostgresConnectionString checks if a string is a valid PostgreSQL connection string.
+func IsValidPostgresConnectionString(s string) bool {
+	// Regular expression to match a valid PostgreSQL connection string
+	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
+	return dbConnStringRegex.MatchString(s)
 }
