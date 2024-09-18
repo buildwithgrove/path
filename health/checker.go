@@ -29,7 +29,7 @@ const (
 )
 
 type (
-	// The health.Checker struct is used to store all PATH components whose
+	// health.Checker struct is used to store all PATH components whose
 	// health needs to be checked to consider PATH ready to serve traffic.
 	Checker struct {
 		Components []Check
