@@ -18,10 +18,8 @@ bin
 go.work.sum
 
 # Config
-config.yaml
-config.*.yaml
 .config.yaml
-.config.test.yaml
+.config.*.yaml
 
 # Macos
 .DS_Store
@@ -32,3 +30,7 @@ config.*.yaml
 .env
 .idea/
 .mise.local.toml
+
+# tmp directory
+tmp
+tmp/*
