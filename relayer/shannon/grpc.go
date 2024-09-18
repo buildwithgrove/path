@@ -2,6 +2,7 @@ package shannon
 
 import (
 	"crypto/tls"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -26,7 +27,7 @@ func connectGRPC(config GRPCConfig) (*grpc.ClientConn, error) {
 
 	// TODO_TECHDEBT: make the necessary changes to allow using grpc.NewClient here.
 	// Currently using the grpc.NewClient method fails the E2E tests.
-	return grpc.Dial(
+	return grpc.Dial( //nolint:all
 		config.HostPort,
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 	)
