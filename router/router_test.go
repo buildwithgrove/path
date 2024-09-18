@@ -38,7 +38,7 @@ func Test_handleHealthz(t *testing.T) {
 		{
 			name:           "should return 200 with status ok",
 			expectedStatus: http.StatusOK,
-			expectedBody:   `{"status":"ok","imageTag":"development"}`,
+			expectedBody:   `{"status":"ready","imageTag":"development"}`,
 		},
 	}
 
