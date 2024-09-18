@@ -8,18 +8,14 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
-)
-
-const (
-	imageTagEnvVar  = "IMAGE_TAG"
-	defaultImageTag = "development"
+	"github.com/buildwithgrove/path/health"
 )
 
 type (
 	router struct {
 		mux           *http.ServeMux
 		gateway       gateway
-		healthChecker *healthChecker
+		healthChecker *health.Checker
 
 		config config.RouterConfig
 
@@ -30,30 +26,16 @@ type (
 	}
 )
 
-type RouterParams struct {
-	Gateway                 gateway
-	HealthCheckerComponents []HealthCheck
-
-	Config config.RouterConfig
-
-	Logger polylog.Logger
-}
-
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(params RouterParams) *router {
+func NewRouter(gateway gateway, healthChecker *health.Checker, config config.RouterConfig, logger polylog.Logger) *router {
 	r := &router{
-		mux:     http.NewServeMux(),
-		gateway: params.Gateway,
-		healthChecker: &healthChecker{
-			components: params.HealthCheckerComponents,
-			logger:     params.Logger,
-		},
-
-		config: params.Config,
-
-		logger: params.Logger.With("package", "router"),
+		mux:           http.NewServeMux(),
+		gateway:       gateway,
+		healthChecker: healthChecker,
+		config:        config,
+		logger:        logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
@@ -61,7 +43,7 @@ func NewRouter(params RouterParams) *router {
 
 func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
-	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.healthzHandler))
+	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
 	// * /v1 - handles service requests
 	r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
