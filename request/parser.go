@@ -1,11 +1,12 @@
-// The responsibility of the `request` package is to extract the service ID and find the target service's corresponding QoS instance.
-// See: https://github.com/buildwithgrove/path/blob/e0067eb0f9ab0956127c952980b09909a795b300/gateway/gateway.go#L52C2-L52C45
+// Request package is responsible for parsing and forwarding user requests.
+// It is not responsible for QoS, authorization, etc...
 //
-// Request package decides how the requested service is referenced by the user (currently: subdomain of the HTTP request).
-//
-// Processing should fail here only if:
+// For example, Processing should fail here only if:
 // A) No service is provided - Bad Request
 // B) The provided service is not found/configured for the gateway instance - Not Found
+//
+// The responsibility of the `request` package is to extract the service ID and find the target service's corresponding QoS instance.
+// See: https://github.com/buildwithgrove/path/blob/e0067eb0f9ab0956127c952980b09909a795b300/gateway/gateway.go#L52C2-L52C45
 package request
 
 import (
