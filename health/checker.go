@@ -13,7 +13,7 @@ const (
 	// which is passed to the Docker image as a build argument at build time.
 	// It represent the semver version of PATH (eg. `v0.0.1`).
 	imageTagEnvVar = "IMAGE_TAG"
-	// If the image tag is not set by the Docker build process, the default image tag is "development".
+	// If the image tag is not set by the Docker build process, the default value is "development".
 	defaultImageTag = "development"
 )
 
@@ -60,9 +60,7 @@ type healthCheckJSON struct {
 //
 // It will return a 200 OK status code if all components are ready or
 // a 503 Service Unavailable status code if any component is not ready.
-//
-// The image tag is set to the value of the IMAGE_TAG environment variable, which is
-// passed to the Docker image as a build argument at build time.
+
 func (c *Checker) HealthzHandler(w http.ResponseWriter, req *http.Request) {
 	readyStates := c.getComponentReadyStates()
 	status := getStatus(readyStates)
@@ -85,8 +83,11 @@ func (c *Checker) HealthzHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // getHealthCheckResponse returns the health check JSON response body as bytes
+//
+// The value of the IMAGE_TAG environment variable is set in the Docker image by a build arg at build time.
+// If the IMAGE_TAG environment variable is not set, the default value is "development".
 func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates map[string]bool) []byte {
-	imageTag := os.Getenv(imageTagEnvVar)
+	imageTag := os.Getenv(imageTagEnvVar) // eg. `v0.0.1`
 	if imageTag == "" {
 		imageTag = defaultImageTag
 	}

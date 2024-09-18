@@ -215,12 +215,12 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]apptypes.Application {
 		}
 
 		for _, svcCfg := range onchainApp.ServiceConfigs {
-			if svcCfg.Service == nil {
+			if svcCfg.ServiceId == "" {
 				logger.Warn().Msg("updateAppCache: app has nil item in service config.")
 				continue
 			}
 
-			serviceID := relayer.ServiceID(svcCfg.Service.Id)
+			serviceID := relayer.ServiceID(svcCfg.ServiceId)
 			appData[serviceID] = append(appData[serviceID], onchainApp)
 		}
 	}
