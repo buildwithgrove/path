@@ -41,11 +41,24 @@ type FullNode interface {
 
 // TODO_UPNEXT(@adshmh): Add unit/E2E tests for the implementation of the Morse relayer.
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
-	return &Protocol{
+	protocol := &Protocol{
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
 		logger:          polylog.Ctx(ctx),
-	}, nil
+	}
+
+	go func() {
+		// TODO_IMPROVE: make the refresh interval configurable.
+		ticker := time.NewTicker(time.Minute)
+		for {
+			protocol.updateAppCache()
+			protocol.updateSessionCache()
+
+			<-ticker.C
+		}
+	}()
+
+	return protocol, nil
 }
 
 type Protocol struct {
@@ -112,17 +125,17 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][
 func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	app, found := p.getApp(req.ServiceID, req.AppAddr)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("Relay: service %s app %s not found", req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: service %s app %s not found", req.ServiceID, req.AppAddr)
 	}
 
 	session, found := p.getSession(req.ServiceID, app.address)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("Relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
 	}
 
 	endpoint, err := getEndpoint(session, req.EndpointAddr)
 	if err != nil {
-		return relayer.Response{}, fmt.Errorf("Relay: error getting node %s for service %s app %s", req.EndpointAddr, req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: error getting node %s for service %s app %s", req.EndpointAddr, req.ServiceID, req.AppAddr)
 	}
 
 	output, err := p.sendRelay(
@@ -288,7 +301,7 @@ func (p *Protocol) sendRelay(
 
 	output, err := p.fullNode.SendRelay(ctx, fullNodeInput)
 	if output.RelayOutput == nil {
-		return provider.RelayOutput{}, fmt.Errorf("Relay: received null output from the SDK")
+		return provider.RelayOutput{}, fmt.Errorf("relay: received null output from the SDK")
 	}
 
 	// TODO_DISCUSS: do we need to verify the node/proof structs?
