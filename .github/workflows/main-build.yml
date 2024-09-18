@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-push:
     runs-on: "ubuntu-22.04"
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout project
         uses: actions/checkout@v3
@@ -43,6 +44,7 @@ jobs:
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           cache-from: type=gha
