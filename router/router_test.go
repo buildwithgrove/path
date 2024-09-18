@@ -15,18 +15,14 @@ import (
 	gomock "go.uber.org/mock/gomock"
 
 	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/health"
 )
 
 func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
 	ctrl := gomock.NewController(t)
 	mockGateway := NewMockgateway(ctrl)
 
-	r := NewRouter(RouterParams{
-		Gateway:                 mockGateway,
-		HealthCheckerComponents: []HealthCheck{},
-		Config:                  config.RouterConfig{},
-		Logger:                  polyzero.NewLogger(),
-	})
+	r := NewRouter(mockGateway, &health.Checker{}, config.RouterConfig{}, polyzero.NewLogger())
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 

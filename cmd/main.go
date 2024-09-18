@@ -10,6 +10,7 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
@@ -87,18 +88,14 @@ func main() {
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
 	// Unavailable status; once all components are ready, it will return a 200 OK status.
-	// health check components must implement the router.HealthCheck
-	// interface to be able to signal they are ready to service requests.
-	healthCheckerComponents := []router.HealthCheck{
-		protocol,
+	// health check components must implement the health.Check interface
+	// to be able to signal they are ready to service requests.
+	healthChecker := &health.Checker{
+		Components: []health.Check{protocol},
+		Logger:     logger,
 	}
 
-	apiRouter := router.NewRouter(router.RouterParams{
-		Gateway:                 gateway,
-		HealthCheckerComponents: healthCheckerComponents,
-		Config:                  config.GetRouterConfig(),
-		Logger:                  logger,
-	})
+	apiRouter := router.NewRouter(gateway, healthChecker, config.GetRouterConfig(), logger)
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}

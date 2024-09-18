@@ -10,12 +10,16 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ relayer.Protocol = &Protocol{}
+
+// All components that report their ready status to /healthz must implement the health.Check interface.
+var _ health.Check = &Protocol{}
 
 // TODO_TECHDEBT: Make this configurable via an env variable.
 const defaultRelayTimeoutMillisec = 5000
@@ -59,10 +63,12 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
+// Name satisfies the HealthCheck#Name interface function
 func (p *Protocol) Name() string {
 	return "pokt-morse"
 }
 
+// IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()

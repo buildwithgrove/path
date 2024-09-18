@@ -25,15 +25,34 @@ const (
 	configFilePath       = "./.config.test.yaml"
 	configMountPoint     = ":/app/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
-	containerExtraHost   = "host.docker.internal:host-gateway"
+	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
 	timeoutSeconds       = 120
 )
 
 var (
-	containerConfigMount     = filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+	// eg. {file_path}/path/e2e/.config.test.yaml:/app/.config.yaml
+	containerConfigMount = filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+	// eg. 3000/tcp
 	containerPortAndProtocol = internalPathPort + "/tcp"
 )
 
+// setupPathDocker sets up and starts a Docker container for the PATH service using dockertest.
+//
+// Key steps:
+//
+// - Builds the container from a specified Dockerfile.
+//
+// - Mounts necessary configuration files.
+//
+// - Sets environment variables for the container.
+//
+// - Exposes required ports and sets extra hosts.
+//
+// - Sets up a signal handler to clean up the container on termination signals.
+//
+// - Performs a health check to ensure the container is ready for requests.
+//
+// - Returns the dockertest pool, resource, and the container port.
 func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 	opts := &dockertest.RunOptions{
 		Name:         containerName,
@@ -103,6 +122,7 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 	return pool, resource, resource.GetPort(containerPortAndProtocol)
 }
 
+// cleanupPathDocker purges the Docker container and resource from the provided dockertest pool and resource.
 func cleanupPathDocker(_ *testing.M, pool *dockertest.Pool, resource *dockertest.Resource) {
 	if err := pool.Purge(resource); err != nil {
 		log.Fatalf("could not purge resource: %s", err)

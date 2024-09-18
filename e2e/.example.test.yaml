@@ -1,18 +1,25 @@
 # To use E2E tests, copy this file and rename it to .config.test.yaml, then update
-# the `protocol.shannon_config.full_node_config` values with the appropriate values.
+# the `protocol.shannon_config.full_node_config.gateway_private_key` value with the correct value.
+# NOTE: only the gateway_private_key value should be updated.
 
-# NOTE: do not modify the "gatewaye2e" service ID or "test-service" alias values or the E2E test will fail.
 services:
-  "gatewaye2e":
-    alias: "test-service"
+  # do not change gatewaye2e
+  "gatewaye2e": 
+    # do not change alias
+    alias: "test-service" 
 
 # shannon_config is required for the shannon E2E test.
 shannon_config:
   full_node_config:
-    rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com # replace with your full node rpc url
+    # do not change rpc_url
+    rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com 
     grpc_config:
-      host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 # replace with your full node grpc host/port
-    gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 # replace with your gateway private key
-    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw # replace with your gateway address
-    delegated_app_addresses: # replace with the list of apps that are delegated to the gateway
-      - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87
+      # do not change host_port
+      host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 
+    # NOTE: gateway_private_key must be replaced with the correct gateway private key secret
+    gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 
+    # do not change gateway_address
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw 
+    delegated_app_addresses: 
+      # do not change delegated_app_address
+      - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87 
