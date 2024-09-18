@@ -17,17 +17,11 @@ import (
 	"github.com/buildwithgrove/path/config"
 )
 
-// TODO_TECHDEBT(@commoddity): move all mocks to shared mocks package
-
 func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
 	ctrl := gomock.NewController(t)
 	mockGateway := NewMockgateway(ctrl)
 
-	r := NewRouter(RouterParams{
-		Gateway: mockGateway,
-		Config:  config.RouterConfig{},
-		Logger:  polyzero.NewLogger(),
-	})
+	r := NewRouter(mockGateway, config.RouterConfig{}, polyzero.NewLogger())
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 

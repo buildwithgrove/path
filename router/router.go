@@ -29,21 +29,15 @@ type (
 	}
 )
 
-type RouterParams struct {
-	Gateway gateway
-	Config  config.RouterConfig
-	Logger  polylog.Logger
-}
-
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(params RouterParams) *router {
+func NewRouter(gateway gateway, config config.RouterConfig, logger polylog.Logger) *router {
 	r := &router{
 		mux:     http.NewServeMux(),
-		gateway: params.Gateway,
-		config:  params.Config,
-		logger:  params.Logger.With("package", "router"),
+		gateway: gateway,
+		config:  config,
+		logger:  logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
