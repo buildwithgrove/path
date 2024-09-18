@@ -52,7 +52,9 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 	}
 
 	// hydrate required fields and set defaults for optional fields
-	config.hydrateServiceAliases()
+	if err := config.hydrateServiceAliases(); err != nil {
+		return GatewayConfig{}, err
+	}
 	config.hydrateRouterConfig()
 
 	return config, config.validate()
@@ -97,15 +99,19 @@ func (c GatewayConfig) GetEnabledServiceConfigs() map[relayer.ServiceID]request.
 
 /* --------------------------------- Gateway Config Hydration Helpers -------------------------------- */
 
-func (c *GatewayConfig) hydrateServiceAliases() {
+func (c *GatewayConfig) hydrateServiceAliases() error {
 	if c.serviceAliases == nil {
 		c.serviceAliases = make(map[string]relayer.ServiceID)
 	}
 	for serviceID, service := range c.Services {
 		if service.Alias != "" {
+			if _, ok := c.serviceAliases[service.Alias]; ok {
+				return fmt.Errorf("duplicate service alias: %s", service.Alias)
+			}
 			c.serviceAliases[service.Alias] = serviceID
 		}
 	}
+	return nil
 }
 
 func (c *GatewayConfig) hydrateRouterConfig() {
