@@ -90,7 +90,7 @@ func main() {
 		log.Fatalf("failed to create API router: %v", err)
 	}
 
-	if err := apiRouter.Start(context.Background()); err != nil {
+	if err := apiRouter.Start(); err != nil {
 		log.Fatalf("failed to start API router: %v", err)
 	}
 }
