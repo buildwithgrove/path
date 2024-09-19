@@ -5,9 +5,20 @@
 </div>
 <br/>
 
+![Static Badge](https://img.shields.io/badge/Maintained_by-Grove-green)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/main-build.yml)
+![GitHub last commit](https://img.shields.io/github/last-commit/buildwithgrove/path)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/buildwithgrove/path)
+![GitHub Release](https://img.shields.io/github/v/release/buildwithgrove/path)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/buildwithgrove/path/total)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/buildwithgrove/path)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
+
 # Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [Releases](#path-releases)
 - [Quickstart (Shannon)](#quickstart-shannon)
 - [Configuration](#configuration)
   - [Configuration File](#configuration-file)
@@ -23,6 +34,18 @@
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
+
+## Path Releases
+
+Path releases provide a Docker image you can start using right away to bootstrap your Path gateway without the need of building your own image. Images are available in our [Packages](https://github.com/buildwithgrove/path/pkgs/container/path) page. You can pull them directly using the following command:
+
+```sh
+docker pull ghcr.io/buildwithgrove/path
+```
+
+Additionally, our releases contain additional information about what's up with updates/fixes. Head over to [releases](https://github.com/buildwithgrove/path/releases) to check them out.
+
+
 
 ## Quickstart (Shannon)
 
