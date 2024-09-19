@@ -63,7 +63,7 @@ type Protocol struct {
 func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
 	apps, found := p.serviceApps(serviceID)
 	if !found {
-		return nil, fmt.Errorf("Endpoints: no apps found for service %s", serviceID)
+		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
 	}
 
 	allEndpoints := make(map[relayer.AppAddr][]relayer.Endpoint)
@@ -93,7 +93,7 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][
 	}
 
 	if len(allEndpoints) == 0 {
-		return nil, fmt.Errorf("Endpoints: no cached sessions found for service %s", serviceID)
+		return nil, fmt.Errorf("endpoints: no cached sessions found for service %s", serviceID)
 	}
 
 	return allEndpoints, nil
@@ -102,23 +102,23 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][
 func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	app, err := p.getApp(req.ServiceID, req.AppAddr)
 	if err != nil {
-		return relayer.Response{}, fmt.Errorf("SendRelay: app not found: %w", err)
+		return relayer.Response{}, fmt.Errorf("sendRelay: app not found: %w", err)
 	}
 
 	session, found := p.getSession(req.ServiceID, req.AppAddr)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("Relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
 	}
 
 	endpoint, err := endpointFromSession(session, req.EndpointAddr)
 	if err != nil {
-		return relayer.Response{}, fmt.Errorf("Relay: endpoint %s not found for service %s app %s: %w", req.EndpointAddr, req.ServiceID, req.AppAddr, err)
+		return relayer.Response{}, fmt.Errorf("relay: endpoint %s not found for service %s app %s: %w", req.EndpointAddr, req.ServiceID, req.AppAddr, err)
 	}
 
 	response, err := p.fullNode.SendRelay(app, session, endpoint, req.Payload)
 	if err != nil {
 		return relayer.Response{},
-			fmt.Errorf("Relay: error sending relay for service %s app %s endpoint %s: %w",
+			fmt.Errorf("relay: error sending relay for service %s app %s endpoint %s: %w",
 				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
 			)
 	}
@@ -129,7 +129,7 @@ func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
 		return relayer.Response{},
-			fmt.Errorf("Relay: error unmarshallring endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
+			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
 				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
 			)
 	}
