@@ -21,19 +21,7 @@ func (p *Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (int
 	if err := any.UnmarshalTo(configStruct); err != nil {
 		return nil, err
 	}
-
-	// v := configStruct.Value
-	conf := &EnvoyConfig{}
-	// prefix, ok := v.AsMap()["prefix_localreply_body"]
-	// if !ok {
-	// 	return nil, errors.New("missing prefix_localreply_body")
-	// }
-	// if str, ok := prefix.(string); ok {
-	// 	conf.echoBody = str
-	// } else {
-	// 	return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", prefix)
-	// }
-	return conf, nil
+	return &EnvoyConfig{}, nil
 }
 
 // Merge configuration from the inherited parent configuration
