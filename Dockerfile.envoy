@@ -1,6 +1,6 @@
-FROM golang:1.23.1 AS golang-base
+FROM golang:1.23 AS golang-base
 
-FROM golang:1.23.1 AS builder
+FROM golang:1.23 AS builder
 WORKDIR /app
 
 COPY ./envoy .
