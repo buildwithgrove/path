@@ -18,3 +18,4 @@ jobs:
           bump_version_scheme: patch
           release_body: ":rocket: Release Notes !:fireworks: "
           use_github_release_notes: true
+          
