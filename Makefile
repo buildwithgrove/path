@@ -40,12 +40,16 @@ path_down: ## Stop the PATH gateway and all related dependencies
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_e2e_shannon_relay
+test_all: test_unit test_auth_plugin test_e2e_shannon_relay
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
-  
+
+.PHONY: test_auth_plugin
+test_auth_plugin: ## Run the auth plugin tests
+	(cd envoy/auth_plugin && go test ./... -short -count=1)
+
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
 	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay 
