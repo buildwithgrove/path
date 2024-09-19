@@ -1,28 +1,20 @@
 services:
-  envoy_proxy:
-    container_name: envoy_proxy
-    build:
-      context: .
-      dockerfile: Dockerfile.envoy
-    ports:
-      - "8080:8080"
-    depends_on:
-      path_gateway:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    networks:
-      - path_network
-
+  # ---------- PATH Gateway Service ----------
+  # This is the main PATH service that handles service requests.
+  #
+  # It sits behind the Envoy proxy.
   path_gateway:
     container_name: path_gateway
     build:
       context: .
       args:
         IMAGE_TAG: ${IMAGE_TAG:-development}
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
     volumes:
       - ./cmd/.config.yaml:/app/.config.yaml
-    command: ["./path"]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
       interval: 30s
@@ -35,12 +27,44 @@ services:
     networks:
       - path_network
 
-  # This DB container is provided for local development. It is not recommended
+  # ---------- Envoy Proxy ----------
+  # This is the Envoy proxy that sits in front of the PATH Gateway Service.
+  #
+  # This container is built from `Dockerfile.envoy`, which:
+  # - mounts the Envoy configuration YAML
+  # - builds & mounts the Go Auth Plugin 
+  #
+  # Request Authorization is handled by the Envoy proxy.
+  # - Authorization is handled by the Go Auth Plugin, mounted in the Envoy image.
+  envoy_proxy:
+    container_name: envoy_proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy
+    ports:
+      - "3001:3001"
+    depends_on:
+      path_gateway:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - path_network
+
+  # ---------- Postgres DB ----------
+  # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
+  # user-specific authorization settings.
+  #
+  # It is connected to by the Go Auth Plugin which runs in the `envoy_proxy` container.
+  #
+  # NOTE - This DB container is provided for local development. It is not recommended
   # for production use. Operator should set up their own secure DB instance.
   db:
     image: postgres:latest
     container_name: db
     restart: always
+    expose:
+      - "5432"
     ports:
       - 5432:5432
     volumes:
@@ -58,5 +82,6 @@ services:
     networks:
       - path_network
 
+# ---------- Docker Network ----------
 networks:
   path_network:
