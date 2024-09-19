@@ -8,7 +8,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/auth-plugin/user"
 )
 
 // userDataCache is an in-memory cache that stores gateway endpoints and their associated data.

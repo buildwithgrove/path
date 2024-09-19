@@ -3,8 +3,11 @@ package db
 import (
 	"context"
 
-	"github.com/buildwithgrove/path/user"
+	"github.com/buildwithgrove/auth-plugin/user"
 )
+
+// TODO_UPNEXT(@commoddity): Investigate alternative authentication solutions to in-house rolled API key, eg. Clerk, Auth0, etc.
+// TODO_UPNEXT(@commoddity): Implement development solution that abstracts away database implementation in favour of Envoy.
 
 // DBDriver is a general purpose interface that must be implemented by any database (e.g. postgres, sqlite, MySQL, etc) driver.
 type DBDriver interface {
