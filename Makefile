@@ -9,20 +9,30 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
+# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
+
 #############################
 ### Run Path Make Targets ###
 #############################
 
+.PHONY: path_up_gateway
+path_up_gateway: ## Run just the PATH gateway without any dependencies
+	docker compose up -d --no-deps path_gateway
+
+.PHONY: path_up_build_gateway
+path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
+	docker compose up -d --build --no-deps path_gateway
+
 .PHONY: path_up
-path_up: ## Run docker compose up
+path_up: ## Run the PATH gateway and all related dependencies
 	docker compose up -d
 
 .PHONY: path_up_build
-path_up_build: ## Run docker compose up with build
+path_up_build: ## Run and build the PATH gateway and all related dependencies
 	docker compose up -d --build
 
 .PHONY: path_down
-path_down: ## Run docker compose down
+path_down: ## Stop the PATH gateway and all related dependencies
 	docker compose down
 
 #########################
@@ -38,7 +48,7 @@ test_unit: ## Run all unit tests
   
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -tags=e2e -count=1 -run TestShannonRelay 
+	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay 
 
 ################################
 ### Copy Config Make Targets ###
@@ -59,3 +69,14 @@ copy_test_config: ## copies the example test configuration yaml file to .gitigno
 	else \
 		echo ".config.test.yaml already exists, not overwriting."; \
 	fi
+
+###############################
+### Generation Make Targets ###
+###############################
+
+.PHONY: sqlc_generate
+sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
+	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
+
+# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
+# // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
