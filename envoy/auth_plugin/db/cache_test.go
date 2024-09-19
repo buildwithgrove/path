@@ -1,5 +1,3 @@
-//go:build auth_plugin
-
 package db
 
 import (
@@ -11,37 +9,37 @@ import (
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/auth-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/user"
 )
 
 func Test_GetGatewayEndpoint(t *testing.T) {
 	tests := []struct {
-		name       string
-		endpointID types.EndpointID
-		mockReturn map[types.EndpointID]types.GatewayEndpoint
-		expected   types.GatewayEndpoint
-		found      bool
+		name                    string
+		endpointID              user.EndpointID
+		mockReturn              map[user.EndpointID]user.GatewayEndpoint
+		expectedGatewayEndpoint user.GatewayEndpoint
+		expectedEndpointFound   bool
 	}{
 		{
-			name:       "should return gateway endpoint when found",
-			endpointID: "endpoint_1",
-			mockReturn: getTestGatewayEndpoints(),
-			expected:   getTestGatewayEndpoints()["endpoint_1"],
-			found:      true,
+			name:                    "should return gateway endpoint when found",
+			endpointID:              "endpoint_1",
+			mockReturn:              getTestGatewayEndpoints(),
+			expectedGatewayEndpoint: getTestGatewayEndpoints()["endpoint_1"],
+			expectedEndpointFound:   true,
 		},
 		{
-			name:       "should return different gateway endpoint when found",
-			endpointID: "endpoint_2",
-			mockReturn: getTestGatewayEndpoints(),
-			expected:   getTestGatewayEndpoints()["endpoint_2"],
-			found:      true,
+			name:                    "should return different gateway endpoint when found",
+			endpointID:              "endpoint_2",
+			mockReturn:              getTestGatewayEndpoints(),
+			expectedGatewayEndpoint: getTestGatewayEndpoints()["endpoint_2"],
+			expectedEndpointFound:   true,
 		},
 		{
-			name:       "should return false when gateway endpoint not found",
-			endpointID: "endpoint_3",
-			mockReturn: getTestGatewayEndpoints(),
-			expected:   types.GatewayEndpoint{},
-			found:      false,
+			name:                    "should return false when gateway endpoint not found",
+			endpointID:              "endpoint_3",
+			mockReturn:              getTestGatewayEndpoints(),
+			expectedGatewayEndpoint: user.GatewayEndpoint{},
+			expectedEndpointFound:   false,
 		},
 	}
 
@@ -57,27 +55,27 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			c.NoError(err)
 
 			gatewayEndpoint, found := cache.GetGatewayEndpoint(test.endpointID)
-			c.Equal(test.found, found)
-			c.Equal(test.expected, gatewayEndpoint)
+			c.Equal(test.expectedEndpointFound, found)
+			c.Equal(test.expectedGatewayEndpoint, gatewayEndpoint)
 		})
 	}
 }
 
 func Test_cacheRefreshHandler(t *testing.T) {
 	tests := []struct {
-		name       string
-		mockReturn map[types.EndpointID]types.GatewayEndpoint
-		expected   map[types.EndpointID]types.GatewayEndpoint
+		name                    string
+		mockReturn              map[user.EndpointID]user.GatewayEndpoint
+		expectedGatewayEndpoint map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
-			name:       "should refresh cache with new data",
-			mockReturn: map[types.EndpointID]types.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
-			expected:   map[types.EndpointID]types.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			name:                    "should refresh cache with new data",
+			mockReturn:              map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			expectedGatewayEndpoint: map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 		},
 		{
-			name:       "should handle empty cache refresh",
-			mockReturn: map[types.EndpointID]types.GatewayEndpoint{},
-			expected:   map[types.EndpointID]types.GatewayEndpoint{},
+			name:                    "should handle empty cache refresh",
+			mockReturn:              map[user.EndpointID]user.GatewayEndpoint{},
+			expectedGatewayEndpoint: map[user.EndpointID]user.GatewayEndpoint{},
 		},
 	}
 
@@ -98,7 +96,7 @@ func Test_cacheRefreshHandler(t *testing.T) {
 
 			time.Sleep(time.Millisecond * 20)
 
-			c.Equal(test.expected, cache.gatewayEndpoints)
+			c.Equal(test.expectedGatewayEndpoint, cache.gatewayEndpoints)
 		})
 	}
 }
@@ -106,18 +104,18 @@ func Test_cacheRefreshHandler(t *testing.T) {
 func Test_updateCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		mockReturn map[types.EndpointID]types.GatewayEndpoint
-		expected   map[types.EndpointID]types.GatewayEndpoint
+		mockReturn map[user.EndpointID]user.GatewayEndpoint
+		expected   map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
 			name:       "should update cache with gateway endpoints",
-			mockReturn: map[types.EndpointID]types.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
-			expected:   map[types.EndpointID]types.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{"endpoint_1": {EndpointID: "endpoint_1"}},
 		},
 		{
 			name:       "should handle empty gateway endpoints",
-			mockReturn: map[types.EndpointID]types.GatewayEndpoint{},
-			expected:   map[types.EndpointID]types.GatewayEndpoint{},
+			mockReturn: map[user.EndpointID]user.GatewayEndpoint{},
+			expected:   map[user.EndpointID]user.GatewayEndpoint{},
 		},
 	}
 
@@ -139,34 +137,34 @@ func Test_updateCache(t *testing.T) {
 	}
 }
 
-func getTestGatewayEndpoints() map[types.EndpointID]types.GatewayEndpoint {
-	return map[types.EndpointID]types.GatewayEndpoint{
+func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
+	return map[user.EndpointID]user.GatewayEndpoint{
 		"endpoint_1": {
 			EndpointID: "endpoint_1",
-			Auth: types.Auth{
+			Auth: user.Auth{
 				APIKey:         "api_key_1",
 				APIKeyRequired: true,
 			},
-			UserAccount: types.UserAccount{
+			UserAccount: user.UserAccount{
 				AccountID: "account_1",
 				PlanType:  "PLAN_FREE",
 			},
-			RateLimiting: types.RateLimiting{
+			RateLimiting: user.RateLimiting{
 				ThroughputLimit: 30,
 				CapacityLimit:   100,
 			},
 		},
 		"endpoint_2": {
 			EndpointID: "endpoint_2",
-			Auth: types.Auth{
+			Auth: user.Auth{
 				APIKey:         "api_key_2",
 				APIKeyRequired: true,
 			},
-			UserAccount: types.UserAccount{
+			UserAccount: user.UserAccount{
 				AccountID: "account_2",
 				PlanType:  "PLAN_UNLIMITED",
 			},
-			RateLimiting: types.RateLimiting{
+			RateLimiting: user.RateLimiting{
 				ThroughputLimit: 50,
 				CapacityLimit:   200,
 			},

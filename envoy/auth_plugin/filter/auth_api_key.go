@@ -3,13 +3,14 @@
 package filter
 
 import (
-	"github.com/buildwithgrove/auth-plugin/types"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+
+	"github.com/buildwithgrove/auth-plugin/user"
 )
 
 type APIKeyAuthorizer struct{}
 
-func (a *APIKeyAuthorizer) authorizeRequest(req api.RequestHeaderMap, endpoint types.GatewayEndpoint) *errorResponse {
+func (a *APIKeyAuthorizer) authorizeRequest(req api.RequestHeaderMap, endpoint user.GatewayEndpoint) *errorResponse {
 	if apiKey, authRequired := endpoint.GetAuth(); authRequired {
 		reqAPIKey, ok := req.Get("Authorization")
 		if !ok || reqAPIKey == "" {
