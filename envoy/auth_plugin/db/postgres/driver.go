@@ -1,16 +1,15 @@
-//go:build auth_plugin
-
 package postgres
 
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/buildwithgrove/auth-plugin/db"
-	"github.com/buildwithgrove/auth-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/user"
 )
 
 // The postgresDriver struct satisfies the db.Driver interface defined in the db package.
@@ -64,7 +63,7 @@ func NewPostgresDriver(connectionString string) (*postgresDriver, func() error, 
 /* ---------- Query Funcs ---------- */
 
 // GetGatewayEndpoints retrieves all GatewayEndpoints from the database and returns them as a map.
-func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[types.EndpointID]types.GatewayEndpoint, error) {
+func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
 	rows, err := d.Queries.SelectGatewayEndpoints(ctx)
 	if err != nil {
 		return nil, err
@@ -74,25 +73,25 @@ func (d *postgresDriver) GetGatewayEndpoints(ctx context.Context) (map[types.End
 }
 
 // convertToGatewayEndpoints converts a slice of the SelectGatewayEndpointsRow struct fetched from
-// the database to a map of the types.GatewayEndpoint struct that is used throughout the repo.
-func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[types.EndpointID]types.GatewayEndpoint, error) {
-	gatewayEndpoints := make(map[types.EndpointID]types.GatewayEndpoint, len(rows))
+// the database to a map of the user.GatewayEndpoint struct that is used throughout the repo.
+func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpointsRow) (map[user.EndpointID]user.GatewayEndpoint, error) {
+	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
 
 	for _, row := range rows {
-		gatewayEndpoint := types.GatewayEndpoint{
-			EndpointID: types.EndpointID(row.ID),
-			Auth: types.Auth{
+		gatewayEndpoint := user.GatewayEndpoint{
+			EndpointID: user.EndpointID(row.ID),
+			Auth: user.Auth{
 				APIKey:         row.ApiKey.String,
 				APIKeyRequired: row.ApiKeyRequired.Bool,
 			},
-			UserAccount: types.UserAccount{
-				AccountID: types.AccountID(row.AccountID.String),
-				PlanType:  types.PlanType(row.Plan.String),
+			UserAccount: user.UserAccount{
+				AccountID: user.AccountID(row.AccountID.String),
+				PlanType:  user.PlanType(row.Plan.String),
 			},
-			RateLimiting: types.RateLimiting{
+			RateLimiting: user.RateLimiting{
 				ThroughputLimit:     int(row.RateLimitThroughput.Int32),
 				CapacityLimit:       int(row.RateLimitCapacity.Int32),
-				CapacityLimitPeriod: types.CapacityLimitPeriod(row.RateLimitCapacityPeriod.RateLimitCapacityPeriod),
+				CapacityLimitPeriod: user.CapacityLimitPeriod(row.RateLimitCapacityPeriod.RateLimitCapacityPeriod),
 			},
 		}
 
@@ -100,4 +99,13 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 	}
 
 	return gatewayEndpoints, nil
+}
+
+/* ---------- Helper Funcs ---------- */
+
+// IsValidPostgresConnectionString checks if a string is a valid PostgreSQL connection string.
+func IsValidPostgresConnectionString(s string) bool {
+	// Regular expression to match a valid PostgreSQL connection string
+	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
+	return dbConnStringRegex.MatchString(s)
 }

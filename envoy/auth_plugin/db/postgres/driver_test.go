@@ -1,5 +1,3 @@
-//go:build auth_plugin
-
 package postgres
 
 import (
@@ -10,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/auth-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/user"
 )
 
 var connectionString string
@@ -31,22 +29,22 @@ func TestMain(m *testing.M) {
 func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected map[types.EndpointID]types.GatewayEndpoint
+		expected map[user.EndpointID]user.GatewayEndpoint
 	}{
 		{
 			name: "should retrieve all gateway endpoints correctly",
-			expected: map[types.EndpointID]types.GatewayEndpoint{
+			expected: map[user.EndpointID]user.GatewayEndpoint{
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "api_key_1",
 						APIKeyRequired: true,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -54,30 +52,30 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_2": {
 					EndpointID: "endpoint_2",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "api_key_2",
 						APIKeyRequired: true,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit: 0,
 						CapacityLimit:   0,
 					},
 				},
 				"endpoint_3": {
 					EndpointID: "endpoint_3",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "api_key_3",
 						APIKeyRequired: true,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_3",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -85,15 +83,15 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_4": {
 					EndpointID: "endpoint_4",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "",
 						APIKeyRequired: false,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
@@ -101,15 +99,15 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				},
 				"endpoint_5": {
 					EndpointID: "endpoint_5",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "",
 						APIKeyRequired: false,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit: 0,
 						CapacityLimit:   0,
 					},
@@ -128,7 +126,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 
 			driver, cleanup, err := NewPostgresDriver(connectionString)
 			c.NoError(err)
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			endpoints, err := driver.GetGatewayEndpoints(context.Background())
 			c.NoError(err)
@@ -141,7 +141,7 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
 		rows     []SelectGatewayEndpointsRow
-		expected map[types.EndpointID]types.GatewayEndpoint
+		expected map[user.EndpointID]user.GatewayEndpoint
 		wantErr  bool
 	}{
 		{
@@ -158,18 +158,18 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 					RateLimitCapacityPeriod: NullRateLimitCapacityPeriod{RateLimitCapacityPeriod: "daily", Valid: true},
 				},
 			},
-			expected: map[types.EndpointID]types.GatewayEndpoint{
+			expected: map[user.EndpointID]user.GatewayEndpoint{
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
-					Auth: types.Auth{
+					Auth: user.Auth{
 						APIKey:         "api_key_1",
 						APIKeyRequired: true,
 					},
-					UserAccount: types.UserAccount{
+					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
 					},
-					RateLimiting: types.RateLimiting{
+					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
 						CapacityLimit:       100000,
 						CapacityLimitPeriod: "daily",
