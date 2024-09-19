@@ -1,12 +1,12 @@
 module github.com/buildwithgrove/path
 
-go 1.23.1
+go 1.23.0
 
 require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.0.8-0.20240911114212-ecf74ced63cc
-	github.com/pokt-network/shannon-sdk v0.0.0-20240912215151-188eb667ed68
+	github.com/pokt-network/poktroll v0.0.9
+	github.com/pokt-network/shannon-sdk v0.0.0-20240907012836-7172ed278f8b
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.65.0

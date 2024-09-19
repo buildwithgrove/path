@@ -216,7 +216,7 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]apptypes.Application {
 
 		for _, svcCfg := range onchainApp.ServiceConfigs {
 			if svcCfg.ServiceId == "" {
-				logger.Warn().Msg("updateAppCache: app has nil item in service config.")
+				logger.Warn().Msg("updateAppCache: app has empty serviceId item in service config.")
 				continue
 			}
 

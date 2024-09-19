@@ -936,12 +936,12 @@ github.com/pokt-foundation/pocket-go v0.21.0 h1:LbCPHQWdlaHzWatPrmghRR2+lrh40jmo
 github.com/pokt-foundation/pocket-go v0.21.0/go.mod h1:TyJgMIbfVF9qhjTMU9u+TeiBwYKLq6+YZhq6POLNeHE=
 github.com/pokt-foundation/utils-go v0.7.0 h1:+BwAZj9Wfac6zkD4eQstRoz8lHc+6xBEtySys9WE5Ec=
 github.com/pokt-foundation/utils-go v0.7.0/go.mod h1:VMYNYtm1NKfCceLqzs6QSRhLcivafktirc3FSnB7Hxs=
-github.com/pokt-network/poktroll v0.0.8-0.20240911114212-ecf74ced63cc h1:VcIe5ca0UZSYwuDtj1qX+uu1h/bgwdXx8dSFl760lOc=
-github.com/pokt-network/poktroll v0.0.8-0.20240911114212-ecf74ced63cc/go.mod h1:iNF1RtZ4876hxeSpYA07ZjpA+/7xyYBRgZlTCa2mqWU=
+github.com/pokt-network/poktroll v0.0.9 h1:Q4LC3zwyslUXf5/aQyAXiME6/Uf15SPdiNCGoKX5XTc=
+github.com/pokt-network/poktroll v0.0.9/go.mod h1:iNF1RtZ4876hxeSpYA07ZjpA+/7xyYBRgZlTCa2mqWU=
 github.com/pokt-network/ring-go v0.1.0 h1:hF7mDR4VVCIqqDAsrloP8azM9y1mprc99YgnTjKSSwk=
 github.com/pokt-network/ring-go v0.1.0/go.mod h1:8NHPH7H3EwrPX3XHfpyRI6bz4gApkE3+fd0XZRbMWP0=
-github.com/pokt-network/shannon-sdk v0.0.0-20240912215151-188eb667ed68 h1:S/oML+SdWw8fhRY8qBtuJtXOZ9pJV6C+oMN9bxoo7kY=
-github.com/pokt-network/shannon-sdk v0.0.0-20240912215151-188eb667ed68/go.mod h1:unwjvRq2aBKYklsOyXNfthSsE3wQdSP3ypR4dLdjwAg=
+github.com/pokt-network/shannon-sdk v0.0.0-20240907012836-7172ed278f8b h1:dTj9PG3p+72ycG1r7PqdZ04Iy42qoCydrveIjXIaMKA=
+github.com/pokt-network/shannon-sdk v0.0.0-20240907012836-7172ed278f8b/go.mod h1:WznmqcNxQ7mdl/nACaf0faJbphX+5YtHcxHjCkhXbsc=
 github.com/pokt-network/smt v0.13.0 h1:C2F8FlJh34aU+DVeRU/Bt8BOkFXn4QjWMK+nbT9PUj4=
 github.com/pokt-network/smt v0.13.0/go.mod h1:S4Ho4OPkK2v2vUCHNtA49XDjqUC/OFYpBbynRVYmxvA=
 github.com/pokt-network/smt/kvstore/pebble v0.0.0-20240822175047-21ea8639c188 h1:QK1WmFKQ/OzNVob/br55Brh+EFbWhcdq41WGC8UMihM=
