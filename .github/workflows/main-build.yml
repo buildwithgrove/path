@@ -5,7 +5,8 @@ on:
     workflows: ["Path tests"]
     types:
       - completed
-    branches: ["main"]
+    branches: 
+      - main
 
 jobs:
   build-and-push:
