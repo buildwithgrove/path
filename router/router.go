@@ -2,27 +2,24 @@ package router
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
-)
-
-const (
-	imageTagEnvVar  = "IMAGE_TAG"
-	defaultImageTag = "development"
+	"github.com/buildwithgrove/path/health"
 )
 
 type (
 	router struct {
-		mux     *http.ServeMux
-		gateway gateway
-		config  config.RouterConfig
-		logger  polylog.Logger
+		mux           *http.ServeMux
+		gateway       gateway
+		healthChecker *health.Checker
+
+		config config.RouterConfig
+
+		logger polylog.Logger
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
@@ -32,20 +29,21 @@ type (
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, config config.RouterConfig, logger polylog.Logger) *router {
+func NewRouter(gateway gateway, healthChecker *health.Checker, config config.RouterConfig, logger polylog.Logger) *router {
 	r := &router{
-		mux:     http.NewServeMux(),
-		gateway: gateway,
-		config:  config,
-		logger:  logger.With("package", "router"),
+		mux:           http.NewServeMux(),
+		gateway:       gateway,
+		healthChecker: healthChecker,
+		config:        config,
+		logger:        logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
 }
 
 func (r *router) handleRoutes() {
-	// GET /healthz - handleHealthz returns a simple health check response
-	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.handleHealthz))
+	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
+	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
 	// * /v1 - handles service requests
 	r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
@@ -101,36 +99,6 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 /* --------------------------------- Handlers -------------------------------- */
-
-// GET - /healthz - handleHealthz returns a simple health check response
-func (r *router) handleHealthz(w http.ResponseWriter, req *http.Request) {
-
-	imageTag := os.Getenv(imageTagEnvVar)
-	if imageTag == "" {
-		imageTag = defaultImageTag
-	}
-
-	// TODO_IMPROVE: return component ready states for components that must initialize before the service is ready
-	responseBytes, err := json.Marshal(struct {
-		Status   string `json:"status"`
-		ImageTag string `json:"imageTag"`
-	}{
-		Status:   "ok",
-		ImageTag: imageTag,
-	})
-	if err != nil {
-		r.logger.Error().Str("error", err.Error()).Msg("error marshalling health check response")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = w.Write(responseBytes)
-	if err != nil {
-		r.logger.Error().Str("error", err.Error()).Msg("error writing health check response")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-}
 
 // * - /v1 - handleServiceRequest sets the request ID and HTTP details in the request context
 // from the HTTP request and passes it to the gateway handler, which processes the request.

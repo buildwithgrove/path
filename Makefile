@@ -9,6 +9,8 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
+# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
+
 #############################
 ### Run Path Make Targets ###
 #############################
@@ -46,7 +48,7 @@ test_unit: ## Run all unit tests
   
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -tags=e2e -count=1 -run TestShannonRelay 
+	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay 
 
 ################################
 ### Copy Config Make Targets ###

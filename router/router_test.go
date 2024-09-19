@@ -15,13 +15,14 @@ import (
 	gomock "go.uber.org/mock/gomock"
 
 	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/health"
 )
 
 func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
 	ctrl := gomock.NewController(t)
 	mockGateway := NewMockgateway(ctrl)
 
-	r := NewRouter(mockGateway, config.RouterConfig{}, polyzero.NewLogger())
+	r := NewRouter(mockGateway, &health.Checker{}, config.RouterConfig{}, polyzero.NewLogger())
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 
@@ -37,7 +38,7 @@ func Test_handleHealthz(t *testing.T) {
 		{
 			name:           "should return 200 with status ok",
 			expectedStatus: http.StatusOK,
-			expectedBody:   `{"status":"ok","imageTag":"development"}`,
+			expectedBody:   `{"status":"ready","imageTag":"development"}`,
 		},
 	}
 
@@ -101,6 +102,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 					if test.expectedStatus == http.StatusOK {
 						w.WriteHeader(http.StatusOK)
 						_, _ = w.Write(test.expectedBytes)
+						return nil
 					} else {
 						http.Error(w, "failed to send service request: some error", http.StatusInternalServerError)
 					}
