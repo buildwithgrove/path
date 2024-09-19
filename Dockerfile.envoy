@@ -1,6 +1,6 @@
-FROM golang:1.23.1 AS golang-base
+FROM golang:1.23 AS golang-base
 
-FROM golang:1.23.1 AS builder
+FROM golang:1.23 AS builder
 WORKDIR /app
 
 COPY ./envoy .
@@ -15,4 +15,4 @@ ENV CONFIG_PATH=/etc/auth_plugin.yaml
 
 COPY --from=builder /app/envoy.yaml /etc/envoy.yaml
 
-CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy.yaml", "--log-level", "error"]
+CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy.yaml"]
