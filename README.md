@@ -17,25 +17,35 @@
 
 # Table of Contents <!-- omit in toc -->
 
-- [Introduction](#introduction)
-- [Releases](#path-releases)
-- [Quickstart (Shannon)](#quickstart-shannon)
-- [Configuration](#configuration)
-  - [Configuration File](#configuration-file)
-    - [Example Configuration Format](#example-configuration-format)
-- [Running PATH](#running-path)
-  - [Setup Config YAML](#setup-config-yaml)
-  - [Start the Container](#start-the-container)
-- [E2E Tests](#e2e-tests)
-  - [Running Tests](#running-tests)
+- [1. Introduction](#1-introduction)
+  - [1.1. Prerequisites](#11-prerequisites)
+- [2. Path Releases](#2-path-releases)
+- [3. Quickstart (Shannon)](#3-quickstart-shannon)
+- [4. Configuration](#4-configuration)
+  - [4.1. Configuration File](#41-configuration-file)
+  - [4.2. Example Configuration Format](#42-example-configuration-format)
+- [5. Running PATH](#5-running-path)
+  - [5.1. Setup Config YAML](#51-setup-config-yaml)
+  - [5.2. Start the Container](#52-start-the-container)
+- [6. E2E Tests](#6-e2e-tests)
+  - [6.1. Running Tests](#61-running-tests)
 
-## Introduction
+## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling access to a decentralized supply network.
 
 It provides various tools and libraries to streamline the integration and interaction with decentralized protocols.
 
-## Path Releases
+### 1.1. Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+
+**Required For Development:**
+
+- [SQLC](https://docs.sqlc.dev/)
+- [Mockgen](https://github.com/uber-go/mock)
+  
+## 2. Path Releases
 
 Path releases provide a Docker image you can start using right away to bootstrap your Path gateway without the need of building your own image. Images are available in our [Packages](https://github.com/buildwithgrove/path/pkgs/container/path) page. You can pull them directly using the following command:
 
@@ -47,7 +57,7 @@ Additionally, our releases contain additional information about what's up with u
 
 
 
-## Quickstart (Shannon)
+## 3. Quickstart (Shannon)
 
 1. Stake Apps and Gateway
 
@@ -77,9 +87,9 @@ Additionally, our releases contain additional information about what's up with u
 
    _For detailed instructions on running PATH, see the [Running PATH](#running-path) section._
 
-## Configuration
+## 4. Configuration
 
-### Configuration File
+### 4.1. Configuration File
 
 The configuration for PATH is defined in a YAML file, which should be named `.config.yaml`.
 
@@ -110,11 +120,7 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-5. **User Data Configuration (`user_data_config`)**:
-   - _Required only if the gateway operator wishes to associate user data with requests._
-   - Configures the PostgreSQL database connection string.
-
-#### Example Configuration Format
+### 4.2. Example Configuration Format
 
 ```yaml
 shannon_config:
@@ -138,9 +144,9 @@ services:
   - [Shannon](./cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](./config/config.schema.yaml)
 
-## Running PATH
+## 5. Running PATH
 
-#### Setup Config YAML
+### 5.1. Setup Config YAML
 
 - The PATH service requires the config YAML file to be populated.
 
@@ -156,7 +162,7 @@ services:
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-#### Start the Container
+### 5.2. Start the Container
 
 1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
 
@@ -176,7 +182,7 @@ services:
    make path_down
    ```
 
-## E2E Tests
+## 6. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
@@ -194,7 +200,7 @@ Currently, the E2E tests are configured to run against the Shannon testnet.
 
 Future work will include adding support for other protocols.
 
-#### Running Tests
+### 6.1. Running Tests
 
 To run the tests, use the following `make` targets:
 
