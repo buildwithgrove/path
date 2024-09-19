@@ -49,7 +49,7 @@ func Test_handleHealthz(t *testing.T) {
 			_, _, ts := newTestRouter(t)
 
 			// Create request
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/healthz", ts.URL), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/healthz", ts.URL), nil)
 			c.NoError(err)
 
 			// Perform request
@@ -107,7 +107,8 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 						http.Error(w, "failed to send service request: some error", http.StatusInternalServerError)
 					}
 					return test.expectedError
-				})
+				},
+			)
 
 			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v1", ts.URL), strings.NewReader(test.payload))
 			c.NoError(err)
