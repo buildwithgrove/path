@@ -20,7 +20,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 40s
     depends_on:
       db:
         condition: service_healthy

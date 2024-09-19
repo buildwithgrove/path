@@ -70,3 +70,4 @@ static_resources:
                                 google_re2: {}
                                 regex: "^/v1/(.*)"
                               substitution: "/v1"
+                            

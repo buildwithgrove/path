@@ -5,10 +5,11 @@ package config
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/buildwithgrove/auth-plugin/db/postgres"
 )
 
 const defaultCacheRefreshInterval = 5 * time.Minute
@@ -48,15 +49,8 @@ func (c *AuthorizerPluginConfig) hydrateConfig() {
 }
 
 func (c AuthorizerPluginConfig) validate() error {
-	if !isValidPostgresConnectionString(c.PostgresConnectionString) {
+	if postgres.IsValidPostgresConnectionString(c.PostgresConnectionString) {
 		return fmt.Errorf("invalid postgres connection string: %s", c.PostgresConnectionString)
 	}
 	return nil
-}
-
-// isValidPostgresConnectionString checks if a string is a valid PostgreSQL connection string.
-func isValidPostgresConnectionString(s string) bool {
-	// Regular expression to match a valid PostgreSQL connection string
-	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
-	return dbConnStringRegex.MatchString(s)
 }
