@@ -7,17 +7,14 @@
 //
 
 // Package db is a generated GoMock package.
-//go:build auth_plugin
-
 package db
 
 import (
 	context "context"
 	reflect "reflect"
 
+	user "github.com/buildwithgrove/auth-plugin/user"
 	gomock "go.uber.org/mock/gomock"
-	
-	types "github.com/buildwithgrove/auth-plugin/types"
 )
 
 // MockDBDriver is a mock of DBDriver interface.
@@ -44,10 +41,10 @@ func (m *MockDBDriver) EXPECT() *MockDBDriverMockRecorder {
 }
 
 // GetGatewayEndpoints mocks base method.
-func (m *MockDBDriver) GetGatewayEndpoints(ctx context.Context) (map[types.EndpointID]types.GatewayEndpoint, error) {
+func (m *MockDBDriver) GetGatewayEndpoints(ctx context.Context) (map[user.EndpointID]user.GatewayEndpoint, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGatewayEndpoints", ctx)
-	ret0, _ := ret[0].(map[types.EndpointID]types.GatewayEndpoint)
+	ret0, _ := ret[0].(map[user.EndpointID]user.GatewayEndpoint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

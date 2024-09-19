@@ -1,6 +1,4 @@
-//go:build auth_plugin
-
-package types
+package user
 
 // A unique identifier for a user account's GatewayEndpoint. It must be passed as the last path segment of
 // the service request URL. For example: POST https://api.path.xyz/v1/{gateway_endpoint_id}
