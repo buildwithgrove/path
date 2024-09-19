@@ -1,0 +1,81 @@
+name: Path tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  linter:
+    name: Run golangci-lint
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.3"
+
+      - name: Setup Git Authentication
+        run: |
+          git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout 10m --verbose
+
+  unit-testing:
+    name: Run unit tests
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.3"
+
+      - name: Setup Git Authentication
+        run: |
+          git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Run unit tests
+        run: CGO_ENABLED=0 go test ./... -short
+
+  test-docker-build:
+    name: Test build of Docker image
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            IMAGE_TAG=test
+            GITHUB_TOKEN=${{ github.token }}
+          push: false
+          load: true
+          tags: test-build
+
+  e2e-testing:
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.3"
+
+      - name: copy E2E config
+        run: make copy_test_config
+
+      - name: update E2E config from secrets
+        env:
+          GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
+        run: ./e2e/scripts/update_config_from_secrets.sh
+
+      - name: Run E2E Tests
+        run: make test_e2e_shannon_relay

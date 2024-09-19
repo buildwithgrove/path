@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/buildwithgrove/auth-plugin/types"
+	"github.com/buildwithgrove/auth-plugin/user"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
@@ -37,13 +37,13 @@ type HTTPFilter struct {
 // The userDataCache contains an in-memory cache of GatewayEndpoints
 // and their associated data from the connected Postgres database.
 type userDataCache interface {
-	GetGatewayEndpoint(types.EndpointID) (types.GatewayEndpoint, bool)
+	GetGatewayEndpoint(user.EndpointID) (user.GatewayEndpoint, bool)
 }
 
 // The Authorizer interface performs requests authorization, for example using
 // API key authentication to ensures a downstream (client) request is authorized.
 type Authorizer interface {
-	authorizeRequest(api.RequestHeaderMap, types.GatewayEndpoint) *errorResponse
+	authorizeRequest(api.RequestHeaderMap, user.GatewayEndpoint) *errorResponse
 }
 
 /* --------------------------------- Service Request Processing -------------------------------- */
@@ -100,7 +100,7 @@ func (f *HTTPFilter) DecodeHeaders(req api.RequestHeaderMap, endStream bool) api
 }
 
 // handleGatewayEndpoints performs all required handling on GatewayEndpoint data associated with a service request
-func (f *HTTPFilter) handleGatewayEndpoint(req api.RequestHeaderMap, endpointID types.EndpointID) {
+func (f *HTTPFilter) handleGatewayEndpoint(req api.RequestHeaderMap, endpointID user.EndpointID) {
 
 	// If GatewayEndpoint is not found send an error response downstream (client)
 	gatewayEndpoint, ok := f.getGatewayEndpoint(endpointID)
@@ -123,12 +123,12 @@ func (f *HTTPFilter) handleGatewayEndpoint(req api.RequestHeaderMap, endpointID 
 }
 
 // getGatewayEndpoint fetches the GatewayEndpoint from the database and a bool indicating if it was found
-func (f *HTTPFilter) getGatewayEndpoint(endpointID types.EndpointID) (types.GatewayEndpoint, bool) {
+func (f *HTTPFilter) getGatewayEndpoint(endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	return f.Cache.GetGatewayEndpoint(endpointID)
 }
 
 // authGatewayEndpoint performs all configured authorization checks on the request
-func (f *HTTPFilter) authGatewayEndpoint(req api.RequestHeaderMap, gatewayEndpoint types.GatewayEndpoint) *errorResponse {
+func (f *HTTPFilter) authGatewayEndpoint(req api.RequestHeaderMap, gatewayEndpoint user.GatewayEndpoint) *errorResponse {
 	for _, auth := range f.Authorizers {
 		if errResp := auth.authorizeRequest(req, gatewayEndpoint); errResp != nil {
 			return errResp
@@ -138,7 +138,7 @@ func (f *HTTPFilter) authGatewayEndpoint(req api.RequestHeaderMap, gatewayEndpoi
 }
 
 // setHeaders sets all headers required by the PATH services on the request being forwarded
-func (f *HTTPFilter) setHeaders(req api.RequestHeaderMap, gatewayEndpoint types.GatewayEndpoint) {
+func (f *HTTPFilter) setHeaders(req api.RequestHeaderMap, gatewayEndpoint user.GatewayEndpoint) {
 	// Set endpoint ID in the headers
 	req.Set(reqHeaderEndpointID, string(gatewayEndpoint.EndpointID))
 
@@ -164,10 +164,10 @@ func (f *HTTPFilter) sendErrResponse(err errorResponse) {
 // The endpoint ID is the part of the path after "/v1/" and is used to identify the GatewayEndpoint.
 //
 // TODO_IMPROVE - see if there is a better way to extract the endpoint ID from the path.
-func extractEndpointID(urlPath string) (types.EndpointID, bool) {
+func extractEndpointID(urlPath string) (user.EndpointID, bool) {
 	const prefix = "/v1/"
 	if strings.HasPrefix(urlPath, prefix) {
-		return types.EndpointID(urlPath[len(prefix):]), true
+		return user.EndpointID(urlPath[len(prefix):]), true
 	}
 	return "", false
 }

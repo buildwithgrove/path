@@ -115,5 +115,7 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	}
 	w.WriteHeader(statusCode)
 
-	w.Write(response.GetPayload())
+	// TODO_TECHDEBT: add logging in case the payload is not written correctly;
+	// this could be a silent failure. Gateway currently has no logger.
+	_, _ = w.Write(response.GetPayload())
 }
