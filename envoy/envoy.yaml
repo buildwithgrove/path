@@ -1,57 +1,6 @@
 static_resources:
-  listeners:
-    - name: listener_0
-      address:
-        socket_address:
-          address: 0.0.0.0
-          port_value: 8080
-      filter_chains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typed_config:
-                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                stat_prefix: ingress_http
-                access_log:
-                  - name: envoy.access_loggers.stdout
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
-                http_filters:
-                  - name: envoy.filters.http.golang
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                      library_id: auth-plugin
-                      library_path: "/lib/auth_plugin.so"
-                      plugin_name: auth-plugin
-                      plugin_config:
-                        "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                        value:
-                          parent_only: parent-bar
-                  - name: envoy.filters.http.router
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                route_config:
-                  name: local_route
-                  virtual_hosts:
-                    - name: local_service
-                      domains: ["*"]  # Match all domains
-                      routes:
-                        # Route for /healthz
-                        - match:
-                            path: "/healthz"
-                          route:
-                            cluster: path_gateway_service
-                        # Route for other paths
-                        - match:
-                            prefix: "/v1"
-                          route:
-                            cluster: path_gateway_service
-                            regex_rewrite:
-                              pattern:
-                                google_re2: {}
-                                regex: "^/v1/(.*)"
-                              substitution: "/v1"
-
   clusters:
+    # The PATH Gateway service is the service that handles requests for the PATH API.
     - name: path_gateway_service
       connect_timeout: 0.25s
       type: STRICT_DNS
@@ -65,3 +14,59 @@ static_resources:
                     socket_address:
                       address: path_gateway
                       port_value: 3000
+
+  listeners:
+    - name: listener_0
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 3001
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                http_filters:
+                  # The Auth Plugin performs GatewayEndpoint authorization checks and sets headers in the request.
+                  - name: envoy.filters.http.golang
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+                      library_id: auth-plugin
+                      library_path: "/lib/auth_plugin.so"
+                      plugin_name: auth-plugin
+                      plugin_config:
+                        "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                        value:
+                          parent_only: parent-bar
+                # Configure the routing for the requests to the PATH service. These 
+                # routes match the routes in the PATH service's `router.go` file.
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]  # Match all domains
+                      routes:
+                        # Route for /healthz
+                        - match:
+                            path: "/healthz"
+                          route:
+                            cluster: path_gateway_service
+                        # Route for /v1/{gateway_endpoint_id}
+                        - match:
+                            prefix: "/v1"
+                          route:
+                            cluster: path_gateway_service
+                            # strip the endpoint ID from the path before forwarding to PATH.
+                            # It is instead attached as the `x-endpoint-id` header by the auth plugin.
+                            # This way PATH's router does not need to have any knowledge of Envoy or the
+                            # user data functionality, allowing it to be run with or without Envoy.
+                            regex_rewrite:
+                              pattern:
+                                google_re2: {}
+                                regex: "^/v1/(.*)"
+                              substitution: "/v1"

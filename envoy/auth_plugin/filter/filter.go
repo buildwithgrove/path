@@ -50,7 +50,6 @@ type Authorizer interface {
 
 const (
 	reqHeaderEndpointID = "x-endpoint-id"
-	reqHeaderThroughput = "x-rate-limit-throughput"
 )
 
 // All processing of the service request is done in DecodeHeaders. This includes:
@@ -59,7 +58,7 @@ const (
 //
 // - performing authorization checks on the request
 //
-// - setting the appropriate headers (x-endpoint-id, x-account-id, x-rate-limit-throughput)
+// - setting the appropriate headers (x-endpoint-id)
 //
 // - sending an error response if the request is not valid
 //
