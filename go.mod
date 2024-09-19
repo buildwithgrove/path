@@ -3,11 +3,10 @@ module github.com/buildwithgrove/path
 go 1.23.0
 
 require (
-	github.com/jackc/pgx/v5 v5.6.0
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.0.9
-	github.com/pokt-network/shannon-sdk v0.0.0-20240912215151-188eb667ed68
+	github.com/pokt-network/shannon-sdk v0.0.0-20240907012836-7172ed278f8b
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.65.0
@@ -145,16 +144,12 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
@@ -196,7 +191,6 @@ require (
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.18.2 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect

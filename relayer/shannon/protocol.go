@@ -11,12 +11,16 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
+	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using methods that are specific to Shannon.
 var _ relayer.Protocol = &Protocol{}
+
+// All components that report their ready status to /healthz must implement the health.Check interface.
+var _ health.Check = &Protocol{}
 
 type FullNode interface {
 	GetApps(context.Context) ([]apptypes.Application, error)
@@ -58,6 +62,21 @@ type Protocol struct {
 	// map keys are of the format "serviceID-appID"
 	sessionCache   map[string]sessiontypes.Session
 	sessionCacheMu sync.RWMutex
+}
+
+// Name satisfies the HealthCheck#Name interface function
+func (p *Protocol) Name() string {
+	return "pokt-shannon"
+}
+
+// IsAlive satisfies the HealthCheck#IsAlive interface function
+func (p *Protocol) IsAlive() bool {
+	p.appCacheMu.RLock()
+	defer p.appCacheMu.RUnlock()
+	p.sessionCacheMu.RLock()
+	defer p.sessionCacheMu.RUnlock()
+
+	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
 func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
