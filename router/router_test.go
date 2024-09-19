@@ -100,7 +100,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 				func(ctx context.Context, req *http.Request, w http.ResponseWriter) error {
 					if test.expectedStatus == http.StatusOK {
 						w.WriteHeader(http.StatusOK)
-						w.Write(test.expectedBytes)
+						_, _ = w.Write(test.expectedBytes)
 					} else {
 						http.Error(w, "failed to send service request: some error", http.StatusInternalServerError)
 					}

@@ -126,7 +126,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 
 			driver, cleanup, err := NewPostgresDriver(connectionString)
 			c.NoError(err)
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			endpoints, err := driver.GetGatewayEndpoints(context.Background())
 			c.NoError(err)
