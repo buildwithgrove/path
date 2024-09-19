@@ -234,6 +234,17 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			yamlData: "invalid_yaml: [",
 			wantErr:  true,
 		},
+		{
+			name:     "should return error for duplicate service alias",
+			filePath: "duplicate_service_alias.yaml",
+			yamlData: `
+			morse_config:
+			  serviceAliases:
+			    eth-mainnet: "0021"
+			    eth-mainnet: "0022"
+			`,
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
