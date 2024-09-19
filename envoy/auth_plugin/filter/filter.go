@@ -3,7 +3,6 @@
 package filter
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/buildwithgrove/auth-plugin/user"
@@ -50,7 +49,6 @@ type Authorizer interface {
 
 const (
 	reqHeaderEndpointID = "x-endpoint-id"
-	reqHeaderThroughput = "x-rate-limit-throughput"
 )
 
 // All processing of the service request is done in DecodeHeaders. This includes:
@@ -59,7 +57,7 @@ const (
 //
 // - performing authorization checks on the request
 //
-// - setting the appropriate headers (x-endpoint-id, x-account-id, x-rate-limit-throughput)
+// - setting the appropriate headers (x-endpoint-id)
 //
 // - sending an error response if the request is not valid
 //
@@ -140,11 +138,6 @@ func (f *HTTPFilter) authGatewayEndpoint(req api.RequestHeaderMap, gatewayEndpoi
 func (f *HTTPFilter) setHeaders(req api.RequestHeaderMap, gatewayEndpoint user.GatewayEndpoint) {
 	// Set endpoint ID in the headers
 	req.Set(reqHeaderEndpointID, string(gatewayEndpoint.EndpointID))
-
-	// Set rate limit headers if the gateway endpoint should be rate limited
-	if gatewayEndpoint.RateLimiting.ThroughputLimit > 0 {
-		req.Set(reqHeaderThroughput, fmt.Sprintf("%d", gatewayEndpoint.RateLimiting.ThroughputLimit))
-	}
 }
 
 // sendErrResponse sends a local reply error response for requests that failed authorization checks

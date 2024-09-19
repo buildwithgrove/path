@@ -103,11 +103,5 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // * - /v1 - handleServiceRequest sets the request ID and HTTP details in the request context
 // from the HTTP request and passes it to the gateway handler, which processes the request.
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
-
-	// TEMP DEV TO VIEW REQUEST HEADERS FROM ENVOY PLUGIN
-	fmt.Printf("Request headers: x-endpoint-id=%s\n", req.Header.Get("x-endpoint-id"))
-	fmt.Printf("Request headers: x-rate-limit-throughput=%s\n", req.Header.Get("x-rate-limit-throughput"))
-	// TEMP DEV TO VIEW REQUEST HEADERS FROM ENVOY PLUGIN
-
 	r.gateway.HandleHTTPServiceRequest(req.Context(), req, w)
 }
