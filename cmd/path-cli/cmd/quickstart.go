@@ -216,7 +216,7 @@ func collectUserInputs(reader *bufio.Reader) ConfigInputs {
 	useTLSInput := promptSelect(reader, "❓ Does your Full Node gRPC connection use TLS? (Yes/No):", []string{"Yes", "No"})
 	config.useTLS = strings.EqualFold(useTLSInput, "Yes")
 	config.gatewayAddress = promptInput(reader, "🔗 Please enter your Gateway address (43 characters starting with pokt1...):", validateAddress)
-	config.gatewayPrivateKey = promptPassword(reader, "🔗 Please enter your Gateway private key (64-character hexadecimal string):", validateGatewayPrivateKey)
+	config.gatewayPrivateKey = promptPassword("🔗 Please enter your Gateway private key (64-character hexadecimal string):", validateGatewayPrivateKey)
 	config.delegatedAppAddress = promptInput(reader, "🔗 Please enter your delegated Application address (43 characters starting with pokt1...):", validateAddress)
 
 	return config
@@ -240,7 +240,7 @@ func promptInput(reader *bufio.Reader, message string, validateFunc func(string)
 }
 
 // promptPassword securely prompts the user for a password input
-func promptPassword(reader *bufio.Reader, message string, validateFunc func(string) error) string {
+func promptPassword(message string, validateFunc func(string) error) string {
 	for {
 		fmt.Println(message)
 		fmt.Println("NOTE: Input will not be displayed on screen.")
@@ -282,7 +282,7 @@ func promptSelect(reader *bufio.Reader, message string, options []string) string
 func validateURL(url string) error {
 	re := regexp.MustCompile(`^http[s]?://[a-zA-Z0-9.-]+(:[0-9]+)?`)
 	if !re.MatchString(url) {
-		return fmt.Errorf("Invalid URL. Must be a valid URL (e.g., https://example.com)")
+		return fmt.Errorf("invalid URL. Must be a valid URL (e.g., https://example.com)")
 	}
 	return nil
 }
@@ -291,7 +291,7 @@ func validateURL(url string) error {
 func validateHostPort(hostport string) error {
 	re := regexp.MustCompile(`^[a-zA-Z0-9.-]+:[0-9]+$`)
 	if !re.MatchString(hostport) {
-		return fmt.Errorf("Invalid host port. Must be in the format 'hostname:port' (e.g., localhost:9090)")
+		return fmt.Errorf("invalid host port. Must be in the format 'hostname:port' (e.g., localhost:9090)")
 	}
 	return nil
 }
@@ -300,7 +300,7 @@ func validateHostPort(hostport string) error {
 func validateAddress(address string) error {
 	re := regexp.MustCompile(`^pokt1[0-9a-zA-Z]{38}$`)
 	if !re.MatchString(address) {
-		return fmt.Errorf("Invalid address. Must be 43 characters long and start with 'pokt1'")
+		return fmt.Errorf("invalid address. Must be 43 characters long and start with 'pokt1'")
 	}
 	return nil
 }
@@ -309,7 +309,7 @@ func validateAddress(address string) error {
 func validateGatewayPrivateKey(key string) error {
 	re := regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
 	if !re.MatchString(key) {
-		return fmt.Errorf("Invalid gateway private key. Must be a 64-character hexadecimal string")
+		return fmt.Errorf("invalid gateway private key. Must be a 64-character hexadecimal string")
 	}
 	return nil
 }
@@ -445,7 +445,7 @@ func startDockerService(configYAMLData []byte) {
 				if err != nil {
 					color.Red("❌ Failed to retrieve container logs: %v", err)
 				} else {
-					io.Copy(os.Stdout, out)
+					_, _ = io.Copy(os.Stdout, out)
 				}
 				color.Red("❌ Container exited with status code: %d", status.StatusCode)
 				os.Exit(1)
@@ -499,10 +499,10 @@ func healthCheckWithProgressBar() {
 			displayServiceRunningMessage()
 			os.Exit(0)
 		}
-		bar.Add(1)
+		_ = bar.Add(1)
 		time.Sleep(1 * time.Second)
 	}
-	bar.Finish()
+	_ = bar.Finish()
 	color.Red("❌ Service health check failed after %d seconds.", timeout)
 	os.Exit(1)
 }
