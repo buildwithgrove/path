@@ -10,12 +10,16 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ relayer.Protocol = &Protocol{}
+
+// All components that report their ready status to /healthz must implement the health.Check interface.
+var _ health.Check = &Protocol{}
 
 // TODO_TECHDEBT: Make this configurable via an env variable.
 const defaultRelayTimeoutMillisec = 5000
@@ -37,11 +41,24 @@ type FullNode interface {
 
 // TODO_UPNEXT(@adshmh): Add unit/E2E tests for the implementation of the Morse relayer.
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
-	return &Protocol{
+	protocol := &Protocol{
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
 		logger:          polylog.Ctx(ctx),
-	}, nil
+	}
+
+	go func() {
+		// TODO_IMPROVE: make the refresh interval configurable.
+		ticker := time.NewTicker(time.Minute)
+		for {
+			protocol.updateAppCache()
+			protocol.updateSessionCache()
+
+			<-ticker.C
+		}
+	}()
+
+	return protocol, nil
 }
 
 type Protocol struct {
@@ -57,6 +74,21 @@ type Protocol struct {
 	// map keys are of the format "serviceID-appID"
 	sessionCache   map[string]provider.Session
 	sessionCacheMu sync.RWMutex
+}
+
+// Name satisfies the HealthCheck#Name interface function
+func (p *Protocol) Name() string {
+	return "pokt-morse"
+}
+
+// IsAlive satisfies the HealthCheck#IsAlive interface function
+func (p *Protocol) IsAlive() bool {
+	p.appCacheMu.RLock()
+	defer p.appCacheMu.RUnlock()
+	p.sessionCacheMu.RLock()
+	defer p.sessionCacheMu.RUnlock()
+
+	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
 func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
@@ -93,17 +125,17 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][
 func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	app, found := p.getApp(req.ServiceID, req.AppAddr)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("Relay: service %s app %s not found", req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: service %s app %s not found", req.ServiceID, req.AppAddr)
 	}
 
 	session, found := p.getSession(req.ServiceID, app.address)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("Relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
 	}
 
 	endpoint, err := getEndpoint(session, req.EndpointAddr)
 	if err != nil {
-		return relayer.Response{}, fmt.Errorf("Relay: error getting node %s for service %s app %s", req.EndpointAddr, req.ServiceID, req.AppAddr)
+		return relayer.Response{}, fmt.Errorf("relay: error getting node %s for service %s app %s", req.EndpointAddr, req.ServiceID, req.AppAddr)
 	}
 
 	output, err := p.sendRelay(
@@ -269,7 +301,7 @@ func (p *Protocol) sendRelay(
 
 	output, err := p.fullNode.SendRelay(ctx, fullNodeInput)
 	if output.RelayOutput == nil {
-		return provider.RelayOutput{}, fmt.Errorf("Relay: received null output from the SDK")
+		return provider.RelayOutput{}, fmt.Errorf("relay: received null output from the SDK")
 	}
 
 	// TODO_DISCUSS: do we need to verify the node/proof structs?

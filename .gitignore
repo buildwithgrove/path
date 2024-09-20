@@ -20,6 +20,7 @@ go.work.sum
 # Config
 .config.yaml
 .config.*.yaml
+!.config.example.yaml
 
 # Macos
 .DS_Store

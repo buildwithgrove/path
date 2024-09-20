@@ -445,7 +445,7 @@ func startDockerService(configYAMLData []byte) {
 				if err != nil {
 					color.Red("❌ Failed to retrieve container logs: %v", err)
 				} else {
-					io.Copy(os.Stdout, out)
+					_, _ = io.Copy(os.Stdout, out)
 				}
 				color.Red("❌ Container exited with status code: %d", status.StatusCode)
 				os.Exit(1)
@@ -499,10 +499,10 @@ func healthCheckWithProgressBar() {
 			displayServiceRunningMessage()
 			os.Exit(0)
 		}
-		bar.Add(1)
+		_ = bar.Add(1)
 		time.Sleep(1 * time.Second)
 	}
-	bar.Finish()
+	_ = bar.Finish()
 	color.Red("❌ Service health check failed after %d seconds.", timeout)
 	os.Exit(1)
 }
