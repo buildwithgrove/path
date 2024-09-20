@@ -10,6 +10,8 @@ package relayer
 import (
 	"context"
 	"fmt"
+
+	"github.com/buildwithgrove/path/health"
 )
 
 // ServiceID represents a unique onchain ID for a service.
@@ -83,6 +85,8 @@ type Response struct {
 type Protocol interface {
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
+	// All components that report their ready status to /healthz must implement the health.Check interface.
+	health.Check
 }
 
 // EndpointSelector defines the functionality that the user of a relayer needs to provide,

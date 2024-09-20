@@ -1,10 +1,17 @@
-// Package request provides a struct for setting and retrieving relay
-// request details from the context during the relay request lifecycle.
+// Request package is responsible for parsing and forwarding user requests.
+// It is not responsible for QoS, authorization, etc...
+//
+// For example, Processing should fail here only if:
+// A) No service is provided - Bad Request
+// B) The provided service is not found/configured for the gateway instance - Not Found
+//
+// The responsibility of the `request` package is to extract the service ID and find the target service's corresponding QoS instance.
+// See: https://github.com/buildwithgrove/path/blob/e0067eb0f9ab0956127c952980b09909a795b300/gateway/gateway.go#L52C2-L52C45
 package request
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -60,9 +67,11 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (relayer.
 	return serviceID, qosService, nil
 }
 
-// TODO_INCOMPLETE: implement this
 func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HTTPResponse {
-	return nil
+	if errors.Is(err, errNoServiceIDProvided) {
+		return &parserErrorResponse{err: err.Error(), code: http.StatusBadRequest}
+	}
+	return &parserErrorResponse{err: err.Error(), code: http.StatusNotFound}
 }
 
 // getServiceID gets the service ID from the request host
@@ -70,7 +79,7 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
 	hostParts := strings.Split(host, ".")
 	if len(hostParts) < 2 {
-		return "", fmt.Errorf("no service ID provided")
+		return "", errNoServiceIDProvided
 	}
 
 	subdomain := hostParts[0]

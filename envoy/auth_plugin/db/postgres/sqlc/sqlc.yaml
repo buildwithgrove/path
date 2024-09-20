@@ -1,0 +1,18 @@
+version: "2"
+
+sql:
+  - schema: "schema.sql"
+    engine: "postgresql"
+    queries: "query.sql"
+    gen:
+      go:
+        package: "postgres"
+        sql_package: "pgx/v5"
+        out: ".."
+        emit_json_tags: true
+        omit_unused_structs: true
+        output_db_file_name: db.generated.go
+        output_models_file_name: models.generated.go
+        output_querier_file_name: querier.generated.go
+        output_files_suffix: .generated
+        
