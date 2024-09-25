@@ -31,7 +31,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=ref,event=tag,suffix=-rc
-            type=sha,suffix=-rc,format=short
             type=sha,format=short,suffix=-rc
             type=ref,event=branch,pattern=latest
 
