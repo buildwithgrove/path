@@ -7,6 +7,8 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
+// TODO_UPNEXT(@adshmh): first implementation of ServiceRequestContext in the qos/evm package.
+//
 // ServiceRequestContext represent the interactions of the gateway with
 // a service's QoS instance, in the context of a single service request.
 //
