@@ -83,6 +83,11 @@ type Response struct {
 // - Morse: in the relayer/morse package, and
 // - Shannon: in the relayer/shannon package.
 type Protocol interface {
+	// TODO_UPNEXT(@adshmh): Update the Endpoints() method to return []EndpointAddr
+	// This is because no entity other than the relayer package and
+	// the underlying protocol integrations should deal with apps.
+	// e.g. QoS is only concerned with the quality of a specific endpoints,
+	// regardless of the app to which it is attached in the current session.
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
 	// All components that report their ready status to /healthz must implement the health.Check interface.

@@ -62,24 +62,25 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This poyload will be sent to an endpoint matching the requested service.
-	servicePayload, err := serviceQoS.ParseHTTPRequest(ctx, httpReq)
-	if err != nil {
+	serviceRequestCtx, isValid := serviceQoS.ParseHTTPRequest(ctx, httpReq)
+	if !isValid {
 		// Use the offchain service spec to decide the HTTP response returned to the user.
 		// This is service-specific because we know which service the user is requesting.
 		// e.g. for a JSONRPC service, the offchain spec enforcer can return a JSONRPC-formatted payload for the HTTP response returned to the user.
-		httpRes = serviceQoS.GetHTTPErrorResponse(ctx, err)
-		g.writeResponse(ctx, httpRes, w)
+		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 		return
 	}
 
 	// Send the service request payload, through the relayer, to a service provider endpoint.
-	endpointResponse, err := g.Relayer.SendRelay(ctx, serviceID, servicePayload, serviceQoS)
+	ctx, endpointAddr, endpointResponse, err := g.Relayer.SendRelay(ctx, serviceID, serviceRequestCtx.GetPayload(), serviceQoS)
 	if err != nil {
 		// TODO_TECHDEBT: the correct reaction to a failure in sending the relay to an endpoint and getting
 		// a response could be retrying with another endpoint, depending on the error.
 		// This should be revisited once a retry mechanism for failed relays is within scope.
-		httpRes = serviceQoS.GetHTTPErrorResponse(ctx, err)
-		g.writeResponse(ctx, httpRes, w)
+		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+
+		// The serviceQoS.Observe method call is intentionally skipped here.
+		// The Relayer is expected to handle protocol-specific errors.
 		return
 	}
 
@@ -92,13 +93,19 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// can only be identified onchain, i.e. the requests will pass the validation by the OffchainServicesSpecsEnforcer.
 	//
 	// TODO_INCOMPLETE: ParseResponse should use the supplied context of the service request to access any details about
-	// the request that is rrquired to validate and parse the response.
-	httpRes, err = serviceQoS.GetHTTPResponse(ctx, endpointResponse)
-	if err != nil {
-		httpRes = serviceQoS.GetHTTPErrorResponse(ctx, err)
-	}
+	// the request that is required to validate and parse the response.
+	serviceRequestCtx.UpdateWithResponse(endpointAddr, endpointResponse)
 
-	g.writeResponse(ctx, httpRes, w)
+	// TODO_TECHDEBT: Enhance the returned service request context so it can be queried on:
+	// a) whether the endpoint failed to provide a valid response, and
+	// b) whether a retry with another endpoint makes sense, if a failure occurred.
+	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+
+	// The context contains all the details the QoS needs to update its internal metrics about endpoint(s).
+	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
+	go func() {
+		serviceQoS.Observe(serviceRequestCtx)
+	}()
 }
 
 // TODO_INCOMPLETE: writeResponse should use the context to write the user-facing
