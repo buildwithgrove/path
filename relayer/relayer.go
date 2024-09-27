@@ -88,6 +88,10 @@ type Protocol interface {
 	// the underlying protocol integrations should deal with apps.
 	// e.g. QoS is only concerned with the quality of a specific endpoints,
 	// regardless of the app to which it is attached in the current session.
+	// TODO_TECHDEBT: any protocol/network-level errors should result in
+	// the endpoint being dropped by the protocol instance from the returned
+	// set of available endpoints.
+	// e.g. an endpoint that is temporarily/permanently unavailable.
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
 	// All components that report their ready status to /healthz must implement the health.Check interface.

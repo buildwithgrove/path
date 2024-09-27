@@ -60,7 +60,7 @@ func (eda *EndpointDataAugmenter) run() {
 	// TODO_IMPROVE: wait for all goroutines to finish before returning.
 }
 
-func (eda *EndpointDataAugmenter) performChecks(serviceID, serviceQoS) {
+func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
 	// endpoints here is expected to be: []Endpoint (AppAddr and EndpointAddr should be properties of Endpoint interface)
 	endpoints, err := eda.Protocol.AvailableEndpoints(serviceID)
 	if err != nil {
@@ -83,6 +83,11 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID, serviceQoS) {
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
 			// take the same execution path.
 			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(context.TODO(), serviceID, serviceReq.GetPayload(), singleEndpointSelector)
+
+			// Protocol-level errors are the responsibility of the specific
+			// protocol instance used in serving the request.
+			// e.g. an endpoint that is temporarily/permanently unavailable
+			// should not be returned by the AvailableEndpoints() method.
 			if err != nil {
 				// TODO_FUTURE: consider retrying failed service requests
 				// as the failure may not be related to the quality of the endpoint.
@@ -94,7 +99,9 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID, serviceQoS) {
 
 			// TODO_FUTURE: consider supplying additional data to QoS.
 			// e.g. data on the latency of an endpoint.
-			eda.QoSPublisher.Publish(serviceRequestCtx)
+			if err := eda.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
+				// TODO_IMPROVE: log the error
+			}
 		}
 
 	}

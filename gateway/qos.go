@@ -35,11 +35,7 @@ type ServiceRequestContext interface {
 	// with a 404 HTTP status code.
 	GetHTTPResponse() HTTPResponse
 
-	// MarshalJSON returns the serialized form
-	// of the service request context in JSON format.
-	// This is required for sharing service data between
-	// multiple PATH instances.
-	MarshalJSON() ([]byte, error)
+	GetObservationSet() message.ObservationSet
 }
 
 // QoSRequestParser can build the payload to be delivered to a service endpoint.
@@ -56,7 +52,7 @@ type QoSEndpointCheckGenerator interface {
 // QoSPublisher is used to publish a ServiceRequestContext.
 // This is used to share QoS data between PATH instances.
 type QoSPublisher interface {
-	Publish(ServiceRequestContext) error
+	Publish(message.ObservationSet) error
 }
 
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
