@@ -62,5 +62,10 @@ func (es *endpointStore) SelectEndpoint(availableEndpoints []relayer.EndpointAdd
 }
 
 func isEndpointValid(endpoint endpoint, chainID string, blockHeight uint64) bool {
-	return endpoint.ChainID == chainID && endpoint.BlockHeight >= blockHeight
+	endpointBlockHeight, err := endpoint.GetBlockHeight()
+	if err != nil {
+		return false
+	}
+
+	return endpoint.ChainID == chainID && endpointBlockHeight >= blockHeight
 }

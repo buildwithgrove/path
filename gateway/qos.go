@@ -45,6 +45,11 @@ type QoSRequestParser interface {
 	ParseHTTPRequest(context.Context, *http.Request) (ServiceRequestContext, bool)
 }
 
+// QoSEndpointCheckGenerator returns one or more service request contexts
+// that can provide data on the quality of an enpoint by sending it the
+// corresponding payloads and parsing its response.
+// These checks are service-specific, i.e. the QoS instance for a
+// service decides what checks should be done against an endpoint.
 type QoSEndpointCheckGenerator interface {
 	GetRequiredQualityChecks(relayer.EndpointAddr) []ServiceRequestContext
 }
@@ -59,12 +64,10 @@ type QoSPublisher interface {
 // e.g. a QoSService implementation for Ethereum, another for Solana, and third one for a RESTful service.
 //
 // QoSService represents the embedded definition of a service, e.g. a JSONRPC blockchain.
-// It is broken into 3 pieces to clarify its responsibilities:
-// 1. QoSRequestParser: Translates a service request from a supported format (currently only HTTP) into a service payload.
-// 2. QoSResponseBuilder: Builds HTTP responses from service endpoints' responses.
-// 3. EndpointSelector: chooses the best endpoint for performing a particular service request.
+// It is broken into several pieces to clarify its responsibilities:
+// 1. QoSRequestParser: Translates a service request from a supported format (currently only HTTP) into a service request context.
+// 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSRequestParser
-	QoSObserver
 	relayer.EndpointSelector
 }

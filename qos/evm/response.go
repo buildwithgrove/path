@@ -16,13 +16,13 @@ var (
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockHeight{}
 
-	methodResponseMappings = map[method]responseUnmarshaller{
+	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
 		methodChainID:     responseUnmarshallerChainID,
 		methodBlockNumber: responseUnmarshallerBlockHeight,
 	}
 )
 
-func unmarshalResponse(method method, data []byte) (response, error) {
+func unmarshalResponse(method jsonrpc.Method, data []byte) (response, error) {
 	unmarshaller, found := methodResponseMappings[method]
 	if found {
 		return unmarshaller(data)

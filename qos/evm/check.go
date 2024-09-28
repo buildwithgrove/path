@@ -2,6 +2,7 @@ package evm
 
 import (
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 const (
@@ -29,16 +30,14 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointA
 
 func getChainIDCheck(chainID string) serviceRequestContext {
 	return serviceRequestContext{
-		method:  methodChainID,
-		id:      idChainIDCheck,
-		isValid: true,
+		jsonrpcReq: jsonrpc.WithID(idChainIDCheck).WithMethod(methodChainID),
+		isValid:    true,
 	}
 }
 
 func getBlockHeightCheck() serviceRequestContext {
 	return serviceRequestContext{
-		method:  methodBlockNumber,
-		id:      idBlockNumberCheck,
-		isValid: true,
+		jsonrpcReq: jsonrpc.WithID(idBlockNumberCheck).WithMethod(methodBlockNumber),
+		isValid:    true,
 	}
 }

@@ -18,8 +18,10 @@ var _ message.ObservationSet = observationSet{}
 // an endpoint.
 type observation struct {
 	// TODO_IMPROVE: use a custom type here.
-	ChainID     string
-	BlockHeight uint64
+	ChainID string
+	// This is intentionally a string to allow validation
+	// of an endpoint's response.
+	BlockHeight string
 }
 
 type observationSet struct {

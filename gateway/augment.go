@@ -82,7 +82,12 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 			// TODO_IMPROVE: Sending a request here should use some method shared with the user request handler.
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
 			// take the same execution path.
-			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(context.TODO(), serviceID, serviceReq.GetPayload(), singleEndpointSelector)
+			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(
+				context.TODO(),
+				serviceID,
+				serviceRequestCtx.GetServicePayload(),
+				singleEndpointSelector,
+			)
 
 			// Protocol-level errors are the responsibility of the specific
 			// protocol instance used in serving the request.
@@ -103,7 +108,6 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 				// TODO_IMPROVE: log the error
 			}
 		}
-
 	}
 
 	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)
