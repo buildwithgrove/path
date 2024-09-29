@@ -73,7 +73,12 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	}
 
 	// Send the service request payload, through the relayer, to a service provider endpoint.
-	ctx, endpointAddr, endpointResponse, err := g.Relayer.SendRelay(ctx, serviceID, serviceRequestCtx.GetPayload(), serviceQoS)
+	endpointResponse, err := g.Relayer.SendRelay(
+		ctx,
+		serviceID,
+		serviceRequestCtx.GetServicePayload(),
+		serviceRequestCtx.GetEndpointSelector(),
+	)
 	if err != nil {
 		// TODO_TECHDEBT: the correct reaction to a failure in sending the relay to an endpoint and getting
 		// a response could be retrying with another endpoint, depending on the error.
@@ -95,7 +100,10 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	//
 	// TODO_INCOMPLETE: ParseResponse should use the supplied context of the service request to access any details about
 	// the request that is required to validate and parse the response.
-	serviceRequestCtx.UpdateWithResponse(endpointAddr, endpointResponse)
+	// TODO_FUTURE: Support multiple concurrent relays to multiple
+	// endpoints for a single user request.
+	// e.g. for handling JSONRPC batch requests.
+	serviceRequestCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
 	// TODO_TECHDEBT: Enhance the returned service request context so it can be queried on:
 	// a) whether the endpoint failed to provide a valid response, and

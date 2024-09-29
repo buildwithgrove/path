@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -13,20 +14,20 @@ type endpoint struct {
 	// TODO_FUTURE: support archival endpoints.
 }
 
-func (e *endpoint) ApplyObservations(observations []observation) {
+func (e *endpoint) Apply(observations []observation) {
 	for _, observation := range observations {
 		if observation.ChainID != "" {
 			e.ChainID = observation.ChainID
 		}
 
 		if observation.BlockHeight != "" {
-			e.BlockHeight = observation.BlockHeight
+			e.blockHeight = observation.BlockHeight
 		}
 	}
 }
 
 func (e endpoint) Validate(expectedChainID string) error {
-	if e.ChainID != chainID {
+	if e.ChainID != expectedChainID {
 		return fmt.Errorf("invalid chain ID: %s, expected: %s", e.ChainID, expectedChainID)
 	}
 

@@ -3,6 +3,8 @@ package evm
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // responseUnmarshaller is the entrypoint function for any
@@ -14,11 +16,11 @@ type responseUnmarshaller func([]byte) (response, error)
 
 var (
 	_ response = &responseToChainID{}
-	_ response = &responseToBlockHeight{}
+	_ response = &responseToBlockNumber{}
 
 	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
 		methodChainID:     responseUnmarshallerChainID,
-		methodBlockNumber: responseUnmarshallerBlockHeight,
+		methodBlockNumber: responseUnmarshallerBlockNumber,
 	}
 )
 
@@ -28,10 +30,10 @@ func unmarshalResponse(method jsonrpc.Method, data []byte) (response, error) {
 		return unmarshaller(data)
 	}
 
-	return genericUnmarshaller(data)
+	return responseUnmarshallerGeneric(data)
 }
 
-func responseUnmarshallerChainID(data []byte) (responseToChainID, error) {
+func responseUnmarshallerChainID(data []byte) (response, error) {
 	var response responseToChainID
 	if err := json.Unmarshal(data, &response); err != nil {
 		return responseToChainID{}, err
@@ -41,13 +43,13 @@ func responseUnmarshallerChainID(data []byte) (responseToChainID, error) {
 }
 
 // TODO_IN_THIS_COMMIT: implement this unmarshaller
-func responseUnmarshallerBlockHeight(data []byte) (responseToBlockHeight, error) {
-
+func responseUnmarshallerBlockNumber(data []byte) (response, error) {
+	return responseToBlockNumber{}, nil
 }
 
 // TODO_IN_THIS_COMMIT: implement this unmarshaller
-func responseUnmarshallerGeneric(data []byte) (responseGeneric, error) {
-
+func responseUnmarshallerGeneric(data []byte) (response, error) {
+	return responseGeneric{}, nil
 }
 
 type responseToChainID struct {
@@ -73,13 +75,13 @@ func (r responseToChainID) GetResponsePayload() []byte {
 
 func (r responseToChainID) Validate(id jsonrpc.ID) error {
 	if r.ID != id {
-		return fmt.Errorf("validate chainID response: invalid ID; expected %s, got %s", id, r.ID)
+		return fmt.Errorf("validate chainID response: invalid ID; expected %v, got %v", id, r.ID)
 	}
 
 	return nil
 }
 
-type responseToBlockHeight struct {
+type responseToBlockNumber struct {
 	ID      jsonrpc.ID      `json:"id"`
 	JSONRPC jsonrpc.Version `json:"jsonrpc"`
 	Result  string          `json:"result"`
@@ -88,13 +90,13 @@ type responseToBlockHeight struct {
 	responsePayload []byte
 }
 
-func (r responseToBlockHeight) GetObservation() (observation, bool) {
+func (r responseToBlockNumber) GetObservation() (observation, bool) {
 	return observation{
 		BlockHeight: r.Result,
 	}, true
 }
 
-func (r responseToBlockHeight) GetResponsePayload() []byte {
+func (r responseToBlockNumber) GetResponsePayload() []byte {
 	// TODO_INCOMPLETE: return a JSONRPC response indicating the error,
 	// if the unmarshalling failed.
 	return r.responsePayload
@@ -112,10 +114,12 @@ func (r responseGeneric) GetObservation() (observation, bool) {
 	return observation{}, false
 }
 
+// TODO_IN_THIS_COMMIT: implement this method and add unit tests.
 func (r responseGeneric) GetResponsePayload() []byte {
-	return r.buildPayload()
+	return nil
 }
 
+// TODO_IN_THIS_COMMIT: implement this method and add unit tests.
 func (r responseGeneric) buildPayload() []byte {
-
+	return nil
 }

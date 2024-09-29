@@ -3,7 +3,10 @@
 package evm
 
 import (
-	"context"
+	"errors"
+
+	"github.com/buildwithgrove/path/message"
+	"github.com/buildwithgrove/path/relayer"
 )
 
 // observationSet provides all the functionality required
@@ -36,7 +39,7 @@ func (os observationSet) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (os observationSet) NotifyStakeHolders() error {
+func (os observationSet) Broadcast() error {
 	if os.EndpointStore == nil {
 		return errors.New("notifyStakeHolders: endpoint store not set")
 	}
@@ -46,7 +49,7 @@ func (os observationSet) NotifyStakeHolders() error {
 
 // TODO_IMPROVE: use a separate function/struct here, instead of splitting
 // the EndpointStore's methods across multiple files.
-func (es *EndpointStore) ApplyObservations(endpointObservations map[relayer.EndpointAddr]observation) error {
+func (es *EndpointStore) ApplyObservations(endpointObservations map[relayer.EndpointAddr][]observation) error {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
 
@@ -61,11 +64,18 @@ func (es *EndpointStore) ApplyObservations(endpointObservations map[relayer.Endp
 			continue
 		}
 
+		endpointBlockHeight, err := endpoint.GetBlockHeight()
+		if err != nil {
+			continue
+		}
+
 		// TODO_TECHDEBT: use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
-		if endpoint.BlockHeight > es.blockHeight {
-			es.blockHeight = endpoint.BlockHeight
+		if endpointBlockHeight > es.blockHeight {
+			es.blockHeight = endpointBlockHeight
 		}
 	}
+
+	return nil
 }

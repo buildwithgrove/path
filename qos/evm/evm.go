@@ -1,17 +1,9 @@
 package evm
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
-	"time"
-
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 // QoS struct performs the functionality defined by
@@ -21,14 +13,7 @@ import (
 // requests.
 // B) an EndpointSelector, which selects an endpoint
 // for performing a service request.
-var _ gateway.ServiceQoS = &QoS{}
-
-var ( // compile-time checks to ensure EVMServiceQoS implements the required interfaces
-	_ gateway.QoSService         = &EVMServiceQoS{}
-	_ gateway.QoSResponseBuilder = &EVMResponseBuilder{}
-	_ gateway.QoSRequestParser   = &EVMRequestParser{}
-	_ gateway.HTTPResponse       = &EVMHTTPResponse{}
-)
+var _ gateway.QoSService = &QoS{}
 
 // QoS is the ServiceQoS implementations for EVM-based chains.
 // It contains logic specific to EVM-based chains,

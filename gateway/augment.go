@@ -1,5 +1,13 @@
 package gateway
 
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/buildwithgrove/path/relayer"
+)
+
 // Protocol specifies the interactions of the EndpointDataAugmenter with
 // the underlying protocol.
 // It is defined separately, rather than reusing relayer.Protocol interface,
@@ -34,7 +42,7 @@ func (eda *EndpointDataAugmenter) Start() error {
 		return errors.New("a Relayer must be provided.")
 	}
 
-	if len(Services) == 0 {
+	if len(eda.Services) == 0 {
 		return errors.New("at-least one covered service must be specified")
 	}
 
@@ -51,8 +59,8 @@ func (eda *EndpointDataAugmenter) Start() error {
 }
 
 func (eda *EndpointDataAugmenter) run() {
-	for svcID, svcQoS := range s.services {
-		go func(serviceID relayer.ServiceID, serviceQoS ServiceQoS) {
+	for svcID, svcQoS := range eda.Services {
+		go func(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
 			eda.performChecks(serviceID, serviceQoS)
 		}(svcID, svcQoS)
 	}
@@ -62,31 +70,30 @@ func (eda *EndpointDataAugmenter) run() {
 
 func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
 	// endpoints here is expected to be: []Endpoint (AppAddr and EndpointAddr should be properties of Endpoint interface)
-	endpoints, err := eda.Protocol.AvailableEndpoints(serviceID)
+	endpoints, err := eda.Protocol.Endpoints(serviceID)
 	if err != nil {
 		// TODO_IMPROVE: log the error
 		return
 	}
 
 	// TODO_FUTURE: use a single goroutine per endpoint
-	for _, endpointAddr := range endpoints {
+	for _, endpoint := range endpoints {
+		endpointAddr := endpoint.Addr()
 		endpointChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 		if len(endpointChecks) == 0 {
 			// TODO_FUTURE: Log an info-level message
 			continue
 		}
 
-		singleEndpointSelector := singleEndpointSelector{EndpointAddr: endpointAddr}
-
 		for _, serviceRequestCtx := range endpointChecks {
 			// TODO_IMPROVE: Sending a request here should use some method shared with the user request handler.
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
 			// take the same execution path.
-			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(
+			endpointResponse, err := eda.Relayer.SendRelay(
 				context.TODO(),
 				serviceID,
 				serviceRequestCtx.GetServicePayload(),
-				singleEndpointSelector,
+				serviceRequestCtx.GetEndpointSelector(),
 			)
 
 			// Protocol-level errors are the responsibility of the specific
@@ -100,7 +107,7 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 				continue
 			}
 
-			serviceRequestCtx.UpdateWithResponse(endpointAddr, endpointResponse)
+			serviceRequestCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
 			// TODO_FUTURE: consider supplying additional data to QoS.
 			// e.g. data on the latency of an endpoint.

@@ -2,6 +2,8 @@ package evm
 
 import (
 	"net/http"
+
+	"github.com/buildwithgrove/path/gateway"
 )
 
 // httpResponse is used by the RequestContext to provide

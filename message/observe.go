@@ -13,12 +13,12 @@ type ObservationSet interface {
 	// multiple PATH instances.
 	MarshalJSON() ([]byte, error)
 
-	// NotifyStakeHolders is used to communicate the observations contained
+	// Broadcast is used to communicate the observations contained
 	// in the set to the interested entities.
 	// e.g. The observation set returned by a gateway.ServiceRequestContext can
-	// guide the target service's QoS instance to update the quality data of 
+	// guide the target service's QoS instance to update the quality data of
 	// one or more endpoints.
-	NotifyStakeHolders() error
+	Broadcast() error
 }
 
 // TODO_FUTURE: consider using protobuf.

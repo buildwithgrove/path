@@ -3,14 +3,12 @@ package evm
 import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
+	"github.com/buildwithgrove/path/relayer"
 )
 
-const (
-	// TODO_IN_THIS_COMMIT: provide a basic JSONRPC package to meet
-	// the current needs of the evm package: e.g. unmarshalling a
-	// JSONRPC ID.
-	idChainIDCheck     = jsonrpc.IDFromNumber(1001)
-	idBlockNumberCheck = jsonrpc.IDFromNumber(1002)
+var (
+	idChainIDCheck     = jsonrpc.IDFromInt(1001)
+	idBlockNumberCheck = jsonrpc.IDFromInt(1002)
 )
 
 // EndpointStore provides the endpoint check generator required by
@@ -21,23 +19,34 @@ var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointAddr) []gateway.ServiceRequestContext {
 	// TODO_IMPROVE: skip any checks for which the endpoint already has
 	// a valid (e.g. not expired) quality data point.
+	requestCtx := requestContext{
+		isValid:                 true,
+		preSelectedEndpointAddr: endpointAddr,
+	}
+
 	return []gateway.ServiceRequestContext{
-		getChainIDCheck(es.chainID),
-		getBlockHeightCheck(),
+		withChainIDCheck(requestCtx),
+		withBlockHeightCheck(requestCtx),
 		// TODO_FUTURE: add an archival endpoint check.
 	}
 }
 
-func getChainIDCheck(chainID string) serviceRequestContext {
-	return serviceRequestContext{
-		jsonrpcReq: jsonrpc.WithID(idChainIDCheck).WithMethod(methodChainID),
-		isValid:    true,
+func withChainIDCheck(requestCtx requestContext) *requestContext {
+	requestCtx.jsonrpcReq = jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      idChainIDCheck,
+		Method:  methodChainID,
 	}
+
+	return &requestCtx
 }
 
-func getBlockHeightCheck() serviceRequestContext {
-	return serviceRequestContext{
-		jsonrpcReq: jsonrpc.WithID(idBlockNumberCheck).WithMethod(methodBlockNumber),
-		isValid:    true,
+func withBlockHeightCheck(requestCtx requestContext) *requestContext {
+	requestCtx.jsonrpcReq = jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      idBlockNumberCheck,
+		Method:  methodBlockNumber,
 	}
+
+	return &requestCtx
 }

@@ -72,6 +72,10 @@ type Response struct {
 	// HTTPStatusCode is the HTTP status returned by an endpoint
 	// in response to a relay request.
 	HTTPStatusCode int
+
+	// EndpointAddr is the address of the endpoint which returned
+	// the response.
+	EndpointAddr
 }
 
 // Protocol defines the core functionality of a protocol,

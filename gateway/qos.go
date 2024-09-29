@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -20,7 +21,7 @@ type ServiceRequestContext interface {
 	// TODO_TECHDEBT: This should eventually return a []relayer.Payload
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
 	// e.g. a batch relay request on a JSONRPC blockchain.
-	GetPayload() relayer.Payload
+	GetServicePayload() relayer.Payload
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
 	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
@@ -36,6 +37,10 @@ type ServiceRequestContext interface {
 	GetHTTPResponse() HTTPResponse
 
 	GetObservationSet() message.ObservationSet
+
+	// GetEndpointSelector is part of this interface to enable more specialized endpoint
+	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
+	GetEndpointSelector() relayer.EndpointSelector
 }
 
 // QoSRequestParser can build the payload to be delivered to a service endpoint.
@@ -69,5 +74,4 @@ type QoSPublisher interface {
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSRequestParser
-	relayer.EndpointSelector
 }

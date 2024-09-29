@@ -2,6 +2,8 @@ package evm
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -14,14 +16,13 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromInternalError(err), false
 	}
 
-	var rc requestContext
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
 		return requestContextFromUserError(err), false
 	}
 
 	// TODO_IMPROVE: method-specific validation of the JSONRPC request.
-	return requestContext{
+	return &requestContext{
 		endpointStore: qos.endpointStore,
 		jsonrpcReq:    jsonrpcReq,
 		isValid:       true,
@@ -30,14 +31,14 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.
-func requestContextFromInternalError(err error) requestContext {
-
+func requestContextFromInternalError(err error) *requestContext {
+	return nil
 }
 
 // requestContextFromUserError returns a request context
 // for a user error, e.g. an unmarshalling error is a
 // user error because the request body, provided by the user,
 // cannot be parsed as a valid JSONRPC request.
-func requestContextFromUserError(err error) requestContext {
-
+func requestContextFromUserError(err error) *requestContext {
+	return nil
 }
