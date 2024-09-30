@@ -90,9 +90,9 @@ docker pull ghcr.io/buildwithgrove/path
    \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
    to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` to start & build the PATH gateway.
+3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
-4. Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
 
    ```bash
    curl http://eth-mainnet.localhost:3000/v1 \
@@ -116,13 +116,15 @@ docker pull ghcr.io/buildwithgrove/path
 
 2. **Populate Config File:** Run `make copy_morse_config` to copy the example configuration file to `cmd/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
+   Update the configuration file `cmd/.config.yaml` with your Gateway's private key, address and your delegated Application's address.
 
-   _If you're a Grove employee, you can use the credentials [here](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=6vfwx26ff2yczyywrzm32bwt2e&i=4god5h3xwsvhszpyamjt2wixsm&h=buildwithgrove.1password.com)._
+   2.1 **If you're a Grove employee**, you can use copy-paste the PROD configs from [here](https://www.notion.so/buildwithgrove/PATH-Morse-Configuration-Helpers-Instructions-111a36edfff6807c8846f78244394e74?pvs=4).
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` to start & build PATH or `make path_up` if this is not your first time.
+   2.2 **If you're a community member**,
 
-4. Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
+
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
 
    ```bash
    curl http://eth-mainnet.localhost:3000/v1 \

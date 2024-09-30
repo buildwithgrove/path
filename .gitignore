@@ -23,6 +23,7 @@ go.work.sum
 !.config.example.yaml
 !.config.shannon_example.yaml
 !.config.morse_example.yaml
+!.config.morse_example_testnet.yaml
 
 # Macos
 .DS_Store
