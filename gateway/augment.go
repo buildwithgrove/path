@@ -68,7 +68,7 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 		return
 	}
 
-	// TODO_FUTURE: use a single goroutine per endpoint
+	// TODO_IMPROVE: use a single goroutine per endpoint
 	for _, endpointAddr := range endpoints {
 		endpointChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 		if len(endpointChecks) == 0 {
