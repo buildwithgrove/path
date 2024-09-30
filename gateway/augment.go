@@ -80,7 +80,7 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 
 		for _, serviceRequestCtx := range endpointChecks {
 			// TODO_IMPROVE: Sending a request here should use some method shared with the user request handler.
-			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
+			// This would ensure that both organic (i.e. user-generated) and synthetic (i.e. for QoS data) requests
 			// take the same execution path.
 			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(context.TODO(), serviceID, serviceReq.GetPayload(), singleEndpointSelector)
 
