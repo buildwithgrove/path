@@ -19,7 +19,8 @@ import (
 type ServiceRequestContext interface {
 	// TODO_TECHDEBT: This should eventually return a []relayer.Payload
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
-	// e.g. a batch relay request on a JSONRPC blockchain.
+	// e.g. A single batch relay request on a JSONRPC blockchain should be decomposable into
+	// multiple independent requests.
 	GetPayload() relayer.Payload
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
