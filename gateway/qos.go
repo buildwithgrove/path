@@ -40,7 +40,7 @@ type ServiceRequestContext interface {
 }
 
 // QoSRequestParser can build the payload to be delivered to a service endpoint.
-// It only supports HTTP service requests at this point.
+// TODO_FUTURE: It only supports HTTP service requests at this point.
 type QoSRequestParser interface {
 	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
 	ParseHTTPRequest(context.Context, *http.Request) (ServiceRequestContext, bool)
