@@ -57,7 +57,7 @@ func (eda *EndpointDataAugmenter) run() {
 		}(svcID, svcQoS)
 	}
 
-	// TODO_IMPROVE: wait for all goroutines to finish before returning.
+	// TODO_IMPROVE: use waitgroups to wait for all goroutines to finish before returning.
 }
 
 func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
