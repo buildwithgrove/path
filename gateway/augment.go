@@ -28,17 +28,17 @@ type Protocol interface {
 	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
 }
 
-// EndpointHydrator augments the available dataset on quality of endpoints.
-// Please see the following link for details on the Hydrator section of the name:
+// Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
-// It does this to ensure each supported service's QoS instance has enough data
-// on each available endpoint to make an informed selection of an endpoint
-// to handle a user service request.
-// It achieves this by:
-// 1. Consulting each service's QoS instance on the checks
-// required to validate an endpoint.
-// 2. Performing the required checks on the endpoint, in the form
-// of a (synthetic) service request.
+//
+// EndpointHydrator augments the available dataset on quality of endpoints.
+// For example, it can be used to process raw data into QoS data.
+// This ensures that each service on each instance has the information
+// needed to make real-time decisions to handle user requests.
+//
+// An example QoS transformation workflow can be:
+// 1. Consulting each service's QoS instance on the checks required to validate an endpoint.
+// 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
 	Protocol
@@ -85,7 +85,7 @@ func (eda *EndpointHydrator) run() {
 		}(svcID, svcQoS)
 	}
 
-	// TODO_IMPROVE: wait for all goroutines to finish before returning.
+	// TODO_IMPROVE: use waitgroups to wait for all goroutines to finish before returning.
 }
 
 func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
@@ -95,7 +95,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		return
 	}
 
-	// TODO_FUTURE: use a single goroutine per endpoint
+	// TODO_IMPROVE: use a single goroutine per endpoint
 	for _, endpoint := range endpoints {
 		endpointAddr := endpoint.Addr()
 		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
@@ -103,6 +103,8 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// TODO_IN_THIS_COMMIT: Log an info-level message
 			continue
 		}
+
+		singleEndpointSelector := singleEndpointSelector{EndpointAddr: endpointAddr}
 
 		for _, serviceRequestCtx := range requiredChecks {
 			// TODO_IMPROVE: Sending a request here should use some method shared with

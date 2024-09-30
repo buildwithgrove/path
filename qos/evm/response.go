@@ -8,10 +8,10 @@ import (
 )
 
 // responseUnmarshaller is the entrypoint function for any
-// new supported response types, e.g. to add a response to an
-// eth_getBalance request, a new responseUnmarshaller needs to
-// be defined, along with a custom struct to handle the details
-// of the particular response.
+// new supported response types.
+// E.g. to handle "eth_getBalance" requests, the following need to be fined:
+// 	1. A new custom responseUnmarshaller
+//      2. A new custom struct  to handle the details of the particular response.
 type responseUnmarshaller func([]byte) (response, error)
 
 var (

@@ -19,8 +19,8 @@ import (
 type RequestQoSContext interface {
 	// TODO_TECHDEBT: This should eventually return a []relayer.Payload
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
-	// e.g. a batch relay request on a JSONRPC blockchain.
-	GetServicePayload() relayer.Payload
+	// e.g. A single batch relay request on a JSONRPC blockchain should be decomposable into
+	// multiple independent requests.
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
 	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
@@ -49,7 +49,7 @@ type RequestQoSContext interface {
 // QoSContextBuilder builds the QoS context required for handling
 // all steps of a service request, e.g. generating a user-facing
 // HTTP response from an endpoint's response.
-// It only supports HTTP service requests at this point.
+// TODO_FUTURE: It only supports HTTP service requests at this point.
 type QoSContextBuilder interface {
 	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)

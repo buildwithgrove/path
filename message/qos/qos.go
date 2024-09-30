@@ -1,5 +1,6 @@
-// package qos provides the functionality required for sharing
-// QoS data between multiple PATH instances.
+// package qos provides the functionality required for
+// messaging (seriliaizing, sharing, etc...) QoS data between
+// multiple PATH instances.
 package qos
 
 import (

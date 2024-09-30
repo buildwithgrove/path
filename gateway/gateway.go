@@ -103,7 +103,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// e.g. for handling JSONRPC batch requests.
 	serviceRequestCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
-	// TODO_TECHDEBT: Enhance the returned service request context so it can be queried on:
+	// TODO_TECHDEBT: Enhance the returned serviceRequestCtx so it can be optionally queried on both:
 	// a) whether the endpoint failed to provide a valid response, and
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)

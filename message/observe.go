@@ -7,10 +7,8 @@ package message
 // e.g. QoS instances can share data by supplying an implementation
 // of this interface.
 type ObservationSet interface {
-	// MarshalJSON returns the serialized form
-	// of the set of observations, in JSON format.
-	// This is required for sharing QoS data between
-	// multiple PATH instances.
+	// MarshalJSON returns the serialized form of the observations in JSON format.
+	// This is required for sharing QoS data between multiple PATH instances.
 	MarshalJSON() ([]byte, error)
 
 	// Broadcast is used to communicate the observations contained
