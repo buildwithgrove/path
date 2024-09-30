@@ -19,7 +19,7 @@ const (
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
-var _ gateway.ServiceRequestContext = &requestContext{}
+var _ gateway.RequestQoSContext = &requestContext{}
 
 // TODO_TECHDEBT: Need a Validate() method here to allow
 // the caller, e.g. gateway, determine whether the endpoint's

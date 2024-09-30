@@ -104,8 +104,6 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			continue
 		}
 
-		singleEndpointSelector := singleEndpointSelector{EndpointAddr: endpointAddr}
-
 		for _, serviceRequestCtx := range requiredChecks {
 			// TODO_IMPROVE: Sending a request here should use some method shared with
 			// the user request (i.e. HTTP request) handler.

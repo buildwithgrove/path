@@ -1,5 +1,12 @@
 package evm
 
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
 func responseUnmarshallerChainID(data []byte) (response, error) {
 	var response responseToChainID
 	if err := json.Unmarshal(data, &response); err != nil {

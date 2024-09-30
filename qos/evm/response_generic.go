@@ -1,5 +1,9 @@
 package evm
 
+import (
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
 // TODO_IN_THIS_COMMIT: implement this unmarshaller
 func responseUnmarshallerGeneric(data []byte) (response, error) {
 	return responseGeneric{}, nil
@@ -14,7 +18,6 @@ func responseUnmarshallerGeneric(data []byte) (response, error) {
 type responseGeneric struct {
 	ID      jsonrpc.ID      `json:"id"`
 	JSONRPC jsonrpc.Version `json:"jsonrpc"`
-	json.RawMessage
 
 	payload []byte
 }

@@ -21,6 +21,7 @@ type RequestQoSContext interface {
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
 	// e.g. A single batch relay request on a JSONRPC blockchain should be decomposable into
 	// multiple independent requests.
+	GetServicePayload() relayer.Payload
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
 	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
@@ -71,7 +72,7 @@ type QoSEndpointCheckGenerator interface {
 	// make a decision based on the specific endpoint.
 	// e.g. An EVM-based blockchain service QoS may decide to skip quering an endpoint on
 	// its current block height if it has already failed the chain ID check.
-	GetRequiredQualityChecks(relayer.EndpointAddr) []ServiceRequestContext
+	GetRequiredQualityChecks(relayer.EndpointAddr) []RequestQoSContext
 }
 
 // QoSPublisher is used to publish a ServiceRequestContext.
@@ -88,5 +89,5 @@ type QoSPublisher interface {
 // 1. QoSRequestParser: Translates a service request from a supported format (currently only HTTP) into a service request context.
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
-	QoSRequestParser
+	QoSContextBuilder
 }

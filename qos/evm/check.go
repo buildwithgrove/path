@@ -16,7 +16,7 @@ var (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointAddr) []gateway.ServiceRequestContext {
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointAddr) []gateway.RequestQoSContext {
 	// TODO_IMPROVE: skip any checks for which the endpoint already has
 	// a valid (e.g. not expired) quality data point.
 	requestCtx := requestContext{
@@ -24,7 +24,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointA
 		preSelectedEndpointAddr: endpointAddr,
 	}
 
-	return []gateway.ServiceRequestContext{
+	return []gateway.RequestQoSContext{
 		withChainIDCheck(requestCtx),
 		withBlockHeightCheck(requestCtx),
 		// TODO_FUTURE: add an archival endpoint check.

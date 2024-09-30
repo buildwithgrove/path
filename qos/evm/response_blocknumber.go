@@ -1,5 +1,9 @@
 package evm
 
+import (
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
 // TODO_IN_THIS_COMMIT: implement this unmarshaller
 func responseUnmarshallerBlockNumber(data []byte) (response, error) {
 	return responseToBlockNumber{}, nil

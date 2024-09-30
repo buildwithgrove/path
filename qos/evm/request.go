@@ -10,7 +10,7 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.ServiceRequestContext, bool) {
+func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return requestContextFromInternalError(err), false
