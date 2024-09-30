@@ -5,8 +5,9 @@ on:
     workflows: ["Path tests"]
     types:
       - completed
-    branches: 
+    branches:
       - main
+  workflow_dispatch: # Added to enable manual trigger via GitHub UI
 
 jobs:
   release-on-push:
@@ -20,4 +21,3 @@ jobs:
           bump_version_scheme: patch
           release_body: ":rocket: Release Notes !:fireworks: "
           use_github_release_notes: true
-          
