@@ -15,6 +15,11 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
 
+1. Remove router config (explain what's option)
+   1. `router_config`
+2. Ensure docker pull works
+3.
+
 # Table of Contents <!-- omit in toc -->
 
 - [1. Introduction](#1-introduction)
@@ -33,6 +38,8 @@
   - [5.2. Start the Container](#52-start-the-container)
 - [6. E2E Tests](#6-e2e-tests)
   - [6.1. Running Tests](#61-running-tests)
+- [Troubleshooting](#troubleshooting)
+  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
 
 ## 1. Introduction
 
@@ -44,9 +51,11 @@ interaction with decentralized protocols.
 
 ### 1.1. Prerequisites
 
+**Deployment:**
+
 - [Docker](https://docs.docker.com/get-docker/)
 
-**Required For Development:**
+**Development only:**
 
 - [SQLC](https://docs.sqlc.dev/)
 - [Mockgen](https://github.com/uber-go/mock)
@@ -54,8 +63,13 @@ interaction with decentralized protocols.
 ## 2. Path Releases
 
 Path releases provide a Docker image you can start using right away to bootstrap
-your Path gateway without the need of building your own image. Images are available
-in our [Packages](https://github.com/buildwithgrove/path/pkgs/container/path) page.
+your Path gateway without the need of building your own image.
+
+You can find:
+
+- All the releases [here](https://github.com/buildwithgrove/path/releases)
+- All the package versions [here](https://github.com/buildwithgrove/path/pkgs/container/path/versions)
+- The containers page [here](https://github.com/buildwithgrove/path/pkgs/container/path)
 
 You can pull them directly using the following command:
 
@@ -63,34 +77,22 @@ You can pull them directly using the following command:
 docker pull ghcr.io/buildwithgrove/path
 ```
 
-Additionally, our releases contain additional information about what's up with updates/fixes.
-
-Head over to [releases](https://github.com/buildwithgrove/path/releases) to check them out.
-
 ## 3. Quickstart
 
 ### 3.1 Shannon Quickstart
 
-1. Stake Apps and Gateway
+1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
 
-   Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
-
-2. Populate Config File
-
-   Run `make copy_shannon_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make copy_shannon_config` to copy the example configuration file to `cmd/.config.yaml`.
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
    \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
    to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
-3. Start the PATH Container
-
-   Run `make path_up_build_gateway` to start & build PATH or `make path_up` if this is not your first time.
+3. **Start the PATH Container:** Run `make path_up_build_gateway` to start & build the PATH gateway.
 
 4. Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
-
-   _Example request to the PATH service:_
 
    ```bash
    curl http://eth-mainnet.localhost:3000/v1 \
@@ -99,11 +101,9 @@ Head over to [releases](https://github.com/buildwithgrove/path/releases) to chec
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
-   _For detailed instructions on running PATH, see the [Running PATH](#running-path) section._
-
 ### 3.2 Morse Quickstart
 
-1. Retrieve Application Authentication Token & Keys
+1. **Retrieve Application Authentication Token & Keys**
 
    This is a relatively manual process in Morse that is not well documented.
 
@@ -114,21 +114,15 @@ Head over to [releases](https://github.com/buildwithgrove/path/releases) to chec
    - [pocket-core/doc/specs/cli/apps.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/cli/apps.md)
    - [Gateway Server Kit instructions (as a reference)](https://github.com/pokt-network/gateway-server/blob/main/docs/quick-onboarding-guide.md#5-insert-app-stake-private-keys)
 
-2. Populate Config File
-
-   Run `make copy_morse_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make copy_morse_config` to copy the example configuration file to `cmd/.config.yaml`.
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
    _If you're a Grove employee, you can use the credentials [here](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=6vfwx26ff2yczyywrzm32bwt2e&i=4god5h3xwsvhszpyamjt2wixsm&h=buildwithgrove.1password.com)._
 
-3. Start the PATH Container
-
-   Run `make path_up_build_gateway` to start & build PATH or `make path_up` if this is not your first time.
+3. **Start the PATH Container:** Run `make path_up_build_gateway` to start & build PATH or `make path_up` if this is not your first time.
 
 4. Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
-
-   _Example request to the PATH service:_
 
    ```bash
    curl http://eth-mainnet.localhost:3000/v1 \
@@ -136,8 +130,6 @@ Head over to [releases](https://github.com/buildwithgrove/path/releases) to chec
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
-
-   _For detailed instructions on running PATH, see the [Running PATH](#running-path) section._
 
 ## 4. Configuration
 
@@ -289,4 +281,16 @@ make test_unit
 
 # Shannon E2E test only
 make test_e2e_shannon_relay
+```
+
+## Troubleshooting
+
+### Docker Permissions Issues - Need to run sudo?
+
+If you're hitting docker permission issues (e.g. you need to use sudo),
+see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
+or just copy-paste the following command:
+
+```bash
+sudo chmod 666 /var/run/docker.sock
 ```
