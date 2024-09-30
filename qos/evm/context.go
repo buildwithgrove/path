@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -66,7 +67,7 @@ type requestContext struct {
 
 // TODO_IN_THIS_COMMIT: implement this by adding a request parser.
 func (rc requestContext) GetServicePayload() relayer.Payload {
-	reqBz, err := rc.jsonrpcReq.MarshalJSON()
+	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {
 		// TODO_IMPROVE: find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request

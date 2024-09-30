@@ -2,6 +2,15 @@
 // QoS data between multiple PATH instances.
 package qos
 
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/message"
+	"github.com/buildwithgrove/path/relayer"
+)
+
 // The topic used by QoS publishers and subscribers
 // for individual service request contexts.
 const observationSetTopic = "qos.observation_set"
@@ -33,12 +42,12 @@ type MessagePlatform interface {
 	Subscribe(topic string) <-chan []byte
 }
 
-type QoSMessenger struct {
+type Messenger struct {
 	MessagePlatform
 	Services map[relayer.ServiceID]ServiceQoS
 }
 
-func (qm *QoSMessenger) Publish(observationSet message.ObservationSet) error {
+func (m *Messenger) Publish(observationSet message.ObservationSet) error {
 	// TODO_IMPROVE: there may be some performance advantage to directly
 	// sending a ServiceRequestContext to the service's QoS instance,
 	// over publishing it to the shared medium to be picked up by
@@ -48,31 +57,31 @@ func (qm *QoSMessenger) Publish(observationSet message.ObservationSet) error {
 		return fmt.Errorf("publish: error marshalling service request context: %w", err)
 	}
 
-	return qm.MessagePlatform.Publish(qosServiceRequestTopic, bz)
+	return m.MessagePlatform.Publish(observationSetTopic, bz)
 }
 
-func (qm *QoSMessenger) Start() error {
+func (m *Messenger) Start() error {
 	// TODO_INCOMPLETE: validate the struct.
 
-	serviceRequestContextMsgCh := qm.MessagePlatform.Subscribe(qosServiceRequestTopic)
+	observationSetMsgCh := m.MessagePlatform.Subscribe(observationSetTopic)
 
 	go func() {
-		qm.run(serviceRequestContextMsgCh)
+		m.run(observationSetMsgCh)
 	}()
 
 	return nil
 }
 
-func (qm *QoSMessenger) run(messageCh <-chan []byte) {
+func (m *Messenger) run(messageCh <-chan []byte) {
 	// TODO_INCOMPLETE: use multiple goroutines here.
 	for bz := range messageCh {
-		var qosMsg QoSObservationSetMessage
+		var qosMsg ObservationSetMessage
 		if err := json.Unmarshal(bz, &qosMsg); err != nil {
 			// TODO_IMPROVE: log the error
 			continue
 		}
 
-		serviceQoS, found := qm.Services[qosMsg.ServiceID]
+		serviceQoS, found := m.Services[qosMsg.ServiceID]
 		if !found {
 			// TODO_IMPROVE: log the error
 			continue
@@ -86,7 +95,7 @@ func (qm *QoSMessenger) run(messageCh <-chan []byte) {
 			continue
 		}
 
-		if err := observationSet.NotifyStakeHolders(); err != nil {
+		if err := observationSet.Broadcast(); err != nil {
 			// TODO_IMPROVE: log the error
 		}
 	}

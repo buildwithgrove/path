@@ -29,12 +29,14 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	}, true
 }
 
+// TODO_UPNEXT(@adshmh): return a request context to handle internal errors.
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.
 func requestContextFromInternalError(err error) *requestContext {
 	return nil
 }
 
+// TODO_UPNEXT(@adshmh): return a request context to handle user errors.
 // requestContextFromUserError returns a request context
 // for a user error, e.g. an unmarshalling error is a
 // user error because the request body, provided by the user,

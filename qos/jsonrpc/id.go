@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // TODO_TECHDEBT: handle all possible ID values based on JSONRPC spec.
@@ -14,28 +15,26 @@ type ID struct {
 
 func (id ID) MarshalJSON() ([]byte, error) {
 	if id.intID > 0 {
-		idWithInt := idWithInt{ID: id.intID}
-		return json.Marshal(idWithInt)
+		return []byte(fmt.Sprintf("%d", id.intID)), nil
 	}
 
-	idWithStr := idWithStr{ID: id.strID}
-	return json.Marshal(idWithStr)
+	return []byte(fmt.Sprintf("%q", id.strID)), nil
 }
 
 func (id *ID) UnmarshalJSON(data []byte) error {
-	var idWithInt idWithInt
-	if err := json.Unmarshal(data, &idWithInt); err == nil {
-		id.intID = idWithInt.ID
+	var intID int
+	if err := json.Unmarshal(data, &intID); err == nil {
+		id.intID = intID
 		return nil
 	}
 
-	var idWithStr idWithStr
-	err := json.Unmarshal(data, &idWithStr)
+	var strID string
+	err := json.Unmarshal(data, &strID)
 	if err != nil {
 		return err
 	}
 
-	id.strID = idWithStr.ID
+	id.strID = strID
 	return nil
 }
 

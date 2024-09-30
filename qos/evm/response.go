@@ -102,6 +102,8 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 	return r.responsePayload
 }
 
+// TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
+// (with the scope limited to an EVM-based blockchain)
 type responseGeneric struct {
 	ID      jsonrpc.ID      `json:"id"`
 	JSONRPC jsonrpc.Version `json:"jsonrpc"`

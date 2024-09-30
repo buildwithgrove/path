@@ -48,7 +48,8 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 
 	qosServices := make(map[relayer.ServiceID]gateway.QoSService)
 
-	for serviceID, serviceConfig := range backend.GetEnabledServiceConfigs() {
+	// TODO_UPNEXT(@adshmh): Move config-related code/initialization to the config package.
+	for serviceID := range backend.GetEnabledServiceConfigs() {
 
 		serviceName, ok := supportedServicesToQoSServiceName[serviceID]
 		if !ok {
@@ -57,7 +58,9 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 
 		switch serviceName {
 		case ServiceNameEVM:
-			qosServices[serviceID] = evm.NewEVMServiceQoS(serviceConfig.RequestTimeout, logger)
+			// TODO_UPNEXT(@adshmh): initialize the EVM Service QoS instance.
+			// TODO_UPNEXT(@adshmh): move this initialization to the config package.
+			qosServices[serviceID] = evm.NewServiceQoS(nil, logger)
 		case ServiceNameSolana:
 			// TODO_TECHDEBT: add solana qos service here
 		case ServiceNamePOKT:
