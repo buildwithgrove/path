@@ -1,7 +1,7 @@
 package gateway
 
-// Protocol specifies the interactions of the EndpointDataAugmenter with
-// the underlying protocol.
+// Protocol specifies the set of behaviours and interactions needed
+// by the EndpointDataAugmenter with the underlying protocol.
 // It is defined separately, rather than reusing relayer.Protocol interface,
 // to ensure only minimum necessary capabilities are available to the augmenter.
 type Protocol interface {
