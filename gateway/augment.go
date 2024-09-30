@@ -84,8 +84,8 @@ func (eda *EndpointDataAugmenter) performChecks(serviceID relayer.ServiceID, ser
 			// take the same execution path.
 			_, endpointAddr, endpointResponse, err := eda.Relayer.SendRelay(context.TODO(), serviceID, serviceReq.GetPayload(), singleEndpointSelector)
 
-			// Protocol-level errors are the responsibility of the specific
-			// protocol instance used in serving the request.
+			// Protocol-level errors are the responsibility of the protocol-specific
+			// instance implementation serving the request.
 			// e.g. an endpoint that is temporarily/permanently unavailable
 			// should not be returned by the AvailableEndpoints() method.
 			if err != nil {
