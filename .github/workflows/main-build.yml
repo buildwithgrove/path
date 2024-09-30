@@ -5,8 +5,9 @@ on:
     workflows: ["Path tests"]
     types:
       - completed
-    branches: 
+    branches:
       - main
+  workflow_dispatch: # Added to enable manual trigger via GitHub UI
 
 jobs:
   build-and-push:
