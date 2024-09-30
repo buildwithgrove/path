@@ -8,15 +8,15 @@ type Protocol interface {
 	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
 }
 
-// EndpointDataAugmenter augments the available dataset on quality of endpoints.
-// It does this to ensure each supported service's QoS instance has enough data
-// on each available endpoint to make an informed selection of an endpoint
-// to handle a user service request.
-// It achieves this by:
-// 1. Consulting each service's QoS instance on the checks
-// required to validate an endpoint.
-// 2. Performing the required checks on the endpoint, in the form
-// of a (synthetic) service request.
+// EndpointDataAugmenter transforms endpoint data to enable real-time business-logic decisions.
+// 
+// For example, it can be used to process raw data into QoS data.
+// This ensures that each service on each instance has the information
+// needed to make real-time decisions to handle user requests.
+// 
+// An example QoS transformation workflow can be:
+// 1. Consulting each service's QoS instance on the checks required to validate an endpoint.
+// 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointDataAugmenter struct {
 	Protocol
