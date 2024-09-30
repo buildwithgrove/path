@@ -12,6 +12,13 @@ import (
 // by the relayer package for handling a service request.
 var _ relayer.EndpointSelector = &EndpointStore{}
 
+// EndpointStoreConfig captures the modifiable settings
+// of the EndpointStore.
+// This will enable `EndpointStore` to be used
+// as part of QoS for other EVM-based blockchains
+// which may have different desired QoS properties.
+// e.g. different blockchains QoS instances could have different
+// tolerance levels for deviation from the current block height.
 type EndpointStoreConfig struct {
 	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
 	// SyncAllowance specifies the maximum number of blocks an endpoint
@@ -24,7 +31,12 @@ type EndpointStoreConfig struct {
 	ChainID string
 }
 
-// EndpointStore
+// EndpointStore maintains QoS data on the set of available endpoints
+// for an EVM-based blockchain service.
+// It performs several tasks, most notable:
+//
+//	1- Endpoint selection based on the quality data available
+//	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
 	Config EndpointStoreConfig
 
@@ -42,7 +54,7 @@ func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer
 		return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: received empty list of endpoints to select from")
 	}
 
-	// TODO_INCOMPLETE: randomize the array of available endpoints, to avoid picking the same valid endpoint every time.
+	// TODO_UPNEXT(@adshmh): randomize the array of available endpoints, to avoid picking the same valid endpoint every time.
 
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for appAddr, endpoints := range availableEndpoints {
@@ -72,11 +84,13 @@ func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer
 	return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: all apps have empty endpoint lists.")
 }
 
-func isEndpointValid(endpoint endpoint, chainID string, blockHeight uint64) bool {
+// isEndpointValid returns true if the input endpoint is valid for the passed
+// chain ID and query block height.
+func isEndpointValid(endpoint endpoint, chainID string, queryBlockHeight uint64) bool {
 	endpointBlockHeight, err := endpoint.GetBlockHeight()
 	if err != nil {
 		return false
 	}
 
-	return endpoint.ChainID == chainID && endpointBlockHeight >= blockHeight
+	return endpoint.ChainID == chainID && endpointBlockHeight >= queryBlockHeight
 }

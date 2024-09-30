@@ -19,6 +19,8 @@ var _ message.ObservationSet = observationSet{}
 // response to a service request.
 // It provides details needed to establish the validity of
 // an endpoint.
+// e.g. an observation can be the block height reported
+// by an endpoint of an EVM-based blockchain service.
 type observation struct {
 	// TODO_IMPROVE: use a custom type here.
 	ChainID string
@@ -44,12 +46,12 @@ func (os observationSet) Broadcast() error {
 		return errors.New("notifyStakeHolders: endpoint store not set")
 	}
 
-	return os.EndpointStore.ApplyObservations(os.Observations)
+	return os.EndpointStore.ProcessObservations(os.Observations)
 }
 
 // TODO_IMPROVE: use a separate function/struct here, instead of splitting
 // the EndpointStore's methods across multiple files.
-func (es *EndpointStore) ApplyObservations(endpointObservations map[relayer.EndpointAddr][]observation) error {
+func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.EndpointAddr][]observation) error {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
 
@@ -57,7 +59,7 @@ func (es *EndpointStore) ApplyObservations(endpointObservations map[relayer.Endp
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
 		endpoint := es.endpoints[endpointAddr]
-		endpoint.Apply(observations)
+		endpoint.Process(observations)
 		es.endpoints[endpointAddr] = endpoint
 
 		if err := endpoint.Validate(es.Config.ChainID); err != nil {

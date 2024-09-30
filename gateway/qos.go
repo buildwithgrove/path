@@ -8,16 +8,15 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
-// TODO_UPNEXT(@adshmh): first implementation of ServiceRequestContext in the qos/evm package.
+// RequestQoSContext represents the interactions of
+// the gateway with the QoS instance corresponding
+// to the service specified by a service request.
 //
-// ServiceRequestContext represent the interactions of the gateway with
-// a service's QoS instance, in the context of a single service request.
-//
-// A ServiceRequestContext can be built by:
-// A) Parsing an organic, i.e. originating from a user, HTTP service request, or
-// B) Using an embedded endpoint data augmenting service request, e.g. an `eth_chainId` request on an EVM blockchain, or
-// C) Deserializing the serialized format of a ServiceRequestContext, e.g. one shared by another PATH instance.
-type ServiceRequestContext interface {
+// A RequestQoSContext can be built in various ways such as:
+//   - 1. Building a new context by parsing an organic request from an end-user
+//   - 2. Building a new context based on a desired endpoint check, e.g. an `eth_chainId` request on an EVM blockchain.
+//   - 3. Rebuilding an existing context by deserializing a shared context from another PATH instance
+type RequestQoSContext interface {
 	// TODO_TECHDEBT: This should eventually return a []relayer.Payload
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
 	// e.g. a batch relay request on a JSONRPC blockchain.
@@ -25,7 +24,11 @@ type ServiceRequestContext interface {
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
 	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
-	UpdateWithResponse(relayer.EndpointAddr, []byte)
+	// UpdateWithResponse is used to inform the request QoS context of the
+	// payload returned by a specific endpoint in response to the service
+	// payload produced (through the `GetServicePayload` method) by the
+	// request QoS context instance
+	UpdateWithResponse(endpointAddr relayer.EndpointAddr, endpointSerializedResponse []byte)
 
 	// GetHTTPResponse returns the user-facing HTTP response.
 	// The received response will depend on the state of the service request context,
@@ -43,11 +46,13 @@ type ServiceRequestContext interface {
 	GetEndpointSelector() relayer.EndpointSelector
 }
 
-// QoSRequestParser can build the payload to be delivered to a service endpoint.
+// QoSContextBuilder builds the QoS context required for handling
+// all steps of a service request, e.g. generating a user-facing
+// HTTP response from an endpoint's response.
 // It only supports HTTP service requests at this point.
-type QoSRequestParser interface {
+type QoSContextBuilder interface {
 	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
-	ParseHTTPRequest(context.Context, *http.Request) (ServiceRequestContext, bool)
+	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
 }
 
 // QoSEndpointCheckGenerator returns one or more service request contexts
@@ -56,6 +61,16 @@ type QoSRequestParser interface {
 // These checks are service-specific, i.e. the QoS instance for a
 // service decides what checks should be done against an endpoint.
 type QoSEndpointCheckGenerator interface {
+	// TODO_FUTURE: add a GetOptionalQualityChecks() method, e.g. to enable
+	// a higher level of quality of service by collecting endpoints' latency
+	// in responding to certain requests.
+	//
+	// GetRequiredQualityChecks returns the set of quality checks required by
+	// the a QoS instance to assess the validity of an endpoint.
+	// The endpoint address is passed here because it allows the QoS instance to
+	// make a decision based on the specific endpoint.
+	// e.g. An EVM-based blockchain service QoS may decide to skip quering an endpoint on
+	// its current block height if it has already failed the chain ID check.
 	GetRequiredQualityChecks(relayer.EndpointAddr) []ServiceRequestContext
 }
 

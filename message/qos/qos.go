@@ -13,7 +13,7 @@ import (
 
 // The topic used by QoS publishers and subscribers
 // for individual service request contexts.
-const observationSetTopic = "qos.observation_set"
+const observationSetTopic = "qos.raw_data_set"
 
 // Messenger provides the functionality required by
 // the gateway package for publishing QoS data,

@@ -131,6 +131,11 @@ type Relayer struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (r Relayer) SendRelay(
+	// TODO_UPNEXT(@adshmh): Remove the context input argument, because:
+	//	1- It is not used.
+	//	2- If the need for more data from the relayer comes up, this
+	//	function can return a specialized "context" struct/interface
+	//	instead.
 	ctx context.Context,
 	serviceID ServiceID,
 	payload Payload,

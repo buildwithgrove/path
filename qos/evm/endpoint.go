@@ -8,13 +8,15 @@ import (
 // endpoint captures the details required to validate an EVM endpoint.
 type endpoint struct {
 	ChainID string
+	// blockHeight is the response to `eth_BlockNumber`
+	// received from the endpoint.
 	// blockHeight is stored as a string
 	// to allow validation of the endpoint's response.
 	blockHeight string
 	// TODO_FUTURE: support archival endpoints.
 }
 
-func (e *endpoint) Apply(observations []observation) {
+func (e *endpoint) Process(observations []observation) {
 	for _, observation := range observations {
 		if observation.ChainID != "" {
 			e.ChainID = observation.ChainID

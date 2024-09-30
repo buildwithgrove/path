@@ -86,7 +86,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
 		// The serviceQoS.Observe method call is intentionally skipped here.
-		// The Relayer is expected to handle protocol-specific errors.
+		// The relayer package is expected to handle protocol-specific errors.
 		return
 	}
 
@@ -98,8 +98,6 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// an error, e.g. an insufficinet funds response to a transaction: note that such validation issues on requests
 	// can only be identified onchain, i.e. the requests will pass the validation by the OffchainServicesSpecsEnforcer.
 	//
-	// TODO_INCOMPLETE: ParseResponse should use the supplied context of the service request to access any details about
-	// the request that is required to validate and parse the response.
 	// TODO_FUTURE: Support multiple concurrent relays to multiple
 	// endpoints for a single user request.
 	// e.g. for handling JSONRPC batch requests.
@@ -114,7 +112,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
 	go func() {
 		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-			// TODO_IMPROVE: log the error
+			// TODO_IN_THIS_COMMIT: log the error
 		}
 	}()
 }
