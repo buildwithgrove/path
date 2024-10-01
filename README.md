@@ -15,11 +15,6 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
 
-1. Remove router config (explain what's option)
-   1. `router_config`
-2. Ensure docker pull works
-3.
-
 # Table of Contents <!-- omit in toc -->
 
 - [1. Introduction](#1-introduction)
@@ -120,7 +115,8 @@ docker pull ghcr.io/buildwithgrove/path
 
    2.1 **If you're a Grove employee**, you can use copy-paste the PROD configs from [here](https://www.notion.so/buildwithgrove/PATH-Morse-Configuration-Helpers-Instructions-111a36edfff6807c8846f78244394e74?pvs=4).
 
-   2.2 **If you're a community member**,
+   2.2 **If you're a community member**, run the following command to get started quickly with a prefilled configuration
+   for Bitcoin MainNet on Pocket Morse TestNet: `cp ./cmd/.config.morse_example_testnet.yaml ./cmd/.config.yaml`
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
 

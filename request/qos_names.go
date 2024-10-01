@@ -8,6 +8,8 @@ var supportedServicesToQoSServiceName = map[relayer.ServiceID]ServiceName{
 
 	"gatewaye2e": ServiceNameEVM, // "gatewaye2e" service used in E2E tests
 
+	"0002": ServiceNameEVM, // Bitcoin MainNet
+
 	"0007": ServiceNameEVM, // Ethereum Gateway Server on POKT TestNet
 
 	"0021": ServiceNameEVM, // Ethereum Mainnet on POKT Mainnet
