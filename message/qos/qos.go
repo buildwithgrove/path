@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/relayer"
@@ -46,6 +48,7 @@ type MessagePlatform interface {
 type Messenger struct {
 	MessagePlatform
 	Services map[relayer.ServiceID]ServiceQoS
+	Logger   polylog.Logger
 }
 
 func (m *Messenger) Publish(observationSet message.ObservationSet) error {
@@ -97,7 +100,8 @@ func (m *Messenger) run(messageCh <-chan []byte) {
 		}
 
 		if err := observationSet.Broadcast(); err != nil {
-			// TODO_IMPROVE: log the error
+			// TODO_IMPROVE: add more details to the log.
+			m.Logger.Warn().Err(err).Msg("error broadcasting observationset")
 		}
 	}
 }

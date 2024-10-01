@@ -35,6 +35,7 @@ type response interface {
 type endpointResponse struct {
 	relayer.EndpointAddr
 	response
+	unmarshalErr error
 }
 
 // requestContext provides the functionality required
@@ -70,9 +71,10 @@ type requestContext struct {
 func (rc requestContext) GetServicePayload() relayer.Payload {
 	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {
-		// TODO_IMPROVE: find a way to guarantee this never happens,
+		// TODO_UPNEXT(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
+		return relayer.Payload{}
 	}
 
 	return relayer.Payload{
@@ -96,14 +98,12 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr relayer.EndpointAddr, 
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
 	response, err := unmarshalResponse(rc.jsonrpcReq.Method, responseBz)
-	if err != nil {
-		// TODO_FUTURE: log the error
-	}
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
 			EndpointAddr: endpointAddr,
 			response:     response,
+			unmarshalErr: err,
 		},
 	)
 }

@@ -45,11 +45,3 @@ func IDFromInt(id int) ID {
 func IDFromStr(id string) ID {
 	return ID{strID: id}
 }
-
-type idWithInt struct {
-	ID int `json:"id"`
-}
-
-type idWithStr struct {
-	ID string `json:"id"`
-}
