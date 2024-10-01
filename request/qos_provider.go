@@ -60,7 +60,7 @@ func newQoSServiceProvider(backend qosBackend, logger polylog.Logger) (*qosServi
 		case ServiceNameEVM:
 			// TODO_UPNEXT(@adshmh): initialize the EVM Service QoS instance.
 			// TODO_UPNEXT(@adshmh): move this initialization to the config package.
-			qosServices[serviceID] = evm.NewServiceQoS(nil, logger)
+			qosServices[serviceID] = evm.NewServiceQoS(&evm.EndpointStore{}, logger)
 		case ServiceNameSolana:
 			// TODO_TECHDEBT: add solana qos service here
 		case ServiceNamePOKT:

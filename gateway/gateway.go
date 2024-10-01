@@ -8,6 +8,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -23,6 +25,7 @@ type Gateway struct {
 	*relayer.Relayer
 	RequestResponseObserver
 	QoSPublisher
+	Logger polylog.Logger
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -112,7 +115,12 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
 	go func() {
 		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-			// TODO_IN_THIS_COMMIT: log the error
+			logger := g.Logger.With(
+				"service", string(serviceID),
+				"endpoint", string(endpointResponse.EndpointAddr),
+			)
+
+			logger.Warn().Msg("Failed to publish endpoint observations")
 		}
 	}()
 }

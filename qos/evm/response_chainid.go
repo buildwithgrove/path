@@ -7,10 +7,14 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// responseUnmarshallerChainID deserializes the provided byte slice
+// into a responseToChainID struct, adding any encountered errors
+// to the returned struct for constructing a response payload.
 func responseUnmarshallerChainID(data []byte) (response, error) {
 	var response responseToChainID
-	if err := json.Unmarshal(data, &response); err != nil {
-		return responseToChainID{}, err
+	err := json.Unmarshal(data, &response)
+	if err != nil {
+		response.unmarshallingErr = err
 	}
 
 	return response, nil
@@ -23,8 +27,9 @@ type responseToChainID struct {
 	JSONRPC jsonrpc.Version `json:"jsonrpc"`
 	Result  string          `json:"result"`
 
-	// TODO_FUTURE: build the response payload instead of keeping a copy.
-	responsePayload []byte
+	// unmarshallingErr captures any unmarshalling errors
+	// that may have occurred when constructing this instance.
+	unmarshallingErr error
 }
 
 func (r responseToChainID) GetObservation() (observation, bool) {
@@ -34,9 +39,21 @@ func (r responseToChainID) GetObservation() (observation, bool) {
 }
 
 func (r responseToChainID) GetResponsePayload() []byte {
-	// TODO_INCOMPLETE: return a JSONRPC response indicating the error,
-	// if the unmarshalling failed.
-	return r.responsePayload
+	if r.unmarshallingErr != nil {
+		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
+		// if unmarshalling failed.
+		return []byte("{}")
+
+	}
+
+	bz, err := json.Marshal(r)
+	if err != nil {
+		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
+		// if marshalling failed.
+		return []byte("{}")
+	}
+
+	return bz
 }
 
 func (r responseToChainID) Validate(id jsonrpc.ID) error {

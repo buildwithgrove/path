@@ -1,12 +1,22 @@
 package evm
 
 import (
+	"encoding/json"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_IN_THIS_COMMIT: implement this unmarshaller
+// responseUnmarshallerBlockNumber deserializes the provided payload
+// into a responseToBlockNumber struct, adding any encountered errors
+// to the returned struct.
 func responseUnmarshallerBlockNumber(data []byte) (response, error) {
-	return responseToBlockNumber{}, nil
+	var response responseToBlockNumber
+	err := json.Unmarshal(data, &response)
+	if err != nil {
+		response.unmarshallingErr = err
+	}
+
+	return response, err
 }
 
 // responseToBlockNumber captures the fields expected in a
@@ -16,8 +26,7 @@ type responseToBlockNumber struct {
 	JSONRPC jsonrpc.Version `json:"jsonrpc"`
 	Result  string          `json:"result"`
 
-	// TODO_FUTURE: build the response payload instead of keeping a copy.
-	responsePayload []byte
+	unmarshallingErr error
 }
 
 func (r responseToBlockNumber) GetObservation() (observation, bool) {
@@ -27,7 +36,18 @@ func (r responseToBlockNumber) GetObservation() (observation, bool) {
 }
 
 func (r responseToBlockNumber) GetResponsePayload() []byte {
-	// TODO_INCOMPLETE: return a JSONRPC response indicating the error,
-	// if the unmarshalling failed.
-	return r.responsePayload
+	if r.unmarshallingErr != nil {
+		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
+		// if the unmarshalling failed.
+		return []byte("{}")
+	}
+
+	bz, err := json.Marshal(r)
+	if err != nil {
+		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
+		// if marshalling failed.
+		return []byte("{}")
+	}
+
+	return bz
 }

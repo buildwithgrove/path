@@ -65,7 +65,8 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
-// TODO_IN_THIS_COMMIT: implement this by adding a request parser.
+// TODO_UPNEXT(@adshmh): Ensure the JSONRPC request struct
+// can handle all valid service requests.
 func (rc requestContext) GetServicePayload() relayer.Payload {
 	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {

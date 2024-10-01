@@ -7,6 +7,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -45,6 +47,7 @@ type EndpointHydrator struct {
 	*relayer.Relayer
 	QoSPublisher
 	ServiceQoSGenerators map[relayer.ServiceID]QoSEndpointCheckGenerator
+	Logger               polylog.Logger
 }
 
 // Start should be called to signal this instance of the hydrator
@@ -89,9 +92,13 @@ func (eda *EndpointHydrator) run() {
 }
 
 func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
+	logger := eda.Logger.With(
+		"service", string(serviceID),
+	)
+
 	endpoints, err := eda.Protocol.Endpoints(serviceID)
 	if err != nil {
-		// TODO_IN_THIS_COMMIT: log the error
+		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
 		return
 	}
 
@@ -100,7 +107,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		endpointAddr := endpoint.Addr()
 		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 		if len(requiredChecks) == 0 {
-			// TODO_IN_THIS_COMMIT: Log an info-level message
+			logger.With("endpoint", string(endpointAddr)).Warn().Msg("service QoS returned 0 required checks")
 			continue
 		}
 
@@ -130,7 +137,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			if err != nil {
 				// TODO_FUTURE: consider retrying failed service requests
 				// as the failure may not be related to the quality of the endpoint.
-				// TODO_IN_THIS_COMMIT: log the error
+				logger.Warn().Err(err).Msg("Failed to send relay.")
 				continue
 			}
 
@@ -139,7 +146,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// TODO_FUTURE: consider supplying additional data to QoS.
 			// e.g. data on the latency of an endpoint.
 			if err := eda.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-				// TODO_IN_THIS_COMMIT: log the error
+				logger.Warn().Err(err).Msg("Failed to publish QoS observations.")
 			}
 		}
 	}

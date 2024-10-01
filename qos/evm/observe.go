@@ -36,7 +36,8 @@ type observationSet struct {
 	Observations map[relayer.EndpointAddr][]observation
 }
 
-// TODO_IN_THIS_COMMIT: implement marshalling
+// TODO_UPNEXT(@adshmh): implement marshalling to allow the
+// observation set to be processed, e.g. by the corresponding QoS instance.
 func (os observationSet) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
