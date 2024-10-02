@@ -217,9 +217,9 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
 		signedAAT, ok := p.offChainBackend.GetSignedAAT(relayer.AppAddr(onchainApp.Address))
 		if !ok {
 			p.logger.Warn().Str("publicKey", onchainApp.PublicKey).Msg("fetchAppData: no AAT found for app. Skipping the app.")
-
 			continue
 		}
+
 		app := app{
 			address:   onchainApp.Address,
 			publicKey: onchainApp.PublicKey,
