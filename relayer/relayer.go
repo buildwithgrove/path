@@ -77,7 +77,7 @@ type Response struct {
 // Protocol defines the core functionality of a protocol,
 // from the perspective of a gateway.
 // It expects a protocol to provide functions to:
-// 1) List the endpoins available for sending relays for a specific service.
+// 1) List the endpoints available for sending relays for a specific service.
 // 2) Send a relay to a specific endpoint and return its response.
 // There are two implementations of this interface:
 // - Morse: in the relayer/morse package, and
