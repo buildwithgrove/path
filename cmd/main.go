@@ -36,18 +36,36 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	requestParser, err := request.NewParser(config, logger)
+	relayer := &relayer.Relayer{Protocol: protocol}
+
+	qosPublisher, err := getQoSPublisher(config.MessagingConfig)
+	if err != nil {
+		log.Fatalf("failed to setup the QoS publisher: %v", err)
+	}
+
+	gatewayQoSInstances, hydratorQoSGenerators, err := getServiceQoSInstances(config, logger)
+	if err != nil {
+		log.Fatalf("failed to setup QoS instances: %v", err)
+	}
+
+	// TODO_IMPROVE: consider using a separate relayer for the hydrator,
+	// to enable configuring separate worker pools for the user requests
+	// and the endpoint hydrator requests.
+	err = setupEndpointHydrator(protocol, relayer, qosPublisher, hydratorQoSGenerators, logger)
+	if err != nil {
+		log.Fatalf("failed to setup endpoint hydrator: %v", err)
+	}
+
+	requestParser, err := request.NewParser(config, gatewayQoSInstances, logger)
 	if err != nil {
 		log.Fatalf("failed to create request parser: %v", err)
 	}
 
-	relayer := &relayer.Relayer{Protocol: protocol}
-
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
-		// TODO_UPNEXT(@adshmh): implement the QoS Publisher and use here.
-		QoSPublisher: noopQoSPublisher{},
+		QoSPublisher:      qosPublisher,
+		Logger:            logger,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service

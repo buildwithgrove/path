@@ -27,7 +27,7 @@ const endpointHydratorRunIntervalMillisec = 30_000
 // It is defined separately, rather than reusing relayer.Protocol interface,
 // to ensure only minimum necessary capabilities are available to the augmenter.
 type Protocol interface {
-	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
+	Endpoints(relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error)
 }
 
 // Please see the following link for details on the use of `Hydrator` word in the name.
@@ -52,20 +52,20 @@ type EndpointHydrator struct {
 
 // Start should be called to signal this instance of the hydrator
 // to start generating and sending out the endpoint check requests.
-func (eda *EndpointHydrator) Start() error {
-	if eda.Protocol == nil {
+func (eph *EndpointHydrator) Start() error {
+	if eph.Protocol == nil {
 		return errors.New("a Protocol instance must be proivded.")
 	}
 
-	if eda.Relayer == nil {
+	if eph.Relayer == nil {
 		return errors.New("a Relayer must be provided.")
 	}
 
-	if eda.QoSPublisher == nil {
+	if eph.QoSPublisher == nil {
 		return errors.New("a QoS Publisher must be provided.")
 	}
 
-	if len(eda.ServiceQoSGenerators) == 0 {
+	if len(eph.ServiceQoSGenerators) == 0 {
 		return errors.New("at-least one covered service must be specified")
 	}
 
@@ -73,7 +73,7 @@ func (eda *EndpointHydrator) Start() error {
 		// TODO_IMPROVE: support configuring a custom running interval.
 		ticker := time.NewTicker(endpointHydratorRunIntervalMillisec * time.Millisecond)
 		for {
-			eda.run()
+			eph.run()
 			<-ticker.C
 		}
 	}()
@@ -81,30 +81,38 @@ func (eda *EndpointHydrator) Start() error {
 	return nil
 }
 
-func (eda *EndpointHydrator) run() {
-	for svcID, svcQoS := range eda.ServiceQoSGenerators {
+func (eph *EndpointHydrator) run() {
+	for svcID, svcQoS := range eph.ServiceQoSGenerators {
 		go func(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
-			eda.performChecks(serviceID, serviceQoS)
+			eph.performChecks(serviceID, serviceQoS)
 		}(svcID, svcQoS)
 	}
 
 	// TODO_IMPROVE: use waitgroups to wait for all goroutines to finish before returning.
 }
 
-func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
-	logger := eda.Logger.With(
+func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
+	logger := eph.Logger.With(
 		"service", string(serviceID),
 	)
 
-	endpoints, err := eda.Protocol.Endpoints(serviceID)
+	allEndpoints, err := eph.Protocol.Endpoints(serviceID)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
 		return
 	}
 
+	// TODO_UPNEXT(@adshmh): remove this once the Protocol interface
+	// is updated to directly return the set of unique endpoints.
+	uniqueEndpoints := make(map[relayer.EndpointAddr]struct{})
+	for _, endpoints := range allEndpoints {
+		for _, endpoint := range endpoints {
+			uniqueEndpoints[endpoint.Addr()] = struct{}{}
+		}
+	}
+
 	// TODO_IMPROVE: use a single goroutine per endpoint
-	for _, endpoint := range endpoints {
-		endpointAddr := endpoint.Addr()
+	for endpointAddr := range uniqueEndpoints {
 		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 		if len(requiredChecks) == 0 {
 			logger.With("endpoint", string(endpointAddr)).Warn().Msg("service QoS returned 0 required checks")
@@ -118,7 +126,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// take the same execution path.
 			// TODO_UPNEXT(@adshmh): remove the context input argument once the Relayer interface's
 			// SendRelay function is updated.
-			endpointResponse, err := eda.Relayer.SendRelay(
+			endpointResponse, err := eph.Relayer.SendRelay(
 				context.TODO(),
 				serviceID,
 				serviceRequestCtx.GetServicePayload(),
@@ -145,7 +153,7 @@ func (eda *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 
 			// TODO_FUTURE: consider supplying additional data to QoS.
 			// e.g. data on the latency of an endpoint.
-			if err := eda.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
+			if err := eph.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
 				logger.Warn().Err(err).Msg("Failed to publish QoS observations.")
 			}
 		}
