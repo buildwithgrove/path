@@ -12,5 +12,5 @@ import (
 type EndpointHydratorConfig struct {
 	// ServiceIDs is the list of IDs of services to be handled by
 	// the Endpoint Hydrator.
-	ServiceIDs []relayer.ServiceID `json:"service_ids,omitempty"`
+	ServiceIDs []relayer.ServiceID `yaml:"service_ids"`
 }

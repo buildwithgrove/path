@@ -20,6 +20,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointA
 	// TODO_IMPROVE: skip any checks for which the endpoint already has
 	// a valid (e.g. not expired) quality data point.
 	requestCtx := requestContext{
+		endpointStore:           es,
 		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
 	}

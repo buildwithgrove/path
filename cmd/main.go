@@ -51,7 +51,7 @@ func main() {
 	// TODO_IMPROVE: consider using a separate relayer for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	err = setupEndpointHydrator(protocol, relayer, qosPublisher, hydratorQoSGenerators, logger)
+	hydrator, err := setupEndpointHydrator(protocol, relayer, qosPublisher, hydratorQoSGenerators, logger)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
@@ -72,8 +72,13 @@ func main() {
 	// Unavailable status; once all components are ready, it will return a 200 OK status.
 	// health check components must implement the health.Check interface
 	// to be able to signal they are ready to service requests.
+	components := []health.Check{protocol}
+	if hydrator != nil {
+		components = append(components, hydrator)
+	}
+
 	healthChecker := &health.Checker{
-		Components: []health.Check{protocol},
+		Components: components,
 		Logger:     logger,
 	}
 

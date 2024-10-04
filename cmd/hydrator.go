@@ -19,30 +19,30 @@ func setupEndpointHydrator(
 	qosPublisher gateway.QoSPublisher,
 	qosGenerators map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
 	logger polylog.Logger,
-) error {
+) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
-		return errors.New("no logger provided")
+		return nil, errors.New("no logger provided")
 	}
 
 	if len(qosGenerators) == 0 {
 		logger.Warn().Msg("endpoint hydrator is disabled: no service QoS generators are specified")
-		return nil
+		return nil, nil
 	}
 
 	if qosPublisher == nil {
-		return errors.New("endpoint hydrator enabled but no QoS publishers provided")
+		return nil, errors.New("endpoint hydrator enabled but no QoS publishers provided")
 	}
 
 	if protocol == nil {
-		return errors.New("endpoint hydrator enabled but no protocol instance provided")
+		return nil, errors.New("endpoint hydrator enabled but no protocol instance provided")
 	}
 
 	if relayer == nil {
-		return errors.New("endpoint hydrator enabled but no relayer provided")
+		return nil, errors.New("endpoint hydrator enabled but no relayer provided")
 	}
 
 	if qosPublisher == nil {
-		return errors.New("endpoint hydrator enabled but no publisher provided")
+		return nil, errors.New("endpoint hydrator enabled but no publisher provided")
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
@@ -53,5 +53,10 @@ func setupEndpointHydrator(
 		Logger:               logger,
 	}
 
-	return endpointHydrator.Start()
+	err := endpointHydrator.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return &endpointHydrator, nil
 }

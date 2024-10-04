@@ -2,8 +2,11 @@ package evm
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"sync"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/relayer"
 )
@@ -39,6 +42,7 @@ type EndpointStoreConfig struct {
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
 	Config EndpointStoreConfig
+	Logger polylog.Logger
 
 	mutex       sync.RWMutex
 	endpoints   map[relayer.EndpointAddr]endpoint
@@ -54,21 +58,34 @@ func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer
 		return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: received empty list of endpoints to select from")
 	}
 
-	// TODO_UPNEXT(@adshmh): randomize the array of available endpoints, to avoid picking the same valid endpoint every time.
+	// TODO_UPNEXT(@adshmh): Use a randomization, e.g. standard library's
+	// random.Shuffle() method, once the Protocol interface is updated,
+	// rather than relying on map's range operator randomization
+	uniqueEndpoints := make(map[relayer.EndpointAddr]relayer.AppAddr)
+	for appAddr, endpoints := range availableEndpoints {
+		for _, endpoint := range endpoints {
+			uniqueEndpoints[endpoint.Addr()] = appAddr
+		}
+	}
+
+	logger := es.Logger.With("number of unique endpoints", fmt.Sprintf("%d", len(uniqueEndpoints)))
+	logger.Info().Msg("select: processing available endpoints")
 
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
-	for appAddr, endpoints := range availableEndpoints {
-		for _, availableEndpoint := range endpoints {
-			endpointAddr := availableEndpoint.Addr()
-			endpoint, found := es.endpoints[endpointAddr]
-			if !found {
-				continue
-			}
+	for endpointAddr, appAddr := range uniqueEndpoints {
+		logger := logger.With("endpoint", endpointAddr)
+		logger.Info().Msg("select: processing endpoint")
 
-			if isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight) {
-				return appAddr, endpointAddr, nil
-			}
+		endpoint, found := es.endpoints[endpointAddr]
+		if !found {
+			continue
 		}
+
+		if isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight) {
+			return appAddr, endpointAddr, nil
+		}
+
+		logger.Info().Msg("select: invalid endpoint is filtered")
 	}
 
 	// TODO_INCOMPLETE: log a warning/info message to provide some visibility if endpoint selection

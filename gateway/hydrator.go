@@ -5,16 +5,26 @@ package gateway
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
+// EndpointHydrator provides the functionality required for health check.
+var _ health.Check = &EndpointHydrator{}
+
 // endpointHydratorRunIntervalMillisec specifies the running
 // interval of an endpoint hydrator.
-const endpointHydratorRunIntervalMillisec = 30_000
+const (
+	endpointHydratorRunIntervalMillisec = 10_000
+
+	// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
+	componentNameHydrator = "endpoint-hydrator"
+)
 
 // TODO_UPNEXT(@adshmh): Complete the following to remove the confusing Protocol interface below:
 //
@@ -46,8 +56,22 @@ type EndpointHydrator struct {
 	Protocol
 	*relayer.Relayer
 	QoSPublisher
+	// ServiceQoSGenerators provides the hydrator with the EndpointCheckGenerator
+	// it needs to invoke for a service ID.
+	// ServiceQoSGenerators should not be modified after the hydrator is started.
 	ServiceQoSGenerators map[relayer.ServiceID]QoSEndpointCheckGenerator
 	Logger               polylog.Logger
+
+	// TODO_FUTURE: a more sophisticated health status indicator
+	// may eventually be needed, e.g. one that checks whether any
+	// of the attempted service requests returned a response.
+	//
+	// isHealthy indicates whether the hydrator's
+	// most recent iteration has been successful
+	// i.e. it has successfully run checks against
+	// every configured service.
+	isHealthy         bool
+	healthStatusMutex sync.RWMutex
 }
 
 // Start should be called to signal this instance of the hydrator
@@ -82,16 +106,33 @@ func (eph *EndpointHydrator) Start() error {
 }
 
 func (eph *EndpointHydrator) run() {
+	eph.Logger.With("services count", len(eph.ServiceQoSGenerators)).Info().Msg("Running Hydrator")
+
+	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
+	// has a timeout set.
+	var wg sync.WaitGroup
+	// A sync.Map is optimized for the use case here,
+	// i.e. each map entry is written only once.
+	var successfulServiceChecks sync.Map
+
 	for svcID, svcQoS := range eph.ServiceQoSGenerators {
+		wg.Add(1)
 		go func(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
-			eph.performChecks(serviceID, serviceQoS)
+			err := eph.performChecks(serviceID, serviceQoS)
+			if err == nil {
+				successfulServiceChecks.Store(svcID, true)
+			}
+			wg.Done()
 		}(svcID, svcQoS)
 	}
+	wg.Wait()
 
-	// TODO_IMPROVE: use waitgroups to wait for all goroutines to finish before returning.
+	eph.healthStatusMutex.Lock()
+	defer eph.healthStatusMutex.Unlock()
+	eph.isHealthy = eph.getHealthStatus(successfulServiceChecks)
 }
 
-func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
+func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) error {
 	logger := eph.Logger.With(
 		"service", string(serviceID),
 	)
@@ -99,7 +140,7 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 	allEndpoints, err := eph.Protocol.Endpoints(serviceID)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
-		return
+		return err
 	}
 
 	// TODO_UPNEXT(@adshmh): remove this once the Protocol interface
@@ -113,6 +154,8 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 
 	// TODO_IMPROVE: use a single goroutine per endpoint
 	for endpointAddr := range uniqueEndpoints {
+		logger.With("endpoint", endpointAddr).Info().Msg("running checks against the endpoint")
+
 		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 		if len(requiredChecks) == 0 {
 			logger.With("endpoint", string(endpointAddr)).Warn().Msg("service QoS returned 0 required checks")
@@ -160,4 +203,40 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 	}
 
 	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)
+	return nil
+}
+
+// Name is used when checking the status/health of the hydrator.
+func (eph EndpointHydrator) Name() string {
+	return componentNameHydrator
+}
+
+// IsAlive returns true if the hydrator has completed 1 iteration.
+// It is used to check the status/health of the hydrator
+func (eph *EndpointHydrator) IsAlive() bool {
+	eph.healthStatusMutex.RLock()
+	defer eph.healthStatusMutex.RUnlock()
+
+	return eph.isHealthy
+}
+
+// getHealthStatus returns the health status of the hydrator
+// based on the results of the most recently completed iteration
+// of running checks against service endpoints.
+func (eph EndpointHydrator) getHealthStatus(successfulServiceChecks sync.Map) bool {
+	// TODO_FUTURE: allow reporting unhealthy status if
+	// certain services could not be processed.
+	for svcID := range eph.ServiceQoSGenerators {
+		value, found := successfulServiceChecks.Load(svcID)
+		if !found {
+			return false
+		}
+
+		successful, ok := value.(bool)
+		if !ok || !successful {
+			return false
+		}
+	}
+
+	return true
 }

@@ -149,6 +149,7 @@ func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	)
 
 	return relayer.Response{
+		EndpointAddr:   req.EndpointAddr,
 		Bytes:          []byte(output.Response),
 		HTTPStatusCode: output.StatusCode,
 	}, err

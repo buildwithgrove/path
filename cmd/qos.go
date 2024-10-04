@@ -39,7 +39,7 @@ func getServiceQoSInstances(
 	for _, serviceID := range allServiceIDs {
 		switch serviceID {
 		case config.ServiceIDEVM:
-			evmEndpointStore := &evm.EndpointStore{}
+			evmEndpointStore := &evm.EndpointStore{Logger: logger}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
@@ -50,6 +50,11 @@ func getServiceQoSInstances(
 			// TODO_TECHDEBT: add solana qos service here
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
+		case config.ServiceIDE2E:
+			evmEndpointStore := &evm.EndpointStore{Logger: logger}
+			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
+				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
+			}
 		default:
 			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not recognized", serviceID)
 		}
