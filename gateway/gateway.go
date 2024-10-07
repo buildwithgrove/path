@@ -88,8 +88,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-		// The serviceQoS.Observe method call is intentionally skipped here.
-		// The relayer package is expected to handle protocol-specific errors.
+		// The serviceQoS.Observe method call is intentionally skipped here,
+		// because the relayer package is expected to handle protocol-specific errors.
 		return
 	}
 
