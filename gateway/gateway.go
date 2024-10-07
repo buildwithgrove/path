@@ -21,10 +21,22 @@ import (
 // request and the response is HTTP as it is sufficient for JSONRPC,
 // REST, Websockets and gRPC but may expand in the future.
 type Gateway struct {
+	// HTTPRequestParser is used by the gateway instance to
+	// interpret an HTTP request as a pair of service ID and
+	// its corresponding QoS instance.
 	HTTPRequestParser
+
+	// The relayer.Relayer instance is used to fulfill the
+	// service requests received by the gateway through
+	// sending the service payload to an endpoint.
 	*relayer.Relayer
-	RequestResponseObserver
+
+	// QoSPublisher is used to publish QoS-related observations.
+	// It can be "local" i.e. inform the local QoS
+	// instance, or publisher that sends QoS observations over
+	// a messaging platform to share among multiple PATH instances.
 	QoSPublisher
+
 	Logger polylog.Logger
 }
 
