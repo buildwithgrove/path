@@ -10,6 +10,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// ParseHTTPRequest builds a request context from the provided HTTP request.
+// It returns an error if the HTTP request cannot be parsed as a JSONRPC request.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {

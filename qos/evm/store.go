@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"sync"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -39,16 +41,19 @@ type EndpointStoreConfig struct {
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
 	Config EndpointStoreConfig
+	Logger polylog.Logger
 
-	mutex       sync.RWMutex
+	endpointsMu sync.RWMutex
 	endpoints   map[relayer.EndpointAddr]endpoint
+	// blockHeight is the expected latest block height on the blockchain.
+	// It is calculated as the maximum of block height reported by any of the endpoints.
 	blockHeight uint64
 }
 
 // TODO_UPNEXT(@adshmh): Update this method along with the relayer.EndpointSelector interface.
 func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer.Endpoint) (relayer.AppAddr, relayer.EndpointAddr, error) {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
 
 	if len(availableEndpoints) == 0 {
 		return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: received empty list of endpoints to select from")

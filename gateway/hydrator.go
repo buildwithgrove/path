@@ -12,20 +12,15 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
-// endpointHydratorRunIntervalMillisec specifies the running
+// endpointHydratorRunInterval specifies the running
 // interval of an endpoint hydrator.
-const endpointHydratorRunIntervalMillisec = 30_000
+var endpointHydratorRunInterval = 30_000 * time.Millisecond
 
 // TODO_UPNEXT(@adshmh): Complete the following to remove the confusing Protocol interface below:
 //
 //	1- Split the relayer package's Protocol interface.
 //	2- Import the appropriate interface here, e.g. a new `EndpointProvider` interface.
 //	3- Update/remove the comment below.
-//
-// Protocol specifies the interactions of the EndpointHydrator with
-// the underlying protocol.
-// It is defined separately, rather than reusing relayer.Protocol interface,
-// to ensure only minimum necessary capabilities are available to the augmenter.
 type Protocol interface {
 	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
 }
@@ -71,7 +66,7 @@ func (eda *EndpointHydrator) Start() error {
 
 	go func() {
 		// TODO_IMPROVE: support configuring a custom running interval.
-		ticker := time.NewTicker(endpointHydratorRunIntervalMillisec * time.Millisecond)
+		ticker := time.NewTicker(endpointHydratorRunInterval)
 		for {
 			eda.run()
 			<-ticker.C

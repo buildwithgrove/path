@@ -53,8 +53,8 @@ func (os observationSet) Broadcast() error {
 // TODO_IMPROVE: use a separate function/struct here, instead of splitting
 // the EndpointStore's methods across multiple files.
 func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.EndpointAddr][]observation) error {
-	es.mutex.Lock()
-	defer es.mutex.Unlock()
+	es.endpointsMu.Lock()
+	defer es.endpointsMu.Unlock()
 
 	for endpointAddr, observations := range endpointObservations {
 		// It is a valid scenario for an endpoint to not be present in the store.
@@ -76,6 +76,10 @@ func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.En
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
 		if endpointBlockHeight > es.blockHeight {
+			es.Logger.With(
+				"block height", endpointBlockHeight,
+				"endpoint", endpointAddr,
+			).Info().Msg("Updating latest block height")
 			es.blockHeight = endpointBlockHeight
 		}
 	}

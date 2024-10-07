@@ -40,6 +40,9 @@ type RequestQoSContext interface {
 	// with a 404 HTTP status code.
 	GetHTTPResponse() HTTPResponse
 
+	// GetObservationSet returns the list of observations resulting from
+	// the response(s) received from one or more endpoints as part of fulfilling
+	// the request underlying the RequestQoSContext instance.
 	GetObservationSet() message.ObservationSet
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
@@ -75,7 +78,7 @@ type QoSEndpointCheckGenerator interface {
 	GetRequiredQualityChecks(relayer.EndpointAddr) []RequestQoSContext
 }
 
-// QoSPublisher is used to publish a ServiceRequestContext.
+// QoSPublisher is used to publish a message package's ObservationSet.
 // This is used to share QoS data between PATH instances.
 type QoSPublisher interface {
 	Publish(message.ObservationSet) error
