@@ -12,8 +12,7 @@ import (
 // by the relayer package for handling a service request.
 var _ relayer.EndpointSelector = &EndpointStore{}
 
-// EndpointStoreConfig captures the modifiable settings
-// of the EndpointStore.
+// EndpointStoreConfig captures the modifiable settings of the EndpointStore.
 // This will enable `EndpointStore` to be used
 // as part of QoS for other EVM-based blockchains
 // which may have different desired QoS properties.
