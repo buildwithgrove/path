@@ -123,7 +123,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-	// The context contains all the details the QoS needs to update its internal metrics about endpoint(s).
+	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
 	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
 	go func() {
 		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
