@@ -72,6 +72,10 @@ type Response struct {
 	// HTTPStatusCode is the HTTP status returned by an endpoint
 	// in response to a relay request.
 	HTTPStatusCode int
+
+	// EndpointAddr is the address of the endpoint which returned
+	// the response.
+	EndpointAddr
 }
 
 // Protocol defines the core functionality of a protocol,
@@ -83,6 +87,15 @@ type Response struct {
 // - Morse: in the relayer/morse package, and
 // - Shannon: in the relayer/shannon package.
 type Protocol interface {
+	// TODO_UPNEXT(@adshmh): Update the Endpoints() method to return []EndpointAddr
+	// This is because no entity other than the relayer package and
+	// the underlying protocol integrations should deal with apps.
+	// e.g. QoS is only concerned with the quality of a specific endpoints,
+	// regardless of the app to which it is attached in the current session.
+	// TODO_TECHDEBT: any protocol/network-level errors should result in
+	// the endpoint being dropped by the protocol instance from the returned
+	// set of available endpoints.
+	// e.g. an endpoint that is temporarily/permanently unavailable.
 	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
 	SendRelay(Request) (Response, error)
 	// All components that report their ready status to /healthz must implement the health.Check interface.
@@ -118,6 +131,11 @@ type Relayer struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (r Relayer) SendRelay(
+	// TODO_UPNEXT(@adshmh): Remove the context input argument, because:
+	//	1. It is not used.
+	//	2. If the need for more data from the relayer comes up, this
+	//	function can return a specialized "context" struct/interface
+	//	instead.
 	ctx context.Context,
 	serviceID ServiceID,
 	payload Payload,
