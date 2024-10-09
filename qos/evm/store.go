@@ -15,13 +15,11 @@ import (
 // by the relayer package for handling a service request.
 var _ relayer.EndpointSelector = &EndpointStore{}
 
-// EndpointStoreConfig captures the modifiable settings
-// of the EndpointStore.
-// This will enable `EndpointStore` to be used
-// as part of QoS for other EVM-based blockchains
-// which may have different desired QoS properties.
-// e.g. different blockchains QoS instances could have different
-// tolerance levels for deviation from the current block height.
+// EndpointStoreConfig captures the modifiable settings of the EndpointStore.
+// This will enable `EndpointStore` to be used as part of QoS for other EVM-based
+// blockchains which may have different desired QoS properties.
+// e.g. different blockchains QoS instances could have different tolerance levels
+// for deviation from the current block height.
 type EndpointStoreConfig struct {
 	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
 	// SyncAllowance specifies the maximum number of blocks an endpoint
@@ -44,15 +42,17 @@ type EndpointStore struct {
 	Config EndpointStoreConfig
 	Logger polylog.Logger
 
-	mutex       sync.RWMutex
+	endpointsMu sync.RWMutex
 	endpoints   map[relayer.EndpointAddr]endpoint
+	// blockHeight is the expected latest block height on the blockchain.
+	// It is calculated as the maximum of block height reported by any of the endpoints.
 	blockHeight uint64
 }
 
 // TODO_UPNEXT(@adshmh): Update this method along with the relayer.EndpointSelector interface.
 func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer.Endpoint) (relayer.AppAddr, relayer.EndpointAddr, error) {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
 
 	if len(availableEndpoints) == 0 {
 		return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: received empty list of endpoints to select from")

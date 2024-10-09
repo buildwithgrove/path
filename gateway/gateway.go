@@ -21,10 +21,22 @@ import (
 // request and the response is HTTP as it is sufficient for JSONRPC,
 // REST, Websockets and gRPC but may expand in the future.
 type Gateway struct {
+	// HTTPRequestParser is used by the gateway instance to
+	// interpret an HTTP request as a pair of service ID and
+	// its corresponding QoS instance.
 	HTTPRequestParser
+
+	// The relayer.Relayer instance is used to fulfill the
+	// service requests received by the gateway through
+	// sending the service payload to an endpoint.
 	*relayer.Relayer
-	RequestResponseObserver
+
+	// QoSPublisher is used to publish QoS-related observations.
+	// It can be "local" i.e. inform the local QoS
+	// instance, or publisher that sends QoS observations over
+	// a messaging platform to share among multiple PATH instances.
 	QoSPublisher
+
 	Logger polylog.Logger
 }
 
@@ -88,8 +100,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-		// The serviceQoS.Observe method call is intentionally skipped here.
-		// The relayer package is expected to handle protocol-specific errors.
+		// The serviceQoS.Observe method call is intentionally skipped here,
+		// because the relayer package is expected to handle protocol-specific errors.
 		return
 	}
 
@@ -111,8 +123,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-	// The context contains all the details the QoS needs to update its internal metrics about endpoint(s).
-	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
+	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
+	// This is called in a Goroutine to avoid potentially blocking the HTTP handler.
 	go func() {
 		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
 			logger := g.Logger.With(

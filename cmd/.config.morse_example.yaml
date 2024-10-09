@@ -1,0 +1,31 @@
+# For a morse gateway, the following config is required:
+morse_config:
+  full_node_config:
+    url: "https://pocket-network-full-full-node-url.io"
+    relay_signing_key: "example_relay_signing_key"
+    http_config:
+      retries: 3
+      timeout: "5000ms"
+    request_config:
+      retries: 3
+
+  signed_aats:
+    "example_application_address":
+      client_public_key: "example_application_client_public_key"
+      application_public_key: "example_application_public_key"
+      application_signature: "example_application_signature"
+
+# services is required. At least one service must be configured with a valid id.
+# All fields are optional but the id is required.
+services:
+  "0021":
+    alias: "eth-mainnet"
+    request_timeout: "3000ms"
+
+# router_config is optional and allows configuration of the router settings.
+router_config:
+  port: 8080
+  max_request_body_size: 512000
+  read_timeout: "5000ms"
+  write_timeout: "5000ms"
+  idle_timeout: "5000ms"

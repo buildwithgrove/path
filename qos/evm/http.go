@@ -24,5 +24,6 @@ func (hr httpResponse) GetHTTPStatusCode() int {
 }
 
 func (r httpResponse) GetHTTPHeaders() map[string]string {
+	// EVM does not need to set HTTP response headers.
 	return nil
 }

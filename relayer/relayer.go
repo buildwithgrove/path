@@ -81,7 +81,7 @@ type Response struct {
 // Protocol defines the core functionality of a protocol,
 // from the perspective of a gateway.
 // It expects a protocol to provide functions to:
-// 1) List the endpoins available for sending relays for a specific service.
+// 1) List the endpoints available for sending relays for a specific service.
 // 2) Send a relay to a specific endpoint and return its response.
 // There are two implementations of this interface:
 // - Morse: in the relayer/morse package, and
@@ -132,8 +132,8 @@ type Relayer struct {
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (r Relayer) SendRelay(
 	// TODO_UPNEXT(@adshmh): Remove the context input argument, because:
-	//	1- It is not used.
-	//	2- If the need for more data from the relayer comes up, this
+	//	1. It is not used.
+	//	2. If the need for more data from the relayer comes up, this
 	//	function can return a specialized "context" struct/interface
 	//	instead.
 	ctx context.Context,

@@ -17,25 +17,20 @@ import (
 // EndpointHydrator provides the functionality required for health check.
 var _ health.Check = &EndpointHydrator{}
 
-// endpointHydratorRunIntervalMillisec specifies the running
-// interval of an endpoint hydrator.
 const (
-	endpointHydratorRunIntervalMillisec = 10_000
-
 	// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
 	componentNameHydrator = "endpoint-hydrator"
 )
+
+// endpointHydratorRunInterval specifies the running
+// interval of an endpoint hydrator.
+var endpointHydratorRunInterval = 30_000 * time.Millisecond
 
 // TODO_UPNEXT(@adshmh): Complete the following to remove the confusing Protocol interface below:
 //
 //	1- Split the relayer package's Protocol interface.
 //	2- Import the appropriate interface here, e.g. a new `EndpointProvider` interface.
 //	3- Update/remove the comment below.
-//
-// Protocol specifies the interactions of the EndpointHydrator with
-// the underlying protocol.
-// It is defined separately, rather than reusing relayer.Protocol interface,
-// to ensure only minimum necessary capabilities are available to the augmenter.
 type Protocol interface {
 	Endpoints(relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error)
 }
@@ -56,6 +51,7 @@ type EndpointHydrator struct {
 	Protocol
 	*relayer.Relayer
 	QoSPublisher
+
 	// ServiceQoSGenerators provides the hydrator with the EndpointCheckGenerator
 	// it needs to invoke for a service ID.
 	// ServiceQoSGenerators should not be modified after the hydrator is started.
@@ -95,7 +91,7 @@ func (eph *EndpointHydrator) Start() error {
 
 	go func() {
 		// TODO_IMPROVE: support configuring a custom running interval.
-		ticker := time.NewTicker(endpointHydratorRunIntervalMillisec * time.Millisecond)
+		ticker := time.NewTicker(endpointHydratorRunInterval)
 		for {
 			eph.run()
 			<-ticker.C

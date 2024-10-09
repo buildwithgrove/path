@@ -6,9 +6,12 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
-var (
-	idChainIDCheck     = jsonrpc.IDFromInt(1001)
-	idBlockNumberCheck = jsonrpc.IDFromInt(1002)
+const (
+	// Each endpoint check should use its own ID to avoid potential conflicts.
+	// ID of JSONRPC requests for any new checks should be added to the list below.
+	_              = iota
+	idChainIDCheck = 1000 + iota
+	idBlockNumberCheck
 )
 
 // EndpointStore provides the endpoint check generator required by
@@ -19,35 +22,39 @@ var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointAddr) []gateway.RequestQoSContext {
 	// TODO_IMPROVE: skip any checks for which the endpoint already has
 	// a valid (e.g. not expired) quality data point.
-	requestCtx := requestContext{
-		endpointStore:           es,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
-	}
 
 	return []gateway.RequestQoSContext{
-		withChainIDCheck(requestCtx),
-		withBlockHeightCheck(requestCtx),
+		getEndpointCheck(endpointAddr, withChainIDCheck),
+		getEndpointCheck(endpointAddr, withBlockHeightCheck),
 		// TODO_FUTURE: add an archival endpoint check.
 	}
 }
 
-func withChainIDCheck(requestCtx requestContext) *requestContext {
-	requestCtx.jsonrpcReq = jsonrpc.Request{
-		JSONRPC: jsonrpc.Version2,
-		ID:      idChainIDCheck,
-		Method:  methodChainID,
+func getEndpointCheck(endpointAddr relayer.EndpointAddr, options ...func(*requestContext)) *requestContext {
+	requestCtx := requestContext{
+		isValid:                 true,
+		preSelectedEndpointAddr: endpointAddr,
+	}
+
+	for _, option := range options {
+		option(&requestCtx)
 	}
 
 	return &requestCtx
 }
 
-func withBlockHeightCheck(requestCtx requestContext) *requestContext {
+func withChainIDCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      idBlockNumberCheck,
+		ID:      jsonrpc.IDFromInt(idChainIDCheck),
+		Method:  methodChainID,
+	}
+}
+
+func withBlockHeightCheck(requestCtx *requestContext) {
+	requestCtx.jsonrpcReq = jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
 		Method:  methodBlockNumber,
 	}
-
-	return &requestCtx
 }

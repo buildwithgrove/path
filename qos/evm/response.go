@@ -12,6 +12,8 @@ import (
 type responseUnmarshaller func([]byte) (response, error)
 
 var (
+	// All response types needs to implement the response interface.
+	// Any new response struct needs to be added to the following list.
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockNumber{}
 
