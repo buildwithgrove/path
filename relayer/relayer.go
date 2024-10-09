@@ -10,8 +10,6 @@ package relayer
 import (
 	"context"
 	"fmt"
-
-	"github.com/buildwithgrove/path/health"
 )
 
 // ServiceID represents a unique onchain ID for a service.
@@ -20,26 +18,6 @@ import (
 // `relayer` handles onchain details. See discussion here for more:
 // https://github.com/buildwithgrove/path/pull/767#discussion_r1722001685
 type ServiceID string
-
-// AppAddr is used as the unique identifier on an onchain application.
-// Both Morse and Shannon use the Application's Address for this purpose.
-type AppAddr string
-
-// App represents an onchain application on a supported protocol.
-type App interface {
-	Addr() AppAddr
-}
-
-// EndpointAddr is used as the unique identifier for an endpoint.
-type EndpointAddr string
-
-// Endpoint represents an entity which serves relay requests.
-type Endpoint interface {
-	// Addr is used to uniquely identify an endpoint
-	Addr() EndpointAddr
-	// PublicURL is the URL to which relay requests can be sent.
-	PublicURL() string
-}
 
 // TODO_TECHDEBT: use an interace here that returns the serialized form the request:
 // Payload should return the serialized form of the request to be delivered to the backend service,
@@ -53,13 +31,6 @@ type Payload struct {
 	Method          string
 	Path            string
 	TimeoutMillisec int
-}
-
-type Request struct {
-	ServiceID
-	AppAddr
-	EndpointAddr
-	Payload
 }
 
 // Response is a general purpose struct for capturing the response
@@ -76,36 +47,6 @@ type Response struct {
 	// EndpointAddr is the address of the endpoint which returned
 	// the response.
 	EndpointAddr
-}
-
-// Protocol defines the core functionality of a protocol,
-// from the perspective of a gateway.
-// It expects a protocol to provide functions to:
-// 1) List the endpoints available for sending relays for a specific service.
-// 2) Send a relay to a specific endpoint and return its response.
-// There are two implementations of this interface:
-// - Morse: in the relayer/morse package, and
-// - Shannon: in the relayer/shannon package.
-type Protocol interface {
-	// TODO_UPNEXT(@adshmh): Update the Endpoints() method to return []EndpointAddr
-	// This is because no entity other than the relayer package and
-	// the underlying protocol integrations should deal with apps.
-	// e.g. QoS is only concerned with the quality of a specific endpoints,
-	// regardless of the app to which it is attached in the current session.
-	// TODO_TECHDEBT: any protocol/network-level errors should result in
-	// the endpoint being dropped by the protocol instance from the returned
-	// set of available endpoints.
-	// e.g. an endpoint that is temporarily/permanently unavailable.
-	Endpoints(ServiceID) (map[AppAddr][]Endpoint, error)
-	SendRelay(Request) (Response, error)
-	// All components that report their ready status to /healthz must implement the health.Check interface.
-	health.Check
-}
-
-// EndpointSelector defines the functionality that the user of a relayer needs to provide,
-// i.e. selecting an endpoint, from the list of available ones, to which the relay is to be sent.
-type EndpointSelector interface {
-	Select(map[AppAddr][]Endpoint) (AppAddr, EndpointAddr, error)
 }
 
 // Relayer defines the components and their interactions
@@ -141,20 +82,19 @@ func (r Relayer) SendRelay(
 	payload Payload,
 	endpointSelector EndpointSelector,
 ) (Response, error) {
-	endpoints, err := r.Protocol.Endpoints(serviceID)
+	protocolRequestCtx, err := r.Protocol.BuildRequestContext(serviceID)
 	if err != nil {
 		return Response{}, fmt.Errorf("Relay: error getting available endpoints for service %s: %w", serviceID, err)
 	}
 
-	appAddr, endpointAddr, err := endpointSelector.Select(endpoints)
-	if err != nil {
+	// appAddr, endpointAddr, err := endpointSelector.Select(endpoints)
+	// if err != nil {
+	if err := protocolRequestCtx.SelectEndpoint(endpointSelector); err != nil {
 		return Response{}, fmt.Errorf("Serve: error selecting an endpoint for service %s: %w", serviceID, err)
 	}
 
-	return r.Protocol.SendRelay(Request{
-		ServiceID:    serviceID,
-		AppAddr:      appAddr,
-		EndpointAddr: endpointAddr,
-		Payload:      payload,
-	})
+	// TODO_FUTURE: add a protocol publisher to enable sending feedback on the endpoint that served the request.
+	// e.g. on Morse protocol, an endpoint that rejects a request due to being maxed out for the app+service
+	// combination, should be dropped until the start of the next session.
+	return protocolRequestCtx.HandleServiceRequest(payload)
 }
