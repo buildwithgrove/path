@@ -20,6 +20,14 @@ var _ relayer.Endpoint = endpoint{}
 type endpoint struct {
 	address string
 	url     string
+
+	// session holds the session to which the endpoint belongs for the purpose of sending relays.
+	// this is used for sending relays to the endpoint.
+	session provider.Session
+
+	// app holds the app corresponding to the session to which the endpoint belongs.
+	// this is used for sending relays to the endpoint.
+	app app
 }
 
 func (e endpoint) Addr() relayer.EndpointAddr {
@@ -30,12 +38,14 @@ func (e endpoint) PublicURL() string {
 	return e.url
 }
 
-func endpointsFromSession(session provider.Session) []relayer.Endpoint {
-	endpoints := make([]relayer.Endpoint, len(session.Nodes))
+func getEndpointsFromAppSession(app app, session provider.Session) []endpoint {
+	endpoints := make([]endpoint, len(session.Nodes))
 	for i, sessionNode := range session.Nodes {
 		endpoints[i] = endpoint{
 			address: sessionNode.Address,
 			url:     sessionNode.ServiceURL,
+			session: session,
+			app:     app,
 		}
 	}
 
