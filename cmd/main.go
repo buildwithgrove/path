@@ -13,6 +13,7 @@ import (
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
@@ -45,6 +46,8 @@ func main() {
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
+		// TODO_UPNEXT(@adshmh): implement the QoS Publisher and use here.
+		QoSPublisher: noopQoSPublisher{},
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
@@ -110,4 +113,11 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	}
 
 	return protocol, nil
+}
+
+// TODO_UPNEXT(@adshmh): Remove this after implementing the QoS Publisher
+type noopQoSPublisher struct{}
+
+func (noopQoSPublisher) Publish(message.ObservationSet) error {
+	return nil
 }

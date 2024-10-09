@@ -60,6 +60,16 @@ func Test_ShannonRelay(t *testing.T) {
 			relayID:      "1001",
 			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
+		{
+			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
+			reqMethod:    http.MethodPost,
+			reqPath:      "/v1",
+			serviceID:    "gatewaye2e",
+			serviceAlias: "test-service",
+			relayID:      "1002",
+			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
+		},
+		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
 	for _, test := range tests {
