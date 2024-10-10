@@ -24,7 +24,7 @@ const (
 
 // endpointHydratorRunInterval specifies the running
 // interval of an endpoint hydrator.
-var endpointHydratorRunInterval = 30_000 * time.Millisecond
+var endpointHydratorRunInterval = 10_000 * time.Millisecond
 
 // TODO_UPNEXT(@adshmh): Complete the following to remove the confusing Protocol interface below:
 //
@@ -114,11 +114,18 @@ func (eph *EndpointHydrator) run() {
 	for svcID, svcQoS := range eph.ServiceQoSGenerators {
 		wg.Add(1)
 		go func(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
+			defer wg.Done()
+
+			logger := eph.Logger.With("serviceID", serviceID)
+
 			err := eph.performChecks(serviceID, serviceQoS)
-			if err == nil {
-				successfulServiceChecks.Store(svcID, true)
+			if err != nil {
+				logger.Warn().Err(err).Msg("failed to run checks for service")
+				return
 			}
-			wg.Done()
+
+			successfulServiceChecks.Store(svcID, true)
+			logger.Info().Msg("successfully completed checks for service")
 		}(svcID, svcQoS)
 	}
 	wg.Wait()
@@ -148,6 +155,7 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		}
 	}
 
+	logger = logger.With("number of endpoints", len(uniqueEndpoints))
 	// TODO_IMPROVE: use a single goroutine per endpoint
 	for endpointAddr := range uniqueEndpoints {
 		logger.With("endpoint", endpointAddr).Info().Msg("running checks against the endpoint")
@@ -182,6 +190,10 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// There is no action required from the QoS perspective, if no
 			// responses were received from an endpoint.
 			if err != nil {
+				// TODO_FUTURE: consider skipping the rest of the checks based on the error.
+				// e.g. if the endpoint is refusing connections it may be reasonable to skip it
+				// in this iteration of QoS checks.
+				//
 				// TODO_FUTURE: consider retrying failed service requests
 				// as the failure may not be related to the quality of the endpoint.
 				logger.Warn().Err(err).Msg("Failed to send relay.")
