@@ -1,2 +1,5 @@
 postgres_connection_string: "postgres://user:password@localhost:5432/database"
 cache_refresh_interval: 5m
+jwt_issuer: "issuer"
+jwt_audience: "audience"
+jwt_jwks_url: "https://www.googleapis.com/oauth2/v3/certs"
