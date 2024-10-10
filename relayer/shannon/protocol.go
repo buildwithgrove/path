@@ -136,7 +136,7 @@ func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 
 	response, err := p.fullNode.SendRelay(app, session, endpoint, req.Payload)
 	if err != nil {
-		return relayer.Response{},
+		return relayer.Response{EndpointAddr: req.EndpointAddr},
 			fmt.Errorf("relay: error sending relay for service %s app %s endpoint %s: %w",
 				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
 			)
@@ -147,12 +147,13 @@ func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	// to access the Service's response body, status code, etc.
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
-		return relayer.Response{},
+		return relayer.Response{EndpointAddr: req.EndpointAddr},
 			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
 				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
 			)
 	}
 
+	relayResponse.EndpointAddr = req.EndpointAddr
 	return relayResponse, nil
 }
 

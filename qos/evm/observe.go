@@ -44,7 +44,7 @@ func (os observationSet) MarshalJSON() ([]byte, error) {
 
 func (os observationSet) Broadcast() error {
 	if os.EndpointStore == nil {
-		return errors.New("notifyStakeHolders: endpoint store not set")
+		return errors.New("broadcast: endpoint store not set")
 	}
 
 	return os.EndpointStore.ProcessObservations(os.Observations)
@@ -56,7 +56,17 @@ func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.En
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
+	if es.endpoints == nil {
+		es.endpoints = make(map[relayer.EndpointAddr]endpoint)
+	}
+
 	for endpointAddr, observations := range endpointObservations {
+		logger := es.Logger.With(
+			"endpoint", endpointAddr,
+			"observations count", len(observations),
+		)
+		logger.Info().Msg("processing observations for endpoint.")
+
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
 		endpoint := es.endpoints[endpointAddr]

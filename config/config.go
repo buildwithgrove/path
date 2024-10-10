@@ -12,7 +12,6 @@ import (
 	"github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/config/utils"
 	"github.com/buildwithgrove/path/relayer"
-	"github.com/buildwithgrove/path/request"
 )
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */
@@ -26,8 +25,10 @@ type (
 		MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
 		ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
-		Services map[relayer.ServiceID]ServiceConfig `yaml:"services"`
-		Router   RouterConfig                        `yaml:"router_config"`
+		Services        map[relayer.ServiceID]ServiceConfig `yaml:"services"`
+		Router          RouterConfig                        `yaml:"router_config"`
+		HydratorConfig  EndpointHydratorConfig              `yaml:"hydrator_config"`
+		MessagingConfig MessagingConfig                     `yaml:"messaging_config"`
 
 		// A map from human readable aliases (e.g. eth-mainnet) to service ID (e.g. 0021)
 		serviceAliases map[string]relayer.ServiceID
@@ -85,16 +86,13 @@ func (c GatewayConfig) GetServiceIDFromAlias(alias string) (relayer.ServiceID, b
 	return serviceID, ok
 }
 
-// GetEnabledServiceConfigs returns all services enabled in the Gateway. This is used to
-// construct the map of QoS services to be used by the QoS service provider.
-func (c GatewayConfig) GetEnabledServiceConfigs() map[relayer.ServiceID]request.QoSServiceConfig {
-	serviceConfigs := make(map[relayer.ServiceID]request.QoSServiceConfig, len(c.Services))
-	for serviceID, service := range c.Services {
-		serviceConfigs[serviceID] = request.QoSServiceConfig{
-			RequestTimeout: service.RequestTimeout,
-		}
+// GetEnabledServiceIDs() returns the list of enabled service IDs.
+func (c GatewayConfig) GetEnabledServiceIDs() []relayer.ServiceID {
+	var enabledServices []relayer.ServiceID
+	for serviceID := range c.Services {
+		enabledServices = append(enabledServices, serviceID)
 	}
-	return serviceConfigs
+	return enabledServices
 }
 
 /* --------------------------------- Gateway Config Hydration Helpers -------------------------------- */
