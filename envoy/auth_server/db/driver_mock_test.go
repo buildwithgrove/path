@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	user "github.com/buildwithgrove/auth-plugin/user"
+	user "github.com/buildwithgrove/auth-server/user"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/buildwithgrove/auth-plugin/user"
+	"github.com/buildwithgrove/auth-server/user"
 )
 
 // TODO_UPNEXT(@commoddity): Investigate alternative authentication solutions to in-house rolled API key, eg. Clerk, Auth0, etc.

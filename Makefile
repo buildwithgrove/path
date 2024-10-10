@@ -52,22 +52,32 @@ test_auth_plugin: ## Run the auth plugin tests
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay 
+	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay
 
 ################################
 ### Copy Config Make Targets ###
 ################################
 
-.PHONY: copy_config
-copy_config: ## copies the example configuration yaml file to .gitignored .config.yaml file
+.PHONY: copy_shannon_config
+copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.example.yaml ./cmd/.config.yaml; \
+		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
 	else \
 		echo ".config.yaml already exists, not overwriting."; \
 	fi
 
+
+.PHONY: copy_morse_config
+copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
+	@if [ ! -f ./cmd/.config.yaml ]; then \
+		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+	else \
+		echo ".config.yaml already exists, not overwriting."; \
+	fi
+
+
 .PHONY: copy_test_config
-copy_test_config: ## copies the example test configuration yaml file to .gitignored .config.test.yaml file
+copy_test_config: ## copies the example test configuration yaml file to .config.test.yaml file
 	@if [ ! -f ./e2e/.config.test.yaml ]; then \
 		cp ./e2e/.example.test.yaml ./e2e/.config.test.yaml; \
 	else \
