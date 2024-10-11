@@ -11,12 +11,15 @@ SELECT
     ua.plan_type AS plan,
     p.rate_limit_throughput,
     p.rate_limit_capacity,
-    p.rate_limit_capacity_period
+    p.rate_limit_capacity_period,
+    ARRAY_AGG(au.user_id) FILTER (WHERE au.user_id IS NOT NULL)::VARCHAR[] AS user_ids
 FROM gateway_endpoints ge
 LEFT JOIN user_accounts ua 
     ON ge.account_id = ua.id
 LEFT JOIN plans p 
     ON ua.plan_type = p.type
+LEFT JOIN account_users au
+    ON ge.account_id = au.account_id
 GROUP BY 
     ge.id,
     ua.plan_type,

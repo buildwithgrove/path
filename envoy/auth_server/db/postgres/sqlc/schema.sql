@@ -30,6 +30,18 @@ CREATE TABLE user_accounts (
     plan_type VARCHAR(255) NOT NULL REFERENCES plans(type)
 );
 
+-- Create 'users' table
+CREATE TABLE users (
+    id VARCHAR(255) PRIMARY KEY
+);
+
+-- Create 'account_users' table
+CREATE TABLE account_users (
+    user_id VARCHAR(10) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    account_id VARCHAR(10) NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, account_id)
+);
+
 -- Create 'gateway_endpoints' table
 CREATE TABLE gateway_endpoints (
     id VARCHAR(24) PRIMARY KEY,

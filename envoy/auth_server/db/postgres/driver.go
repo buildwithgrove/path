@@ -78,6 +78,12 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
 
 	for _, row := range rows {
+
+		userIDs := make(map[user.AccountUserID]struct{}, len(row.UserIds))
+		for _, userID := range row.UserIds {
+			userIDs[user.AccountUserID(userID)] = struct{}{}
+		}
+
 		gatewayEndpoint := user.GatewayEndpoint{
 			EndpointID: user.EndpointID(row.ID),
 			Auth: user.Auth{
@@ -87,6 +93,7 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 			UserAccount: user.UserAccount{
 				AccountID: user.AccountID(row.AccountID.String),
 				PlanType:  user.PlanType(row.Plan.String),
+				UserIDs:   userIDs,
 			},
 			RateLimiting: user.RateLimiting{
 				ThroughputLimit:     int(row.RateLimitThroughput.Int32),

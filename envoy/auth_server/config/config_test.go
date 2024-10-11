@@ -22,9 +22,6 @@ func Test_LoadAuthServerConfigFromYAML(t *testing.T) {
 			want: AuthServerConfig{
 				PostgresConnectionString: "postgres://user:password@localhost:5432/database",
 				CacheRefreshInterval:     5 * time.Minute,
-				JWTIssuer:                "issuer",
-				JWTAudience:              "audience",
-				JWTJWKSURL:               "https://www.googleapis.com/oauth2/v3/certs",
 			},
 			wantErr: false,
 		},

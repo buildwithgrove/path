@@ -16,6 +16,20 @@ VALUES ('account_1', 'PLAN_FREE'),
     ('account_2', 'PLAN_UNLIMITED'),
     ('account_3', 'PLAN_FREE');
 
+-- Insert into the 'users' table
+INSERT INTO users (id)
+VALUES ('user_1'),
+    ('user_2'),
+    ('user_3'),
+    ('user_4');
+
+-- Insert into the 'account_users' table
+INSERT INTO account_users (account_id, user_id)
+VALUES ('account_1', 'user_1'),
+    ('account_2', 'user_2'),
+    ('account_3', 'user_3'),
+    ('account_1', 'user_4');
+
 -- Insert into the 'gateway_endpoints' table
 INSERT INTO gateway_endpoints (id, account_id, api_key, api_key_required)
 VALUES ('endpoint_1', 'account_1', 'api_key_1', TRUE),
@@ -23,4 +37,3 @@ VALUES ('endpoint_1', 'account_1', 'api_key_1', TRUE),
     ('endpoint_3', 'account_3', 'api_key_3', TRUE),
     ('endpoint_4', 'account_1', NULL, FALSE),
     ('endpoint_5', 'account_2', NULL, FALSE);
-    
