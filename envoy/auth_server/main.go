@@ -39,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	cache, err := db.NewUserDataCache(dbDriver, config.CacheRefreshInterval, logger)
+	cache, err := db.NewEndpointDataCache(dbDriver, config.CacheRefreshInterval, logger)
 	if err != nil {
 		panic(err)
 	}

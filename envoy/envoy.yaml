@@ -133,6 +133,12 @@ static_resources:
                             path: "/healthz"
                           route:
                             cluster: path_gateway_service
+                            # Disable auth for `/healthz`
+                            per_filter_config:
+                              envoy.filters.http.jwt_authn:
+                                disabled: true
+                            envoy.filters.http.ext_authz:
+                              disabled: true
                         # Route for /v1/{gateway_endpoint_id}
                         - match:
                             prefix: "/v1"

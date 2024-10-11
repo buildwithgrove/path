@@ -51,7 +51,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil)
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			gatewayEndpoint, found := cache.GetGatewayEndpoint(test.endpointID)
@@ -87,7 +87,7 @@ func Test_cacheRefreshHandler(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			cache.cacheRefreshInterval = time.Millisecond * 10
@@ -127,7 +127,7 @@ func Test_updateCache(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			err = cache.updateCache(context.Background())

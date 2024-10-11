@@ -26,9 +26,9 @@ const (
 	reqHeaderRateLimitPlan       = "x-rl-plan"        // Set only on service requests that should be rate limited
 )
 
-// The userDataCache contains an in-memory cache of GatewayEndpoints
+// The endpointDataCache contains an in-memory cache of GatewayEndpoints
 // and their associated data from the connected Postgres database.
-type userDataCache interface {
+type endpointDataCache interface {
 	GetGatewayEndpoint(user.EndpointID) (user.GatewayEndpoint, bool)
 }
 
@@ -40,9 +40,9 @@ type Authorizer interface {
 
 // struct with check method
 type AuthServer struct {
-	// The userDataCache contains an in-memory cache of GatewayEndpoints
+	// The endpointDataCache contains an in-memory cache of GatewayEndpoints
 	// and their associated data from the connected Postgres database.
-	Cache userDataCache
+	Cache endpointDataCache
 	// The authorizers represents a list of authorization types that must
 	// pass before a request may be forwarded to the PATH service.
 	// Configured in `main.go` and passed to the filter.
@@ -50,11 +50,20 @@ type AuthServer struct {
 	Logger      polylog.Logger
 }
 
-func (a *AuthServer) Check(ctx context.Context, req *envoy_auth.CheckRequest,
+// Check satisfies the implementation of the Envoy External Authorization gRPC service.
+// It performs the following steps:
+// - Extracts the endpoint ID from the path
+// - Extracts the account user ID from the headers
+// - Fetches the GatewayEndpoint from the database
+// - Performs all configured authorization checks
+// - Returns a response with the HTTP headers set
+func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
 
+	req := checkReq.GetAttributes().GetRequest().GetHttp()
+
 	// Get the request path
-	path := req.GetAttributes().GetRequest().GetHttp().GetPath()
+	path := req.GetPath()
 	if path == "" {
 		return &envoy_auth.CheckResponse{
 			Status: &status.Status{
@@ -64,15 +73,28 @@ func (a *AuthServer) Check(ctx context.Context, req *envoy_auth.CheckRequest,
 		}, nil
 	}
 
-	// If the path is "/healthz", we don't need to authenticate
-	if path == "/healthz" {
+	// Get the request headers
+	headers := req.GetHeaders()
+	if len(headers) == 0 {
 		return &envoy_auth.CheckResponse{
 			Status: &status.Status{
-				Code:    int32(codes.OK),
-				Message: "ok",
+				Code:    int32(codes.InvalidArgument),
+				Message: "headers not found",
 			},
 		}, nil
 	}
+
+	// Get the account user ID from the headers set from the JWT sub claim
+	accountUserIDHeader, ok := headers[reqHeaderAccountUserID]
+	if !ok || accountUserIDHeader == "" {
+		return &envoy_auth.CheckResponse{
+			Status: &status.Status{
+				Code:    int32(codes.Unauthenticated),
+				Message: "account user ID not found in JWT",
+			},
+		}, nil
+	}
+	accountUserID := user.AccountUserID(accountUserIDHeader)
 
 	// Extract the endpoint ID from the path
 	endpointID, err := extractEndpointID(path)
@@ -81,17 +103,6 @@ func (a *AuthServer) Check(ctx context.Context, req *envoy_auth.CheckRequest,
 			Status: &status.Status{
 				Code:    int32(codes.InvalidArgument),
 				Message: err.Error(),
-			},
-		}, nil
-	}
-
-	// Get the account user ID from the headers set from the JWT sub claim
-	accountUserID := user.AccountUserID(req.GetAttributes().GetRequest().GetHttp().GetHeaders()[reqHeaderAccountUserID])
-	if accountUserID == "" {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.Unauthenticated),
-				Message: "account user ID not found in JWT",
 			},
 		}, nil
 	}
@@ -117,11 +128,7 @@ func (a *AuthServer) Check(ctx context.Context, req *envoy_auth.CheckRequest,
 		}, nil
 	}
 
-	// Add endpoint ID and rate limiting values to the headers
-	// to be passed along the filter chain to the rate limiter.
-	httpHeaders := a.getHTTPHeaders(gatewayEndpoint)
-
-	// Return a valid response
+	// Return a valid response with the HTTP headers set
 	return &envoy_auth.CheckResponse{
 		Status: &status.Status{
 			Code:    int32(codes.OK),
@@ -129,23 +136,26 @@ func (a *AuthServer) Check(ctx context.Context, req *envoy_auth.CheckRequest,
 		},
 		HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 			OkResponse: &envoy_auth.OkHttpResponse{
-				Headers: httpHeaders,
+				// Add endpoint ID and rate limiting values to the headers
+				// to be passed along the filter chain to the rate limiter.
+				Headers: a.getHTTPHeaders(gatewayEndpoint),
 			},
 		},
 	}, nil
 }
 
-/* --------------------------------- Service Request Processing -------------------------------- */
+/* --------------------------------- Helpers -------------------------------- */
 
 // extractEndpointID extracts the endpoint ID from the URL path.
 // The endpoint ID is the part of the path after "/v1/" and is used to identify the GatewayEndpoint.
-//
-// TODO_IMPROVE - see if there is a better way to extract the endpoint ID from the path.
 func extractEndpointID(urlPath string) (user.EndpointID, error) {
 	if strings.HasPrefix(urlPath, pathPrefix) {
-		return user.EndpointID(urlPath[len(pathPrefix):]), nil
+		if endpointID := strings.TrimPrefix(urlPath, pathPrefix); endpointID != "" {
+			return user.EndpointID(endpointID), nil
+		}
+		return "", fmt.Errorf("endpoint ID not provided")
 	}
-	return "", fmt.Errorf("endpoint ID not provided")
+	return "", fmt.Errorf("invalid path: %s", urlPath)
 }
 
 // getGatewayEndpoint fetches the GatewayEndpoint from the database and a bool indicating if it was found
@@ -191,7 +201,7 @@ func (a *AuthServer) getHTTPHeaders(gatewayEndpoint user.GatewayEndpoint) []*env
 		headers = append(headers, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
 				Key:   reqHeaderRateLimitPlan,
-				Value: fmt.Sprintf("%s", gatewayEndpoint.UserAccount.PlanType),
+				Value: string(gatewayEndpoint.UserAccount.PlanType),
 			},
 		})
 

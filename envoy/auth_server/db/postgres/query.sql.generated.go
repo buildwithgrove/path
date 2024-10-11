@@ -51,7 +51,7 @@ type SelectGatewayEndpointsRow struct {
 }
 
 // This file is used by SQLC to autogenerate the Go code needed by the database driver.
-// It contains all queries used for fetching user data by the Gateway.
+// It contains all queries used for fetching endpoint data by the Gateway.
 // See: https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html#schema-and-queries
 func (q *Queries) SelectGatewayEndpoints(ctx context.Context) ([]SelectGatewayEndpointsRow, error) {
 	rows, err := q.db.Query(ctx, selectGatewayEndpoints)
