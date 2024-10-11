@@ -14,6 +14,23 @@ static_resources:
                     socket_address:
                       address: path_gateway
                       port_value: 3000
+    # The Auth0 JWKS cluster is used to fetch the JWKS from Auth0.
+    - name: auth0_jwks_cluster
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: auth0_jwks_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: auth.grove.city
+                      port_value: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: auth.grove.city
     # The Envoy Rate Limiting Service is used to rate limit service requests.
     - name: ratelimit
       type: STRICT_DNS
@@ -48,19 +65,25 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # The Auth Plugin performs GatewayEndpoint authorization checks and sets headers in the request.
-                  - name: envoy.filters.http.golang
+                  - name: envoy.filters.http.jwt_authn
                     typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                      library_id: auth-plugin
-                      library_path: "/lib/auth_plugin.so"
-                      plugin_name: auth-plugin
-                      plugin_config:
-                        "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                        value:
-                          parent_only: parent-bar
-                  # The rate limiting service performs rate limiting based on the descriptors set 
-                  # by the auth plugin which are passed to the service from the `x-rl-*` headers.
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                      providers:
+                        auth0_provider:
+                          issuer: https://auth.grove.city/
+                          audiences:
+                            - https://ui.backend.pokt.network/
+                          remote_jwks:
+                            http_uri:
+                              uri: https://auth.grove.city/.well-known/jwks.json
+                              cluster: auth0_jwks_cluster
+                              timeout: 1s
+                          forward: true
+                          claim_to_headers:
+                            - header_name: x-jwt-endpoint-id
+                              claim_name: https://custom.claims/endpoint_id
+                            - header_name: x-jwt-plan
+                              claim_name: https://custom.claims/plan
                   - name: envoy.filters.http.ratelimit
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
@@ -74,7 +97,6 @@ static_resources:
                         grpc_service:
                           envoy_grpc:
                             cluster_name: ratelimit
-                        transport_api_version: V3
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -91,15 +113,13 @@ static_resources:
                             path: "/healthz"
                           route:
                             cluster: path_gateway_service
-                        # Route for /v1/{gateway_endpoint_id}
+                            # Disable auth for `/healthz`
+                        # Route for /v1/{gateway_endpoint_id} 
                         - match:
                             prefix: "/v1"
                           route:
                             cluster: path_gateway_service
-                            # strip the endpoint ID from the path before forwarding to PATH.
-                            # It is instead attached as the `x-endpoint-id` header by the auth plugin.
-                            # This way PATH's router does not need to have any knowledge of Envoy or the
-                            # user data functionality, allowing it to be run with or without Envoy.
+                            # strip the endpoint ID from the path before forwarding to PATH for backwards compatibility
                             regex_rewrite:
                               pattern:
                                 google_re2: {}
@@ -113,6 +133,5 @@ static_resources:
                                       header_name: "x-rl-endpoint-id"
                                       descriptor_key: "x-rl-endpoint-id"
                                   - request_headers:
-                                      header_name: "x-rl-throughput"
-                                      descriptor_key: "x-rl-throughput"
-
+                                      header_name: "x-rl-plan"
+                                      descriptor_key: "x-rl-plan"
