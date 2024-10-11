@@ -20,9 +20,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    depends_on:
-      db:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
     networks:
       - path_network
 
@@ -38,16 +38,14 @@ services:
   # - Rate limiting is handled by the `ratelimit` container.
   envoy_proxy:
     container_name: envoy_proxy
-    build:
-      context: .
-      dockerfile: Dockerfile.envoy
+    image: envoyproxy/envoy:v1.31-latest
     ports:
       - "3001:3001"
     depends_on:
       path_gateway:
         condition: service_healthy
-      db:
-        condition: service_healthy
+      # db:
+      #   condition: service_healthy
     networks:
       - path_network
 
@@ -82,36 +80,36 @@ services:
     networks:
       - path_network
 
-  # ---------- Postgres DB ----------
-  # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
-  # user-specific authorization settings and rate limiting. 
-  #
-  # It is connected to by the Go Auth Plugin which runs in the `envoy_proxy` container.
-  #
-  # NOTE - This DB container is provided for local development. It is not recommended
-  # for production use. Operator should set up their own secure DB instance.
-  db:
-    image: postgres:latest
-    container_name: db
-    restart: always
-    expose:
-      - "5432"
-    ports:
-      - 5432:5432
-    volumes:
-      # Initializes the database with the minimum required tables from the base schema.
-      - ./envoy/auth_plugin/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
-      # For local development, persist the database data in a .gitignore'd tmp directory.
-      - ./tmp/db:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: pgpassword
-      POSTGRES_DB: postgres
-    healthcheck:
-      test: pg_isready -U postgres
-      interval: 5s
-      retries: 3
-    networks:
-      - path_network
+  # # ---------- Postgres DB ----------
+  # # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
+  # # user-specific authorization settings and rate limiting. 
+  # #
+  # # It is connected to by the Go Auth Plugin which runs in the `envoy_proxy` container.
+  # #
+  # # NOTE - This DB container is provided for local development. It is not recommended
+  # # for production use. Operator should set up their own secure DB instance.
+  # db:
+  #   image: postgres:latest
+  #   container_name: db
+  #   restart: always
+  #   expose:
+  #     - "5432"
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     # Initializes the database with the minimum required tables from the base schema.
+  #     - ./envoy/auth_plugin/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+  #     # For local development, persist the database data in a .gitignore'd tmp directory.
+  #     - ./tmp/db:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_PASSWORD: pgpassword
+  #     POSTGRES_DB: postgres
+  #   healthcheck:
+  #     test: pg_isready -U postgres
+  #     interval: 5s
+  #     retries: 3
+  #   networks:
+  #     - path_network
 
   # ---------- Redis Cache ----------
   # The Redis Cache is used to coordinate rate limiting among all services.
