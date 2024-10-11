@@ -29,7 +29,7 @@ path_up: ## Run the PATH gateway and all related dependencies
 
 .PHONY: path_up_build
 path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+	docker compose up -d --build --remove-orphans
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies

@@ -1,3 +1,13 @@
+# TODO: remove debug logging
+layered_runtime:
+  layers:
+    - name: static_layer
+      static_layer:
+        envoy:
+          logger:
+            level: debug
+# TODO: remove debug logging
+
 static_resources:
   clusters:
     # The PATH Gateway service is the service that handles requests for the PATH API.
@@ -17,6 +27,7 @@ static_resources:
     # The Auth0 JWKS cluster is used to fetch the JWKS from Auth0.
     - name: auth0_jwks_cluster
       type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
       load_assignment:
         cluster_name: auth0_jwks_cluster
         endpoints:
@@ -65,9 +76,15 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
+                  # The JWT Authn filter performs JWT verification and sets the `x-jwt-*` headers.
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                      rules:
+                        - match:
+                            prefix: "/v1"
+                          requires:
+                            provider_name: auth0_provider
                       providers:
                         auth0_provider:
                           issuer: https://auth.grove.city/
@@ -81,9 +98,11 @@ static_resources:
                           forward: true
                           claim_to_headers:
                             - header_name: x-jwt-endpoint-id
-                              claim_name: https://custom.claims/endpoint_id
+                              claim_name: endpoint_id
                             - header_name: x-jwt-plan
-                              claim_name: https://custom.claims/plan
+                              claim_name: plan
+                  # The rate limiting service performs rate limiting based on the descriptors 
+                  # which are passed to the service from the `rl-*` headers set from the JWT.
                   - name: envoy.filters.http.ratelimit
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
@@ -97,6 +116,7 @@ static_resources:
                         grpc_service:
                           envoy_grpc:
                             cluster_name: ratelimit
+                        transport_api_version: V3
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -119,7 +139,7 @@ static_resources:
                             prefix: "/v1"
                           route:
                             cluster: path_gateway_service
-                            # strip the endpoint ID from the path before forwarding to PATH for backwards compatibility
+                            # strip the endpoint ID from the path before forwarding to PATH to wotk with PATH's ability to serve requests without any dependencies
                             regex_rewrite:
                               pattern:
                                 google_re2: {}
@@ -128,10 +148,10 @@ static_resources:
                             # Configure descriptors for rate limiting here
                             rate_limits:
                               - actions:
-                                  # Only send descriptors to the ratelimit service if the `x-rl-*` headers are set
+                                  # Only send descriptors to the ratelimit service if the `rl-*` headers are set
                                   - request_headers:
-                                      header_name: "x-rl-endpoint-id"
-                                      descriptor_key: "x-rl-endpoint-id"
+                                      header_name: "x-jwt-endpoint-id"
+                                      descriptor_key: "rl-endpoint-id"
                                   - request_headers:
-                                      header_name: "x-rl-plan"
-                                      descriptor_key: "x-rl-plan"
+                                      header_name: "x-jwt-plan"
+                                      descriptor_key: "rl-plan"

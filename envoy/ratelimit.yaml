@@ -2,12 +2,12 @@
 domain: rl
 # Configure the rate limits under the descriptors key
 descriptors:
-  # The descriptors under `x-jwt-endpoint-id` are applied to each unique value of `x-jwt-endpoint-id`
-  - key: x-jwt-endpoint-id
-    # The descriptors under `x-jwt-plan` are applied only to the specified value of `x-jwt-plan`
+  # The descriptors under `rl-endpoint-id` are applied to each unique value of `rl-endpoint-id`
+  - key: rl-endpoint-id
+    # The descriptors under `rl-plan` are applied only to the specified value of `rl-plan`
     descriptors:
-      # [Rule] - Rate limit requests with `x-jwt-plan` set to "PLAN_FREE" at a rate of 30 requests per second
-      - key: x-jwt-plan
+      # [Rule] - Rate limit requests with `rl-plan` set to "PLAN_FREE" at a rate of 30 requests per second
+      - key: rl-plan
         value: "PLAN_FREE"
         rate_limit:
           unit: second
