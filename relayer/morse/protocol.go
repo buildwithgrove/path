@@ -39,7 +39,6 @@ type FullNode interface {
 	SendRelay(context.Context, *sdkrelayer.Input) (*sdkrelayer.Output, error)
 }
 
-// TODO_UPNEXT(@adshmh): Add unit/E2E tests for the implementation of the Morse relayer.
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
 	protocol := &Protocol{
 		fullNode:        fullNode,

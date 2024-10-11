@@ -4,8 +4,6 @@ package e2e
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,12 +15,12 @@ import (
 const (
 	// shannonConfigFile is the name of the config file under "e2e" directory, that contains
 	// the config for a PATH instance that uses Shannon as the relaying protocol.
-	shannonConfigFile = ".shannon.config.yaml"
+	morseConfigFile = ".morse.config.yaml"
 )
 
-func Test_ShannonRelay(t *testing.T) {
+func Test_MorseRelay(t *testing.T) {
 	// Start an instance of PATH using the E2E config file for Shannon.
-	pathContainerPort, teardownFn := setupPathInstance(t, shannonConfigFile)
+	pathContainerPort, teardownFn := setupPathInstance(t, morseConfigFile)
 	defer teardownFn()
 
 	tests := []struct {
@@ -35,23 +33,22 @@ func Test_ShannonRelay(t *testing.T) {
 		body         string
 	}{
 		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
-			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
-			serviceAlias: "test-service",
-			relayID:      "1001",
-			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
-		},
-		{
 			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
 			serviceAlias: "test-service",
-			relayID:      "1002",
+			relayID:      "1201",
 			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
+		{
+			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			reqMethod:    http.MethodPost,
+			reqPath:      "/v1",
+			serviceAlias: "ethereum-mainnet",
+			relayID:      "1202",
+			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
+		},
+
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
@@ -105,41 +102,4 @@ func Test_ShannonRelay(t *testing.T) {
 			c.True(success)
 		})
 	}
-}
-
-// TODO_TECHDEBT: delete (NOT MOVE) this function and implement a proper JSONRPC validator in the service package.
-//
-// DO NOT use this function either directly or as a base/guide for general JSONRPC validation.
-// The sole purpose of this function is to check whether the relay response received from an endpoint
-// looks like a valid JSONRPC response.
-// This is a very rudimentary validatior that can only be used when the outgoing
-// JSONRPC request is limited to a few special cases, e.g. in the E2E tests.
-func validateJsonRpcResponse(expectedID string, response []byte) error {
-	type jsonRpcResponse struct {
-		JsonRpc string `json:"jsonrpc"`
-		// TODO_TECHDEBT: ID field can contain other values. We are using a string here because
-		// the E2E tests use a string ID for relays that are sent.
-		// Proper JSONRPC validation requires referencing the ID field against the relay request on both type and value.
-		ID     string `json:"id"`
-		Result string `json:"result"`
-	}
-
-	var parsedResponse jsonRpcResponse
-	if err := json.Unmarshal(response, &parsedResponse); err != nil {
-		return err
-	}
-
-	if parsedResponse.JsonRpc != "2.0" {
-		return fmt.Errorf("invalid JSONRPC field, expected %q, got %q", "2.0", parsedResponse.JsonRpc)
-	}
-
-	if parsedResponse.ID != expectedID {
-		return fmt.Errorf("expected ID %q, got %q", expectedID, parsedResponse.ID)
-	}
-
-	if len(parsedResponse.Result) == 0 {
-		return errors.New("empty Result field")
-	}
-
-	return nil
 }
