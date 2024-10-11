@@ -1,0 +1,26 @@
+# To run E2E tests, copy this file and rename it to .morse.config.yaml, then update.
+# morse_config is required for Morse E2E tests.
+morse_config:
+  full_node_config:
+    url: "https://pocket-network-full-full-node-url.io"
+    relay_signing_key: "example_relay_signing_key" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    http_config:
+      retries: 3
+      timeout: "5000ms"
+    request_config:
+      retries: 3
+
+  signed_aats:
+    "example_application_address":
+      client_public_key: "example_application_client_public_key"
+      application_public_key: "example_application_public_key"
+      application_signature: "example_application_signature"
+
+# services is required. At least one service must be configured with a valid id.
+# All fields are optional but the id is required.
+services:
+  "0021":
+    # do not change service alias: it is used in the Morse E2E tests to identify the target service.
+    alias: "eth-mainnet"
+    request_timeout: "3000ms"
+
