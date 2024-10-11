@@ -112,7 +112,7 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 
 // IsValidPostgresConnectionString checks if a string is a valid PostgreSQL connection string.
 func IsValidPostgresConnectionString(s string) bool {
-	// Regular expression to match a valid PostgreSQL connection string
-	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
+	// Regular expression to match a valid PostgreSQL connection string with optional query parameters
+	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/[^\s?]+(\?.*)?$`)
 	return dbConnStringRegex.MatchString(s)
 }
