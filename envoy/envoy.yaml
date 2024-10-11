@@ -24,24 +24,30 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: auth.grove.city
+                      address: auth.grove.cityå
                       port_value: 443
       transport_socket:
         name: envoy.transport_sockets.tls
-    # The External Authorization cluster is used to handle external authorization checks.
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: auth.grove.city
+    # The External Authorization cluster is used to handle external authorization checks.å
     - name: ext-authz
-      connect_timeout: 0.25s
-      type: logical_dns
-      lb_policy: round_robin
+      type: static
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
       load_assignment:
         cluster_name: ext-authz
         endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: 127.0.0.1
-                      port_value: 10003
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 10003
     # The Envoy Rate Limiting Service is used to rate limit service requests.
     - name: ratelimit
       type: STRICT_DNS
@@ -96,13 +102,11 @@ static_resources:
                   - name: envoy.filters.http.ext_authz
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
-                      http_service:
-                        server_uri:
-                          uri: http://127.0.0.1:10003
-                          cluster: ext-authz
-                          timeout: 0.25s
-                          failure_mode_allow: false
-                        include_peer_certificate: true
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: ext-authz
+                        timeout: 0.5s
+                      include_peer_certificate: true
                   - name: envoy.filters.http.ratelimit
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
@@ -116,7 +120,6 @@ static_resources:
                         grpc_service:
                           envoy_grpc:
                             cluster_name: ratelimit
-                          transport_api_version: V3
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -133,7 +136,16 @@ static_resources:
                             path: "/healthz"
                           route:
                             cluster: path_gateway_service
-                        # Route for /v1/{gateway_endpoint_id}
+                            # Disable auth for `/healthz`
+                          typed_per_filter_config:
+                            # envoy.filters.http.ext_authz:
+                            #   "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                            #   disabled: true
+                            # envoy.filters.http.jwt_authn:
+                              # typed_per_filter_config:
+                            #   "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteFilterConfig
+                            #   disabled: true
+                        # Route for /v1/{gateway_endpoint_id} 
                         - match:
                             prefix: "/v1"
                           route:

@@ -11,8 +11,8 @@ import (
 	"github.com/buildwithgrove/auth-server/user"
 )
 
-// userDataCache is an in-memory cache that stores gateway endpoints and their associated data.
-type userDataCache struct {
+// endpointDataCache is an in-memory cache that stores gateway endpoints and their associated data.
+type endpointDataCache struct {
 	db DBDriver
 
 	gatewayEndpoints     map[user.EndpointID]user.GatewayEndpoint
@@ -22,10 +22,10 @@ type userDataCache struct {
 	logger polylog.Logger
 }
 
-// NewUserDataCache creates a new user data cache, which stores GatewayEndpoints in memory for fast access.
+// NewEndpointDataCache creates a new endpoint data cache, which stores GatewayEndpoints in memory for fast access.
 // It refreshes the cache from the Postgres database connection at the specified interval.
-func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*userDataCache, error) {
-	cache := &userDataCache{
+func NewEndpointDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logger polylog.Logger) (*endpointDataCache, error) {
+	cache := &endpointDataCache{
 		db: driver,
 
 		gatewayEndpoints:     make(map[user.EndpointID]user.GatewayEndpoint),
@@ -46,7 +46,7 @@ func NewUserDataCache(driver DBDriver, cacheRefreshInterval time.Duration, logge
 }
 
 // GetGatewayEndpoint returns a GatewayEndpoint from the cache and a bool indicating if it exists in the cache.
-func (c *userDataCache) GetGatewayEndpoint(endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
+func (c *endpointDataCache) GetGatewayEndpoint(endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 
@@ -55,7 +55,7 @@ func (c *userDataCache) GetGatewayEndpoint(endpointID user.EndpointID) (user.Gat
 }
 
 // cacheRefreshHandler is intended to be run in a go routine.
-func (c *userDataCache) cacheRefreshHandler(ctx context.Context) {
+func (c *endpointDataCache) cacheRefreshHandler(ctx context.Context) {
 	for {
 		<-time.After(c.cacheRefreshInterval)
 
@@ -68,7 +68,7 @@ func (c *userDataCache) cacheRefreshHandler(ctx context.Context) {
 // updateCache fetches the GatewayEndpoints from the Postgres database and sets them in the cache.
 // TODO_IMPROVE(@commoddity) - set up a Postgres listener to update the cache when
 // the GatewayEndpoints change, rather than having to poll the database on an interval.
-func (c *userDataCache) updateCache(ctx context.Context) error {
+func (c *endpointDataCache) updateCache(ctx context.Context) error {
 	gatewayEndpoints, err := c.db.GetGatewayEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get gateway endpoints: %w", err)

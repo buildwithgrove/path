@@ -61,7 +61,7 @@ func (c *AuthServerConfig) hydrateConfig() {
 }
 
 func (c AuthServerConfig) validate() error {
-	if postgres.IsValidPostgresConnectionString(c.PostgresConnectionString) {
+	if !postgres.IsValidPostgresConnectionString(c.PostgresConnectionString) {
 		return fmt.Errorf("invalid postgres connection string: %s", c.PostgresConnectionString)
 	}
 	return nil

@@ -39,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	cache, err := db.NewUserDataCache(dbDriver, config.CacheRefreshInterval, logger)
+	cache, err := db.NewEndpointDataCache(dbDriver, config.CacheRefreshInterval, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -63,5 +63,10 @@ func main() {
 	// register envoy proto server
 	envoy_auth.RegisterAuthorizationServer(grpcServer, authServer)
 
-	grpcServer.Serve(listen)
+	fmt.Printf("Auth server starting on %s:%d\n", config.Host, config.Port)
+	err = grpcServer.Serve(listen)
+	if err != nil {
+		panic(err)
+	}
+
 }
