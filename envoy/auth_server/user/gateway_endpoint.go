@@ -7,6 +7,8 @@ type EndpointID string
 // A unique identifier for a user's account, which identifies the account that owns the GatewayEndpoint.
 type AccountID string
 
+type AccountUserID string
+
 // The pricing plan type for an Account. Used for metering and billing purposes.
 type PlanType string
 
@@ -47,6 +49,8 @@ type UserAccount struct {
 	AccountID AccountID
 	// The plan type for a UserAccount, which identifies the pricing plan for the Account.
 	PlanType PlanType
+	// A map of AccountUserIDs to the GatewayEndpoints they are associated with.
+	UserIDs map[AccountUserID]struct{}
 }
 
 // The rate limiting settings for a GatewayEndpoint.
@@ -72,10 +76,10 @@ const (
 	CapacityLimitPeriodMonthly CapacityLimitPeriod = "monthly"
 )
 
-// GetAuth returns a the API key string and a boolean indicating
-// whether the GatewayEndpoint requires the API key for authorization.
-func (e *GatewayEndpoint) GetAuth() (string, bool) {
-	return e.Auth.APIKey, e.Auth.APIKeyRequired
+// IsUserAuthorized returns whether the given accountUserID is authorized to access the GatewayEndpoint.
+func (e *GatewayEndpoint) IsUserAuthorized(accountUserID AccountUserID) bool {
+	_, ok := e.UserAccount.UserIDs[accountUserID]
+	return ok
 }
 
 // GetThroughputLimit returns the throughput limit (TPS) for the GatewayEndpoint,

@@ -43,6 +43,10 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_1": {},
+							"user_4": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
@@ -59,6 +63,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_2": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit: 0,
@@ -74,6 +81,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_3",
 						PlanType:  "PLAN_FREE",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_3": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
@@ -90,6 +100,10 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_1": {},
+							"user_4": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,
@@ -106,6 +120,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_2",
 						PlanType:  "PLAN_UNLIMITED",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_2": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit: 0,
@@ -156,6 +173,7 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 					RateLimitThroughput:     pgtype.Int4{Int32: 30, Valid: true},
 					RateLimitCapacity:       pgtype.Int4{Int32: 100000, Valid: true},
 					RateLimitCapacityPeriod: NullRateLimitCapacityPeriod{RateLimitCapacityPeriod: "daily", Valid: true},
+					UserIds:                 []string{"user_1", "user_4"},
 				},
 			},
 			expected: map[user.EndpointID]user.GatewayEndpoint{
@@ -168,6 +186,10 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",
 						PlanType:  "PLAN_FREE",
+						UserIDs: map[user.AccountUserID]struct{}{
+							"user_1": {},
+							"user_4": {},
+						},
 					},
 					RateLimiting: user.RateLimiting{
 						ThroughputLimit:     30,

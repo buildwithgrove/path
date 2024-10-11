@@ -34,15 +34,32 @@ services:
   # - builds & mounts the Go Auth Plugin 
   #
   # Request Authorization and Rate Limiting is handled by the Envoy proxy.
-  # - Authorization is handled by the Go Auth Plugin, mounted in the Envoy image.
+  # - Authorization is handled using the `jwt-authn` filter and an external auth service.
   # - Rate limiting is handled by the `ratelimit` container.
   envoy_proxy:
     container_name: envoy_proxy
-    build:
-      context: .
-      dockerfile: Dockerfile.envoy
+    image: envoyproxy/envoy:v1.31-latest
     ports:
       - "3001:3001"
+    depends_on:
+      path_gateway:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - path_network
+
+  # ---------- Envoy External Authorization Service ----------
+  # The Envoy External Authorization Service is used to handle external authorization checks.
+  #
+  # It is used in conjunction with the Envoy proxy to handle JWT-based authorization.
+  ext_authz:
+    container_name: ext_authz
+    build:
+      context: ./envoy/auth_server
+      dockerfile: Dockerfile
+    ports:
+      - "10003:10003"
     depends_on:
       path_gateway:
         condition: service_healthy

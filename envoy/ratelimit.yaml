@@ -6,9 +6,9 @@ descriptors:
   - key: x-rl-endpoint-id
     # The descriptors under `x-rl-throughput` are applied only to the specified value of `x-rl-throughput`
     descriptors:
-      # [Rule] - Rate limit requests with `x-rl-throughput` set to "30" at a rate of 30 requests per second
-      - key: x-rl-throughput
-        value: "30"
+      # [Rule] - Rate limit requests for "PLAN_FREE" at a rate of 30 requests per second
+      - key: x-rl-plan
+        value: "PLAN_FREE"
         rate_limit:
           unit: second
           requests_per_unit: 30

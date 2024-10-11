@@ -12,17 +12,20 @@ import (
 	"github.com/buildwithgrove/auth-server/db/postgres"
 )
 
-const defaultCacheRefreshInterval = 5 * time.Minute
+const (
+	defaultHost                 = "localhost"
+	defaultPort                 = 10003
+	defaultCacheRefreshInterval = 5 * time.Minute
+)
 
 /* ---------------------------------  Authorizer Server Config Struct -------------------------------- */
 
 // AuthServerConfig contains the configuration for the authorizer server.
 type AuthServerConfig struct {
+	Host                     string        `yaml:"host"`
+	Port                     int           `yaml:"port"`
 	PostgresConnectionString string        `yaml:"postgres_connection_string"`
 	CacheRefreshInterval     time.Duration `yaml:"cache_refresh_interval"`
-	JWTIssuer                string        `yaml:"jwt_issuer"`
-	JWTAudience              string        `yaml:"jwt_audience"`
-	JWTJWKSURL               string        `yaml:"jwt_jwks_url"`
 }
 
 // LoadAuthServerConfig reads a YAML configuration file from the specified path
@@ -46,6 +49,12 @@ func LoadAuthServerConfigFromYAML(path string) (AuthServerConfig, error) {
 /* --------------------------------- Authorizer Server Config Helpers -------------------------------- */
 
 func (c *AuthServerConfig) hydrateConfig() {
+	if c.Host == "" {
+		c.Host = defaultHost
+	}
+	if c.Port == 0 {
+		c.Port = defaultPort
+	}
 	if c.CacheRefreshInterval == 0 {
 		c.CacheRefreshInterval = defaultCacheRefreshInterval
 	}
