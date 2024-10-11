@@ -137,10 +137,3 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 
 	return protocol, nil
 }
-
-// TODO_UPNEXT(@adshmh): Remove this after implementing the QoS Publisher
-type noopQoSPublisher struct{}
-
-func (noopQoSPublisher) Publish(message.ObservationSet) error {
-	return nil
-}

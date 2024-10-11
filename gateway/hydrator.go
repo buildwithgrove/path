@@ -215,7 +215,7 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 }
 
 // Name is used when checking the status/health of the hydrator.
-func (eph EndpointHydrator) Name() string {
+func (eph *EndpointHydrator) Name() string {
 	return componentNameHydrator
 }
 
@@ -231,7 +231,7 @@ func (eph *EndpointHydrator) IsAlive() bool {
 // getHealthStatus returns the health status of the hydrator
 // based on the results of the most recently completed iteration
 // of running checks against service endpoints.
-func (eph EndpointHydrator) getHealthStatus(successfulServiceChecks sync.Map) bool {
+func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks sync.Map) bool {
 	// TODO_FUTURE: allow reporting unhealthy status if
 	// certain services could not be processed.
 	for svcID := range eph.ServiceQoSGenerators {

@@ -8,9 +8,7 @@ import (
 const parserErrorTemplate = `{"code":%d,"message":"%s"}`
 
 var (
-	errNoServiceIDProvided     = errors.New("no service ID provided")
-	errServiceIDNotEnabled     = errors.New("service ID not enabled")
-	errServiceNameNotSupported = errors.New("service name not supported")
+	errNoServiceIDProvided = errors.New("no service ID provided")
 )
 
 /* Parser Error Response */
