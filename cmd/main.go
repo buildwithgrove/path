@@ -13,7 +13,6 @@ import (
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
