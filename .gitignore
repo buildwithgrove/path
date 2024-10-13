@@ -21,7 +21,6 @@ go.work.sum
 .config.yaml
 .config.*.yaml
 !.config.example.yaml
-<<<<<<< HEAD
 # Morse E2E config
 .morse.config.yaml
 # Shannon E2E config
