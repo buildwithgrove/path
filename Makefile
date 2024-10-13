@@ -71,7 +71,7 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 	fi
 
 .PHONY: copy_shannon_e2e_config
-copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .config.test.yaml file
+copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
 	else \
@@ -79,7 +79,7 @@ copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml f
 	fi
 
 .PHONY: copy_morse_e2e_config
-copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored .config.test.morse.yaml file.
+copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
 	else \
