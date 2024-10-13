@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	// shannonConfigFile is the name of the config file under "e2e" directory, that contains
+	// morseConfigFile is the name of the config file under "e2e" directory, that contains
 	// the config for a PATH instance that uses Shannon as the relaying protocol.
 	morseConfigFile = ".morse.config.yaml"
 )
