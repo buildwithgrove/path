@@ -24,14 +24,15 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointA
 	// a valid (e.g. not expired) quality data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(endpointAddr, withChainIDCheck),
-		getEndpointCheck(endpointAddr, withBlockHeightCheck),
+		getEndpointCheck(es, endpointAddr, withChainIDCheck),
+		getEndpointCheck(es, endpointAddr, withBlockHeightCheck),
 		// TODO_FUTURE: add an archival endpoint check.
 	}
 }
 
-func getEndpointCheck(endpointAddr relayer.EndpointAddr, options ...func(*requestContext)) *requestContext {
+func getEndpointCheck(endpointStore *EndpointStore, endpointAddr relayer.EndpointAddr, options ...func(*requestContext)) *requestContext {
 	requestCtx := requestContext{
+		endpointStore:           endpointStore,
 		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
 	}
