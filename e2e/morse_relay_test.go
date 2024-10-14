@@ -36,17 +36,17 @@ func Test_MorseRelay(t *testing.T) {
 			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceAlias: "test-service",
+			serviceAlias: "eth-mainnet",
 			relayID:      "1201",
-			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
+			body:         `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
 		{
 			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceAlias: "ethereum-mainnet",
+			serviceAlias: "eth-mainnet",
 			relayID:      "1202",
-			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
+			body:         `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
 
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
