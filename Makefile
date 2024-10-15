@@ -21,7 +21,11 @@ path_up_gateway: ## Run just the PATH gateway without any dependencies
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --build --no-deps path_gateway --profile path-gateway
+	docker compose --profile path-gateway up -d --build --no-deps path_gateway
+
+.PHONY: path_down_gateway
+path_down_gateway: ## Stop just the PATH gateway
+	docker compose --profile path-gateway down --remove-orphans path_gateway
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
