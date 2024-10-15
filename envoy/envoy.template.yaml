@@ -1,13 +1,3 @@
-# TODO: remove debug logging
-layered_runtime:
-  layers:
-    - name: static_layer
-      static_layer:
-        envoy:
-          logger:
-            level: debug
-# TODO: remove debug logging
-
 static_resources:
   clusters:
     # The PATH Gateway service is the service that handles requests for the PATH API.
@@ -22,7 +12,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: path_gateway
+                      address: path
                       port_value: 3000
     # The Auth0 JWKS cluster is used to fetch the JWKS from Auth0.
     - name: auth0_jwks_cluster
@@ -35,7 +25,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: auth.grove.city
+                      address: ${AUTH0_DOMAIN}
                       port_value: 443
       transport_socket:
         name: envoy.transport_sockets.tls
@@ -104,12 +94,12 @@ static_resources:
                             provider_name: auth0_provider
                       providers:
                         auth0_provider:
-                          issuer: https://auth.grove.city/
+                          issuer: https://${AUTH0_DOMAIN}/
                           audiences:
-                            - https://ui.backend.pokt.network/
+                            - ${AUTH0_AUDIENCE}
                           remote_jwks:
                             http_uri:
-                              uri: https://auth.grove.city/.well-known/jwks.json
+                              uri: https://${AUTH0_DOMAIN}/.well-known/jwks.json
                               cluster: auth0_jwks_cluster
                               timeout: 1s
                           forward: true
@@ -154,16 +144,10 @@ static_resources:
                             path: "/healthz"
                           route:
                             cluster: path_gateway_service
-                            # Disable auth for `/healthz`
                           typed_per_filter_config:
-                            # envoy.filters.http.ext_authz:
-                            #   "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
-                            #   disabled: true
-                            # envoy.filters.http.jwt_authn:
-                              # typed_per_filter_config:
-                            #   "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteFilterConfig
-                            #   disabled: true
-                        # Route for /v1/{gateway_endpoint_id} 
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
                         - match:
                             prefix: "/v1"
                           route:
