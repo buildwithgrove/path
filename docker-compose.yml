@@ -1,18 +1,19 @@
 services:
-  # ---------- PATH Gateway Service ----------
-  # This is the main PATH service that handles service requests.
+
+  # -------------------- PATH Gateway Only --------------------
+  # This stack runs only the PATH Gateway service, with no auth or
+  # other dependencies. This is the simplest way to get PATH running.
   #
-  # It sits behind the Envoy proxy.
+  # This service will be run with `make path_up_gateway`, 
+  # which enables the `path-gateway` profile that exposes port 3000.
   path_gateway:
     container_name: path_gateway
+    profiles:
+      - path-gateway
     build:
-      # context: .
-      context: ./tmp/dummy-server
-      dockerfile: Dockerfile
+      context: .
       args:
         IMAGE_TAG: ${IMAGE_TAG:-development}
-    expose:
-      - "3000"
     ports:
       - "3000:3000"
     volumes:
@@ -22,15 +23,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    networks:
-      - path_network
 
-  # ---------- Envoy Proxy ----------
-  # This is the Envoy proxy that sits in front of the PATH Gateway Service.
+  # -------------------- PATH Entire Stack --------------------
+  # This stack runs the PATH Gateway service, with all dependencies.
+  # This is the most comprehensive way to get PATH running.
   #
-  # This container is built from `Dockerfile.envoy`, which:
-  # - mounts the Envoy configuration YAML
-  # - builds & mounts the Go Auth Plugin 
+  # The whole stack will be run with `make path_up`.
+
+  # - Envoy Proxy -
+  # This is the Envoy proxy that sits in front of the PATH Gateway Service.
   #
   # Request Authorization and Rate Limiting is handled by the Envoy proxy.
   # - Authorization is handled using the `jwt-authn` filter and an external auth service.
@@ -44,14 +45,14 @@ services:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
     command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --log-level debug
     depends_on:
-      path_gateway:
+      path:
         condition: service_healthy
       db:
         condition: service_healthy
     networks:
       - path_network
 
-  # ---------- Envoy External Authorization Service ----------
+  # - Envoy External Authorization Service -
   # The Envoy External Authorization Service is used to handle external authorization checks.
   #
   # It is used in conjunction with the Envoy proxy to handle JWT-based authorization.
@@ -65,14 +66,14 @@ services:
     volumes:
       - ./envoy/auth_server/.config.auth_server.yaml:/etc/auth_server.yaml
     depends_on:
-      path_gateway:
+      path:
         condition: service_healthy
       db:
         condition: service_healthy
     networks:
       - path_network
 
-  # ---------- Envoy Rate Limiting Service ----------
+  # - Envoy Rate Limiting Service -
   # The Envoy Rate Limiting Service is used to rate limit service requests.
   #
   # It is used in conjunction with the Envoy proxy to handle request rate limiting.
@@ -96,14 +97,38 @@ services:
       - RUNTIME_WATCH_ROOT=false
       - CONFIG_TYPE=FILE
     depends_on:
-      path_gateway:
+      path:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - path_network
 
-  # ---------- Postgres DB ----------
+  # - PATH -
+  # This is the main PATH service that handles service requests.
+  # It sits behind the Envoy proxy, which handles auth and rate limiting.
+  # 
+  # When run as part of the whole stack, this service does not expose any ports
+  # outside of the container. Instead, all traffic is routed through the Envoy proxy.
+  path:
+    container_name: path
+    build:
+      context: .
+      args:
+        IMAGE_TAG: ${IMAGE_TAG:-development}
+    expose:
+      - "3000"
+    volumes:
+      - ./cmd/.config.yaml:/app/.config.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - path_network
+
+  # - Postgres DB -
   # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
   # user-specific authorization settings and rate limiting. 
   #
@@ -134,7 +159,7 @@ services:
     networks:
       - path_network
 
-  # ---------- Redis Cache ----------
+  # - Redis Cache -
   # The Redis Cache is used to coordinate rate limiting among all services.
   # It is used in conjunction with the Envoy Rate Limiting Service.
   redis:
@@ -149,6 +174,6 @@ services:
       interval: 5s
       retries: 3
 
-# ---------- Docker Network ----------
+# - Docker Network -
 networks:
   path_network:

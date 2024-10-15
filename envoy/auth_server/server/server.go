@@ -25,6 +25,8 @@ const (
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
 	reqHeaderRateLimitEndpointID = "x-rl-endpoint-id" // Set only on service requests that should be rate limited
 	reqHeaderRateLimitPlan       = "x-rl-plan"        // Set only on service requests that should be rate limited
+
+	errBody = `{"code": %d, "message": "%s"}`
 )
 
 // The endpointDataCache contains an in-memory cache of GatewayEndpoints
@@ -185,7 +187,7 @@ func (a *AuthServer) getDeniedCheckResponse(err string, httpCode envoy_type.Stat
 				Status: &envoy_type.HttpStatus{
 					Code: httpCode,
 				},
-				Body: "Error: " + err,
+				Body: fmt.Sprintf(errBody, httpCode, err),
 			},
 		},
 	}
