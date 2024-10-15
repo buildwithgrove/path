@@ -69,37 +69,37 @@ func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckReques
 	// Get the request path
 	path := req.GetPath()
 	if path == "" {
-		return a.getDeniedCheckResponse("path not provided", envoy_type.StatusCode_BadRequest), nil
+		return getDeniedCheckResponse("path not provided", envoy_type.StatusCode_BadRequest), nil
 	}
 
 	// Get the request headers
 	headers := req.GetHeaders()
 	if len(headers) == 0 {
-		return a.getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
+		return getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
 	}
 
 	// Get the provider user ID from the headers set from the JWT sub claim
 	providerUserIDHeader, ok := headers[reqHeaderAccountUserID]
 	if !ok || providerUserIDHeader == "" {
-		return a.getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
+		return getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
 	}
 	providerUserID := user.ProviderUserID(providerUserIDHeader)
 
 	// Extract the endpoint ID from the path
 	endpointID, err := extractEndpointID(path)
 	if err != nil {
-		return a.getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
+		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
 	}
 
 	// If GatewayEndpoint is not found send an error response downstream (client)
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)
 	if !ok {
-		return a.getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
+		return getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
 	}
 
 	// Perform all configured authorization checks
 	if err := a.authGatewayEndpoint(providerUserID, gatewayEndpoint); err != nil {
-		return a.getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
+		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
 	}
 
 	// Add endpoint ID and rate limiting values to the headers
@@ -176,7 +176,8 @@ func (a *AuthServer) getHTTPHeaders(gatewayEndpoint user.GatewayEndpoint) []*env
 	return headers
 }
 
-func (a *AuthServer) getDeniedCheckResponse(err string, httpCode envoy_type.StatusCode) *envoy_auth.CheckResponse {
+// getDeniedCheckResponse returns a CheckResponse with a denied status and error message
+func getDeniedCheckResponse(err string, httpCode envoy_type.StatusCode) *envoy_auth.CheckResponse {
 	return &envoy_auth.CheckResponse{
 		Status: &status.Status{
 			Code:    int32(codes.PermissionDenied),
@@ -193,6 +194,7 @@ func (a *AuthServer) getDeniedCheckResponse(err string, httpCode envoy_type.Stat
 	}
 }
 
+// getOKCheckResponse returns a CheckResponse with an OK status and the provided headers
 func getOKCheckResponse(headers []*envoy_core.HeaderValueOption) *envoy_auth.CheckResponse {
 	return &envoy_auth.CheckResponse{
 		Status: &status.Status{
