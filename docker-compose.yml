@@ -22,9 +22,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - path_network
 
@@ -69,8 +66,6 @@ services:
       - ./envoy/auth_server/.config.auth_server.yaml:/etc/auth_server.yaml
     depends_on:
       path_gateway:
-        condition: service_healthy
-      db:
         condition: service_healthy
     networks:
       - path_network

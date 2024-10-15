@@ -2,9 +2,9 @@
 domain: rl
 # Configure the rate limits under the descriptors key
 descriptors:
-  # The descriptors under `x-rl-endpoint-id` are applied to each unique value of `x-rl-endpoint-id`
-  - key: x-rl-endpoint-id
-    # The descriptors under `x-rl-throughput` are applied only to the specified value of `x-rl-throughput`
+  # The descriptors under `rl-endpoint-id` are applied to each unique value of `rl-endpoint-id`
+  - key: rl-endpoint-id
+    # The descriptors under `rl-plan` are applied only to the specified value of `rl-plan`
     descriptors:
       # [Rule] - Rate limit requests for "PLAN_FREE" at a rate of 30 requests per second
       - key: x-rl-plan
