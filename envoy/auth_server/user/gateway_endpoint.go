@@ -7,7 +7,12 @@ type EndpointID string
 // A unique identifier for a user's account, which identifies the account that owns the GatewayEndpoint.
 type AccountID string
 
+// AccountUserID is an internal unique ID, stored in the database, that represents a single account user.
 type AccountUserID string
+
+// ProviderUserID is a user ID provided by an external auth provider (eg. Auth0), linked to an AccountUserID.
+// This is to allow linking multiple auth providers (eg. user/PW, Github, Google, etc.) to a single account user.
+type ProviderUserID string
 
 // The pricing plan type for an Account. Used for metering and billing purposes.
 type PlanType string
@@ -25,7 +30,7 @@ type GatewayEndpoint struct {
 	EndpointID EndpointID
 	// The authorization settings for the GatewayEndpoint.
 	Auth Auth
-	// The UserAccount that the GatewayEndpoint belongs to, including the PlanType.
+	// The UserAccount that the GatewayEndpoint belongs to, including the PlanType.j
 	UserAccount UserAccount
 	// The rate limiting settings for the GatewayEndpoint, which includes both
 	// the throughput (TPS) limit and the capacity (longer period) limit.
@@ -34,13 +39,8 @@ type GatewayEndpoint struct {
 
 // The authorization settings for a GatewayEndpoint.
 type Auth struct {
-	// The API key for GatewayEndpoint. If APIKeyRequired is true, the API key
-	// must be passed as the `Authorization` HTTP header in service requests.
-	APIKey string
-	// Whether the GatewayEndpoint requires an API key for authorization.
-	// If not set, the GatewayEndpoint does not require an API key to be passed
-	// as the `Authorization` header and all requests using the endpoint will be allowed.
-	APIKeyRequired bool
+	// A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
+	AuthorizedUsers map[ProviderUserID]struct{}
 }
 
 // A UserAccount contains the PlanType and may have multiple GatewayEndpoints.
@@ -49,8 +49,6 @@ type UserAccount struct {
 	AccountID AccountID
 	// The plan type for a UserAccount, which identifies the pricing plan for the Account.
 	PlanType PlanType
-	// A map of AccountUserIDs to the GatewayEndpoints they are associated with.
-	UserIDs map[AccountUserID]struct{}
 }
 
 // The rate limiting settings for a GatewayEndpoint.
@@ -76,9 +74,9 @@ const (
 	CapacityLimitPeriodMonthly CapacityLimitPeriod = "monthly"
 )
 
-// IsUserAuthorized returns whether the given accountUserID is authorized to access the GatewayEndpoint.
-func (e *GatewayEndpoint) IsUserAuthorized(accountUserID AccountUserID) bool {
-	_, ok := e.UserAccount.UserIDs[accountUserID]
+// IsUserAuthorized returns whether the given ProviderUserID is authorized to access the GatewayEndpoint.
+func (e *GatewayEndpoint) IsUserAuthorized(providerUserID ProviderUserID) bool {
+	_, ok := e.Auth.AuthorizedUsers[providerUserID]
 	return ok
 }
 

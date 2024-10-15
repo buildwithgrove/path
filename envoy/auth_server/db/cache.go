@@ -32,7 +32,7 @@ func NewEndpointDataCache(driver DBDriver, cacheRefreshInterval time.Duration, l
 		cacheRefreshInterval: cacheRefreshInterval,
 		gatewayEndpointsMu:   sync.RWMutex{},
 
-		logger: logger.With("component", "user_data_cache"),
+		logger: logger.With("component", "endpoint_data_cache"),
 	}
 
 	// Initialize the cache with the GatewayEndpoints from the Postgres database.

@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	defaultHost                 = "localhost"
 	defaultPort                 = 10003
 	defaultCacheRefreshInterval = 5 * time.Minute
 )
@@ -22,10 +21,9 @@ const (
 
 // AuthServerConfig contains the configuration for the authorizer server.
 type AuthServerConfig struct {
-	Host                     string        `yaml:"host"`
-	Port                     int           `yaml:"port"`
 	PostgresConnectionString string        `yaml:"postgres_connection_string"`
 	CacheRefreshInterval     time.Duration `yaml:"cache_refresh_interval"`
+	Port                     int           `yaml:"port"`
 }
 
 // LoadAuthServerConfig reads a YAML configuration file from the specified path
@@ -49,14 +47,11 @@ func LoadAuthServerConfigFromYAML(path string) (AuthServerConfig, error) {
 /* --------------------------------- Authorizer Server Config Helpers -------------------------------- */
 
 func (c *AuthServerConfig) hydrateConfig() {
-	if c.Host == "" {
-		c.Host = defaultHost
+	if c.CacheRefreshInterval == 0 {
+		c.CacheRefreshInterval = defaultCacheRefreshInterval
 	}
 	if c.Port == 0 {
 		c.Port = defaultPort
-	}
-	if c.CacheRefreshInterval == 0 {
-		c.CacheRefreshInterval = defaultCacheRefreshInterval
 	}
 }
 

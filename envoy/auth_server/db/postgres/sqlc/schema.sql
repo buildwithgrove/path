@@ -7,8 +7,7 @@ CREATE TYPE rate_limit_capacity_period AS ENUM ('daily', 'weekly', 'monthly');
 
 -- Create 'plans' table
 CREATE TABLE plans (
-    id SERIAL PRIMARY KEY,
-    type VARCHAR(255) NOT NULL UNIQUE,
+    type VARCHAR(255) PRIMARY KEY,
     rate_limit_throughput INT,
     rate_limit_capacity INT,
     rate_limit_capacity_period rate_limit_capacity_period,
@@ -32,7 +31,14 @@ CREATE TABLE user_accounts (
 
 -- Create 'users' table
 CREATE TABLE users (
-    id VARCHAR(255) PRIMARY KEY
+    id VARCHAR(10) PRIMARY KEY
+);
+
+-- Create 'user_auth_providers' table
+CREATE TABLE user_auth_providers (
+    user_id VARCHAR(10) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider_user_id VARCHAR(255) NOT NULL,
+    UNIQUE(user_id, type)
 );
 
 -- Create 'account_users' table
@@ -45,7 +51,5 @@ CREATE TABLE account_users (
 -- Create 'gateway_endpoints' table
 CREATE TABLE gateway_endpoints (
     id VARCHAR(24) PRIMARY KEY,
-    account_id VARCHAR(24) REFERENCES user_accounts(id) ON DELETE CASCADE,
-    api_key VARCHAR(255),
-    api_key_required BOOLEAN DEFAULT FALSE
+    account_id VARCHAR(24) REFERENCES user_accounts(id) ON DELETE CASCADE
 );

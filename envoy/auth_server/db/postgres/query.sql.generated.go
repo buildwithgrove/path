@@ -16,13 +16,11 @@ const selectGatewayEndpoints = `-- name: SelectGatewayEndpoints :many
 SELECT 
     ge.id,
     ge.account_id,
-    ge.api_key,
-    ge.api_key_required,
     ua.plan_type AS plan,
     p.rate_limit_throughput,
     p.rate_limit_capacity,
     p.rate_limit_capacity_period,
-    ARRAY_AGG(au.user_id) FILTER (WHERE au.user_id IS NOT NULL)::VARCHAR[] AS user_ids
+    ARRAY_AGG(uap.provider_user_id)::VARCHAR[] AS provider_user_ids
 FROM gateway_endpoints ge
 LEFT JOIN user_accounts ua 
     ON ge.account_id = ua.id
@@ -30,6 +28,10 @@ LEFT JOIN plans p
     ON ua.plan_type = p.type
 LEFT JOIN account_users au
     ON ge.account_id = au.account_id
+LEFT JOIN users u
+    ON au.user_id = u.id
+LEFT JOIN user_auth_providers uap
+    ON u.id = uap.user_id
 GROUP BY 
     ge.id,
     ua.plan_type,
@@ -41,13 +43,11 @@ GROUP BY
 type SelectGatewayEndpointsRow struct {
 	ID                      string                      `json:"id"`
 	AccountID               pgtype.Text                 `json:"account_id"`
-	ApiKey                  pgtype.Text                 `json:"api_key"`
-	ApiKeyRequired          pgtype.Bool                 `json:"api_key_required"`
 	Plan                    pgtype.Text                 `json:"plan"`
 	RateLimitThroughput     pgtype.Int4                 `json:"rate_limit_throughput"`
 	RateLimitCapacity       pgtype.Int4                 `json:"rate_limit_capacity"`
 	RateLimitCapacityPeriod NullRateLimitCapacityPeriod `json:"rate_limit_capacity_period"`
-	UserIds                 []string                    `json:"user_ids"`
+	ProviderUserIds         []string                    `json:"provider_user_ids"`
 }
 
 // This file is used by SQLC to autogenerate the Go code needed by the database driver.
@@ -65,13 +65,11 @@ func (q *Queries) SelectGatewayEndpoints(ctx context.Context) ([]SelectGatewayEn
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
-			&i.ApiKey,
-			&i.ApiKeyRequired,
 			&i.Plan,
 			&i.RateLimitThroughput,
 			&i.RateLimitCapacity,
 			&i.RateLimitCapacityPeriod,
-			&i.UserIds,
+			&i.ProviderUserIds,
 		); err != nil {
 			return nil, err
 		}

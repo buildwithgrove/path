@@ -9,6 +9,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
@@ -35,7 +36,7 @@ type endpointDataCache interface {
 // The Authorizer interface performs requests authorization, for example using
 // API key authentication to ensures a downstream (client) request is authorized.
 type Authorizer interface {
-	authorizeRequest(user.AccountUserID, user.GatewayEndpoint) error
+	authorizeRequest(user.ProviderUserID, user.GatewayEndpoint) error
 }
 
 // struct with check method
@@ -60,90 +61,51 @@ type AuthServer struct {
 func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
 
-	fmt.Println("Handling request")
-
+	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 
 	// Get the request path
 	path := req.GetPath()
 	if path == "" {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.InvalidArgument),
-				Message: "path not provided",
-			},
-		}, nil
+		return a.getDeniedCheckResponse("path not provided", envoy_type.StatusCode_BadRequest), nil
 	}
 
 	// Get the request headers
 	headers := req.GetHeaders()
 	if len(headers) == 0 {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.InvalidArgument),
-				Message: "headers not found",
-			},
-		}, nil
+		return a.getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
 	}
 
-	// Get the account user ID from the headers set from the JWT sub claim
-	accountUserIDHeader, ok := headers[reqHeaderAccountUserID]
-	if !ok || accountUserIDHeader == "" {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.Unauthenticated),
-				Message: "account user ID not found in JWT",
-			},
-		}, nil
+	// Get the provider user ID from the headers set from the JWT sub claim
+	providerUserIDHeader, ok := headers[reqHeaderAccountUserID]
+	if !ok || providerUserIDHeader == "" {
+		return a.getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
 	}
-	accountUserID := user.AccountUserID(accountUserIDHeader)
+	providerUserID := user.ProviderUserID(providerUserIDHeader)
 
 	// Extract the endpoint ID from the path
 	endpointID, err := extractEndpointID(path)
 	if err != nil {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.InvalidArgument),
-				Message: err.Error(),
-			},
-		}, nil
+		return a.getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
 	}
 
 	// If GatewayEndpoint is not found send an error response downstream (client)
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)
 	if !ok {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.NotFound),
-				Message: "endpoint not found",
-			},
-		}, nil
+		return a.getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
 	}
 
 	// Perform all configured authorization checks
-	if err := a.authGatewayEndpoint(accountUserID, gatewayEndpoint); err != nil {
-		return &envoy_auth.CheckResponse{
-			Status: &status.Status{
-				Code:    int32(codes.PermissionDenied),
-				Message: err.Error(),
-			},
-		}, nil
+	if err := a.authGatewayEndpoint(providerUserID, gatewayEndpoint); err != nil {
+		return a.getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
 	}
 
+	// Add endpoint ID and rate limiting values to the headers
+	// to be passed along the filter chain to the rate limiter.
+	httpHeaders := a.getHTTPHeaders(gatewayEndpoint)
+
 	// Return a valid response with the HTTP headers set
-	return &envoy_auth.CheckResponse{
-		Status: &status.Status{
-			Code:    int32(codes.OK),
-			Message: "ok",
-		},
-		HttpResponse: &envoy_auth.CheckResponse_OkResponse{
-			OkResponse: &envoy_auth.OkHttpResponse{
-				// Add endpoint ID and rate limiting values to the headers
-				// to be passed along the filter chain to the rate limiter.
-				Headers: a.getHTTPHeaders(gatewayEndpoint),
-			},
-		},
-	}, nil
+	return getOKCheckResponse(httpHeaders), nil
 }
 
 /* --------------------------------- Helpers -------------------------------- */
@@ -166,9 +128,9 @@ func (a *AuthServer) getGatewayEndpoint(endpointID user.EndpointID) (user.Gatewa
 }
 
 // authGatewayEndpoint performs all configured authorization checks on the request
-func (a *AuthServer) authGatewayEndpoint(accountUserID user.AccountUserID, gatewayEndpoint user.GatewayEndpoint) error {
+func (a *AuthServer) authGatewayEndpoint(providerUserID user.ProviderUserID, gatewayEndpoint user.GatewayEndpoint) error {
 	for _, auth := range a.Authorizers {
-		if err := auth.authorizeRequest(accountUserID, gatewayEndpoint); err != nil {
+		if err := auth.authorizeRequest(providerUserID, gatewayEndpoint); err != nil {
 			return err
 		}
 	}
@@ -210,4 +172,35 @@ func (a *AuthServer) getHTTPHeaders(gatewayEndpoint user.GatewayEndpoint) []*env
 	}
 
 	return headers
+}
+
+func (a *AuthServer) getDeniedCheckResponse(err string, httpCode envoy_type.StatusCode) *envoy_auth.CheckResponse {
+	return &envoy_auth.CheckResponse{
+		Status: &status.Status{
+			Code:    int32(codes.PermissionDenied),
+			Message: err,
+		},
+		HttpResponse: &envoy_auth.CheckResponse_DeniedResponse{
+			DeniedResponse: &envoy_auth.DeniedHttpResponse{
+				Status: &envoy_type.HttpStatus{
+					Code: httpCode,
+				},
+				Body: "Error: " + err,
+			},
+		},
+	}
+}
+
+func getOKCheckResponse(headers []*envoy_core.HeaderValueOption) *envoy_auth.CheckResponse {
+	return &envoy_auth.CheckResponse{
+		Status: &status.Status{
+			Code:    int32(codes.OK),
+			Message: "ok",
+		},
+		HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+			OkResponse: &envoy_auth.OkHttpResponse{
+				Headers: headers,
+			},
+		},
+	}
 }
