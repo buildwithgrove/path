@@ -17,11 +17,11 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose up -d --no-deps path_gateway
+	docker compose --profile path-gateway up -d --no-deps path_gateway 
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose up -d --build --no-deps path_gateway
+	docker compose --profile path-gateway up -d --build --no-deps path_gateway --profile path-gateway
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
@@ -29,11 +29,11 @@ path_up: ## Run the PATH gateway and all related dependencies
 
 .PHONY: path_up_build
 path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build --remove-orphans
+	docker compose up -d --build
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down
+	docker compose down --remove-orphans
 
 #########################
 ### Test Make Targets ###
@@ -46,9 +46,9 @@ test_all: test_unit test_auth_plugin test_e2e_shannon_relay
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
 
-.PHONY: test_auth_plugin
-test_auth_plugin: ## Run the auth plugin tests
-	(cd envoy/auth_plugin && go test ./... -short -count=1)
+.PHONY: test_auth_server
+test_auth_server: ## Run the auth server tests
+	(cd envoy/auth_server && go test ./... -short -count=1 -tags auth_server)
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
@@ -83,6 +83,10 @@ copy_test_config: ## copies the example test configuration yaml file to .config.
 	else \
 		echo ".config.test.yaml already exists, not overwriting."; \
 	fi
+
+.PHONY: copy_envoy_config
+copy_envoy_config: ## substitutes the Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+	./envoy/scripts/generate_envoy_yaml.sh
 
 ###############################
 ### Generation Make Targets ###

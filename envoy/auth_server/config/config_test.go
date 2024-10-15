@@ -18,10 +18,11 @@ func Test_LoadAuthServerConfigFromYAML(t *testing.T) {
 	}{
 		{
 			name:     "should load valid auth plugin config without error",
-			filePath: "./testdata/plugin.example.yaml",
+			filePath: "./testdata/auth_server.example.yaml",
 			want: AuthServerConfig{
 				PostgresConnectionString: "postgres://user:password@localhost:5432/database",
 				CacheRefreshInterval:     5 * time.Minute,
+				Port:                     10003,
 			},
 			wantErr: false,
 		},
