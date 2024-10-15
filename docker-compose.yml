@@ -67,6 +67,8 @@ services:
     depends_on:
       path_gateway:
         condition: service_healthy
+      db:
+        condition: service_healthy
     networks:
       - path_network
 

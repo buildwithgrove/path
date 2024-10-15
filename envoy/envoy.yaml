@@ -42,9 +42,9 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           sni: auth.grove.city
-    # The External Authorization cluster is used to handle external authorization checks.å
+    # The External Authorization cluster is used to handle external authorization checks.
     - name: ext-authz
-      type: static
+      type: STRICT_DNS
       typed_extension_protocol_options:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -57,7 +57,7 @@ static_resources:
           - endpoint:
               address:
                 socket_address:
-                  address: 127.0.0.1
+                  address: ext_authz
                   port_value: 10003
     # The Envoy Rate Limiting Service is used to rate limit service requests.
     - name: ratelimit
@@ -93,7 +93,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # The JWT Authn filter performs JWT verification and sets the `x-jwt-*` headers.
+                  # The JWT Authn filter performs JWT verification and sets the `x-jwt-user-id` header.
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -123,6 +123,7 @@ static_resources:
                         envoy_grpc:
                           cluster_name: ext-authz
                         timeout: 0.5s
+                      failure_mode_allow: false
                       include_peer_certificate: true
                   - name: envoy.filters.http.ratelimit
                     typed_config:

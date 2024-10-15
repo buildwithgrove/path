@@ -142,8 +142,10 @@ func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
 		"endpoint_1": {
 			EndpointID: "endpoint_1",
 			Auth: user.Auth{
-				APIKey:         "api_key_1",
-				APIKeyRequired: true,
+				AuthorizedUsers: map[user.ProviderUserID]struct{}{
+					"auth0|user_1": {},
+					"auth0|user_4": {},
+				},
 			},
 			UserAccount: user.UserAccount{
 				AccountID: "account_1",
@@ -157,8 +159,9 @@ func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
 		"endpoint_2": {
 			EndpointID: "endpoint_2",
 			Auth: user.Auth{
-				APIKey:         "api_key_2",
-				APIKeyRequired: true,
+				AuthorizedUsers: map[user.ProviderUserID]struct{}{
+					"auth0|user_2": {},
+				},
 			},
 			UserAccount: user.UserAccount{
 				AccountID: "account_2",

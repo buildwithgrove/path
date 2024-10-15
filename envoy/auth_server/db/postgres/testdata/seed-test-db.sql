@@ -23,6 +23,13 @@ VALUES ('user_1'),
     ('user_3'),
     ('user_4');
 
+-- Insert into the 'user_auth_providers' table
+INSERT INTO user_auth_providers (user_id, provider_user_id)
+VALUES ('user_1', 'auth0|user_1'),
+    ('user_2', 'auth0|user_2'),
+    ('user_3', 'auth0|user_3'),
+    ('user_4', 'auth0|user_4');
+
 -- Insert into the 'account_users' table
 INSERT INTO account_users (account_id, user_id)
 VALUES ('account_1', 'user_1'),
@@ -31,9 +38,9 @@ VALUES ('account_1', 'user_1'),
     ('account_1', 'user_4');
 
 -- Insert into the 'gateway_endpoints' table
-INSERT INTO gateway_endpoints (id, account_id, api_key, api_key_required)
-VALUES ('endpoint_1', 'account_1', 'api_key_1', TRUE),
-    ('endpoint_2', 'account_2', 'api_key_2', TRUE),
-    ('endpoint_3', 'account_3', 'api_key_3', TRUE),
-    ('endpoint_4', 'account_1', NULL, FALSE),
-    ('endpoint_5', 'account_2', NULL, FALSE);
+INSERT INTO gateway_endpoints (id, account_id)
+VALUES ('endpoint_1', 'account_1'),
+    ('endpoint_2', 'account_2'),
+    ('endpoint_3', 'account_3'),
+    ('endpoint_4', 'account_1'),
+    ('endpoint_5', 'account_2');

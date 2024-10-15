@@ -18,7 +18,7 @@ import (
 )
 
 // CONFIG_PATH is set in the Envoy Docker image during the build process.
-// It points to the mounted `.config.auth_server.yaml` file. See `Dockerfile.envoy`.
+// It points to the mounted `.config.auth_server.yaml` file. See auth server Dockerfile.
 const envVarConfigPath = "CONFIG_PATH"
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 		panic(err)
 	}
 
-	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Host, config.Port))
+	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func main() {
 		Cache: cache,
 		// TODO_IMPROVE: make the authorizers configurable from the plugin config YAML
 		Authorizers: []server.Authorizer{
-			&server.AccountUserIDAuthorizer{},
+			&server.ProviderUserIDAuthorizer{},
 		},
 		Logger: logger,
 	}
@@ -63,10 +63,8 @@ func main() {
 	// register envoy proto server
 	envoy_auth.RegisterAuthorizationServer(grpcServer, authServer)
 
-	fmt.Printf("Auth server starting on %s:%d\n", config.Host, config.Port)
-	err = grpcServer.Serve(listen)
-	if err != nil {
+	fmt.Printf("Auth server starting on port %d...\n", config.Port)
+	if err = grpcServer.Serve(listen); err != nil {
 		panic(err)
 	}
-
 }
