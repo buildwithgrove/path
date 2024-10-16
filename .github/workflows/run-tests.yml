@@ -69,13 +69,24 @@ jobs:
         with:
           go-version: "1.22.3"
 
-      - name: copy E2E config
-        run: make copy_test_config
+      - name: copy Shannon E2E config
+        run: make copy_shannon_e2e_config
 
-      - name: update E2E config from secrets
+      - name: update Shannon E2E config from secrets
         env:
           GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
-        run: ./e2e/scripts/update_config_from_secrets.sh
+        run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
-      - name: Run E2E Tests
+      - name: copy Morse E2E config
+        run: make copy_morse_e2e_config
+
+      - name: update Morse E2E config from secrets
+        env:
+          GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
+        run: ./e2e/scripts/update_morse_config_from_secrets.sh
+
+      - name: Run Shannon E2E Tests
         run: make test_e2e_shannon_relay
+
+      - name: Run Morse E2E Tests
+        run: make test_e2e_morse_relay

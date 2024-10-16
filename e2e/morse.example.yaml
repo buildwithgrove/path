@@ -2,7 +2,7 @@
 # morse_config is required for Morse E2E tests.
 morse_config:
   full_node_config:
-    url: "https://pocket-network-full-full-node-url.io"
+    url: "https://pocket-network-full-node-url.io"
     relay_signing_key: "example_relay_signing_key" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
     http_config:
       retries: 3
