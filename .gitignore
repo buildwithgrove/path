@@ -24,6 +24,10 @@ go.work.sum
 !.config.shannon_example.yaml
 !.config.morse_example.yaml
 !.config.morse_example_testnet.yaml
+# Morse E2E config
+.morse.config.yaml
+# Shannon E2E config
+.shannon.config.yaml
 
 # Macos
 .DS_Store
