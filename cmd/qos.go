@@ -24,7 +24,7 @@ func getServiceQoSInstances(
 	map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
 	error,
 ) {
-	// Build a mpa of services configured for the hydrator
+	// Build a map of services configured for the hydrator
 	// and the gateway to allow easy lookup.
 	hydratorServiceIDsIdx := buildServiceIDsIdx(gatewayConfig.HydratorConfig.ServiceIDs)
 	gatewayServiceIDsIdx := buildServiceIDsIdx(gatewayConfig.GetEnabledServiceIDs())
