@@ -82,7 +82,9 @@ jobs:
 
       - name: update Morse E2E config from secrets
         env:
-          GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
+          MORSE_GATEWAY_SIGNING_KEY: ${{ secrets.MORSE_GATEWAY_SIGNING_KEY }}
+          MORSE_FULLNODE_URL: ${{ secrets.MORSE_FULLNODE_URL }}
+          MORSE_AATS: ${{ secrets.MORSE_AATS }}
         run: ./e2e/scripts/update_morse_config_from_secrets.sh
 
       - name: Run Shannon E2E Tests
