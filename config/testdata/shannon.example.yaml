@@ -4,11 +4,13 @@ shannon_config:
     rpc_url: "https://rpc-url.io"
     grpc_config:
       host_port: "grpc-url.io:443"
+
+  gateway_config:
     gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
     gateway_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
-    delegated_app_addresses:
-      - "pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0"
-      - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
+    owned_application_private_keys:
+      - "???"
+      - "???"
 
 # services is required. At least one service must be configured and the
 # id field is required. Service config is optional and allows configuration of the service.
