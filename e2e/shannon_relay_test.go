@@ -9,39 +9,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
-// This allows a subdomain to be specified without modifying /etc/hosts.
-// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
-const localdevMe = "localdev.me"
-
-// When the ephemeral PATH Docker container is running it exposes a dynamically
-// assigned port. This global variable is used to capture the port number.
-var pathPort string
-
-func TestMain(m *testing.M) {
-	// Initialize the ephemeral PATH Docker container
-	pool, resource, containerPort := setupPathDocker()
-
-	// Assign the port the container is listening on to the global variable
-	pathPort = containerPort
-
-	// Run PATH E2E Shannon relay tests
-	exitCode := m.Run()
-
-	// Cleanup the ephemeral PATH Docker container
-	cleanupPathDocker(m, pool, resource)
-
-	// Exit with the test result
-	os.Exit(exitCode)
-}
+const (
+	// shannonConfigFile is the name of the config file under "e2e" directory, that contains
+	// the config for a PATH instance that uses Shannon as the relaying protocol.
+	shannonConfigFile = ".shannon.config.yaml"
+)
 
 func Test_ShannonRelay(t *testing.T) {
+	// Start an instance of PATH using the E2E config file for Shannon.
+	pathContainerPort, teardownFn := setupPathInstance(t, shannonConfigFile)
+	defer teardownFn()
+
 	tests := []struct {
 		name         string
 		reqMethod    string
@@ -86,7 +69,7 @@ func Test_ShannonRelay(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathPort, test.reqPath)
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, test.reqPath)
 
 			client := &http.Client{}
 
