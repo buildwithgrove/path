@@ -52,23 +52,32 @@ func Test_ShannonRelay(t *testing.T) {
 		body         string
 	}{
 		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			// gatewaye2e is a service created for e2e tests: it is supported by a
+			// single endpoint, maintained by Grove.
+			name:         "should successfully relay eth_blockNumber for gatewaye2e",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
 			serviceAlias: "test-service",
 			relayID:      "1001",
 			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
 		{
-			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
+			name:         "should successfully relay eth_chainId for gatewaye2e",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
 			serviceAlias: "test-service",
 			relayID:      "1002",
 			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
+		{
+			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			reqMethod:    http.MethodPost,
+			reqPath:      "/v1",
+			serviceAlias: "eth-mainnet",
+			relayID:      "1101",
+			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
+		},
+
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
