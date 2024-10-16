@@ -11,8 +11,9 @@ WORKDIR /app
 
 ARG IMAGE_TAG
 ENV IMAGE_TAG=${IMAGE_TAG}
-ENV CONFIG_PATH=/etc/auth_server.yaml
+ENV CONFIG_PATH=/etc/config.auth_server.yaml
 
 COPY --from=builder /go/bin/auth-server ./
+COPY --from=builder .config.auth_server.yaml ${CONFIG_PATH}
 
 CMD ["./auth-server"]

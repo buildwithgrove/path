@@ -89,8 +89,8 @@ copy_test_config: ## copies the example test configuration yaml file to .config.
 	fi
 
 .PHONY: copy_envoy_config
-copy_envoy_config: ## substitutes the Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	./envoy/scripts/generate_envoy_yaml.sh
+copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+	./envoy/scripts/copy_envoy_config.sh
 
 ###############################
 ### Generation Make Targets ###
