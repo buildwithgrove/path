@@ -52,7 +52,7 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_auth_server
 test_auth_server: ## Run the auth server tests
-	(cd envoy/auth_server && go test ./... -short -count=1 -tags auth_server)
+	(cd envoy/auth_server && go test ./... -count=1 -tags auth_server)
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
