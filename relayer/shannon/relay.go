@@ -16,7 +16,7 @@ func sendHttpRelay(
 	supplierUrlStr string,
 	relayRequest *servicetypes.RelayRequest,
 ) (relayResponseBz []byte, err error) {
-	supplierUrl, err := url.Parse(supplierUrlStr)
+	_, err = url.Parse(supplierUrlStr)
 	if err != nil {
 		return nil, err
 	}
@@ -26,14 +26,17 @@ func sendHttpRelay(
 		return nil, err
 	}
 
-	relayHTTPRequest := &http.Request{
-		Method: http.MethodPost,
-		URL:    supplierUrl,
-		Body:   io.NopCloser(bytes.NewReader(relayRequestBz)),
-		Header: http.Header{
-			"Content-Type": []string{"application/json"},
-		},
+	relayHTTPRequest, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		supplierUrlStr,
+		io.NopCloser(bytes.NewReader(relayRequestBz)),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	relayHTTPRequest.Header.Add("Content-Type", "application/json")
 
 	relayHTTPResponse, err := http.DefaultClient.Do(relayHTTPRequest)
 	if err != nil {

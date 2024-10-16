@@ -12,6 +12,7 @@ package request
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -23,30 +24,20 @@ import (
 
 type (
 	Parser struct {
-		Backend            Backend
-		QoSServiceProvider provider
-		Logger             polylog.Logger
+		Backend     Backend
+		QoSServices map[relayer.ServiceID]gateway.QoSService
+		Logger      polylog.Logger
 	}
 	Backend interface {
-		GetEnabledServiceConfigs() map[relayer.ServiceID]QoSServiceConfig
 		GetServiceIDFromAlias(string) (relayer.ServiceID, bool)
 	}
 )
 
-type provider interface {
-	GetQoSService(relayer.ServiceID) (gateway.QoSService, error)
-}
-
-func NewParser(backend Backend, logger polylog.Logger) (*Parser, error) {
-	qosServiceProvider, err := newQoSServiceProvider(backend, logger)
-	if err != nil {
-		return nil, err
-	}
-
+func NewParser(backend Backend, enabledServices map[relayer.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
 	return &Parser{
-		Backend:            backend,
-		QoSServiceProvider: qosServiceProvider,
-		Logger:             logger,
+		Backend:     backend,
+		QoSServices: enabledServices,
+		Logger:      logger,
 	}, nil
 }
 
@@ -59,9 +50,9 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (relayer.
 		return "", nil, err
 	}
 
-	qosService, err := p.QoSServiceProvider.GetQoSService(serviceID)
-	if err != nil {
-		return "", nil, err
+	qosService, ok := p.QoSServices[serviceID]
+	if !ok {
+		return serviceID, nil, fmt.Errorf("service ID %q not supported", serviceID)
 	}
 
 	return serviceID, qosService, nil

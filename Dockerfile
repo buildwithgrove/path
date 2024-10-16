@@ -4,7 +4,7 @@ RUN apk add --no-cache git
 WORKDIR /go/src/github.com/buildwithgrove/path
 COPY . .
 RUN apk add --no-cache make build-base
-RUN go build -o /go/bin/path ./cmd/main.go
+RUN go build -o /go/bin/path ./cmd
 
 FROM alpine:3.19
 WORKDIR /app
