@@ -38,6 +38,8 @@ func getServiceQoSInstances(
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
 	for _, serviceID := range allServiceIDs {
 		switch serviceID {
+		case config.ServiceIDAnvil:
+			fallthrough
 		case config.ServiceIDEVM:
 			evmEndpointStore := &evm.EndpointStore{Logger: logger}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {

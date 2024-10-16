@@ -50,7 +50,7 @@ type Gateway struct {
 // request processing steps into a common method.
 //
 // HandleHTTPServiceRequest is written as a template method to allow the customization of steps
-// invovled in serving a service request, e.g.:
+// involved in serving a service request, e.g.:
 // authenticating the request, parsing into a service payload,
 // sending the service payload through a relayer, etc.
 //
@@ -76,8 +76,13 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// TODO_TECHDEBT: add request authorization, e.g. rate limiting would block an otherwise valid service request.
 	// This is currently out fo scope since the gateway MVP is to accept and serve all incoming HTTP requests.
 
+	// TODO_FUTURE(@adshmh):
+	// Allow passing in an optional appAddr as a request parameter such that:
+	// - We check if it's in `OwnedApplicationPrivateKeys`
+	// - It is used to sign the request when calling `SendRelay` below
+
 	// Build the payload for the requested service using the incoming HTTP request.
-	// This poyload will be sent to an endpoint matching the requested service.
+	// This payload will be sent to an endpoint matching the requested service.
 	serviceRequestCtx, isValid := serviceQoS.ParseHTTPRequest(ctx, httpReq)
 	if !isValid {
 		// Use the offchain service spec to decide the HTTP response returned to the user.
@@ -86,6 +91,11 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 		return
 	}
+
+	// TODO_FUTURE(@adshmh):
+	// Allow passing in a pre-signed relay such that:
+	// - The gateway does not need to sign anything
+	// - The gateway only offers QoS and proxying services
 
 	// Send the service request payload, through the relayer, to a service provider endpoint.
 	endpointResponse, err := g.Relayer.SendRelay(
@@ -110,7 +120,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// a) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
 	// b) endpoint errors, e.g. when an endpoint is (temporarily) unreachable due to some network issue,
 	// c) request errors: these do not result in an error from SendRelay, but the payload from the endpoint indicates
-	// an error, e.g. an insufficinet funds response to a transaction: note that such validation issues on requests
+	// an error, e.g. an insufficient funds response to a transaction: note that such validation issues on requests
 	// can only be identified onchain, i.e. the requests will pass the validation by the OffchainServicesSpecsEnforcer.
 	//
 	// TODO_FUTURE: Support multiple concurrent relays to multiple
