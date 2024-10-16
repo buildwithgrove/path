@@ -65,6 +65,9 @@ func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckReques
 
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
+	if req == nil {
+		return getDeniedCheckResponse("HTTP request not found", envoy_type.StatusCode_BadRequest), nil
+	}
 
 	// Get the request path
 	path := req.GetPath()
@@ -91,7 +94,7 @@ func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckReques
 		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
 	}
 
-	// If GatewayEndpoint is not found send an error response downstream (client)
+	// Fetch GatewayEndpoint from endpoints cache
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)
 	if !ok {
 		return getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
