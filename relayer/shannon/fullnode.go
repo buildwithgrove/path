@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"slices"
 	"strings"
 	"time"
 
@@ -88,12 +87,29 @@ func NewFullNode(config FullNodeConfig, logger polylog.Logger) (FullNode, error)
 type (
 	// TODO_DISCUSS: move this (and the morse FullNodeConfig) to the config package?
 	FullNodeConfig struct {
-		RpcURL            string     `yaml:"rpc_url"`
-		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
-		GatewayAddress    string     `yaml:"gateway_address"`
-		GatewayPrivateKey string     `yaml:"gateway_private_key"`
+		RpcURL     string     `yaml:"rpc_url"`
+		GRPCConfig GRPCConfig `yaml:"grpc_config"`
+
 		// A list of addresses of onchain Applications delegated to the Gateway.
+		//
+		// - We should remove these references from configs (not internal structures)
+		// - We should replace it with a is_sovereign flag
 		DelegatedApps []string `yaml:"delegated_app_addresses"`
+	}
+
+	// TODO_IN_PARALLEL_TO_THIS_PR(@arash): Updated everything to reflect these configs
+	GatewayConfig struct {
+		// The address of the gateway running this instance of PATH.
+		GatewayAddress string `yaml:"gateway_address"`
+		// The private key of the gateway signing incoming relays.
+		GatewayPrivateKey string `yaml:"gateway_private_key"`
+		// On-chain Applications owned by this gateway that can be used
+		// to sign relays instead of the gateway.
+		// If these applications are not staked correctly, or do not delegate to
+		// the gateway itself above, PATH  will not start.
+		// TODO_IMPROVE: Add a config / option/ CLI to send delegation transactions
+		// automatically.
+		OwnedApplicationPrivateKeys []string `yaml:"allow_sovereign"`
 	}
 
 	GRPCConfig struct {
@@ -192,14 +208,14 @@ func (s *fullNode) GetSession(serviceID, appAddr string, blockHeight int64) (ses
 
 	if err != nil {
 		return sessiontypes.Session{},
-			fmt.Errorf("GetSession: error getting the session for service %s app %s blockheight %d: %w",
+			fmt.Errorf("GetSession: error getting the session for service %s app %s block height %d: %w",
 				serviceID, appAddr, blockHeight, err,
 			)
 	}
 
 	if session == nil {
 		return sessiontypes.Session{},
-			fmt.Errorf("GetSession: got nil session for service %s app %s blockheight %d: %w",
+			fmt.Errorf("GetSession: got nil session for service %s app %s block height %d: %w",
 				serviceID, appAddr, blockHeight, err,
 			)
 	}
@@ -207,27 +223,17 @@ func (s *fullNode) GetSession(serviceID, appAddr string, blockHeight int64) (ses
 	return *session, nil
 }
 
+// TODO_IN_PARALLEL_TO_THIS_PR_IN_POKTROLL(@red0ne):
+// - Whenever an app delegates to a gateway -> update an index {gateway -> [apps] + app}
+// - Whenever an app undelegates from a gateway -> update the index {gateway -> [apps] - app}
+// - Add a getter to make the above accessible
+
 // GetApps returns the onchain apps that have active delegations to the gateway.
 func (s *fullNode) GetApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
-
-	var apps []apptypes.Application
-	for _, appAddr := range s.delegatedApps {
-		onchainApp, err := s.appClient.GetApplication(ctx, appAddr)
-		if err != nil {
-			s.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
-			continue
-		}
-
-		if !slices.Contains(onchainApp.DelegateeGatewayAddresses, s.gatewayAddress) {
-			s.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
-			continue
-		}
-
-		apps = append(apps, onchainApp)
-	}
-
-	return apps, nil
+	// TODO_IN_PARALLEL_TO_THIS_PR(@arash):
+	// 1. Ensure applications in `owned_application_private_keys` are delegateing to this gateway
+	// -> Error if not (configs incorrect)
+	// 2. Use the new index + endpoint above to return the apps
 }
 
 // TODO_IMPROVE: split this function into build/sign/send/verify stages.
