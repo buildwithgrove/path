@@ -43,7 +43,8 @@ services:
       - "3001:3001"
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
-    command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --log-level debug
+    # Throw an error if the envoy.yaml file is not found.
+    command: /bin/sh -c "if [ ! -f /etc/envoy/envoy.yaml ]; then echo 'envoy.yaml not found. Run `make copy_envoy_config` to generate it.' && exit 1; fi; /usr/local/bin/envoy -c /etc/envoy/envoy.yaml"
     depends_on:
       path:
         condition: service_healthy
@@ -63,8 +64,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "10003:10003"
-    volumes:
-      - ./envoy/auth_server/.config.auth_server.yaml:/etc/auth_server.yaml
     depends_on:
       path:
         condition: service_healthy

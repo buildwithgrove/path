@@ -14,24 +14,26 @@ static_resources:
                     socket_address:
                       address: path
                       port_value: 3000
-    # The Auth0 JWKS cluster is used to fetch the JWKS from Auth0.
-    - name: auth0_jwks_cluster
+    # The Auth JSON Web Key Set (JWKS) cluster is used to fetch the JWKS from the auth provider.
+    - name: auth_jwks_cluster
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY
       load_assignment:
-        cluster_name: auth0_jwks_cluster
+        cluster_name: auth_jwks_cluster
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: ${AUTH0_DOMAIN}
+                      # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                      address: ${AUTH_DOMAIN}
                       port_value: 443
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          sni: auth.grove.city
+          # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+          sni: ${AUTH_DOMAIN}
     # The External Authorization cluster is used to handle external authorization checks.
     - name: ext-authz
       type: STRICT_DNS
@@ -91,16 +93,19 @@ static_resources:
                         - match:
                             prefix: "/v1"
                           requires:
-                            provider_name: auth0_provider
+                            provider_name: auth_provider
                       providers:
-                        auth0_provider:
-                          issuer: https://${AUTH0_DOMAIN}/
+                        auth_provider:
+                          # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                          issuer: https://${AUTH_DOMAIN}/
                           audiences:
-                            - ${AUTH0_AUDIENCE}
+                            # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                            - ${AUTH_AUDIENCE}
                           remote_jwks:
                             http_uri:
-                              uri: https://${AUTH0_DOMAIN}/.well-known/jwks.json
-                              cluster: auth0_jwks_cluster
+                              # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                              uri: https://${AUTH_DOMAIN}/.well-known/jwks.json
+                              cluster: auth_jwks_cluster
                               timeout: 1s
                           forward: true
                           claim_to_headers:
