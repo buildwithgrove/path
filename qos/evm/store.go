@@ -49,56 +49,57 @@ type EndpointStore struct {
 	blockHeight uint64
 }
 
-// TODO_UPNEXT(@adshmh): Update this method along with the relayer.EndpointSelector interface.
-func (es *EndpointStore) Select(availableEndpoints map[relayer.AppAddr][]relayer.Endpoint) (relayer.AppAddr, relayer.EndpointAddr, error) {
+// Select returns an endpoint address matching an entry from the list of available endpoints.
+// available endpoints are filtered based on their validity first.
+// A random endpoint is then returned from the filtered list of valid endpoints.
+func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
+	if err != nil {
+		return relayer.EndpointAddr(""), err
+	}
+
+	logger := es.Logger.With("number of available endpoints", len(availableEndpoints))
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msg("select: all endpoints failed validation; selecting a random endpoint.")
+		randomAvailableEndpoint := availableEndpoints[rand.Intn(len(availableEndpoints))]
+		return randomAvailableEndpoint.Addr(), nil
+	}
+
+	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
+	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
+}
+
+// filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
+func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) ([]relayer.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
 	if len(availableEndpoints) == 0 {
-		return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: received empty list of endpoints to select from")
+		return nil, errors.New("select: received empty list of endpoints to select from")
 	}
 
-	// TODO_UPNEXT(@adshmh): Use a randomization, e.g. standard library's
-	// random.Shuffle() method, once the Protocol interface is updated,
-	// rather than relying on map's range operator randomization
-	uniqueEndpoints := make(map[relayer.EndpointAddr]relayer.AppAddr)
-	for appAddr, endpoints := range availableEndpoints {
-		for _, endpoint := range endpoints {
-			uniqueEndpoints[endpoint.Addr()] = appAddr
-		}
-	}
-
-	logger := es.Logger.With("number of unique endpoints", fmt.Sprintf("%d", len(uniqueEndpoints)))
+	logger := es.Logger.With("number of available endpoints", fmt.Sprintf("%d", len(availableEndpoints)))
 	logger.Info().Msg("select: processing available endpoints")
 
+	var filteredEndpointsAddr []relayer.EndpointAddr
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
-	for endpointAddr, appAddr := range uniqueEndpoints {
-		logger := logger.With("endpoint", endpointAddr)
+	for _, availableEndpoint := range availableEndpoints {
+		logger := logger.With("endpoint", availableEndpoint.Addr())
 		logger.Info().Msg("select: processing endpoint")
 
-		endpoint, found := es.endpoints[endpointAddr]
+		endpoint, found := es.endpoints[availableEndpoint.Addr()]
 		if !found {
 			continue
 		}
 
 		if isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight) {
-			return appAddr, endpointAddr, nil
+			filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
 		}
 
 		logger.Info().Msg("select: invalid endpoint is filtered")
 	}
 
-	// TODO_INCOMPLETE: log a warning/info message to provide some visibility if endpoint selection
-	// consistently reaches this point, resulting in potential service degradation, possibly due to a bug.
-
-	// TODO_UPNEXT(@adshmh): Remove the app address hack once the relayer.EndpointSelector
-	// interface is updated.
-	// return a random endpoint if no endpoint has details in the store.
-	for appAddr, appEndpoints := range availableEndpoints {
-		return appAddr, appEndpoints[rand.Intn(len(appEndpoints))].Addr(), nil
-	}
-
-	return relayer.AppAddr(""), relayer.EndpointAddr(""), errors.New("select: all apps have empty endpoint lists.")
+	return filteredEndpointsAddr, nil
 }
 
 // isEndpointValid returns true if the input endpoint is valid for the passed

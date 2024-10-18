@@ -11,16 +11,12 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
-	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using methods that are specific to Shannon.
 var _ relayer.Protocol = &Protocol{}
-
-// All components that report their ready status to /healthz must implement the health.Check interface.
-var _ health.Check = &Protocol{}
 
 type FullNode interface {
 	GetApps(context.Context) ([]apptypes.Application, error)
