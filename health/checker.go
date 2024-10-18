@@ -35,10 +35,12 @@ type (
 		Components []Check
 		Logger     polylog.Logger
 	}
+
 	// health.Check is an interface that must be implemented
 	// by components that need to report their health status
 	Check interface {
-		Name() string  // Name returns the name of the component being checked.
+		Name() string // Name returns the name of the component being checked.
+		// TODO_FUTURE: consider adding a message/reason for an unhealthy status.
 		IsAlive() bool // IsAlive returns true if the component is healthy, otherwise false.
 	}
 )
@@ -111,6 +113,7 @@ func (c *Checker) getComponentReadyStates() map[string]bool {
 	for _, component := range c.Components {
 		readyStates[component.Name()] = component.IsAlive()
 	}
+
 	return readyStates
 }
 

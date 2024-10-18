@@ -13,7 +13,6 @@ import (
 	shannonConfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/relayer"
 	"github.com/buildwithgrove/path/relayer/morse"
 	"github.com/buildwithgrove/path/relayer/shannon"
@@ -36,26 +35,49 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	requestParser, err := request.NewParser(config, logger)
+	relayer := &relayer.Relayer{Protocol: protocol}
+
+	qosPublisher, err := getQoSPublisher(config.MessagingConfig)
+	if err != nil {
+		log.Fatalf("failed to setup the QoS publisher: %v", err)
+	}
+
+	gatewayQoSInstances, hydratorQoSGenerators, err := getServiceQoSInstances(config, logger)
+	if err != nil {
+		log.Fatalf("failed to setup QoS instances: %v", err)
+	}
+
+	// TODO_IMPROVE: consider using a separate relayer for the hydrator,
+	// to enable configuring separate worker pools for the user requests
+	// and the endpoint hydrator requests.
+	hydrator, err := setupEndpointHydrator(protocol, relayer, qosPublisher, hydratorQoSGenerators, logger)
+	if err != nil {
+		log.Fatalf("failed to setup endpoint hydrator: %v", err)
+	}
+
+	requestParser, err := request.NewParser(config, gatewayQoSInstances, logger)
 	if err != nil {
 		log.Fatalf("failed to create request parser: %v", err)
 	}
 
-	relayer := &relayer.Relayer{Protocol: protocol}
-
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Relayer:           relayer,
-		// TODO_UPNEXT(@adshmh): implement the QoS Publisher and use here.
-		QoSPublisher: noopQoSPublisher{},
+		QoSPublisher:      qosPublisher,
+		Logger:            logger,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
 	// Unavailable status; once all components are ready, it will return a 200 OK status.
 	// health check components must implement the health.Check interface
 	// to be able to signal they are ready to service requests.
+	components := []health.Check{protocol}
+	if hydrator != nil {
+		components = append(components, hydrator)
+	}
+
 	healthChecker := &health.Checker{
-		Components: []health.Check{protocol},
+		Components: components,
 		Logger:     logger,
 	}
 
@@ -113,11 +135,4 @@ func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Log
 	}
 
 	return protocol, nil
-}
-
-// TODO_UPNEXT(@adshmh): Remove this after implementing the QoS Publisher
-type noopQoSPublisher struct{}
-
-func (noopQoSPublisher) Publish(message.ObservationSet) error {
-	return nil
 }

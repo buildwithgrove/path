@@ -254,7 +254,10 @@ func (f *fullNode) SendRelay(app apptypes.Application, session sessiontypes.Sess
 		return nil, fmt.Errorf("relay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	responseBz, err := sendHttpRelay(context.Background(), endpoint.url, req)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
+	defer cancelFn()
+
+	responseBz, err := sendHttpRelay(ctxWithTimeout, endpoint.url, req)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", endpoint.url, err)
 	}
