@@ -11,16 +11,12 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
-	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using methods that are specific to Shannon.
 var _ relayer.Protocol = &Protocol{}
-
-// All components that report their ready status to /healthz must implement the health.Check interface.
-var _ health.Check = &Protocol{}
 
 type FullNode interface {
 	GetApps(context.Context) ([]apptypes.Application, error)
@@ -79,82 +75,74 @@ func (p *Protocol) IsAlive() bool {
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
-func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
+// func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
+func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, error) {
 	apps, found := p.serviceApps(serviceID)
 	if !found {
 		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
 	}
 
-	allEndpoints := make(map[relayer.AppAddr][]relayer.Endpoint)
-	for _, app := range apps {
-		logger := p.logger.With(
-			"service", string(serviceID),
-			"address", app.Address,
-		)
-
-		session, found := p.getSession(serviceID, relayer.AppAddr(app.Address))
-		if !found {
-			logger.Warn().Msg("Endpoints: no sessions found for service,app combination. Skipping.")
-			continue
-		}
-
-		sessionEndpoints, err := endpointsFromSession(session)
-		if err != nil {
-			p.logger.Warn().Err(err).Msg("Endpoints: error getting endpoints from the session")
-			continue
-		}
-
-		endpoints := make([]relayer.Endpoint, len(sessionEndpoints))
-		for i, sessionEndpoint := range sessionEndpoints {
-			endpoints[i] = sessionEndpoint
-		}
-		allEndpoints[relayer.AppAddr(app.Address)] = endpoints
+	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID, apps)
+	if err != nil {
+		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	if len(allEndpoints) == 0 {
-		return nil, fmt.Errorf("endpoints: no cached sessions found for service %s", serviceID)
+	var endpoints []relayer.Endpoint
+	for _, endpoint := range endpointsIdx {
+		endpoints = append(endpoints, endpoint)
 	}
 
-	return allEndpoints, nil
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("endpoints: no endpoints found for service %s", serviceID)
+	}
+
+	return endpoints, nil
 }
 
-func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
-	app, err := p.getApp(req.ServiceID, req.AppAddr)
-	if err != nil {
-		return relayer.Response{}, fmt.Errorf("sendRelay: app not found: %w", err)
-	}
-
-	session, found := p.getSession(req.ServiceID, req.AppAddr)
+// BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
+func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID) (relayer.ProtocolRequestContext, error) {
+	apps, found := p.serviceApps(serviceID)
 	if !found {
-		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
+		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
 	}
 
-	endpoint, err := endpointFromSession(session, req.EndpointAddr)
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, apps)
 	if err != nil {
-		return relayer.Response{}, fmt.Errorf("relay: endpoint %s not found for service %s app %s: %w", req.EndpointAddr, req.ServiceID, req.AppAddr, err)
+		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	response, err := p.fullNode.SendRelay(app, session, endpoint, req.Payload)
-	if err != nil {
-		return relayer.Response{EndpointAddr: req.EndpointAddr},
-			fmt.Errorf("relay: error sending relay for service %s app %s endpoint %s: %w",
-				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
-			)
+	return &requestContext{
+		fullNode:  p.fullNode,
+		endpoints: endpoints,
+		serviceID: serviceID,
+	}, nil
+}
+
+// TODO_FUTURE: Find a more optimized way of handling an overlap among endpoints
+// matching multiple sessions of apps delegating to the gateway.
+//
+// getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
+// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
+// matching one of the apps/sessions is returned.
+func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, apps []apptypes.Application) (map[relayer.EndpointAddr]endpoint, error) {
+	endpoints := make(map[relayer.EndpointAddr]endpoint)
+	for _, app := range apps {
+		session, found := p.getSession(serviceID, app.Address)
+		if !found {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: no session found for service %s app %s", serviceID, app.Address)
+		}
+
+		appEndpoints, err := endpointsFromSession(session)
+		if err != nil {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
+		}
+
+		for endpointAddr, endpoint := range appEndpoints {
+			endpoints[endpointAddr] = endpoint
+		}
 	}
 
-	// The Payload field of the response received from the endpoint, i.e. the relay miner,
-	// is a serialized http.Response struct. It needs to be deserialized into an HTTP Response struct
-	// to access the Service's response body, status code, etc.
-	relayResponse, err := deserializeRelayResponse(response.Payload)
-	if err != nil {
-		return relayer.Response{EndpointAddr: req.EndpointAddr},
-			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
-				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
-			)
-	}
-
-	relayResponse.EndpointAddr = req.EndpointAddr
-	return relayResponse, nil
+	return endpoints, nil
 }
 
 func (p *Protocol) serviceApps(serviceID relayer.ServiceID) ([]apptypes.Application, bool) {
@@ -165,21 +153,7 @@ func (p *Protocol) serviceApps(serviceID relayer.ServiceID) ([]apptypes.Applicat
 	return apps, found
 }
 
-func (p *Protocol) getApp(serviceID relayer.ServiceID, appAddr relayer.AppAddr) (apptypes.Application, error) {
-	apps, found := p.serviceApps(serviceID)
-	if !found {
-		return apptypes.Application{}, fmt.Errorf("getApp: service %s not found", serviceID)
-	}
-
-	app, found := appFromList(apps, appAddr)
-	if found {
-		return app, nil
-	}
-
-	return apptypes.Application{}, fmt.Errorf("getApp: service %s has no apps with address %s", serviceID, appAddr)
-}
-
-func (p *Protocol) getSession(serviceID relayer.ServiceID, appAddr relayer.AppAddr) (sessiontypes.Session, bool) {
+func (p *Protocol) getSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, bool) {
 	p.sessionCacheMu.RLock()
 	defer p.sessionCacheMu.RUnlock()
 
@@ -253,7 +227,7 @@ func (p *Protocol) fetchSessions() map[string]sessiontypes.Session {
 		return nil
 	}
 
-	apps := p.AllApps()
+	apps := p.allApps()
 
 	sessions := make(map[string]sessiontypes.Session)
 	// TODO_TECHDEBT: use multiple go routines.
@@ -270,7 +244,7 @@ func (p *Protocol) fetchSessions() map[string]sessiontypes.Session {
 				continue
 			}
 
-			sessions[sessionCacheKey(serviceID, relayer.AppAddr(app.Address))] = session
+			sessions[sessionCacheKey(serviceID, app.Address)] = session
 			logger.Info().Msg("successfully fetched the session for service and app combination.")
 		}
 	}
@@ -278,7 +252,7 @@ func (p *Protocol) fetchSessions() map[string]sessiontypes.Session {
 	return sessions
 }
 
-func (p *Protocol) AllApps() map[relayer.ServiceID][]apptypes.Application {
+func (p *Protocol) allApps() map[relayer.ServiceID][]apptypes.Application {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
@@ -292,16 +266,6 @@ func (p *Protocol) AllApps() map[relayer.ServiceID][]apptypes.Application {
 	return allApps
 }
 
-func sessionCacheKey(serviceID relayer.ServiceID, appAddr relayer.AppAddr) string {
+func sessionCacheKey(serviceID relayer.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s-%s", serviceID, appAddr)
-}
-
-func appFromList(apps []apptypes.Application, appAddr relayer.AppAddr) (apptypes.Application, bool) {
-	for _, app := range apps {
-		if app.Address == string(appAddr) {
-			return app, true
-		}
-	}
-
-	return apptypes.Application{}, false
 }

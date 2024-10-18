@@ -26,13 +26,10 @@ const (
 // interval of an endpoint hydrator.
 var endpointHydratorRunInterval = 10_000 * time.Millisecond
 
-// TODO_UPNEXT(@adshmh): Complete the following to remove the confusing Protocol interface below:
-//
-//	1- Split the relayer package's Protocol interface.
-//	2- Import the appropriate interface here, e.g. a new `EndpointProvider` interface.
-//	3- Update/remove the comment below.
-type Protocol interface {
-	Endpoints(relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error)
+// EndpointLister specifies the functionality required by the EndpointHydrator to
+// obtain a list of available endpoints for a service.
+type EndpointLister interface {
+	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
 }
 
 // Please see the following link for details on the use of `Hydrator` word in the name.
@@ -48,7 +45,7 @@ type Protocol interface {
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
-	Protocol
+	EndpointLister
 	*relayer.Relayer
 	QoSPublisher
 
@@ -73,8 +70,8 @@ type EndpointHydrator struct {
 // Start should be called to signal this instance of the hydrator
 // to start generating and sending out the endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
-	if eph.Protocol == nil {
-		return errors.New("a Protocol instance must be proivded.")
+	if eph.EndpointLister == nil {
+		return errors.New("an instance of EndpointLister must be proivded.")
 	}
 
 	if eph.Relayer == nil {
@@ -140,29 +137,20 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		"service", string(serviceID),
 	)
 
-	allEndpoints, err := eph.Protocol.Endpoints(serviceID)
+	uniqueEndpoints, err := eph.EndpointLister.Endpoints(serviceID)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
 		return err
 	}
 
-	// TODO_UPNEXT(@adshmh): remove this once the Protocol interface
-	// is updated to directly return the set of unique endpoints.
-	uniqueEndpoints := make(map[relayer.EndpointAddr]struct{})
-	for _, endpoints := range allEndpoints {
-		for _, endpoint := range endpoints {
-			uniqueEndpoints[endpoint.Addr()] = struct{}{}
-		}
-	}
-
 	logger = logger.With("number of endpoints", len(uniqueEndpoints))
 	// TODO_IMPROVE: use a single goroutine per endpoint
-	for endpointAddr := range uniqueEndpoints {
-		logger.With("endpoint", endpointAddr).Info().Msg("running checks against the endpoint")
+	for _, endpoint := range uniqueEndpoints {
+		logger.With("endpoint", endpoint.Addr()).Info().Msg("running checks against the endpoint")
 
-		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
+		requiredChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
 		if len(requiredChecks) == 0 {
-			logger.With("endpoint", string(endpointAddr)).Warn().Msg("service QoS returned 0 required checks")
+			logger.With("endpoint", string(endpoint.Addr())).Warn().Msg("service QoS returned 0 required checks")
 			continue
 		}
 

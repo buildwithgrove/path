@@ -14,7 +14,7 @@ import (
 // The EndpointHydrator will not be started if no
 // service QoS generators are specified.
 func setupEndpointHydrator(
-	protocol gateway.Protocol,
+	endpointLister gateway.EndpointLister,
 	relayer *relayer.Relayer,
 	qosPublisher gateway.QoSPublisher,
 	qosGenerators map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
@@ -33,8 +33,8 @@ func setupEndpointHydrator(
 		return nil, errors.New("endpoint hydrator enabled but no QoS publishers provided")
 	}
 
-	if protocol == nil {
-		return nil, errors.New("endpoint hydrator enabled but no protocol instance provided")
+	if endpointLister == nil {
+		return nil, errors.New("endpoint hydrator enabled but no endpointLister instance provided")
 	}
 
 	if relayer == nil {
@@ -46,7 +46,7 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-		Protocol:             protocol,
+		EndpointLister:       endpointLister,
 		Relayer:              relayer,
 		QoSPublisher:         qosPublisher,
 		ServiceQoSGenerators: qosGenerators,

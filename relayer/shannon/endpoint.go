@@ -20,6 +20,12 @@ var _ relayer.Endpoint = endpoint{}
 type endpoint struct {
 	supplier string
 	url      string
+
+	// TODO_IMPROVE: If the same endpoint is in the session of multiple apps at the same time,
+	// the first app will be chosen. A randomization among the apps in this (unlikely) scenario
+	// may be needed.
+	// session is the active session corresponding to the app, of which the endpoint is a member.
+	session sessiontypes.Session
 }
 
 func (e endpoint) Addr() relayer.EndpointAddr {
@@ -31,7 +37,9 @@ func (e endpoint) PublicURL() string {
 }
 
 // endpointsFromSession returns the list of all endpoints from a Shannon session.
-func endpointsFromSession(session sessiontypes.Session) ([]endpoint, error) {
+// It returns a map for efficient lookup, as the main/only consumer of this function uses
+// the return value for selecting an endpoint for sending a relay.
+func endpointsFromSession(session sessiontypes.Session) (map[relayer.EndpointAddr]endpoint, error) {
 	sf := sdk.SessionFilter{
 		Session: &session,
 	}
@@ -41,31 +49,18 @@ func endpointsFromSession(session sessiontypes.Session) ([]endpoint, error) {
 		return nil, err
 	}
 
-	var endpoints []endpoint
+	endpoints := make(map[relayer.EndpointAddr]endpoint)
 	for _, supplierEndpoints := range allEndpoints {
 		for _, supplierEndpoint := range supplierEndpoints {
-			endpoints = append(endpoints, endpoint{
+			endpoint := endpoint{
 				supplier: string(supplierEndpoint.Supplier()),
 				url:      supplierEndpoint.Endpoint().Url,
-			})
+				// Set the session field on the endpoint for efficient lookup when sending relays.
+				session: session,
+			}
+			endpoints[endpoint.Addr()] = endpoint
 		}
 	}
 
 	return endpoints, nil
-}
-
-// endpointFromSession returns the endpoint matching the input address from the list of all SupplierEndpoints of a Shannon session.
-func endpointFromSession(session sessiontypes.Session, endpointAddr relayer.EndpointAddr) (endpoint, error) {
-	endpoints, err := endpointsFromSession(session)
-	if err != nil {
-		return endpoint{}, fmt.Errorf("endpointFromSession: error getting all endpoints for session %s: %w", session.SessionId, err)
-	}
-
-	for _, e := range endpoints {
-		if e.Addr() == endpointAddr {
-			return e, nil
-		}
-	}
-
-	return endpoint{}, fmt.Errorf("endpointFromSession: endpoint %s not found in the session", endpointAddr)
 }
