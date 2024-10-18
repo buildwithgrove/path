@@ -1,5 +1,9 @@
 package relayer
 
+import (
+	"github.com/buildwithgrove/path/health"
+)
+
 // Protocol defines the core functionality of a protocol,
 // from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a speicifc service ID.
@@ -7,6 +11,8 @@ type Protocol interface {
 	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
 	// request, which matches the provided Service ID.
 	BuildRequestContext(ServiceID) (ProtocolRequestContext, error)
+
+	health.Check
 }
 
 // ProtocolRequestContext defines the functionality expected by the gateway

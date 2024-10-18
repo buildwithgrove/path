@@ -12,6 +12,9 @@ import (
 	"fmt"
 )
 
+// TODO_UPNEXT(@adshmh): move the Relayer struct to its own package,
+// and rename this package to 'protocol'
+
 // ServiceID represents a unique onchain ID for a service.
 // It is defined in the `relayer` package and not the `service` package
 // because `service` is intended to handle off-chain details, while
