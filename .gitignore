@@ -42,3 +42,6 @@ go.work.sum
 # tmp directory
 tmp
 tmp/*
+
+# Envoy config with sensitive information
+envoy.yaml

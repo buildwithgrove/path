@@ -1,3 +1,5 @@
+//go:build auth_server
+
 package postgres
 
 import (
@@ -8,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/buildwithgrove/auth-plugin/db"
-	"github.com/buildwithgrove/auth-plugin/user"
+	"github.com/buildwithgrove/auth-server/db"
+	"github.com/buildwithgrove/auth-server/user"
 )
 
 // The postgresDriver struct satisfies the db.Driver interface defined in the db package.
@@ -78,11 +80,16 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 	gatewayEndpoints := make(map[user.EndpointID]user.GatewayEndpoint, len(rows))
 
 	for _, row := range rows {
+
+		authorizedUserIDs := make(map[user.ProviderUserID]struct{}, len(row.ProviderUserIds))
+		for _, userID := range row.ProviderUserIds {
+			authorizedUserIDs[user.ProviderUserID(userID)] = struct{}{}
+		}
+
 		gatewayEndpoint := user.GatewayEndpoint{
 			EndpointID: user.EndpointID(row.ID),
 			Auth: user.Auth{
-				APIKey:         row.ApiKey.String,
-				APIKeyRequired: row.ApiKeyRequired.Bool,
+				AuthorizedUsers: authorizedUserIDs,
 			},
 			UserAccount: user.UserAccount{
 				AccountID: user.AccountID(row.AccountID.String),
@@ -105,7 +112,7 @@ func (d *postgresDriver) convertToGatewayEndpoints(rows []SelectGatewayEndpoints
 
 // IsValidPostgresConnectionString checks if a string is a valid PostgreSQL connection string.
 func IsValidPostgresConnectionString(s string) bool {
-	// Regular expression to match a valid PostgreSQL connection string
-	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/.+$`)
+	// Regular expression to match a valid PostgreSQL connection string with optional query parameters
+	var dbConnStringRegex = regexp.MustCompile(`^postgres://[^:]+:[^@]+@[^:]+:\d+/[^\s?]+(\?.*)?$`)
 	return dbConnStringRegex.MatchString(s)
 }

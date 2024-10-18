@@ -1,3 +1,5 @@
+//go:build auth_server
+
 package postgres
 
 import (
