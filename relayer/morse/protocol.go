@@ -138,10 +138,7 @@ func (p *Protocol) getServiceApps(serviceID relayer.ServiceID) ([]app, bool) {
 	}
 
 	apps := make([]app, len(cachedApps))
-	for i, app := range cachedApps {
-		apps[i] = app
-	}
-
+	copy(apps, cachedApps)
 	return apps, true
 }
 
