@@ -64,19 +64,3 @@ func endpointsFromSession(session sessiontypes.Session) (map[relayer.EndpointAdd
 
 	return endpoints, nil
 }
-
-// endpointFromSession returns the endpoint matching the input address from the list of all SupplierEndpoints of a Shannon session.
-func endpointFromSession(session sessiontypes.Session, endpointAddr relayer.EndpointAddr) (endpoint, error) {
-	endpoints, err := endpointsFromSession(session)
-	if err != nil {
-		return endpoint{}, fmt.Errorf("endpointFromSession: error getting all endpoints for session %s: %w", session.SessionId, err)
-	}
-
-	for _, e := range endpoints {
-		if e.Addr() == endpointAddr {
-			return e, nil
-		}
-	}
-
-	return endpoint{}, fmt.Errorf("endpointFromSession: endpoint %s not found in the session", endpointAddr)
-}
