@@ -9,39 +9,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
-// This allows a subdomain to be specified without modifying /etc/hosts.
-// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
-const localdevMe = "localdev.me"
-
-// When the ephemeral PATH Docker container is running it exposes a dynamically
-// assigned port. This global variable is used to capture the port number.
-var pathPort string
-
-func TestMain(m *testing.M) {
-	// Initialize the ephemeral PATH Docker container
-	pool, resource, containerPort := setupPathDocker()
-
-	// Assign the port the container is listening on to the global variable
-	pathPort = containerPort
-
-	// Run PATH E2E Shannon relay tests
-	exitCode := m.Run()
-
-	// Cleanup the ephemeral PATH Docker container
-	cleanupPathDocker(m, pool, resource)
-
-	// Exit with the test result
-	os.Exit(exitCode)
-}
+const (
+	// shannonConfigFile is the name of the config file under "e2e" directory, that contains
+	// the config for a PATH instance that uses Shannon as the relaying protocol.
+	shannonConfigFile = ".shannon.config.yaml"
+)
 
 func Test_ShannonRelay(t *testing.T) {
+	// Start an instance of PATH using the E2E config file for Shannon.
+	pathContainerPort, teardownFn := setupPathInstance(t, shannonConfigFile)
+	defer teardownFn()
+
 	tests := []struct {
 		name         string
 		reqMethod    string
@@ -52,23 +35,32 @@ func Test_ShannonRelay(t *testing.T) {
 		body         string
 	}{
 		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			// gatewaye2e is a service created for e2e tests: it is supported by a
+			// single endpoint, maintained by Grove.
+			name:         "should successfully relay eth_blockNumber for gatewaye2e",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
 			serviceAlias: "test-service",
 			relayID:      "1001",
 			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
 		{
-			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
+			name:         "should successfully relay eth_chainId for gatewaye2e",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceID:    "gatewaye2e",
 			serviceAlias: "test-service",
 			relayID:      "1002",
 			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
+		{
+			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			reqMethod:    http.MethodPost,
+			reqPath:      "/v1",
+			serviceAlias: "eth-mainnet",
+			relayID:      "1101",
+			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
+		},
+
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
@@ -77,7 +69,7 @@ func Test_ShannonRelay(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathPort, test.reqPath)
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, test.reqPath)
 
 			client := &http.Client{}
 

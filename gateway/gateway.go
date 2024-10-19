@@ -124,7 +124,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
 	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
-	// This is called in a Goroutine to avoid potenitally blocking the HTTP handler.
+	// This is called in a Goroutine to avoid potentially blocking the HTTP handler.
 	go func() {
 		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
 			logger := g.Logger.With(

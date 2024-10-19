@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,7 +21,6 @@ const (
 	containerName        = "path"
 	internalPathPort     = "3000"
 	dockerfilePath       = "../Dockerfile"
-	configFilePath       = "./.config.test.yaml"
 	configMountPoint     = ":/app/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
@@ -30,11 +28,34 @@ const (
 )
 
 var (
-	// eg. {file_path}/path/e2e/.config.test.yaml:/app/.config.yaml
-	containerConfigMount = filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+	// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
+	// This allows a subdomain to be specified without modifying /etc/hosts.
+	// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
+	localdevMe = "localdev.me"
+
 	// eg. 3000/tcp
 	containerPortAndProtocol = internalPathPort + "/tcp"
 )
+
+// setupPathInstance starts an instance of PATH in a container, using Docker.
+// It returns:
+// 1. "pathPort", the port that is dynamically selected and exposed
+// by the ephemeral PATH container.
+// 2. "cleanup", a function that needs to be called to clean up the PATH container.
+// It is the responsibility of the test function to call this cleanup function.
+func setupPathInstance(t *testing.T, configFilePath string) (containerPort string, cleanupFn func()) {
+	t.Helper()
+
+	// Initialize the ephemeral PATH Docker container
+	pool, resource, containerPort := setupPathDocker(t, configFilePath)
+
+	cleanupFn = func() {
+		// Cleanup the ephemeral PATH Docker container
+		cleanupPathDocker(t, pool, resource)
+	}
+
+	return containerPort, cleanupFn
+}
 
 // setupPathDocker sets up and starts a Docker container for the PATH service using dockertest.
 //
@@ -53,7 +74,12 @@ var (
 // - Performs a health check to ensure the container is ready for requests.
 //
 // - Returns the dockertest pool, resource, and the container port.
-func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
+func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *dockertest.Resource, string) {
+	t.Helper()
+
+	// eg. {file_path}/path/e2e/.config.test.yaml:/app/.config.yaml
+	containerConfigMount := filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+
 	opts := &dockertest.RunOptions{
 		Name:         containerName,
 		Mounts:       []string{containerConfigMount},
@@ -64,16 +90,14 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		fmt.Printf("Could not construct pool: %s", err)
-		os.Exit(1)
+		t.Fatalf("Could not construct pool: %s", err)
 	}
 	resource, err := pool.BuildAndRunWithOptions(dockerfilePath, opts, func(config *docker.HostConfig) {
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
 	if err != nil {
-		fmt.Printf("Could not start resource: %s", err)
-		os.Exit(1)
+		t.Fatalf("Could not start resource: %s", err)
 	}
 
 	c := make(chan os.Signal, 1)
@@ -88,8 +112,7 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 	}()
 
 	if err := resource.Expire(timeoutSeconds); err != nil {
-		fmt.Printf("[ERROR] Failed to set expiration on docker container: %v", err)
-		os.Exit(1)
+		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
 	// performs a health check on the PATH container to ensure it is ready for requests
@@ -113,8 +136,7 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 		return nil
 	}
 	if err = pool.Retry(retryConnectFn); err != nil {
-		fmt.Printf("could not connect to docker: %s", err)
-		os.Exit(1)
+		t.Fatalf("could not connect to docker: %s", err)
 	}
 
 	<-poolRetryChan
@@ -123,8 +145,10 @@ func setupPathDocker() (*dockertest.Pool, *dockertest.Resource, string) {
 }
 
 // cleanupPathDocker purges the Docker container and resource from the provided dockertest pool and resource.
-func cleanupPathDocker(_ *testing.M, pool *dockertest.Pool, resource *dockertest.Resource) {
+func cleanupPathDocker(t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) {
+	t.Helper()
+
 	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("could not purge resource: %s", err)
+		t.Fatalf("could not purge resource: %s", err)
 	}
 }
