@@ -39,7 +39,6 @@ type FullNode interface {
 	SendRelay(context.Context, *sdkrelayer.Input) (*sdkrelayer.Output, error)
 }
 
-// TODO_UPNEXT(@adshmh): Add unit/E2E tests for the implementation of the Morse relayer.
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
 	protocol := &Protocol{
 		fullNode:        fullNode,
@@ -149,6 +148,7 @@ func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
 	)
 
 	return relayer.Response{
+		EndpointAddr:   req.EndpointAddr,
 		Bytes:          []byte(output.Response),
 		HTTPStatusCode: output.StatusCode,
 	}, err
@@ -194,29 +194,33 @@ func (p *Protocol) updateAppCache() {
 }
 
 func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
+	logger := p.logger.With(
+		"protocol", "Morse",
+		"method", "fetchAppData",
+	)
+
 	onchainApps, err := p.fullNode.GetAllApps(context.Background())
 	if err != nil {
-		p.logger.Warn().
-			Err(err).
-			Msg("fetchAppData: error getting list of onchain applications")
-
+		logger.Warn().Err(err).Msg("error getting list of onchain applications")
 		return nil
 	}
 
 	appData := make(map[relayer.ServiceID][]app)
 	for _, onchainApp := range onchainApps {
-		if len(onchainApp.Chains) == 0 {
-			p.logger.Warn().
-				Str("publicKey", onchainApp.PublicKey).
-				Msg("fetchAppData: app has no chains specified onchain. Skipping the app.")
+		logger := logger.With(
+			"publicKey", onchainApp.PublicKey,
+			"address", onchainApp.Address,
+		)
 
+		if len(onchainApp.Chains) == 0 {
+			logger.Warn().Msg("app has no chains specified onchain. Skipping the app.")
 			continue
 		}
 
 		// TODO_IMPROVE: validate the AAT received from the offChainBackend
 		signedAAT, ok := p.offChainBackend.GetSignedAAT(relayer.AppAddr(onchainApp.Address))
 		if !ok {
-			p.logger.Warn().Str("publicKey", onchainApp.PublicKey).Msg("fetchAppData: no AAT found for app. Skipping the app.")
+			logger.Info().Msg("no AAT configured for app. Skipping the app.")
 			continue
 		}
 
@@ -229,7 +233,9 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
 		for _, chainID := range onchainApp.Chains {
 			serviceID := relayer.ServiceID(chainID)
 			appData[serviceID] = append(appData[serviceID], app)
+			logger.With("serviceID", serviceID).Info().Msg("Found matching AAT, adding the app/service combination to the cache.")
 		}
+
 	}
 
 	return appData

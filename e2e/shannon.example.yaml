@@ -1,13 +1,6 @@
 # To use E2E tests, copy this file and rename it to .config.test.yaml, then update
 # the `protocol.shannon_config.full_node_config.gateway_private_key` value with the correct value.
 # NOTE: only the gateway_private_key value should be updated.
-
-services:
-  # do not change gatewaye2e
-  "gatewaye2e": 
-    # do not change alias
-    alias: "test-service" 
-
 # shannon_config is required for the shannon E2E test.
 shannon_config:
   full_node_config:
@@ -23,3 +16,13 @@ shannon_config:
     delegated_app_addresses: 
       # do not change delegated_app_address
       - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87 
+services:
+  # do not change gatewaye2e
+  "gatewaye2e":
+    # do not change alias
+    alias: "test-service"
+  "0021":
+    alias: "eth-mainnet"
+hydrator_config:
+  service_ids:
+    - 0021

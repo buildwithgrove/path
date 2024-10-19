@@ -58,6 +58,10 @@ test_auth_server: ## Run the auth server tests
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
 	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay
 
+.PHONY: test_e2e_morse_relay
+test_e2e_morse_relay: ## Run an E2E Morse relay test
+	go test ./... -tags=e2e -count=1 -run Test_MorseRelay
+
 ################################
 ### Copy Config Make Targets ###
 ################################
@@ -70,7 +74,6 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 		echo ".config.yaml already exists, not overwriting."; \
 	fi
 
-
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
@@ -79,13 +82,20 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 		echo ".config.yaml already exists, not overwriting."; \
 	fi
 
-
-.PHONY: copy_test_config
-copy_test_config: ## copies the example test configuration yaml file to .config.test.yaml file
-	@if [ ! -f ./e2e/.config.test.yaml ]; then \
-		cp ./e2e/.example.test.yaml ./e2e/.config.test.yaml; \
+.PHONY: copy_shannon_e2e_config
+copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
+	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
+		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
 	else \
-		echo ".config.test.yaml already exists, not overwriting."; \
+		echo "./e2e/.shannon.config.yaml already exists, not overwriting."; \
+	fi
+
+.PHONY: copy_morse_e2e_config
+copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
+	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
+		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
+	else \
+		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
 	fi
 
 .PHONY: copy_envoy_config
