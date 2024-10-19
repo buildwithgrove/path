@@ -1,3 +1,5 @@
+//go:build auth_server
+
 package postgres
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/auth-plugin/user"
+	"github.com/buildwithgrove/auth-server/user"
 )
 
 var connectionString string
@@ -37,8 +39,10 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
 					Auth: user.Auth{
-						APIKey:         "api_key_1",
-						APIKeyRequired: true,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_1": {},
+							"auth0|user_4": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",
@@ -53,8 +57,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				"endpoint_2": {
 					EndpointID: "endpoint_2",
 					Auth: user.Auth{
-						APIKey:         "api_key_2",
-						APIKeyRequired: true,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_2": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_2",
@@ -68,8 +73,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				"endpoint_3": {
 					EndpointID: "endpoint_3",
 					Auth: user.Auth{
-						APIKey:         "api_key_3",
-						APIKeyRequired: true,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_3": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_3",
@@ -84,8 +90,10 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				"endpoint_4": {
 					EndpointID: "endpoint_4",
 					Auth: user.Auth{
-						APIKey:         "",
-						APIKeyRequired: false,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_1": {},
+							"auth0|user_4": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",
@@ -100,8 +108,9 @@ func Test_Integration_GetGatewayEndpoints(t *testing.T) {
 				"endpoint_5": {
 					EndpointID: "endpoint_5",
 					Auth: user.Auth{
-						APIKey:         "",
-						APIKeyRequired: false,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_2": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_2",
@@ -150,20 +159,21 @@ func Test_convertToGatewayEndpoints(t *testing.T) {
 				{
 					ID:                      "endpoint_1",
 					AccountID:               pgtype.Text{String: "account_1", Valid: true},
-					ApiKey:                  pgtype.Text{String: "api_key_1", Valid: true},
-					ApiKeyRequired:          pgtype.Bool{Bool: true, Valid: true},
 					Plan:                    pgtype.Text{String: "PLAN_FREE", Valid: true},
 					RateLimitThroughput:     pgtype.Int4{Int32: 30, Valid: true},
 					RateLimitCapacity:       pgtype.Int4{Int32: 100000, Valid: true},
 					RateLimitCapacityPeriod: NullRateLimitCapacityPeriod{RateLimitCapacityPeriod: "daily", Valid: true},
+					ProviderUserIds:         []string{"auth0|user_1", "auth0|user_4"},
 				},
 			},
 			expected: map[user.EndpointID]user.GatewayEndpoint{
 				"endpoint_1": {
 					EndpointID: "endpoint_1",
 					Auth: user.Auth{
-						APIKey:         "api_key_1",
-						APIKeyRequired: true,
+						AuthorizedUsers: map[user.ProviderUserID]struct{}{
+							"auth0|user_1": {},
+							"auth0|user_4": {},
+						},
 					},
 					UserAccount: user.UserAccount{
 						AccountID: "account_1",

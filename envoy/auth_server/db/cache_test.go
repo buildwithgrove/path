@@ -1,3 +1,5 @@
+//go:build auth_server
+
 package db
 
 import (
@@ -9,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/auth-plugin/user"
+	"github.com/buildwithgrove/auth-server/user"
 )
 
 func Test_GetGatewayEndpoint(t *testing.T) {
@@ -51,7 +53,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil)
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			gatewayEndpoint, found := cache.GetGatewayEndpoint(test.endpointID)
@@ -87,7 +89,7 @@ func Test_cacheRefreshHandler(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			cache.cacheRefreshInterval = time.Millisecond * 10
@@ -127,7 +129,7 @@ func Test_updateCache(t *testing.T) {
 			mockDB := NewMockDBDriver(ctrl)
 			mockDB.EXPECT().GetGatewayEndpoints(gomock.Any()).Return(test.mockReturn, nil).AnyTimes()
 
-			cache, err := NewUserDataCache(mockDB, time.Minute, polyzero.NewLogger())
+			cache, err := NewEndpointDataCache(mockDB, time.Minute, polyzero.NewLogger())
 			c.NoError(err)
 
 			err = cache.updateCache(context.Background())
@@ -142,8 +144,10 @@ func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
 		"endpoint_1": {
 			EndpointID: "endpoint_1",
 			Auth: user.Auth{
-				APIKey:         "api_key_1",
-				APIKeyRequired: true,
+				AuthorizedUsers: map[user.ProviderUserID]struct{}{
+					"auth0|user_1": {},
+					"auth0|user_4": {},
+				},
 			},
 			UserAccount: user.UserAccount{
 				AccountID: "account_1",
@@ -157,8 +161,9 @@ func getTestGatewayEndpoints() map[user.EndpointID]user.GatewayEndpoint {
 		"endpoint_2": {
 			EndpointID: "endpoint_2",
 			Auth: user.Auth{
-				APIKey:         "api_key_2",
-				APIKeyRequired: true,
+				AuthorizedUsers: map[user.ProviderUserID]struct{}{
+					"auth0|user_2": {},
+				},
 			},
 			UserAccount: user.UserAccount{
 				AccountID: "account_2",

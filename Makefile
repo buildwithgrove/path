@@ -17,11 +17,15 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose up -d --no-deps path_gateway
+	docker compose --profile path-gateway up -d --no-deps path_gateway 
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose up -d --build --no-deps path_gateway
+	docker compose --profile path-gateway up -d --build --no-deps path_gateway
+
+.PHONY: path_down_gateway
+path_down_gateway: ## Stop just the PATH gateway
+	docker compose --profile path-gateway down --remove-orphans path_gateway
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
@@ -33,18 +37,22 @@ path_up_build: ## Run and build the PATH gateway and all related dependencies
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down
+	docker compose down --remove-orphans
 
 #########################
 ### Test Make Targets ###
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_e2e_shannon_relay
+test_all: test_unit test_auth_plugin test_e2e_shannon_relay
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
+
+.PHONY: test_auth_server
+test_auth_server: ## Run the auth server tests
+	(cd envoy/auth_server && go test ./... -count=1 -tags auth_server)
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
@@ -90,13 +98,17 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
 	fi
 
+.PHONY: copy_envoy_config
+copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+	./envoy/scripts/copy_envoy_config.sh
+
 ###############################
 ### Generation Make Targets ###
 ###############################
 
 .PHONY: sqlc_generate
 sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
-	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
+	sqlc generate -f ./envoy/auth_server/db/postgres/sqlc/sqlc.yaml
 
 # // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
 # // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
