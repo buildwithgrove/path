@@ -108,15 +108,18 @@ func getProtocol(config config.GatewayConfig, logger polylog.Logger) (relayer.Pr
 func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polylog.Logger) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	fullNode, err := shannon.NewFullNode(config.FullNodeConfig, logger)
+	lazyFullNode, err := shannon.NewLazyFullNode(config.FullNodeConfig, logger)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create shannon full node: %v", err)
 	}
 
-	protocol, err := shannon.NewProtocol(context.Background(), fullNode)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create shannon protocol: %v", err)
+	var fullNode shannon.FullNode = lazyFullNode
+	// Use a Caching FullNode implementation if LazyMode flag is not set.
+	if !config.FullNodeConfig.LazyMode {
+		fullNode = shannon.NewCachingFullNode(lazyFullNode, logger)
 	}
+
+	protocol := &shannon.Protocol{fullNode, logger}
 
 	// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
 	return protocol, protocol, nil
