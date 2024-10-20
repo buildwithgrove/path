@@ -28,8 +28,14 @@ type (
 		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
 		GatewayAddress    string     `yaml:"gateway_address"`
 		GatewayPrivateKey string     `yaml:"gateway_private_key"`
+		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
+		// can be verified, i.e. if the public key derived from the stored private key matches the onchain app data.
 		// A list of addresses of onchain Applications delegated to the Gateway.
 		DelegatedApps []string `yaml:"delegated_app_addresses"`
+
+		// LazyMode, if set, will disable all caching of onchain data, specifically apps and sessions.
+		// This enables supporting short block times, e.g. when running E2E tests on LocalNet.
+		LazyMode bool `yaml:"lazy_mode"`
 	}
 
 	GRPCConfig struct {

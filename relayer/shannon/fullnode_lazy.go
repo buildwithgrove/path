@@ -29,7 +29,7 @@ import (
 var _ FullNode = &LazyFullNode{}
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (FullNode, error) {
+func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
