@@ -1,2 +1,0 @@
-postgres_connection_string: "postgres://user:password@localhost:5432/database"
-cache_refresh_interval: "5m"

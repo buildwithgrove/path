@@ -52,7 +52,7 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_auth_server
 test_auth_server: ## Run the auth server tests
-	(cd envoy/auth_server && go test ./... -count=1 -tags auth_server)
+	(cd envoy/auth_server && go test ./... -count=1)
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
@@ -101,6 +101,14 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
 	./envoy/scripts/copy_envoy_config.sh
+
+.PHONY: copy_envoy_env
+copy_envoy_env: ## copies the example envoy environment variables file to .env file
+	@if [ ! -f ./envoy/auth_server/.env ]; then \
+		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
+	else \
+		echo "./envoy/auth_server/.env already exists, not overwriting."; \
+	fi
 
 ###############################
 ### Generation Make Targets ###

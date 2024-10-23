@@ -7,12 +7,12 @@
 //
 
 // Package server is a generated GoMock package.
-package server
+package auth
 
 import (
 	reflect "reflect"
 
-	user "github.com/buildwithgrove/auth-server/user"
+	proto "github.com/buildwithgrove/auth-server/proto"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,18 +40,18 @@ func (m *MockendpointDataCache) EXPECT() *MockendpointDataCacheMockRecorder {
 }
 
 // GetGatewayEndpoint mocks base method.
-func (m *MockendpointDataCache) GetGatewayEndpoint(arg0 user.EndpointID) (user.GatewayEndpoint, bool) {
+func (m *MockendpointDataCache) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGatewayEndpoint", arg0)
-	ret0, _ := ret[0].(user.GatewayEndpoint)
+	ret := m.ctrl.Call(m, "GetGatewayEndpoint", endpointID)
+	ret0, _ := ret[0].(*proto.GatewayEndpoint)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetGatewayEndpoint indicates an expected call of GetGatewayEndpoint.
-func (mr *MockendpointDataCacheMockRecorder) GetGatewayEndpoint(arg0 any) *gomock.Call {
+func (mr *MockendpointDataCacheMockRecorder) GetGatewayEndpoint(endpointID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayEndpoint", reflect.TypeOf((*MockendpointDataCache)(nil).GetGatewayEndpoint), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayEndpoint", reflect.TypeOf((*MockendpointDataCache)(nil).GetGatewayEndpoint), endpointID)
 }
 
 // MockAuthorizer is a mock of Authorizer interface.
@@ -78,7 +78,7 @@ func (m *MockAuthorizer) EXPECT() *MockAuthorizerMockRecorder {
 }
 
 // authorizeRequest mocks base method.
-func (m *MockAuthorizer) authorizeRequest(arg0 user.ProviderUserID, arg1 user.GatewayEndpoint) error {
+func (m *MockAuthorizer) authorizeRequest(arg0 string, arg1 *proto.GatewayEndpoint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "authorizeRequest", arg0, arg1)
 	ret0, _ := ret[0].(error)
