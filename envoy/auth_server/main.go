@@ -14,6 +14,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	// autoload env vars
+	_ "github.com/joho/godotenv/autoload"
+
 	"github.com/buildwithgrove/auth-server/auth"
 	"github.com/buildwithgrove/auth-server/cache"
 	"github.com/buildwithgrove/auth-server/proto"
