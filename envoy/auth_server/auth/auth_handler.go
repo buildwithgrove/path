@@ -1,3 +1,7 @@
+// The auth package contains the implementation of the Envoy External Authorization gRPC service.
+// It is responsible for receiving requests from Envoy and authorizing them based on the GatewayEndpoint
+// data stored in the cache package. It receives a check request from Envoy, containing a user ID parsed
+// from a JWT in the previous HTTP filter defined in `envoy.yaml`.
 package auth
 
 import (
@@ -12,6 +16,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
+	"github.com/buildwithgrove/auth-server/cache"
 	"github.com/buildwithgrove/auth-server/proto"
 )
 
@@ -33,11 +38,8 @@ type endpointDataCache interface {
 	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
 
-// The Authorizer interface performs requests authorization, for example using
-// API key authentication to ensures a downstream (client) request is authorized.
-type Authorizer interface {
-	authorizeRequest(string, *proto.GatewayEndpoint) error
-}
+// Enforce that the EndpointDataCache implements the endpointDataCache interface.
+var _ endpointDataCache = &cache.EndpointDataCache{}
 
 // struct with check method
 type AuthHandler struct {

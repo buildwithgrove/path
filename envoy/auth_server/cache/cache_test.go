@@ -27,7 +27,7 @@ func (m *MockStream) Recv() (*proto.Update, error) {
 	return update, nil
 }
 
-func newTestCache(t *testing.T, ctx context.Context, updates chan *proto.Update, ctrl *gomock.Controller) *endpointDataCache {
+func newTestCache(t *testing.T, ctx context.Context, updates chan *proto.Update, ctrl *gomock.Controller) *EndpointDataCache {
 	mockClient := NewMockGatewayEndpointsClient(ctrl)
 
 	// Set up the expected call for GetInitialData

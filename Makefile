@@ -114,9 +114,6 @@ copy_envoy_env: ## copies the example envoy environment variables file to .env f
 ### Generation Make Targets ###
 ###############################
 
-.PHONY: sqlc_generate
-sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
-	sqlc generate -f ./envoy/auth_server/db/postgres/sqlc/sqlc.yaml
-
-# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
+.PHONY: proto_generate
+proto_generate: ## Generate the Go code from the gateway_endpoint.proto file
+	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
