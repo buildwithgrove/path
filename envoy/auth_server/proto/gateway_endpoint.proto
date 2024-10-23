@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = ".;proto";
+
+service GatewayEndpoints {
+  rpc GetInitialData(InitialDataRequest) returns (InitialDataResponse);
+  rpc StreamUpdates(UpdatesRequest) returns (stream Update);
+}
+
+message InitialDataRequest {}
+
+message InitialDataResponse {
+  map<string, GatewayEndpoint> endpoints = 1;
+}
+
+message UpdatesRequest {}
+
+message Update {
+  // A unique identifier for a user account's GatewayEndpoint. It must be passed as the last path segment of
+  // the service request URL. For example: POST https://api.path.xyz/v1/{gateway_endpoint_id}
+  // This is used to identify the GatewayEndpoint when making a service request.
+  string endpoint_id = 1;
+  // The GatewayEndpoint to upsert to the database. If delete is true, the GatewayEndpoint will be deleted and this field will be empty in the gRPC data.
+  GatewayEndpoint gateway_endpoint = 2;
+  // Indicates whether the GatewayEndpoint should be deleted
+  bool delete = 3;
+}
+
+// A GatewayEndpoint represents a user account's endpoint, which has two primary functions:
+// 1. Identifying which endpoint is being used to make a service request.
+// 2. Allowing configuration of endpoint-specific settings, such as API key authorization, etc.
+//
+// A GatewayEndpoint is associated to a single UserAccount. A UserAccount can have multiple GatewayEndpoints.
+// Settings related to service requests, such as enforcing API key authorization, are configured per GatewayEndpoint.
+message GatewayEndpoint {
+  // The unique identifier for a user account's endpoint, which must be passed
+  // as the last path segment of the service request URL. eg `/v1/{endpoint_id}`
+  // This is used to identify the GatewayEndpoint when making a service request.
+  string endpoint_id = 1;
+  // The authorization settings for the GatewayEndpoint.
+  Auth auth = 2;
+  // The UserAccount that the GatewayEndpoint belongs to, including the PlanType.
+  UserAccount user_account = 3;
+  // The rate limiting settings for the GatewayEndpoint, which includes both
+  // the throughput (TPS) limit and the capacity (longer period) limit.
+  RateLimiting rate_limiting = 4;
+}
+
+// The authorization settings for a GatewayEndpoint.
+message Auth {
+  // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
+  map<string, Empty> authorized_users = 1;
+}
+
+// A UserAccount contains the PlanType and may have multiple GatewayEndpoints.
+message UserAccount {
+  // The unique identifier for a UserAccount.
+  string account_id = 1;
+  // The plan type for a UserAccount, which identifies the pricing plan for the Account.
+  string plan_type = 2;
+}
+
+// The rate limiting settings for a GatewayEndpoint.
+message RateLimiting {
+  // ThroughputLimit refers to rate limiting per-second (TPS).
+  // This is used to prevent DoS or DDoS attacks, as well as enforce pricing plan limits.
+  int32 throughput_limit = 1;
+  // CapacityLimit refers to rate limiting over longer periods, such as a day, week or month.
+  // This is to prevent abuse of the services provided, as well enforce pricing plan limits.
+  int32 capacity_limit = 2;
+  // The period over which the CapacityLimit is enforced. One of `daily`, `weekly` or `monthly`.
+  CapacityLimitPeriod capacity_limit_period = 3;
+}
+
+enum CapacityLimitPeriod {
+    // CapacityLimitPeriod is the period over which the capacity limit is enforced.
+    // For example: CapacityLimit=`100,000` and CapacityLimitPeriod=`daily`
+    // enforces a rate limit of 100,000 requests per day.
+    CAPACITY_LIMIT_PERIOD_UNSPECIFIED = 0;
+    CAPACITY_LIMIT_PERIOD_DAILY = 1;
+    CAPACITY_LIMIT_PERIOD_WEEKLY = 2;
+    CAPACITY_LIMIT_PERIOD_MONTHLY = 3;
+  }
+
+message Empty {}
