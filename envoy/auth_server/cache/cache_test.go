@@ -35,7 +35,7 @@ func newTestCache(t *testing.T, ctx context.Context, updates chan *proto.Update,
 
 	// Set up the expected call for StreamUpdates
 	mockStream := &MockStream{updates: updates}
-	mockClient.EXPECT().StreamUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil)
+	mockClient.EXPECT().StreamUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil).AnyTimes()
 
 	cache, err := NewEndpointDataCache(ctx, mockClient, polyzero.NewLogger())
 	require.NoError(t, err)
