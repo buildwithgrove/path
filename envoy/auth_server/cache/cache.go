@@ -69,6 +69,8 @@ func (c *EndpointDataCache) initializeCacheFromRemote(ctx context.Context) error
 	defer c.gatewayEndpointsMu.Unlock()
 	c.gatewayEndpoints = gatewayEndpointsResponse.GetEndpoints()
 
+	fmt.Println("gatewayEndpoints", c.gatewayEndpoints)
+
 	return nil
 }
 

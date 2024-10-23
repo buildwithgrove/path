@@ -48,10 +48,9 @@ services:
     depends_on:
       path:
         condition: service_healthy
-      db:
-        condition: service_healthy
     networks:
       - path_network
+    ## TODO_IMPROVE: add healthcheck
 
   # - Envoy External Authorization Service -
   # The Envoy External Authorization Service is used to handle external authorization checks.
@@ -62,15 +61,33 @@ services:
     build:
       context: ./envoy/auth_server
       dockerfile: Dockerfile
+    env_file:
+      - ./envoy/auth_server/.env
     ports:
       - "10003:10003"
     depends_on:
       path:
         condition: service_healthy
-      db:
+      path_auth_grpc_server:
         condition: service_healthy
     networks:
       - path_network
+
+  # PATH gRPC Auth Server
+  path_auth_grpc_server:
+    container_name: path_auth_grpc_server
+    image: buildwithgrove/path-auth-grpc-server:latest
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./gateway-endpoints.yaml:/app/gateway-endpoints.yaml
+    networks:
+      - path_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:50051/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # - Envoy Rate Limiting Service -
   # The Envoy Rate Limiting Service is used to rate limit service requests.
@@ -124,37 +141,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    networks:
-      - path_network
-
-  # - Postgres DB -
-  # The Postgres DB stores all GatewayEndpoint data for the purposes of enabling
-  # user-specific authorization settings and rate limiting. 
-  #
-  # It is connected to by the Go Auth Plugin which runs in the `envoy_proxy` container.
-  #
-  # NOTE - This DB container is provided for local development. It is not recommended
-  # for production use. Operator should set up their own secure DB instance.
-  db:
-    image: postgres:latest
-    container_name: db
-    restart: always
-    expose:
-      - "5432"
-    ports:
-      - 5432:5432
-    volumes:
-      # Initializes the database with the minimum required tables from the base schema.
-      - ./envoy/auth_server/db/postgres/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
-      # For local development, persist the database data in a .gitignore'd tmp directory.
-      - ./tmp/db:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: pgpassword
-      POSTGRES_DB: postgres
-    healthcheck:
-      test: pg_isready -U postgres
-      interval: 5s
-      retries: 3
     networks:
       - path_network
 
