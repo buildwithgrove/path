@@ -45,3 +45,4 @@ tmp/*
 
 # Envoy config with sensitive information
 envoy.yaml
+gateway-endpoints.yaml

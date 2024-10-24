@@ -52,7 +52,7 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_auth_server
 test_auth_server: ## Run the auth server tests
-	(cd envoy/auth_server && go test ./... -count=1 -tags auth_server)
+	(cd envoy/auth_server && go test ./... -count=1)
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
@@ -102,13 +102,18 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
 	./envoy/scripts/copy_envoy_config.sh
 
+.PHONY: copy_envoy_env
+copy_envoy_env: ## copies the example envoy environment variables file to .env file
+	@if [ ! -f ./envoy/auth_server/.env ]; then \
+		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
+	else \
+		echo "./envoy/auth_server/.env already exists, not overwriting."; \
+	fi
+
 ###############################
 ### Generation Make Targets ###
 ###############################
 
-.PHONY: sqlc_generate
-sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
-	sqlc generate -f ./envoy/auth_server/db/postgres/sqlc/sqlc.yaml
-
-# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
+.PHONY: proto_generate
+proto_generate: ## Generate the Go code from the gateway_endpoint.proto file
+	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto

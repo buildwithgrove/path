@@ -1,6 +1,8 @@
-//go:build auth_server
-
-package server
+// The auth package contains the implementation of the Envoy External Authorization gRPC service.
+// It is responsible for receiving requests from Envoy and authorizing them based on the GatewayEndpoint
+// data stored in the cache package. It receives a check request from Envoy, containing a user ID parsed
+// from a JWT in the previous HTTP filter defined in `envoy.yaml`.
+package auth
 
 import (
 	"context"
@@ -14,7 +16,8 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
-	"github.com/buildwithgrove/auth-server/user"
+	"github.com/buildwithgrove/auth-server/cache"
+	"github.com/buildwithgrove/auth-server/proto"
 )
 
 const (
@@ -32,17 +35,14 @@ const (
 // The endpointDataCache contains an in-memory cache of GatewayEndpoints
 // and their associated data from the connected Postgres database.
 type endpointDataCache interface {
-	GetGatewayEndpoint(user.EndpointID) (user.GatewayEndpoint, bool)
+	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
 
-// The Authorizer interface performs requests authorization, for example using
-// API key authentication to ensures a downstream (client) request is authorized.
-type Authorizer interface {
-	authorizeRequest(user.ProviderUserID, user.GatewayEndpoint) error
-}
+// Enforce that the EndpointDataCache implements the endpointDataCache interface.
+var _ endpointDataCache = &cache.EndpointDataCache{}
 
 // struct with check method
-type AuthServer struct {
+type AuthHandler struct {
 	// The endpointDataCache contains an in-memory cache of GatewayEndpoints
 	// and their associated data from the connected Postgres database.
 	Cache endpointDataCache
@@ -60,7 +60,7 @@ type AuthServer struct {
 // - Fetches the GatewayEndpoint from the database
 // - Performs all configured authorization checks
 // - Returns a response with the HTTP headers set
-func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
+func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
 
 	// Get the HTTP request
@@ -82,11 +82,10 @@ func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckReques
 	}
 
 	// Get the provider user ID from the headers set from the JWT sub claim
-	providerUserIDHeader, ok := headers[reqHeaderAccountUserID]
-	if !ok || providerUserIDHeader == "" {
+	providerUserID, ok := headers[reqHeaderAccountUserID]
+	if !ok || providerUserID == "" {
 		return getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
 	}
-	providerUserID := user.ProviderUserID(providerUserIDHeader)
 
 	// Extract the endpoint ID from the path
 	endpointID, err := extractEndpointID(path)
@@ -117,10 +116,10 @@ func (a *AuthServer) Check(ctx context.Context, checkReq *envoy_auth.CheckReques
 
 // extractEndpointID extracts the endpoint ID from the URL path.
 // The endpoint ID is the part of the path after "/v1/" and is used to identify the GatewayEndpoint.
-func extractEndpointID(urlPath string) (user.EndpointID, error) {
+func extractEndpointID(urlPath string) (string, error) {
 	if strings.HasPrefix(urlPath, pathPrefix) {
 		if endpointID := strings.TrimPrefix(urlPath, pathPrefix); endpointID != "" {
-			return user.EndpointID(endpointID), nil
+			return endpointID, nil
 		}
 		return "", fmt.Errorf("endpoint ID not provided")
 	}
@@ -128,12 +127,12 @@ func extractEndpointID(urlPath string) (user.EndpointID, error) {
 }
 
 // getGatewayEndpoint fetches the GatewayEndpoint from the database and a bool indicating if it was found
-func (a *AuthServer) getGatewayEndpoint(endpointID user.EndpointID) (user.GatewayEndpoint, bool) {
+func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
 	return a.Cache.GetGatewayEndpoint(endpointID)
 }
 
 // authGatewayEndpoint performs all configured authorization checks on the request
-func (a *AuthServer) authGatewayEndpoint(providerUserID user.ProviderUserID, gatewayEndpoint user.GatewayEndpoint) error {
+func (a *AuthHandler) authGatewayEndpoint(providerUserID string, gatewayEndpoint *proto.GatewayEndpoint) error {
 	for _, auth := range a.Authorizers {
 		if err := auth.authorizeRequest(providerUserID, gatewayEndpoint); err != nil {
 			return err
@@ -143,26 +142,26 @@ func (a *AuthServer) authGatewayEndpoint(providerUserID user.ProviderUserID, gat
 }
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded
-func (a *AuthServer) getHTTPHeaders(gatewayEndpoint user.GatewayEndpoint) []*envoy_core.HeaderValueOption {
+func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint) []*envoy_core.HeaderValueOption {
 
 	// Set endpoint ID header on all requests
 	headers := []*envoy_core.HeaderValueOption{
 		{
 			Header: &envoy_core.HeaderValue{
 				Key:   reqHeaderEndpointID,
-				Value: string(gatewayEndpoint.EndpointID),
+				Value: gatewayEndpoint.GetEndpointId(),
 			},
 		},
 	}
 
 	// Set rate limit headers if the gateway endpoint should be rate limited
-	if gatewayEndpoint.RateLimiting.ThroughputLimit > 0 {
+	if gatewayEndpoint.GetRateLimiting().GetThroughputLimit() > 0 {
 
 		// Set the rate limit endpoint ID header
 		headers = append(headers, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
 				Key:   reqHeaderRateLimitEndpointID,
-				Value: string(gatewayEndpoint.EndpointID),
+				Value: gatewayEndpoint.GetEndpointId(),
 			},
 		})
 
@@ -170,7 +169,7 @@ func (a *AuthServer) getHTTPHeaders(gatewayEndpoint user.GatewayEndpoint) []*env
 		headers = append(headers, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
 				Key:   reqHeaderRateLimitPlan,
-				Value: string(gatewayEndpoint.UserAccount.PlanType),
+				Value: gatewayEndpoint.GetUserAccount().GetPlanType(),
 			},
 		})
 
