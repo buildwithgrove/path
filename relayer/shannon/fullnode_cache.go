@@ -42,7 +42,8 @@ type CachingFullNode struct {
 	sessionCacheMu sync.RWMutex
 }
 
-// start launches a goroutine, only once per instance of FullNodeCache, to
+// start launches a goroutine, only once per instance of CachingFullNode in 
+// order to... ???
 func (cfn *CachingFullNode) start() {
 	go func() {
 		// TODO_IMPROVE: make the refresh interval configurable.
