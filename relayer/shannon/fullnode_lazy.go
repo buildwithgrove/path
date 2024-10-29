@@ -82,7 +82,7 @@ type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddress string
-	// TODO_UPNEXT(@adshmh): use private keys of owned apps.
+	// TODO_UPNEXT(@adshmh): replace delegatedApps with privateKeys of gatewayOwnedApps
 	delegatedApps []string
 
 	appClient     *sdk.ApplicationClient
