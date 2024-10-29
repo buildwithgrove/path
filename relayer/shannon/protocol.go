@@ -38,7 +38,7 @@ func NewProtocol(ctx context.Context, fullNode FullNode) (*Protocol, error) {
 
 	go func() {
 		// TODO_IMPROVE: make the refresh interval configurable.
-		ticker := time.NewTicker(time.Minute)
+		ticker := time.NewTicker(time.Second)
 		for {
 			protocol.updateAppCache()
 			protocol.updateSessionCache()

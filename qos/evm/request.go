@@ -3,6 +3,7 @@ package evm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -35,7 +36,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.
 func requestContextFromInternalError(err error) *requestContext {
-	return nil
+	fmt.Sprintf("error parsing JSONRPC request: %v", err)
+	return &requestContext{
+		isValid: false,
+	}
 }
 
 // TODO_UPNEXT(@adshmh): return a request context to handle user errors.
@@ -44,5 +48,8 @@ func requestContextFromInternalError(err error) *requestContext {
 // user error because the request body, provided by the user,
 // cannot be parsed as a valid JSONRPC request.
 func requestContextFromUserError(err error) *requestContext {
-	return nil
+	fmt.Sprintf("error parsing JSONRPC request: %v", err)
+	return &requestContext{
+		isValid: false,
+	}
 }

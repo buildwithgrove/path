@@ -209,22 +209,29 @@ func (s *fullNode) GetSession(serviceID, appAddr string, blockHeight int64) (ses
 
 // GetApps returns the onchain apps that have active delegations to the gateway.
 func (s *fullNode) GetApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
-
 	var apps []apptypes.Application
-	for _, appAddr := range s.delegatedApps {
-		onchainApp, err := s.appClient.GetApplication(ctx, appAddr)
+	allAppsReq := &apptypes.QueryAllApplicationsRequest{}
+
+	for {
+		delegatedApps, err := s.appClient.AllApplications(ctx, allAppsReq)
 		if err != nil {
-			s.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
-			continue
+			return nil, fmt.Errorf("GetApps: SDK returned error when getting all applications: %w", err)
 		}
 
-		if !slices.Contains(onchainApp.DelegateeGatewayAddresses, s.gatewayAddress) {
-			s.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
-			continue
+		for _, onchainApp := range delegatedApps.GetApplications() {
+			if !slices.Contains(onchainApp.DelegateeGatewayAddresses, s.gatewayAddress) {
+				s.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
+				continue
+			}
+
+			apps = append(apps, onchainApp)
 		}
 
-		apps = append(apps, onchainApp)
+		if len(delegatedApps.Pagination.NextKey) == 0 {
+			break
+		}
+
+		allAppsReq.Pagination.Key = delegatedApps.Pagination.NextKey
 	}
 
 	return apps, nil
