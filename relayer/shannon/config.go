@@ -10,7 +10,10 @@ import (
 )
 
 const (
-	gatewayPrivateKeyLength = 64
+	// Shannon uses secp256k1 key schemes (the cosmos default)
+	// secp256k1 keys are 32 bytes -> 64 hexadecimal characters
+	// Ref: https://docs.cosmos.network/v0.45/basics/accounts.html
+	shannonPrivateKeyLengthHex = 64
 	addressLength           = 43
 )
 
