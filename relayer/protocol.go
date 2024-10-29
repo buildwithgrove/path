@@ -18,12 +18,12 @@ type Protocol interface {
 // for a particular service ID.
 //
 // These include but not limited to:
-// 	1. Listing the endpoins available for sending relays for a specific service.
-// 	2. Send a relay to a specific endpoint and return its response.
-// 
+//  1. Listing the endpoins available for sending relays for a specific service.
+//  2. Send a relay to a specific endpoint and return its response.
+//
 // The first two implementations of this interface are (as of writing) are:
-// 	- Morse: in the relayer/morse package, and
-// 	- Shannon: in the relayer/shannon package.
+//   - Morse: in the relayer/morse package, and
+//   - Shannon: in the relayer/shannon package.
 type ProtocolRequestContext interface {
 	// TODO_TECHDEBT: any protocol/network-level errors should result in
 	// the endpoint being dropped by the protocol instance from the returned
@@ -31,5 +31,7 @@ type ProtocolRequestContext interface {
 	// e.g. an endpoint that is temporarily/permanently unavailable.
 	SelectEndpoint(EndpointSelector) error
 
+	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
+	// and receives and verfieis the response.
 	HandleServiceRequest(Payload) (Response, error)
 }

@@ -13,14 +13,18 @@ var _ relayer.ProtocolRequestContext = &requestContext{}
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
 	fullNode  FullNode
-	endpoints map[relayer.EndpointAddr]endpoint
 	serviceID relayer.ServiceID
 
+	// endpoints contains all the candidate endpoints available for processing a service request.
+	endpoints map[relayer.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 }
 
+// SelectEndpoint satisfies the relayer package's ProtocolRequestContext interface.
+// It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
+// for handling a service request.
 func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) error {
 	// Convert the map of endpoints to a list for easier business logic.
 	var endpoints []relayer.Endpoint
@@ -45,6 +49,8 @@ func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) erro
 	return nil
 }
 
+// HandleServiceRequest satisfies the relayer package's ProtocolRequestContext interface.
+// It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer.Response, error) {
 	if rc.selectedEndpoint == nil {
 		return relayer.Response{}, fmt.Errorf("handleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)

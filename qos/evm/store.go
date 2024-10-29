@@ -53,17 +53,26 @@ type EndpointStore struct {
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+	logger := es.Logger.With("method", "Select")
+	logger.With("total endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
+
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
 	if err != nil {
+		logger.Warn().Err(err).Msg("error filtering endpoints")
 		return relayer.EndpointAddr(""), err
 	}
 
-	logger := es.Logger.With("number of available endpoints", len(availableEndpoints))
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Warn().Msg("select: all endpoints failed validation; selecting a random endpoint.")
+		logger.Warn().Msg("all endpoints failed validation; selecting a random endpoint.")
+
 		randomAvailableEndpoint := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpoint.Addr(), nil
 	}
+
+	logger.With(
+		"total endpoints", len(availableEndpoints),
+		"endpoints after filtering", len(filteredEndpointsAddr),
+	).Info().Msg("filtered endpoints")
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
