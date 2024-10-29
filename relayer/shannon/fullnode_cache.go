@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -13,18 +14,24 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
+// TODO_IMPROVE: make the refresh interval configurable.
+const cacheRefreshIntervalSeconds = 60
+
 // The Shannon Relayer's FullNode interface is implemented by the CachingFullNode struct below,
 // which provides the full node capabilities required by the Shannon relayer.
 var _ FullNode = &CachingFullNode{}
 
-func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) *CachingFullNode {
+func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*CachingFullNode, error) {
 	cachingFullNode := CachingFullNode{
 		LazyFullNode: lazyFullNode,
 		Logger:       logger,
 	}
 
-	cachingFullNode.start()
-	return &cachingFullNode
+	if err := cachingFullNode.start(); err != nil {
+		return nil, err
+	}
+
+	return &cachingFullNode, nil
 }
 
 // FullNodeCache's single responsibility is to add a caching layer around a LazyFullNode.
@@ -40,22 +47,41 @@ type CachingFullNode struct {
 	// map keys are of the format "serviceID-appID"
 	sessionCache   map[string]sessiontypes.Session
 	sessionCacheMu sync.RWMutex
+
+	// once is used to ensure the cache update go routine of the `start` method is only run once.
+	once sync.Once
 }
 
 // start launches a goroutine, only once per instance of FullNodeCache, to
-func (cfn *CachingFullNode) start() {
-	go func() {
-		// TODO_IMPROVE: make the refresh interval configurable.
-		ticker := time.NewTicker(time.Minute)
-		for {
-			cfn.updateAppCache()
-			cfn.updateSessionCache()
+func (cfn *CachingFullNode) start() error {
+	if cfn.LazyFullNode == nil {
+		return errors.New("CachingFullNode needs a LazyFullNode to operate.")
+	}
 
-			<-ticker.C
-		}
-	}()
+	if cfn.Logger == nil {
+		return errors.New("CachingFullNode needs a Logger to operate.")
+	}
+
+	cfn.once.Do(func() {
+		go func() {
+			// TODO_IMPROVE: make the refresh interval configurable.
+			ticker := time.NewTicker(cacheRefreshIntervalSeconds * time.Second)
+			for {
+				cfn.Logger.Info().Msg("Starting the cache update process.")
+
+				cfn.updateAppCache()
+				cfn.updateSessionCache()
+
+				<-ticker.C
+			}
+		}()
+	})
+
+	return nil
 }
 
+// GetServiceApps returns (from the cache) the set of onchain applications which delegate to the gateway, matching the supplied service ID.
+// It is required to fulfill the FullNode interface.
 func (cfn *CachingFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes.Application, error) {
 	cfn.appCacheMu.RLock()
 	defer cfn.appCacheMu.RUnlock()
@@ -68,6 +94,8 @@ func (cfn *CachingFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]appty
 	return apps, nil
 }
 
+// GetSession returns the cached session matching (serviceID, appAddr) combination.
+// It is required to fulfill the FullNode interface.
 func (cfn *CachingFullNode) GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error) {
 	cfn.sessionCacheMu.RLock()
 	defer cfn.sessionCacheMu.RUnlock()
@@ -81,10 +109,13 @@ func (cfn *CachingFullNode) GetSession(serviceID relayer.ServiceID, appAddr stri
 }
 
 // SendRelay delegates the sending of the relay to the LazyFullNode.
+// It is required to fulfill the FullNode interface.
 func (cfn *CachingFullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
 	return cfn.LazyFullNode.SendRelay(app, session, endpoint, payload)
 }
 
+// IsHealthy indicates the health status of the caching full node.
+// It is required to fulfill the FullNode interface.
 func (cfn *CachingFullNode) IsHealthy() bool {
 	cfn.appCacheMu.RLock()
 	defer cfn.appCacheMu.RUnlock()
@@ -149,6 +180,8 @@ func (cfn *CachingFullNode) fetchSessions() map[string]sessiontypes.Session {
 	return sessions
 }
 
+// sessionCacheKey returns a string to be used as the key for storing the session matching the supplied service ID and application address.
+// e.g. for service with ID `svc1` and app with address `appAddress1`, the key is `svc1-appAddress1`.
 func sessionCacheKey(serviceID relayer.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s-%s", string(serviceID), appAddr)
 }

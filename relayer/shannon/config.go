@@ -22,7 +22,6 @@ var (
 )
 
 type (
-	// TODO_DISCUSS: move this (and the morse FullNodeConfig) to the config package?
 	FullNodeConfig struct {
 		RpcURL            string     `yaml:"rpc_url"`
 		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
@@ -38,6 +37,7 @@ type (
 		LazyMode bool `yaml:"lazy_mode"`
 	}
 
+	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
 	GRPCConfig struct {
 		HostPort          string        `yaml:"host_port"`
 		Insecure          bool          `yaml:"insecure"`
@@ -49,7 +49,6 @@ type (
 	}
 )
 
-// TODO_IMPROVE: move this to the config package?
 func (c FullNodeConfig) Validate() error {
 	if len(c.GatewayPrivateKey) != gatewayPrivateKeyLength {
 		return ErrShannonInvalidGatewayPrivateKey
@@ -60,10 +59,10 @@ func (c FullNodeConfig) Validate() error {
 	if !strings.HasPrefix(c.GatewayAddress, "pokt1") {
 		return ErrShannonInvalidGatewayAddress
 	}
-	if !isValidUrl(c.RpcURL, false) {
+	if !isValidURL(c.RpcURL) {
 		return ErrShannonInvalidNodeUrl
 	}
-	if !isValidGrpcHostPort(c.GRPCConfig.HostPort) {
+	if !isValidURLWithPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	for _, addr := range c.DelegatedApps {
@@ -74,7 +73,10 @@ func (c FullNodeConfig) Validate() error {
 	return nil
 }
 
-// TODO_IMPROVE: move this to the config package?
+// TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.
+// The config package is not a good fit for this, because it is designed to build the configuration structs for other packages,
+// and so it has dependencies on all other packages, including `relayer/shannon`. Therefore, no packages except `cmd` can have a dependency
+// on the `config` package.
 const (
 	defaultBackoffBaseDelay  = 1 * time.Second
 	defaultBackoffMaxDelay   = 120 * time.Second
@@ -83,7 +85,6 @@ const (
 	defaultKeepAliveTimeout  = 20 * time.Second
 )
 
-// TODO_IMPROVE: move this to the config package?
 func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	if c.BackoffBaseDelay == 0 {
 		c.BackoffBaseDelay = defaultBackoffBaseDelay
@@ -131,7 +132,39 @@ func isValidUrl(urlToCheck string, needPort bool) bool {
 	return true
 }
 
-func isValidGrpcHostPort(hostPort string) bool {
+// isValidURL returns true if the supplied URL string can be parsed into a valid URL.
+func isValidURL(url string) bool {
+	_, isValid := parseURL(url)
+	return isValid
+}
+
+// isValidURLWithPort returns true if the supplied URL string can be parsed into a valid URL and a port.
+func isValidURLWithPort(url string) bool {
+	parsedURL, isValid := parseURL(url)
+	if !isValid {
+		return false
+	}
+
+	return isValidHostPort(parsedURL.Host)
+}
+
+// parseURL parses a string into a URL, and returns the parsed value, and a boolean indicating whether the URL string is valid.
+func parseURL(urlStr string) (*url.URL, bool) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, false
+	}
+
+	if u.Scheme == "" || u.Host == "" {
+		return u, false
+	}
+
+	return u, true
+}
+
+// isValidHostPort returns true if the supplied string can be parsed into a host and port combination.
+// The input string can be taken from the `Host` field of a parsed net/url.URL struct.
+func isValidHostPort(hostPort string) bool {
 	host, port, err := net.SplitHostPort(hostPort)
 	if err != nil {
 		return false
