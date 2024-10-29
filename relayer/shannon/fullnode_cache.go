@@ -34,7 +34,7 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*Cac
 	return &cachingFullNode, nil
 }
 
-// FullNodeCache's single responsibility is to add a caching layer around a LazyFullNode.
+// CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
 	LazyFullNode *LazyFullNode
 	Logger       polylog.Logger
@@ -52,7 +52,7 @@ type CachingFullNode struct {
 	once sync.Once
 }
 
-// start launches a goroutine, only once per instance of FullNodeCache, to
+// start launches a goroutine, only once per instance of CachingFullNode in order to update the cached items at a fixed interval.
 func (cfn *CachingFullNode) start() error {
 	if cfn.LazyFullNode == nil {
 		return errors.New("CachingFullNode needs a LazyFullNode to operate.")

@@ -28,7 +28,7 @@ import (
 //
 // A properly initialized fullNode struct can:
 // 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a service+app combination.
+// 2. Fetch a session for a (service,app) combination.
 // 3. Send a relay, corresponding to a specific session, to an endpoint.
 var _ FullNode = &LazyFullNode{}
 
@@ -78,14 +78,15 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 }
 
 // LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
-// It intentionally avoids caching any data to allow it to support very short block times, e.g. on a LocalNet.
-// The CachingFullNode struct can be used instead if caching is desired for performance reasons, as it provides
-// the same functionality by wrapping a caching layer around a LazyFullNode.
+// The key differences between a lazy and full node are:
+// 1. Lazy node intentionally avoids caching.
+// 	- This allows supporting short block times (e.g. LocalNet)
+//      - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddress string
-	// TODO_UPNEXT(@adshmh): use private keys of owned apps.
+	// TODO_UPNEXT(@adshmh): replace delegatedApps with privateKeys of gatewayOwnedApps
 	delegatedApps []string
 
 	appClient     *sdk.ApplicationClient
@@ -248,7 +249,7 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 //
 // getAllApps returns the onchain apps that have active delegations to the gateway.
 func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
+	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
 
 	var apps []apptypes.Application
 	for _, appAddr := range lfn.delegatedApps {

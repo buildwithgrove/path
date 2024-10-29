@@ -10,8 +10,13 @@ import (
 )
 
 const (
-	gatewayPrivateKeyLength = 64
-	addressLength           = 43
+	// Shannon uses secp256k1 key schemes (the cosmos default)
+	// secp256k1 keys are 32 bytes -> 64 hexadecimal characters
+	// Ref: https://docs.cosmos.network/v0.45/basics/accounts.html
+	shannonPrivateKeyLengthHex = 64
+	// secp256k1 keys are 20 bytes, but are then bech32 encoded -> 43 bytes
+	// Ref: https://docs.cosmos.network/main/build/spec/addresses/bech32
+	shannonAddressLengthBech32           = 43
 )
 
 var (
@@ -25,6 +30,8 @@ type (
 	FullNodeConfig struct {
 		RpcURL            string     `yaml:"rpc_url"`
 		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
+		// TODO_UPNEXT(@adshmh): Remove all Gateway specific types into its own
+		// struct, as they are independent from full node configs.
 		GatewayAddress    string     `yaml:"gateway_address"`
 		GatewayPrivateKey string     `yaml:"gateway_private_key"`
 		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
