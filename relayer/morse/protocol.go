@@ -252,8 +252,8 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 
 // TODO_UPNEXT(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
 // Then add 2 implementations of the FullNode interface:
-// CachingFullNode
-// LazyFullNode
+// - CachingFullNode
+// - LazyFullNode
 //
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
