@@ -31,6 +31,8 @@ type (
 	FullNodeConfig struct {
 		RpcURL            string     `yaml:"rpc_url"`
 		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
+		// TODO_UPNEXT(@adshmh): Remove all Gateway specific types into its own
+		// struct, as they are independent from full node configs.
 		GatewayAddress    string     `yaml:"gateway_address"`
 		GatewayPrivateKey string     `yaml:"gateway_private_key"`
 		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
