@@ -22,6 +22,7 @@ type requestContext struct {
 }
 
 func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) error {
+	// Convert the map of endpoints to a list for easier business logic.
 	var endpoints []relayer.Endpoint
 	for _, endpoint := range rc.endpoints {
 		endpoints = append(endpoints, endpoint)
