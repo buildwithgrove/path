@@ -24,7 +24,7 @@ import (
 // which provides the full node capabilities required by the Shannon relayer.
 // A properly initialized fullNode struct can:
 // 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a service+app combination.
+// 2. Fetch a session for a (service,app) combination.
 // 3. Send a relay, corresponding to a specific session, to an endpoint.
 var _ FullNode = &LazyFullNode{}
 
