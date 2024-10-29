@@ -27,7 +27,7 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) *Cach
 	return &cachingFullNode
 }
 
-// FullNodeCache's single responsibility is to add a caching layer around a LazyFullNode.
+// CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
 	LazyFullNode *LazyFullNode
 	Logger       polylog.Logger
