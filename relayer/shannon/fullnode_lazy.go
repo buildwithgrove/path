@@ -241,7 +241,7 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 //
 // getAllApps returns the onchain apps that have active delegations to the gateway.
 func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
+	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
 
 	var apps []apptypes.Application
 	for _, appAddr := range lfn.delegatedApps {
