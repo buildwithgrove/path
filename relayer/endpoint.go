@@ -14,7 +14,7 @@ type Endpoint interface {
 	// define its own service endpoint address scheme.
 	// See the comment on EndpointAddr type for more details.
 	Addr() EndpointAddr
-	// PublicURL is the URL to which relay requests can be sent.
+	// PublicURL is the publically exposed/accessible URL to which relay requests can be sent.
 	PublicURL() string
 }
 
