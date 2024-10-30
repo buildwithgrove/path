@@ -108,14 +108,30 @@ func getProtocol(config config.GatewayConfig, logger polylog.Logger) (relayer.Pr
 func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polylog.Logger) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	fullNode, err := shannon.NewFullNode(config.FullNodeConfig, logger)
+	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
+	lazyFullNode, err := shannon.NewLazyFullNode(config.FullNodeConfig, logger)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create shannon full node: %v", err)
+		return nil, nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
 	}
 
-	protocol, err := shannon.NewProtocol(context.Background(), fullNode)
+	if config.FullNodeConfig.LazyMode {
+		protocol := &shannon.Protocol{
+			FullNode: lazyFullNode,
+			Logger:   logger,
+		}
+		// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
+		return protocol, protocol, nil
+	}
+
+	// Use a Caching FullNode implementation if LazyMode flag is not set.
+	cachingFullNode, err := shannon.NewCachingFullNode(lazyFullNode, logger)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create shannon protocol: %v", err)
+		return nil, nil, fmt.Errorf("failed to create Shannon caching full node: %v", err)
+	}
+
+	protocol := &shannon.Protocol{
+		FullNode: cachingFullNode,
+		Logger:   logger,
 	}
 
 	// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
@@ -125,7 +141,7 @@ func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polyl
 func getMorseProtocol(
 	config *morseConfig.MorseGatewayConfig,
 	logger polylog.Logger,
- ) (relayer.Protocol, gateway.EndpointLister, error) {
+) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Morse protocol")
 
 	fullNode, err := morse.NewFullNode(config.FullNodeConfig)

@@ -259,8 +259,8 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
 // This could happen because there is no guarantee on sessions having unique nodes/endpoints.
-// e.g. if there are only 30 Morse endpoints stakes for some service, there will be some overlap of endpoints
-// between the two sessions corresponding to two different applications.
+// e.g. if there are only 30 Morse endpoints staked for some service, there will be some overlap of endpoints
+// between the two sessions corresponding to two different applications, as each session in Morse contains 24 endpoints.
 func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, apps []app) (map[relayer.EndpointAddr]endpoint, error) {
 	endpoints := make(map[relayer.EndpointAddr]endpoint)
 	for _, app := range apps {

@@ -3,14 +3,11 @@ package shannon
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -23,25 +20,20 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
-const (
-	gatewayPrivateKeyLength = 64
-	addressLength           = 43
-)
-
-// The Shannon Relayer's FullNode interface is implemented by the fullNode struct below,
+// The Shannon Relayer's FullNode interface is implemented by the LazyFullNode struct below,
 // which provides the full node capabilities required by the Shannon relayer.
-// A properly initialized fullNode struct can return the latest block height,
-// fetch a session for a service+app combination, and send a relay to an endpoint.
-var _ FullNode = &fullNode{}
+// A LazyFullNode queries the onchain data for every data item it needs to serve a relay request, e.g. applications staked for a service.
+// This is done to enable supporting short block times (a few seconds), by avoiding caching which can result in failures due to stale
+// data in the cache.
+//
+// A properly initialized fullNode struct can:
+// 1. Return the onchain apps matching a service ID.
+// 2. Fetch a session for a (service,app) combination.
+// 3. Send a relay, corresponding to a specific session, to an endpoint.
+var _ FullNode = &LazyFullNode{}
 
-var (
-	ErrShannonInvalidGatewayPrivateKey = errors.New("invalid shannon gateway private key")
-	ErrShannonInvalidGatewayAddress    = errors.New("invalid shannon gateway address")
-	ErrShannonInvalidNodeUrl           = errors.New("invalid shannon node URL")
-	ErrShannonInvalidGrpcHostPort      = errors.New("invalid shannon grpc host:port")
-)
-
-func NewFullNode(config FullNodeConfig, logger polylog.Logger) (FullNode, error) {
+// NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
+func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
@@ -69,7 +61,7 @@ func NewFullNode(config FullNodeConfig, logger polylog.Logger) (FullNode, error)
 		return nil, fmt.Errorf("NewSdk: error creating new signer at url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	fullNode := &fullNode{
+	lazyFullNode := &LazyFullNode{
 		gatewayAddress: config.GatewayAddress,
 		delegatedApps:  config.DelegatedApps,
 
@@ -82,91 +74,19 @@ func NewFullNode(config FullNodeConfig, logger polylog.Logger) (FullNode, error)
 		logger: logger,
 	}
 
-	return fullNode, nil
+	return lazyFullNode, nil
 }
 
-type (
-	// TODO_DISCUSS: move this (and the morse FullNodeConfig) to the config package?
-	FullNodeConfig struct {
-		RpcURL            string     `yaml:"rpc_url"`
-		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
-		GatewayAddress    string     `yaml:"gateway_address"`
-		GatewayPrivateKey string     `yaml:"gateway_private_key"`
-		// A list of addresses of onchain Applications delegated to the Gateway.
-		DelegatedApps []string `yaml:"delegated_app_addresses"`
-	}
-
-	GRPCConfig struct {
-		HostPort          string        `yaml:"host_port"`
-		Insecure          bool          `yaml:"insecure"`
-		BackoffBaseDelay  time.Duration `yaml:"backoff_base_delay"`
-		BackoffMaxDelay   time.Duration `yaml:"backoff_max_delay"`
-		MinConnectTimeout time.Duration `yaml:"min_connect_timeout"`
-		KeepAliveTime     time.Duration `yaml:"keep_alive_time"`
-		KeepAliveTimeout  time.Duration `yaml:"keep_alive_timeout"`
-	}
-)
-
-// TODO_IMPROVE: move this to the config package?
-func (c FullNodeConfig) Validate() error {
-	if len(c.GatewayPrivateKey) != gatewayPrivateKeyLength {
-		return ErrShannonInvalidGatewayPrivateKey
-	}
-	if len(c.GatewayAddress) != addressLength {
-		return ErrShannonInvalidGatewayAddress
-	}
-	if !strings.HasPrefix(c.GatewayAddress, "pokt1") {
-		return ErrShannonInvalidGatewayAddress
-	}
-	if !isValidUrl(c.RpcURL, false) {
-		return ErrShannonInvalidNodeUrl
-	}
-	if !isValidGrpcHostPort(c.GRPCConfig.HostPort) {
-		return ErrShannonInvalidGrpcHostPort
-	}
-	for _, addr := range c.DelegatedApps {
-		if len(addr) != addressLength {
-			return fmt.Errorf("invalid delegated app address: %s", addr)
-		}
-	}
-	return nil
-}
-
-// TODO_IMPROVE: move this to the config package?
-const (
-	defaultBackoffBaseDelay  = 1 * time.Second
-	defaultBackoffMaxDelay   = 120 * time.Second
-	defaultMinConnectTimeout = 20 * time.Second
-	defaultKeepAliveTime     = 20 * time.Second
-	defaultKeepAliveTimeout  = 20 * time.Second
-)
-
-// TODO_IMPROVE: move this to the config package?
-func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
-	if c.BackoffBaseDelay == 0 {
-		c.BackoffBaseDelay = defaultBackoffBaseDelay
-	}
-	if c.BackoffMaxDelay == 0 {
-		c.BackoffMaxDelay = defaultBackoffMaxDelay
-	}
-	if c.MinConnectTimeout == 0 {
-		c.MinConnectTimeout = defaultMinConnectTimeout
-	}
-	if c.KeepAliveTime == 0 {
-		c.KeepAliveTime = defaultKeepAliveTime
-	}
-	if c.KeepAliveTimeout == 0 {
-		c.KeepAliveTimeout = defaultKeepAliveTimeout
-	}
-	return *c
-}
-
-// fullNode provides the default implementation of a full node required by the Shannon relayer.
-type fullNode struct {
+// LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
+// The key differences between a lazy and full node are:
+// 1. Lazy node intentionally avoids caching.
+// 	- This allows supporting short block times (e.g. LocalNet)
+//      - CachingFullNode struct can be used instead if caching is desired for performance reasons
+type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddress string
-	// TODO_COMMENT
+	// TODO_UPNEXT(@adshmh): replace delegatedApps with privateKeys of gatewayOwnedApps
 	delegatedApps []string
 
 	appClient     *sdk.ApplicationClient
@@ -178,60 +98,67 @@ type fullNode struct {
 	logger polylog.Logger
 }
 
-func (s *fullNode) LatestBlockHeight() (int64, error) {
-	return s.blockClient.LatestBlockHeight(context.Background())
+// GetServiceApps returns the set of onchain applications which delegate to the gateway, matching the supplied service ID.
+// It is required to fulfill the FullNode interface.
+func (lfn *LazyFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes.Application, error) {
+	// fetch all staked applications which have delegated to this gateway, by querying the onchain data.
+	allApps, err := lfn.getAllApps(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	// use a filter to drop any apps that are not staked for the service matching the supplied service ID.
+	appsServiceMap, err := lfn.buildAppsServiceMap(allApps, serviceAppFilter(serviceID))
+	if err != nil {
+		return nil, err
+	}
+
+	// convert the map of service ID to application which is returned from the previous method call, into a slice for easier processing.
+	var apps []apptypes.Application
+	apps = append(apps, appsServiceMap[serviceID]...)
+
+	return apps, nil
 }
 
-func (s *fullNode) GetSession(serviceID, appAddr string, blockHeight int64) (sessiontypes.Session, error) {
-	session, err := s.sessionClient.GetSession(
+func (lfn *LazyFullNode) GetAllServicesApps() (map[relayer.ServiceID][]apptypes.Application, error) {
+	allApps, err := lfn.getAllApps(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	return lfn.buildAppsServiceMap(allApps, nil)
+}
+
+// GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
+// It is required to fulfill the FullNode interface.
+func (lfn *LazyFullNode) GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error) {
+	session, err := lfn.sessionClient.GetSession(
 		context.Background(),
 		appAddr,
-		serviceID,
-		blockHeight,
+		string(serviceID),
+		0,
 	)
 
 	if err != nil {
 		return sessiontypes.Session{},
-			fmt.Errorf("GetSession: error getting the session for service %s app %s blockheight %d: %w",
-				serviceID, appAddr, blockHeight, err,
+			fmt.Errorf("GetSession: error getting the session for service %s app %s: %w",
+				serviceID, appAddr, err,
 			)
 	}
 
 	if session == nil {
 		return sessiontypes.Session{},
-			fmt.Errorf("GetSession: got nil session for service %s app %s blockheight %d: %w",
-				serviceID, appAddr, blockHeight, err,
+			fmt.Errorf("GetSession: got nil session for service %s app %s: %w",
+				serviceID, appAddr, err,
 			)
 	}
 
 	return *session, nil
 }
 
-// GetApps returns the onchain apps that have active delegations to the gateway.
-func (s *fullNode) GetApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
-
-	var apps []apptypes.Application
-	for _, appAddr := range s.delegatedApps {
-		onchainApp, err := s.appClient.GetApplication(ctx, appAddr)
-		if err != nil {
-			s.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
-			continue
-		}
-
-		if !slices.Contains(onchainApp.DelegateeGatewayAddresses, s.gatewayAddress) {
-			s.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
-			continue
-		}
-
-		apps = append(apps, onchainApp)
-	}
-
-	return apps, nil
-}
-
 // TODO_IMPROVE: split this function into build/sign/send/verify stages.
-func (f *fullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
+// SendRelay sends a the supplied payload as a relay request to the supplied endpoint.
+// It is required to fulfill the FullNode interface.
+func (lfn *LazyFullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
 	// TODO_TECHDEBT: need to select the correct underlying request (HTTP, etc.) based on the selected service.
 	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest([]byte(payload.Data), endpoint.url)
 	if err != nil {
@@ -249,7 +176,7 @@ func (f *fullNode) SendRelay(app apptypes.Application, session sessiontypes.Sess
 		SupplierOperatorAddress: string(endpoint.supplier),
 	}
 
-	req, err := f.signer.SignRequest(relayRequest, app)
+	req, err := lfn.signer.SignRequest(relayRequest, app)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error signing the relay request for app %s: %w", app.Address, err)
 	}
@@ -267,7 +194,7 @@ func (f *fullNode) SendRelay(app apptypes.Application, session sessiontypes.Sess
 		context.Background(),
 		sdk.SupplierAddress(endpoint.supplier),
 		responseBz,
-		f.accountClient,
+		lfn.accountClient,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, endpoint.url, err)
@@ -276,45 +203,71 @@ func (f *fullNode) SendRelay(app apptypes.Application, session sessiontypes.Sess
 	return response, nil
 }
 
-// isValidUrl checks whether the provided string is a formatted as the poktroll SDK expects
-// The gRPC url requires a port
-func isValidUrl(urlToCheck string, needPort bool) bool {
-	u, err := url.Parse(urlToCheck)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	if !needPort {
-		return true
-	}
-
-	_, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		return false
-	}
-
-	if port == "" {
-		return false
-	}
-
+// IsHealthy always returns true for a LazyFullNode.
+// It is required to fulfill the FullNode interface.
+func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
 
-func isValidGrpcHostPort(hostPort string) bool {
-	host, port, err := net.SplitHostPort(hostPort)
-	if err != nil {
-		return false
+// buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
+func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[relayer.ServiceID][]apptypes.Application, error) {
+	appData := make(map[relayer.ServiceID][]apptypes.Application)
+	for _, onchainApp := range onchainApps {
+		logger := lfn.logger.With("address", onchainApp.Address)
+
+		if len(onchainApp.ServiceConfigs) == 0 {
+			logger.Warn().Msg("buildAppsServiceMap: app has no services specified onchain. Skipping the app.")
+			continue
+		}
+
+		for _, svcCfg := range onchainApp.ServiceConfigs {
+			if svcCfg.ServiceId == "" {
+				logger.Warn().Msg("buildAppsServiceMap: app has empty serviceId item in service config.")
+				continue
+			}
+
+			if filterFn != nil && !filterFn(onchainApp, relayer.ServiceID(svcCfg.ServiceId)) {
+				continue
+			}
+
+			serviceID := relayer.ServiceID(svcCfg.ServiceId)
+			appData[serviceID] = append(appData[serviceID], onchainApp)
+		}
 	}
 
-	if host == "" || port == "" {
-		return false
+	if len(appData) == 0 {
+		return nil, fmt.Errorf("buildAppsServiceMap: no apps found.")
 	}
 
-	return true
+	return appData, nil
+}
+
+// TODO_UPNEXT(@adshmh): cross-reference onchain apps against the configured apps' private keys.
+// An onchain app should be used for sending relays if and only if it meets the following criteria:
+// 1. It has delegated to the gateway.
+// 2. Its private key is present in the configuration.
+//
+// getAllApps returns the onchain apps that have active delegations to the gateway.
+func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
+	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
+
+	var apps []apptypes.Application
+	for _, appAddr := range lfn.delegatedApps {
+		onchainApp, err := lfn.appClient.GetApplication(ctx, appAddr)
+		if err != nil {
+			lfn.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
+			continue
+		}
+
+		if !slices.Contains(onchainApp.DelegateeGatewayAddresses, lfn.gatewayAddress) {
+			lfn.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
+			continue
+		}
+
+		apps = append(apps, onchainApp)
+	}
+
+	return apps, nil
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.
@@ -405,4 +358,15 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 	}
 
 	return &sdk.AccountClient{PoktNodeAccountFetcher: sdk.NewPoktNodeAccountFetcher(conn)}, nil
+}
+
+// appFilterFn represents a filter that determines whether an app should be included.
+// it is mainly used to return the apps matching a specific service ID.
+type appFilterFn func(apptypes.Application, relayer.ServiceID) bool
+
+// serviceAppFilter is an app filtering function that drops any applications which does not match the supplied service ID.
+func serviceAppFilter(selectedServiceID relayer.ServiceID) appFilterFn {
+	return func(_ apptypes.Application, serviceID relayer.ServiceID) bool {
+		return serviceID == selectedServiceID
+	}
 }
