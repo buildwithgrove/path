@@ -23,7 +23,7 @@ type requestContext struct {
 	// endpoints contains all the candidate endpoints available for processing a service request.
 	endpoints map[relayer.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
-	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
+	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 }
 
