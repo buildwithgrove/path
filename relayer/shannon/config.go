@@ -69,7 +69,7 @@ func (c FullNodeConfig) Validate() error {
 	if !isValidURL(c.RpcURL) {
 		return ErrShannonInvalidNodeUrl
 	}
-	if !isValidURLWithPort(c.GRPCConfig.HostPort) {
+	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	for _, addr := range c.DelegatedApps {
@@ -112,39 +112,23 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 }
 
 // isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
-func isValidURL(url string) bool {
-	_, isValid := parseURL(url)
-	return isValid
-}
-
-// isValidURLWithPort returns true if the supplied URL string can be parsed into a valid URL and a port.
-func isValidURLWithPort(url string) bool {
-	parsedURL, isValid := parseURL(url)
-	if !isValid {
+func isValidURL(urlStr string) bool {
+	u, err := url.Parse(urlStr)
+	if err != nil {
 		return false
 	}
 
-	return isValidHostPort(parsedURL.Host)
-}
-
-// parseURL parses a string into a URL, and returns the parsed value, and a boolean indicating whether the URL string is valid.
-func parseURL(urlStr string) (*url.URL, bool) {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, false
-	}
-
 	if u.Scheme == "" || u.Host == "" {
-		return u, false
+		return false
 	}
 
-	return u, true
+	return true
 }
 
 // isValidHostPort returns true if the supplied string can be parsed into a host and port combination.
-// The input string can be taken from the `Host` field of a parsed net/url.URL struct.
 func isValidHostPort(hostPort string) bool {
 	host, port, err := net.SplitHostPort(hostPort)
+
 	if err != nil {
 		return false
 	}
