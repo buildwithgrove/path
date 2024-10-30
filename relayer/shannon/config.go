@@ -111,35 +111,7 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	return *c
 }
 
-// isValidUrl checks whether the provided string is a formatted as the poktroll SDK expects
-// The gRPC url requires a port
-func isValidUrl(urlToCheck string, needPort bool) bool {
-	u, err := url.Parse(urlToCheck)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	if !needPort {
-		return true
-	}
-
-	_, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		return false
-	}
-
-	if port == "" {
-		return false
-	}
-
-	return true
-}
-
-// isValidURL returns true if the supplied URL string can be parsed into a valid URL.
+// isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
 func isValidURL(url string) bool {
 	_, isValid := parseURL(url)
 	return isValid

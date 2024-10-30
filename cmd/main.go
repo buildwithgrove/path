@@ -115,7 +115,10 @@ func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polyl
 	}
 
 	if config.FullNodeConfig.LazyMode {
-		protocol := &shannon.Protocol{lazyFullNode, logger}
+		protocol := &shannon.Protocol{
+			FullNode: lazyFullNode,
+			Logger:   logger,
+		}
 		// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
 		return protocol, protocol, nil
 	}
@@ -126,7 +129,10 @@ func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polyl
 		return nil, nil, fmt.Errorf("failed to create Shannon caching full node: %v", err)
 	}
 
-	protocol := &shannon.Protocol{cachingFullNode, logger}
+	protocol := &shannon.Protocol{
+		FullNode: cachingFullNode,
+		Logger:   logger,
+	}
 
 	// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
 	return protocol, protocol, nil
