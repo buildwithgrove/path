@@ -10,7 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/utils"
-	"github.com/buildwithgrove/path/relayer"
 	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
 )
 
@@ -31,9 +30,10 @@ const (
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type (
 	MorseGatewayConfig struct {
-		FullNodeConfig morseRelayer.FullNodeConfig   `yaml:"full_node_config"`
-		Transport      FullNodeHTTPTransportConfig   `yaml:"transport_config"`
-		SignedAATs     map[relayer.AppAddr]SignedAAT `yaml:"signed_aats"`
+		FullNodeConfig morseRelayer.FullNodeConfig `yaml:"full_node_config"`
+		Transport      FullNodeHTTPTransportConfig `yaml:"transport_config"`
+		// SignedAATs is a map of applications' addresses to their corresponding signed AATs.
+		SignedAATs map[string]SignedAAT `yaml:"signed_aats"`
 	}
 	FullNodeHTTPTransportConfig struct {
 		MaxConnsPerHost     int           `yaml:"max_conns_per_host"`
@@ -69,7 +69,7 @@ func (c *MorseGatewayConfig) UnmarshalYAML(value *yaml.Node) error {
 // Returns:
 //   - provider.PocketAAT: The PocketAAT associated with the given application ID.
 //   - bool: A boolean indicating whether the PocketAAT was successfully retrieved.
-func (c MorseGatewayConfig) GetSignedAAT(appID relayer.AppAddr) (provider.PocketAAT, bool) {
+func (c MorseGatewayConfig) GetSignedAAT(appID string) (provider.PocketAAT, bool) {
 	application, ok := c.SignedAATs[appID]
 	if !ok {
 		return provider.PocketAAT{}, false

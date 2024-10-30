@@ -30,7 +30,7 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	protocol, err := getProtocol(config, logger)
+	protocol, endpointLister, err := getProtocol(config, logger)
 	if err != nil {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
@@ -50,7 +50,7 @@ func main() {
 	// TODO_IMPROVE: consider using a separate relayer for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(protocol, relayer, qosPublisher, hydratorQoSGenerators, logger)
+	hydrator, err := setupEndpointHydrator(endpointLister, relayer, qosPublisher, hydratorQoSGenerators, logger)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
@@ -93,7 +93,7 @@ func main() {
 
 /* -------------------- Gateway Init Helpers -------------------- */
 
-func getProtocol(config config.GatewayConfig, logger polylog.Logger) (relayer.Protocol, error) {
+func getProtocol(config config.GatewayConfig, logger polylog.Logger) (relayer.Protocol, gateway.EndpointLister, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
 		return getShannonProtocol(shannonConfig, logger)
 	}
@@ -102,37 +102,42 @@ func getProtocol(config config.GatewayConfig, logger polylog.Logger) (relayer.Pr
 		return getMorseProtocol(morseConfig, logger)
 	}
 
-	return nil, fmt.Errorf("no protocol config set")
+	return nil, nil, fmt.Errorf("no protocol config set")
 }
 
-func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polylog.Logger) (relayer.Protocol, error) {
+func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polylog.Logger) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
 	fullNode, err := shannon.NewFullNode(config.FullNodeConfig, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create shannon full node: %v", err)
+		return nil, nil, fmt.Errorf("failed to create shannon full node: %v", err)
 	}
 
 	protocol, err := shannon.NewProtocol(context.Background(), fullNode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create shannon protocol: %v", err)
+		return nil, nil, fmt.Errorf("failed to create shannon protocol: %v", err)
 	}
 
-	return protocol, nil
+	// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
+	return protocol, protocol, nil
 }
 
-func getMorseProtocol(config *morseConfig.MorseGatewayConfig, logger polylog.Logger) (relayer.Protocol, error) {
+func getMorseProtocol(
+	config *morseConfig.MorseGatewayConfig,
+	logger polylog.Logger,
+ ) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Morse protocol")
 
 	fullNode, err := morse.NewFullNode(config.FullNodeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create morse full node: %v", err)
+		return nil, nil, fmt.Errorf("failed to create morse full node: %v", err)
 	}
 
 	protocol, err := morse.NewProtocol(context.Background(), fullNode, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create morse protocol: %v", err)
+		return nil, nil, fmt.Errorf("failed to create morse protocol: %v", err)
 	}
 
-	return protocol, nil
+	// return the same protocol instance as two different interfaces for consumption by the relayer and the endpoint hydrator components.
+	return protocol, protocol, nil
 }
