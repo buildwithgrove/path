@@ -90,8 +90,6 @@ func (r Relayer) SendRelay(
 		return Response{}, fmt.Errorf("Relay: error getting available endpoints for service %s: %w", serviceID, err)
 	}
 
-	// appAddr, endpointAddr, err := endpointSelector.Select(endpoints)
-	// if err != nil {
 	if err := protocolRequestCtx.SelectEndpoint(endpointSelector); err != nil {
 		return Response{}, fmt.Errorf("Serve: error selecting an endpoint for service %s: %w", serviceID, err)
 	}

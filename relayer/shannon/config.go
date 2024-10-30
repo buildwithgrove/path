@@ -10,8 +10,13 @@ import (
 )
 
 const (
-	gatewayPrivateKeyLength = 64
-	addressLength           = 43
+	// Shannon uses secp256k1 key schemes (the cosmos default)
+	// secp256k1 keys are 32 bytes -> 64 hexadecimal characters
+	// Ref: https://docs.cosmos.network/v0.45/basics/accounts.html
+	shannonPrivateKeyLengthHex = 64
+	// secp256k1 keys are 20 bytes, but are then bech32 encoded -> 43 bytes
+	// Ref: https://docs.cosmos.network/main/build/spec/addresses/bech32
+	shannonAddressLengthBech32 = 43
 )
 
 var (
@@ -22,12 +27,13 @@ var (
 )
 
 type (
-	// TODO_DISCUSS: move this (and the morse FullNodeConfig) to the config package?
 	FullNodeConfig struct {
-		RpcURL            string     `yaml:"rpc_url"`
-		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
-		GatewayAddress    string     `yaml:"gateway_address"`
-		GatewayPrivateKey string     `yaml:"gateway_private_key"`
+		RpcURL     string     `yaml:"rpc_url"`
+		GRPCConfig GRPCConfig `yaml:"grpc_config"`
+		// TODO_UPNEXT(@adshmh): Remove all Gateway specific types into its own
+		// struct, as they are independent from full node configs.
+		GatewayAddress    string `yaml:"gateway_address"`
+		GatewayPrivateKey string `yaml:"gateway_private_key"`
 		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
 		// can be verified, i.e. if the public key derived from the stored private key matches the onchain app data.
 		// A list of addresses of onchain Applications delegated to the Gateway.
@@ -38,6 +44,7 @@ type (
 		LazyMode bool `yaml:"lazy_mode"`
 	}
 
+	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
 	GRPCConfig struct {
 		HostPort          string        `yaml:"host_port"`
 		Insecure          bool          `yaml:"insecure"`
@@ -49,32 +56,34 @@ type (
 	}
 )
 
-// TODO_IMPROVE: move this to the config package?
 func (c FullNodeConfig) Validate() error {
-	if len(c.GatewayPrivateKey) != gatewayPrivateKeyLength {
+	if len(c.GatewayPrivateKey) != shannonPrivateKeyLengthHex {
 		return ErrShannonInvalidGatewayPrivateKey
 	}
-	if len(c.GatewayAddress) != addressLength {
+	if len(c.GatewayAddress) != shannonAddressLengthBech32 {
 		return ErrShannonInvalidGatewayAddress
 	}
 	if !strings.HasPrefix(c.GatewayAddress, "pokt1") {
 		return ErrShannonInvalidGatewayAddress
 	}
-	if !isValidUrl(c.RpcURL, false) {
+	if !isValidURL(c.RpcURL) {
 		return ErrShannonInvalidNodeUrl
 	}
-	if !isValidGrpcHostPort(c.GRPCConfig.HostPort) {
+	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	for _, addr := range c.DelegatedApps {
-		if len(addr) != addressLength {
+		if len(addr) != shannonAddressLengthBech32 {
 			return fmt.Errorf("invalid delegated app address: %s", addr)
 		}
 	}
 	return nil
 }
 
-// TODO_IMPROVE: move this to the config package?
+// TODO_TECHDEBT(@adshmh): add a new `grpc` package to handle all GRPC related functionality and configuration.
+// The config package is not a good fit for this, because it is designed to build the configuration structs for other packages,
+// and so it has dependencies on all other packages, including `relayer/shannon`. Therefore, no packages except `cmd` can have a dependency
+// on the `config` package.
 const (
 	defaultBackoffBaseDelay  = 1 * time.Second
 	defaultBackoffMaxDelay   = 120 * time.Second
@@ -83,7 +92,6 @@ const (
 	defaultKeepAliveTimeout  = 20 * time.Second
 )
 
-// TODO_IMPROVE: move this to the config package?
 func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	if c.BackoffBaseDelay == 0 {
 		c.BackoffBaseDelay = defaultBackoffBaseDelay
@@ -103,10 +111,9 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	return *c
 }
 
-// isValidUrl checks whether the provided string is a formatted as the poktroll SDK expects
-// The gRPC url requires a port
-func isValidUrl(urlToCheck string, needPort bool) bool {
-	u, err := url.Parse(urlToCheck)
+// isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
+func isValidURL(urlStr string) bool {
+	u, err := url.Parse(urlStr)
 	if err != nil {
 		return false
 	}
@@ -115,24 +122,13 @@ func isValidUrl(urlToCheck string, needPort bool) bool {
 		return false
 	}
 
-	if !needPort {
-		return true
-	}
-
-	_, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		return false
-	}
-
-	if port == "" {
-		return false
-	}
-
 	return true
 }
 
-func isValidGrpcHostPort(hostPort string) bool {
+// isValidHostPort returns true if the supplied string can be parsed into a host and port combination.
+func isValidHostPort(hostPort string) bool {
 	host, port, err := net.SplitHostPort(hostPort)
+
 	if err != nil {
 		return false
 	}
