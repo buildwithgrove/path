@@ -2,8 +2,9 @@ package relayer
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
 // Each protocol interface implementation needs to define an endpoint address which uniquely identifies a service endpoint.
-// As of now, the Morse-based protocol interface implementation, under relayer/morse package, uses a Morse node's public key as its endpoint address.
-// The Shannon-based protocol interface implementation, under relayer/shannon package, appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
+// As of writing this comment(#50):
+// - Morse (POKT): uses a node's public key as its endpoint address
+// - Shannon (POKT): appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
 type EndpointAddr string
 
 // Endpoint represents an entity which serves relay requests.
