@@ -161,10 +161,16 @@ func (rc requestContext) GetObservationSet() message.ObservationSet {
 	}
 }
 
+// GetEndpointSelector is required to satisfy the gateway package's ResquestQoSContext interface.
+// The request context is queried for the correct endpoint selector to use because this allows different
+// endpoint selectors based on the request's context.
+// e.g. the request context for a particular request method can potentially rank endpoints based on their latency when responding to requests with matching method.
 func (rc *requestContext) GetEndpointSelector() relayer.EndpointSelector {
 	return rc
 }
 
+// Select chooses an endpoint from the list of supplied endpoints, using the estimated (using endpoints' responses) state of the Solana chain.
+// It is required to satisfy the relayer package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)

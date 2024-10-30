@@ -6,7 +6,16 @@ import (
 
 const (
 	// Expected value of the `result` field to a `getHealth` request.
-	ResultGetHealthOK = "ok"
+	resultGetHealthOK = "ok"
+)
+
+var (
+	// The errors below list all the possible basic validation errors on an endpoint.
+	errNoGetHealthObs                   = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetHealth)
+	errInvalidGetHealthObs              = fmt.Errorf("endpoint responded incorrectly to a %q request, expected: %q", methodGetHealth, resultGetHealthOK)
+	errNoGetEpochInfoObs                = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetEpochInfo)
+	errInvalidGetEpochInfoHeightZeroObs = fmt.Errorf("endpoint responded with blockHeight of 0 to a %q request, expected a blockHeight of > 0", methodGetEpochInfo)
+	errInvalidGetEpochInfoEpochZeroObs  = fmt.Errorf("endpoint responded with epoch of 0 to a %q request, expected an epoch of > 0", methodGetEpochInfo)
 )
 
 // endpoint captures the details required to validate a Solana endpoint.
@@ -31,15 +40,15 @@ type endpoint struct {
 func (e endpoint) ValidateBasic() error {
 	switch {
 	case e.GetHealthResult == nil:
-		return fmt.Errorf("endpoint has not had an observation of its response to a %q request", "getHealth")
-	case *e.GetHealthResult != ResultGetHealthOK:
-		return fmt.Errorf("endpoint responded with %q to a %q request, expected: %q", *e.GetHealthResult, "getHealth", ResultGetHealthOK)
+		return errNoGetHealthObs
+	case *e.GetHealthResult != resultGetHealthOK:
+		return fmt.Errorf("invalid response: %s :%w", *e.GetHealthResult, errInvalidGetHealthObs)
 	case e.GetEpochInfoResult == nil:
-		return fmt.Errorf("endpoint has not had an observation of its response to a %q request", "getEpochInfo")
+		return errNoGetEpochInfoObs
 	case e.GetEpochInfoResult.BlockHeight == 0:
-		return fmt.Errorf("endpoint responded with blockHeight of 0 to a %q request, expected a blockHeight of > 0", "getEpochInfo")
+		return errInvalidGetEpochInfoHeightZeroObs
 	case e.GetEpochInfoResult.Epoch == 0:
-		return fmt.Errorf("endpoint responded with epoch of 0 to a %q request, expected an epoch of > 0", "getEpochInfo")
+		return errInvalidGetEpochInfoEpochZeroObs
 	default:
 		return nil
 	}
