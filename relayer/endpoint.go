@@ -18,8 +18,8 @@ type Endpoint interface {
 	PublicURL() string
 }
 
-// EndpointSelector defines the functionality that the user of a relayer needs to provide,
-// i.e. selecting an endpoint, from the list of available ones, to which the relay is to be sent.
+// EndpointSelector defines the functionality that the user of a relayer needs to provide.
+// E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
 	Select([]Endpoint) (EndpointAddr, error)
 }
