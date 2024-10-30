@@ -6,7 +6,6 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	"github.com/stretchr/testify/require"
 
-	"github.com/buildwithgrove/path/relayer"
 	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
 )
 
@@ -14,14 +13,14 @@ func Test_GetSignedAAT(t *testing.T) {
 	tests := []struct {
 		name   string
 		config MorseGatewayConfig
-		appID  relayer.AppAddr
+		appID  string
 		want   provider.PocketAAT
 		ok     bool
 	}{
 		{
 			name: "should return valid PocketAAT for existing appID",
 			config: MorseGatewayConfig{
-				SignedAATs: map[relayer.AppAddr]SignedAAT{
+				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
 						ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 						ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
@@ -41,7 +40,7 @@ func Test_GetSignedAAT(t *testing.T) {
 		{
 			name: "should return false for non-existing appID",
 			config: MorseGatewayConfig{
-				SignedAATs: map[relayer.AppAddr]SignedAAT{
+				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
 						ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 						ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
@@ -82,7 +81,7 @@ func Test_Validate(t *testing.T) {
 					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
-				SignedAATs: map[relayer.AppAddr]SignedAAT{
+				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
 						ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 						ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
@@ -101,7 +100,7 @@ func Test_Validate(t *testing.T) {
 					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
-				SignedAATs: map[relayer.AppAddr]SignedAAT{
+				SignedAATs: map[string]SignedAAT{
 					"invalid_app_id": {
 						ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 						ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
@@ -120,7 +119,7 @@ func Test_Validate(t *testing.T) {
 					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
-				SignedAATs: map[relayer.AppAddr]SignedAAT{
+				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
 						ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 						ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
