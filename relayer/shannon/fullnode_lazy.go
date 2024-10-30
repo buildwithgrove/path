@@ -22,9 +22,13 @@ import (
 
 // The Shannon Relayer's FullNode interface is implemented by the LazyFullNode struct below,
 // which provides the full node capabilities required by the Shannon relayer.
+// A LazyFullNode queries the onchain data for every data item it needs to serve a relay request, e.g. applications staked for a service.
+// This is done to enable supporting short block times (a few seconds), by avoiding caching which can result in failures due to stale
+// data in the cache.
+//
 // A properly initialized fullNode struct can:
 // 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a service+app combination.
+// 2. Fetch a session for a (service,app) combination.
 // 3. Send a relay, corresponding to a specific session, to an endpoint.
 var _ FullNode = &LazyFullNode{}
 
@@ -74,14 +78,15 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 }
 
 // LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
-// It intentionally avoids caching any data to allow it to support very short block times, e.g. on a LocalNet.
-// The CachingFullNode struct can be used instead if caching is desired for performance reasons, as it provides
-// the same functionality by wrapping a caching layer around a LazyFullNode.
+// The key differences between a lazy and full node are:
+// 1. Lazy node intentionally avoids caching.
+//   - This allows supporting short block times (e.g. LocalNet)
+//   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddress string
-	// TODO_UPNEXT(@adshmh): use private keys of owned apps.
+	// TODO_UPNEXT(@adshmh): replace delegatedApps with privateKeys of gatewayOwnedApps
 	delegatedApps []string
 
 	appClient     *sdk.ApplicationClient
@@ -93,25 +98,24 @@ type LazyFullNode struct {
 	logger polylog.Logger
 }
 
+// GetServiceApps returns the set of onchain applications which delegate to the gateway, matching the supplied service ID.
+// It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes.Application, error) {
+	// fetch all staked applications which have delegated to this gateway, by querying the onchain data.
 	allApps, err := lfn.getAllApps(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
+	// use a filter to drop any apps that are not staked for the service matching the supplied service ID.
 	appsServiceMap, err := lfn.buildAppsServiceMap(allApps, serviceAppFilter(serviceID))
 	if err != nil {
 		return nil, err
 	}
 
+	// convert the map of service ID to application which is returned from the previous method call, into a slice for easier processing.
 	var apps []apptypes.Application
-	for appsSvcID, svcApps := range appsServiceMap {
-		if appsSvcID != serviceID {
-			continue
-		}
-
-		apps = append(apps, svcApps...)
-	}
+	apps = append(apps, appsServiceMap[serviceID]...)
 
 	return apps, nil
 }
@@ -124,6 +128,8 @@ func (lfn *LazyFullNode) GetAllServicesApps() (map[relayer.ServiceID][]apptypes.
 	return lfn.buildAppsServiceMap(allApps, nil)
 }
 
+// GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
+// It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error) {
 	session, err := lfn.sessionClient.GetSession(
 		context.Background(),
@@ -150,6 +156,8 @@ func (lfn *LazyFullNode) GetSession(serviceID relayer.ServiceID, appAddr string)
 }
 
 // TODO_IMPROVE: split this function into build/sign/send/verify stages.
+// SendRelay sends a the supplied payload as a relay request to the supplied endpoint.
+// It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
 	// TODO_TECHDEBT: need to select the correct underlying request (HTTP, etc.) based on the selected service.
 	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest([]byte(payload.Data), endpoint.url)
@@ -196,6 +204,7 @@ func (lfn *LazyFullNode) SendRelay(app apptypes.Application, session sessiontype
 }
 
 // IsHealthy always returns true for a LazyFullNode.
+// It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
@@ -240,7 +249,7 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 //
 // getAllApps returns the onchain apps that have active delegations to the gateway.
 func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_TECHDEBT: query the onchain data for the gateway address to confirm it is valid and return an error if not.
+	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
 
 	var apps []apptypes.Application
 	for _, appAddr := range lfn.delegatedApps {
@@ -355,6 +364,7 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 // it is mainly used to return the apps matching a specific service ID.
 type appFilterFn func(apptypes.Application, relayer.ServiceID) bool
 
+// serviceAppFilter is an app filtering function that drops any applications which does not match the supplied service ID.
 func serviceAppFilter(selectedServiceID relayer.ServiceID) appFilterFn {
 	return func(_ apptypes.Application, serviceID relayer.ServiceID) bool {
 		return serviceID == selectedServiceID
