@@ -16,7 +16,7 @@ const (
 	shannonPrivateKeyLengthHex = 64
 	// secp256k1 keys are 20 bytes, but are then bech32 encoded -> 43 bytes
 	// Ref: https://docs.cosmos.network/main/build/spec/addresses/bech32
-	shannonAddressLengthBech32           = 43
+	shannonAddressLengthBech32 = 43
 )
 
 var (
