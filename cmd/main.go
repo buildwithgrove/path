@@ -124,7 +124,7 @@ func getShannonProtocol(config *shannonConfig.ShannonGatewayConfig, logger polyl
 
 func getMorseProtocol(
 	config *morseConfig.MorseGatewayConfig,
-	 logger polylog.Logger,
+	logger polylog.Logger,
  ) (relayer.Protocol, gateway.EndpointLister, error) {
 	logger.Info().Msg("Starting PATH gateway with Morse protocol")
 
