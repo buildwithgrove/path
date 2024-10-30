@@ -63,10 +63,6 @@ func withGetEpochInfo(requestCtx *requestContext) {
 	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetEpochInfo, methodGetEpochInfo)
 }
 
-func withGetBlock(requestCtx *requestContext) {
-	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetBlock, methodGetBlock)
-}
-
 func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
