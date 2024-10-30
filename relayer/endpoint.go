@@ -9,8 +9,10 @@ type EndpointAddr string
 
 // Endpoint represents an entity which serves relay requests.
 type Endpoint interface {
-	// Addr is used to uniquely identify an endpoint. Defining this as an interface allows each protocl interface implementation (Morse and Shannon as of now), to
-	// define its own service endpoint address scheme. See the comment on EndpointAddr type for more details.
+	// Addr is used to uniquely identify an endpoint.
+	// Defining this as an interface allows each protocl interface implementation (e.g. Pocket's Morse and Shannon) to
+	// define its own service endpoint address scheme.
+	// See the comment on EndpointAddr type for more details.
 	Addr() EndpointAddr
 	// PublicURL is the URL to which relay requests can be sent.
 	PublicURL() string
