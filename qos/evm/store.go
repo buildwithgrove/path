@@ -54,7 +54,7 @@ type EndpointStore struct {
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
 	logger := es.Logger.With("method", "Select")
-	logger.With("total endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
+	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
 	if err != nil {
@@ -70,8 +70,8 @@ func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.
 	}
 
 	logger.With(
-		"total endpoints", len(availableEndpoints),
-		"endpoints after filtering", len(filteredEndpointsAddr),
+		"total_endpoints", len(availableEndpoints),
+		"endpoints_after_filtering", len(filteredEndpointsAddr),
 	).Info().Msg("filtered endpoints")
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
@@ -87,7 +87,7 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) 
 		return nil, errors.New("select: received empty list of endpoints to select from")
 	}
 
-	logger := es.Logger.With("number of available endpoints", fmt.Sprintf("%d", len(availableEndpoints)))
+	logger := es.Logger.With("number_of_available_endpoints", fmt.Sprintf("%d", len(availableEndpoints)))
 	logger.Info().Msg("select: processing available endpoints")
 
 	var filteredEndpointsAddr []relayer.EndpointAddr
