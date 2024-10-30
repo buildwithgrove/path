@@ -34,7 +34,7 @@ func responseUnmarshallerGetEpochInfo(jsonrpcReq jsonrpc.Request, jsonrpcResp js
 	return &responseToGetEpochInfo{
 		Response:  jsonrpcResp,
 		epochInfo: epochInfo,
-	}, nil
+	}, err
 }
 
 // epochInfo captures all the fields expected from a response to a `getEpochInfo` request.
@@ -53,11 +53,8 @@ type responseToGetEpochInfo struct {
 	jsonrpc.Response
 	Logger polylog.Logger
 
+	// epochInfo stores the epochInfo struct that is parsed from the response to a `getEpochInfo` request.
 	epochInfo epochInfo
-
-	// err is any errors encountered during unmarshalling.
-	// it is used to build a JSONRPC Response to return to the user if an endpoint returns a malformed response.
-	err error
 }
 
 func (r responseToGetEpochInfo) GetObservation() (observation, bool) {
