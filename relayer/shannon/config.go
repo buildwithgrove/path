@@ -28,12 +28,12 @@ var (
 
 type (
 	FullNodeConfig struct {
-		RpcURL            string     `yaml:"rpc_url"`
-		GRPCConfig        GRPCConfig `yaml:"grpc_config"`
+		RpcURL     string     `yaml:"rpc_url"`
+		GRPCConfig GRPCConfig `yaml:"grpc_config"`
 		// TODO_UPNEXT(@adshmh): Remove all Gateway specific types into its own
 		// struct, as they are independent from full node configs.
-		GatewayAddress    string     `yaml:"gateway_address"`
-		GatewayPrivateKey string     `yaml:"gateway_private_key"`
+		GatewayAddress    string `yaml:"gateway_address"`
+		GatewayPrivateKey string `yaml:"gateway_private_key"`
 		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
 		// can be verified, i.e. if the public key derived from the stored private key matches the onchain app data.
 		// A list of addresses of onchain Applications delegated to the Gateway.
@@ -57,10 +57,10 @@ type (
 )
 
 func (c FullNodeConfig) Validate() error {
-	if len(c.GatewayPrivateKey) != gatewayPrivateKeyLength {
+	if len(c.GatewayPrivateKey) != shannonPrivateKeyLengthHex {
 		return ErrShannonInvalidGatewayPrivateKey
 	}
-	if len(c.GatewayAddress) != addressLength {
+	if len(c.GatewayAddress) != shannonAddressLengthBech32 {
 		return ErrShannonInvalidGatewayAddress
 	}
 	if !strings.HasPrefix(c.GatewayAddress, "pokt1") {
@@ -73,7 +73,7 @@ func (c FullNodeConfig) Validate() error {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	for _, addr := range c.DelegatedApps {
-		if len(addr) != addressLength {
+		if len(addr) != shannonAddressLengthBech32 {
 			return fmt.Errorf("invalid delegated app address: %s", addr)
 		}
 	}
