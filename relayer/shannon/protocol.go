@@ -1,17 +1,13 @@
 package shannon
 
 import (
-	"context"
 	"fmt"
-	"sync"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
-	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -19,49 +15,55 @@ import (
 // below using methods that are specific to Shannon.
 var _ relayer.Protocol = &Protocol{}
 
-// All components that report their ready status to /healthz must implement the health.Check interface.
-var _ health.Check = &Protocol{}
-
+// FullNode defines the set of capabilities the Shannon protocol integration needs
+// from a fullnode for sending relays.
 type FullNode interface {
-	GetApps(context.Context) ([]apptypes.Application, error)
-	LatestBlockHeight() (int64, error)
-	GetSession(serviceID, appAddr string, blockHeight int64) (sessiontypes.Session, error)
+	GetServiceApps(relayer.ServiceID) ([]apptypes.Application, error)
+	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
+	// This is used here because the gateway only needs the current session for any service+app combination.
+	GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error)
 	SendRelay(apptypes.Application, sessiontypes.Session, endpoint, relayer.Payload) (*servicetypes.RelayResponse, error)
+
+	// IsHealthy returns true if the FullNode instance is healthy.
+	// A LazyFullNode will always return true.
+	// A CachingFullNode will return true if it has data in app and session caches.
+	IsHealthy() bool
 }
 
-// TODO_UPNEXT(@adshmh): Add unit/E2E tests for the implementation of the Shannon relayer.
-func NewProtocol(ctx context.Context, fullNode FullNode) (*Protocol, error) {
-	protocol := &Protocol{
-		fullNode: fullNode,
-		logger:   polylog.Ctx(ctx),
+// Protocol provides the functionality needed by the relayer and gateway packages
+// for sending a relay to a specific endpoint.
+type Protocol struct {
+	FullNode
+	Logger polylog.Logger
+}
+
+// func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
+func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, error) {
+	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	go func() {
-		// TODO_IMPROVE: make the refresh interval configurable.
-		ticker := time.NewTicker(time.Minute)
-		for {
-			protocol.updateAppCache()
-			protocol.updateSessionCache()
+	var endpoints []relayer.Endpoint
+	for _, endpoint := range endpointsIdx {
+		endpoints = append(endpoints, endpoint)
+	}
 
-			<-ticker.C
-		}
-	}()
-
-	return protocol, nil
+	return endpoints, nil
 }
 
-type Protocol struct {
-	fullNode FullNode
-	logger   polylog.Logger
+// BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
+func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID) (relayer.ProtocolRequestContext, error) {
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+	}
 
-	appCache   map[relayer.ServiceID][]apptypes.Application
-	appCacheMu sync.RWMutex
-
-	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
-	// sessionCache caches sessions for use by the Relay function.
-	// map keys are of the format "serviceID-appID"
-	sessionCache   map[string]sessiontypes.Session
-	sessionCacheMu sync.RWMutex
+	return &requestContext{
+		fullNode:  p.FullNode,
+		endpoints: endpoints,
+		serviceID: serviceID,
+	}, nil
 }
 
 // Name satisfies the HealthCheck#Name interface function
@@ -71,237 +73,41 @@ func (p *Protocol) Name() string {
 
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
-	p.appCacheMu.RLock()
-	defer p.appCacheMu.RUnlock()
-	p.sessionCacheMu.RLock()
-	defer p.sessionCacheMu.RUnlock()
-
-	return len(p.appCache) > 0 && len(p.sessionCache) > 0
+	return p.FullNode.IsHealthy()
 }
 
-func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
-	apps, found := p.serviceApps(serviceID)
-	if !found {
-		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
+// TODO_FUTURE: Find a more optimized way of handling an overlap among endpoints
+// matching multiple sessions of apps delegating to the gateway.
+//
+// getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
+// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
+// matching one of the apps/sessions is returned.
+func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID) (map[relayer.EndpointAddr]endpoint, error) {
+	apps, err := p.FullNode.GetServiceApps(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
 	}
 
-	allEndpoints := make(map[relayer.AppAddr][]relayer.Endpoint)
+	endpoints := make(map[relayer.EndpointAddr]endpoint)
 	for _, app := range apps {
-		logger := p.logger.With(
-			"service", string(serviceID),
-			"address", app.Address,
-		)
-
-		session, found := p.getSession(serviceID, relayer.AppAddr(app.Address))
-		if !found {
-			logger.Warn().Msg("Endpoints: no sessions found for service,app combination. Skipping.")
-			continue
-		}
-
-		sessionEndpoints, err := endpointsFromSession(session)
+		session, err := p.FullNode.GetSession(serviceID, app.Address)
 		if err != nil {
-			p.logger.Warn().Err(err).Msg("Endpoints: error getting endpoints from the session")
-			continue
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
 		}
 
-		endpoints := make([]relayer.Endpoint, len(sessionEndpoints))
-		for i, sessionEndpoint := range sessionEndpoints {
-			endpoints[i] = sessionEndpoint
-		}
-		allEndpoints[relayer.AppAddr(app.Address)] = endpoints
-	}
-
-	if len(allEndpoints) == 0 {
-		return nil, fmt.Errorf("endpoints: no cached sessions found for service %s", serviceID)
-	}
-
-	return allEndpoints, nil
-}
-
-func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
-	app, err := p.getApp(req.ServiceID, req.AppAddr)
-	if err != nil {
-		return relayer.Response{}, fmt.Errorf("sendRelay: app not found: %w", err)
-	}
-
-	session, found := p.getSession(req.ServiceID, req.AppAddr)
-	if !found {
-		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
-	}
-
-	endpoint, err := endpointFromSession(session, req.EndpointAddr)
-	if err != nil {
-		return relayer.Response{}, fmt.Errorf("relay: endpoint %s not found for service %s app %s: %w", req.EndpointAddr, req.ServiceID, req.AppAddr, err)
-	}
-
-	response, err := p.fullNode.SendRelay(app, session, endpoint, req.Payload)
-	if err != nil {
-		return relayer.Response{EndpointAddr: req.EndpointAddr},
-			fmt.Errorf("relay: error sending relay for service %s app %s endpoint %s: %w",
-				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
-			)
-	}
-
-	// The Payload field of the response received from the endpoint, i.e. the relay miner,
-	// is a serialized http.Response struct. It needs to be deserialized into an HTTP Response struct
-	// to access the Service's response body, status code, etc.
-	relayResponse, err := deserializeRelayResponse(response.Payload)
-	if err != nil {
-		return relayer.Response{EndpointAddr: req.EndpointAddr},
-			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
-				req.ServiceID, req.AppAddr, req.EndpointAddr, err,
-			)
-	}
-
-	relayResponse.EndpointAddr = req.EndpointAddr
-	return relayResponse, nil
-}
-
-func (p *Protocol) serviceApps(serviceID relayer.ServiceID) ([]apptypes.Application, bool) {
-	p.appCacheMu.RLock()
-	defer p.appCacheMu.RUnlock()
-
-	apps, found := p.appCache[serviceID]
-	return apps, found
-}
-
-func (p *Protocol) getApp(serviceID relayer.ServiceID, appAddr relayer.AppAddr) (apptypes.Application, error) {
-	apps, found := p.serviceApps(serviceID)
-	if !found {
-		return apptypes.Application{}, fmt.Errorf("getApp: service %s not found", serviceID)
-	}
-
-	app, found := appFromList(apps, appAddr)
-	if found {
-		return app, nil
-	}
-
-	return apptypes.Application{}, fmt.Errorf("getApp: service %s has no apps with address %s", serviceID, appAddr)
-}
-
-func (p *Protocol) getSession(serviceID relayer.ServiceID, appAddr relayer.AppAddr) (sessiontypes.Session, bool) {
-	p.sessionCacheMu.RLock()
-	defer p.sessionCacheMu.RUnlock()
-
-	session, found := p.sessionCache[sessionCacheKey(serviceID, appAddr)]
-	return session, found
-}
-
-func (p *Protocol) updateAppCache() {
-	appData := p.fetchAppData()
-	if len(appData) == 0 {
-		p.logger.Warn().Msg("updateAppCache: received an empty app list; skipping update.")
-		return
-	}
-
-	p.appCacheMu.Lock()
-	defer p.appCacheMu.Unlock()
-	p.appCache = appData
-}
-
-func (p *Protocol) fetchAppData() map[relayer.ServiceID][]apptypes.Application {
-	onchainApps, err := p.fullNode.GetApps(context.Background())
-	if err != nil {
-		p.logger.Warn().Err(err).Msg("updateAppCache: error getting list of applications from the SDK")
-		return nil
-	}
-
-	appData := make(map[relayer.ServiceID][]apptypes.Application)
-	for _, onchainApp := range onchainApps {
-		logger := p.logger.With("address", onchainApp.Address)
-
-		if len(onchainApp.ServiceConfigs) == 0 {
-			logger.Warn().Msg("updateAppCache: app has no services specified onchain. Skipping the app.")
-			continue
+		appEndpoints, err := endpointsFromSession(session)
+		if err != nil {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
 		}
 
-		for _, svcCfg := range onchainApp.ServiceConfigs {
-			if svcCfg.ServiceId == "" {
-				logger.Warn().Msg("updateAppCache: app has empty serviceId item in service config.")
-				continue
-			}
-
-			serviceID := relayer.ServiceID(svcCfg.ServiceId)
-			appData[serviceID] = append(appData[serviceID], onchainApp)
+		for endpointAddr, endpoint := range appEndpoints {
+			endpoints[endpointAddr] = endpoint
 		}
 	}
 
-	return appData
-}
-
-func (p *Protocol) updateSessionCache() {
-	sessions := p.fetchSessions()
-	if len(sessions) == 0 {
-		p.logger.Warn().Msg("updateSessionCache: received empty session list; skipping update.")
-		return
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("getAppsUniqueEndpoints: no endpoints found for service %s", serviceID)
 	}
 
-	p.sessionCacheMu.Lock()
-	defer p.sessionCacheMu.Unlock()
-	p.sessionCache = sessions
-}
-
-func (p *Protocol) fetchSessions() map[string]sessiontypes.Session {
-	logger := p.logger.With("method", "fetchSessions")
-
-	blockHeight, err := p.fullNode.LatestBlockHeight()
-	if err != nil {
-		logger.Warn().
-			Err(err).
-			Msg("error getting the latest block height. Skipping session update.")
-
-		return nil
-	}
-
-	apps := p.AllApps()
-
-	sessions := make(map[string]sessiontypes.Session)
-	// TODO_TECHDEBT: use multiple go routines.
-	for serviceID, serviceApps := range apps {
-		for _, app := range serviceApps {
-			logger := logger.With(
-				"service", string(serviceID),
-				"address", app.Address,
-			)
-
-			session, err := p.fullNode.GetSession(string(serviceID), string(app.Address), blockHeight)
-			if err != nil {
-				logger.Warn().Err(err).Msg("could not get a session")
-				continue
-			}
-
-			sessions[sessionCacheKey(serviceID, relayer.AppAddr(app.Address))] = session
-			logger.Info().Msg("successfully fetched the session for service and app combination.")
-		}
-	}
-
-	return sessions
-}
-
-func (p *Protocol) AllApps() map[relayer.ServiceID][]apptypes.Application {
-	p.appCacheMu.RLock()
-	defer p.appCacheMu.RUnlock()
-
-	allApps := make(map[relayer.ServiceID][]apptypes.Application)
-	for serviceID, cachedApps := range p.appCache {
-		apps := make([]apptypes.Application, len(cachedApps))
-		copy(apps, cachedApps)
-		allApps[serviceID] = apps
-	}
-
-	return allApps
-}
-
-func sessionCacheKey(serviceID relayer.ServiceID, appAddr relayer.AppAddr) string {
-	return fmt.Sprintf("%s-%s", serviceID, appAddr)
-}
-
-func appFromList(apps []apptypes.Application, appAddr relayer.AppAddr) (apptypes.Application, bool) {
-	for _, app := range apps {
-		if app.Address == string(appAddr) {
-			return app, true
-		}
-	}
-
-	return apptypes.Application{}, false
+	return endpoints, nil
 }

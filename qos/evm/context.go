@@ -163,7 +163,7 @@ func (rc *requestContext) GetEndpointSelector() relayer.EndpointSelector {
 
 // TODO_UPNEXT(@adshmh): update this method once the relayer.EndpointSelector
 // interface is updated to provide a list of endpoint addresses, i.e. no app address.
-func (rc *requestContext) Select(allEndpoints map[relayer.AppAddr][]relayer.Endpoint) (relayer.AppAddr, relayer.EndpointAddr, error) {
+func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
@@ -175,15 +175,13 @@ func (rc *requestContext) Select(allEndpoints map[relayer.AppAddr][]relayer.Endp
 // is refactored to only present a slice of EndpointAddr for selection.
 func preSelectedEndpoint(
 	preSelectedEndpointAddr relayer.EndpointAddr,
-	allEndpoints map[relayer.AppAddr][]relayer.Endpoint,
-) (relayer.AppAddr, relayer.EndpointAddr, error) {
-	for appAddr, endpoints := range allEndpoints {
-		for _, endpoint := range endpoints {
-			if endpoint.Addr() == preSelectedEndpointAddr {
-				return appAddr, preSelectedEndpointAddr, nil
-			}
+	allEndpoints []relayer.Endpoint,
+) (relayer.EndpointAddr, error) {
+	for _, endpoint := range allEndpoints {
+		if endpoint.Addr() == preSelectedEndpointAddr {
+			return preSelectedEndpointAddr, nil
 		}
 	}
 
-	return relayer.AppAddr(""), relayer.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
+	return relayer.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }

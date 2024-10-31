@@ -10,16 +10,12 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/relayer"
 )
 
 // relayer package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ relayer.Protocol = &Protocol{}
-
-// All components that report their ready status to /healthz must implement the health.Check interface.
-var _ health.Check = &Protocol{}
 
 // TODO_TECHDEBT: Make this configurable via an env variable.
 const defaultRelayTimeoutMillisec = 5000
@@ -28,7 +24,7 @@ const defaultRelayTimeoutMillisec = 5000
 // This is used to supply AAT data to a Morse application, which is needed for sending relays on behalf of the application.
 type OffChainBackend interface {
 	// GetSignedAAT returns the AAT created by AppID offchain
-	GetSignedAAT(appID relayer.AppAddr) (provider.PocketAAT, bool)
+	GetSignedAAT(appAddr string) (provider.PocketAAT, bool)
 }
 
 // FullNode defines the functionality expected by the Protocol struct
@@ -75,6 +71,48 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
+// BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
+func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID) (relayer.ProtocolRequestContext, error) {
+	apps, found := p.getServiceApps(serviceID)
+	if !found {
+		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
+	}
+
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, apps)
+	if err != nil {
+		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	return &requestContext{
+		fullNode:  p.fullNode,
+		endpoints: endpoints,
+		serviceID: serviceID,
+	}, nil
+}
+
+func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, error) {
+	apps, found := p.getServiceApps(serviceID)
+	if !found {
+		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
+	}
+
+	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID, apps)
+	if err != nil {
+		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	var endpoints []relayer.Endpoint
+	for _, endpoint := range endpointsIdx {
+		endpoints = append(endpoints, endpoint)
+	}
+
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("endpoints: no endpoints found for service %s", serviceID)
+	}
+
+	return endpoints, nil
+}
+
 // Name satisfies the HealthCheck#Name interface function
 func (p *Protocol) Name() string {
 	return "pokt-morse"
@@ -90,86 +128,18 @@ func (p *Protocol) IsAlive() bool {
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
-func (p *Protocol) Endpoints(serviceID relayer.ServiceID) (map[relayer.AppAddr][]relayer.Endpoint, error) {
+func (p *Protocol) getServiceApps(serviceID relayer.ServiceID) ([]app, bool) {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
-	apps, found := p.appCache[serviceID]
+	cachedApps, found := p.appCache[serviceID]
 	if !found {
-		return nil, fmt.Errorf("Endpoints: no apps found for service %s", serviceID)
+		return nil, false
 	}
 
-	endpoints := make(map[relayer.AppAddr][]relayer.Endpoint)
-	for _, app := range apps {
-		session, found := p.getSession(serviceID, app.address)
-		if !found {
-			p.logger.Warn().
-				Str("service", string(serviceID)).
-				Str("address", app.address).
-				Msg("Endpoints: no session found for service/app combination. Skipping.")
-
-			continue
-		}
-
-		endpoints[app.Addr()] = endpointsFromSession(session)
-	}
-
-	if len(endpoints) == 0 {
-		return nil, fmt.Errorf("Endpoints: no sessions found for service %s", serviceID)
-	}
-
-	return endpoints, nil
-}
-
-func (p *Protocol) SendRelay(req relayer.Request) (relayer.Response, error) {
-	app, found := p.getApp(req.ServiceID, req.AppAddr)
-	if !found {
-		return relayer.Response{}, fmt.Errorf("relay: service %s app %s not found", req.ServiceID, req.AppAddr)
-	}
-
-	session, found := p.getSession(req.ServiceID, app.address)
-	if !found {
-		return relayer.Response{}, fmt.Errorf("relay: session not found for service %s app %s", req.ServiceID, req.AppAddr)
-	}
-
-	endpoint, err := getEndpoint(session, req.EndpointAddr)
-	if err != nil {
-		return relayer.Response{}, fmt.Errorf("relay: error getting node %s for service %s app %s", req.EndpointAddr, req.ServiceID, req.AppAddr)
-	}
-
-	output, err := p.sendRelay(
-		string(req.ServiceID),
-		endpoint,
-		session,
-		app.aat,
-		// TODO_IMPROVE: chain-specific timeouts
-		0, // SDK to use the default timeout.
-		req.Payload,
-	)
-
-	return relayer.Response{
-		EndpointAddr:   req.EndpointAddr,
-		Bytes:          []byte(output.Response),
-		HTTPStatusCode: output.StatusCode,
-	}, err
-}
-
-func (p *Protocol) getApp(serviceID relayer.ServiceID, appAddr relayer.AppAddr) (app, bool) {
-	p.appCacheMu.RLock()
-	defer p.appCacheMu.RUnlock()
-
-	apps, found := p.appCache[serviceID]
-	if !found {
-		return app{}, false
-	}
-
-	for _, app := range apps {
-		if app.Addr() == appAddr {
-			return app, true
-		}
-	}
-
-	return app{}, false
+	apps := make([]app, len(cachedApps))
+	copy(apps, cachedApps)
+	return apps, true
 }
 
 func (p *Protocol) getSession(serviceID relayer.ServiceID, appAddr string) (provider.Session, bool) {
@@ -218,7 +188,7 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
 		}
 
 		// TODO_IMPROVE: validate the AAT received from the offChainBackend
-		signedAAT, ok := p.offChainBackend.GetSignedAAT(relayer.AppAddr(onchainApp.Address))
+		signedAAT, ok := p.offChainBackend.GetSignedAAT(onchainApp.Address)
 		if !ok {
 			logger.Info().Msg("no AAT configured for app. Skipping the app.")
 			continue
@@ -280,38 +250,31 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 	return sessions
 }
 
-func (p *Protocol) sendRelay(
-	chainID string,
-	node provider.Node,
-	session provider.Session,
-	aat provider.PocketAAT,
-	timeoutMillisec int,
-	payload relayer.Payload,
-) (provider.RelayOutput, error) {
-	fullNodeInput := &sdkrelayer.Input{
-		Blockchain: chainID,
-		Node:       &node,
-		Session:    &session,
-		PocketAAT:  &aat,
-		Data:       payload.Data,
-		Method:     payload.Method,
-		Path:       payload.Path,
+// TODO_UPNEXT(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
+// Then add 2 implementations of the FullNode interface:
+// - CachingFullNode
+// - LazyFullNode
+//
+// getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
+// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
+// matching one of the apps/sessions is returned.
+// This could happen because there is no guarantee on sessions having unique nodes/endpoints.
+// e.g. if there are only 30 Morse endpoints staked for some service, there will be some overlap of endpoints
+// between the two sessions corresponding to two different applications, as each session in Morse contains 24 endpoints.
+func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, apps []app) (map[relayer.EndpointAddr]endpoint, error) {
+	endpoints := make(map[relayer.EndpointAddr]endpoint)
+	for _, app := range apps {
+		session, found := p.getSession(serviceID, app.Addr())
+		if !found {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: no session found for service %s app %s", serviceID, app.Addr())
+		}
+
+		for _, endpoint := range getEndpointsFromAppSession(app, session) {
+			endpoints[endpoint.Addr()] = endpoint
+		}
 	}
 
-	timeout := timeoutMillisec
-	if timeout == 0 {
-		timeout = defaultRelayTimeoutMillisec
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
-	defer cancel()
-
-	output, err := p.fullNode.SendRelay(ctx, fullNodeInput)
-	if output.RelayOutput == nil {
-		return provider.RelayOutput{}, fmt.Errorf("relay: received null output from the SDK")
-	}
-
-	// TODO_DISCUSS: do we need to verify the node/proof structs?
-	return *output.RelayOutput, err
+	return endpoints, nil
 }
 
 func sessionCacheKey(serviceID relayer.ServiceID, appAddr string) string {
