@@ -1,0 +1,25 @@
+endpoints:
+  endpoint_1:
+    endpoint_id: "endpoint_1"
+    auth:
+      authorized_users:
+        "auth0|user_1": {}
+    user_account:
+      account_id: "account_1"
+      plan_type: "PLAN_FREE"
+    rate_limiting:
+      throughput_limit: 30
+      capacity_limit: 100
+      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_DAILY"
+  endpoint_2:
+    endpoint_id: "endpoint_2"
+    auth:
+      authorized_users:
+        "auth0|user_2": {}
+    user_account:
+      account_id: "account_2"
+      plan_type: "PLAN_UNLIMITED"
+    rate_limiting:
+      throughput_limit: 50
+      capacity_limit: 200
+      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"

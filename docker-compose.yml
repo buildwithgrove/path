@@ -25,7 +25,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # -------------------- Profile: 2PATH Entire Stack --------------------
+  # -------------------- Profile 2: PATH Entire Stack --------------------
   # Run with `make path_up`
   # Port: 3001
   #
@@ -93,7 +93,7 @@ services:
     ports:
       - "50051:50051"
     volumes:
-      - ./gateway-endpoints.yaml:/app/gateway-endpoints.yaml
+      - ./envoy/gateway-endpoints.yaml:/app/gateway-endpoints.yaml
     networks:
       - path_network
     healthcheck:
