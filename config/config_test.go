@@ -40,7 +40,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							Retries: 3,
 						},
 					},
-					SignedAATs: map[relayer.AppAddr]morse.SignedAAT{
+					SignedAATs: map[string]morse.SignedAAT{
 						"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
 							ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
 							ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
