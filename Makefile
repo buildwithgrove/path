@@ -100,7 +100,11 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	./envoy/scripts/copy_envoy_config.sh
+	@if [ ! -f ./envoy/envoy.yaml ]; then \
+		./envoy/scripts/copy_envoy_config.sh; \
+	else \
+		echo "./envoy/envoy.yaml already exists, not overwriting."; \
+	fi
 
 .PHONY: copy_envoy_env
 copy_envoy_env: ## copies the example envoy environment variables file to .env file
@@ -109,6 +113,20 @@ copy_envoy_env: ## copies the example envoy environment variables file to .env f
 	else \
 		echo "./envoy/auth_server/.env already exists, not overwriting."; \
 	fi
+
+.PHONY: copy_envoy_gateway_endpoints
+copy_envoy_gateway_endpoints: ## copies the example envoy gateway endpoints file to gateway-endpoints.yaml
+	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
+		cp ./envoy/gateway-endpoints.example.yaml ./envoy/gateway-endpoints.yaml; \
+	else \
+		echo "./envoy/gateway-endpoints.yaml already exists, not overwriting."; \
+	fi
+
+.PHONY: init_envoy
+init_envoy: ## copies the example envoy configuration and gateway endpoints files to their respective files
+	@make copy_envoy_config
+	@make copy_envoy_env
+	@make copy_envoy_gateway_endpoints
 
 ###############################
 ### Generation Make Targets ###

@@ -29,13 +29,14 @@
   - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
   - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
   - [4.4 Other Examples](#44-other-examples)
-- [5. Running PATH](#5-running-path)
-  - [5.1. Setup Config YAML](#51-setup-config-yaml)
-  - [5.2. Start the Container](#52-start-the-container)
-- [6. E2E Tests](#6-e2e-tests)
-  - [6.1. Running Tests](#61-running-tests)
-- [Troubleshooting](#troubleshooting)
-  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
+- [5. Authorization \& Rate Limiting](#5-authorization--rate-limiting)
+- [6. Running PATH](#6-running-path)
+  - [6.1. Setup Config YAML](#61-setup-config-yaml)
+  - [6.2. Start the Container](#62-start-the-container)
+- [7. E2E Tests](#7-e2e-tests)
+  - [7.1. Running Tests](#71-running-tests)
+- [8. Troubleshooting](#8-troubleshooting)
+  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 
 ## 1. Introduction
 
@@ -217,9 +218,19 @@ services:
   - [Shannon](./cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](./config/config.schema.yaml)
 
-## 5. Running PATH
+## 5. Authorization & Rate Limiting
 
-### 5.1. Setup Config YAML
+By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
+
+To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
+
+This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
+
+**For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).**
+
+## 6. Running PATH
+
+### 6.1. Setup Config YAML
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
@@ -229,19 +240,29 @@ services:
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 5.2. Start the Container
+### 6.2. Start the Container
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
+**NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-   ```sh
-   make path_up
-   ```
+1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
 
-   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+   - To run PATH with no dependencies, use:
+
+      ```sh
+      make path_up_gateway
+      ```
+
+     **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
+**
+   - To run PATH with authorization and rate limiting dependencies, use:
+
+      ```sh
+      make path_up
+      ```
+      **In this mode, all requests pass through Envoy Proxy, which runs on port `3001`.**
 
 2. Once the Docker container is running, you may send service requests to the PATH service.
 
-   By default, the PATH service will run on port `3000`.
 
 3. To stop the PATH service, use the following `make` target:
 
@@ -249,7 +270,7 @@ services:
    make path_down
    ```
 
-## 6. E2E Tests
+## 7. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
@@ -267,7 +288,7 @@ Currently, the E2E tests are configured to run against the Shannon testnet.
 
 Future work will include adding support for other protocols.
 
-### 6.1. Running Tests
+### 7.1. Running Tests
 
 To run the tests, use the following `make` targets:
 
@@ -282,9 +303,9 @@ make test_unit
 make test_e2e_shannon_relay
 ```
 
-## Troubleshooting
+## 8. Troubleshooting
 
-### Docker Permissions Issues - Need to run sudo?
+### 8.1. Docker Permissions Issues - Need to run sudo?
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
