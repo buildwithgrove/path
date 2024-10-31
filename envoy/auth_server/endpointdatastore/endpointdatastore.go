@@ -1,8 +1,8 @@
-// The cache package contains the implementation of an in-memory cache that stores
+// The endpointdatastore package contains the implementation of an in-memory store that stores
 // GatewayEndpoints and their associated data from the connected Postgres database.
-// It fetches this data from the remote gRPC server through an initial cache update
-// on startup, then listens for updates from the remote gRPC server to update the cache.
-package cache
+// It fetches this data from the remote gRPC server through an initial store update
+// on startup, then listens for updates from the remote gRPC server to update the store.
+package endpointdatastore
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 	"github.com/buildwithgrove/auth-server/proto"
 )
 
-// EndpointDataCache is an in-memory cache that stores gateway endpoints and their associated data.
-type EndpointDataCache struct {
+// EndpointDataStore is an in-memory store that stores gateway endpoints and their associated data.
+type EndpointDataStore struct {
 	grpcClient proto.GatewayEndpointsClient
 
 	gatewayEndpoints   map[string]*proto.GatewayEndpoint
@@ -26,31 +26,31 @@ type EndpointDataCache struct {
 	logger polylog.Logger
 }
 
-// NewEndpointDataCache creates a new endpoint data cache, which stores GatewayEndpoints in memory for fast access.
-// It initializes the cache by requesting data from a remote gRPC server and listens for updates from the remote server to update the cache.
-func NewEndpointDataCache(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*EndpointDataCache, error) {
-	cache := &EndpointDataCache{
+// NewEndpointDataStore creates a new endpoint data store, which stores GatewayEndpoints in memory for fast access.
+// It initializes the store by requesting data from a remote gRPC server and listens for updates from the remote server to update the store.
+func NewEndpointDataStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*EndpointDataStore, error) {
+	store := &EndpointDataStore{
 		grpcClient: grpcClient,
 
 		gatewayEndpoints:   make(map[string]*proto.GatewayEndpoint),
 		gatewayEndpointsMu: sync.RWMutex{},
 
-		logger: logger.With("component", "endpoint_data_cache"),
+		logger: logger.With("component", "endpoint_data_store"),
 	}
 
-	// Initialize the cache with the GatewayEndpoints from the remote gRPC server.
-	if err := cache.initializeCacheFromRemote(context.Background()); err != nil {
-		return nil, fmt.Errorf("failed to set cache: %w", err)
+	// Initialize the endpoint data store with the GatewayEndpoints from the remote gRPC server.
+	if err := store.initializeStoreFromRemote(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to set store: %w", err)
 	}
 
 	// Start listening for updates from the remote gRPC server.
-	go cache.listenForRemoteUpdates(ctx)
+	go store.listenForRemoteUpdates(ctx)
 
-	return cache, nil
+	return store, nil
 }
 
-// GetGatewayEndpoint returns a GatewayEndpoint from the cache and a bool indicating if it exists in the cache.
-func (c *EndpointDataCache) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
+// GetGatewayEndpoint returns a GatewayEndpoint from the store and a bool indicating if it exists in the store.
+func (c *EndpointDataStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 
@@ -58,8 +58,8 @@ func (c *EndpointDataCache) GetGatewayEndpoint(endpointID string) (*proto.Gatewa
 	return gatewayEndpoint, ok
 }
 
-// initializeCacheFromRemote requests the initial data from the remote gRPC server to set the cache.
-func (c *EndpointDataCache) initializeCacheFromRemote(ctx context.Context) error {
+// initializeStoreFromRemote requests the initial data from the remote gRPC server to set the store.
+func (c *EndpointDataStore) initializeStoreFromRemote(ctx context.Context) error {
 	gatewayEndpointsResponse, err := c.grpcClient.GetInitialData(ctx, &proto.InitialDataRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get initial data from remote server: %w", err)
@@ -74,13 +74,15 @@ func (c *EndpointDataCache) initializeCacheFromRemote(ctx context.Context) error
 	return nil
 }
 
-// listenForRemoteUpdates listens for updates from the remote gRPC server and updates the cache accordingly.
+// listenForRemoteUpdates listens for updates from the remote gRPC server and updates the store accordingly.
 // Updates will be one of three cases:
 // 3. A new GatewayEndpoint was created
 // 1. An existing GatewayEndpoint was updated
 // 2. An existing GatewayEndpoint was deleted
-func (c *EndpointDataCache) listenForRemoteUpdates(ctx context.Context) {
+func (c *EndpointDataStore) listenForRemoteUpdates(ctx context.Context) {
 	for {
+		// TODO_IMPROVE(@commoddity): improve the reconnection logic to better handle the
+		// remote server restarting or other connection issues that may arise.
 		if err := c.connectAndProcessUpdates(ctx); err != nil {
 			c.logger.Error().Err(err).Msg("error in update stream, retrying")
 			<-time.After(time.Second * 2)
@@ -88,7 +90,8 @@ func (c *EndpointDataCache) listenForRemoteUpdates(ctx context.Context) {
 	}
 }
 
-func (c *EndpointDataCache) connectAndProcessUpdates(ctx context.Context) error {
+// connectAndProcessUpdates connects to the remote gRPC server and processes updates from the server.
+func (c *EndpointDataStore) connectAndProcessUpdates(ctx context.Context) error {
 	stream, err := c.grpcClient.StreamUpdates(ctx, &proto.UpdatesRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to stream updates from remote server: %w", err)
