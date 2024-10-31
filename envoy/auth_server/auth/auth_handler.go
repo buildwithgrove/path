@@ -1,6 +1,6 @@
 // The auth package contains the implementation of the Envoy External Authorization gRPC service.
 // It is responsible for receiving requests from Envoy and authorizing them based on the GatewayEndpoint
-// data stored in the cache package. It receives a check request from Envoy, containing a user ID parsed
+// data stored in the endpointdatastore package. It receives a check request from Envoy, containing a user ID parsed
 // from a JWT in the previous HTTP filter defined in `envoy.yaml`.
 package auth
 
@@ -16,7 +16,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
-	"github.com/buildwithgrove/auth-server/cache"
+	"github.com/buildwithgrove/auth-server/endpointdatastore"
 	"github.com/buildwithgrove/auth-server/proto"
 )
 
@@ -32,20 +32,20 @@ const (
 	errBody = `{"code": %d, "message": "%s"}`
 )
 
-// The endpointDataCache contains an in-memory cache of GatewayEndpoints
+// The endpointDataStore interface contains an in-memory store of GatewayEndpoints
 // and their associated data from the connected Postgres database.
-type endpointDataCache interface {
+type endpointDataStore interface {
 	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
 
-// Enforce that the EndpointDataCache implements the endpointDataCache interface.
-var _ endpointDataCache = &cache.EndpointDataCache{}
+// Enforce that the EndpointDataStore implements the endpointDataStore interface.
+var _ endpointDataStore = &endpointdatastore.EndpointDataStore{}
 
 // struct with check method
 type AuthHandler struct {
-	// The endpointDataCache contains an in-memory cache of GatewayEndpoints
+	// The endpointDataStore contains an in-memory store of GatewayEndpoints
 	// and their associated data from the connected Postgres database.
-	Cache endpointDataCache
+	EndpointDataStore endpointDataStore
 	// The authorizers represents a list of authorization types that must
 	// pass before a request may be forwarded to the PATH service.
 	// Configured in `main.go` and passed to the filter.
@@ -93,7 +93,7 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
 	}
 
-	// Fetch GatewayEndpoint from endpoints cache
+	// Fetch GatewayEndpoint from endpoint data store
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)
 	if !ok {
 		return getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
@@ -126,9 +126,9 @@ func extractEndpointID(urlPath string) (string, error) {
 	return "", fmt.Errorf("invalid path: %s", urlPath)
 }
 
-// getGatewayEndpoint fetches the GatewayEndpoint from the database and a bool indicating if it was found
+// getGatewayEndpoint fetches the GatewayEndpoint from the endpoint data store and a bool indicating if it was found
 func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
-	return a.Cache.GetGatewayEndpoint(endpointID)
+	return a.EndpointDataStore.GetGatewayEndpoint(endpointID)
 }
 
 // authGatewayEndpoint performs all configured authorization checks on the request

@@ -1,11 +1,12 @@
 services:
 
-  # -------------------- PATH Gateway Only --------------------
+  # -------------------- Profile 1: PATH Gateway Only --------------------
+  # Run with `make path_up_gateway`
+  # Port: 3000
+  #
   # This stack runs only the PATH Gateway service, with no auth or
   # other dependencies. This is the simplest way to get PATH running.
   #
-  # This service will be run with `make path_up_gateway`, 
-  # which enables the `path-gateway` profile that exposes port 3000.
   path_gateway:
     container_name: path_gateway
     profiles:
@@ -24,14 +25,17 @@ services:
       timeout: 10s
       retries: 5
 
-  # -------------------- PATH Entire Stack --------------------
-  # This stack runs the PATH Gateway service, with all dependencies.
-  # This is the most comprehensive way to get PATH running.
+  # -------------------- Profile: 2PATH Entire Stack --------------------
+  # Run with `make path_up`
+  # Port: 3001
   #
-  # The whole stack will be run with `make path_up`.
+  # This stack runs the PATH Gateway service, with all dependencies.
+  # This is the most comprehensive way to get PATH running as it includes
+  # authorization and rate limiting for specific PATH gateway endpoints.
 
   # - Envoy Proxy -
   # This is the Envoy proxy that sits in front of the PATH Gateway Service.
+  # All ingress traffic to PATH will first hit the Envoy proxy on port 3001.
   #
   # Request Authorization and Rate Limiting is handled by the Envoy proxy.
   # - Authorization is handled using the `jwt-authn` filter and an external auth service.
@@ -75,8 +79,8 @@ services:
 
   # PATH gRPC Auth Server
   # DEV_NOTE: This is a simple implementation of a gRPC remote server 
-  # that handles providing the external authorization service with the
-  # necessary information to make an authorization decision.
+  # that handles providing the Envoy External Authorization Service
+  # with the necessary information to make an authorization decision.
   # eg. the GatewayEndpoints that should be used for the request.
   #
   # The actual implementation is entirely up to the Gateway operator.
@@ -132,6 +136,7 @@ services:
   # - PATH -
   # This is the main PATH service that handles service requests.
   # It sits behind the Envoy proxy, which handles auth and rate limiting.
+  # All ingress traffic to PATH will first hit the Envoy proxy on port 3001.
   # 
   # When run as part of the whole stack, this service does not expose any ports
   # outside of the container. Instead, all traffic is routed through the Envoy proxy.

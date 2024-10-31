@@ -18,7 +18,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/buildwithgrove/auth-server/auth"
-	"github.com/buildwithgrove/auth-server/cache"
+	"github.com/buildwithgrove/auth-server/endpointdatastore"
 	"github.com/buildwithgrove/auth-server/proto"
 )
 
@@ -85,10 +85,10 @@ func main() {
 	// Create a new gRPC client for the GatewayEndpoints service
 	grpcClient := proto.NewGatewayEndpointsClient(conn)
 
-	// Create a new GatewayEndpoints cache
+	// Create a new endpoint data store
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cache, err := cache.NewEndpointDataCache(ctx, grpcClient, logger)
+	endpointDataStore, err := endpointdatastore.NewEndpointDataStore(ctx, grpcClient, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +101,7 @@ func main() {
 
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
-		Cache: cache,
+		EndpointDataStore: endpointDataStore,
 		// TODO_IMPROVE: make the authorizers configurable from the plugin config YAML
 		Authorizers: []auth.Authorizer{
 			&auth.ProviderUserIDAuthorizer{},

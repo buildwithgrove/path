@@ -187,13 +187,13 @@ func Test_Check(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockCache := NewMockendpointDataCache(ctrl)
+			mockStore := NewMockendpointDataStore(ctrl)
 			if test.endpointID != "" {
-				mockCache.EXPECT().GetGatewayEndpoint(test.endpointID).Return(test.mockEndpointReturn, test.mockEndpointReturn.EndpointId != "")
+				mockStore.EXPECT().GetGatewayEndpoint(test.endpointID).Return(test.mockEndpointReturn, test.mockEndpointReturn.EndpointId != "")
 			}
 
 			authHandler := &AuthHandler{
-				Cache: mockCache,
+				EndpointDataStore: mockStore,
 				Authorizers: []Authorizer{
 					&ProviderUserIDAuthorizer{},
 				},
