@@ -1,4 +1,4 @@
-package endpointdatastore
+package endpointstore
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func (m *MockStream) Recv() (*proto.Update, error) {
 	return update, nil
 }
 
-func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.Update, ctrl *gomock.Controller) *EndpointDataStore {
+func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.Update, ctrl *gomock.Controller) *EndpointStore {
 	mockClient := NewMockGatewayEndpointsClient(ctrl)
 
 	// Set up the expected call for GetInitialData
@@ -37,7 +37,7 @@ func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.Update,
 	mockStream := &MockStream{updates: updates}
 	mockClient.EXPECT().StreamUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil).AnyTimes()
 
-	store, err := NewEndpointDataStore(ctx, mockClient, polyzero.NewLogger())
+	store, err := NewEndpointStore(ctx, mockClient, polyzero.NewLogger())
 	require.NoError(t, err)
 
 	return store
@@ -118,7 +118,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 	}
 }
 
-// getTestGatewayEndpoints returns a mock response for the initial endpoint data store data, received when the endpoint data store is first created
+// getTestGatewayEndpoints returns a mock response for the initial endpoint store data, received when the endpoint store is first created
 func getTestGatewayEndpoints() *proto.InitialDataResponse {
 	return &proto.InitialDataResponse{
 		Endpoints: map[string]*proto.GatewayEndpoint{
@@ -161,7 +161,7 @@ func getTestGatewayEndpoints() *proto.InitialDataResponse {
 	}
 }
 
-// getTestUpdate returns a mock update for a given endpoint ID, used to test the endpoint data store's behavior when updates are received
+// getTestUpdate returns a mock update for a given endpoint ID, used to test the endpoint store's behavior when updates are received
 // Will be one of three cases:
 // 1. A new GatewayEndpoint was created (endpoint_3)
 // 2. An existing GatewayEndpoint was updated (endpoint_2)

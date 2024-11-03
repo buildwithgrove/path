@@ -18,7 +18,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/buildwithgrove/path/envoy/auth_server/auth"
-	"github.com/buildwithgrove/path/envoy/auth_server/endpointdatastore"
+	store "github.com/buildwithgrove/path/envoy/auth_server/endpoint_store"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
@@ -85,10 +85,10 @@ func main() {
 	// Create a new gRPC client for the GatewayEndpoints service
 	grpcClient := proto.NewGatewayEndpointsClient(conn)
 
-	// Create a new endpoint data store
+	// Create a new endpoint store
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	endpointDataStore, err := endpointdatastore.NewEndpointDataStore(ctx, grpcClient, logger)
+	endpointStore, err := store.NewEndpointStore(ctx, grpcClient, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +101,7 @@ func main() {
 
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
-		EndpointDataStore: endpointDataStore,
+		EndpointStore: endpointStore,
 		// TODO_IMPROVE: make the authorizers configurable from the plugin config YAML
 		Authorizers: []auth.Authorizer{
 			&auth.ProviderUserIDAuthorizer{},

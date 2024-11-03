@@ -1,8 +1,8 @@
-// The endpointdatastore package contains the implementation of an in-memory store that stores
+// The endpointstore package contains the implementation of an in-memory store that stores
 // GatewayEndpoints and their associated data from the connected Postgres database.
 // It fetches this data from the remote gRPC server through an initial store update
 // on startup, then listens for updates from the remote gRPC server to update the store.
-package endpointdatastore
+package endpointstore
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
-// EndpointDataStore is an in-memory store that stores gateway endpoints and their associated data.
-type EndpointDataStore struct {
+// EndpointStore is an in-memory store that stores gateway endpoints and their associated data.
+type EndpointStore struct {
 	grpcClient proto.GatewayEndpointsClient
 
 	gatewayEndpoints   map[string]*proto.GatewayEndpoint
@@ -26,10 +26,10 @@ type EndpointDataStore struct {
 	logger polylog.Logger
 }
 
-// NewEndpointDataStore creates a new endpoint data store, which stores GatewayEndpoints in memory for fast access.
+// NewEndpointStore creates a new endpoint store, which stores GatewayEndpoints in memory for fast access.
 // It initializes the store by requesting data from a remote gRPC server and listens for updates from the remote server to update the store.
-func NewEndpointDataStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*EndpointDataStore, error) {
-	store := &EndpointDataStore{
+func NewEndpointStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*EndpointStore, error) {
+	store := &EndpointStore{
 		grpcClient: grpcClient,
 
 		gatewayEndpoints:   make(map[string]*proto.GatewayEndpoint),
@@ -38,7 +38,7 @@ func NewEndpointDataStore(ctx context.Context, grpcClient proto.GatewayEndpoints
 		logger: logger.With("component", "endpoint_data_store"),
 	}
 
-	// Initialize the endpoint data store with the GatewayEndpoints from the remote gRPC server.
+	// Initialize the endpoint store with the GatewayEndpoints from the remote gRPC server.
 	if err := store.initializeStoreFromRemote(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to set store: %w", err)
 	}
@@ -50,7 +50,7 @@ func NewEndpointDataStore(ctx context.Context, grpcClient proto.GatewayEndpoints
 }
 
 // GetGatewayEndpoint returns a GatewayEndpoint from the store and a bool indicating if it exists in the store.
-func (c *EndpointDataStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
+func (c *EndpointStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 
@@ -59,7 +59,7 @@ func (c *EndpointDataStore) GetGatewayEndpoint(endpointID string) (*proto.Gatewa
 }
 
 // initializeStoreFromRemote requests the initial data from the remote gRPC server to set the store.
-func (c *EndpointDataStore) initializeStoreFromRemote(ctx context.Context) error {
+func (c *EndpointStore) initializeStoreFromRemote(ctx context.Context) error {
 	gatewayEndpointsResponse, err := c.grpcClient.GetInitialData(ctx, &proto.InitialDataRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get initial data from remote server: %w", err)
@@ -79,7 +79,7 @@ func (c *EndpointDataStore) initializeStoreFromRemote(ctx context.Context) error
 // 3. A new GatewayEndpoint was created
 // 1. An existing GatewayEndpoint was updated
 // 2. An existing GatewayEndpoint was deleted
-func (c *EndpointDataStore) listenForRemoteUpdates(ctx context.Context) {
+func (c *EndpointStore) listenForRemoteUpdates(ctx context.Context) {
 	for {
 		// TODO_IMPROVE(@commoddity): improve the reconnection logic to better handle the
 		// remote server restarting or other connection issues that may arise.
@@ -91,7 +91,7 @@ func (c *EndpointDataStore) listenForRemoteUpdates(ctx context.Context) {
 }
 
 // connectAndProcessUpdates connects to the remote gRPC server and processes updates from the server.
-func (c *EndpointDataStore) connectAndProcessUpdates(ctx context.Context) error {
+func (c *EndpointStore) connectAndProcessUpdates(ctx context.Context) error {
 	stream, err := c.grpcClient.StreamUpdates(ctx, &proto.UpdatesRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to stream updates from remote server: %w", err)
