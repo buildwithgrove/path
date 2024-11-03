@@ -17,9 +17,9 @@ import (
 	// autoload env vars
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/buildwithgrove/auth-server/auth"
-	"github.com/buildwithgrove/auth-server/endpointdatastore"
-	"github.com/buildwithgrove/auth-server/proto"
+	"github.com/buildwithgrove/path/envoy/auth_server/auth"
+	"github.com/buildwithgrove/path/envoy/auth_server/endpointdatastore"
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 // The auth server runs on port 10003.

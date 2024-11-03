@@ -12,7 +12,7 @@ package auth
 import (
 	reflect "reflect"
 
-	proto "github.com/buildwithgrove/auth-server/proto"
+	proto "github.com/buildwithgrove/path/envoy/auth_server/proto"
 	gomock "go.uber.org/mock/gomock"
 )
 

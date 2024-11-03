@@ -1,4 +1,4 @@
-module github.com/buildwithgrove/auth-server
+module github.com/buildwithgrove/path/envoy/auth_server
 
 go 1.23.1
 
