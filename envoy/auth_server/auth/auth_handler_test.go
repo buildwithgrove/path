@@ -13,7 +13,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
-	"github.com/buildwithgrove/auth-server/proto"
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 func Test_Check(t *testing.T) {

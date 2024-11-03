@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/buildwithgrove/auth-server/proto"
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"

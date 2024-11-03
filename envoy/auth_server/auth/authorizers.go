@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/buildwithgrove/auth-server/proto"
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 // The Authorizer interface performs requests authorization, for example using

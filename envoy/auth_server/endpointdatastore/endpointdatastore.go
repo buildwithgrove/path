@@ -13,7 +13,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/auth-server/proto"
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 // EndpointDataStore is an in-memory store that stores gateway endpoints and their associated data.
