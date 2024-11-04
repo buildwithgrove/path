@@ -85,6 +85,14 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
+                  # Ensure the request does not have the `x-jwt-user-id` header set before
+                  # it is forwarded to the external authorization filter.
+                  - name: envoy.filters.http.header_mutation
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+                      mutations:
+                        request_mutations:
+                          - remove: x-jwt-user-id
                   # The JWT Authn filter performs JWT verification and sets the `x-jwt-user-id` header.
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
@@ -93,7 +101,13 @@ static_resources:
                         - match:
                             prefix: "/v1"
                           requires:
-                            provider_name: auth_provider
+                            requires_any:
+                              requirements:
+                                # Allow the request to pass if no JWT is provided.
+                                # The 'x-jwt-user-id' header will not be set in this case.
+                                - allow_missing: {}
+                                # Enforce validation with the provider if JWT is present.
+                                - provider_name: auth_provider
                       providers:
                         auth_provider:
                           # SENSITIVE VALUE, DO NOT SHARE OUTSIDE YOUR ORGANIZATION
