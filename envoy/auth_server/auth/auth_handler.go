@@ -95,10 +95,11 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 
 	// If the GatewayEndpoint requires auth, perform all configured authorization checks
 	if gatewayEndpoint.GetAuth().GetRequireAuth() {
+
 		// Get the provider user ID from the headers set from the JWT sub claim
 		providerUserID, ok := headers[reqHeaderAccountUserID]
 		if !ok || providerUserID == "" {
-			return getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
+			return getDeniedCheckResponse("unauthorized", envoy_type.StatusCode_Unauthorized), nil
 		}
 
 		// Perform all configured authorization checks
