@@ -6,18 +6,20 @@
 <br/>
 
 # Table of Contents <!-- omit in toc -->
-
+****
 - [1. Overview](#1-overview)
   - [1.1. Components](#11-components)
 - [2. Quickstart](#2-quickstart)
 - [3. Envoy Proxy](#3-envoy-proxy)
   - [3.1. Contents](#31-contents)
-- [4. External Authorization Server](#4-external-authorization-server)
-  - [4.1. Remote gRPC Server](#41-remote-grpc-server)
-    - [4.1.1. Example Gateway Endpoint Data File](#411-example-gateway-endpoint-data-file)
-  - [4.2. Environment Variables](#42-environment-variables)
-- [5. Rate Limiter](#5-rate-limiter)
-- [6. Architecture](#6-architecture)
+  - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
+- [4. JSON Web Token (JWT) Verification](#4-json-web-token-jwt-verification)
+- [5. External Authorization Server](#5-external-authorization-server)
+  - [5.1. Remote gRPC Server](#51-remote-grpc-server)
+    - [5.1.1. Example Gateway Endpoint Data File](#511-example-gateway-endpoint-data-file)
+  - [5.2. Environment Variables](#52-environment-variables)
+- [6. Rate Limiter](#6-rate-limiter)
+- [7. Architecture](#7-architecture)
 
 
 ## 1. Overview
@@ -69,7 +71,33 @@ The `/envoy` directory houses the configuration files and settings for Envoy Pro
   - `gateway-endpoints.yaml` is Git ignored as it contains sensitive information.
 - **ratelimit.yaml**: Configuration for the rate limiting service.
 
-## 4. External Authorization Server
+### 3.2. Envoy HTTP Filters
+
+The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
+
+- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `x-jwt-user-id` header set before it is forwarded upstream.
+- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `x-jwt-user-id` header.
+- **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
+- **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
+
+## 4. JSON Web Token (JWT) Verification
+
+For GatewayEndpoints with the `RequireAuth` field set to `true`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
+
+```bash
+-H "Authorization: Bearer <JWT>"
+```
+
+The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error. 
+
+The `ext_authz` filter will use the `x-jwt-user-id` header to make an authorization decision; if the GatewayEndpoint's `auth.authorized_users` field contains the `x-jwt-user-id` value, the request will be authorized.
+
+For GatewayEndpoints with the `RequireAuth` field set to `false`, no JWT is required to access the PATH service. The request may be sent to the PATH Envoy Proxy without the `Authorization` header set. The `jwt_authn` filter will forward the request without setting the `x-jwt-user-id` header.
+
+For more information, see:
+- [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+
+## 5. External Authorization Server
 
 The `envoy/auth_server` directory contains the Go/gRPC server responsible for authorizing requests forwarded by Envoy Proxy. It evaluates whether incoming requests are authorized to access the PATH service.
 
@@ -78,13 +106,13 @@ This server communicates with a remote gRPC server to populate its in-memory`Gat
 For more information, see:
 - [Envoy External Authorization Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 
-### 4.1. Remote gRPC Server
+### 5.1. Remote gRPC Server
 
 The implementation of the remote gRPC server is up to the Gateway operator. 
 
 A default Docker image is provided to handle live-loading of data from a `gateway-endpoints.yaml` file for simple use cases or quick startup of PATH.
 
-#### 4.1.1. Example Gateway Endpoint Data File
+#### 5.1.1. Example Gateway Endpoint Data File
 
 An example `gateway-endpoints.yaml` file is provided at [envoy/gateway-endpoints.example.yaml](./gateway-endpoints.example.yaml).
 
@@ -93,6 +121,7 @@ endpoints:
   endpoint_1:
     endpoint_id: "endpoint_1"
     auth:
+      require_auth: true
       authorized_users:
         "auth0|user_1": {}
     user_account:
@@ -105,8 +134,7 @@ endpoints:
   endpoint_2:
     endpoint_id: "endpoint_2"
     auth:
-      authorized_users:
-        "auth0|user_2": {}
+      require_auth: false
     user_account:
       account_id: "account_2"
       plan_type: "PLAN_UNLIMITED"
@@ -116,11 +144,13 @@ endpoints:
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
+_In this example, `endpoint_1` is authorized for `user_1` and `endpoint_2` is authorized for all users._
+
 Run `make copy_envoy_gateway_endpoints` to create an example `gateway-endpoints.yaml` file used by the remote gRPC server.
 
 The contents of this file represent the gateway endpoints that are authorized to use the PATH service for a specific gateway operator.
 
-### 4.2. Environment Variables
+### 5.2. Environment Variables
 
 The external authorization server requires the following environment variables to be set:
 
@@ -129,9 +159,11 @@ The external authorization server requires the following environment variables t
 
 Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally in Docker.
 
-## 5. Rate Limiter
+## 6. Rate Limiter
 
 Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file. 
+
+The default throughput limit is 30 requests per second for GatewayEndpoints with the `PLAN_FREE` plan type.
 
 For more advanced configuration options, refer to the Envoy documentation:
 
@@ -139,7 +171,7 @@ For more advanced configuration options, refer to the Envoy documentation:
 
 - [Envoy Rate Limit Github](https://github.com/envoyproxy/ratelimit)
 
-## 6. Architecture
+## 7. Architecture
 
 ```mermaid
 graph TD
