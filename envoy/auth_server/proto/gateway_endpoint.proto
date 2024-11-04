@@ -64,8 +64,10 @@ message GatewayEndpoint {
 
 // The authorization settings for a GatewayEndpoint.
 message Auth {
+  // A boolean indicating whether the GatewayEndpoint requires authentication.
+  bool require_auth = 1;
   // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
-  map<string, Empty> authorized_users = 1;
+  map<string, Empty> authorized_users = 2;
 }
 
 // A UserAccount contains the PlanType and may have multiple GatewayEndpoints.

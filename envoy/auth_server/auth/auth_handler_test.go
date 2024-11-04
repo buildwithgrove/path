@@ -110,6 +110,44 @@ func Test_Check(t *testing.T) {
 			},
 		},
 		{
+			name: "should return ok check response if endpoint does not require auth",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1/public_endpoint",
+							Headers: map[string]string{
+								reqHeaderAccountUserID: "auth0|ulfric_stormcloak",
+							},
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.OK),
+					Message: "ok",
+				},
+				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+					OkResponse: &envoy_auth.OkHttpResponse{
+						Headers: []*envoy_core.HeaderValueOption{
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "public_endpoint"}},
+						},
+					},
+				},
+			},
+			endpointID: "public_endpoint",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "public_endpoint",
+				Auth: &proto.Auth{
+					RequireAuth: false,
+					AuthorizedUsers: map[string]*proto.Empty{
+						"auth0|chrisjen_avasarala": {},
+					},
+				},
+			},
+		},
+		{
 			name: "should return denied check response if gateway endpoint not found",
 			checkReq: &envoy_auth.CheckRequest{
 				Attributes: &envoy_auth.AttributeContext{
@@ -172,6 +210,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_found",
 				Auth: &proto.Auth{
+					RequireAuth: true,
 					AuthorizedUsers: map[string]*proto.Empty{
 						"auth0|chrisjen_avasarala": {},
 					},

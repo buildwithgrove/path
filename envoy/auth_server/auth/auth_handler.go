@@ -81,12 +81,6 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 		return getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
 	}
 
-	// Get the provider user ID from the headers set from the JWT sub claim
-	providerUserID, ok := headers[reqHeaderAccountUserID]
-	if !ok || providerUserID == "" {
-		return getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
-	}
-
 	// Extract the endpoint ID from the path
 	endpointID, err := extractEndpointID(path)
 	if err != nil {
@@ -99,9 +93,18 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 		return getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
 	}
 
-	// Perform all configured authorization checks
-	if err := a.authGatewayEndpoint(providerUserID, gatewayEndpoint); err != nil {
-		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
+	// If the GatewayEndpoint requires auth, perform all configured authorization checks
+	if gatewayEndpoint.GetAuth().GetRequireAuth() {
+		// Get the provider user ID from the headers set from the JWT sub claim
+		providerUserID, ok := headers[reqHeaderAccountUserID]
+		if !ok || providerUserID == "" {
+			return getDeniedCheckResponse("provider user ID not found in JWT", envoy_type.StatusCode_Unauthorized), nil
+		}
+
+		// Perform all configured authorization checks
+		if err := a.authGatewayEndpoint(providerUserID, gatewayEndpoint); err != nil {
+			return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
+		}
 	}
 
 	// Add endpoint ID and rate limiting values to the headers
