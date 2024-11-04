@@ -94,6 +94,8 @@ services:
       - "50051:50051"
     volumes:
       - ./envoy/gateway-endpoints.yaml:/app/gateway-endpoints.yaml
+    environment:
+      - YAML_FILEPATH=/app/gateway-endpoints.yaml
     networks:
       - path_network
     healthcheck:
