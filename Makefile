@@ -14,6 +14,9 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 ### Run Path Make Targets ###
 #############################
+.PHONY: path_build
+path_build: ## build the path binary
+	go build -o bin/path ./cmd
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
@@ -23,6 +26,7 @@ path_up_gateway: ## Run just the PATH gateway without any dependencies
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
 	docker compose up -d --build --no-deps path_gateway
 
+# TODO_UPNEXT(@adshmh): update path_up and path_down to use Tilt, and remove docker compose
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
 	docker compose up -d
