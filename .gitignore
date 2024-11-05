@@ -45,4 +45,6 @@ tmp/*
 
 # Envoy config with sensitive information
 envoy.yaml
+
+# Gateway Endpoints YAML file for loading local auth data
 gateway-endpoints.yaml
