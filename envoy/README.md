@@ -21,6 +21,8 @@
     - [5.1.1. Example Gateway Endpoint Data File](#511-example-gateway-endpoint-data-file)
   - [5.2. Environment Variables](#52-environment-variables)
 - [6. Rate Limiter](#6-rate-limiter)
+  - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
+  - [6.2. Documentation and Examples](#62-documentation-and-examples)
 - [7. Architecture](#7-architecture)
 
 
@@ -104,27 +106,31 @@ The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoypr
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Envoy
-    participant JWTFilter as JWT HTTP Filter
-    participant AuthServer as PATH Auth Server
-    participant RateLimiter as PATH Rate Limiter
-    participant Service as PATH Service
+    participant Envoy as Envoy<br>Proxy
+    participant JWTFilter as JWT HTTP Filter<br>(jwt_authn)
+    participant AuthServer as PATH Auth Server<br>(ext_authz)
+    participant RateLimiter as PATH Rate Limiter<br>(ratelimit)
+    participant Service as PATH<br>Service
+
+    %% Add bidirectional arrow for Upstream and Downstream
+    Note over Client,Service: Downstream <-------------------------------------> Upstream
 
     Client->>Envoy: 1. Send Request
     Envoy->>JWTFilter: 2. Parse JWT (if present)
-    JWTFilter-->>Envoy: Return parsed x-jwt-user-id (if present)
-    Envoy->>AuthServer: 3. Forward Request
-    AuthServer->>AuthServer: 4. Authorize (if required)
-    AuthServer-->>Envoy: 5. Auth Failed (if rejected)
-    Envoy-->>Client: Reject Request (Auth Failed)
-    AuthServer-->>Envoy: 6. Auth Success (if accepted)
-    Envoy->>RateLimiter: 7. Set Rate Limit Labels (if required)
-    RateLimiter->>RateLimiter: 8. Rate Limit Check
-    RateLimiter-->>Envoy: Rate Check Failed
-    Envoy-->>Client: Reject Request (Rate Limit Exceeded)
-    RateLimiter-->>Envoy: Rate Check Passed
-    Envoy->>Service: 9. Forward Request
-    Service-->>Client: 10. Return Response
+    JWTFilter-->>Envoy: 3. Return parsed x-jwt-user-id (if present)
+    Envoy->>AuthServer: 4. Forward Request
+    AuthServer->>AuthServer: 5. Authorize (if required)
+    AuthServer->>AuthServer: 6. Set Rate Limit descriptors (if required)
+    AuthServer-->>Envoy: 7a. Auth Failed (if rejected)
+    Envoy-->>Client: 7a. Reject Request (Auth Failed)
+    AuthServer-->>Envoy: 7b. Auth Success (if accepted)
+    Envoy->>RateLimiter: 8. Perform Rate Limit Check
+    RateLimiter->>RateLimiter: 9. Rate Limit Check
+    RateLimiter-->>Envoy: 10a. Rate Limit Check Failed
+    Envoy-->>Client: 10a. Reject Request (Rate Limit Exceeded)
+    RateLimiter-->>Envoy: 10b. Rate Limit Check Passed
+    Envoy->>Service: 11. Forward Request
+    Service-->>Client: 12. Return Response
 ```
 
 ## 4. JSON Web Token (JWT) Verification
@@ -138,7 +144,7 @@ _Example Request Header:_
 
 The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error. 
 
-The `ext_authz` filter will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
+The `Go External Authorization Server` will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
 ```
@@ -152,7 +158,7 @@ For more information, see:
 
 ## 5. External Authorization Server
 
-The `envoy/auth_server` directory contains the Go/gRPC server responsible for authorizing requests forwarded by Envoy Proxy. It evaluates whether incoming requests are authorized to access the PATH service.
+The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
 This server communicates with a remote gRPC server to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
 
@@ -161,7 +167,7 @@ For more information, see:
 
 ### 5.1. Remote gRPC Server
 
-**The implementation of the remote gRPC server is up to the Gateway operator. **
+**The implementation of the remote gRPC server is up to the Gateway operator.**
 
 A default Docker image is provided to handle live-loading of data from a `gateway-endpoints.yaml` file for simple use cases or quick startup of PATH.
 
@@ -183,21 +189,18 @@ endpoints:
         "auth0|user_1": {}
     user_account:
       account_id: "account_1"
-      plan_type: "PLAN_FREE"
-    rate_limiting:
-      throughput_limit: 30
-      capacity_limit: 100
-      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_DAILY"
+      plan_type: "PLAN_UNLIMITED"
+
   endpoint_2:
     endpoint_id: "endpoint_2"
     auth:
       require_auth: false
     user_account:
       account_id: "account_2"
-      plan_type: "PLAN_UNLIMITED"
+      plan_type: "PLAN_FREE"
     rate_limiting:
-      throughput_limit: 50
-      capacity_limit: 200
+      throughput_limit: 30
+      capacity_limit: 100000
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
@@ -221,6 +224,43 @@ Run `make copy_envoy_env` to create the `.env` file needed to run the external a
 Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file. 
 
 The default throughput limit is 30 requests per second for GatewayEndpoints with the `PLAN_FREE` plan type.
+
+### 6.1. Rate Limit Configuration
+
+1. The `Go External Authorization Server` sets the `x-rl-endpoint-id` and `x-rl-plan` headers if the `GatewayEndpoint` for the request should be rate limited.
+
+2. Envoy Proxy is configured to forward the `x-rl-endpoint-id` and `x-rl-plan` headers to the rate limiter service as descriptors.
+    ```yaml
+    rate_limits:
+      - actions:
+          - request_headers:
+              header_name: "x-rl-endpoint-id"
+              descriptor_key: "x-rl-endpoint-id"
+          - request_headers:
+              header_name: "x-rl-plan"
+              descriptor_key: "x-rl-plan"
+    ```
+    _envoy.yaml_
+
+3. The rate limiter service is configured to limit the rate for `PLAN_FREE` GatewayEndpoints to 30 requests per second based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+
+    ```yaml
+    domain: rl
+    descriptors:  
+      - key: x-rl-endpoint-id    
+        descriptors:      
+          - key: x-rl-plan
+            value: "PLAN_FREE"
+            rate_limit:
+              unit: second
+              requests_per_unit: 30      
+    ```
+    _ratelimit.yaml_
+
+### 6.2. Documentation and Examples
+
+As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
+- [Understanding Envoy Rate Limits](https://www.aboutwayfair.com/tech-innovation/understanding-envoy-rate-limits)
 
 For more advanced configuration options, refer to the Envoy documentation:
 

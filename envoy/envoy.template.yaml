@@ -180,10 +180,10 @@ static_resources:
                             # Configure descriptors for rate limiting here
                             rate_limits:
                               - actions:
-                                  # Only send descriptors to the ratelimit service if the `rl-*` headers are set
+                                  # Only send descriptors to the ratelimit service if the `x-rl-*` headers are set
                                   - request_headers:
-                                      header_name: "x-jwt-endpoint-id"
-                                      descriptor_key: "rl-endpoint-id"
+                                      header_name: "x-rl-endpoint-id"
+                                      descriptor_key: "x-rl-endpoint-id"
                                   - request_headers:
                                       header_name: "x-rl-plan"
                                       descriptor_key: "x-rl-plan"
