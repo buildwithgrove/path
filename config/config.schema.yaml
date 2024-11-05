@@ -101,7 +101,7 @@ properties:
               - host_port
           gateway_address:
             type: string
-            pattern: "^pokt1[0-9a-zA-Z]{43}$"
+            pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
           gateway_private_key:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
@@ -109,7 +109,7 @@ properties:
             type: array
             items:
               type: string
-              pattern: "^pokt1[0-9a-zA-Z]{43}$"
+              pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
         required:
           - rpc_url
           - grpc_config
@@ -122,7 +122,7 @@ properties:
     type: object
     patternProperties:
       "^[a-zA-Z0-9]+$":
-      type: object
+        type: object
         properties:
           alias:
             type: string
@@ -144,5 +144,15 @@ properties:
       idle_timeout:
         type: string
 
+  # Hydrator Configuration (optional)
+  hydrator_config:
+    type: object
+    properties:
+      service_ids:
+        type: array
+        items:
+          type: string
+
 required:
   - services
+additionalProperties: false
