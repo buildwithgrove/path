@@ -122,7 +122,7 @@ properties:
     type: object
     patternProperties:
       "^[a-zA-Z0-9]+$":
-      type: object
+        type: object
         properties:
           alias:
             type: string
