@@ -1,4 +1,8 @@
 type: object
+additionalProperties: false
+required:
+  - services
+
 properties:
   # NOTE: Exactly one of either "morse_config" or "shannon_config" must be present
 
@@ -9,9 +13,17 @@ properties:
   # Morse Configuration (required for Morse gateways)
   morse_config:
     type: object
+    additionalProperties: false
+    required:
+      - client_public_key
+      - application_public_key
+      - application_signature
     properties:
       full_node_config:
         type: object
+        additionalProperties: false
+        required:
+          - url
         properties:
           url:
             type: string
@@ -21,6 +33,7 @@ properties:
             pattern: "^[0-9a-fA-F]{64}$"
           http_config:
             type: object
+            additionalProperties: false
             properties:
               retries:
                 type: integer
@@ -28,6 +41,7 @@ properties:
                 type: string
               transport:
                 type: object
+                additionalProperties: false
                 properties:
                   max_conns_per_host:
                     type: integer
@@ -43,16 +57,17 @@ properties:
                     type: string
           request_config:
             type: object
+            additionalProperties: false
             properties:
               retries:
                 type: integer
-        required:
-          - url
       signed_aats:
         type: object
+        additionalProperties: false
         patternProperties:
           "^[0-9a-fA-F]{40}$":
             type: object
+            additionalProperties: false
             properties:
               client_public_key:
                 type: string
@@ -63,23 +78,28 @@ properties:
               application_signature:
                 type: string
                 pattern: "^[0-9a-fA-F]{128}$"
-            required:
-              - client_public_key
-              - application_public_key
-              - application_signature
 
   # Shannon Configuration (required for Shannon gateways)
   shannon_config:
     type: object
+    additionalProperties: false
     properties:
       full_node_config:
         type: object
+        additionalProperties: false
+        required:
+          - rpc_url
+          - grpc_config
+          - gateway_address
+          - gateway_private_key
+          - delegated_app_addresses
         properties:
           rpc_url:
             type: string
             pattern: "^(http|https)://.*$"
           grpc_config:
             type: object
+            additionalProperties: false
             properties:
               host_port:
                 type: string
@@ -101,7 +121,7 @@ properties:
               - host_port
           gateway_address:
             type: string
-            pattern: "^pokt1[0-9a-zA-Z]{43}$"
+            pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
           gateway_private_key:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
@@ -109,20 +129,16 @@ properties:
             type: array
             items:
               type: string
-              pattern: "^pokt1[0-9a-zA-Z]{43}$"
-        required:
-          - rpc_url
-          - grpc_config
-          - gateway_address
-          - gateway_private_key
-          - delegated_app_addresses
+              pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
 
   # Services Configuration (required)
   services:
     type: object
+    additionalProperties: false
     patternProperties:
       "^[a-zA-Z0-9]+$":
         type: object
+        additionalProperties: false
         properties:
           alias:
             type: string
@@ -132,6 +148,7 @@ properties:
   # Router Configuration (optional)
   router_config:
     type: object
+    additionalProperties: false
     properties:
       port:
         type: integer
@@ -144,5 +161,12 @@ properties:
       idle_timeout:
         type: string
 
-required:
-  - services
+  # Hydrator Configuration (optional)
+  hydrator_config:
+    type: object
+    additionalProperties: false
+    properties:
+      service_ids:
+        type: array
+        items:
+          type: string
