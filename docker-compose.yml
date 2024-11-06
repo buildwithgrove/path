@@ -72,12 +72,12 @@ services:
     depends_on:
       path:
         condition: service_healthy
-      path_auth_grpc_server:
+      path_auth_data_server:
         condition: service_healthy
     networks:
       - path_network
 
-  # PATH gRPC Auth Server
+  # PATH Auth Data Server
   # DEV_NOTE: This is a simple implementation of a gRPC remote server 
   # that handles providing the Envoy External Authorization Service
   # with the necessary information to make an authorization decision.
@@ -87,9 +87,9 @@ services:
   # This specific implementation just reads data from a static YAML file
   # but in practice it could be implemented however the Gateway operator sees fit.
   # eg. a database lookup, external API call, etc. PATH doesn't know or care.
-  path_auth_grpc_server:
-    container_name: path_auth_grpc_server
-    image: buildwithgrove/path-auth-grpc-server:latest
+  path_auth_data_server:
+    container_name: path_auth_data_server
+    image: buildwithgrove/path-auth-data-server:latest
     ports:
       - "50051:50051"
     volumes:
