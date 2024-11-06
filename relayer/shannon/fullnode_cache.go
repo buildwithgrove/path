@@ -115,7 +115,7 @@ func (cfn *CachingFullNode) SendRelay(app apptypes.Application, session sessiont
 }
 
 // IsHealthy indicates the health status of the caching full node.
-// It is required to fulfill the FullNode interface.
+// It is required to fulfill the health.Check interface.
 func (cfn *CachingFullNode) IsHealthy() bool {
 	cfn.appCacheMu.RLock()
 	defer cfn.appCacheMu.RUnlock()
