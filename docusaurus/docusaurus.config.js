@@ -64,7 +64,7 @@ const config = {
           alt: 'Path logo',
           src: 'img/grove-leaf.jpeg',
         },
-        // TODO_UPNEXT: Add documentation sidebars abour operation, contributing etc.
+        // TODO_UPNEXT: Add documentation sidebars about operation, contributing etc.
         items: [],
       },
       footer: {
