@@ -17,9 +17,11 @@
   - [3.3. Request Lifecycle](#33-request-lifecycle)
 - [4. JSON Web Token (JWT) Verification](#4-json-web-token-jwt-verification)
 - [5. External Authorization Server](#5-external-authorization-server)
-  - [5.1. Remote gRPC Server](#51-remote-grpc-server)
-    - [5.1.1. Example Gateway Endpoint Data File](#511-example-gateway-endpoint-data-file)
-  - [5.2. Environment Variables](#52-environment-variables)
+  - [5.1. Gateway Endpoints gRPC Service](#51-gateway-endpoints-grpc-service)
+  - [5.2. Remote gRPC Auth Server](#52-remote-grpc-auth-server)
+    - [5.2.1. PATH Auth Data Server](#521-path-auth-data-server)
+    - [5.2.2. Example Gateway Endpoint YAML File](#522-example-gateway-endpoint-yaml-file)
+    - [5.2.3. Custom Remote gRPC Server Implementation](#523-custom-remote-grpc-server-implementation)
 - [6. Rate Limiter](#6-rate-limiter)
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
@@ -120,10 +122,11 @@ sequenceDiagram
     JWTFilter-->>Envoy: 3. Return parsed x-jwt-user-id (if present)
     Envoy->>AuthServer: 4. Forward Request
     AuthServer->>AuthServer: 5. Authorize (if required)
-    AuthServer->>AuthServer: 6. Set Rate Limit descriptors (if required)
+    AuthServer->>AuthServer: 6. Set Rate Limit headers (if required)
     AuthServer-->>Envoy: 7a. Auth Failed (if rejected)
     Envoy-->>Client: 7a. Reject Request (Auth Failed)
     AuthServer-->>Envoy: 7b. Auth Success (if accepted)
+    Envoy->>Envoy: Set Rate Limit descriptors from headers
     Envoy->>RateLimiter: 8. Perform Rate Limit Check
     RateLimiter->>RateLimiter: 9. Rate Limit Check
     RateLimiter-->>Envoy: 10a. Rate Limit Check Failed
@@ -160,22 +163,77 @@ For more information, see:
 
 The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
-This server communicates with a remote gRPC server to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
+This server communicates with a `Remote gRPC Server` to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
+
+```mermaid
+sequenceDiagram
+    participant EnvoyProxy as Envoy Proxy<br>(ext_authz filter)
+    participant GoAuthServer as Go External<br>Authorization Server
+    participant RemoteGRPC as Remote gRPC Server
+    participant DataSource as Data Source<br>(YAML, Postgres, etc.)
+
+    %% Grouping "Included in PATH"
+    Note over EnvoyProxy, GoAuthServer: Included in PATH
+
+    %% Grouping "Must be implemented by operator"
+    Note over RemoteGRPC, DataSource: Must be implemented by operator
+
+    DataSource-->>RemoteGRPC: Get Data
+    RemoteGRPC<<-->>GoAuthServer: Populate Gateway Endpoint Store
+    EnvoyProxy->>GoAuthServer: 1. Check Request
+    GoAuthServer->>GoAuthServer: 1a. Authorize Request
+    GoAuthServer->>GoAuthServer: 1b. Set Rate Limit Headers
+    GoAuthServer->>EnvoyProxy: 2. Check Response<br>(Approve/Deny)
+```
+
+The external authorization server requires the following environment variables to be set:
+
+- `GRPC_HOST_PORT`: The host and port of the remote gRPC server.
+- `GRPC_USE_INSECURE`: Set to `true` if the remote gRPC server does not use TLS (default: `false`).
+
+Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally in Docker.
 
 For more information, see:
 - [Envoy External Authorization Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
+- [Envoy Go Control Plane Auth Package](https://pkg.go.dev/github.com/envoyproxy/go-control-plane@v0.13.0/envoy/service/auth/v3)
 
-### 5.1. Remote gRPC Server
+### 5.1. Gateway Endpoints gRPC Service
+
+Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
+
+This service defines two main methods for populating the `Go External Authorization Server`'s `Gateway Endpoint Store`:
+```proto
+service GatewayEndpoints {
+  // GetInitialData requests the initial set of GatewayEndpoints from the remote gRPC server.
+  rpc GetInitialData(InitialDataRequest) returns (InitialDataResponse);
+
+  // StreamUpdates listens for updates from the remote gRPC server and streams them to the client.
+  rpc StreamUpdates(UpdatesRequest) returns (stream Update);
+}
+```
+
+### 5.2. Remote gRPC Auth Server
+
+The `Remote gRPC Server` is responsible for providing the `Go External Authorization Server` with data on which endpoints are authorized to use the PATH service.
 
 **The implementation of the remote gRPC server is up to the Gateway operator.**
 
-A default Docker image is provided to handle live-loading of data from a `gateway-endpoints.yaml` file for simple use cases or quick startup of PATH.
+#### 5.2.1. PATH Auth Data Server
 
+The `PATH Auth Data Server (PADS)` is an implementation of the `Remote gRPC Server` that provides `Gateway Endpoint` data to the `Go External Authorization Server` in order to enable authorization for the PATH Gateway.
+
+It is provided to allow an easy default implementation of the remote gRPC server by Gateway operators, or as a starting point for custom implementations. 
+
+The Docker image for `PADS` is available at:
 ```bash
-docker pull buildwithgrove/path-auth-grpc-server:latest
+buildwithgrove/path-auth-data-server:latest
 ```
 
-#### 5.1.1. Example Gateway Endpoint Data File
+_This Docker image is loaded by default in the [docker-compose.yml](../docker-compose.yml#L90) file at the root of the PATH repo._
+
+_`PADS` loads data from the `gateway-endpoints.yaml` file specified by the `YAML_FILEPATH` environment variable._
+
+#### 5.2.2. Example Gateway Endpoint YAML File
 
 An example `gateway-endpoints.yaml` file is provided at [envoy/gateway-endpoints.example.yaml](./gateway-endpoints.example.yaml).
 
@@ -210,14 +268,128 @@ Run `make copy_envoy_gateway_endpoints` to create an example `gateway-endpoints.
 
 The contents of this file represent the gateway endpoints that are authorized to use the PATH service for a specific gateway operator.
 
-### 5.2. Environment Variables
+#### 5.2.3. Custom Remote gRPC Server Implementation
 
-The external authorization server requires the following environment variables to be set:
+If wishing to implement a custom remote gRPC server, the implementation should import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
 
-- `GRPC_HOST_PORT`: The host and port of the remote gRPC server.
-- `GRPC_USE_INSECURE`: Set to `true` if the remote gRPC server does not use TLS (default: `false`).
+[The custom implementation must use the methods defined in the `GatewayEndpoints` service:](#51-gateway-endpoints-grpc-service)
+- `GetInitialData`
+- `StreamUpdates`
 
-Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally in Docker.
+Example simple Go implementation:
+
+_server.go_
+```go
+// Implementation of DataSource interface up to the Gateway operator.
+// eg. It could load data from a Postgres database or YAML file.
+type DataSource interface {
+	GetInitialData() (*proto.InitialDataResponse, error)
+	SubscribeUpdates() (<-chan *proto.Update, error)
+}
+
+// Server implements the gRPC server for GatewayEndpoints.
+// It uses a DataSource to retrieve initial data and updates.
+type Server struct {
+	proto.UnimplementedGatewayEndpointsServer
+	GatewayEndpoints map[string]*proto.GatewayEndpoint
+	updateCh         chan *proto.Update
+	mu               sync.RWMutex
+	dataSource       DataSource
+}
+
+// NewServer creates a new Server instance using the provided DataSource.
+func NewServer(dataSource DataSource) (*Server, error) {
+	server := &Server{
+		GatewayEndpoints: make(map[string]*proto.GatewayEndpoint),
+		updateCh:         make(chan *proto.Update, 100),
+		dataSource:       dataSource,
+	}
+
+	initialData, err := dataSource.GetInitialData()
+	if err != nil {
+		return nil, err
+	}
+
+	server.mu.Lock()
+	server.GatewayEndpoints = initialData.Endpoints
+	server.mu.Unlock()
+
+	updatesCh, err := dataSource.SubscribeUpdates()
+	if err != nil {
+		return nil, err
+	}
+
+	go server.handleDataSourceUpdates(updatesCh)
+
+	return server, nil
+}
+
+// GetInitialData handles the gRPC request to retrieve initial GatewayEndpoints data.
+func (s *Server) GetInitialData(ctx context.Context, req *proto.InitialDataRequest) (*proto.InitialDataResponse, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return &proto.InitialDataResponse{Endpoints: s.GatewayEndpoints}, nil
+}
+
+// StreamUpdates streams updates to the client whenever the data source changes.
+func (s *Server) StreamUpdates(req *proto.UpdatesRequest, stream proto.GatewayEndpoints_StreamUpdatesServer) error {
+	for update := range s.updateCh {
+		if err := stream.Send(update); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// handleDataSourceUpdates listens for updates from the DataSource and updates the server state accordingly.
+func (s *Server) handleDataSourceUpdates(updatesCh <-chan *proto.Update) {
+	for update := range updatesCh {
+		s.mu.Lock()
+		if update.Delete {
+			delete(s.GatewayEndpoints, update.EndpointId)
+		} else {
+			s.GatewayEndpoints[update.EndpointId] = update.GatewayEndpoint
+		}
+		s.mu.Unlock()
+
+		// Send the update to any clients streaming updates.
+		s.updateCh <- update
+	}
+}
+```
+
+_main.go_
+```go
+func main() {
+
+	// Implementation of DataSource interface up to the Gateway operator.
+	dataSource, err := NewDataSource()
+	if err != nil {
+		panic(fmt.Sprintf("failed to create YAML data source: %v", err))
+	}
+
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		panic(fmt.Sprintf("failed to listen: %v", err))
+	}
+
+	server, err := server.NewServer(dataSource)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create server: %v", err))
+	}
+
+	grpcServer := grpc.NewServer()
+	proto.RegisterGatewayEndpointsServer(grpcServer, server)
+	httpServer := &http.Server{Handler: grpcServer}
+
+	if err := httpServer.Serve(lis); err != nil {
+		panic(fmt.Sprintf("failed to serve: %v", err))
+	}
+}
+
+```
+
+
 
 ## 6. Rate Limiter
 
