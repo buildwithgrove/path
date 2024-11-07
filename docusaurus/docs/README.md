@@ -200,9 +200,9 @@ services:
 #### 4.4 Other Examples
 
 - Full example config YAML files:
-  - [Morse](./cmd/config/testdata/morse.example.yaml)
-  - [Shannon](./cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](./config/config.schema.yaml)
+  - [Morse](../../cmd/config/testdata/morse.example.yaml)
+  - [Shannon](../../cmd/config/testdata/shannon.example.yaml)
+- [Config YAML Schema](../../config/config.schema.yaml)
 
 ### 5. Running PATH
 
@@ -211,7 +211,7 @@ services:
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
    :::tip
-   For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](./cmd/config/testdata).
+   For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](../../cmd/config/testdata).
    :::
 
 1. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
@@ -254,7 +254,7 @@ make copy_test_config
 
 Then update the `protocol.shannon_config.full_node_config` values with the appropriate values.
 
-You can find the example configuration file [here](./e2e/.example.test.yaml).
+You can find the example configuration file [here](../../e2e/.example.test.yaml).
 
 Currently, the E2E tests are configured to run against the Shannon testnet.
 
