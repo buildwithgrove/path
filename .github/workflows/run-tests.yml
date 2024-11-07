@@ -69,6 +69,10 @@ jobs:
         with:
           go-version: "1.22.3"
 
+      - name: Dump docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
+
       - name: copy Shannon E2E config
         run: make copy_shannon_e2e_config
 
