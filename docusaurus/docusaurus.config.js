@@ -64,8 +64,20 @@ const config = {
           alt: 'Path logo',
           src: 'img/grove-leaf.jpeg',
         },
-        // TODO_UPNEXT: Add documentation sidebars about operation, contributing etc.
-        items: [],
+        items: [
+          {
+            type: "docSidebar",
+            position: "left",
+            sidebarId: "operateSidebar",
+            label: "⚙️ Operate",
+          },
+          {
+            type: "docSidebar",
+            position: "left",
+            sidebarId: "developSidebar",
+            label: "💻 Develop",
+          },
+        ],
       },
       footer: {
         style: 'dark',

@@ -14,7 +14,7 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
-![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path&revision=true&showAppName=true)
+![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path-gateway&revision=true&showAppName=true)
 
 # Table of Contents <!-- omit in toc -->
 
