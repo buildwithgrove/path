@@ -48,7 +48,7 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -short # Temporarily disabled for debugging # go test ./... -tags=e2e -count=1 -run Test_ShannonRelay
+	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay
 
 .PHONY: test_e2e_morse_relay
 test_e2e_morse_relay: ## Run an E2E Morse relay test
