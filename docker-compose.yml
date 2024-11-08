@@ -42,7 +42,7 @@ services:
   # - Rate limiting is handled by the `ratelimit` container.
   envoy_proxy:
     container_name: envoy_proxy
-    image: envoyproxy/envoy:v1.31-latest
+    image: envoyproxy/envoy:v1.32-latest
     ports:
       - "3001:3001"
     volumes:
