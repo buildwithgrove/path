@@ -226,7 +226,7 @@ It is provided to allow an easy default implementation of the remote gRPC server
 
 The Docker image for `PADS` is available at:
 ```bash
-buildwithgrove/path-auth-data-server:latest
+ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
 _This Docker image is loaded by default in the [docker-compose.yml](../docker-compose.yml#L90) file at the root of the PATH repo._

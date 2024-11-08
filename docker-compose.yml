@@ -89,7 +89,7 @@ services:
   # eg. a database lookup, external API call, etc. PATH doesn't know or care.
   path_auth_data_server:
     container_name: path_auth_data_server
-    image: buildwithgrove/path-auth-data-server:latest
+    image: ghcr.io/buildwithgrove/path-auth-data-server:latest
     ports:
       - "50051:50051"
     volumes:
