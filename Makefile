@@ -100,3 +100,16 @@ sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
 
 # // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
 # // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
+
+########################
+#### Documentation  ####
+########################
+
+.PHONY: go_docs
+go_docs: ## Start Go documentation server
+	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
+	godoc -http=:6060
+
+.PHONY: docusaurus_start
+docusaurus_start: ## Start docusaurus server
+	cd docusaurus && npm i && npm run start
