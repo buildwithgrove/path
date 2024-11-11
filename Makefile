@@ -17,27 +17,23 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --no-deps path_gateway 
+	MODE=path_only tilt up
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --build --no-deps path_gateway
-
-.PHONY: path_down_gateway
-path_down_gateway: ## Stop just the PATH gateway
-	docker compose --profile path-gateway down --remove-orphans path_gateway
+	MODE=path_only tilt up --update
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
-	docker compose up -d
+	MODE=path_with_auth tilt up
 
 .PHONY: path_up_build
 path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+	MODE=path_with_auth tilt up --update
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down --remove-orphans
+	MODE=path_with_auth tilt down
 
 #########################
 ### Test Make Targets ###

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: path
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: path
+  template:
+    metadata:
+      labels:
+        app: path
+    spec:
+      containers:
+      - name: path
+        image: path:development
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/.config.yaml
+          subPath: .config.yaml
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: path-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: path
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: path
+  type: ClusterIP

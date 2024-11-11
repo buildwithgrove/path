@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ext-authz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ext-authz
+  template:
+    metadata:
+      labels:
+        app: ext-authz
+    spec:
+      containers:
+      - name: ext-authz
+        image: ext-authz:latest
+        ports:
+        - containerPort: 10003
+        envFrom:
+        - configMapRef:
+            name: ext-authz-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-authz
+spec:
+  ports:
+  - port: 10003
+    targetPort: 10003
+  selector:
+    app: ext-authz
+  type: ClusterIP
