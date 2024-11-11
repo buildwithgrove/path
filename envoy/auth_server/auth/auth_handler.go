@@ -63,8 +63,6 @@ type AuthHandler struct {
 func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
 
-	fmt.Println("Check request received")
-
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 	if req == nil {

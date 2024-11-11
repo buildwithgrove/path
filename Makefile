@@ -14,26 +14,30 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 ### Run Path Make Targets ###
 #############################
+.PHONY: path_build
+path_build: ## build the path binary
+	go build -o bin/path ./cmd
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	MODE=path_only tilt up
+	MODE=path_gateway tilt up
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	MODE=path_only tilt up --update
+	MODE=path_gateway tilt up --update
 
+# TODO_UPNEXT(@adshmh): update path_up and path_down to use Tilt, and remove docker compose
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
-	MODE=path_with_auth tilt up
+	tilt up
 
 .PHONY: path_up_build
 path_up_build: ## Run and build the PATH gateway and all related dependencies
-	MODE=path_with_auth tilt up --update
+	tilt up --update
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	MODE=path_with_auth tilt down
+	tilt down
 
 #########################
 ### Test Make Targets ###

@@ -23,7 +23,7 @@ const (
 	internalPathPort     = "3000"
 	buildContextDir      = ".."
 	dockerfileName       = "Dockerfile"
-	configMountPoint     = ":/app/.config.yaml"
+	configMountPoint     = ":/app/config/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
 	timeoutSeconds       = 120
