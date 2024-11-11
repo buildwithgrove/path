@@ -28,6 +28,9 @@ type endpoint struct {
 	session sessiontypes.Session
 }
 
+// TODO_UPNEXT(@adshmh): use the URL as the address: a single URL should be treated the same regardless of the app to which it is attached.
+// For protocol-level concerns, both the app/session and the URL should be taken into account: e.g. a healthy endpoint may have been maxed out for a particular app.
+// For QoS-level concerns, only the URL of the endpoint matters: e.g. an unhealthy endpoint should be skipped regardless of the app/session to which it is attached.
 func (e endpoint) Addr() relayer.EndpointAddr {
 	return relayer.EndpointAddr(fmt.Sprintf("%s-%s", e.supplier, e.url))
 }

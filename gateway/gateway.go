@@ -26,10 +26,10 @@ type Gateway struct {
 	// its corresponding QoS instance.
 	HTTPRequestParser
 
-	// The relayer.Relayer instance is used to fulfill the
+	// The relayer.Protocol instance is used to fulfill the
 	// service requests received by the gateway through
 	// sending the service payload to an endpoint.
-	*relayer.Relayer
+	relayer.Protocol
 
 	// QoSPublisher is used to publish QoS-related observations.
 	// It can be "local" i.e. inform the local QoS
@@ -87,10 +87,17 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	protocolRequestCtx, err := g.buildProtocolRequestCtx(serviceID, httpReq)
+	if err != nil {
+		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
+		// This will enable debugging of any potential issues.
+		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+		return
+	}
+
 	// Send the service request payload, through the relayer, to a service provider endpoint.
-	endpointResponse, err := g.Relayer.SendRelay(
-		ctx,
-		serviceID,
+	relayer := relayer.Relayer{ProtocolRequestContext: protocolRequestCtx}
+	endpointResponse, err := relayer.SendRelay(
 		serviceRequestCtx.GetServicePayload(),
 		serviceRequestCtx.GetEndpointSelector(),
 	)
@@ -154,4 +161,16 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	// TODO_TECHDEBT: add logging in case the payload is not written correctly;
 	// this could be a silent failure. Gateway currently has no logger.
 	_, _ = w.Write(response.GetPayload())
+}
+
+func (g *Gateway) buildProtocolRequestCtx(serviceID relayer.ServiceID, httpReq *http.Request) (relayer.ProtocolRequestContext, error) {
+	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
+	if err != nil {
+		logger := g.Logger.With(
+			"service", string(serviceID),
+		)
+		logger.Warn().Err(err).Msg("Failed to create a protocol request context")
+	}
+
+	return protocolCtx, err
 }

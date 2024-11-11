@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -155,52 +154,14 @@ func (lfn *LazyFullNode) GetSession(serviceID relayer.ServiceID, appAddr string)
 	return *session, nil
 }
 
-// TODO_IMPROVE: split this function into build/sign/send/verify stages.
-// SendRelay sends a the supplied payload as a relay request to the supplied endpoint.
-// It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
-	// TODO_TECHDEBT: need to select the correct underlying request (HTTP, etc.) based on the selected service.
-	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest([]byte(payload.Data), endpoint.url)
-	if err != nil {
-		return nil, fmt.Errorf("error building a JSONRPC HTTP request for url %s: %w", endpoint.url, err)
-	}
-
-	relayRequest, err := embedHttpRequest(jsonRpcHttpReq)
-	if err != nil {
-		return nil, fmt.Errorf("error embedding a JSONRPC HTTP request for url %s: %w", endpoint.url, err)
-	}
-
-	// TODO_TECHDEBT: use the new `FilteredSession` struct provided by the Shannon SDK to get the session and the endpoint.
-	relayRequest.Meta = servicetypes.RelayRequestMetadata{
-		SessionHeader:           session.Header,
-		SupplierOperatorAddress: string(endpoint.supplier),
-	}
-
-	req, err := lfn.signer.SignRequest(relayRequest, app)
-	if err != nil {
-		return nil, fmt.Errorf("relay: error signing the relay request for app %s: %w", app.Address, err)
-	}
-
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
-	defer cancelFn()
-
-	responseBz, err := sendHttpRelay(ctxWithTimeout, endpoint.url, req)
-	if err != nil {
-		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", endpoint.url, err)
-	}
-
-	// Validate the response
-	response, err := sdk.ValidateRelayResponse(
+// ValidateRelayResponse validates the raw response bytes received from an endpoint using the SDK and the account client.
+func (lfn *LazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+	return sdk.ValidateRelayResponse(
 		context.Background(),
-		sdk.SupplierAddress(endpoint.supplier),
+		supplierAddr,
 		responseBz,
 		lfn.accountClient,
 	)
-	if err != nil {
-		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, endpoint.url, err)
-	}
-
-	return response, nil
 }
 
 // IsHealthy always returns true for a LazyFullNode.
