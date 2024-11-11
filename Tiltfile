@@ -57,13 +57,14 @@ MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
 # --------------------------------------------------------------------------- #
 
 # Import PATH configuration file into Kubernetes ConfigMaps
-configmap_create("path-config", from_file="./config/.config.yaml", watch=True)
+configmap_create("path-config", from_file="./localnet/path/config/.config.yaml", watch=True)
 
 # Build the PATH image from the Dockerfile in the root directory
 docker_build_with_restart(
     "path",
     context=".",
     dockerfile="./Dockerfile",
+    entrypoint=["/app/path"],
     live_update=[sync(".", "/app/path")],
 )
 
@@ -75,14 +76,12 @@ if MODE == "path_only":
     k8s_resource(
         "path",
         labels=["path"],
-        links=[link("http://localhost:3000", "Path Service")],
         port_forwards=["3000:3000"],
     )
 else:
     k8s_resource(
         "path",
         labels=["path"],
-        links=[link("http://localhost:3001", "Path Service via Envoy Proxy")],
     )
 
 if MODE == "path_with_auth":
@@ -97,12 +96,12 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
 
     # Import Envoy Auth configuration file into Kubernetes ConfigMaps
-    configmap_create("envoy-config", from_file="./envoy/envoy.yaml", watch=True)
-    configmap_create("gateway-endpoints", from_file="./envoy/gateway-endpoints.yaml", watch=True)
-    configmap_create("ratelimit-config", from_file="./envoy/ratelimit.yaml", watch=True)
+    configmap_create("envoy-config", from_file="./localnet/path/envoy/.envoy.yaml", watch=True)
+    configmap_create("gateway-endpoints", from_file="./localnet/path/envoy/.gateway-endpoints.yaml", watch=True)
+    configmap_create("ratelimit-config", from_file="./localnet/path/envoy/.ratelimit.yaml", watch=True)
 
     # Import External Authorization Server environment variables into Kubernetes ConfigMaps
-    configmap_create("ext-authz-env", from_env_file="./envoy/auth_server/.env", watch=True)
+    configmap_create("ext-authz-env", from_env_file="./localnet/path/envoy/.env.auth_server", watch=True)
 
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(
@@ -116,9 +115,8 @@ if MODE == "path_with_auth":
     k8s_resource(
         "ext-authz",
         labels=["envoy_auth"],
-        port_forwards=["10003:10003"],
-        links=[link("http://localhost:10003", "Ext Authz")],
-        resource_deps=["path", "path-auth-data-server"],
+        port_forwards=["10003:10003"],        
+        resource_deps=["path-auth-data-server"],
     )
 
     # 2. Load the Kubernetes YAML for the envoy-proxy service
@@ -126,27 +124,22 @@ if MODE == "path_with_auth":
     k8s_resource(
         "envoy-proxy",
         labels=["envoy_auth"],
-        port_forwards=["3001:3001"],
-        links=[link("http://localhost:3001", "Envoy Proxy")],
-        resource_deps=["path"],
+        port_forwards=["3001:3001"],        
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
     k8s_yaml("./localnet/kubernetes/manifests/path-auth-data-server.yaml")
     k8s_resource(
         "path-auth-data-server",
-        labels=["envoy_auth"],
-        links=[link("http://localhost:50051", "Path Auth Data Server")],
-        resource_deps=["path"],
+        labels=["envoy_auth"],        
     )
 
     # 4. Load the Kubernetes YAML for the ratelimit service
     k8s_yaml("./localnet/kubernetes/manifests/ratelimit.yaml")
     k8s_resource(
         "ratelimit",
-        labels=["envoy_auth"],
-        links=[link("http://localhost:8081", "Ratelimit")],
-        resource_deps=["path", "redis"],
+        labels=["envoy_auth"],        
+        resource_deps=["redis"],
     )
 
     # 5. Load the Kubernetes YAML for the redis service
@@ -154,8 +147,6 @@ if MODE == "path_with_auth":
     k8s_resource(
         "redis",
         labels=["envoy_auth"],
-        links=[link("http://localhost:6379", "Redis")],
-        resource_deps=["path"],
     )
 
 # ----------------------------------------------------------------------------- #
@@ -177,7 +168,7 @@ helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
-       "--values=./localnet/kubernetes/observability-prometheus-stack.yaml",
+       "--values=./localnet/kubernetes/observability/prometheus-stack.yaml",
        "--set=grafana.defaultDashboardsEnabled=true",
     ],
     resource_deps=["prometheus-community"],
@@ -188,7 +179,7 @@ helm_resource(
     "loki",
     "grafana-helm-repo/loki-stack",
     flags=[
-        "--values=./localnet/kubernetes/observability-loki-stack.yaml",
+        "--values=./localnet/kubernetes/observability/loki-stack.yaml",
     ],
     labels=["monitoring"],
     resource_deps=["grafana-helm-repo"],

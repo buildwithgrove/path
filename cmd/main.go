@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -22,7 +21,7 @@ import (
 )
 
 // TODO_UPNEXT(@adshmh): add CLI flags for specifying the config file's path.
-var configPath = filepath.Join("config", ".config.yaml")
+var configPath = "/app/.config.yaml"
 
 func main() {
 	logger := polyzero.NewLogger()

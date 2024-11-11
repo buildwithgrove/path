@@ -20,7 +20,7 @@ spec:
         # Note: Only 1 of the following two environment variables should be set.
         # 1. Loading data from a YAML file mounted into the container from ./envoy/gateway-endpoints.yaml to /app/gateway-endpoints.yaml
         - name: YAML_FILEPATH 
-          value: /app/gateway-endpoints.yaml
+          value: /app/.gateway-endpoints.yaml
         # 2. Loading data from a Postgres database
         # - name: POSTGRES_CONNECTION_STRING
         #   value: postgres://postgres:postgres@postgres:5432/postgres # Set this to the connection string for your Postgres database
@@ -28,8 +28,8 @@ spec:
         - containerPort: 50051
         volumeMounts:
         - name: gateway-endpoints
-          mountPath: /app/gateway-endpoints.yaml
-          subPath: gateway-endpoints.yaml
+          mountPath: /app/.gateway-endpoints.yaml
+          subPath: .gateway-endpoints.yaml
       volumes:
       - name: gateway-endpoints
         configMap:

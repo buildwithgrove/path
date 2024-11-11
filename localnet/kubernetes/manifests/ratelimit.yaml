@@ -37,8 +37,8 @@ spec:
         - containerPort: 8081
         volumeMounts:
         - name: ratelimit-config
-          mountPath: /data/ratelimit/config/config.yaml
-          subPath: config.yaml
+          mountPath: /data/ratelimit/config/.config.yaml
+          subPath: .config.yaml
       volumes:
       - name: ratelimit-config
         configMap:

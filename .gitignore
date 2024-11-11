@@ -43,8 +43,5 @@ go.work.sum
 tmp
 tmp/*
 
-# Envoy config with sensitive information
-envoy.yaml
-
-# Gateway Endpoints YAML file for loading local auth data
-gateway-endpoints.yaml
+# PATH Localnet config files
+localnet/path/**/.*
