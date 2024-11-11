@@ -8,7 +8,6 @@
 package relayer
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -56,7 +55,7 @@ type Response struct {
 // required for sending relays through a single entry point,
 // i.e. the SendRelay method.
 type Relayer struct {
-	Protocol
+	ProtocolRequestContext
 }
 
 // TODO_INCOMPLETE: use the supplied context to store any details, including protocol-specific details,
@@ -75,27 +74,15 @@ type Relayer struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (r Relayer) SendRelay(
-	// TODO_UPNEXT(@adshmh): Remove the context input argument, because:
-	//	1. It is not used.
-	//	2. If the need for more data from the relayer comes up, this
-	//	function can return a specialized "context" struct/interface
-	//	instead.
-	ctx context.Context,
-	serviceID ServiceID,
 	payload Payload,
 	endpointSelector EndpointSelector,
 ) (Response, error) {
-	protocolRequestCtx, err := r.Protocol.BuildRequestContext(serviceID)
-	if err != nil {
-		return Response{}, fmt.Errorf("Relay: error getting available endpoints for service %s: %w", serviceID, err)
-	}
-
-	if err := protocolRequestCtx.SelectEndpoint(endpointSelector); err != nil {
-		return Response{}, fmt.Errorf("Serve: error selecting an endpoint for service %s: %w", serviceID, err)
+	if err := r.ProtocolRequestContext.SelectEndpoint(endpointSelector); err != nil {
+		return Response{}, fmt.Errorf("Serve: error selecting an endpoint: %w", err)
 	}
 
 	// TODO_FUTURE: add a protocol publisher to enable sending feedback on the endpoint that served the request.
 	// e.g. on Morse protocol, an endpoint that rejects a request due to being maxed out for the app+service
 	// combination, should be dropped until the start of the next session.
-	return protocolRequestCtx.HandleServiceRequest(payload)
+	return r.ProtocolRequestContext.HandleServiceRequest(payload)
 }

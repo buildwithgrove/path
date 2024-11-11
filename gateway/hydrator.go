@@ -3,7 +3,6 @@
 package gateway
 
 import (
-	"context"
 	"errors"
 	"sync"
 	"time"
@@ -26,12 +25,6 @@ const (
 // interval of an endpoint hydrator.
 var endpointHydratorRunInterval = 10_000 * time.Millisecond
 
-// EndpointLister specifies the functionality required by the EndpointHydrator to
-// obtain a list of available endpoints for a service.
-type EndpointLister interface {
-	Endpoints(relayer.ServiceID) ([]relayer.Endpoint, error)
-}
-
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
 //
@@ -45,8 +38,7 @@ type EndpointLister interface {
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
-	EndpointLister
-	*relayer.Relayer
+	relayer.Protocol
 	QoSPublisher
 
 	// ServiceQoSGenerators provides the hydrator with the EndpointCheckGenerator
@@ -70,12 +62,8 @@ type EndpointHydrator struct {
 // Start should be called to signal this instance of the hydrator
 // to start generating and sending out the endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
-	if eph.EndpointLister == nil {
-		return errors.New("an instance of EndpointLister must be proivded.")
-	}
-
-	if eph.Relayer == nil {
-		return errors.New("a Relayer must be provided.")
+	if eph.Protocol == nil {
+		return errors.New("an instance of Protocol must be proivded.")
 	}
 
 	if eph.QoSPublisher == nil {
@@ -137,7 +125,16 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		"service", string(serviceID),
 	)
 
-	uniqueEndpoints, err := eph.EndpointLister.Endpoints(serviceID)
+	// TODO_FUTURE: support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
+	// no need for specifying a specific app.
+	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to build a protocol request context")
+		return err
+	}
+
+	uniqueEndpoints, err := protocolRequestCtx.AvailableEndpoints()
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
 		return err
@@ -159,11 +156,8 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// the user request (i.e. HTTP request) handler.
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
 			// take the same execution path.
-			// TODO_UPNEXT(@adshmh): remove the context input argument once the Relayer interface's
-			// SendRelay function is updated.
-			endpointResponse, err := eph.Relayer.SendRelay(
-				context.TODO(),
-				serviceID,
+			relayer := relayer.Relayer{ProtocolRequestContext: protocolRequestCtx}
+			endpointResponse, err := relayer.SendRelay(
 				serviceRequestCtx.GetServicePayload(),
 				serviceRequestCtx.GetEndpointSelector(),
 			)
