@@ -42,11 +42,18 @@ if localnet_config["helm_chart_local_repo"]["enabled"]:
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Define modes
+# Define modes:
+# Mode determines which resources are loaded. Possible options are:
+# 1. path_only - Loads only the PATH service.
+# 2. path_with_auth - Loads the PATH service, Envoy Proxy, External Authorization Server, Ratelimit, and Redis.
+# 
+# Observability stack is loaded in both modes.
 MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
 
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
+# --------------------------------------------------------------------------- #
+# 1. PATH Service                                                             #
 # --------------------------------------------------------------------------- #
 
 # Import PATH configuration file into Kubernetes ConfigMaps
@@ -82,6 +89,12 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
+    # 1. External Authorization Server                                             #
+    # 2. Envoy Proxy                                                               #
+    # 3. Path Auth Data Server                                                     #
+    # 4. Ratelimit                                                                 #
+    # 5. Redis                                                                     #
+    # ---------------------------------------------------------------------------- #
 
     # Import Envoy Auth configuration file into Kubernetes ConfigMaps
     configmap_create("envoy-config", from_file="./envoy/envoy.yaml", watch=True)
@@ -91,14 +104,13 @@ if MODE == "path_with_auth":
     # Import External Authorization Server environment variables into Kubernetes ConfigMaps
     configmap_create("ext-authz-env", from_env_file="./envoy/auth_server/.env", watch=True)
 
-    # Build the External Authorization Server image from envoy/auth_server/Dockerfile
+    # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(
         "ext-authz",
         context="./envoy/auth_server",
         dockerfile="./envoy/auth_server/Dockerfile",
         live_update=[sync("./envoy/auth_server", "/app")],
     )
-
     # Load the Kubernetes YAML for the External Authorization Server
     k8s_yaml("./localnet/kubernetes/manifests/ext-authz.yaml")
     k8s_resource(
@@ -109,7 +121,7 @@ if MODE == "path_with_auth":
         resource_deps=["path", "path-auth-data-server"],
     )
 
-    # Load the Kubernetes YAML for the envoy-proxy service
+    # 2. Load the Kubernetes YAML for the envoy-proxy service
     k8s_yaml("./localnet/kubernetes/manifests/envoy-proxy.yaml")
     k8s_resource(
         "envoy-proxy",
@@ -119,7 +131,7 @@ if MODE == "path_with_auth":
         resource_deps=["path"],
     )
 
-    # Load the Kubernetes YAML for the path-auth-data-server service
+    # 3. Load the Kubernetes YAML for the path-auth-data-server service
     k8s_yaml("./localnet/kubernetes/manifests/path-auth-data-server.yaml")
     k8s_resource(
         "path-auth-data-server",
@@ -128,7 +140,7 @@ if MODE == "path_with_auth":
         resource_deps=["path"],
     )
 
-    # Load the Kubernetes YAML for the ratelimit service
+    # 4. Load the Kubernetes YAML for the ratelimit service
     k8s_yaml("./localnet/kubernetes/manifests/ratelimit.yaml")
     k8s_resource(
         "ratelimit",
@@ -137,7 +149,7 @@ if MODE == "path_with_auth":
         resource_deps=["path", "redis"],
     )
 
-    # Load the Kubernetes YAML for the redis service
+    # 5. Load the Kubernetes YAML for the redis service
     k8s_yaml("./localnet/kubernetes/manifests/redis.yaml")
     k8s_resource(
         "redis",
@@ -149,6 +161,10 @@ if MODE == "path_with_auth":
 # ----------------------------------------------------------------------------- #
 #                            Observability Resources                            #
 # ----------------------------------------------------------------------------- #
+# 1. Prometheus                                                                 #
+# 2. Loki                                                                       #
+# 3. Grafana                                                                    #
+# ----------------------------------------------------------------------------- #
 
 helm_repo("prometheus-community", "https://prometheus-community.github.io/helm-charts")
 helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
@@ -156,6 +172,7 @@ helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
 # Increase timeout for building the image
 update_settings(k8s_upsert_timeout_secs=60)
 
+# 1. Load the Kubernetes YAML for the prometheus-stack service
 helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
@@ -166,6 +183,7 @@ helm_resource(
     resource_deps=["prometheus-community"],
 )
 
+# 2. Load the Kubernetes YAML for the loki-stack service
 helm_resource(
     "loki",
     "grafana-helm-repo/loki-stack",
@@ -176,6 +194,7 @@ helm_resource(
     resource_deps=["grafana-helm-repo"],
 )
 
+# 3. Load the Kubernetes YAML for the Frafana service
 k8s_resource(
     new_name="grafana",
     workload="observability",
