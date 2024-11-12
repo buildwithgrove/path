@@ -18,7 +18,7 @@ type Protocol interface {
 // for a particular service ID.
 //
 // These include but not limited to:
-//  1. Listing the endpoins available for sending relays for a specific service.
+//  1. Listing the endpoints available for sending relays for a specific service.
 //  2. Send a relay to a specific endpoint and return its response.
 //
 // The first two implementations of this interface are (as of writing) are:
