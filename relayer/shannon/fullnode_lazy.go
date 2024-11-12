@@ -80,8 +80,8 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 // LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
 // The key differences between a lazy and full node are:
 // 1. Lazy node intentionally avoids caching.
-// 	- This allows supporting short block times (e.g. LocalNet)
-//      - CachingFullNode struct can be used instead if caching is desired for performance reasons
+//   - This allows supporting short block times (e.g. LocalNet)
+//   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.

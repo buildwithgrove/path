@@ -44,3 +44,8 @@ func responseUnmarshallerGeneric(data []byte) (response, error) {
 	response.rawBytes = data
 	return response, nil
 }
+
+// TODO_INCOMPLETE: Handle the string `null`, as it could be returned
+// when an object is expected.
+// See the following link for more details:
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash
