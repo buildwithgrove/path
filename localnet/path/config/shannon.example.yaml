@@ -5,7 +5,7 @@
 # DEV_NOTE: only the `gateway_private_key` value should be updated.
 shannon_config:
   full_node_config:
-    # do not change rpc_url
+    # DO NOT change rpc_url unless you know what you're doing
     rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com 
     grpc_config:
       # do not change host_port
