@@ -135,3 +135,16 @@ init_envoy: ## copies the example envoy configuration and gateway endpoints file
 .PHONY: proto_generate
 proto_generate: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
+
+########################
+#### Documentation  ####
+########################
+
+.PHONY: go_docs
+go_docs: ## Start Go documentation server
+	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
+	godoc -http=:6060
+
+.PHONY: docusaurus_start
+docusaurus_start: ## Start docusaurus server
+	cd docusaurus && npm i && npm run start
