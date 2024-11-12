@@ -1,7 +1,8 @@
-# To run a Local development environment using Shannon as the relaying protocol, copy this file and rename it to .config.yaml, then update
-# the `protocol.shannon_config.full_node_config.gateway_private_key` value with the correct value.
-# NOTE: only the gateway_private_key value should be updated.
-# shannon_config is required for using the shannon relayer in the Localnet environment.
+# This is an example config file to run a local development environment using the Shannon protocol as a relayer.
+#
+# Run `make config_shannon_localnet` to use it and update `protocol.shannon_config.full_node_config.gateway_private_key`
+# 
+# DEV_NOTE: only the `gateway_private_key` value should be updated.
 shannon_config:
   full_node_config:
     # do not change rpc_url
