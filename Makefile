@@ -14,6 +14,7 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 ### Run Path Make Targets ###
 #############################
+
 .PHONY: path_build
 path_build: ## build the path binary
 	go build -o bin/path ./cmd
