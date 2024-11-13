@@ -60,7 +60,7 @@ func (c *EndpointStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEnd
 
 // initializeStoreFromRemote requests the initial data from the remote gRPC server to set the store.
 func (c *EndpointStore) initializeStoreFromRemote(ctx context.Context) error {
-	gatewayEndpointsResponse, err := c.grpcClient.GetInitialData(ctx, &proto.InitialDataRequest{})
+	gatewayEndpointsResponse, err := c.grpcClient.FetchAuthDataSync(ctx, &proto.AuthDataRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get initial data from remote server: %w", err)
 	}
@@ -90,7 +90,7 @@ func (c *EndpointStore) listenForRemoteUpdates(ctx context.Context) {
 
 // connectAndProcessUpdates connects to the remote gRPC server and processes updates from the server.
 func (c *EndpointStore) connectAndProcessUpdates(ctx context.Context) error {
-	stream, err := c.grpcClient.StreamUpdates(ctx, &proto.UpdatesRequest{})
+	stream, err := c.grpcClient.StreamAuthDataUpdates(ctx, &proto.AuthDataUpdatesRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to stream updates from remote server: %w", err)
 	}
