@@ -16,10 +16,10 @@ import (
 // MockStream is a mock implementation of the grpc.ClientStream interface.
 type MockStream struct {
 	grpc.ClientStream
-	updates chan *proto.Update
+	updates chan *proto.AuthDataUpdate
 }
 
-func (m *MockStream) Recv() (*proto.Update, error) {
+func (m *MockStream) Recv() (*proto.AuthDataUpdate, error) {
 	update := <-m.updates
 	if update == nil {
 		return nil, io.EOF
@@ -27,15 +27,15 @@ func (m *MockStream) Recv() (*proto.Update, error) {
 	return update, nil
 }
 
-func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.Update, ctrl *gomock.Controller) *EndpointStore {
+func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.AuthDataUpdate, ctrl *gomock.Controller) *EndpointStore {
 	mockClient := NewMockGatewayEndpointsClient(ctrl)
 
-	// Set up the expected call for GetInitialData
-	mockClient.EXPECT().GetInitialData(gomock.Any(), gomock.Any()).Return(getTestGatewayEndpoints(), nil)
+	// Set up the expected call for FetchAuthDataSync
+	mockClient.EXPECT().FetchAuthDataSync(gomock.Any(), gomock.Any()).Return(getTestGatewayEndpoints(), nil)
 
 	// Set up the expected call for StreamUpdates
 	mockStream := &MockStream{updates: updates}
-	mockClient.EXPECT().StreamUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil).AnyTimes()
+	mockClient.EXPECT().StreamAuthDataUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil).AnyTimes()
 
 	store, err := NewEndpointStore(ctx, mockClient, polyzero.NewLogger())
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 		endpointID              string
 		expectedGatewayEndpoint *proto.GatewayEndpoint
 		expectedEndpointFound   bool
-		update                  *proto.Update
+		update                  *proto.AuthDataUpdate
 	}{
 		{
 			name:                    "should return gateway endpoint when found",
@@ -99,7 +99,7 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			updates := make(chan *proto.Update)
+			updates := make(chan *proto.AuthDataUpdate)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -119,8 +119,8 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 }
 
 // getTestGatewayEndpoints returns a mock response for the initial endpoint store data, received when the endpoint store is first created
-func getTestGatewayEndpoints() *proto.InitialDataResponse {
-	return &proto.InitialDataResponse{
+func getTestGatewayEndpoints() *proto.AuthDataResponse {
+	return &proto.AuthDataResponse{
 		Endpoints: map[string]*proto.GatewayEndpoint{
 			"endpoint_1": {
 				EndpointId: "endpoint_1",
@@ -166,8 +166,8 @@ func getTestGatewayEndpoints() *proto.InitialDataResponse {
 // 1. A new GatewayEndpoint was created (endpoint_3)
 // 2. An existing GatewayEndpoint was updated (endpoint_2)
 // 3. An existing GatewayEndpoint was deleted (endpoint_1)
-func getTestUpdate(endpointID string) *proto.Update {
-	updatesMap := map[string]*proto.Update{
+func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
+	updatesMap := map[string]*proto.AuthDataUpdate{
 		"endpoint_3": {
 			EndpointId: "endpoint_3",
 			GatewayEndpoint: &proto.GatewayEndpoint{

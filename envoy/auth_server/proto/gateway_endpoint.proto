@@ -16,22 +16,22 @@ option go_package = ".;proto";
 // The GatewayEndpoints service provides a gRPC interface for the Auth Server to
 // interact with the remote gRPC server.
 service GatewayEndpoints {
-  // GetInitialData requests the initial set of GatewayEndpoints from the remote gRPC server.
-  rpc GetInitialData(InitialDataRequest) returns (InitialDataResponse);
-  // StreamUpdates listens for updates from the remote gRPC server and streams them to the client.
-  rpc StreamUpdates(UpdatesRequest) returns (stream Update);
+  // FetchAuthDataSync requests the initial set of GatewayEndpoints from the remote gRPC server.
+  rpc FetchAuthDataSync(AuthDataRequest) returns (AuthDataResponse);
+  // StreamAuthDataUpdates listens for updates from the remote gRPC server and streams them to the client.
+  rpc StreamAuthDataUpdates(AuthDataUpdatesRequest) returns (stream AuthDataUpdate);
 }
 
-message InitialDataRequest {}
+message AuthDataRequest {}
 
-message InitialDataResponse {
+message AuthDataResponse {
   map<string, GatewayEndpoint> endpoints = 1;
 }
 
-message UpdatesRequest {}
+message AuthDataUpdatesRequest {}
 
-// An Update message is sent from the remote gRPC server when a GatewayEndpoint is created, updated, or deleted.
-message Update {
+// An AuthDataUpdate message is sent from the remote gRPC server when a GatewayEndpoint is created, updated, or deleted.
+message AuthDataUpdate {
   // A unique identifier for a user account's GatewayEndpoint. It must be passed as the last path segment of
   // the service request URL. For example: POST https://api.path.xyz/v1/{gateway_endpoint_id}
   // This is used to identify the GatewayEndpoint when making a service request.
