@@ -19,26 +19,13 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## build the path binary
 	go build -o bin/path ./cmd
 
-.PHONY: path_up_gateway
-path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose up -d --no-deps path_gateway
-
-.PHONY: path_up_build_gateway
-path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose up -d --build --no-deps path_gateway
-
-# TODO_UPNEXT(@adshmh): update path_up and path_down to use Tilt, and remove docker compose
 .PHONY: path_up
-path_up: ## Run the PATH gateway and all related dependencies
-	docker compose up -d
-
-.PHONY: path_up_build
-path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
+	tilt up
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down
+	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -95,6 +82,15 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
 	fi
 
+.PHONY: config_shannon_localnet
+config_shannon_localnet: ## Create a localnet config file for the Shannon relay
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "./local/path/config/.config.yaml already exists, not overwriting."; \
+	else \
+		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
+		echo "Created ./local/path/config/.config.yaml"; \
+		echo "Please update the gateway_private_key and gateway_address values in the .config.yaml file with the correct value."; \
+	fi
 ###############################
 ### Generation Make Targets ###
 ###############################

@@ -2,16 +2,19 @@
 #
 # Run `make config_shannon_localnet` to use it and update `protocol.shannon_config.full_node_config.gateway_private_key`
 # 
-# DEV_NOTE: only the `gateway_private_key` value should be updated.
+# DEV_NOTE: only the `gateway_private_key`, and `gateway_address` values should be updated.
 shannon_config:
   full_node_config:
     # DO NOT change rpc_url unless you know what you're doing
     rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com 
     grpc_config:
-      # do not change host_port
+      # DO NOT change host_port unless you know what you're doing
       host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 
     # IMPORTANT: gateway_private_key MUST BE replaced with your personal gateway private key secret
+    # See the following link for instructions on creating a Shannon gateway.
+    # https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough#d-creating-a-gateway-deploying-an-gateway-server
     gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 
+    # IMPORTANT: gateway_address MUST BE replaced with your personal gateway's address
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw 
     delegated_app_addresses: 
       - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87 

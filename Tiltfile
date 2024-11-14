@@ -7,15 +7,15 @@ load("ext://configmap", "configmap_create")
 hot_reload_dirs = ["cmd", "config", "gateway", "health", "message", "qos", "relayer", "request", "router"]
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
-localnet_config_path = "localnet_config.yaml"
-localnet_config = read_yaml(localnet_config_path, default={})
+local_config_path = "local_config.yaml"
+local_config = read_yaml(local_config_path, default={})
 
-# TODO_UPNEXT(@adshmh): Package the default Helm chart for PATH and upload the pokt-network repo.
+# TODO_UPNEXT(@HebertCL): Upload the Helm charts used for deployment of PATH on staging to the buildwithgrove repo.
 # Configure helm chart reference. If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
-helm_repo("pokt-network", "https://pokt-network.github.io/helm-charts/")
-chart_prefix = "pokt-network/"
-if localnet_config["helm_chart_local_repo"]["enabled"]:
-    helm_chart_local_repo = localnet_config["helm_chart_local_repo"]["path"]
+helm_repo("buildwithgrove", "https://buildwithgrove.github.io/helm-charts/")
+chart_prefix = "buildwithgrove/"
+if local_config["helm_chart_local_repo"]["enabled"]:
+    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
     hot_reload_dirs.append(helm_chart_local_repo)
     print("Using local helm chart repo " + helm_chart_local_repo)
     chart_prefix = helm_chart_local_repo + "/charts/"
@@ -28,9 +28,9 @@ if localnet_config["helm_chart_local_repo"]["enabled"]:
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
 # Import configuration files into Kubernetes ConfigMap
-configmap_create("path-config", from_file="localnet/path/config/.config.yaml", watch=True)
+configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
 
-# Build an image with a poktrolld binary
+# Build an image with a path binary
 docker_build_with_restart(
     "path",
     ".",
@@ -43,7 +43,7 @@ docker_build_with_restart(
 helm_resource(
     "path",
     chart_prefix + "path",
-    # TODO_UPNEXT(@adshmh): Add the CLI flag for loading the configuration file, once the CLI flags feature has been implemented.
+    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file, once the CLI flags feature has been implemented.
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
 )
@@ -59,7 +59,7 @@ helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
-       "--values=./localnet/kubernetes/observability-prometheus-stack.yaml",
+       "--values=./local/kubernetes/observability-prometheus-stack.yaml",
        "--set=grafana.defaultDashboardsEnabled=true",
     ],
     resource_deps=["prometheus-community"],
@@ -69,7 +69,7 @@ helm_resource(
     "loki",
     "grafana-helm-repo/loki-stack",
     flags=[
-        "--values=./localnet/kubernetes/observability-loki-stack.yaml",
+        "--values=./local/kubernetes/observability-loki-stack.yaml",
     ],
     labels=["monitoring"],
     resource_deps=["grafana-helm-repo"],

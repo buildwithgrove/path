@@ -1,14 +1,25 @@
-# To run LocalNet environment using Tilt, copy this file and rename it to .config.yaml, then update.
-# morse_config is required for using Morse as the relaying protocol.
+# This is an example config file to run a local development environment using the Morse protocol as a relayer.
+#
+# Run `make config_morse_localnet` to use it as a template and update the following:
+#  1. `protocol.morse_config.full_node_config.relay_signing_key`,
+#  2. `protocol.morse_config.full_node_config.url`, and
+#  3. `protocol.morse_config.signed_aats`.
+#
+# DEV_NOTE: Ony `relay_signing_key` and `signed_aats` values should be updated.
 morse_config:
   full_node_config:
+    # IMPORTANT: url MUST BE replaced with a Morse full node.
     url: "https://pocket-network-full-node-url.io"
+    # IMPORTANT: relay_signing_key MUST BE replaced with your personal gateway private key secret
     relay_signing_key: "example_relay_signing_key" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
     http_config:
       retries: 3
       timeout: "5000ms"
     request_config:
       retries: 3
+  # IMPORTANT: signed_aats MUST BE replaced with the AATs of your Morse applications.
+  # See the following link for more details:
+  # https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats
   signed_aats:
     "example_application_address":
       client_public_key: "example_application_client_public_key"
