@@ -35,6 +35,21 @@ path_up_build: ## Run and build the PATH gateway and all related dependencies
 path_down: ## Stop the PATH gateway and all related dependencies
 	docker compose down
 
+#######################
+### Proto  Helpers ####
+#######################
+
+.PHONY: proto_gen
+proto_gen: ## Generate protobuf artifacts
+	protoc -I=./proto --go_out=./observation --go_opt=module='github.com/buildwithgrove/path/observation' ./proto/path/*.proto
+
+.PHONY: proto_clean
+proto_clean: ## Delete existing .pb.go or .pb.gw.go files
+	find . \( -name "*.pb.go" \) | xargs --no-run-if-empty rm
+
+.PHONY: proto_regen
+proto_regen: proto_clean proto_gen ## Regenerate protobuf artifacts
+
 #########################
 ### Test Make Targets ###
 #########################

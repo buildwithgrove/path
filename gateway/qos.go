@@ -93,4 +93,5 @@ type QoSPublisher interface {
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSContextBuilder
+	ApplyObservations(*observation.QoSDetails) error
 }

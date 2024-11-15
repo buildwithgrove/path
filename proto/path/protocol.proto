@@ -1,0 +1,9 @@
+syntax = "proto3";
+package path;
+
+option go_package = "github.com/buildwithgrove/path/observation";
+
+message ProtocolDetails {
+  string protocol_name=1;
+  int64 block_height=2;
+}

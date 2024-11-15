@@ -37,6 +37,9 @@ type Gateway struct {
 	// a messaging platform to share among multiple PATH instances.
 	QoSPublisher
 
+	MetricsPublisher RequestResponseDetailsPublisher
+	DataPublisher RequestResponseDetailsPublisher
+
 	Logger polylog.Logger
 }
 
@@ -65,6 +68,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// TODO_TECHDEBT: add request authentication: e.g. using a portal app ID extracted from the HTTP request's path.
 	// This is currently out of scope since the gateway MVP is to accept all incoming HTTP requests.
 
+	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
 	// Extract the service ID and find the target service's corresponding QoS instance.
 	serviceID, serviceQoS, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
 	if err != nil {
@@ -86,6 +90,9 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 		return
 	}
+
+	// TODO_IN_THIS_PR: Use a Protocol context struct, similar to QoS, to send relays and to get the protocol-level observation set, once 
+	// the relayer package's refactor PR is merged.
 
 	// Send the service request payload, through the relayer, to a service provider endpoint.
 	endpointResponse, err := g.Relayer.SendRelay(
@@ -123,17 +130,25 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
-	// This is called in a Goroutine to avoid potentially blocking the HTTP handler.
-	go func() {
-		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-			logger := g.Logger.With(
-				"service", string(serviceID),
-				"endpoint", string(endpointResponse.EndpointAddr),
-			)
+	// TODO_MVP(@adshmh): Apply Protocol-level observations once the relayer package's refactor PR is merged:
+	// https://github.com/buildwithgrove/path/pull/61
 
-			logger.Warn().Msg("Failed to publish endpoint observations")
-		}
+	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
+	// the observation.QoSDetails struct.
+	// This ensures that separate PATH instances can communicate and share their QoS observations.
+	qosObservations := serviceRequestCtx.GetObservations()
+	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
+	go func() {
+		g.applyQoSObservations(serviceID, serviceQoS, qosObservations)
+		g.applyProtocolObservations(serviceID, protocolObservations)
+
+		g.publishRequestResponseDetails(
+			serviceID,
+			gatewayObservations,
+			httpRequestObservations,
+			protocolObservations,
+			qosObservations, 
+		)
 	}()
 }
 
@@ -154,4 +169,53 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	// TODO_TECHDEBT: add logging in case the payload is not written correctly;
 	// this could be a silent failure. Gateway currently has no logger.
 	_, _ = w.Write(response.GetPayload())
+}
+
+// applyQoSObservations calls the supplied QoS instance to apply the supplied observations.
+func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS QoSService, qosObservations *observation.QoSDetails) {
+	logger := g.Logger.With(
+		"service", string(serviceID),
+		"method": "publishQoSObservations",
+	)
+
+	if qosObservations == nil {
+		logger.Info().Msg("QoS observation set is nil; skipping.")
+		return
+	}
+
+	err := qos.ApplyObservations(qosObservations)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to apply QoS observations")
+	}
+}
+
+// publishRequestResponseDetails delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
+func (g Gateway) publishRequestResponseDetails(
+	serviceID relayer.ServiceID,
+	gatewayObservations *observation.Gateway,
+	httpObservations *observation.HTTPRequest,
+	protocolObservations *observation.Protocol,
+	qosObservations *observation.Qos,
+) {
+	logger := g.Logger.With(
+		"service", string(serviceID),
+		"method": "publishRequestResponseDetails",
+	)
+
+	requestResponseDetails := observation.RequestResponseDetails {
+		HTTPRequest: httpObservations,
+		Gateway: gatewayObservations,
+		Protocol: protocolObservations,
+		QoS: qosObservations,
+	}
+
+	err = g.MetricsPublisher.Publish(requestResponseDetails)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to publish metrics")
+	}
+
+	err = g.DataPublisher.Publish(requestResponseDetails)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to publish data")
+	}
 }

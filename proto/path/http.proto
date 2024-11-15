@@ -1,0 +1,11 @@
+syntax = "proto3";
+package path;
+
+option go_package = "github.com/buildwithgrove/path/observation";
+
+import "google/protobuf/timestamp.proto";
+
+message HTTPRequestDetails {
+  string host=1;
+  google.protobuf.Timestamp request_time=2;
+}
