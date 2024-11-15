@@ -132,6 +132,24 @@ init_envoy: ## copies the example envoy configuration and gateway endpoints file
 ### Generation Make Targets ###
 ###############################
 
-.PHONY: proto_generate
-proto_generate: ## Generate the Go code from the gateway_endpoint.proto file
+.PHONY: gen_proto
+gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
+
+# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
+.PHONY: gen_mocks
+gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
+	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
+
+########################
+#### Documentation  ####
+########################
+
+.PHONY: go_docs
+go_docs: ## Start Go documentation server
+	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
+	godoc -http=:6060
+
+.PHONY: docusaurus_start
+docusaurus_start: ## Start docusaurus server
+	cd docusaurus && npm i && npm run start
