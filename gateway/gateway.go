@@ -31,14 +31,10 @@ type Gateway struct {
 	// sending the service payload to an endpoint.
 	*relayer.Relayer
 
-	// QoSPublisher is used to publish QoS-related observations.
-	// It can be "local" i.e. inform the local QoS
-	// instance, or publisher that sends QoS observations over
-	// a messaging platform to share among multiple PATH instances.
-	QoSPublisher
-
-	MetricsPublisher RequestResponseDetailsPublisher
-	DataPublisher RequestResponseDetailsPublisher
+	// MetricsPublisher and DataPublisher are intentionally declared separately, rather than using a slice of the same interface, to be consistent 
+	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	MetricsPublisher RequestResponseReporter
+	DataPublisher RequestResponseReporter
 
 	Logger polylog.Logger
 }
@@ -209,12 +205,12 @@ func (g Gateway) publishRequestResponseDetails(
 		QoS: qosObservations,
 	}
 
-	err = g.MetricsPublisher.Publish(requestResponseDetails)
+	err = g.MetricsReporter.Publish(requestResponseDetails)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to publish metrics")
 	}
 
-	err = g.DataPublisher.Publish(requestResponseDetails)
+	err = g.DataReporter.Publish(requestResponseDetails)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to publish data")
 	}

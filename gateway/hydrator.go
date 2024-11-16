@@ -195,6 +195,9 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			if err := eph.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
 				logger.Warn().Err(err).Msg("Failed to publish QoS observations.")
 			}
+
+
+			// TODO_IN_THIS_PR: apply Observations + Publish Observations.
 		}
 	}
 

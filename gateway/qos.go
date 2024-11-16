@@ -78,12 +78,6 @@ type QoSEndpointCheckGenerator interface {
 	GetRequiredQualityChecks(relayer.EndpointAddr) []RequestQoSContext
 }
 
-// QoSPublisher is used to publish a message package's ObservationSet.
-// This is used to share QoS data between PATH instances.
-type QoSPublisher interface {
-	Publish(message.ObservationSet) error
-}
-
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
 // e.g. a QoSService implementation for Ethereum, another for Solana, and third one for a RESTful service.
 //
@@ -93,5 +87,10 @@ type QoSPublisher interface {
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSContextBuilder
+
+	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
+	// The observatios can be:
+	// A. "local", i.e. from requests sent to an endpoint by this PATH instance, or
+	// B. "shared": i.e. from QoS observations shared by other PATH instances.
 	ApplyObservations(*observation.QoSDetails) error
 }
