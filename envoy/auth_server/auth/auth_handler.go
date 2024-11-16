@@ -49,7 +49,7 @@ type AuthHandler struct {
 	// The authorizers represents a list of authorization types that must
 	// pass before a request may be forwarded to the PATH service.
 	// Configured in `main.go` and passed to the filter.
-	Authorizers []Authorizer
+	Authorizers map[proto.Auth_AuthType]Authorizer
 	Logger      polylog.Logger
 }
 
@@ -93,19 +93,9 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 		return getDeniedCheckResponse("endpoint not found", envoy_type.StatusCode_NotFound), nil
 	}
 
-	// If the GatewayEndpoint requires auth, perform all configured authorization checks
-	if gatewayEndpoint.GetAuth().GetRequireAuth() {
-
-		// Get the provider user ID from the headers set from the JWT sub claim
-		providerUserID, ok := headers[reqHeaderAccountUserID]
-		if !ok || providerUserID == "" {
-			return getDeniedCheckResponse("unauthorized", envoy_type.StatusCode_Unauthorized), nil
-		}
-
-		// Perform all configured authorization checks
-		if err := a.authGatewayEndpoint(providerUserID, gatewayEndpoint); err != nil {
-			return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
-		}
+	// Perform all configured authorization checks
+	if err := a.authGatewayEndpoint(headers, gatewayEndpoint); err != nil {
+		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Unauthorized), nil
 	}
 
 	// Add endpoint ID and rate limiting values to the headers
@@ -136,13 +126,11 @@ func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpo
 }
 
 // authGatewayEndpoint performs all configured authorization checks on the request
-func (a *AuthHandler) authGatewayEndpoint(providerUserID string, gatewayEndpoint *proto.GatewayEndpoint) error {
-	for _, auth := range a.Authorizers {
-		if err := auth.authorizeRequest(providerUserID, gatewayEndpoint); err != nil {
-			return err
-		}
-	}
-	return nil
+func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndpoint *proto.GatewayEndpoint) error {
+
+	requestAuthorizer := a.Authorizers[gatewayEndpoint.GetAuth().GetAuthType()]
+
+	return requestAuthorizer.authorizeRequest(headers, gatewayEndpoint)
 }
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded
