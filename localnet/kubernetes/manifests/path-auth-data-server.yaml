@@ -12,18 +12,14 @@ spec:
       labels:
         app: path-auth-data-server
     spec:
+      hostNetwork: true
       containers:
       - name: path-auth-data-server
         image: ghcr.io/buildwithgrove/path-auth-data-server:latest
-        env:
-        # PADS may run in one of two modes:
-        # Note: Only 1 of the following two environment variables should be set.
-        # 1. Loading data from a YAML file mounted into the container from ./envoy/gateway-endpoints.yaml to /app/gateway-endpoints.yaml
-        - name: YAML_FILEPATH 
-          value: /app/.gateway-endpoints.yaml
-        # 2. Loading data from a Postgres database
-        # - name: POSTGRES_CONNECTION_STRING
-        #   value: postgres://postgres:postgres@postgres:5432/postgres # Set this to the connection string for your Postgres database
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: pads-env
         ports:
         - containerPort: 50051
         volumeMounts:

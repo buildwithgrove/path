@@ -102,6 +102,7 @@ if MODE == "path_with_auth":
 
     # Import External Authorization Server environment variables into Kubernetes ConfigMaps
     configmap_create("ext-authz-env", from_env_file="./localnet/path/envoy/.env.auth_server", watch=True)
+    configmap_create("pads-env", from_env_file="./localnet/path/envoy/.env.pads", watch=True)
 
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(

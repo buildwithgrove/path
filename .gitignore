@@ -45,3 +45,8 @@ tmp/*
 
 # PATH Localnet config files
 localnet/path/**/.*
+.env.auth_server
+.env.pads
+.envoy.yaml
+.gateway_endpoints.yaml
+.ratelimit.yaml
