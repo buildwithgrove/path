@@ -134,14 +134,14 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_1",
-					PlanType:  "PLAN_FREE",
-				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     30,
 					CapacityLimit:       100,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_DAILY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_1",
+					"plan_type":  "PLAN_FREE",
 				},
 			},
 			"endpoint_2": {
@@ -155,14 +155,14 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_2",
-					PlanType:  "PLAN_UNLIMITED",
-				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     50,
 					CapacityLimit:       200,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 		},
@@ -189,14 +189,14 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_3",
-					PlanType:  "PLAN_ENTERPRISE",
-				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     100,
 					CapacityLimit:       500,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_3",
+					"plan_type":  "PLAN_ENTERPRISE",
 				},
 			},
 			Delete: false,
@@ -215,14 +215,14 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_2",
-					PlanType:  "PLAN_PREMIUM",
-				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     60,
 					CapacityLimit:       250,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_WEEKLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 			Delete: false,
