@@ -41,7 +41,7 @@ path_down: ## Stop the PATH gateway and all related dependencies
 
 .PHONY: proto_gen
 proto_gen: ## Generate protobuf artifacts
-	protoc -I=./proto --go_out=./observation --go_opt=module='github.com/buildwithgrove/path/observation' ./proto/path/*.proto
+	protoc -I=./proto --go_out=./observation --go_opt=module='github.com/buildwithgrove/path/observation' ./proto/path/*.proto ./proto/path/qos/*.proto
 
 .PHONY: proto_clean
 proto_clean: ## Delete existing .pb.go or .pb.gw.go files

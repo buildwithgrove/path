@@ -1,12 +1,7 @@
 syntax = "proto3";
-package path;
+package path.qos;
 
-option go_package = "github.com/buildwithgrove/path/observation";
-
-message QoSDetails {
-  optional JsonRpcRequest jsonrpc_request=1;
-  optional JsonRpcResponse jsonrpc_response=2;
-}
+option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 message JsonRpcRequest {
   string id=1;

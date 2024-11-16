@@ -1,0 +1,19 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+message SolanaDetails {
+  JsonRpcRequest jsonrpc_request=1;
+  optional JsonRpcResponse jsonrpc_response=2;
+  repeated SolanaEndpointDetails
+}
+
+message SolanaEndpointDetails {
+  string endpoint_addr=1;
+  optional uint64 epoch=2;
+  optional uint64 block_height=3;
+  optional string health_result=4;
+}
