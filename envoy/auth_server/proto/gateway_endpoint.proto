@@ -64,8 +64,30 @@ message GatewayEndpoint {
 
 // The authorization settings for a GatewayEndpoint.
 message Auth {
-  // A boolean indicating whether the GatewayEndpoint requires authentication.
-  bool require_auth = 1;
+  enum AuthType {
+    NO_AUTH = 0;
+    API_KEY_AUTH = 1;
+    JWT_AUTH = 2;
+  }
+
+  // The type of authentication being used.
+  AuthType auth_type = 1;
+
+  oneof auth_type_details {
+    Empty no_auth = 2;
+    // The API key authorization settings for the GatewayEndpoint.
+    APIKey api_key = 3;
+    // The JWT authorization settings for the GatewayEndpoint.
+    JWT jwt = 4;
+  }
+}
+
+message APIKey {
+  // The API key string.
+  string api_key = 2;
+}
+
+message JWT {
   // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
   map<string, Empty> authorized_users = 2;
 }
