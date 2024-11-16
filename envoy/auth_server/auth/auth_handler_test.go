@@ -48,7 +48,7 @@ func Test_Check(t *testing.T) {
 						Headers: []*envoy_core.HeaderValueOption{
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_free"}},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitEndpointID, Value: "endpoint_free"}},
-							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitPlan, Value: "PLAN_FREE"}},
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitThroughput, Value: "30"}},
 						},
 					},
 				},
@@ -69,8 +69,9 @@ func Test_Check(t *testing.T) {
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit: 30,
 				},
-				UserAccount: &proto.UserAccount{
-					PlanType: "PLAN_FREE",
+				Metadata: map[string]string{
+					"account_id": "account_1",
+					"plan_type":  "PLAN_FREE",
 				},
 			},
 		},
@@ -113,8 +114,9 @@ func Test_Check(t *testing.T) {
 						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					PlanType: "PLAN_UNLIMITED",
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 		},

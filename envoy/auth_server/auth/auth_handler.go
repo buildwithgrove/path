@@ -27,7 +27,7 @@ const (
 
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
 	reqHeaderRateLimitEndpointID = "x-rl-endpoint-id" // Set only on service requests that should be rate limited
-	reqHeaderRateLimitPlan       = "x-rl-plan"        // Set only on service requests that should be rate limited
+	reqHeaderRateLimitThroughput = "x-rl-throughput"  // Set only on service requests that should be rate limited
 
 	errBody = `{"code": %d, "message": "%s"}`
 )
@@ -160,8 +160,8 @@ func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint) []*
 		// Set the account plan type header
 		headers = append(headers, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
-				Key:   reqHeaderRateLimitPlan,
-				Value: gatewayEndpoint.GetUserAccount().GetPlanType(),
+				Key:   reqHeaderRateLimitThroughput,
+				Value: fmt.Sprintf("%d", gatewayEndpoint.GetRateLimiting().GetThroughputLimit()),
 			},
 		})
 

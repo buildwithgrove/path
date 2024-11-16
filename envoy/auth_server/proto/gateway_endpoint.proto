@@ -55,11 +55,11 @@ message GatewayEndpoint {
   string endpoint_id = 1;
   // The authorization settings for the GatewayEndpoint.
   Auth auth = 2;
-  // The UserAccount that the GatewayEndpoint belongs to, including the PlanType.
-  UserAccount user_account = 3;
   // The rate limiting settings for the GatewayEndpoint, which includes both
   // the throughput (TPS) limit and the capacity (longer period) limit.
-  RateLimiting rate_limiting = 4;
+  RateLimiting rate_limiting = 3;
+  // The metadata for the GatewayEndpoint, which can be set to any additional information
+  map<string, string> metadata = 4;
 }
 
 // The authorization settings for a GatewayEndpoint.
@@ -90,14 +90,6 @@ message APIKey {
 message JWT {
   // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
   map<string, Empty> authorized_users = 2;
-}
-
-// A UserAccount contains the PlanType and may have multiple GatewayEndpoints.
-message UserAccount {
-  // The unique identifier for a UserAccount.
-  string account_id = 1;
-  // The plan type for a UserAccount, which identifies the pricing plan for the Account.
-  string plan_type = 2;
 }
 
 // The rate limiting settings for a GatewayEndpoint.
