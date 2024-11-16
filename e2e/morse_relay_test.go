@@ -50,6 +50,11 @@ func Test_MorseRelay(t *testing.T) {
 		},
 
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
+		// TODO_UPNEXT(@adshmh): add the following test cases for Solana:
+		//	1. Valid GetEpochInfo request
+		//	2. Invalid GetEpochInfo request
+		//      3. Valid generic request
+		//      4. Invalid generic request
 	}
 
 	for _, test := range tests {

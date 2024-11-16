@@ -11,6 +11,12 @@ import (
 	"github.com/buildwithgrove/path/relayer"
 )
 
+// TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
+// 1. Add Solana alias + config to the configuration
+// 2. Build a Solana QoS instance using any required configuration options.
+// 3. Pass the Solana QoS instance to the endpoint hydrator, if enabled.
+// 4. Pass the Solana QoS instance to the gateway.
+//
 // getServiceQoSInstances returns all QoS instances
 // to be used by the Gateway and EndpointHydrator, respectively.
 // This is done to ensure the same QoS instance is used in both
@@ -39,7 +45,13 @@ func getServiceQoSInstances(
 	for _, serviceID := range allServiceIDs {
 		switch serviceID {
 		case config.ServiceIDEVM:
-			evmEndpointStore := &evm.EndpointStore{Logger: logger}
+			evmEndpointStore := &evm.EndpointStore{
+				Config: evm.EndpointStoreConfig{
+					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
+					ChainID: "0x1",
+				},
+				Logger: logger,
+			}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
@@ -51,7 +63,13 @@ func getServiceQoSInstances(
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 		case config.ServiceIDE2E:
-			evmEndpointStore := &evm.EndpointStore{Logger: logger}
+			evmEndpointStore := &evm.EndpointStore{
+				Config: evm.EndpointStoreConfig{
+					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
+					ChainID: "0x1",
+				},
+				Logger: logger,
+			}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}

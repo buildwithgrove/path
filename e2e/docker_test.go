@@ -18,9 +18,11 @@ import (
 /* -------------------- Dockertest Ephemeral PATH Container Setup -------------------- */
 
 const (
+	imageName            = "path-image"
 	containerName        = "path"
 	internalPathPort     = "3000"
-	dockerfilePath       = "../Dockerfile"
+	buildContextDir      = ".."
+	dockerfileName       = "Dockerfile"
 	configMountPoint     = ":/app/config/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
@@ -77,22 +79,46 @@ func setupPathInstance(t *testing.T, configFilePath string) (containerPort strin
 func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *dockertest.Resource, string) {
 	t.Helper()
 
-	// eg. {file_path}/path/e2e/.config.test.yaml:/app/.config.yaml
-	containerConfigMount := filepath.Join(os.Getenv("PWD"), configFilePath) + configMountPoint
+	// eg. {file_path}/path/e2e/.shannon.config.yaml
+	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
 
-	opts := &dockertest.RunOptions{
+	// Check if config file exists and exit if it does not
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		t.Fatalf("config file does not exist: %s", configFilePath)
+	}
+
+	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/.config.yaml
+	containerConfigMount := configFilePath + configMountPoint
+
+	// Initialize the dockertest pool
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		t.Fatalf("Could not construct pool: %s", err)
+	}
+
+	// Build the image and log build output
+	buildOptions := docker.BuildImageOptions{
+		Name:           imageName,
+		ContextDir:     buildContextDir,
+		Dockerfile:     dockerfileName,
+		OutputStream:   os.Stdout,
+		SuppressOutput: false,
+		NoCache:        false,
+	}
+	if err := pool.Client.BuildImage(buildOptions); err != nil {
+		t.Fatalf("could not build path image: %s", err)
+	}
+
+	// Run the built image
+	runOpts := &dockertest.RunOptions{
 		Name:         containerName,
+		Repository:   imageName,
 		Mounts:       []string{containerConfigMount},
 		Env:          []string{containerEnvImageTag},
 		ExposedPorts: []string{containerPortAndProtocol},
 		ExtraHosts:   []string{containerExtraHost},
 	}
-
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		t.Fatalf("Could not construct pool: %s", err)
-	}
-	resource, err := pool.BuildAndRunWithOptions(dockerfilePath, opts, func(config *docker.HostConfig) {
+	resource, err := pool.RunWithOptions(runOpts, func(config *docker.HostConfig) {
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
@@ -100,6 +126,21 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
+	// Print container logs in a goroutine to prevent blocking
+	go func() {
+		if err := pool.Client.Logs(docker.LogsOptions{
+			Container:    resource.Container.ID,
+			OutputStream: os.Stdout,
+			ErrorStream:  os.Stderr,
+			Stdout:       true,
+			Stderr:       true,
+			Follow:       true,
+		}); err != nil {
+			fmt.Printf("could not fetch logs for PATH container: %s", err)
+		}
+	}()
+
+	// Handle termination signals
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {

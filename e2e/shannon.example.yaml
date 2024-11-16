@@ -5,10 +5,10 @@
 shannon_config:
   full_node_config:
     # do not change rpc_url
-    rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com 
+    rpc_url: https://testnet-validated-validator-rpc.poktroll.com
     grpc_config:
       # do not change host_port
-      host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 
+      host_port: testnet-validated-validator-grpc.poktroll.com:443
     # NOTE: gateway_private_key must be replaced with the correct gateway private key secret
     gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 
     # do not change gateway_address
