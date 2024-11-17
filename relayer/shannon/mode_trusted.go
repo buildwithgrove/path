@@ -26,7 +26,7 @@ var (
 const (
 	// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address.
 	// The target app will be used to sign the relay request.
-	headerAppAddr = "app_address"
+	headerAppAddr = "X-App-Address"
 )
 
 // NewTrustedMode initializes an instance of TrustedMode using the supplied list of private keys.
