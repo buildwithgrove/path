@@ -20,7 +20,8 @@ import (
 	"github.com/buildwithgrove/path/router"
 )
 
-const configPath = ".config.yaml"
+// TODO_UPNEXT(@adshmh): add CLI flags for specifying the config file's path.
+var configPath = "/app/.config.yaml"
 
 func main() {
 	logger := polyzero.NewLogger()

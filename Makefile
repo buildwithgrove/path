@@ -14,30 +14,21 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 ### Run Path Make Targets ###
 #############################
+.PHONY: path_build
+path_build: ## build the path binary
+	go build -o bin/path ./cmd
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --no-deps path_gateway 
-
-.PHONY: path_up_build_gateway
-path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --build --no-deps path_gateway
-
-.PHONY: path_down_gateway
-path_down_gateway: ## Stop just the PATH gateway
-	docker compose --profile path-gateway down --remove-orphans path_gateway
+	MODE=path_gateway tilt up
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
-	docker compose up -d
-
-.PHONY: path_up_build
-path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+	tilt up
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down --remove-orphans
+	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -100,26 +91,34 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	@if [ ! -f ./envoy/envoy.yaml ]; then \
+	@if [ ! -f ./localnet/path/envoy/.envoy.yaml ]; then \
 		./envoy/scripts/copy_envoy_config.sh; \
 	else \
-		echo "./envoy/envoy.yaml already exists, not overwriting."; \
+		echo "./localnet/path/envoy/.envoy.yaml already exists, not overwriting."; \
 	fi
 
 .PHONY: copy_envoy_env
 copy_envoy_env: ## copies the example envoy environment variables file to .env file
-	@if [ ! -f ./envoy/auth_server/.env ]; then \
-		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
+	@if [ ! -f ./localnet/path/envoy/.env.auth_server ]; then \
+		cp ./envoy/auth_server/.env.example ./localnet/path/envoy/.env.auth_server; \
 	else \
-		echo "./envoy/auth_server/.env already exists, not overwriting."; \
+		echo "./localnet/path/envoy/.env.auth_server already exists, not overwriting."; \
 	fi
 
 .PHONY: copy_envoy_gateway_endpoints
 copy_envoy_gateway_endpoints: ## copies the example envoy gateway endpoints file to gateway-endpoints.yaml
-	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
-		cp ./envoy/gateway-endpoints.example.yaml ./envoy/gateway-endpoints.yaml; \
+	@if [ ! -f ./localnet/path/envoy/.gateway-endpoints.yaml ]; then \
+		cp ./envoy/gateway-endpoints.example.yaml ./localnet/path/envoy/.gateway-endpoints.yaml; \
 	else \
-		echo "./envoy/gateway-endpoints.yaml already exists, not overwriting."; \
+		echo "./localnet/path/envoy/.gateway-endpoints.yaml already exists, not overwriting."; \
+	fi
+
+.PHONY: copy_envoy_ratelimit
+copy_envoy_ratelimit: ## copies the example envoy ratelimit configuration file to ratelimit.yaml
+	@if [ ! -f ./localnet/path/envoy/.ratelimit.yaml ]; then \
+		cp ./envoy/ratelimit.template.yaml ./localnet/path/envoy/.ratelimit.yaml; \
+	else \
+		echo "./localnet/path/envoy/.ratelimit.yaml already exists, not overwriting."; \
 	fi
 
 .PHONY: init_envoy
@@ -127,6 +126,7 @@ init_envoy: ## copies the example envoy configuration and gateway endpoints file
 	@make copy_envoy_config
 	@make copy_envoy_env
 	@make copy_envoy_gateway_endpoints
+	@make copy_envoy_ratelimit
 
 ###############################
 ### Generation Make Targets ###
