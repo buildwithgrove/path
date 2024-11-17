@@ -12,7 +12,7 @@ spec:
       labels:
         app: path-auth-data-server
     spec:
-      hostNetwork: true
+
       containers:
       - name: path-auth-data-server
         image: ghcr.io/buildwithgrove/path-auth-data-server:latest

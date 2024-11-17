@@ -97,12 +97,20 @@ copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in t
 		echo "./localnet/path/envoy/.envoy.yaml already exists, not overwriting."; \
 	fi
 
-.PHONY: copy_envoy_env
-copy_envoy_env: ## copies the example envoy environment variables file to .env file
+.PHONY: copy_envoy_env_auth_server
+copy_envoy_env_auth_server: ## copies the example envoy environment variables file to .env.auth_server file
 	@if [ ! -f ./localnet/path/envoy/.env.auth_server ]; then \
 		cp ./envoy/auth_server/.env.example ./localnet/path/envoy/.env.auth_server; \
 	else \
 		echo "./localnet/path/envoy/.env.auth_server already exists, not overwriting."; \
+	fi
+
+.PHONY: copy_envoy_env_pads
+copy_envoy_env_pads: ## copies the example envoy environment variables file to .env.pads file
+	@if [ ! -f ./localnet/path/envoy/.env.pads ]; then \
+		cp ./envoy/auth_server/.env.pads.example ./localnet/path/envoy/.env.pads; \
+	else \
+		echo "./localnet/path/envoy/.env.pads already exists, not overwriting."; \
 	fi
 
 .PHONY: copy_envoy_gateway_endpoints
@@ -124,7 +132,8 @@ copy_envoy_ratelimit: ## copies the example envoy ratelimit configuration file t
 .PHONY: init_envoy
 init_envoy: ## copies the example envoy configuration and gateway endpoints files to their respective files
 	@make copy_envoy_config
-	@make copy_envoy_env
+	@make copy_envoy_env_auth_server
+	@make copy_envoy_env_pads
 	@make copy_envoy_gateway_endpoints
 	@make copy_envoy_ratelimit
 
