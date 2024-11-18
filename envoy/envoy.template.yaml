@@ -185,5 +185,5 @@ static_resources:
                                       header_name: "x-rl-endpoint-id"
                                       descriptor_key: "x-rl-endpoint-id"
                                   - request_headers:
-                                      header_name: "x-rl-plan"
-                                      descriptor_key: "x-rl-plan"
+                                      header_name: "x-rl-throughput"
+                                      descriptor_key: "x-rl-throughput"

@@ -48,7 +48,7 @@ func Test_Check(t *testing.T) {
 						Headers: []*envoy_core.HeaderValueOption{
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_free"}},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitEndpointID, Value: "endpoint_free"}},
-							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitPlan, Value: "PLAN_FREE"}},
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitThroughput, Value: "30"}},
 						},
 					},
 				},
@@ -57,15 +57,21 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_free",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|ulfric_stormcloak": {},
+					AuthType: proto.Auth_JWT_AUTH,
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|ulfric_stormcloak": {},
+							},
+						},
 					},
 				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit: 30,
 				},
-				UserAccount: &proto.UserAccount{
-					PlanType: "PLAN_FREE",
+				Metadata: map[string]string{
+					"account_id": "account_1",
+					"plan_type":  "PLAN_FREE",
 				},
 			},
 		},
@@ -100,12 +106,17 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_unlimited",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|frodo_baggins": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|frodo_baggins": {},
+							},
+						},
 					},
 				},
-				UserAccount: &proto.UserAccount{
-					PlanType: "PLAN_UNLIMITED",
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 		},
@@ -140,9 +151,8 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "public_endpoint",
 				Auth: &proto.Auth{
-					RequireAuth: false,
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|chrisjen_avasarala": {},
+					AuthTypeDetails: &proto.Auth_NoAuth{
+						NoAuth: &proto.Empty{},
 					},
 				},
 			},
@@ -210,9 +220,12 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_found",
 				Auth: &proto.Auth{
-					RequireAuth: true,
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|chrisjen_avasarala": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|chrisjen_avasarala": {},
+							},
+						},
 					},
 				},
 			},
@@ -233,8 +246,10 @@ func Test_Check(t *testing.T) {
 
 			authHandler := &AuthHandler{
 				EndpointStore: mockStore,
-				Authorizers: []Authorizer{
-					&ProviderUserIDAuthorizer{},
+				Authorizers: map[proto.Auth_AuthType]Authorizer{
+					proto.Auth_NO_AUTH:      &NoAuthAuthorizer{},
+					proto.Auth_API_KEY_AUTH: &APIKeyAuthorizer{},
+					proto.Auth_JWT_AUTH:     &JWTAuthorizer{},
 				},
 				Logger: polyzero.NewLogger(),
 			}

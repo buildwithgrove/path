@@ -102,9 +102,10 @@ func main() {
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
 		EndpointStore: endpointStore,
-		// TODO_IMPROVE: make the authorizers configurable from the plugin config YAML
-		Authorizers: []auth.Authorizer{
-			&auth.ProviderUserIDAuthorizer{},
+		Authorizers: map[proto.Auth_AuthType]auth.Authorizer{
+			proto.Auth_NO_AUTH:      &auth.NoAuthAuthorizer{},
+			proto.Auth_API_KEY_AUTH: &auth.APIKeyAuthorizer{},
+			proto.Auth_JWT_AUTH:     &auth.JWTAuthorizer{},
 		},
 		Logger: logger,
 	}

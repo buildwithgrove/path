@@ -125,36 +125,44 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 			"endpoint_1": {
 				EndpointId: "endpoint_1",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|user_1": {},
-						"auth0|user_4": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|user_1": {},
+								"auth0|user_4": {},
+							},
+						},
 					},
-				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_1",
-					PlanType:  "PLAN_FREE",
 				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     30,
 					CapacityLimit:       100,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_DAILY,
 				},
+				Metadata: map[string]string{
+					"account_id": "account_1",
+					"plan_type":  "PLAN_FREE",
+				},
 			},
 			"endpoint_2": {
 				EndpointId: "endpoint_2",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|user_2": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|user_2": {},
+							},
+						},
 					},
-				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_2",
-					PlanType:  "PLAN_UNLIMITED",
 				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     50,
 					CapacityLimit:       200,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 		},
@@ -173,18 +181,22 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 			GatewayEndpoint: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_3",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|user_3": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|user_3": {},
+							},
+						},
 					},
-				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_3",
-					PlanType:  "PLAN_ENTERPRISE",
 				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     100,
 					CapacityLimit:       500,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_3",
+					"plan_type":  "PLAN_ENTERPRISE",
 				},
 			},
 			Delete: false,
@@ -194,19 +206,23 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 			GatewayEndpoint: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_2",
 				Auth: &proto.Auth{
-					AuthorizedUsers: map[string]*proto.Empty{
-						"auth0|user_2": {},
-						"auth0|user_5": {},
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|user_2": {},
+								"auth0|user_5": {},
+							},
+						},
 					},
-				},
-				UserAccount: &proto.UserAccount{
-					AccountId: "account_2",
-					PlanType:  "PLAN_PREMIUM",
 				},
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit:     60,
 					CapacityLimit:       250,
 					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_WEEKLY,
+				},
+				Metadata: map[string]string{
+					"account_id": "account_2",
+					"plan_type":  "PLAN_UNLIMITED",
 				},
 			},
 			Delete: false,

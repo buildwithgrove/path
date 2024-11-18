@@ -55,27 +55,41 @@ message GatewayEndpoint {
   string endpoint_id = 1;
   // The authorization settings for the GatewayEndpoint.
   Auth auth = 2;
-  // The UserAccount that the GatewayEndpoint belongs to, including the PlanType.
-  UserAccount user_account = 3;
   // The rate limiting settings for the GatewayEndpoint, which includes both
   // the throughput (TPS) limit and the capacity (longer period) limit.
-  RateLimiting rate_limiting = 4;
+  RateLimiting rate_limiting = 3;
+  // The metadata for the GatewayEndpoint, which can be set to any additional information
+  map<string, string> metadata = 4;
 }
 
 // The authorization settings for a GatewayEndpoint.
 message Auth {
-  // A boolean indicating whether the GatewayEndpoint requires authentication.
-  bool require_auth = 1;
-  // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
-  map<string, Empty> authorized_users = 2;
+  enum AuthType {
+    NO_AUTH = 0;
+    API_KEY_AUTH = 1;
+    JWT_AUTH = 2;
+  }
+
+  // The type of authentication being used.
+  AuthType auth_type = 1;
+
+  oneof auth_type_details {
+    Empty no_auth = 2;
+    // The API key authorization settings for the GatewayEndpoint.
+    APIKey api_key = 3;
+    // The JWT authorization settings for the GatewayEndpoint.
+    JWT jwt = 4;
+  }
 }
 
-// A UserAccount contains the PlanType and may have multiple GatewayEndpoints.
-message UserAccount {
-  // The unique identifier for a UserAccount.
-  string account_id = 1;
-  // The plan type for a UserAccount, which identifies the pricing plan for the Account.
-  string plan_type = 2;
+message APIKey {
+  // The API key string.
+  string api_key = 2;
+}
+
+message JWT {
+  // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
+  map<string, Empty> authorized_users = 2;
 }
 
 // The rate limiting settings for a GatewayEndpoint.
