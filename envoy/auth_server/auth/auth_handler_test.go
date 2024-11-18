@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -32,7 +33,7 @@ func Test_Check(t *testing.T) {
 						Http: &envoy_auth.AttributeContext_HttpRequest{
 							Path: "/v1/endpoint_free",
 							Headers: map[string]string{
-								reqHeaderAccountUserID: "auth0|ulfric_stormcloak",
+								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
 							},
 						},
 					},
@@ -83,7 +84,7 @@ func Test_Check(t *testing.T) {
 						Http: &envoy_auth.AttributeContext_HttpRequest{
 							Path: "/v1/endpoint_unlimited",
 							Headers: map[string]string{
-								reqHeaderAccountUserID: "auth0|frodo_baggins",
+								reqHeaderJWTUserID: "auth0|frodo_baggins",
 							},
 						},
 					},
@@ -121,6 +122,88 @@ func Test_Check(t *testing.T) {
 			},
 		},
 		{
+			name: "should return ok check response if endpoint requires API key auth",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1/api_key_endpoint",
+							Headers: map[string]string{
+								reqHeaderAPIKey: "api_key_good",
+							},
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.OK),
+					Message: "ok",
+				},
+				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+					OkResponse: &envoy_auth.OkHttpResponse{
+						Headers: []*envoy_core.HeaderValueOption{
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "api_key_endpoint"}},
+						},
+					},
+				},
+			},
+			endpointID: "api_key_endpoint",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "api_key_endpoint",
+				Auth: &proto.Auth{
+					AuthType: proto.Auth_API_KEY_AUTH,
+					AuthTypeDetails: &proto.Auth_ApiKey{
+						ApiKey: &proto.APIKey{
+							ApiKey: "api_key_good",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should return ok check response if endpoint requires JWT auth",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1/jwt_endpoint",
+							Headers: map[string]string{
+								reqHeaderJWTUserID: "auth0|yennefer_of_vengerberg",
+							},
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.OK),
+					Message: "ok",
+				},
+				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+					OkResponse: &envoy_auth.OkHttpResponse{
+						Headers: []*envoy_core.HeaderValueOption{
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "jwt_endpoint"}},
+						},
+					},
+				},
+			},
+			endpointID: "jwt_endpoint",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "jwt_endpoint",
+				Auth: &proto.Auth{
+					AuthType: proto.Auth_JWT_AUTH,
+					AuthTypeDetails: &proto.Auth_Jwt{
+						Jwt: &proto.JWT{
+							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|yennefer_of_vengerberg": {},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "should return ok check response if endpoint does not require auth",
 			checkReq: &envoy_auth.CheckRequest{
 				Attributes: &envoy_auth.AttributeContext{
@@ -128,7 +211,7 @@ func Test_Check(t *testing.T) {
 						Http: &envoy_auth.AttributeContext_HttpRequest{
 							Path: "/v1/public_endpoint",
 							Headers: map[string]string{
-								reqHeaderAccountUserID: "auth0|ulfric_stormcloak",
+								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
 							},
 						},
 					},
@@ -165,7 +248,7 @@ func Test_Check(t *testing.T) {
 						Http: &envoy_auth.AttributeContext_HttpRequest{
 							Path: "/v1/endpoint_not_found",
 							Headers: map[string]string{
-								reqHeaderAccountUserID: "auth0|ellen_ripley",
+								reqHeaderJWTUserID: "auth0|ellen_ripley",
 							},
 						},
 					},
@@ -189,14 +272,14 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{},
 		},
 		{
-			name: "should return denied check response if user is not authorized to access endpoint",
+			name: "should return denied check response if user is not authorized to access endpoint using API key auth",
 			checkReq: &envoy_auth.CheckRequest{
 				Attributes: &envoy_auth.AttributeContext{
 					Request: &envoy_auth.AttributeContext_Request{
 						Http: &envoy_auth.AttributeContext_HttpRequest{
-							Path: "/v1/endpoint_found",
+							Path: "/v1/endpoint_api_key",
 							Headers: map[string]string{
-								reqHeaderAccountUserID: "auth0|ulfric_stormcloak",
+								reqHeaderAPIKey: "api_key_123",
 							},
 						},
 					},
@@ -205,21 +288,63 @@ func Test_Check(t *testing.T) {
 			expectedResp: &envoy_auth.CheckResponse{
 				Status: &status.Status{
 					Code:    int32(codes.PermissionDenied),
-					Message: "user is not authorized to access this endpoint",
+					Message: errUnauthorized.Error(),
 				},
 				HttpResponse: &envoy_auth.CheckResponse_DeniedResponse{
 					DeniedResponse: &envoy_auth.DeniedHttpResponse{
 						Status: &envoy_type.HttpStatus{
 							Code: envoy_type.StatusCode_Unauthorized,
 						},
-						Body: `{"code": 401, "message": "user is not authorized to access this endpoint"}`,
+						Body: fmt.Sprintf(`{"code": 401, "message": "%s"}`, errUnauthorized.Error()),
 					},
 				},
 			},
-			endpointID: "endpoint_found",
+			endpointID: "endpoint_api_key",
 			mockEndpointReturn: &proto.GatewayEndpoint{
-				EndpointId: "endpoint_found",
+				EndpointId: "endpoint_api_key",
 				Auth: &proto.Auth{
+					AuthType: proto.Auth_API_KEY_AUTH,
+					AuthTypeDetails: &proto.Auth_ApiKey{
+						ApiKey: &proto.APIKey{
+							ApiKey: "api_key_no_this_one",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should return denied check response if user is not authorized to access endpoint using JWT auth",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1/endpoint_jwt_auth",
+							Headers: map[string]string{
+								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
+							},
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.PermissionDenied),
+					Message: errUnauthorized.Error(),
+				},
+				HttpResponse: &envoy_auth.CheckResponse_DeniedResponse{
+					DeniedResponse: &envoy_auth.DeniedHttpResponse{
+						Status: &envoy_type.HttpStatus{
+							Code: envoy_type.StatusCode_Unauthorized,
+						},
+						Body: fmt.Sprintf(`{"code": 401, "message": "%s"}`, errUnauthorized.Error()),
+					},
+				},
+			},
+			endpointID: "endpoint_jwt_auth",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "endpoint_jwt_auth",
+				Auth: &proto.Auth{
+					AuthType: proto.Auth_JWT_AUTH,
 					AuthTypeDetails: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
@@ -247,7 +372,6 @@ func Test_Check(t *testing.T) {
 			authHandler := &AuthHandler{
 				EndpointStore: mockStore,
 				Authorizers: map[proto.Auth_AuthType]Authorizer{
-					proto.Auth_NO_AUTH:      &NoAuthAuthorizer{},
 					proto.Auth_API_KEY_AUTH: &APIKeyAuthorizer{},
 					proto.Auth_JWT_AUTH:     &JWTAuthorizer{},
 				},
