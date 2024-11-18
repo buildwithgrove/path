@@ -10,6 +10,9 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/observation"
+	"github.com/buildwithgrove/path/observation/protocol"
+	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -31,10 +34,10 @@ type Gateway struct {
 	// sending the service payload to an endpoint.
 	relayer.Protocol
 
-	// MetricsPublisher and DataPublisher are intentionally declared separately, rather than using a slice of the same interface, to be consistent 
+	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
 	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
-	MetricsPublisher RequestResponseReporter
-	DataPublisher RequestResponseReporter
+	MetricsReporter RequestResponseReporter
+	DataReporter    RequestResponseReporter
 
 	Logger polylog.Logger
 }
@@ -56,13 +59,21 @@ type Gateway struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	var httpRes HTTPResponse
+	var (
+		httpRes             HTTPResponse
+		serviceID           relayer.ServiceID
+		serviceQoS          QoSService
+		gatewayObservations observation.GatewayDetails
+		httpObservations    observation.HTTPRequestDetails
+		serviceRequestCtx   RequestQoSContext
+		protocolRequestCtx  relayer.ProtocolRequestContext
+	)
 
-	// TODO_INCOMPLETE: add request response observation and uncomment the following line when implemented.
-	// defer g.RequestResponseObserver.ObserveReqRes(ctx, httpReq, httpRes)
-
-	// TODO_TECHDEBT: add request authentication: e.g. using a portal app ID extracted from the HTTP request's path.
-	// This is currently out of scope since the gateway MVP is to accept all incoming HTTP requests.
+	defer func() {
+		// TODO_IN_THIS_PR: build the gateway observation data and pass it to the publisher method.
+		// TODO_IN_THIS_PR: build the HTTP request observation data and pass it to the publisher method.
+		g.observeReqRes(serviceID, serviceQoS, gatewayObservations, httpObservations, serviceRequestCtx, protocolRequestCtx)
+	}()
 
 	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
 	// Extract the service ID and find the target service's corresponding QoS instance.
@@ -87,7 +98,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
-	protocolRequestCtx, err := g.buildProtocolRequestCtx(serviceID, httpReq)
+	protocolRequestCtx, err = g.buildProtocolRequestCtx(serviceID, httpReq)
 	if err != nil {
 		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
@@ -129,27 +140,6 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// a) whether the endpoint failed to provide a valid response, and
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
-
-	// TODO_MVP(@adshmh): Apply Protocol-level observations once the relayer package's refactor PR is merged:
-	// https://github.com/buildwithgrove/path/pull/61
-
-	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-	// the observation.QoSDetails struct.
-	// This ensures that separate PATH instances can communicate and share their QoS observations.
-	qosObservations := serviceRequestCtx.GetObservations()
-	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
-	go func() {
-		g.applyQoSObservations(serviceID, serviceQoS, qosObservations)
-		g.applyProtocolObservations(serviceID, protocolObservations)
-
-		g.publishRequestResponseDetails(
-			serviceID,
-			gatewayObservations,
-			httpRequestObservations,
-			protocolObservations,
-			qosObservations, 
-		)
-	}()
 }
 
 // TODO_INCOMPLETE: writeResponse should use the context to write the user-facing
@@ -172,56 +162,20 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 }
 
 // applyQoSObservations calls the supplied QoS instance to apply the supplied observations.
-func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS QoSService, qosObservations *observation.QoSDetails) {
-	logger := g.Logger.With(
-		"service", string(serviceID),
-		"method", "publishQoSObservations",
-	)
-
-	if qosObservations == nil {
-		logger.Info().Msg("QoS observation set is nil; skipping.")
-		return
-	}
-
-	err := qos.ApplyObservations(qosObservations)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to apply QoS observations")
-	}
+func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS QoSService, qosObservations qos.QoSDetails) {
 }
 
-func (g Gateway) applyProtocolObservations(serviceID relayer.ServiceID, protocol Protocol, protocolObservations *observations.ProtocolDetails) {
-	// TODO_IN_THIS_PR: implement this method.
+func (g Gateway) applyProtocolObservations(serviceID relayer.ServiceID, protocolObservations protocol.ProtocolDetails) {
 }
 
 // publishRequestResponseDetails delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
 func (g Gateway) publishRequestResponseDetails(
 	serviceID relayer.ServiceID,
-	gatewayObservations *observation.Gateway,
-	httpObservations *observation.HTTPRequest,
-	protocolObservations *observation.Protocol,
-	qosObservations *observation.Qos,
+	gatewayObservations observation.GatewayDetails,
+	httpObservations observation.HTTPRequestDetails,
+	protocolObservations protocol.ProtocolDetails,
+	qosObservations qos.QoSDetails,
 ) {
-	logger := g.Logger.With(
-		"service", string(serviceID),
-		"method", "publishRequestResponseDetails",
-	)
-
-	requestResponseDetails := observation.RequestResponseDetails {
-		HTTPRequest: httpObservations,
-		Gateway: gatewayObservations,
-		Protocol: protocolObservations,
-		QoS: qosObservations,
-	}
-
-	err = g.MetricsReporter.Publish(requestResponseDetails)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to publish metrics")
-	}
-
-	err = g.DataReporter.Publish(requestResponseDetails)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to publish data")
-	}
 }
 
 func (g *Gateway) buildProtocolRequestCtx(serviceID relayer.ServiceID, httpReq *http.Request) (relayer.ProtocolRequestContext, error) {
@@ -234,4 +188,35 @@ func (g *Gateway) buildProtocolRequestCtx(serviceID relayer.ServiceID, httpReq *
 	}
 
 	return protocolCtx, err
+}
+
+func (g *Gateway) observeReqRes(
+	serviceID relayer.ServiceID,
+	serviceQoS QoSService,
+	gatewayObservations observation.GatewayDetails,
+	httpObservations observation.HTTPRequestDetails,
+	serviceRequestCtx RequestQoSContext,
+	protocolRequestCtx relayer.ProtocolRequestContext,
+) {
+	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
+	go func() {
+		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
+		// the observation.QoSDetails struct.
+		// This ensures that separate PATH instances can communicate and share their QoS observations.
+		qosObservations := serviceRequestCtx.GetObservations()
+		protocolObservations := protocolRequestCtx.GetObservations()
+
+		serviceQoS.ApplyObservations(qosObservations)
+		g.Protocol.ApplyObservations(protocolObservations)
+
+		requestResponseDetails := observation.RequestResponseDetails{
+			HttpRequest: &httpObservations,
+			Gateway:     &gatewayObservations,
+			Protocol:    &protocolObservations,
+			Qos:         &qosObservations,
+		}
+
+		g.MetricsReporter.Publish(requestResponseDetails)
+		g.DataReporter.Publish(requestResponseDetails)
+	}()
 }

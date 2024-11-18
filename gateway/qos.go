@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/relayer"
 )
@@ -88,6 +87,7 @@ type QoSEndpointCheckGenerator interface {
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSContextBuilder
+	QoSEndpointCheckGenerator
 
 	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
 	// The observatios can be:

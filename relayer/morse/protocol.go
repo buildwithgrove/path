@@ -3,6 +3,7 @@ package morse
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -72,7 +74,8 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
-func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID) (relayer.ProtocolRequestContext, error) {
+// Note: Morse ignores the HTTP Request input: it does not, as of now, support passing any parameters to the protocol integration using the HTTP request.
+func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID, _ *http.Request) (relayer.ProtocolRequestContext, error) {
 	apps, found := p.getServiceApps(serviceID)
 	if !found {
 		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
@@ -111,6 +114,14 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, e
 	}
 
 	return endpoints, nil
+}
+
+// TODO_MVP(@adshmh): implement protocol state update using the observations by completing the ApplyObservations method below.
+//
+// ApplyObservations applies the Shannon protocol-level observations to the endpoint store.
+// e.g. Observation showing an endpoint has maxed out on a specific app for the current session.
+func (p *Protocol) ApplyObservations(protocolobservations.ProtocolDetails) error {
+	return nil
 }
 
 // Name satisfies the HealthCheck#Name interface function

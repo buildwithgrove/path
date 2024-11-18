@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -81,6 +82,30 @@ func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) erro
 
 	rc.selectedEndpoint = &selectedEndpoint
 	return nil
+}
+
+// AvailableEndpoints returns the pre-set list of available endpoints.
+// It implements the relayer.ProtocolRequestContext interface.
+func (rc *requestContext) AvailableEndpoints() ([]relayer.Endpoint, error) {
+	var availableEndpoints []relayer.Endpoint
+
+	for _, endpoint := range rc.endpoints {
+		availableEndpoints = append(availableEndpoints, endpoint)
+	}
+
+	return availableEndpoints, nil
+}
+
+// TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
+// GetObservations returns the set of Shannon protocol-level observations for the current request context.
+// The returned observations are used to:
+// 1. Update the Shannon's endpoint store.
+// 2. Report metrics on the operation of PATH (in the metrics package)
+// 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
+//
+// This method implements the relayer.ProtocolRequestContext interface.
+func (rc *requestContext) GetObservations() protocolobservations.ProtocolDetails {
+	return protocolobservations.ProtocolDetails{}
 }
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.

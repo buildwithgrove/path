@@ -11,5 +11,5 @@ import (
 // - The DataReporter: to export the observations to an external component: eg. a Messaging system or a Database.
 type RequestResponseReporter interface {
 	// Publish exports the details of the service request and response(s) to the external component used by the corresponding implementation.
-	Publish(observation.RequestResponseDetails) error
+	Publish(observation.RequestResponseDetails)
 }

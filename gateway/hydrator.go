@@ -10,6 +10,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -39,13 +40,17 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
 	relayer.Protocol
-	QoSPublisher
 
-	// ServiceQoSGenerators provides the hydrator with the EndpointCheckGenerator
-	// it needs to invoke for a service ID.
-	// ServiceQoSGenerators should not be modified after the hydrator is started.
-	ServiceQoSGenerators map[relayer.ServiceID]QoSEndpointCheckGenerator
-	Logger               polylog.Logger
+	// ActiveQoSService provides the hydrator with the QoS instances
+	// it needs to invoke for generating synthetic service requests.
+	// ActiveQoSService should not be modified after the hydrator is started.
+	ActiveQoSService map[relayer.ServiceID]QoSService
+	Logger           polylog.Logger
+
+	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
+	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	MetricsReporter RequestResponseReporter
+	DataReporter    RequestResponseReporter
 
 	// TODO_FUTURE: a more sophisticated health status indicator
 	// may eventually be needed, e.g. one that checks whether any
@@ -66,11 +71,7 @@ func (eph *EndpointHydrator) Start() error {
 		return errors.New("an instance of Protocol must be proivded.")
 	}
 
-	if eph.QoSPublisher == nil {
-		return errors.New("a QoS Publisher must be provided.")
-	}
-
-	if len(eph.ServiceQoSGenerators) == 0 {
+	if len(eph.ActiveQoSService) == 0 {
 		return errors.New("at-least one covered service must be specified")
 	}
 
@@ -87,7 +88,7 @@ func (eph *EndpointHydrator) Start() error {
 }
 
 func (eph *EndpointHydrator) run() {
-	eph.Logger.With("services count", len(eph.ServiceQoSGenerators)).Info().Msg("Running Hydrator")
+	eph.Logger.With("services count", len(eph.ActiveQoSService)).Info().Msg("Running Hydrator")
 
 	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
 	// has a timeout set.
@@ -96,9 +97,9 @@ func (eph *EndpointHydrator) run() {
 	// i.e. each map entry is written only once.
 	var successfulServiceChecks sync.Map
 
-	for svcID, svcQoS := range eph.ServiceQoSGenerators {
+	for svcID, svcQoS := range eph.ActiveQoSService {
 		wg.Add(1)
-		go func(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) {
+		go func(serviceID relayer.ServiceID, serviceQoS QoSService) {
 			defer wg.Done()
 
 			logger := eph.Logger.With("serviceID", serviceID)
@@ -120,7 +121,7 @@ func (eph *EndpointHydrator) run() {
 	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
 }
 
-func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSEndpointCheckGenerator) error {
+func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
 		"service", string(serviceID),
 	)
@@ -152,6 +153,9 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 		}
 
 		for _, serviceRequestCtx := range requiredChecks {
+			// TODO_IN_THIS_PR: populate the fields of gatewayObservations struct.
+			gatewayObservations := observation.GatewayDetails{}
+
 			// TODO_IMPROVE: Sending a request here should use some method shared with
 			// the user request (i.e. HTTP request) handler.
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
@@ -184,14 +188,7 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 
 			serviceRequestCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
-			// TODO_FUTURE: consider supplying additional data to QoS.
-			// e.g. data on the latency of an endpoint.
-			if err := eph.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-				logger.Warn().Err(err).Msg("Failed to publish QoS observations.")
-			}
-
-
-			// TODO_IN_THIS_PR: apply Observations + Publish Observations.
+			eph.observeReqRes(serviceID, serviceQoS, gatewayObservations, observation.HTTPRequestDetails{}, serviceRequestCtx, protocolRequestCtx)
 		}
 	}
 
@@ -219,7 +216,7 @@ func (eph *EndpointHydrator) IsAlive() bool {
 func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) bool {
 	// TODO_FUTURE: allow reporting unhealthy status if
 	// certain services could not be processed.
-	for svcID := range eph.ServiceQoSGenerators {
+	for svcID := range eph.ActiveQoSService {
 		value, found := successfulServiceChecks.Load(svcID)
 		if !found {
 			return false
@@ -232,4 +229,35 @@ func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) 
 	}
 
 	return true
+}
+
+func (eph *EndpointHydrator) observeReqRes(
+	serviceID relayer.ServiceID,
+	serviceQoS QoSService,
+	gatewayObservations observation.GatewayDetails,
+	httpObservations observation.HTTPRequestDetails,
+	serviceRequestCtx RequestQoSContext,
+	protocolRequestCtx relayer.ProtocolRequestContext,
+) {
+	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
+	go func() {
+		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
+		// the observation.QoSDetails struct.
+		// This ensures that separate PATH instances can communicate and share their QoS observations.
+		qosObservations := serviceRequestCtx.GetObservations()
+		protocolObservations := protocolRequestCtx.GetObservations()
+
+		serviceQoS.ApplyObservations(qosObservations)
+		eph.Protocol.ApplyObservations(protocolObservations)
+
+		requestResponseDetails := observation.RequestResponseDetails{
+			HttpRequest: &httpObservations,
+			Gateway:     &gatewayObservations,
+			Protocol:    &protocolObservations,
+			Qos:         &qosObservations,
+		}
+
+		eph.MetricsReporter.Publish(requestResponseDetails)
+		eph.DataReporter.Publish(requestResponseDetails)
+	}()
 }

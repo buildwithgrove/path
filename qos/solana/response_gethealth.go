@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -61,8 +62,8 @@ type responseToGetHealth struct {
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getHealth` request.
 // This method implements the response interface used by the requestContext struct. 
-func (r responseToGetHealth) GetObservation() observation.qos.SolanaEndpointDetails {
-	return observation.qos.SolanaEndpointDetails{
+func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointDetails {
+	return qosobservations.SolanaEndpointDetails{
 		HealthResult: &r.HealthResult,
 	}
 }

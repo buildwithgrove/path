@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -48,9 +49,9 @@ type responseGeneric struct {
 }
 
 // This method implements the response interface used by the requestContext struct. 
-func (r responseGeneric) GetObservation() observation.qos.SolanaEndpointDetails {
+func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointDetails {
 	isGeneric := true
-	return observation.qos.SolanaEndpointDetails{
+	return qosobservations.SolanaEndpointDetails{
 		GenericRequest: &isGeneric,
 	}
 }

@@ -3,10 +3,7 @@
 package solana
 
 import (
-	"errors"
-
-	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/observation"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -17,8 +14,8 @@ import (
 // UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
 func (es *EndpointStore) UpdateEndpointsFromObservations(
-	solanaObservations *observation.qos.SolanaDetails,
-) map[relayer.EndpointAddr]*endpoint {
+	solanaObservations *qosobservations.SolanaDetails,
+) map[relayer.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
@@ -26,28 +23,30 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		es.endpoints = make(map[relayer.EndpointAddr]endpoint)
 	}
 
-	updatedEndpoints := make(map[relayer.EndpointAddr]*endpoint)
-	for _, observation := range solanaObservations {
-		logger := es.Logger.With(
-			"endpoint", endpointAddr,
-			"observations count", len(observations),
-		)
-		logger.Info().Msg("processing observations for endpoint.")
+	logger := es.Logger.With(
+		"observations_count", len(solanaObservations.EndpointDetails),
+	)
+
+	updatedEndpoints := make(map[relayer.EndpointAddr]endpoint)
+	for _, observation := range solanaObservations.EndpointDetails {
+		if observation == nil {
+			continue
+		}
+
+		logger := logger.With("endpoint", observation.EndpointAddr)
+		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
-		endpoint, found := es.endpoints[observation.EndpointAddr]
-		if !found {
-			endpoint = &endpoint{}
-		}
+		ep := es.endpoints[relayer.EndpointAddr(observation.EndpointAddr)]
 
-		isMutated := endpoint.Apply(observation)
+		isMutated := ep.ApplyObservation(observation)
 		if !isMutated {
 			continue
 		}
 
-		es.endpoints[observation.EndpointAddr] = endpoint
-		updatedEndpoints[observation.EndpointAddr] = endpoint
+		es.endpoints[relayer.EndpointAddr(observation.EndpointAddr)] = ep
+		updatedEndpoints[relayer.EndpointAddr(observation.EndpointAddr)] = ep
 	}
 
 	return updatedEndpoints

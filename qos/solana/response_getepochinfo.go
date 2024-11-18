@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -59,9 +60,9 @@ type responseToGetEpochInfo struct {
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getEpochInfo` request.
 // This method implements the response interface used by the requestContext struct. 
-func (r responseToGetEpochInfo) GetObservation() observation.qos.SolanaEndpointDetails {
-	return observation.qos.SolanaEndpointDetails{
-		EpochInfo    : &observation.qos.SolanaEpochInfoResponse {
+func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointDetails {
+	return qosobservations.SolanaEndpointDetails{
+		EpochInfo    : &qosobservations.SolanaEpochInfoResponse {
 			BlockHeight: r.epochInfo.BlockHeight,
 			Epoch: r.epochInfo.Epoch,
 		},
@@ -82,17 +83,4 @@ func (r responseToGetEpochInfo) GetResponsePayload() []byte {
 		r.Logger.Warn().Err(err).Msg("responseToGetEpochInfo: Marshalling JSONRPC response failed.")
 	}
 	return bz
-}
-
-// epochInfoResponseObservation provides the functionality defined by the response interface, specific to a response matching
-// a `getEpochInfo` request.
-var _ observation = epochInfoResponseObservation{}
-
-// epochInfoResponseObservation holds the epochInfo struct built from a response, and applies it to the (supplied) corresponding endpoint's struct.
-type epochInfoResponseObservation struct {
-	epochInfo epochInfo
-}
-
-func (e epochInfoResponseObservation) Apply(ep *endpoint) {
-	ep.GetEpochInfoResult = &e.epochInfo
 }

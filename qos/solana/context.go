@@ -8,7 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/message"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/relayer"
 )
@@ -30,7 +30,7 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // response defines the functionality required from
 // a parsed endpoint response.
 type response interface {
-	GetObservation() observation.qos.SolanaEndpointDetails
+	GetObservation() qosobservations.SolanaEndpointDetails
 	GetResponsePayload() []byte
 	// TODO_TECHDEBT: add method(s) to support retrying a request, e.g. IsUserError(), IsEndpointError().
 }
@@ -45,7 +45,6 @@ type endpointResponse struct {
 // to support QoS for a Solana blockchain service.
 type requestContext struct {
 	JSONRPCReq    jsonrpc.Request
-	ServiceState  *ServiceState
 	EndpointStore *EndpointStore
 	Logger        polylog.Logger
 
@@ -138,16 +137,16 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 }
 
 // This method implements the gateway.RequestQoSContext interface.
-func (rc requestContext) GetObservationSet() observation.qos.QoSDetails {
-	observations := make([]*observation.qos.SolanaDetails)
+func (rc requestContext) GetObservations() qosobservations.QoSDetails {
+	observations := make([]*qosobservations.SolanaEndpointDetails, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
-		obs := response.GetObservation()
-		obs.EndpointAddr = endpointResponse.EndpointAddr
+		obs := endpointResponse.response.GetObservation()
+		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		observations[idx] = &obs
 	}
 
-	return observation.qos.QosDetails {
-		SolanaDetails: observation.qos.SolanaDetails {
+	return qosobservations.QoSDetails {
+		SolanaDetails: &qosobservations.SolanaDetails {
 			// TODO_TECHDEBT: set the JSONRPCRequest field.
 			EndpointDetails:  observations,
 		},		

@@ -1,15 +1,5 @@
 package solana
 
-import (
-	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
-)
-
 // TODO_UPNEXT(@adshmh): return a request context to handle internal errors.
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.

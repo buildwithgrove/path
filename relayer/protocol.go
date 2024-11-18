@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/observation/protocol"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
@@ -13,6 +14,7 @@ type Protocol interface {
 	// request, which matches the provided Service ID.
 	BuildRequestContext(ServiceID, *http.Request) (ProtocolRequestContext, error)
 
+	ApplyObservations(protocol.ProtocolDetails) error
 	health.Check
 }
 
@@ -41,4 +43,6 @@ type ProtocolRequestContext interface {
 	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
 	// See the Shannon package's operation_mode.go file for more details.
 	AvailableEndpoints() ([]Endpoint, error)
+
+	GetObservations() protocol.ProtocolDetails
 }
