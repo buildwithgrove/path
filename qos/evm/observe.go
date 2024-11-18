@@ -74,11 +74,13 @@ func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.En
 		es.endpoints[endpointAddr] = endpoint
 
 		if err := endpoint.Validate(es.Config.ChainID); err != nil {
+			logger.Info().Err(err).Msg("skipping endpoint observation: validation error.")
 			continue
 		}
 
 		endpointBlockHeight, err := endpoint.GetBlockHeight()
 		if err != nil {
+			logger.Info().Err(err).Msg("skipping endpoint observation: blockheight error.")
 			continue
 		}
 
