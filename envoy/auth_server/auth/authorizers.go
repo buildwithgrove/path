@@ -7,24 +7,18 @@ import (
 )
 
 const (
-	apiKeyHeader = "Authorization"
+	reqHeaderAPIKey    = "authorization" // Standard header for API keys
+	reqHeaderJWTUserID = "x-jwt-user-id" // Defined in envoy.yaml
 )
+
+// errUnauthorized is returned when a request is not authorized.
+// It is left intentionally vague to avoid leaking information to the client.
+var errUnauthorized = fmt.Errorf("unauthorized")
 
 // The Authorizer interface performs requests authorization, for example using
 // API key authentication to ensures a downstream (client) request is authorized.
 type Authorizer interface {
-	authorizeRequest(map[string]string, *proto.GatewayEndpoint) error
-}
-
-// NoAuthAuthorizer is an Authorizer that ensures no authorization is required.
-type NoAuthAuthorizer struct{}
-
-// Enforce that the NoAuthAuthorizer implements the Authorizer interface.
-var _ Authorizer = &NoAuthAuthorizer{}
-
-// authorizeRequest always returns nil, as no authorization is required.
-func (a *NoAuthAuthorizer) authorizeRequest(headers map[string]string, endpoint *proto.GatewayEndpoint) error {
-	return nil
+	authorizeRequest(headers map[string]string, endpoint *proto.GatewayEndpoint) error
 }
 
 // APIKeyAuthorizer is an Authorizer that ensures the request is authorized
@@ -36,12 +30,12 @@ var _ Authorizer = &APIKeyAuthorizer{}
 
 // authorizeRequest checks if the API key is valid for the endpoint
 func (a *APIKeyAuthorizer) authorizeRequest(headers map[string]string, endpoint *proto.GatewayEndpoint) error {
-	apiKey, ok := headers[apiKeyHeader]
+	apiKey, ok := headers[reqHeaderAPIKey]
 	if !ok || apiKey == "" {
-		return fmt.Errorf("unauthorized")
+		return errUnauthorized
 	}
 	if endpoint.GetAuth().GetApiKey().GetApiKey() != apiKey {
-		return fmt.Errorf("invalid API key")
+		return errUnauthorized
 	}
 	return nil
 }
@@ -55,12 +49,12 @@ var _ Authorizer = &JWTAuthorizer{}
 
 // authorizeRequest checks if the account user ID is authorized to access the endpoint
 func (a *JWTAuthorizer) authorizeRequest(headers map[string]string, endpoint *proto.GatewayEndpoint) error {
-	providerUserID, ok := headers[reqHeaderAccountUserID]
+	providerUserID, ok := headers[reqHeaderJWTUserID]
 	if !ok || providerUserID == "" {
-		return fmt.Errorf("unauthorized")
+		return errUnauthorized
 	}
 	if _, ok := endpoint.GetAuth().GetJwt().GetAuthorizedUsers()[providerUserID]; !ok {
-		return fmt.Errorf("user is not authorized to access this endpoint")
+		return errUnauthorized
 	}
 	return nil
 }
