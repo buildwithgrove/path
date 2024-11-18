@@ -18,6 +18,7 @@ bin
 go.work.sum
 
 # Config
+.*.yaml
 .config.yaml
 .config.*.yaml
 !.config.example.yaml
@@ -28,6 +29,11 @@ go.work.sum
 .morse.config.yaml
 # Shannon E2E config
 .shannon.config.yaml
+
+# Env
+.env
+.env.*
+!.env.example
 
 # Macos
 .DS_Store
