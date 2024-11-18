@@ -87,25 +87,31 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) 
 		return nil, errors.New("select: received empty list of endpoints to select from")
 	}
 
-	logger := es.Logger.With("number_of_available_endpoints", fmt.Sprintf("%d", len(availableEndpoints)))
+	logger := es.Logger.With(
+		"number_of_available_endpoints", fmt.Sprintf("%d", len(availableEndpoints)),
+		"method", "filterEndpoints",
+	)
 	logger.Info().Msg("select: processing available endpoints")
 
 	var filteredEndpointsAddr []relayer.EndpointAddr
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for _, availableEndpoint := range availableEndpoints {
 		logger := logger.With("endpoint", availableEndpoint.Addr())
-		logger.Info().Msg("select: processing endpoint")
+		logger.Info().Msg("processing endpoint")
 
 		endpoint, found := es.endpoints[availableEndpoint.Addr()]
 		if !found {
+			logger.Info().Msg("skipping endpoint with no entry in the store.")
 			continue
 		}
 
-		if isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight) {
-			filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
+		if err := isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight); err != nil {
+			logger.Info().Err(err).Msg("invalid endpoint is filtered")
+			continue
 		}
 
-		logger.Info().Msg("select: invalid endpoint is filtered")
+		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
+		logger.Info().Msg("adding endpoint to the list of valid endpoints.")
 	}
 
 	return filteredEndpointsAddr, nil
@@ -113,11 +119,19 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) 
 
 // isEndpointValid returns true if the input endpoint is valid for the passed
 // chain ID and query block height.
-func isEndpointValid(endpoint endpoint, chainID string, queryBlockHeight uint64) bool {
+func isEndpointValid(endpoint endpoint, chainID string, queryBlockHeight uint64) error {
 	endpointBlockHeight, err := endpoint.GetBlockHeight()
 	if err != nil {
-		return false
+		return fmt.Errorf("isEndpointValid: error getting endpoint block height: %w", err)
 	}
 
-	return endpoint.ChainID == chainID && endpointBlockHeight >= queryBlockHeight
+	if endpoint.ChainID != chainID {
+		return fmt.Errorf("isEndpointValid: expected chain ID %s, got %s", chainID, endpoint.ChainID)
+	}
+
+	if endpointBlockHeight < queryBlockHeight {
+		return fmt.Errorf("isEndpointValid: expected block height %d or higher, got %d", queryBlockHeight, endpointBlockHeight)
+	}
+
+	return nil
 }
