@@ -1,6 +1,8 @@
 package relayer
 
 import (
+	"net/http"
+
 	"github.com/buildwithgrove/path/health"
 )
 
@@ -9,7 +11,7 @@ import (
 type Protocol interface {
 	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
 	// request, which matches the provided Service ID.
-	BuildRequestContext(ServiceID) (ProtocolRequestContext, error)
+	BuildRequestContext(ServiceID, *http.Request) (ProtocolRequestContext, error)
 
 	health.Check
 }
@@ -21,7 +23,7 @@ type Protocol interface {
 //  1. Listing the endpoints available for sending relays for a specific service.
 //  2. Send a relay to a specific endpoint and return its response.
 //
-// The first two implementations of this interface are (as of writing) are:
+// The first two implementations of this interface are (as of writing):
 //   - Morse: in the relayer/morse package, and
 //   - Shannon: in the relayer/shannon package.
 type ProtocolRequestContext interface {
@@ -34,4 +36,9 @@ type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verfieis the response.
 	HandleServiceRequest(Payload) (Response, error)
+
+	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
+	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
+	// See the Shannon package's operation_mode.go file for more details.
+	AvailableEndpoints() ([]Endpoint, error)
 }

@@ -26,10 +26,10 @@ type Gateway struct {
 	// its corresponding QoS instance.
 	HTTPRequestParser
 
-	// The relayer.Relayer instance is used to fulfill the
+	// The relayer.Protocol instance is used to fulfill the
 	// service requests received by the gateway through
 	// sending the service payload to an endpoint.
-	*relayer.Relayer
+	relayer.Protocol
 
 	// MetricsPublisher and DataPublisher are intentionally declared separately, rather than using a slice of the same interface, to be consistent 
 	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
@@ -87,13 +87,17 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
-	// TODO_IN_THIS_PR: Use a Protocol context struct, similar to QoS, to send relays and to get the protocol-level observation set, once 
-	// the relayer package's refactor PR is merged.
+	protocolRequestCtx, err := g.buildProtocolRequestCtx(serviceID, httpReq)
+	if err != nil {
+		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
+		// This will enable debugging of any potential issues.
+		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+		return
+	}
 
 	// Send the service request payload, through the relayer, to a service provider endpoint.
-	endpointResponse, err := g.Relayer.SendRelay(
-		ctx,
-		serviceID,
+	relayer := relayer.Relayer{ProtocolRequestContext: protocolRequestCtx}
+	endpointResponse, err := relayer.SendRelay(
 		serviceRequestCtx.GetServicePayload(),
 		serviceRequestCtx.GetEndpointSelector(),
 	)
@@ -218,4 +222,16 @@ func (g Gateway) publishRequestResponseDetails(
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to publish data")
 	}
+}
+
+func (g *Gateway) buildProtocolRequestCtx(serviceID relayer.ServiceID, httpReq *http.Request) (relayer.ProtocolRequestContext, error) {
+	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
+	if err != nil {
+		logger := g.Logger.With(
+			"service", string(serviceID),
+		)
+		logger.Warn().Err(err).Msg("Failed to create a protocol request context")
+	}
+
+	return protocolCtx, err
 }

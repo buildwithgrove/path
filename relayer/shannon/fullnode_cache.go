@@ -10,6 +10,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/relayer"
 )
@@ -108,10 +109,11 @@ func (cfn *CachingFullNode) GetSession(serviceID relayer.ServiceID, appAddr stri
 	return session, nil
 }
 
-// SendRelay delegates the sending of the relay to the LazyFullNode.
+// ValidateRelayResponse validates the raw response bytes received from an endpoint using the SDK and the account client.
+// This method delegates to the underlying LazyFullNode.
 // It is required to fulfill the FullNode interface.
-func (cfn *CachingFullNode) SendRelay(app apptypes.Application, session sessiontypes.Session, endpoint endpoint, payload relayer.Payload) (*servicetypes.RelayResponse, error) {
-	return cfn.LazyFullNode.SendRelay(app, session, endpoint, payload)
+func (cfn *CachingFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+	return cfn.LazyFullNode.ValidateRelayResponse(supplierAddr, responseBz)
 }
 
 // IsHealthy indicates the health status of the caching full node.
