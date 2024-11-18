@@ -1,9 +1,14 @@
 syntax = "proto3";
-package path;
+package path.protocol;
 
-option go_package = "github.com/buildwithgrove/path/observation";
+option go_package = "github.com/buildwithgrove/path/observation/protocol";
+
+import "path/protocol/shannon.proto";
+import "path/protocol/morse.proto";
 
 message ProtocolDetails {
   string protocol_name=1;
-  int64 block_height=2;
+  uint64 block_height=2;
+  repeated ShannonDetails shannon=3;
+  repeated  MorseDetails morse=4;
 }

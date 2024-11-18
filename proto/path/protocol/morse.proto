@@ -1,0 +1,8 @@
+syntax = "proto3";
+package path.protocol;
+
+option go_package = "github.com/buildwithgrove/path/observation/protocol";
+
+message MorseDetails {
+  string gigastake_app_address=1;
+}

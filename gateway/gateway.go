@@ -171,7 +171,7 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS QoSService, qosObservations *observation.QoSDetails) {
 	logger := g.Logger.With(
 		"service", string(serviceID),
-		"method": "publishQoSObservations",
+		"method", "publishQoSObservations",
 	)
 
 	if qosObservations == nil {
@@ -185,6 +185,10 @@ func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS Qo
 	}
 }
 
+func (g Gateway) applyProtocolObservations(serviceID relayer.ServiceID, protocol Protocol, protocolObservations *observations.ProtocolDetails) {
+	// TODO_IN_THIS_PR: implement this method.
+}
+
 // publishRequestResponseDetails delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
 func (g Gateway) publishRequestResponseDetails(
 	serviceID relayer.ServiceID,
@@ -195,7 +199,7 @@ func (g Gateway) publishRequestResponseDetails(
 ) {
 	logger := g.Logger.With(
 		"service", string(serviceID),
-		"method": "publishRequestResponseDetails",
+		"method", "publishRequestResponseDetails",
 	)
 
 	requestResponseDetails := observation.RequestResponseDetails {

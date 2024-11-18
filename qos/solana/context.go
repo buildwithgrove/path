@@ -30,7 +30,7 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // response defines the functionality required from
 // a parsed endpoint response.
 type response interface {
-	GetObservation() (observation, bool)
+	GetObservation() observation.qos.SolanaEndpointDetails
 	GetResponsePayload() []byte
 	// TODO_TECHDEBT: add method(s) to support retrying a request, e.g. IsUserError(), IsEndpointError().
 }
@@ -137,27 +137,20 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
-func (rc requestContext) GetObservationSet() message.ObservationSet {
-	// No updates needed if the request was invalid
-	if !rc.isValid {
-		return observationSet{}
+// This method implements the gateway.RequestQoSContext interface.
+func (rc requestContext) GetObservationSet() observation.qos.QoSDetails {
+	observations := make([]*observation.qos.SolanaDetails)
+	for idx, endpointResponse := range rc.endpointResponses {
+		obs := response.GetObservation()
+		obs.EndpointAddr = endpointResponse.EndpointAddr
+		observations[idx] = &obs
 	}
 
-	observations := make(map[relayer.EndpointAddr][]observation)
-	for _, response := range rc.endpointResponses {
-		obs, ok := response.GetObservation()
-		if !ok {
-			continue
-		}
-
-		addr := response.EndpointAddr
-		observations[addr] = append(observations[addr], obs)
-	}
-
-	return observationSet{
-		EndpointStore: rc.EndpointStore,
-		ServiceState:  rc.ServiceState,
-		Observations:  observations,
+	return observation.qos.QosDetails {
+		SolanaDetails: observation.qos.SolanaDetails {
+			// TODO_TECHDEBT: set the JSONRPCRequest field.
+			EndpointDetails:  observations,
+		},		
 	}
 }
 

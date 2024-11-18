@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/message"
+	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/relayer"
 )
 
@@ -43,7 +44,7 @@ type RequestQoSContext interface {
 	// GetObservationSet returns the list of observations resulting from
 	// the response(s) received from one or more endpoints as part of fulfilling
 	// the request underlying the RequestQoSContext instance.
-	GetObservationSet() message.ObservationSet
+	GetObservations() qos.QoSDetails
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
@@ -92,5 +93,5 @@ type QoSService interface {
 	// The observatios can be:
 	// A. "local", i.e. from requests sent to an endpoint by this PATH instance, or
 	// B. "shared": i.e. from QoS observations shared by other PATH instances.
-	ApplyObservations(*observation.QoSDetails) error
+	ApplyObservations(qos.QoSDetails) error
 }

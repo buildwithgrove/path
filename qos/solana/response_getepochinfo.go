@@ -57,10 +57,15 @@ type responseToGetEpochInfo struct {
 	epochInfo epochInfo
 }
 
-func (r responseToGetEpochInfo) GetObservation() (observation, bool) {
-	return epochInfoResponseObservation{
-		epochInfo: r.epochInfo,
-	}, true
+// GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getEpochInfo` request.
+// This method implements the response interface used by the requestContext struct. 
+func (r responseToGetEpochInfo) GetObservation() observation.qos.SolanaEndpointDetails {
+	return observation.qos.SolanaEndpointDetails{
+		EpochInfo    : &observation.qos.SolanaEpochInfoResponse {
+			BlockHeight: r.epochInfo.BlockHeight,
+			Epoch: r.epochInfo.Epoch,
+		},
+	}
 }
 
 // TODO_UPNEXT(@adshmh): handle the following scenarios:

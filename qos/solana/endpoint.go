@@ -26,11 +26,11 @@ type endpoint struct {
 	// B. There has been an observation of the endpoint's response to a `getHealth` request.
 	GetHealthResult *string
 
-	// EpochInfo stores the result of processing the endpoint's response to a `getEpochInfo` request.
+	// GetEpochInfo stores the result of processing the endpoint's response to a `getEpochInfo` request.
 	// A pointer is used to distinguish between the following scenarios:
 	// A. There has NOT been an observation of the endpoint's response to a `getEpochInfo` request, and
 	// B. There has been an observation the endpoint's response to a `getEpochInfo` request.
-	GetEpochInfoResult *epochInfo
+	GetEpochInfoResult *observation.qos.SolanaEpochInfoResponse 
 
 	// TODO_FUTURE: support archival endpoints.
 }
@@ -52,4 +52,23 @@ func (e endpoint) ValidateBasic() error {
 	default:
 		return nil
 	}
+}
+
+// ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
+// It Returns true if the observation was non-generic, i.e. mutated the endpoint.
+// TODO_TECHDEBT: add a method to distinguish a bad endpoint, i.e. an endpoint which failed to respond to a request, from an endpoint with no/incomplete observations.
+func (e *endpoint) ApplyObservation(obs observation.qos.SolanaEndpointDetails) bool {
+	if obs.GenericRequest != nil && *obs.GenericRequest == true {
+		return false
+	}
+
+	if obs.HealthResult != nil {
+		endpoint.GetHealthResult = obs.HealthResult
+	}
+
+	if obs.EpochInfo != nil {
+		endpoint.GetEpochInfoResult = obs.EpochInfo
+	}
+
+	return true
 }

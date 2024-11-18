@@ -47,8 +47,12 @@ type responseGeneric struct {
 	Logger polylog.Logger
 }
 
-func (r responseGeneric) GetObservation() (observation, bool) {
-	return nil, false
+// This method implements the response interface used by the requestContext struct. 
+func (r responseGeneric) GetObservation() observation.qos.SolanaEndpointDetails {
+	isGeneric := true
+	return observation.qos.SolanaEndpointDetails{
+		GenericRequest: &isGeneric,
+	}
 }
 
 func (r responseGeneric) GetResponsePayload() []byte {
