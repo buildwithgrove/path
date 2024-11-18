@@ -73,15 +73,25 @@ k8s_yaml("./localnet/kubernetes/manifests/path.yaml")
 
 # Conditionally add port forwarding based on the mode
 if MODE == "path_only":
+    # Run PATH without any dependencies and port 3000 exposed
     k8s_resource(
         "path",
         labels=["path"],
         port_forwards=["3000:3000"],
     )
 else:
+    # Run PATH with all dependencies and no port exposed 
+    # as all traffic must be routed through Envoy Proxy.
     k8s_resource(
         "path",
         labels=["path"],
+        resource_deps=[
+            "ext-authz",
+            "envoy-proxy",
+            "path-auth-data-server",
+            "ratelimit",
+            "redis",
+        ],
     )
 
 if MODE == "path_with_auth":

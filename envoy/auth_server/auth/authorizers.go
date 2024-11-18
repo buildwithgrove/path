@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
@@ -32,27 +31,14 @@ var _ Authorizer = &APIKeyAuthorizer{}
 
 // authorizeRequest checks if the API key is valid for the endpoint
 func (a *APIKeyAuthorizer) authorizeRequest(headers map[string]string, endpoint *proto.GatewayEndpoint) error {
-	apiKey := extractAPIKey(headers)
-	if apiKey == "" {
+	apiKey, ok := headers[reqHeaderAPIKey]
+	if !ok || apiKey == "" {
 		return errUnauthorized
 	}
 	if endpoint.GetAuth().GetApiKey().GetApiKey() != apiKey {
 		return errUnauthorized
 	}
 	return nil
-}
-
-// extractAPIKey extracts the API key from the authorization header.
-// It supports both "Authorization: Bearer <API_KEY>" and "Authorization: <API_KEY>" formats.
-func extractAPIKey(headers map[string]string) string {
-	apiKey, ok := headers[reqHeaderAPIKey]
-	if !ok || apiKey == "" {
-		return ""
-	}
-	if strings.HasPrefix(apiKey, bearerPrefix) {
-		return strings.TrimSpace(apiKey[len(bearerPrefix):])
-	}
-	return strings.TrimSpace(apiKey)
 }
 
 // JWTAuthorizer is an Authorizer that ensures the request is authorized
