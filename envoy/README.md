@@ -15,7 +15,10 @@
   - [3.1. Contents](#31-contents)
   - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
   - [3.3. Request Lifecycle](#33-request-lifecycle)
-- [4. JSON Web Token (JWT) Verification](#4-json-web-token-jwt-verification)
+- [4. Gateway Endpoint Authorization](#4-gateway-endpoint-authorization)
+  - [4.1 JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
+  - [4.2 API Key Authorization](#42-api-key-authorization)
+  - [4.3 No Authorization](#43-no-authorization)
 - [5. External Authorization Server](#5-external-authorization-server)
   - [5.1. Gateway Endpoints gRPC Service](#51-gateway-endpoints-grpc-service)
   - [5.2. Remote gRPC Auth Server](#52-remote-grpc-auth-server)
@@ -136,9 +139,18 @@ sequenceDiagram
     Service-->>Client: 12. Return Response
 ```
 
-## 4. JSON Web Token (JWT) Verification
+## 4. Gateway Endpoint Authorization
 
-For GatewayEndpoints with the `RequireAuth` field set to `true`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
+The `Go External Authorization Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct. 
+
+Three authorization types are supported:
+- [JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
+- [API Key Authorization](#42-api-key-authorization)
+- [No Authorization](#43-no-authorization)
+
+### 4.1 JSON Web Token (JWT) Authorization
+
+For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
 
 _Example Request Header:_
 ```bash
@@ -154,10 +166,26 @@ _Example auth provider user ID header:_
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
-For GatewayEndpoints with the `RequireAuth` field set to `false`, no JWT is required to access the PATH service. The request may be sent to the PATH Envoy Proxy without the `Authorization` header set. The `jwt_authn` filter will forward the request without setting the `x-jwt-user-id` header.
-
 For more information, see:
 - [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+
+### 4.2 API Key Authorization
+
+For GatewayEndpoints with the `AuthType` field set to `API_KEY_AUTH`, a static API key is required to access the PATH service.
+
+_Example Request Header (both Bearer and non-Bearer are supported):_
+```bash
+-H "Authorization: <API_KEY>"
+-H "Authorization: Bearer <API_KEY>"
+```
+
+The `Go External Authorization Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
+
+### 4.3 No Authorization
+
+For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service. 
+
+All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Authorization Server`.
 
 ## 5. External Authorization Server
 
