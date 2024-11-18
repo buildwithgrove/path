@@ -102,8 +102,8 @@ func main() {
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
 		EndpointStore: endpointStore,
+		// TODO_IMPROVE(@commoddity): allow configuration of authorizers using an environment variable
 		Authorizers: map[proto.Auth_AuthType]auth.Authorizer{
-			proto.Auth_NO_AUTH:      &auth.NoAuthAuthorizer{},
 			proto.Auth_API_KEY_AUTH: &auth.APIKeyAuthorizer{},
 			proto.Auth_JWT_AUTH:     &auth.JWTAuthorizer{},
 		},

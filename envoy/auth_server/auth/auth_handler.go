@@ -23,8 +23,6 @@ import (
 const (
 	pathPrefix = "/v1/"
 
-	reqHeaderAccountUserID = "x-jwt-user-id" // Defined in envoy.yaml
-
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
 	reqHeaderRateLimitEndpointID = "x-rl-endpoint-id" // Set only on service requests that should be rate limited
 	reqHeaderRateLimitThroughput = "x-rl-throughput"  // Set only on service requests that should be rate limited
@@ -99,7 +97,7 @@ func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckReque
 	}
 
 	// Add endpoint ID and rate limiting values to the headers
-	// to be passed along the filter chain to the rate limiter.
+	// to be passed upstream along the filter chain to the rate limiter.
 	httpHeaders := a.getHTTPHeaders(gatewayEndpoint)
 
 	// Return a valid response with the HTTP headers set
@@ -127,9 +125,20 @@ func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpo
 
 // authGatewayEndpoint performs all configured authorization checks on the request
 func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndpoint *proto.GatewayEndpoint) error {
+	authType := gatewayEndpoint.GetAuth().GetAuthType()
 
-	requestAuthorizer := a.Authorizers[gatewayEndpoint.GetAuth().GetAuthType()]
+	// If the endpoint has no authorization requirements, return no error
+	if authType == proto.Auth_NO_AUTH {
+		return nil
+	}
 
+	// If the endpoint has authorization requirements, get the authorizer for the request
+	requestAuthorizer, ok := a.Authorizers[authType]
+	if !ok {
+		return fmt.Errorf("invalid authorization type: %s", authType)
+	}
+
+	// Authorize the request using the authorizer configured for the gateway endpoint
 	return requestAuthorizer.authorizeRequest(headers, gatewayEndpoint)
 }
 
