@@ -1,9 +1,22 @@
-package relayer
+// gateway package defines the requirements and steps of sending relays from the perspective of:
+// a) protocols, i.e. Morse and Shannon protocols, which provide:
+// - a list of endpoints available for a service.
+// - a function for sending a relay to a specific endpoint.
+// b) gateways, which are required to provide a function for
+// selecting an endpoint to which the relay is to be sent.
+// c) Quality-of-Service (QoS) services: which provide:
+// - interpretation of the user's request as the payload to be sent to an endpoint.
+// - selection of the best endpoint for handling a user's request.
+//
+// TODO_MVP(@adshmh): add a README with a diagram of all the above.
+// TODO_MVP(@adshmh): add a section for the following packages once they are added: Metrics, Message.
+package gateway
 
 import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
@@ -11,7 +24,7 @@ import (
 type Protocol interface {
 	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
 	// request, which matches the provided Service ID.
-	BuildRequestContext(ServiceID, *http.Request) (ProtocolRequestContext, error)
+	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)
 
 	health.Check
 }
@@ -31,14 +44,14 @@ type ProtocolRequestContext interface {
 	// the endpoint being dropped by the protocol instance from the returned
 	// set of available endpoints.
 	// e.g. an endpoint that is temporarily/permanently unavailable.
-	SelectEndpoint(EndpointSelector) error
+	SelectEndpoint(protocol.EndpointSelector) error
 
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verfieis the response.
-	HandleServiceRequest(Payload) (Response, error)
+	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
 	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
 	// See the Shannon package's operation_mode.go file for more details.
-	AvailableEndpoints() ([]Endpoint, error)
+	AvailableEndpoints() ([]protocol.Endpoint, error)
 }

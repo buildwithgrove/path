@@ -10,12 +10,13 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 )
 
-// requestContext provides all the functionality required by the relayer package
+// requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
-var _ relayer.ProtocolRequestContext = &requestContext{}
+var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // RelayRequestSigner is used by the request context to sign the relay request.
 type RelayRequestSigner interface {
@@ -25,22 +26,22 @@ type RelayRequestSigner interface {
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
 	fullNode           FullNode
-	serviceID          relayer.ServiceID
+	serviceID          protocol.ServiceID
 	relayRequestSigner RelayRequestSigner
 
 	// endpoints contains all the candidate endpoints available for processing a service request.
-	endpoints map[relayer.EndpointAddr]endpoint
+	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 }
 
-// SelectEndpoint satisfies the relayer package's ProtocolRequestContext interface.
+// SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
 // for handling a service request.
-func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) error {
+func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
 	// Convert the map of endpoints to a list for easier business logic.
-	var endpoints []relayer.Endpoint
+	var endpoints []protocol.Endpoint
 	for _, endpoint := range rc.endpoints {
 		endpoints = append(endpoints, endpoint)
 	}
@@ -62,23 +63,23 @@ func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) erro
 	return nil
 }
 
-// HandleServiceRequest satisfies the relayer package's ProtocolRequestContext interface.
+// HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
-func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer.Response, error) {
+func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	if rc.selectedEndpoint == nil {
-		return relayer.Response{}, fmt.Errorf("handleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
+		return protocol.Response{}, fmt.Errorf("handleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 	endpoint := rc.selectedEndpoint
 
 	session := endpoint.session
 	if session.Application == nil {
-		return relayer.Response{}, fmt.Errorf("handleServiceRequest: nil app on session %s for service %s", session.SessionId, rc.serviceID)
+		return protocol.Response{}, fmt.Errorf("handleServiceRequest: nil app on session %s for service %s", session.SessionId, rc.serviceID)
 	}
 	app := *session.Application
 
 	response, err := rc.sendRelay(app, session, *rc.selectedEndpoint, payload)
 	if err != nil {
-		return relayer.Response{EndpointAddr: endpoint.Addr()},
+		return protocol.Response{EndpointAddr: endpoint.Addr()},
 			fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
 				rc.serviceID, endpoint.Addr(), err,
 			)
@@ -89,7 +90,7 @@ func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer
 	// to access the Service's response body, status code, etc.
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
-		return relayer.Response{EndpointAddr: endpoint.Addr()},
+		return protocol.Response{EndpointAddr: endpoint.Addr()},
 			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
 				rc.serviceID, app.Address, endpoint.Addr(), err,
 			)
@@ -100,9 +101,9 @@ func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer
 }
 
 // AvailableEndpoints returns the pre-set list of available endpoints.
-// It implements the relayer.ProtocolRequestContext interface.
-func (rc *requestContext) AvailableEndpoints() ([]relayer.Endpoint, error) {
-	var availableEndpoints []relayer.Endpoint
+// It implements the gateway.ProtocolRequestContext interface.
+func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
+	var availableEndpoints []protocol.Endpoint
 
 	for _, endpoint := range rc.endpoints {
 		availableEndpoints = append(availableEndpoints, endpoint)
@@ -117,7 +118,7 @@ func (rc *requestContext) sendRelay(
 	app apptypes.Application,
 	session sessiontypes.Session,
 	endpoint endpoint,
-	payload relayer.Payload,
+	payload protocol.Payload,
 ) (*servicetypes.RelayResponse, error) {
 	relayRequest, err := buildRelayRequest(endpoint, session, []byte(payload.Data))
 	if err != nil {

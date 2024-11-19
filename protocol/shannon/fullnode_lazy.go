@@ -16,7 +16,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // The Shannon Relayer's FullNode interface is implemented by the LazyFullNode struct below,
@@ -99,7 +99,7 @@ type LazyFullNode struct {
 
 // GetServiceApps returns the set of onchain applications which delegate to the gateway, matching the supplied service ID.
 // It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes.Application, error) {
+func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
 	// fetch all staked applications which have delegated to this gateway, by querying the onchain data.
 	allApps, err := lfn.getAllApps(context.TODO())
 	if err != nil {
@@ -119,7 +119,7 @@ func (lfn *LazyFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes
 	return apps, nil
 }
 
-func (lfn *LazyFullNode) GetAllServicesApps() (map[relayer.ServiceID][]apptypes.Application, error) {
+func (lfn *LazyFullNode) GetAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
 	allApps, err := lfn.getAllApps(context.TODO())
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (lfn *LazyFullNode) GetAllServicesApps() (map[relayer.ServiceID][]apptypes.
 
 // GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
 // It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error) {
+func (lfn *LazyFullNode) GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
 	session, err := lfn.sessionClient.GetSession(
 		context.Background(),
 		appAddr,
@@ -171,8 +171,8 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 }
 
 // buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
-func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[relayer.ServiceID][]apptypes.Application, error) {
-	appData := make(map[relayer.ServiceID][]apptypes.Application)
+func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[protocol.ServiceID][]apptypes.Application, error) {
+	appData := make(map[protocol.ServiceID][]apptypes.Application)
 	for _, onchainApp := range onchainApps {
 		logger := lfn.logger.With("address", onchainApp.Address)
 
@@ -187,11 +187,11 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 				continue
 			}
 
-			if filterFn != nil && !filterFn(onchainApp, relayer.ServiceID(svcCfg.ServiceId)) {
+			if filterFn != nil && !filterFn(onchainApp, protocol.ServiceID(svcCfg.ServiceId)) {
 				continue
 			}
 
-			serviceID := relayer.ServiceID(svcCfg.ServiceId)
+			serviceID := protocol.ServiceID(svcCfg.ServiceId)
 			appData[serviceID] = append(appData[serviceID], onchainApp)
 		}
 	}
@@ -266,15 +266,15 @@ func embedHttpRequest(reqToEmbed *http.Request) (*servicetypes.RelayRequest, err
 // https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
 //
 // deserializeRelayResponse uses the Shannon sdk to deserialize the relay response payload
-// received from an endpoint into a relayer.Response. This is necessary since the relay miner, i.e. the endpoint
+// received from an endpoint into a protocol.Response. This is necessary since the relay miner, i.e. the endpoint
 // that serves the relay, returns the HTTP response in serialized format in its payload.
-func deserializeRelayResponse(bz []byte) (relayer.Response, error) {
+func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
 	poktHttpResponse, err := sdktypes.DeserializeHTTPResponse(bz)
 	if err != nil {
-		return relayer.Response{}, err
+		return protocol.Response{}, err
 	}
 
-	return relayer.Response{
+	return protocol.Response{
 		Bytes:          poktHttpResponse.BodyBz,
 		HTTPStatusCode: int(poktHttpResponse.StatusCode),
 	}, nil
@@ -323,11 +323,11 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 
 // appFilterFn represents a filter that determines whether an app should be included.
 // it is mainly used to return the apps matching a specific service ID.
-type appFilterFn func(apptypes.Application, relayer.ServiceID) bool
+type appFilterFn func(apptypes.Application, protocol.ServiceID) bool
 
 // serviceAppFilter is an app filtering function that drops any applications which does not match the supplied service ID.
-func serviceAppFilter(selectedServiceID relayer.ServiceID) appFilterFn {
-	return func(_ apptypes.Application, serviceID relayer.ServiceID) bool {
+func serviceAppFilter(selectedServiceID protocol.ServiceID) appFilterFn {
+	return func(_ apptypes.Application, serviceID protocol.ServiceID) bool {
 		return serviceID == selectedServiceID
 	}
 }
