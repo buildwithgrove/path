@@ -1,4 +1,4 @@
-package relayer
+package protocol
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
 // Each protocol interface implementation needs to define an endpoint address which uniquely identifies a service endpoint.
@@ -18,7 +18,7 @@ type Endpoint interface {
 	PublicURL() string
 }
 
-// EndpointSelector defines the functionality that the user of a relayer needs to provide.
+// EndpointSelector defines the functionality that the user of a protocol needs to provide.
 // E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
 	Select([]Endpoint) (EndpointAddr, error)

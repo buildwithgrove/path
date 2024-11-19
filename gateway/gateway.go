@@ -10,7 +10,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -26,10 +26,10 @@ type Gateway struct {
 	// its corresponding QoS instance.
 	HTTPRequestParser
 
-	// The relayer.Protocol instance is used to fulfill the
+	// The Protocol instance is used to fulfill the
 	// service requests received by the gateway through
 	// sending the service payload to an endpoint.
-	relayer.Protocol
+	Protocol
 
 	// QoSPublisher is used to publish QoS-related observations.
 	// It can be "local" i.e. inform the local QoS
@@ -52,7 +52,7 @@ type Gateway struct {
 // HandleHTTPServiceRequest is written as a template method to allow the customization of steps
 // invovled in serving a service request, e.g.:
 // authenticating the request, parsing into a service payload,
-// sending the service payload through a relayer, etc.
+// sending the service payload through a relaying protocol, etc.
 //
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
@@ -95,9 +95,9 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
-	// Send the service request payload, through the relayer, to a service provider endpoint.
-	relayer := relayer.Relayer{ProtocolRequestContext: protocolRequestCtx}
-	endpointResponse, err := relayer.SendRelay(
+	// Send the service request payload, to a service provider endpoint.
+	endpointResponse, err := SendRelay(
+		protocolRequestCtx,
 		serviceRequestCtx.GetServicePayload(),
 		serviceRequestCtx.GetEndpointSelector(),
 	)
@@ -107,12 +107,10 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
 
-		// The serviceQoS.Observe method call is intentionally skipped here,
-		// because the relayer package is expected to handle protocol-specific errors.
 		return
 	}
 
-	// TODO_TECHDEBT: implement a service-specific retry mechanism based on the relayer response/error:
+	// TODO_TECHDEBT: implement a service-specific retry mechanism based on the protocol's response/error:
 	// This would need to distinguish between:
 	// a) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
 	// b) endpoint errors, e.g. when an endpoint is (temporarily) unreachable due to some network issue,
@@ -163,7 +161,7 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	_, _ = w.Write(response.GetPayload())
 }
 
-func (g *Gateway) buildProtocolRequestCtx(serviceID relayer.ServiceID, httpReq *http.Request) (relayer.ProtocolRequestContext, error) {
+func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq *http.Request) (ProtocolRequestContext, error) {
 	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
 	if err != nil {
 		logger := g.Logger.With(

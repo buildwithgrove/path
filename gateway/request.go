@@ -4,14 +4,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // HTTPRequestParser is used, in handling an HTTP service request, to extract
 // the service ID and corresponding QoS service from an HTTP request.
 type HTTPRequestParser interface {
 	// GetQoSService returns the qos for the service matching an HTTP request.
-	GetQoSService(context.Context, *http.Request) (relayer.ServiceID, QoSService, error)
+	GetQoSService(context.Context, *http.Request) (protocol.ServiceID, QoSService, error)
 
 	// GetHTTPErrorResponse returns an HTTP response using the supplied error.
 	// It will only be called if the GetQoSService method above returns an error.
@@ -41,7 +41,7 @@ type HTTPRequestParser interface {
 //
 // could be translated into:
 //
-//	map[relayer.ServiceID]QoSService{
+//	map[protocol.ServiceID]QoSService{
 //	   "ethereum": qos.Evm{},
 //	   "polygon":  qos.Evm{},
 //	   "solana":   qos.Solana{},

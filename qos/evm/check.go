@@ -2,8 +2,8 @@ package evm
 
 import (
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointAddr) []gateway.RequestQoSContext {
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
 	// TODO_IMPROVE: skip any checks for which the endpoint already has
 	// a valid (e.g. not expired) quality data point.
 
@@ -30,7 +30,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr relayer.EndpointA
 	}
 }
 
-func getEndpointCheck(endpointStore *EndpointStore, endpointAddr relayer.EndpointAddr, options ...func(*requestContext)) *requestContext {
+func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.EndpointAddr, options ...func(*requestContext)) *requestContext {
 	requestCtx := requestContext{
 		endpointStore:           endpointStore,
 		isValid:                 true,

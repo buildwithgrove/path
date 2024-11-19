@@ -10,20 +10,21 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 )
 
-// relayer package's Protocol interface is fulfilled by the Protocol struct
+// gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using methods that are specific to Shannon.
-var _ relayer.Protocol = &Protocol{}
+var _ gateway.Protocol = &Protocol{}
 
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
 type FullNode interface {
-	GetServiceApps(relayer.ServiceID) ([]apptypes.Application, error)
+	GetServiceApps(protocol.ServiceID) ([]apptypes.Application, error)
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
 	// This is used here because the gateway only needs the current session for any service+app combination.
-	GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error)
+	GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
 	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
@@ -34,8 +35,7 @@ type FullNode interface {
 	IsHealthy() bool
 }
 
-// Protocol provides the functionality needed by the relayer and gateway packages
-// for sending a relay to a specific endpoint.
+// Protocol provides the functionality needed by the gateway packag for sending a relay to a specific endpoint.
 type Protocol struct {
 	FullNode
 	OperationMode
@@ -43,7 +43,7 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
-func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID, httpReq *http.Request) (relayer.ProtocolRequestContext, error) {
+func (p *Protocol) BuildRequestContext(serviceID protocol.ServiceID, httpReq *http.Request) (gateway.ProtocolRequestContext, error) {
 	operationModeInstance, err := p.OperationMode.BuildInstanceFromHTTPRequest(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error building an operation mode instance: %w", err)
@@ -78,7 +78,7 @@ func (p *Protocol) IsAlive() bool {
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, appFilter IsAppPermittedFn) (map[relayer.EndpointAddr]endpoint, error) {
+func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter IsAppPermittedFn) (map[protocol.EndpointAddr]endpoint, error) {
 	apps, err := p.FullNode.GetServiceApps(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
@@ -91,7 +91,7 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, appFilter
 		}
 	}
 
-	endpoints := make(map[relayer.EndpointAddr]endpoint)
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range filteredApps {
 		session, err := p.FullNode.GetSession(serviceID, app.Address)
 		if err != nil {
