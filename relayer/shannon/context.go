@@ -111,7 +111,7 @@ func (rc *requestContext) AvailableEndpoints() ([]relayer.Endpoint, error) {
 	return availableEndpoints, nil
 }
 
-// SendRelay sends a the supplied payload as a relay request to the supplied endpoint.
+// sendRelay sends a the supplied payload as a relay request to the supplied endpoint.
 // It is required to fulfill the FullNode interface.
 func (rc *requestContext) sendRelay(
 	app apptypes.Application,
