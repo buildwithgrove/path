@@ -160,7 +160,7 @@ func buildRelayRequest(endpoint endpoint, session sessiontypes.Session, payload 
 		return nil, fmt.Errorf("error embedding a JSONRPC HTTP request for url %s: %w", endpoint.url, err)
 	}
 
-	// TODO_TECHDEBT: use the new `FilteredSession` struct provided by the Shannon SDK to get the session and the endpoint.
+	// TODO_MVP(@adshmh): use the new `FilteredSession` struct provided by the Shannon SDK to get the session and the endpoint.
 	relayRequest.Meta = servicetypes.RelayRequestMetadata{
 		SessionHeader:           session.Header,
 		SupplierOperatorAddress: string(endpoint.supplier),
