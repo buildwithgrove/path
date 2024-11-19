@@ -9,6 +9,7 @@ import (
 // OperationMode defines the behavior of a specific mode of operation of PATH.
 // As of now, it is expected to provide a single method to build an instance of the underlying mode of operation based on an HTTP request.
 //
+// TODO_DOCUMENT(@adshmh): Convert the following notion doc into a proper README.
 // See the following link for more details on PATH's different modes of operation.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5
 type OperationMode interface {

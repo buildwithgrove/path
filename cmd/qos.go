@@ -45,7 +45,13 @@ func getServiceQoSInstances(
 	for _, serviceID := range allServiceIDs {
 		switch serviceID {
 		case config.ServiceIDEVM:
-			evmEndpointStore := &evm.EndpointStore{Logger: logger}
+			evmEndpointStore := &evm.EndpointStore{
+				Config: evm.EndpointStoreConfig{
+					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
+					ChainID: "0x1",
+				},
+				Logger: logger,
+			}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
@@ -57,7 +63,13 @@ func getServiceQoSInstances(
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 		case config.ServiceIDE2E:
-			evmEndpointStore := &evm.EndpointStore{Logger: logger}
+			evmEndpointStore := &evm.EndpointStore{
+				Config: evm.EndpointStoreConfig{
+					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
+					ChainID: "0x1",
+				},
+				Logger: logger,
+			}
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
