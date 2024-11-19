@@ -36,7 +36,8 @@
   - [6.1. Running Tests](#61-running-tests)
 - [Troubleshooting](#troubleshooting)
   - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
-
+- [Special Thanks](#spacial-thanks)
+- 
 ## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -293,3 +294,16 @@ or just copy-paste the following command:
 ```bash
 sudo chmod 666 /var/run/docker.sock
 ```
+
+## Special Thanks
+
+The origins of this repository were inspired by the work kicked off in [gateway-server](https://github.com/pokt-network/gateway-server) by the
+[Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
+
+However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
+- Enabling multi-protocol support; Morse, Shanon and beyond
+- Set a foundation to migrate Grove's quality of service and data pipelineta
+- Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
+- Etc...
+
+<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) --> 
