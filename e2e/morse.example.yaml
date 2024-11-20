@@ -1,3 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # To run E2E tests, copy this file and rename it to .morse.config.yaml, then update.
 # morse_config is required for Morse E2E tests.
 morse_config:
