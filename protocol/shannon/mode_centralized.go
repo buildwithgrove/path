@@ -20,9 +20,14 @@ import (
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680d4a0fff3a40dea543e
 
 // getCentralizedModeOwnedAppsAddr returns the list of addresses of apps owned by the gateway, built using the supplied private keys.
-func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys []*secp256k1.PrivKey) ([]string, error) {
+func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string, error) {
 	var ownedAppsAddr []string
-	for _, ownedAppPrivateKey := range ownedAppsPrivateKeys {
+	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
+		ownedAppPrivateKey, err := getSec256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
+		if err != nil {
+			return nil, err
+		}
+
 		appAddr, err := getAddressFromPrivateKey(ownedAppPrivateKey)
 		if err != nil {
 			return nil, err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -43,11 +42,9 @@ type FullNode interface {
 func NewProtocol(
 	fullNode FullNode,
 	logger polylog.Logger,
-	gatewayAddr string,
-	gatewayPrivateKeyHex string,
-	ownedAppsPrivateKeys []*secp256k1.PrivKey,
+	config GatewayConfig,
 ) (*Protocol, error) {
-	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys)
+	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(config.OwnedAppsPrivateKeysHex)
 	if err != nil {
 		return nil, fmt.Errorf("NewProtocol: error parsing the supplied private keys: %w", err)
 	}
@@ -62,8 +59,9 @@ func NewProtocol(
 		Logger:   logger,
 
 		// TODO_MVP(@adshmh): verify the gateway address and private key are valid.
-		gatewayAddr:          gatewayAddr,
-		gatewayPrivateKeyHex: gatewayPrivateKeyHex,
+		gatewayAddr:          config.GatewayAddress,
+		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
+		gatewayMode:          config.GatewayMode,
 		ownedAppsAddr:        ownedAppsAddrIdx,
 	}, nil
 }
@@ -72,6 +70,10 @@ func NewProtocol(
 type Protocol struct {
 	FullNode
 	Logger polylog.Logger
+
+	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
+	// See protocol/shannon/gateway_mode.go for more details.
+	gatewayMode protocol.GatewayMode
 
 	// gatewayAddr is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
@@ -89,13 +91,11 @@ type Protocol struct {
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
-	gatewayMode protocol.GatewayMode,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-
-	permittedAppFilter, err := p.getGatewayModePermittedAppFilter(gatewayMode, httpReq)
+	permittedAppFilter, err := p.getGatewayModePermittedAppFilter(p.gatewayMode, httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", gatewayMode, err)
+		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppFilter)
@@ -103,9 +103,9 @@ func (p *Protocol) BuildRequestContext(
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	permittedSigner, err := p.getGatewayModePermittedRelaySigner(gatewayMode)
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", gatewayMode, err)
+		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
 	return &requestContext{
