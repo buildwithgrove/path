@@ -13,8 +13,8 @@ shannon_config:
 # services is required. At least one service must be configured and the
 # id field is required. Service config is optional and allows configuration of the service.
 services:
-  "F00C":
-    alias: "eth"
+  "0021":
+    alias: "eth-mainnet"
     request_timeout: "3000ms"
   "0001": # Example of a service with no additional configuration
 
