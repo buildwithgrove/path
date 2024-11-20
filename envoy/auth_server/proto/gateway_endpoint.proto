@@ -76,15 +76,10 @@ message Auth {
   oneof auth_type_details {
     Empty no_auth = 2;
     // The API key authorization settings for the GatewayEndpoint.
-    APIKey api_key = 3;
+    string api_key = 3;
     // The JWT authorization settings for the GatewayEndpoint.
     JWT jwt = 4;
   }
-}
-
-message APIKey {
-  // The API key string.
-  string api_key = 2;
 }
 
 message JWT {
