@@ -2,6 +2,7 @@ package shannon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 

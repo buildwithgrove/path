@@ -38,6 +38,8 @@ type Gateway struct {
 	QoSPublisher
 
 	Logger polylog.Logger
+
+	GatewayMode protocol.GatewayMode
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -162,7 +164,7 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 }
 
 func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq *http.Request) (ProtocolRequestContext, error) {
-	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
+	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, g.GatewayMode, httpReq)
 	if err != nil {
 		logger := g.Logger.With(
 			"service", string(serviceID),
