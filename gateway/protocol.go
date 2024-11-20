@@ -26,6 +26,10 @@ type Protocol interface {
 	// request, which matches the provided Service ID.
 	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)
 
+	// SupportedGamewayModes returns the Gateway modes supported by the protocol instance.
+	// See protocol/gateway_mode.go for more details.
+	SupportedGatewayModes() []protocol.GatewayMode
+
 	health.Check
 }
 

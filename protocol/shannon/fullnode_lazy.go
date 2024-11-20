@@ -85,7 +85,11 @@ type LazyFullNode struct {
 	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddress string
-	// TODO_UPNEXT(@adshmh): replace delegatedApps with privateKeys of gatewayOwnedApps
+
+	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
+	// More specifically, support for the following criteria is required as of now:
+	// 1. Apps matching a specific service ID
+	// 2. Apps delegating to a gateway address.
 	delegatedApps []string
 
 	appClient     *sdk.ApplicationClient
@@ -170,6 +174,14 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
 
+func (lfn *LazyFullNode) GetGatewayAddr() string {
+	return lfn.gatewayAddress
+}
+
+func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
+	return lfn.accountClient
+}
+
 // buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
 func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[protocol.ServiceID][]apptypes.Application, error) {
 	appData := make(map[protocol.ServiceID][]apptypes.Application)
@@ -217,11 +229,6 @@ func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application
 		onchainApp, err := lfn.appClient.GetApplication(ctx, appAddr)
 		if err != nil {
 			lfn.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
-			continue
-		}
-
-		if !slices.Contains(onchainApp.DelegateeGatewayAddresses, lfn.gatewayAddress) {
-			lfn.logger.Warn().Msgf("GetApps: Application %s is not delegated to Gateway", onchainApp.Address)
 			continue
 		}
 
