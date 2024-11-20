@@ -106,6 +106,11 @@ go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
 
+.PHONY: docs_update
+## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
+docs_update: ## Update documentation from README.
+	cat README.md > docusaurus/docs/README.md 
+
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
 	cd docusaurus && npm i && npm run start
