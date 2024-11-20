@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -35,17 +36,16 @@ func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys []*secp256k1.PrivKey) 
 
 // getCentralizedGatewayModeAppFilter returns a permittedAppsFilter for the Centralized gateway mode.
 func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[string]struct{}) permittedAppFilter {
-	// TODO_MVP(@adshmh): return a "reason" string to allow the caller to log the reason for skipping the app.
-	return func(app *apptypes.Application) bool {
+	return func(app *apptypes.Application) error {
 		if _, found := ownedAppsAddr[app.Address]; !found {
-			return false
+			return fmt.Errorf("Centralized GatewayMode: app with address %s is not owned by the gateway", app.Address)
 		}
 
 		if !gatewayHasDelegationForApp(gatewayAddr, app) {
-			return false
+			return fmt.Errorf("Centralized GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
 		}
 
-		return true
+		return nil
 	}
 }
 

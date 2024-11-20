@@ -35,9 +35,6 @@ type FullNode interface {
 	// A CachingFullNode will return true if it has data in app and session caches.
 	IsHealthy() bool
 
-	// GetGatewayAddr returns the gateway address configured for the fullnode, to be used in filtering apps.
-	GetGatewayAddr() string
-
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
 }
@@ -46,6 +43,7 @@ type FullNode interface {
 func NewProtocol(
 	fullNode FullNode,
 	logger polylog.Logger,
+	gatewayAddr string,
 	gatewayPrivateKeyHex string,
 	ownedAppsPrivateKeys []*secp256k1.PrivKey,
 ) (*Protocol, error) {
@@ -63,6 +61,8 @@ func NewProtocol(
 		FullNode: fullNode,
 		Logger:   logger,
 
+		// TODO_MVP(@adshmh): verify the gateway address and private key are valid.
+		gatewayAddr:          gatewayAddr,
 		gatewayPrivateKeyHex: gatewayPrivateKeyHex,
 		ownedAppsAddr:        ownedAppsAddrIdx,
 	}, nil
@@ -73,6 +73,12 @@ type Protocol struct {
 	FullNode
 	Logger polylog.Logger
 
+	// gatewayAddr is used by the SDK for selecting onchain applications which have delegated to the gateway.
+	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
+	gatewayAddr string
+
+	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon integration instance.
+	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
 	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in centralized mode.
@@ -87,12 +93,12 @@ func (p *Protocol) BuildRequestContext(
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
 
-	permittedAppsFilter, err := p.getGatewayModePermittedAppsFilter(gatewayMode, httpReq)
+	permittedAppFilter, err := p.getGatewayModePermittedAppFilter(gatewayMode, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", gatewayMode, err)
 	}
 
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppsFilter)
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppFilter)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
@@ -132,11 +138,17 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilte
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
 	}
 
+	logger := p.Logger.With("service", serviceID)
 	var filteredApps []apptypes.Application
 	for _, app := range apps {
-		if isPermitted := appFilter(&app); isPermitted {
-			filteredApps = append(filteredApps, app)
+		logger = logger.With("app_address", app.Address)
+
+		if errSelectingApp := appFilter(&app); errSelectingApp != nil {
+			logger.Warn().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
+			continue
 		}
+
+		filteredApps = append(filteredApps, app)
 	}
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
