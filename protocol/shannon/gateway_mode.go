@@ -30,19 +30,19 @@ func (p Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 //
 // permittedAppFilter represents any function that can be used to filter an onchain app based on its attributes.
 // It is used by different gateway modes to select app(s) that are permitted for use by the gateway for sending relay requests.
-type permittedAppFilter func(*apptypes.Application) bool
+type permittedAppFilter func(*apptypes.Application) error
 
-// getGatewayModePermittedAppsFilter returns the app filter corresponding to the supplied gateway mode.
-// As of now, the HTTP request that initiates a relay request can also be used to determine the correct filter, e.g. in the Delegated gateway mode.
-func (p *Protocol) getGatewayModePermittedAppsFilter(
+// getGatewayModePermittedAppFilter returns the app filter matching the supplied gateway mode.
+// As of now, the HTTP request that initiates a relay request can also be used to adjust the app filter, e.g. in the Delegated gateway mode.
+func (p *Protocol) getGatewayModePermittedAppFilter(
 	gatewayMode protocol.GatewayMode,
 	req *http.Request,
 ) (permittedAppFilter, error) {
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
-		return getCentralizedGatewayModeAppFilter(p.FullNode.GetGatewayAddr(), p.ownedAppsAddr), nil
+		return getCentralizedGatewayModeAppFilter(p.gatewayAddr, p.ownedAppsAddr), nil
 	case protocol.GatewayModeDelegated:
-		return getDelegatedGatewayModeAppFilter(p.FullNode.GetGatewayAddr(), req), nil
+		return getDelegatedGatewayModeAppFilter(p.gatewayAddr, req), nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
 	}

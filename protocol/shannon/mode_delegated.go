@@ -21,21 +21,21 @@ const (
 
 // getDelegatedGatewayModeAppFilter returns a permittedAppsFilter for the Delegated gateway mode.
 func getDelegatedGatewayModeAppFilter(gatewayAddr string, req *http.Request) permittedAppFilter {
-	return func(app *apptypes.Application) bool {
+	return func(app *apptypes.Application) error {
 		selectedAppAddr, err := getAppAddrFromHTTPReq(req)
 		if err != nil {
-			return false
+			return fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
 		}
 
 		if app.Address != selectedAppAddr {
-			return false
+			return fmt.Errorf("Delegated GatewayMode: app with address %s does not match the selected app address: %s", app.Address, selectedAppAddr)
 		}
 
 		if !gatewayHasDelegationForApp(gatewayAddr, app) {
-			return false
+			return fmt.Errorf("Delegated GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
 		}
 
-		return true
+		return nil
 	}
 }
 

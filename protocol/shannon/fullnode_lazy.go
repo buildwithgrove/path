@@ -54,11 +54,6 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 		return nil, fmt.Errorf("NewSdk: error creating new account client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	signer, err := newSigner(config.GatewayPrivateKey, config.GRPCConfig)
-	if err != nil {
-		return nil, fmt.Errorf("NewSdk: error creating new signer at url %s: %w", config.GRPCConfig.HostPort, err)
-	}
-
 	lazyFullNode := &LazyFullNode{
 		gatewayAddress: config.GatewayAddress,
 		delegatedApps:  config.DelegatedApps,
@@ -67,7 +62,6 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
-		signer:        signer,
 
 		logger: logger,
 	}
@@ -95,7 +89,6 @@ type LazyFullNode struct {
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
-	signer        *signer
 
 	logger polylog.Logger
 }
@@ -173,10 +166,8 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
 
-func (lfn *LazyFullNode) GetGatewayAddr() string {
-	return lfn.gatewayAddress
-}
-
+// GetAccountClient returns the account client created by the fullnode.
+// It is used to create relay request signers.
 func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
 }
