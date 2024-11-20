@@ -107,7 +107,7 @@ go_docs: ## Start Go documentation server
 	godoc -http=:6060
 
 .PHONY: docs_update
-## TODO_UPNEXT handle documentation update like poktroll
+## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
 docs_update: ## Update documentation from README.
 	cat README.md > docusaurus/docs/README.md 
 
