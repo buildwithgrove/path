@@ -53,10 +53,10 @@ func Test_ShannonRelay(t *testing.T) {
 			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
 		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			name:         "should successfully relay eth_blockNumber for eth (F00C)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceAlias: "eth-mainnet",
+			serviceAlias: "eth",
 			relayID:      "1101",
 			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
 		},

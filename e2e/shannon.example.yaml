@@ -21,8 +21,8 @@ services:
   "gatewaye2e":
     # do not change alias
     alias: "test-service"
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
 hydrator_config:
   service_ids:
-    - 0021
+    - "F00C"

@@ -33,18 +33,18 @@ func Test_MorseRelay(t *testing.T) {
 		body         string
 	}{
 		{
-			name:         "should successfully relay eth_chainId for eth-mainnet (0021)",
+			name:         "should successfully relay eth_chainId for eth (F00C)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceAlias: "eth-mainnet",
+			serviceAlias: "eth",
 			relayID:      "1201",
 			body:         `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
 		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
+			name:         "should successfully relay eth_blockNumber for eth (F00C)",
 			reqMethod:    http.MethodPost,
 			reqPath:      "/v1",
-			serviceAlias: "eth-mainnet",
+			serviceAlias: "eth",
 			relayID:      "1202",
 			body:         `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},

@@ -54,8 +54,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Services: map[relayer.ServiceID]ServiceConfig{
-					"0021": {
-						Alias:          "eth-mainnet",
+					"F00C": {
+						Alias:          "eth",
 						RequestTimeout: 3000 * time.Millisecond,
 					},
 					"0001": {}, // Example of a service with no additional configuration
@@ -68,7 +68,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					IdleTimeout:        5000 * time.Millisecond,
 				},
 				serviceAliases: map[string]relayer.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -92,8 +92,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Services: map[relayer.ServiceID]ServiceConfig{
-					"0021": {
-						Alias:          "eth-mainnet",
+					"F00C": {
+						Alias:          "eth",
 						RequestTimeout: 3000 * time.Millisecond,
 					},
 					"0001": {}, // Example of a service with no additional configuration
@@ -106,7 +106,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					IdleTimeout:        5000 * time.Millisecond,
 				},
 				serviceAliases: map[string]relayer.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -240,8 +240,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			yamlData: `
 			morse_config:
 			  serviceAliases:
-			    eth-mainnet: "0021"
-			    eth-mainnet: "0022"
+			    eth: "F00C"
+			    eth: "0022"
 			`,
 			wantErr: true,
 		},
@@ -280,18 +280,18 @@ func Test_GetServiceIDFromAlias(t *testing.T) {
 			name: "should return service ID for existing alias",
 			config: GatewayConfig{
 				serviceAliases: map[string]relayer.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
-			alias: "eth-mainnet",
-			want:  "0021",
+			alias: "eth",
+			want:  "F00C",
 			ok:    true,
 		},
 		{
 			name: "should return false for non-existing alias",
 			config: GatewayConfig{
 				serviceAliases: map[string]relayer.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
 			alias: "btc-mainnet",
