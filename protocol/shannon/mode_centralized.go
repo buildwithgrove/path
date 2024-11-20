@@ -1,15 +1,11 @@
 package shannon
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
 	"slices"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // In Centralized Gateway Mode, the Shannon protocol integration behaves as follows:
@@ -25,8 +21,8 @@ import (
 // getCentralizedModeOwnedAppsAddr returns the list of addresses of apps owned by the gateway, built using the supplied private keys.
 func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys []*secp256k1.PrivKey) ([]string, error) {
 	var ownedAppsAddr []string
-	for _, delegatingAppPrivateKey := range delegatingAppsPrivateKeys {
-		appAddr, err := getAddressFromPrivateKey(delegatingAppPrivateKey)
+	for _, ownedAppPrivateKey := range ownedAppsPrivateKeys {
+		appAddr, err := getAddressFromPrivateKey(ownedAppPrivateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -34,18 +30,18 @@ func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys []*secp256k1.PrivKey) 
 		ownedAppsAddr = append(ownedAppsAddr, appAddr)
 	}
 
-	return ownedAppsAddr
+	return ownedAppsAddr, nil
 }
 
 // getCentralizedGatewayModeAppFilter returns a permittedAppsFilter for the Centralized gateway mode.
-func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[string]struct{}) permittedAppsFilter {
+func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[string]struct{}) permittedAppFilter {
 	// TODO_MVP(@adshmh): return a "reason" string to allow the caller to log the reason for skipping the app.
 	return func(app *apptypes.Application) bool {
 		if _, found := ownedAppsAddr[app.Address]; !found {
 			return false
 		}
 
-		if !gatewayHasDelegationForApp(gatewayaddr, app) {
+		if !gatewayHasDelegationForApp(gatewayAddr, app) {
 			return false
 		}
 

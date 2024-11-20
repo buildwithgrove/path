@@ -37,8 +37,8 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*Cac
 
 // CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
-	LazyFullNode *LazyFullNode
-	Logger       polylog.Logger
+	*LazyFullNode
+	Logger polylog.Logger
 
 	appCache   map[protocol.ServiceID][]apptypes.Application
 	appCacheMu sync.RWMutex

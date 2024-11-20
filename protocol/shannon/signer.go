@@ -26,7 +26,7 @@ type signer struct {
 	privateKeyHex string
 }
 
-func (s *signer) SignRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+func (s *signer) SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
 	ring := sdk.ApplicationRing{
 		Application:      app,
 		PublicKeyFetcher: &s.accountClient,

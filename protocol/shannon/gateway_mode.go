@@ -1,5 +1,14 @@
 package shannon
 
+import (
+	"fmt"
+	"net/http"
+
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
+
+	"github.com/buildwithgrove/path/protocol"
+)
+
 // TODO_DOCUMENT(@adshmh): Convert the following notion doc into a proper README.
 //
 // Gateway Mode defines the behavior of a specific mode of operation of PATH.
@@ -31,7 +40,7 @@ func (p *Protocol) getGatewayModePermittedAppsFilter(
 ) (permittedAppFilter, error) {
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
-		return getCentralizedGatewayModeAppFilter(p.FullNode.GetGatewayAddr(), p.ownedAppsAddrs), nil
+		return getCentralizedGatewayModeAppFilter(p.FullNode.GetGatewayAddr(), p.ownedAppsAddr), nil
 	case protocol.GatewayModeDelegated:
 		return getDelegatedGatewayModeAppFilter(p.FullNode.GetGatewayAddr(), req), nil
 	default:
@@ -46,13 +55,13 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
 		return &signer{
-			accountClient: p.FullNode.GetAccountClient(),
+			accountClient: *p.FullNode.GetAccountClient(),
 			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
 	case protocol.GatewayModeDelegated:
 		return &signer{
-			accountClient: p.FullNode.GetAccountClient(),
+			accountClient: *p.FullNode.GetAccountClient(),
 			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil

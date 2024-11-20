@@ -3,7 +3,6 @@ package shannon
 import (
 	"fmt"
 	"net/http"
-	"slices"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -50,7 +49,6 @@ func NewProtocol(
 	gatewayPrivateKeyHex string,
 	ownedAppsPrivateKeys []*secp256k1.PrivKey,
 ) (*Protocol, error) {
-	}
 	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys)
 	if err != nil {
 		return nil, fmt.Errorf("NewProtocol: error parsing the supplied private keys: %w", err)
@@ -63,8 +61,10 @@ func NewProtocol(
 
 	return &Protocol{
 		FullNode: fullNode,
-		Logger: logger,
-		ownedAppsAddr: ownedAppsAddrIdx,
+		Logger:   logger,
+
+		gatewayPrivateKeyHex: gatewayPrivateKeyHex,
+		ownedAppsAddr:        ownedAppsAddrIdx,
 	}, nil
 }
 
@@ -72,6 +72,8 @@ func NewProtocol(
 type Protocol struct {
 	FullNode
 	Logger polylog.Logger
+
+	gatewayPrivateKeyHex string
 
 	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in centralized mode.
 	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
@@ -81,7 +83,7 @@ type Protocol struct {
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
-	gatewayMode protocol.GatewayMode, 
+	gatewayMode protocol.GatewayMode,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
 
@@ -95,7 +97,7 @@ func (p *Protocol) BuildRequestContext(
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	permittedSigner, err := p.getGatewayModePermittedSigner(gatewayMode)
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(gatewayMode)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", gatewayMode, err)
 	}

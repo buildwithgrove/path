@@ -47,6 +47,8 @@ type EndpointHydrator struct {
 	ServiceQoSGenerators map[protocol.ServiceID]QoSEndpointCheckGenerator
 	Logger               polylog.Logger
 
+	protocol.GatewayMode
+
 	// TODO_FUTURE: a more sophisticated health status indicator
 	// may eventually be needed, e.g. one that checks whether any
 	// of the attempted service requests returned a response.
@@ -128,7 +130,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// TODO_FUTURE: support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
 	// no need for specifying a specific app.
-	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)
+	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, eph.GatewayMode, nil)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to build a protocol request context")
 		return err
