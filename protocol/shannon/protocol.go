@@ -3,7 +3,9 @@ package shannon
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -33,32 +35,76 @@ type FullNode interface {
 	// A LazyFullNode will always return true.
 	// A CachingFullNode will return true if it has data in app and session caches.
 	IsHealthy() bool
+
+	// GetGatewayAddr returns the gateway address configured for the fullnode, to be used in filtering apps.
+	GetGatewayAddr() string
+
+	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
+	GetAccountClient() *sdk.AccountClient
+}
+
+// NewProtocol instantiates an instance of the Shannon protocol integration.
+func NewProtocol(
+	fullNode FullNode,
+	logger polylog.Logger,
+	gatewayPrivateKeyHex string,
+	ownedAppsPrivateKeys []*secp256k1.PrivKey,
+) (*Protocol, error) {
+	}
+	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeys)
+	if err != nil {
+		return nil, fmt.Errorf("NewProtocol: error parsing the supplied private keys: %w", err)
+	}
+
+	ownedAppsAddrIdx := make(map[string]struct{})
+	for _, appAddr := range ownedAppsAddr {
+		ownedAppsAddrIdx[appAddr] = struct{}{}
+	}
+
+	return &Protocol{
+		FullNode: fullNode,
+		Logger: logger,
+		ownedAppsAddr: ownedAppsAddrIdx,
+	}, nil
 }
 
 // Protocol provides the functionality needed by the gateway packag for sending a relay to a specific endpoint.
 type Protocol struct {
 	FullNode
-	OperationMode
 	Logger polylog.Logger
+
+	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in centralized mode.
+	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
+	ownedAppsAddr map[string]struct{}
 }
 
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
-func (p *Protocol) BuildRequestContext(serviceID protocol.ServiceID, httpReq *http.Request) (gateway.ProtocolRequestContext, error) {
-	operationModeInstance, err := p.OperationMode.BuildInstanceFromHTTPRequest(httpReq)
+func (p *Protocol) BuildRequestContext(
+	serviceID protocol.ServiceID,
+	gatewayMode protocol.GatewayMode, 
+	httpReq *http.Request,
+) (gateway.ProtocolRequestContext, error) {
+
+	permittedAppsFilter, err := p.getGatewayModePermittedAppsFilter(gatewayMode, httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error building an operation mode instance: %w", err)
+		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", gatewayMode, err)
 	}
 
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, operationModeInstance.GetAppFilterFn())
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppsFilter)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	permittedSigner, err := p.getGatewayModePermittedSigner(gatewayMode)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", gatewayMode, err)
 	}
 
 	return &requestContext{
 		fullNode:           p.FullNode,
 		endpoints:          endpoints,
 		serviceID:          serviceID,
-		relayRequestSigner: operationModeInstance.GetRelayRequestSigner(),
+		relayRequestSigner: permittedSigner,
 	}, nil
 }
 
@@ -78,7 +124,7 @@ func (p *Protocol) IsAlive() bool {
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter IsAppPermittedFn) (map[protocol.EndpointAddr]endpoint, error) {
+func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter permittedAppFilter) (map[protocol.EndpointAddr]endpoint, error) {
 	apps, err := p.FullNode.GetServiceApps(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)

@@ -125,7 +125,7 @@ func (rc *requestContext) sendRelay(
 		return nil, err
 	}
 
-	signedRelayReq, err := rc.relayRequestSigner.SignRelayRequest(relayRequest, app)
+	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error signing the relay request for app %s: %w", app.Address, err)
 	}
@@ -145,6 +145,24 @@ func (rc *requestContext) sendRelay(
 	}
 
 	return response, nil
+}
+
+func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+	// Verify the relay request's metadata, specifically the session header.
+	// Note: cannot use the RelayRequest's ValidateBasic() method here, as it looks for a signature in the struct, which has not been added yet at this point.
+	meta := unsignedRelayReq.GetMeta()
+
+	if meta.GetSessionHeader() == nil {
+		return nil, errors.New("signRelayRequest: relay request is missing session header")
+	}
+
+	sessionHeader := meta.GetSessionHeader()
+	if err := sessionHeader.ValidateBasic(); err != nil {
+		return nil, fmt.Errorf("signRelayRequest: relay request session header is invalid: %w", err)
+	}
+
+	// Sign the relay request using the selected app's private key
+	return rc.relayRequestSigner.SignRelayRequest(unsignedRelayReq, app)
 }
 
 // buildRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, and payload.
