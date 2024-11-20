@@ -55,9 +55,6 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 	}
 
 	lazyFullNode := &LazyFullNode{
-		gatewayAddress: config.GatewayAddress,
-		delegatedApps:  config.DelegatedApps,
-
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
@@ -75,16 +72,6 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 //   - This allows supporting short block times (e.g. LocalNet)
 //   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
-	// gatewayAddress is used by the SDK for selecting onchain applications which have delegated to the gateway.
-	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
-	gatewayAddress string
-
-	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
-	// More specifically, support for the following criteria is required as of now:
-	// 1. Apps matching a specific service ID
-	// 2. Apps delegating to a gateway address.
-	delegatedApps []string
-
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
@@ -93,10 +80,9 @@ type LazyFullNode struct {
 	logger polylog.Logger
 }
 
-// GetServiceApps returns the set of onchain applications which delegate to the gateway, matching the supplied service ID.
+// GetServiceApps returns the set of onchain applications matching the supplied service ID.
 // It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
-	// fetch all staked applications which have delegated to this gateway, by querying the onchain data.
 	allApps, err := lfn.getAllApps(context.TODO())
 	if err != nil {
 		return nil, err
@@ -205,27 +191,15 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 	return appData, nil
 }
 
-// TODO_UPNEXT(@adshmh): cross-reference onchain apps against the configured apps' private keys.
-// An onchain app should be used for sending relays if and only if it meets the following criteria:
-// 1. It has delegated to the gateway.
-// 2. Its private key is present in the configuration.
-//
-// getAllApps returns the onchain apps that have active delegations to the gateway.
+// getAllApps returns all the onchain apps.
 func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
 	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
-
-	var apps []apptypes.Application
-	for _, appAddr := range lfn.delegatedApps {
-		onchainApp, err := lfn.appClient.GetApplication(ctx, appAddr)
-		if err != nil {
-			lfn.logger.Error().Msgf("GetApps: SDK returned error when getting application %s: %v", appAddr, err)
-			continue
-		}
-
-		apps = append(apps, onchainApp)
-	}
-
-	return apps, nil
+	//
+	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
+	// More specifically, support for the following criteria is required as of now:
+	// 1. Apps matching a specific service ID
+	// 2. Apps delegating to a gateway address.
+	return lfn.appClient.GetAllApplications(ctx)
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.
