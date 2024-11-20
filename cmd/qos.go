@@ -7,8 +7,8 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 // TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
@@ -26,8 +26,8 @@ func getServiceQoSInstances(
 	gatewayConfig config.GatewayConfig,
 	logger polylog.Logger,
 ) (
-	map[relayer.ServiceID]gateway.QoSService,
-	map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
+	map[protocol.ServiceID]gateway.QoSService,
+	map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator,
 	error,
 ) {
 	// Build a map of services configured for the hydrator
@@ -37,8 +37,8 @@ func getServiceQoSInstances(
 
 	// TODO_TECHDEBT: refactor this function to remove
 	// the need for manually adding entries for every new QoS implmenetation.
-	gatewayQoSService := make(map[relayer.ServiceID]gateway.QoSService)
-	hydratorQoSGenerators := make(map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator)
+	gatewayQoSService := make(map[protocol.ServiceID]gateway.QoSService)
+	hydratorQoSGenerators := make(map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator)
 
 	// TODO_FUTURE: support serviceQoS-specific configuration.
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
@@ -82,8 +82,8 @@ func getServiceQoSInstances(
 }
 
 // buildServiceIDsIdx builds a map of the provided service IDs to allow one-line lookups.
-func buildServiceIDsIdx(ids []relayer.ServiceID) map[relayer.ServiceID]struct{} {
-	idx := make(map[relayer.ServiceID]struct{})
+func buildServiceIDsIdx(ids []protocol.ServiceID) map[protocol.ServiceID]struct{} {
+	idx := make(map[protocol.ServiceID]struct{})
 	for _, id := range ids {
 		idx[id] = struct{}{}
 	}

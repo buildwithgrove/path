@@ -24,7 +24,7 @@ import (
 type Protocol interface {
 	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
 	// request, which matches the provided Service ID.
-	BuildRequestContext(protocol.ServiceID, protocol.GatewayMode, *http.Request) (ProtocolRequestContext, error)
+	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)
 
 	// SupportedGamewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
