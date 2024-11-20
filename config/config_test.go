@@ -83,11 +83,14 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "grpc-url.io:443",
 						},
-						GatewayPrivateKey: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
-						GatewayAddress:    "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
-						DelegatedApps: []string{
-							"pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0",
-							"pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0",
+					},
+					GatewayConfig: shannonprotocol.GatewayConfig{
+						GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
+						GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
+						GatewayMode:          protocol.GatewayModeCentralized,
+						OwnedAppsPrivateKeysHex: []string{
+							"e5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
+							"f5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
 						},
 					},
 				},
@@ -119,7 +122,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "invalid-url"
 			    grpc_url: "grpcs://grpc-url.io"
-			    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
 			`,
 			wantErr: true,
 		},
@@ -131,7 +133,10 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "https://rpc-url.io"
 			    grpc_url: "grpcs://grpc-url.io"
+			  gateway_config:
 			    gateway_address: "invalid_gateway_address"
+                            gateway_hex_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
+                            gateway_mode: "delegated"
 			`,
 			wantErr: true,
 		},
