@@ -1,3 +1,9 @@
+# TODO_IMPROVE(@commoddity): Update schema URL to point to main branch once `yaml-data-source` branch is merged into main.
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/yaml-data-source/yaml/gateway-endpoints.schema.yaml
+
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # This file shows examples of how to configure PATH gateway endpoints using a YAML file as the PADS data source.
 # These files will be converted to the proto.GatewayEndpoint struct expected by the PATH's Go External Auth Server.
 # 
@@ -6,12 +12,11 @@
 endpoints:
 
   # 1. Example of a gateway endpoint using API Key Authorization
+  # This endpoint has no rate limits defined (the rate_limiting field is omitted entirely in this case).
   endpoint_1:                                                # The unique identifier for a gateway endpoint.
     auth:
       auth_type: "API_KEY_AUTH"                              # This endpoint uses API Key Authorization.
       api_key: "api_key_1"                                   # For API Key Authorization, the API key string is required.
-
-    rate_limiting:                                           # This endpoint has no rate limits defined (the rate_limiting field may be omitted entirely in this case).
 
     metadata:                                                # Metadata fields may be any key-value pairs and are optional.
       plan_type: "PLAN_UNLIMITED"                            # Example of a key-value pair (in this case, a pricing plan).
@@ -31,10 +36,8 @@ endpoints:
       account_id: "account_2"
       owner_email: "paul.atreides@arrakis.com"
 
-  # 3. Example of a gateway endpoint with no authorization
+  # 3. Example of a gateway endpoint with no authorization (the auth field is omitted entirely in this case).
   endpoint_3:
-    auth:                                                    # This endpoint does not use any authorization (the auth field may be omitted entirely in this case).
-    
     rate_limiting:                                           # This endpoint has a rate limit defined
       throughput_limit: 50                                   # Throughput limit defines the endpoint's per-second (TPS) rate limit.
       capacity_limit: 200                                    # Capacity limit defines the endpoint's rate limit over longer periods.

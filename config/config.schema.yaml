@@ -1,3 +1,9 @@
+# This schema file may be used to validate the config file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+# To validate the config file, the following comment must be placed at the top of the .config.yaml file:
+# <REMOVE THIS TAG> yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+
 type: object
 additionalProperties: false
 required:
@@ -14,10 +20,6 @@ properties:
   morse_config:
     type: object
     additionalProperties: false
-    required:
-      - client_public_key
-      - application_public_key
-      - application_signature
     properties:
       full_node_config:
         type: object
@@ -30,7 +32,7 @@ properties:
             pattern: "^(http|https)://.*$"
           relay_signing_key:
             type: string
-            pattern: "^[0-9a-fA-F]{64}$"
+            pattern: "^[0-9a-fA-F]{128}$"
           http_config:
             type: object
             additionalProperties: false
@@ -78,6 +80,10 @@ properties:
               application_signature:
                 type: string
                 pattern: "^[0-9a-fA-F]{128}$"
+            required:
+              - client_public_key
+              - application_public_key
+              - application_signature
 
   # Shannon Configuration (required for Shannon gateways)
   shannon_config:

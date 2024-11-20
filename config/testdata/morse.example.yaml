@@ -1,3 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:
@@ -25,7 +29,7 @@ services:
   "0021":
     alias: "eth-mainnet"
     request_timeout: "3000ms"
-  "0001": # Example of a service with no additional configuration
+  "0001": {} # Example of a service with no additional configuration (empty object)
 
 # router_config is optional and allows configuration of the router settings.
 router_config:
