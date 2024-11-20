@@ -25,4 +25,4 @@ services:
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
-    - 0021
+    - "0021"

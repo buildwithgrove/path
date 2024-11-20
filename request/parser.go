@@ -66,7 +66,7 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 }
 
 // getServiceID gets the service ID from the request host
-// eg. host = "eth-mainnet.gateway.pokt.network" -> serviceID = "eth-mainnet"
+// eg. host = "eth.gateway.pokt.network" -> serviceID = "eth"
 func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
 	hostParts := strings.Split(host, ".")
 	if len(hostParts) < 2 {
