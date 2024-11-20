@@ -42,9 +42,15 @@ func getServiceQoSInstances(
 
 	// TODO_FUTURE: support serviceQoS-specific configuration.
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
+
 	for _, serviceID := range allServiceIDs {
-		switch serviceID {
-		case config.ServiceIDEVM, config.ServiceIDFEVM:
+
+		// Get the QoS type for the service ID.
+		serviceQoSType := serviceQoSTypes[serviceID]
+
+		switch serviceQoSType {
+
+		case serviceIDEVM:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
@@ -58,11 +64,14 @@ func getServiceQoSInstances(
 			if _, ok := hydratorServiceIDsIdx[serviceID]; ok {
 				hydratorQoSGenerators[serviceID] = evmEndpointStore
 			}
-		case config.ServiceIDSolana:
+
+		case serviceIDSolana:
 			// TODO_TECHDEBT: add solana qos service here
-		case config.ServiceIDPOKT:
+
+		case serviceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
-		case config.ServiceIDE2E:
+
+		case serviceIDE2E:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
@@ -73,8 +82,9 @@ func getServiceQoSInstances(
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
+
 		default:
-			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not recognized", serviceID)
+			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
 	}
 
