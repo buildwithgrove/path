@@ -19,10 +19,7 @@ import (
 // SupportedGatewayModes returns the list of gateway modes supported by the Shannon protocol integration.
 // This method implements the gateway.Protocol interface.
 func (p Protocol) SupportedGatewayModes() []protocol.GatewayMode {
-	return []protocol.GatewayMode{
-		protocol.GatewayModeCentralized,
-		protocol.GatewayModeDelegated,
-	}
+	return supportedGatewayModes()
 }
 
 // TODO_TECHDEBT: once Shannon supports querying the applications based on one more criteria, this function's name and signature should be updated to
@@ -67,5 +64,13 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
+	}
+}
+
+// supportedGatewayModes returns the list of gateway modes currently supported by the Shannon protocol integration.
+func supportedGatewayModes() []protocol.GatewayMode {
+	return []protocol.GatewayMode{
+		protocol.GatewayModeCentralized,
+		protocol.GatewayModeDelegated,
 	}
 }

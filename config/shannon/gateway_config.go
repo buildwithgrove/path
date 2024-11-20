@@ -9,6 +9,7 @@ import (
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type ShannonGatewayConfig struct {
 	FullNodeConfig shannonprotocol.FullNodeConfig `yaml:"full_node_config"`
+	GatewayConfig  shannonprotocol.GatewayConfig  `yaml:"gateway_config"`
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.
@@ -28,5 +29,9 @@ func (c *ShannonGatewayConfig) UnmarshalYAML(value *yaml.Node) error {
 
 // validate checks if the configuration is valid after loading it from the YAML file.
 func (c ShannonGatewayConfig) Validate() error {
-	return c.FullNodeConfig.Validate()
+	if err := c.FullNodeConfig.Validate(); err != nil {
+		return err
+	}
+
+	return c.GatewayConfig.Validate()
 }
