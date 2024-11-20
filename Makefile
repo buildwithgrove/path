@@ -94,12 +94,8 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 ### Generation Make Targets ###
 ###############################
 
-.PHONY: sqlc_generate
-sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
-	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
-
 # // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
+# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
 
 ########################
 #### Documentation  ####
