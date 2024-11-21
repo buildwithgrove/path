@@ -26,6 +26,9 @@ jobs:
           cache: "yarn"
           cache-dependency-path: docusaurus/yarn.lock
 
+      - name: Update docs page
+        run: make docs_update
+
       - name: Install dependencies
         run: |
           cd docusaurus
