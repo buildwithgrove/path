@@ -20,6 +20,8 @@ import (
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // RelayRequestSigner is used by the request context to sign the relay request.
+// It takes an unsigned relay request and an application, and returns a relay request signed either by the gateway that has delegation from the app.
+// If/when the Permissionless Gateway Mode is supported by the Shannon integration, the app's own private key may also be used for signing the relay request.
 type RelayRequestSigner interface {
 	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
@@ -67,22 +69,16 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 // HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
-	if rc.selectedEndpoint == nil {
-		return protocol.Response{}, fmt.Errorf("handleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
+	var selectedEndpointAddr protocol.EndpointAddr
+	if rc.selectedEndpoint != nil {
+		selectedEndpointAddr = rc.selectedEndpoint.Addr()
 	}
-	endpoint := rc.selectedEndpoint
 
-	session := endpoint.session
-	if session.Application == nil {
-		return protocol.Response{}, fmt.Errorf("handleServiceRequest: nil app on session %s for service %s", session.SessionId, rc.serviceID)
-	}
-	app := *session.Application
-
-	response, err := rc.sendRelay(app, session, *rc.selectedEndpoint, payload)
+	response, err := rc.sendRelay(payload)
 	if err != nil {
-		return protocol.Response{EndpointAddr: endpoint.Addr()},
+		return protocol.Response{EndpointAddr: selectedEndpointAddr},
 			fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
-				rc.serviceID, endpoint.Addr(), err,
+				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
 
@@ -91,17 +87,18 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// to access the Service's response body, status code, etc.
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
-		return protocol.Response{EndpointAddr: endpoint.Addr()},
-			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s app %s endpoint %s: %w",
-				rc.serviceID, app.Address, endpoint.Addr(), err,
+		return protocol.Response{EndpointAddr: selectedEndpointAddr},
+			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
+				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
 
-	relayResponse.EndpointAddr = endpoint.Addr()
+	relayResponse.EndpointAddr = selectedEndpointAddr
 	return relayResponse, nil
 }
 
-// AvailableEndpoints returns the pre-set list of available endpoints.
+// AvailableEndpoints returns the list of endpoints available under the request context, which is populated by the protocol instance
+// at the time of creating the request context.
 // It implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	var availableEndpoints []protocol.Endpoint
@@ -113,36 +110,41 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	return availableEndpoints, nil
 }
 
-// sendRelay sends a the supplied payload as a relay request to the supplied endpoint.
+// sendRelay sends a the supplied payload as a relay request to the endpoint selected for the request context through the SelectEndpoint method.
 // It is required to fulfill the FullNode interface.
-func (rc *requestContext) sendRelay(
-	app apptypes.Application,
-	session sessiontypes.Session,
-	endpoint endpoint,
-	payload protocol.Payload,
-) (*servicetypes.RelayResponse, error) {
-	relayRequest, err := buildRelayRequest(endpoint, session, []byte(payload.Data))
+func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.RelayResponse, error) {
+	if rc.selectedEndpoint == nil {
+		return nil, fmt.Errorf("sendRelay: no endpoint has been selected on service %s", rc.serviceID)
+	}
+
+	session := rc.selectedEndpoint.session
+	if session.Application == nil {
+		return nil, fmt.Errorf("sendRelay: nil app on session %s for service %s", session.SessionId, rc.serviceID)
+	}
+	app := *session.Application
+
+	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, []byte(payload.Data))
 	if err != nil {
 		return nil, err
 	}
 
 	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
 	if err != nil {
-		return nil, fmt.Errorf("relay: error signing the relay request for app %s: %w", app.Address, err)
+		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
 	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
 	defer cancelFn()
 
-	responseBz, err := sendHttpRelay(ctxWithTimeout, endpoint.url, signedRelayReq)
+	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
-		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", endpoint.url, err)
+		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", rc.selectedEndpoint.url, err)
 	}
 
 	// Validate the response
-	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(endpoint.supplier), responseBz)
+	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
-		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, endpoint.url, err)
+		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, rc.selectedEndpoint.url, err)
 	}
 
 	return response, nil
@@ -166,9 +168,9 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 	return rc.relayRequestSigner.SignRelayRequest(unsignedRelayReq, app)
 }
 
-// buildRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, and payload.
+// buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, and payload.
 // The returned RelayRequest can be signed and sent to the endpoint to receive the endpoint's response.
-func buildRelayRequest(endpoint endpoint, session sessiontypes.Session, payload []byte) (*servicetypes.RelayRequest, error) {
+func buildUnsignedRelayRequest(endpoint endpoint, session sessiontypes.Session, payload []byte) (*servicetypes.RelayRequest, error) {
 	// TODO_TECHDEBT: need to select the correct underlying request (HTTP, etc.) based on the selected service.
 	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest(payload, endpoint.url)
 	if err != nil {

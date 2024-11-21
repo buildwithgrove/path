@@ -129,7 +129,7 @@ func (p *Protocol) IsAlive() bool {
 // TODO_FUTURE: Find a more optimized way of handling an overlap among endpoints
 // matching multiple sessions of apps delegating to the gateway.
 //
-// getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
+// getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
 func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter permittedAppFilter) (map[protocol.EndpointAddr]endpoint, error) {

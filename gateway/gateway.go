@@ -161,13 +161,11 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	_, _ = w.Write(response.GetPayload())
 }
 
+// buildProtocolRequestCtx builds a protocol-level context for the supplied service ID and HTTP request.
 func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq *http.Request) (ProtocolRequestContext, error) {
 	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
 	if err != nil {
-		logger := g.Logger.With(
-			"service", string(serviceID),
-		)
-		logger.Warn().Err(err).Msg("Failed to create a protocol request context")
+		g.Logger.With("service", string(serviceID)).Warn().Err(err).Msg("Failed to create a protocol request context")
 	}
 
 	return protocolCtx, err
