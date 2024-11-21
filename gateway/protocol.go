@@ -44,7 +44,7 @@ type Protocol interface {
 //   - Morse: in the relayer/morse package, and
 //   - Shannon: in the relayer/shannon package.
 type ProtocolRequestContext interface {
-	// TODO_TECHDEBT: any protocol/network-level errors should result in
+	// TODO_TECHDEBT(@adshmh): any protocol/network-level errors should result in
 	// the endpoint being dropped by the protocol instance from the returned
 	// set of available endpoints.
 	// e.g. an endpoint that is temporarily/permanently unavailable.
@@ -55,6 +55,7 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
+	// This is needed by the Endpooint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.
 	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
 	// See the Shannon package's operation_mode.go file for more details.
 	AvailableEndpoints() ([]protocol.Endpoint, error)

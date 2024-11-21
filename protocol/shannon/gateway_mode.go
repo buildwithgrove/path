@@ -22,7 +22,7 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// TODO_TECHDEBT: once Shannon supports querying the applications based on one more criteria, this function's name and signature should be updated to
+// TODO_TECHDEBT(@adshmh): once Shannon supports querying the applications based on one more criteria, this function's name and signature should be updated to
 // build and return the query criteria.
 //
 // permittedAppFilter represents any function that can be used to filter an onchain app based on its attributes.
