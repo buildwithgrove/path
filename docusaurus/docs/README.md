@@ -76,10 +76,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -109,10 +109,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -143,7 +143,7 @@ The configuration is divided into several sections:
 3. **Services Configuration (`services`)**:
 
    - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `0021`) and the value is the service configuration.
+   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
    - Only the Service ID is required. All other fields are optional.
 
 4. **Router Configuration (`router_config`)**:
@@ -166,8 +166,8 @@ shannon_config:
       - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
 
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
 ```
 
 #### 4.3 Example Morse Configuration Format
@@ -193,8 +193,8 @@ morse_config:
 ## services is required. At least one service must be configured with a valid id.
 ## All fields are optional but the id is required.
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
     request_timeout: "3000ms"
 ```
 

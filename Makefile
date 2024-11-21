@@ -150,6 +150,9 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
 	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
 
+# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
+# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
+
 ########################
 #### Documentation  ####
 ########################
@@ -158,6 +161,11 @@ gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
 go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
+
+.PHONY: docs_update
+## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
+docs_update: ## Update documentation from README.
+	cat README.md > docusaurus/docs/README.md 
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
