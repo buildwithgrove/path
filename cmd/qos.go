@@ -44,7 +44,7 @@ func getServiceQoSInstances(
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
 	for _, serviceID := range allServiceIDs {
 		switch serviceID {
-		case config.ServiceIDEVM:
+		case config.ServiceIDEVM, config.ServiceIDFEVM:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.

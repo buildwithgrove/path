@@ -22,7 +22,7 @@ morse_config:
 # All fields are optional but the id is required.
 services:
   "0022":
-    alias: "eth-mainnet"
+    alias: "eth"
     request_timeout: "3000ms"
 # router_config is optional and allows configuration of the router settings.
 # Only uncomment this if you know what you're doing.
