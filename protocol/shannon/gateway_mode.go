@@ -18,7 +18,7 @@ import (
 // TODO_MVP(@adshmh): Add the GatewayModePermissionless to the output once it is supported.
 // SupportedGatewayModes returns the list of gateway modes supported by the Shannon protocol integration.
 // This method implements the gateway.Protocol interface.
-func (p Protocol) SupportedGatewayModes() []protocol.GatewayMode {
+func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
