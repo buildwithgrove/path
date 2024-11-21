@@ -13,12 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  update-docs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Update gov params page
-        run: make docs_update
-
   validate-docs:
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +25,9 @@ jobs:
           node-version: 18
           cache: "yarn"
           cache-dependency-path: docusaurus/yarn.lock
+
+      - name: Update docs page
+        run: make docs_update
 
       - name: Install dependencies
         run: |
@@ -62,6 +59,9 @@ jobs:
           node-version: 18
           cache: "yarn"
           cache-dependency-path: docusaurus/yarn.lock
+      
+      - name: Update docs page
+        run: make docs_update
 
       - name: Install dependencies
         run: |
