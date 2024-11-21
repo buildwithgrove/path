@@ -74,7 +74,8 @@ jobs:
 
       - name: update Shannon E2E config from secrets
         env:
-          GATEWAY_PRIVATE_KEY: ${{ secrets.GATEWAY_PRIVATE_KEY }}
+          SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
+          SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
       - name: copy Morse E2E config
