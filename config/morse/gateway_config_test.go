@@ -6,7 +6,7 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	"github.com/stretchr/testify/require"
 
-	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
+	morseprotocol "github.com/buildwithgrove/path/protocol/morse"
 )
 
 func Test_GetSignedAAT(t *testing.T) {
@@ -75,10 +75,10 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should pass with valid config",
 			config: MorseGatewayConfig{
-				FullNodeConfig: morseRelayer.FullNodeConfig{
+				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "https://full-node-url.io",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
 				SignedAATs: map[string]SignedAAT{
@@ -94,10 +94,10 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should fail with invalid application ID",
 			config: MorseGatewayConfig{
-				FullNodeConfig: morseRelayer.FullNodeConfig{
+				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "https://full-node-url.io",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
 				SignedAATs: map[string]SignedAAT{
@@ -113,10 +113,10 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should fail with invalid full node URL",
 			config: MorseGatewayConfig{
-				FullNodeConfig: morseRelayer.FullNodeConfig{
+				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "invalid-url",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseRelayer.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
 					RequestConfig:   provider.RequestConfigOpts{Retries: 3},
 				},
 				SignedAATs: map[string]SignedAAT{

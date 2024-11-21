@@ -9,8 +9,8 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 const (
@@ -36,7 +36,7 @@ type response interface {
 }
 
 type endpointResponse struct {
-	relayer.EndpointAddr
+	protocol.EndpointAddr
 	response
 	unmarshalErr error
 }
@@ -59,7 +59,7 @@ type requestContext struct {
 	// endpoint selector with a specific endpoint's addresss.
 	// This is used when building a request context as a check
 	// for a specific endpoint.
-	preSelectedEndpointAddr relayer.EndpointAddr
+	preSelectedEndpointAddr protocol.EndpointAddr
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -71,16 +71,16 @@ type requestContext struct {
 
 // TODO_UPNEXT(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
-func (rc requestContext) GetServicePayload() relayer.Payload {
+func (rc requestContext) GetServicePayload() protocol.Payload {
 	reqBz, err := json.Marshal(rc.JSONRPCReq)
 	if err != nil {
 		// TODO_UPNEXT(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
-		return relayer.Payload{}
+		return protocol.Payload{}
 	}
 
-	return relayer.Payload{
+	return protocol.Payload{
 		Data: string(reqBz),
 		// Method is alway POST for Solana.
 		Method: http.MethodPost,
@@ -95,7 +95,7 @@ func (rc requestContext) GetServicePayload() relayer.Payload {
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
-func (rc *requestContext) UpdateWithResponse(endpointAddr relayer.EndpointAddr, responseBz []byte) {
+func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
@@ -145,11 +145,11 @@ func (rc requestContext) GetObservations() qosobservations.QoSDetails {
 		observations[idx] = &obs
 	}
 
-	return qosobservations.QoSDetails {
-		SolanaDetails: &qosobservations.SolanaDetails {
+	return qosobservations.QoSDetails{
+		SolanaDetails: &qosobservations.SolanaDetails{
 			// TODO_TECHDEBT: set the JSONRPCRequest field.
-			EndpointDetails:  observations,
-		},		
+			EndpointDetails: observations,
+		},
 	}
 }
 
@@ -157,13 +157,13 @@ func (rc requestContext) GetObservations() qosobservations.QoSDetails {
 // The request context is queried for the correct endpoint selector to use because this allows different
 // endpoint selectors based on the request's context.
 // e.g. the request context for a particular request method can potentially rank endpoints based on their latency when responding to requests with matching method.
-func (rc *requestContext) GetEndpointSelector() relayer.EndpointSelector {
+func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
 // Select chooses an endpoint from the list of supplied endpoints, using the estimated (using endpoints' responses) state of the Solana chain.
-// It is required to satisfy the relayer package's EndpointSelector interface.
-func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+// It is required to satisfy the protocol package's EndpointSelector interface.
+func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
@@ -172,14 +172,14 @@ func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.Endpo
 }
 
 func preSelectedEndpoint(
-	preSelectedEndpointAddr relayer.EndpointAddr,
-	allEndpoints []relayer.Endpoint,
-) (relayer.EndpointAddr, error) {
+	preSelectedEndpointAddr protocol.EndpointAddr,
+	allEndpoints []protocol.Endpoint,
+) (protocol.EndpointAddr, error) {
 	for _, endpoint := range allEndpoints {
 		if endpoint.Addr() == preSelectedEndpointAddr {
 			return preSelectedEndpointAddr, nil
 		}
 	}
 
-	return relayer.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
+	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }

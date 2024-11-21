@@ -11,7 +11,7 @@ import (
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/observation"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // EndpointHydrator provides the functionality required for health check.
@@ -39,7 +39,7 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
-	relayer.Protocol
+	Protocol
 
 	// ActiveQoSService provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
@@ -99,7 +99,7 @@ func (eph *EndpointHydrator) run() {
 
 	for svcID, svcQoS := range eph.ActiveQoSService {
 		wg.Add(1)
-		go func(serviceID relayer.ServiceID, serviceQoS QoSService) {
+		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
 			defer wg.Done()
 
 			logger := eph.Logger.With("serviceID", serviceID)
@@ -121,7 +121,7 @@ func (eph *EndpointHydrator) run() {
 	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
 }
 
-func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQoS QoSService) error {
+func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
 		"service", string(serviceID),
 	)
@@ -160,8 +160,8 @@ func (eph *EndpointHydrator) performChecks(serviceID relayer.ServiceID, serviceQ
 			// the user request (i.e. HTTP request) handler.
 			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
 			// take the same execution path.
-			relayer := relayer.Relayer{ProtocolRequestContext: protocolRequestCtx}
-			endpointResponse, err := relayer.SendRelay(
+			endpointResponse, err := SendRelay(
+				protocolRequestCtx,
 				serviceRequestCtx.GetServicePayload(),
 				serviceRequestCtx.GetEndpointSelector(),
 			)

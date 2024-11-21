@@ -12,7 +12,7 @@ import (
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_IMPROVE: make the refresh interval configurable.
@@ -37,10 +37,10 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*Cac
 
 // CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
-	LazyFullNode *LazyFullNode
-	Logger       polylog.Logger
+	*LazyFullNode
+	Logger polylog.Logger
 
-	appCache   map[relayer.ServiceID][]apptypes.Application
+	appCache   map[protocol.ServiceID][]apptypes.Application
 	appCacheMu sync.RWMutex
 
 	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
@@ -83,7 +83,7 @@ func (cfn *CachingFullNode) start() error {
 
 // GetServiceApps returns (from the cache) the set of onchain applications which delegate to the gateway, matching the supplied service ID.
 // It is required to fulfill the FullNode interface.
-func (cfn *CachingFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]apptypes.Application, error) {
+func (cfn *CachingFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
 	cfn.appCacheMu.RLock()
 	defer cfn.appCacheMu.RUnlock()
 
@@ -97,7 +97,7 @@ func (cfn *CachingFullNode) GetServiceApps(serviceID relayer.ServiceID) ([]appty
 
 // GetSession returns the cached session matching (serviceID, appAddr) combination.
 // It is required to fulfill the FullNode interface.
-func (cfn *CachingFullNode) GetSession(serviceID relayer.ServiceID, appAddr string) (sessiontypes.Session, error) {
+func (cfn *CachingFullNode) GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
 	cfn.sessionCacheMu.RLock()
 	defer cfn.sessionCacheMu.RUnlock()
 
@@ -184,6 +184,6 @@ func (cfn *CachingFullNode) fetchSessions() map[string]sessiontypes.Session {
 
 // sessionCacheKey returns a string to be used as the key for storing the session matching the supplied service ID and application address.
 // e.g. for service with ID `svc1` and app with address `appAddress1`, the key is `svc1-appAddress1`.
-func sessionCacheKey(serviceID relayer.ServiceID, appAddr string) string {
+func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s-%s", string(serviceID), appAddr)
 }

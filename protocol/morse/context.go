@@ -8,36 +8,50 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 
+	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
-// requestContext provides all the functionality required by the relayer package
+// requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
-var _ relayer.ProtocolRequestContext = &requestContext{}
+var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
 	fullNode  FullNode
-	serviceID relayer.ServiceID
+	serviceID protocol.ServiceID
 
 	// endpoints contains all the candidate endpoints available for processing a service request.
-	endpoints map[relayer.EndpointAddr]endpoint
+	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 }
 
-// HandleServiceRequest satisfies the relayer package's ProtocolRequestContext interface.
+// AvailableEndpoints returns the list of available endpoints for the current request context.
+// This list is populated by the Morse protocol instance when building the request context.
+// This method implements the gateway.ProtocolRequestContext interface.
+func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
+	var availableEndpoints []protocol.Endpoint
+
+	for _, endpoint := range rc.endpoints {
+		availableEndpoints = append(availableEndpoints, endpoint)
+	}
+
+	return availableEndpoints, nil
+}
+
+// HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
-func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer.Response, error) {
+func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	if rc.selectedEndpoint == nil {
-		return relayer.Response{}, fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
+		return protocol.Response{}, fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
 	morseEndpoint, err := getEndpoint(rc.selectedEndpoint.session, rc.selectedEndpoint.Addr())
 	if err != nil {
-		return relayer.Response{},
+		return protocol.Response{},
 			fmt.Errorf("HandleServiceRequest: error matching the selected endpoint %s against session's nodes: %w", rc.selectedEndpoint.Addr(), err)
 	}
 
@@ -51,18 +65,18 @@ func (rc *requestContext) HandleServiceRequest(payload relayer.Payload) (relayer
 		payload,
 	)
 
-	return relayer.Response{
+	return protocol.Response{
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          []byte(output.Response),
 		HTTPStatusCode: output.StatusCode,
 	}, err
 }
 
-// SelectEndpoint satisfies the relayer package's ProtocolRequestContext interface.
+// SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
 // for handling a service request.
-func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) error {
-	var endpoints []relayer.Endpoint
+func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
+	var endpoints []protocol.Endpoint
 	for _, endpoint := range rc.endpoints {
 		endpoints = append(endpoints, endpoint)
 	}
@@ -85,9 +99,9 @@ func (rc *requestContext) SelectEndpoint(selector relayer.EndpointSelector) erro
 }
 
 // AvailableEndpoints returns the pre-set list of available endpoints.
-// It implements the relayer.ProtocolRequestContext interface.
-func (rc *requestContext) AvailableEndpoints() ([]relayer.Endpoint, error) {
-	var availableEndpoints []relayer.Endpoint
+// It implements the gateway.ProtocolRequestContext interface.
+func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
+	var availableEndpoints []protocol.Endpoint
 
 	for _, endpoint := range rc.endpoints {
 		availableEndpoints = append(availableEndpoints, endpoint)
@@ -103,7 +117,7 @@ func (rc *requestContext) AvailableEndpoints() ([]relayer.Endpoint, error) {
 // 2. Report metrics on the operation of PATH (in the metrics package)
 // 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
 //
-// This method implements the relayer.ProtocolRequestContext interface.
+// This method implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.ProtocolDetails {
 	return protocolobservations.ProtocolDetails{}
 }
@@ -115,7 +129,7 @@ func (rc *requestContext) sendRelay(
 	session provider.Session,
 	aat provider.PocketAAT,
 	timeoutMillisec int,
-	payload relayer.Payload,
+	payload protocol.Payload,
 ) (provider.RelayOutput, error) {
 	fullNodeInput := &sdkrelayer.Input{
 		Blockchain: chainID,

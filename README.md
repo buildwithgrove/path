@@ -36,7 +36,7 @@
   - [6.1. Running Tests](#61-running-tests)
 - [Troubleshooting](#troubleshooting)
   - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
-
+- [Special Thanks](#special-thanks)
 ## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -88,10 +88,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -121,10 +121,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -155,7 +155,7 @@ The configuration is divided into several sections:
 3. **Services Configuration (`services`)**:
 
    - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `0021`) and the value is the service configuration.
+   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
    - Only the Service ID is required. All other fields are optional.
 
 4. **Router Configuration (`router_config`)**:
@@ -178,8 +178,8 @@ shannon_config:
       - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
 
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
 ```
 
 ### 4.3 Example Morse Configuration Format
@@ -205,8 +205,8 @@ morse_config:
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
     request_timeout: "3000ms"
 ```
 
@@ -293,3 +293,16 @@ or just copy-paste the following command:
 ```bash
 sudo chmod 666 /var/run/docker.sock
 ```
+
+## Special Thanks
+
+The origins of this repository were inspired by the work kicked off in [gateway-server](https://github.com/pokt-network/gateway-server) by the
+[Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
+
+However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
+- Enabling multi-protocol support; Morse, Shanon and beyond
+- Set a foundation to migrate Grove's quality of service and data pipelineta
+- Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
+- Etc...
+
+<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) --> 

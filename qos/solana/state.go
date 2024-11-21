@@ -6,7 +6,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // SerciceState keeps the expected current state of the solana blockchain based on the endpoints' responses to
@@ -47,7 +47,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 
 // UpdateFromObservations updates the service state using estimation(s) deriven from the set of updated endpoints, i.e. the set of endpoints for which
 // an observation was received.
-func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[relayer.EndpointAddr]endpoint) error {
+func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()
 

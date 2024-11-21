@@ -11,13 +11,14 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
-// relayer package's Protocol interface is fulfilled by the Protocol struct
+// gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
-var _ relayer.Protocol = &Protocol{}
+var _ gateway.Protocol = &Protocol{}
 
 // TODO_TECHDEBT: Make this configurable via an env variable.
 const defaultRelayTimeoutMillisec = 5000
@@ -64,7 +65,7 @@ type Protocol struct {
 	fullNode        FullNode
 	offChainBackend OffChainBackend
 
-	appCache   map[relayer.ServiceID][]app
+	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
 	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
 	// sessionCache caches sessions for use by the Relay function.
@@ -74,8 +75,12 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
-// Note: Morse ignores the HTTP Request input: it does not, as of now, support passing any parameters to the protocol integration using the HTTP request.
-func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID, _ *http.Request) (relayer.ProtocolRequestContext, error) {
+// The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
+// This method implements the gateway.Protocol interface.
+func (p *Protocol) BuildRequestContext(
+	serviceID protocol.ServiceID,
+	_ *http.Request,
+) (gateway.ProtocolRequestContext, error) {
 	apps, found := p.getServiceApps(serviceID)
 	if !found {
 		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
@@ -93,7 +98,7 @@ func (p *Protocol) BuildRequestContext(serviceID relayer.ServiceID, _ *http.Requ
 	}, nil
 }
 
-func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, error) {
+func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
 	apps, found := p.getServiceApps(serviceID)
 	if !found {
 		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
@@ -104,7 +109,7 @@ func (p *Protocol) Endpoints(serviceID relayer.ServiceID) ([]relayer.Endpoint, e
 		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	var endpoints []relayer.Endpoint
+	var endpoints []protocol.Endpoint
 	for _, endpoint := range endpointsIdx {
 		endpoints = append(endpoints, endpoint)
 	}
@@ -139,7 +144,7 @@ func (p *Protocol) IsAlive() bool {
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
-func (p *Protocol) getServiceApps(serviceID relayer.ServiceID) ([]app, bool) {
+func (p *Protocol) getServiceApps(serviceID protocol.ServiceID) ([]app, bool) {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
@@ -153,7 +158,7 @@ func (p *Protocol) getServiceApps(serviceID relayer.ServiceID) ([]app, bool) {
 	return apps, true
 }
 
-func (p *Protocol) getSession(serviceID relayer.ServiceID, appAddr string) (provider.Session, bool) {
+func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (provider.Session, bool) {
 	p.sessionCacheMu.RLock()
 	defer p.sessionCacheMu.RUnlock()
 
@@ -174,7 +179,7 @@ func (p *Protocol) updateAppCache() {
 	p.appCache = appData
 }
 
-func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
+func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 	logger := p.logger.With(
 		"protocol", "Morse",
 		"method", "fetchAppData",
@@ -186,7 +191,7 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
 		return nil
 	}
 
-	appData := make(map[relayer.ServiceID][]app)
+	appData := make(map[protocol.ServiceID][]app)
 	for _, onchainApp := range onchainApps {
 		logger := logger.With(
 			"publicKey", onchainApp.PublicKey,
@@ -212,7 +217,7 @@ func (p *Protocol) fetchAppData() map[relayer.ServiceID][]app {
 		}
 
 		for _, chainID := range onchainApp.Chains {
-			serviceID := relayer.ServiceID(chainID)
+			serviceID := protocol.ServiceID(chainID)
 			appData[serviceID] = append(appData[serviceID], app)
 			logger.With("serviceID", serviceID).Info().Msg("Found matching AAT, adding the app/service combination to the cache.")
 		}
@@ -272,8 +277,8 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 // This could happen because there is no guarantee on sessions having unique nodes/endpoints.
 // e.g. if there are only 30 Morse endpoints staked for some service, there will be some overlap of endpoints
 // between the two sessions corresponding to two different applications, as each session in Morse contains 24 endpoints.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, apps []app) (map[relayer.EndpointAddr]endpoint, error) {
-	endpoints := make(map[relayer.EndpointAddr]endpoint)
+func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range apps {
 		session, found := p.getSession(serviceID, app.Addr())
 		if !found {
@@ -288,6 +293,6 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID relayer.ServiceID, apps []ap
 	return endpoints, nil
 }
 
-func sessionCacheKey(serviceID relayer.ServiceID, appAddr string) string {
+func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s-%s", serviceID, appAddr)
 }

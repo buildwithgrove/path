@@ -7,8 +7,8 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/message"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 const (
@@ -33,7 +33,7 @@ type response interface {
 }
 
 type endpointResponse struct {
-	relayer.EndpointAddr
+	protocol.EndpointAddr
 	response
 	unmarshalErr error
 }
@@ -56,7 +56,7 @@ type requestContext struct {
 	// endpoint selector with a specific endpoint's addresss.
 	// This is used when building a request context as a check
 	// for a specific endpoint.
-	preSelectedEndpointAddr relayer.EndpointAddr
+	preSelectedEndpointAddr protocol.EndpointAddr
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -68,16 +68,16 @@ type requestContext struct {
 
 // TODO_UPNEXT(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
-func (rc requestContext) GetServicePayload() relayer.Payload {
+func (rc requestContext) GetServicePayload() protocol.Payload {
 	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {
 		// TODO_UPNEXT(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
-		return relayer.Payload{}
+		return protocol.Payload{}
 	}
 
-	return relayer.Payload{
+	return protocol.Payload{
 		Data: string(reqBz),
 		// Method is alway POST for EVM-based blockchains.
 		Method: http.MethodPost,
@@ -92,7 +92,7 @@ func (rc requestContext) GetServicePayload() relayer.Payload {
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
-func (rc *requestContext) UpdateWithResponse(endpointAddr relayer.EndpointAddr, responseBz []byte) {
+func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
@@ -140,7 +140,7 @@ func (rc requestContext) GetObservationSet() message.ObservationSet {
 		return observationSet{}
 	}
 
-	observations := make(map[relayer.EndpointAddr][]observation)
+	observations := make(map[protocol.EndpointAddr][]observation)
 	for _, response := range rc.endpointResponses {
 		obs, ok := response.GetObservation()
 		if !ok {
@@ -157,13 +157,13 @@ func (rc requestContext) GetObservationSet() message.ObservationSet {
 	}
 }
 
-func (rc *requestContext) GetEndpointSelector() relayer.EndpointSelector {
+func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// TODO_UPNEXT(@adshmh): update this method once the relayer.EndpointSelector
-// interface is updated to provide a list of endpoint addresses, i.e. no app address.
-func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+// Select returns the address of an endpoint using the request context's endpoint store.
+// This method implements the protocol.EndpointSelector interface.
+func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
@@ -171,17 +171,15 @@ func (rc *requestContext) Select(allEndpoints []relayer.Endpoint) (relayer.Endpo
 	return rc.endpointStore.Select(allEndpoints)
 }
 
-// TODO_UPNEXT(@adshmh): update this method once the relayer.EndpointSelector interface
-// is refactored to only present a slice of EndpointAddr for selection.
 func preSelectedEndpoint(
-	preSelectedEndpointAddr relayer.EndpointAddr,
-	allEndpoints []relayer.Endpoint,
-) (relayer.EndpointAddr, error) {
+	preSelectedEndpointAddr protocol.EndpointAddr,
+	allEndpoints []protocol.Endpoint,
+) (protocol.EndpointAddr, error) {
 	for _, endpoint := range allEndpoints {
 		if endpoint.Addr() == preSelectedEndpointAddr {
 			return preSelectedEndpointAddr, nil
 		}
 	}
 
-	return relayer.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
+	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }

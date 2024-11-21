@@ -8,12 +8,12 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // EndpointStore provides the endpoint selection capability required
-// by the relayer package for handling a service request.
-var _ relayer.EndpointSelector = &EndpointStore{}
+// by the protocol package for handling a service request.
+var _ protocol.EndpointSelector = &EndpointStore{}
 
 // EndpointStoreConfig captures the modifiable settings of the EndpointStore.
 // This will enable `EndpointStore` to be used as part of QoS for other EVM-based
@@ -43,7 +43,7 @@ type EndpointStore struct {
 	Logger polylog.Logger
 
 	endpointsMu sync.RWMutex
-	endpoints   map[relayer.EndpointAddr]endpoint
+	endpoints   map[protocol.EndpointAddr]endpoint
 	// blockHeight is the expected latest block height on the blockchain.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
 	blockHeight uint64
@@ -52,14 +52,14 @@ type EndpointStore struct {
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
-func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	logger := es.Logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
 	if err != nil {
 		logger.Warn().Err(err).Msg("error filtering endpoints")
-		return relayer.EndpointAddr(""), err
+		return protocol.EndpointAddr(""), err
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
@@ -79,7 +79,7 @@ func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.
 }
 
 // filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
-func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) ([]relayer.EndpointAddr, error) {
+func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
@@ -93,7 +93,7 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) 
 	)
 	logger.Info().Msg("select: processing available endpoints")
 
-	var filteredEndpointsAddr []relayer.EndpointAddr
+	var filteredEndpointsAddr []protocol.EndpointAddr
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for _, availableEndpoint := range availableEndpoints {
 		logger := logger.With("endpoint", availableEndpoint.Addr())
