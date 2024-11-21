@@ -154,9 +154,7 @@ func Test_Check(t *testing.T) {
 				Auth: &proto.Auth{
 					AuthType: proto.Auth_API_KEY_AUTH,
 					AuthTypeDetails: &proto.Auth_ApiKey{
-						ApiKey: &proto.APIKey{
-							ApiKey: "api_key_good",
-						},
+						ApiKey: "api_key_good",
 					},
 				},
 			},
@@ -305,9 +303,7 @@ func Test_Check(t *testing.T) {
 				Auth: &proto.Auth{
 					AuthType: proto.Auth_API_KEY_AUTH,
 					AuthTypeDetails: &proto.Auth_ApiKey{
-						ApiKey: &proto.APIKey{
-							ApiKey: "api_key_no_this_one",
-						},
+						ApiKey: "api_key_no_this_one",
 					},
 				},
 			},

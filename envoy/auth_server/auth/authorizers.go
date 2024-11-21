@@ -35,7 +35,7 @@ func (a *APIKeyAuthorizer) authorizeRequest(headers map[string]string, endpoint 
 	if !ok || apiKey == "" {
 		return errUnauthorized
 	}
-	if endpoint.GetAuth().GetApiKey().GetApiKey() != apiKey {
+	if endpoint.GetAuth().GetApiKey() != apiKey {
 		return errUnauthorized
 	}
 	return nil
