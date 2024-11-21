@@ -79,8 +79,8 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 //
 // This method allows for the use of a user-friendly string service alias in the
 // URL subdomain, enabling more user-friendly URLs. For example, instead of
-// using a ServiceID like "0021", an alias such as "eth-mainnet" can be used,
-// resulting in a URL like "eth-mainnet.rpc.gateway.io" instead of "0021.rpc.gateway.io".
+// using a ServiceID like "F00C", an alias such as "eth" can be used,
+// resulting in a URL like "eth.rpc.gateway.io" instead of "F00C.rpc.gateway.io".
 func (c GatewayConfig) GetServiceIDFromAlias(alias string) (protocol.ServiceID, bool) {
 	serviceID, ok := c.serviceAliases[alias]
 	return serviceID, ok

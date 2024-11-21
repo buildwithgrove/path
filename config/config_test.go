@@ -54,8 +54,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Services: map[protocol.ServiceID]ServiceConfig{
-					"0021": {
-						Alias:          "eth-mainnet",
+					"F00C": {
+						Alias:          "eth",
 						RequestTimeout: 3000 * time.Millisecond,
 					},
 					"0001": {}, // Example of a service with no additional configuration
@@ -68,7 +68,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					IdleTimeout:        5000 * time.Millisecond,
 				},
 				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -245,8 +245,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			yamlData: `
 			morse_config:
 			  serviceAliases:
-			    eth-mainnet: "0021"
-			    eth-mainnet: "0022"
+			    eth: "0021"
+			    eth: "0022"
 			`,
 			wantErr: true,
 		},
