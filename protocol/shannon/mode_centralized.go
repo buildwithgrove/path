@@ -23,7 +23,7 @@ import (
 func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string, error) {
 	var ownedAppsAddr []string
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
-		ownedAppPrivateKey, err := getSec256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
+		ownedAppPrivateKey, err := getSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
 		if err != nil {
 			return nil, err
 		}
