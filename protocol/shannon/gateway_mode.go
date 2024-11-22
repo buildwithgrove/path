@@ -3,6 +3,7 @@ package shannon
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 
@@ -73,4 +74,9 @@ func supportedGatewayModes() []protocol.GatewayMode {
 		protocol.GatewayModeCentralized,
 		protocol.GatewayModeDelegated,
 	}
+}
+
+// gatewayHasDelegationsForApp returns true if the supplied application delegates to the supplied gateway address.
+func gatewayHasDelegationForApp(gatewayAddr string, app *apptypes.Application) bool {
+	return slices.Contains(app.DelegateeGatewayAddresses, gatewayAddr)
 }
