@@ -9,7 +9,7 @@ import (
 )
 
 // In Centralized Gateway Mode, the Shannon protocol integration behaves as follows:
-// 1. PATH (or more speicifcally the Shannon protocol integration instance) holds the private keys of the gateway operator's app(s).
+// 1. PATH (or more specifically the Shannon protocol integration instance) holds the private keys of the gateway operator's app(s).
 // 2. All configured apps are owned by the gateway (PATH) operator.
 // 3. All configured apps delegate (onchain) to the gateway address.
 // 4. Each relay request is sent on behalf of one of the apps above (owned by the gateway operator)
