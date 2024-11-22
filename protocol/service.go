@@ -1,8 +1,8 @@
 package protocol
 
 // ServiceID represents a unique onchain ID for a service.
-// It is defined in the `protocol` package and not the `qos` package because `qos` is intended to handle off-chain details,
-// while the `protocol` package defines onchain specs.
-// See the discussion here for more details:
-// https://github.com/buildwithgrove/path/pull/767#discussion_r1722001685
+// It is defined in the `protocol` package and not the `qos` package because:
+// A. Protocols, i.e. Morse and Shannon, define and maintain onchain entities, including service IDs.
+// B. The `qos` package handles off-chain spec/details.
+// C. This allows the `gateway` package to map multiple Service IDs to a single qos implementation, e.g. all EVM blockchain services can be handled by `qos/evm`.
 type ServiceID string
