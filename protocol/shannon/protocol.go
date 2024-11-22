@@ -66,7 +66,7 @@ func NewProtocol(
 	}, nil
 }
 
-// Protocol provides the functionality needed by the gateway packag for sending a relay to a specific endpoint.
+// Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
 	FullNode
 	Logger polylog.Logger

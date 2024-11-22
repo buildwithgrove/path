@@ -51,7 +51,7 @@ type ProtocolRequestContext interface {
 	SelectEndpoint(protocol.EndpointSelector) error
 
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
-	// and receives and verfieis the response.
+	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
