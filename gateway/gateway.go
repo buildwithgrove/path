@@ -11,7 +11,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/observation"
-	"github.com/buildwithgrove/path/observation/protocol"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -61,12 +61,12 @@ type Gateway struct {
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	var (
 		httpRes             HTTPResponse
-		serviceID           relayer.ServiceID
+		serviceID           protocol.ServiceID
 		serviceQoS          QoSService
 		gatewayObservations observation.GatewayDetails
 		httpObservations    observation.HTTPRequestDetails
 		serviceRequestCtx   RequestQoSContext
-		protocolRequestCtx  relayer.ProtocolRequestContext
+		protocolRequestCtx  ProtocolRequestContext
 	)
 
 	defer func() {
@@ -159,22 +159,11 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	_, _ = w.Write(response.GetPayload())
 }
 
-<<<<<<< HEAD
 // applyQoSObservations calls the supplied QoS instance to apply the supplied observations.
-func (g Gateway) applyQoSObservations(serviceID relayer.ServiceID, serviceQoS QoSService, qosObservations qos.QoSDetails) {
+func (g Gateway) applyQoSObservations(serviceID protocol.ServiceID, serviceQoS QoSService, qosObservations qos.QoSDetails) {
 }
 
-func (g Gateway) applyProtocolObservations(serviceID relayer.ServiceID, protocolObservations protocol.ProtocolDetails) {
-}
-
-// publishRequestResponseDetails delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
-func (g Gateway) publishRequestResponseDetails(
-	serviceID relayer.ServiceID,
-	gatewayObservations observation.GatewayDetails,
-	httpObservations observation.HTTPRequestDetails,
-	protocolObservations protocol.ProtocolDetails,
-	qosObservations qos.QoSDetails,
-) {
+func (g Gateway) applyProtocolObservations(serviceID protocol.ServiceID, protocolObservations protocolobservations.ProtocolDetails) {
 }
 
 // buildProtocolRequestCtx builds a protocol-level context for the supplied service ID and HTTP request.
@@ -187,13 +176,14 @@ func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq 
 	return protocolCtx, err
 }
 
+// observeReqRes delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
 func (g *Gateway) observeReqRes(
-	serviceID relayer.ServiceID,
+	serviceID protocol.ServiceID,
 	serviceQoS QoSService,
 	gatewayObservations observation.GatewayDetails,
 	httpObservations observation.HTTPRequestDetails,
 	serviceRequestCtx RequestQoSContext,
-	protocolRequestCtx relayer.ProtocolRequestContext,
+	protocolRequestCtx ProtocolRequestContext,
 ) {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {

@@ -44,7 +44,7 @@ type EndpointHydrator struct {
 	// ActiveQoSService provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
 	// ActiveQoSService should not be modified after the hydrator is started.
-	ActiveQoSService map[relayer.ServiceID]QoSService
+	ActiveQoSService map[protocol.ServiceID]QoSService
 	Logger           polylog.Logger
 
 	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
@@ -232,12 +232,12 @@ func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) 
 }
 
 func (eph *EndpointHydrator) observeReqRes(
-	serviceID relayer.ServiceID,
+	serviceID protocol.ServiceID,
 	serviceQoS QoSService,
 	gatewayObservations observation.GatewayDetails,
 	httpObservations observation.HTTPRequestDetails,
 	serviceRequestCtx RequestQoSContext,
-	protocolRequestCtx relayer.ProtocolRequestContext,
+	protocolRequestCtx ProtocolRequestContext,
 ) {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
