@@ -15,4 +15,3 @@ message RequestResponseDetails {
   protocol.ProtocolDetails protocol=4;
   qos.QoSDetails qos=5; 
 }
-
