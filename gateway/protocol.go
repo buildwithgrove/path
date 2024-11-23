@@ -1,3 +1,5 @@
+//go:generate mockgen -destination ../testutil/gateway/mocks/protocol_mock.go -package mocks . Protocol,ProtocolRequestContext
+
 // gateway package defines the requirements and steps of sending relays from the perspective of:
 // a) protocols, i.e. Morse and Shannon protocols, which provide:
 // - a list of endpoints available for a service.

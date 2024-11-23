@@ -1,3 +1,5 @@
+//go:generate mockgen -destination ../testutil/protocol/mocks/protocol_mock.go -package mocks . Endpoint,EndpointSelector
+
 package protocol
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
