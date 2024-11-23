@@ -5,13 +5,13 @@ import (
 
 	"github.com/pokt-foundation/pocket-go/provider"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // The relayer package's Endpoint interface is fulfilled by the endpoint struct below, which allows
 // all code outside this package to uniquely identify any Morse endpoint, e.g. for the purpose of selecting
 // the best endpoint when sending a relay.
-var _ relayer.Endpoint = endpoint{}
+var _ protocol.Endpoint = endpoint{}
 
 // endpoint is used to convert a Morse endpoint, i.e. an entity that can serve relay requests,
 // to the Endpoint defined in the relayer package.
@@ -30,8 +30,8 @@ type endpoint struct {
 	app app
 }
 
-func (e endpoint) Addr() relayer.EndpointAddr {
-	return relayer.EndpointAddr(e.address)
+func (e endpoint) Addr() protocol.EndpointAddr {
+	return protocol.EndpointAddr(e.address)
 }
 
 func (e endpoint) PublicURL() string {
@@ -55,7 +55,7 @@ func getEndpointsFromAppSession(app app, session provider.Session) []endpoint {
 // getEndpoint returns a Morse endpoint, from the provided session's list of endpoints, which matches the input address.
 // Note: this function is intentionally named getEndpoint to reflect its generality even though it returns
 // a provider.Node struct. This is a legacy structure used and required to send a relay to a Morse endpoint.
-func getEndpoint(session provider.Session, endpointAddr relayer.EndpointAddr) (provider.Node, error) {
+func getEndpoint(session provider.Session, endpointAddr protocol.EndpointAddr) (provider.Node, error) {
 	for _, node := range session.Nodes {
 		if node.Address == string(endpointAddr) {
 			return node, nil

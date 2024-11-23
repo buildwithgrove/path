@@ -6,7 +6,7 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.0.9
-	github.com/pokt-network/shannon-sdk v0.0.0-20240907012836-7172ed278f8b
+	github.com/pokt-network/shannon-sdk v0.0.0-20241120182248-2b3d4ad6e3f2
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.65.0

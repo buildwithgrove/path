@@ -8,12 +8,12 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // EndpointStore provides the endpoint selection capability required
-// by the relayer package for handling a service request.
-var _ relayer.EndpointSelector = &EndpointStore{}
+// by the protocol package for handling a service request.
+var _ protocol.EndpointSelector = &EndpointStore{}
 
 // EndpointStore maintains QoS data on the set of available endpoints
 // for the Solana blockchain service.
@@ -26,16 +26,16 @@ type EndpointStore struct {
 	Logger       polylog.Logger
 
 	endpointsMu sync.RWMutex
-	endpoints   map[relayer.EndpointAddr]endpoint
+	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
-func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.EndpointAddr, error) {
+func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
 	if err != nil {
-		return relayer.EndpointAddr(""), err
+		return protocol.EndpointAddr(""), err
 	}
 
 	logger := es.Logger.With("number of available endpoints", len(availableEndpoints))
@@ -50,7 +50,7 @@ func (es *EndpointStore) Select(availableEndpoints []relayer.Endpoint) (relayer.
 }
 
 // filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
-func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) ([]relayer.EndpointAddr, error) {
+func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
@@ -61,7 +61,7 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []relayer.Endpoint) 
 	logger := es.Logger.With("number of available endpoints", fmt.Sprintf("%d", len(availableEndpoints)))
 	logger.Info().Msg("select: processing available endpoints")
 
-	var filteredEndpointsAddr []relayer.EndpointAddr
+	var filteredEndpointsAddr []protocol.EndpointAddr
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for _, availableEndpoint := range availableEndpoints {
 		logger := logger.With("endpoint", availableEndpoint.Addr())

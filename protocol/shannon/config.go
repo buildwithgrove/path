@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -20,28 +23,29 @@ const (
 )
 
 var (
-	ErrShannonInvalidGatewayPrivateKey = errors.New("invalid shannon gateway private key")
-	ErrShannonInvalidGatewayAddress    = errors.New("invalid shannon gateway address")
-	ErrShannonInvalidNodeUrl           = errors.New("invalid shannon node URL")
-	ErrShannonInvalidGrpcHostPort      = errors.New("invalid shannon grpc host:port")
+	ErrShannonInvalidGatewayPrivateKey                = errors.New("invalid shannon gateway private key")
+	ErrShannonInvalidGatewayAddress                   = errors.New("invalid shannon gateway address")
+	ErrShannonInvalidNodeUrl                          = errors.New("invalid shannon node URL")
+	ErrShannonInvalidGrpcHostPort                     = errors.New("invalid shannon grpc host:port")
+	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
+	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
 )
 
 type (
 	FullNodeConfig struct {
 		RpcURL     string     `yaml:"rpc_url"`
 		GRPCConfig GRPCConfig `yaml:"grpc_config"`
-		// TODO_UPNEXT(@adshmh): Remove all Gateway specific types into its own
-		// struct, as they are independent from full node configs.
-		GatewayAddress    string `yaml:"gateway_address"`
-		GatewayPrivateKey string `yaml:"gateway_private_key"`
-		// TODO_UPNEXT(@adshmh): use private keys of owned apps in the configuration, and only use an app if it
-		// can be verified, i.e. if the public key derived from the stored private key matches the onchain app data.
-		// A list of addresses of onchain Applications delegated to the Gateway.
-		DelegatedApps []string `yaml:"delegated_app_addresses"`
 
 		// LazyMode, if set, will disable all caching of onchain data, specifically apps and sessions.
 		// This enables supporting short block times, e.g. when running E2E tests on LocalNet.
 		LazyMode bool `yaml:"lazy_mode"`
+	}
+
+	GatewayConfig struct {
+		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
+		GatewayAddress          string               `yaml:"gateway_address"`
+		GatewayPrivateKeyHex    string               `yaml:"gateway_hex_private_key"`
+		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_hex_private_keys"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
@@ -56,26 +60,40 @@ type (
 	}
 )
 
-func (c FullNodeConfig) Validate() error {
-	if len(c.GatewayPrivateKey) != shannonPrivateKeyLengthHex {
+func (gc GatewayConfig) Validate() error {
+	if len(gc.GatewayPrivateKeyHex) != shannonPrivateKeyLengthHex {
 		return ErrShannonInvalidGatewayPrivateKey
 	}
-	if len(c.GatewayAddress) != shannonAddressLengthBech32 {
+	if len(gc.GatewayAddress) != shannonAddressLengthBech32 {
 		return ErrShannonInvalidGatewayAddress
 	}
-	if !strings.HasPrefix(c.GatewayAddress, "pokt1") {
+	if !strings.HasPrefix(gc.GatewayAddress, "pokt1") {
 		return ErrShannonInvalidGatewayAddress
 	}
+
+	if !slices.Contains(supportedGatewayModes(), gc.GatewayMode) {
+		return fmt.Errorf("%w: %s", ErrShannonUnsupportedGatewayMode, gc.GatewayMode)
+	}
+
+	if gc.GatewayMode == protocol.GatewayModeCentralized && len(gc.OwnedAppsPrivateKeysHex) == 0 {
+		return ErrShannonCentralizedGatewayModeRequiresOwnedApps
+	}
+
+	for index, privKey := range gc.OwnedAppsPrivateKeysHex {
+		if len(privKey) != shannonPrivateKeyLengthHex {
+			return fmt.Errorf("%w: invalid owned app private key at index: %d", ErrShannonInvalidGatewayPrivateKey, index)
+		}
+	}
+
+	return nil
+}
+
+func (c FullNodeConfig) Validate() error {
 	if !isValidURL(c.RpcURL) {
 		return ErrShannonInvalidNodeUrl
 	}
 	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
-	}
-	for _, addr := range c.DelegatedApps {
-		if len(addr) != shannonAddressLengthBech32 {
-			return fmt.Errorf("invalid delegated app address: %s", addr)
-		}
 	}
 	return nil
 }

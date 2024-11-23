@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // observationSet provides all the functionality required
@@ -33,7 +33,7 @@ type observationSet struct {
 	// TODO_IMPROVE: use an interface here.
 	EndpointStore *EndpointStore
 
-	Observations map[relayer.EndpointAddr][]observation
+	Observations map[protocol.EndpointAddr][]observation
 }
 
 // TODO_UPNEXT(@adshmh): implement marshalling to allow the
@@ -52,12 +52,12 @@ func (os observationSet) Broadcast() error {
 
 // TODO_IMPROVE: use a separate function/struct here, instead of splitting
 // the EndpointStore's methods across multiple files.
-func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.EndpointAddr][]observation) error {
+func (es *EndpointStore) ProcessObservations(endpointObservations map[protocol.EndpointAddr][]observation) error {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
 	if es.endpoints == nil {
-		es.endpoints = make(map[relayer.EndpointAddr]endpoint)
+		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
 	}
 
 	for endpointAddr, observations := range endpointObservations {
