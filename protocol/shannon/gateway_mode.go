@@ -16,7 +16,6 @@ import (
 // See the following link for more details on PATH's different modes of operation.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5
 //
-// TODO_MVP(@adshmh): Add the GatewayModePermissionless to the output once it is supported.
 // SupportedGatewayModes returns the list of gateway modes supported by the Shannon protocol integration.
 // This method implements the gateway.Protocol interface.
 func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
@@ -41,6 +40,9 @@ func (p *Protocol) getGatewayModePermittedAppFilter(
 		return getCentralizedGatewayModeAppFilter(p.gatewayAddr, p.ownedAppsAddr), nil
 	case protocol.GatewayModeDelegated:
 		return getDelegatedGatewayModeAppFilter(p.gatewayAddr, req), nil
+	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
+	//case protocol.GatewayModePermissionless:
+	//	return getPermissionlessGatewayModeAppFilter(p.ownedAppsAddr), nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
 	}
@@ -73,6 +75,8 @@ func supportedGatewayModes() []protocol.GatewayMode {
 	return []protocol.GatewayMode{
 		protocol.GatewayModeCentralized,
 		protocol.GatewayModeDelegated,
+		// TODO_MVP(@adshmh): Uncomment this line once support for Permissionless Gateway mode is added to the shannon package.
+		// protocol.GatewayModePermissionless,
 	}
 }
 
