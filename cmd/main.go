@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -9,12 +8,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
 	"github.com/buildwithgrove/path/config"
-	morseConfig "github.com/buildwithgrove/path/config/morse"
-	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/protocol/morse"
-	"github.com/buildwithgrove/path/protocol/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
 )
@@ -100,60 +95,4 @@ func getProtocol(config config.GatewayConfig, logger polylog.Logger) (gateway.Pr
 	}
 
 	return nil, fmt.Errorf("no protocol config set")
-}
-
-// getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
-func getShannonFullNode(config shannon.FullNodeConfig, logger polylog.Logger) (shannon.FullNode, error) {
-	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(config, logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
-	}
-
-	if config.LazyMode {
-		return lazyFullNode, nil
-	}
-
-	// Use a Caching FullNode implementation if LazyMode flag is not set.
-	cachingFullNode, err := shannon.NewCachingFullNode(lazyFullNode, logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Shannon caching full node: %v", err)
-	}
-
-	return cachingFullNode, nil
-}
-
-func getShannonProtocol(config *shannonconfig.ShannonGatewayConfig, logger polylog.Logger) (gateway.Protocol, error) {
-	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
-
-	fullNode, err := getShannonFullNode(config.FullNodeConfig, logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon full node instance: %v", err)
-	}
-
-	protocol, err := shannon.NewProtocol(fullNode, logger, config.GatewayConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon protocol instance: %v", err)
-	}
-
-	return protocol, nil
-}
-
-func getMorseProtocol(
-	config *morseConfig.MorseGatewayConfig,
-	logger polylog.Logger,
-) (gateway.Protocol, error) {
-	logger.Info().Msg("Starting PATH gateway with Morse protocol")
-
-	fullNode, err := morse.NewFullNode(config.FullNodeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create morse full node: %v", err)
-	}
-
-	protocol, err := morse.NewProtocol(context.Background(), fullNode, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create morse protocol: %v", err)
-	}
-
-	return protocol, nil
 }
