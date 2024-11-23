@@ -152,7 +152,7 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
 
-// GetAccountClient returns the account client created by the fullnode.
+// GetAccountClient returns the account client created by the lazy fullnode.
 // It is used to create relay request signers.
 func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient

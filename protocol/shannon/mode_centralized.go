@@ -3,9 +3,9 @@ package shannon
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+
+	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
 // In Centralized Gateway Mode, the Shannon protocol integration behaves as follows:
@@ -23,12 +23,12 @@ import (
 func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string, error) {
 	var ownedAppsAddr []string
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
-		ownedAppPrivateKey, err := getSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
+		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
 		if err != nil {
 			return nil, err
 		}
 
-		appAddr, err := getAddressFromPrivateKey(ownedAppPrivateKey)
+		appAddr, err := crypto.GetAddressFromPrivateKey(ownedAppPrivateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -52,10 +52,4 @@ func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[st
 
 		return nil
 	}
-}
-
-// getAddressFromPrivateKey returns the address of the provided private key
-func getAddressFromPrivateKey(privKey *secp256k1.PrivKey) (string, error) {
-	addressBz := privKey.PubKey().Address()
-	return bech32.ConvertAndEncode("pokt", addressBz)
 }
