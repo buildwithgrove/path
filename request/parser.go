@@ -19,21 +19,21 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 type (
 	Parser struct {
 		Backend     Backend
-		QoSServices map[relayer.ServiceID]gateway.QoSService
+		QoSServices map[protocol.ServiceID]gateway.QoSService
 		Logger      polylog.Logger
 	}
 	Backend interface {
-		GetServiceIDFromAlias(string) (relayer.ServiceID, bool)
+		GetServiceIDFromAlias(string) (protocol.ServiceID, bool)
 	}
 )
 
-func NewParser(backend Backend, enabledServices map[relayer.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
+func NewParser(backend Backend, enabledServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
 	return &Parser{
 		Backend:     backend,
 		QoSServices: enabledServices,
@@ -43,7 +43,7 @@ func NewParser(backend Backend, enabledServices map[relayer.ServiceID]gateway.Qo
 
 /* --------------------------------- HTTP Request Parsing -------------------------------- */
 
-func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (relayer.ServiceID, gateway.QoSService, error) {
+func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol.ServiceID, gateway.QoSService, error) {
 
 	serviceID, err := p.getServiceID(req.Host)
 	if err != nil {
@@ -67,7 +67,7 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 
 // getServiceID gets the service ID from the request host
 // eg. host = "eth.gateway.pokt.network" -> serviceID = "eth"
-func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
+func (p *Parser) getServiceID(host string) (protocol.ServiceID, error) {
 	hostParts := strings.Split(host, ".")
 	if len(hostParts) < 2 {
 		return "", errNoServiceIDProvided
@@ -75,11 +75,11 @@ func (p *Parser) getServiceID(host string) (relayer.ServiceID, error) {
 
 	subdomain := hostParts[0]
 
-	var serviceID relayer.ServiceID
+	var serviceID protocol.ServiceID
 	if serviceIDFromAlias, ok := p.Backend.GetServiceIDFromAlias(subdomain); ok {
 		serviceID = serviceIDFromAlias
 	} else {
-		serviceID = relayer.ServiceID(subdomain)
+		serviceID = protocol.ServiceID(subdomain)
 	}
 
 	return serviceID, nil
