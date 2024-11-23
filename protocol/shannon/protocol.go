@@ -22,7 +22,8 @@ var _ gateway.Protocol = &Protocol{}
 // from a fullnode for sending relays.
 type FullNode interface {
 	GetServiceApps(protocol.ServiceID) ([]apptypes.Application, error)
-	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
+
+		// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
 	// This is used here because the gateway only needs the current session for any service+app combination.
 	GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
@@ -83,7 +84,7 @@ type Protocol struct {
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in centralized mode.
+	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in Centralized mode.
 	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
 	ownedAppsAddr map[string]struct{}
 }
@@ -126,7 +127,7 @@ func (p *Protocol) IsAlive() bool {
 	return p.FullNode.IsHealthy()
 }
 
-// TODO_FUTURE: Find a more optimized way of handling an overlap among endpoints
+// TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints
 // matching multiple sessions of apps delegating to the gateway.
 //
 // getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.

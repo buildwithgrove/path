@@ -9,11 +9,14 @@ import (
 
 // Delegated Gateway Mode represents an gateway operation mode which behaves as follows:
 // 1. Each relay request is signed by the gateway key, and sent on behalf of an app selected by the user.
-// 3. Users need to select a specific app for each relay request, done using HTTP request's headers as of now.
+// 2. Users need to select a specific app for each relay request, done using HTTP request's headers as of now.
+// TODO(@Olshansk): Revisit the security specification & requirements for how the paying app is selected.
 //
+// TODO_DOCUMENT(@Olshansk): Convert the notion doc into a proper README.
 // See the following link for more details on PATH's Trusted operation mode.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 const (
+	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
 	// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address in delegated mode.
 	// The target app will be used for sending the relay request.
 	headerAppAddr = "X-App-Address"
