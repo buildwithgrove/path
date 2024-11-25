@@ -3,6 +3,7 @@ package shannon
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 
@@ -40,6 +41,9 @@ func (p *Protocol) getGatewayModePermittedAppFilter(
 		return getCentralizedGatewayModeAppFilter(p.gatewayAddr, p.ownedAppsAddr), nil
 	case protocol.GatewayModeDelegated:
 		return getDelegatedGatewayModeAppFilter(p.gatewayAddr, req), nil
+	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
+	//case protocol.GatewayModePermissionless:
+	//	return getPermissionlessGatewayModeAppFilter(p.ownedAppsAddr), nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
 	}
@@ -72,5 +76,12 @@ func supportedGatewayModes() []protocol.GatewayMode {
 	return []protocol.GatewayMode{
 		protocol.GatewayModeCentralized,
 		protocol.GatewayModeDelegated,
+		// TODO_MVP(@adshmh): Uncomment this line once support for Permissionless Gateway mode is added to the shannon package.
+		// protocol.GatewayModePermissionless,
 	}
+}
+
+// gatewayHasDelegationsForApp returns true if the supplied application delegates to the supplied gateway address.
+func gatewayHasDelegationForApp(gatewayAddr string, app *apptypes.Application) bool {
+	return slices.Contains(app.DelegateeGatewayAddresses, gatewayAddr)
 }

@@ -1,7 +1,16 @@
-// gateway package defines the components and
-// their interactions necessary for operating a gateway.
-// It defines, in a template design pattern function, all
-// the steps involved in handling a service request.
+// gateway package defines the components and their interactions necessary for operating a gateway.
+// It defines the requirements and steps of sending relays from the perspective of:
+// a) protocols, i.e. Morse and Shannon protocols, which provide:
+// - a list of endpoints available for a service.
+// - a function for sending a relay to a specific endpoint.
+// b) gateways, which are required to provide a function for
+// selecting an endpoint to which the relay is to be sent.
+// c) Quality-of-Service (QoS) services: which provide:
+// - interpretation of the user's request as the payload to be sent to an endpoint.
+// - selection of the best endpoint for handling a user's request.
+//
+// TODO_MVP(@adshmh): add a README with a diagram of all the above.
+// TODO_MVP(@adshmh): add a section for the following packages once they are added: Metrics, Message.
 package gateway
 
 import (
@@ -157,13 +166,6 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	// TODO_TECHDEBT: add logging in case the payload is not written correctly;
 	// this could be a silent failure. Gateway currently has no logger.
 	_, _ = w.Write(response.GetPayload())
-}
-
-// applyQoSObservations calls the supplied QoS instance to apply the supplied observations.
-func (g Gateway) applyQoSObservations(serviceID protocol.ServiceID, serviceQoS QoSService, qosObservations qos.QoSDetails) {
-}
-
-func (g Gateway) applyProtocolObservations(serviceID protocol.ServiceID, protocolObservations protocolobservations.ProtocolDetails) {
 }
 
 // buildProtocolRequestCtx builds a protocol-level context for the supplied service ID and HTTP request.

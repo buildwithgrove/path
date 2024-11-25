@@ -126,7 +126,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		"service", string(serviceID),
 	)
 
-	// TODO_FUTURE: support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
 	// no need for specifying a specific app.
 	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)

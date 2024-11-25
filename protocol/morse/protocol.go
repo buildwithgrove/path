@@ -75,8 +75,8 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
-// The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
 // This method implements the gateway.Protocol interface.
+// The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	_ *http.Request,

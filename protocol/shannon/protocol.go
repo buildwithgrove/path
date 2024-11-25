@@ -21,9 +21,12 @@ var _ gateway.Protocol = &Protocol{}
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
 type FullNode interface {
+	// GetServiceApps returns all the onchain applications staked for the supplied Service ID.
 	GetServiceApps(protocol.ServiceID) ([]apptypes.Application, error)
+
+	// GetSession returns the latest session matching the supplied service+app combination.
+	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
-	// This is used here because the gateway only needs the current session for any service+app combination.
 	GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
@@ -44,6 +47,8 @@ func NewProtocol(
 	logger polylog.Logger,
 	config GatewayConfig,
 ) (*Protocol, error) {
+	// Derive the address of apps owned by the gateway operator using the supplied apps' private keys.
+	// This only applies to Centralized gateway mode and needs to be done during initialization to ensure it is possible to send relays in Centralized mode.
 	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(config.OwnedAppsPrivateKeysHex)
 	if err != nil {
 		return nil, fmt.Errorf("NewProtocol: error parsing the supplied private keys: %w", err)
@@ -58,7 +63,9 @@ func NewProtocol(
 		FullNode: fullNode,
 		Logger:   logger,
 
-		// TODO_MVP(@adshmh): verify the gateway address and private key are valid.
+		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
+		// 1. Query onchain data for a gateway with the supplied address.
+		// 2. Query onchain data for app(s) matching the derived addresses.
 		gatewayAddr:          config.GatewayAddress,
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
@@ -66,7 +73,7 @@ func NewProtocol(
 	}, nil
 }
 
-// Protocol provides the functionality needed by the gateway packag for sending a relay to a specific endpoint.
+// Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
 	FullNode
 	Logger polylog.Logger
@@ -79,11 +86,11 @@ type Protocol struct {
 	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
 	gatewayAddr string
 
-	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon integration instance.
+	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon Gateway instance.
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in centralized mode.
+	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in Centralized mode.
 	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
 	ownedAppsAddr map[string]struct{}
 }
@@ -126,7 +133,7 @@ func (p *Protocol) IsAlive() bool {
 	return p.FullNode.IsHealthy()
 }
 
-// TODO_FUTURE: Find a more optimized way of handling an overlap among endpoints
+// TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints
 // matching multiple sessions of apps delegating to the gateway.
 //
 // getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.

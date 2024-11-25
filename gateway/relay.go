@@ -6,7 +6,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// SendRelay is sending a relay from the perspective of a gateway.
+// SendRelay sends a relay from the perspective of a gateway.
 // It is responsible for calling Protocol.SendRelay to a specific endpoint for a specific application.
 // It does so by calling the correct sequence of functions on the Relayer and the EndpointSelector.
 //
@@ -23,7 +23,7 @@ func SendRelay(
 		return protocol.Response{}, fmt.Errorf("SendRelay: error selecting an endpoint: %w", err)
 	}
 
-	// TODO_FUTURE: add a protocol publisher to enable sending feedback on the endpoint that served the request.
+	// TODO_FUTURE(@adshmh): add a protocol publisher to enable sending feedback on the endpoint that served the request.
 	// e.g. on Morse protocol, an endpoint that rejects a request due to being maxed out for the app+service
 	// combination, should be dropped until the start of the next session.
 	return protocolRequestCtx.HandleServiceRequest(payload)
