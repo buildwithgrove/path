@@ -95,12 +95,8 @@ config_shannon_localnet: ## Create a localnet config file for the Shannon relay
 ### Generation Make Targets ###
 ###############################
 
-.PHONY: sqlc_generate
-sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
-	sqlc generate -f ./db/driver/sqlc/sqlc.yaml
-
 # // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all other mock generation commands here
+# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
 
 ########################
 #### Documentation  ####
@@ -110,6 +106,11 @@ sqlc_generate: ## Generate SQLC code from db/driver/sqlc/*.sql files
 go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
+
+.PHONY: docs_update
+## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
+docs_update: ## Update documentation from README.
+	cat README.md > docusaurus/docs/README.md 
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server

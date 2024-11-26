@@ -9,13 +9,15 @@ shannon_config:
     grpc_config:
       # do not change host_port
       host_port: testnet-validated-validator-grpc.poktroll.com:443
-    # NOTE: gateway_private_key must be replaced with the correct gateway private key secret
-    gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 
+  gateway_config:
+    gateway_mode: "centralized"
+    # NOTE: gateway_hex_private_key must be replaced with the correct gateway private key secret
+    gateway_hex_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
     # do not change gateway_address
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw 
-    delegated_app_addresses: 
-      # do not change delegated_app_address
-      - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87 
+    owned_apps_hex_private_keys:
+      # NOTE: the application private key must be replaced with the correct application private key secret
+      - cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
 services:
   # do not change gatewaye2e
   "gatewaye2e":
@@ -25,4 +27,4 @@ services:
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
-    - 0021
+    - "0021"

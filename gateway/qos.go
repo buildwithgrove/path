@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // RequestQoSContext represents the interactions of
@@ -17,11 +17,11 @@ import (
 //   - 2. Building a new context based on a desired endpoint check, e.g. an `eth_chainId` request on an EVM blockchain.
 //   - 3. Rebuilding an existing context by deserializing a shared context from another PATH instance
 type RequestQoSContext interface {
-	// TODO_TECHDEBT: This should eventually return a []relayer.Payload
+	// TODO_TECHDEBT: This should eventually return a []Payload
 	// to allow mapping a single RelayRequest into multiple ServiceRequests,
 	// e.g. A single batch relay request on a JSONRPC blockchain should be decomposable into
 	// multiple independent requests.
-	GetServicePayload() relayer.Payload
+	GetServicePayload() protocol.Payload
 
 	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
 	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
@@ -29,7 +29,7 @@ type RequestQoSContext interface {
 	// payload returned by a specific endpoint in response to the service
 	// payload produced (through the `GetServicePayload` method) by the
 	// request QoS context instance
-	UpdateWithResponse(endpointAddr relayer.EndpointAddr, endpointSerializedResponse []byte)
+	UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte)
 
 	// GetHTTPResponse returns the user-facing HTTP response.
 	// The received response will depend on the state of the service request context,
@@ -47,7 +47,7 @@ type RequestQoSContext interface {
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
-	GetEndpointSelector() relayer.EndpointSelector
+	GetEndpointSelector() protocol.EndpointSelector
 }
 
 // QoSContextBuilder builds the QoS context required for handling
@@ -75,7 +75,7 @@ type QoSEndpointCheckGenerator interface {
 	// make a decision based on the specific endpoint.
 	// e.g. An EVM-based blockchain service QoS may decide to skip quering an endpoint on
 	// its current block height if it has already failed the chain ID check.
-	GetRequiredQualityChecks(relayer.EndpointAddr) []RequestQoSContext
+	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
 }
 
 // QoSPublisher is used to publish a message package's ObservationSet.
