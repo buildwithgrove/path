@@ -1,0 +1,21 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+message EVMDetails {
+  JsonRpcRequest jsonrpc_request=1;
+  repeated EVMEndpointDetails endpoint_details=2;
+}
+
+message EVMEndpointDetails {
+  string endpoint_addr=1;
+  optional JsonRpcResponse jsonrpc_response=2;
+  optional string chain_id=3;
+  optional string block_height_response=4;
+  // generic_request is set to true if the request was considered `generic`, i.e. ignored by the service state update and endpoint validation methods.
+  optional bool generic_request=5;
+  // TODO_MVP(@adshmh): add details for performing archival checks.
+}
