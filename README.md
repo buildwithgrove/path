@@ -193,8 +193,6 @@ morse_config:
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
   signed_aats:
     "example_application_address":

@@ -1,19 +1,19 @@
+# yaml-language-server: $schema=../config/config.schema.yaml
+
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:
-    url: "https://pocket-network-full-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key"
+    url: "https://pocket-network-full-full-node-url.io" # replace with your full node url
+    relay_signing_key: "ea5768843c5ad06897d43faa70b9ad39f143f3c7be8930d2b380022dbfbde3858b96695a0acc3458f84c2062c6d04f0dc44cf012d4244c688a60060f87940ef5" # replace with your relay signing key
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
   signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
+    "d39c0468509264eb455f8b7593b1967180058c89": # replace with your application address
+      client_public_key: "22632c2191c3cd27b0c4c42509f5c349be7a1d3f5258fc34986df543f0e5a82c" # replace with your client public key
+      application_public_key: "e9b360514aca1f544801dc25353e9e5d73783e41562f34f99d2b130301ab00b1" # replace with your application public key
+      application_signature: "4c6abff229a13f9b0f1915f6d1353f77bc96a2e317645c235ea0bb635e2e554b4cb384c516550f86535e683be3e0fba69e39ae608aa51428abbb8b28036d02ae" # replace with your application signature
 
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
@@ -23,9 +23,10 @@ services:
     request_timeout: "3000ms"
 
 # router_config is optional and allows configuration of the router settings.
-router_config:
-  port: 8080
-  max_request_body_size: 512000
-  read_timeout: "5000ms"
-  write_timeout: "5000ms"
-  idle_timeout: "5000ms"
+# Only uncomment this if you know what you're doing.
+# router_config:
+#   port: 8080
+#   max_request_body_size: 512000
+#   read_timeout: "5000ms"
+#   write_timeout: "5000ms"
+#   idle_timeout: "5000ms"

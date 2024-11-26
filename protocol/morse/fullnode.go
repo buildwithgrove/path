@@ -53,9 +53,8 @@ type HttpConfig struct {
 }
 
 type FullNodeConfig struct {
-	URL           string                     `yaml:"url"`
-	HttpConfig    HttpConfig                 `yaml:"http_config"`
-	RequestConfig provider.RequestConfigOpts `yaml:"request_config"`
+	URL        string     `yaml:"url"`
+	HttpConfig HttpConfig `yaml:"http_config"`
 
 	// RelaySigningKey is either:
 	// A. An application's private key, or

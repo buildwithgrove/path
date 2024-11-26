@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=../config/config.schema.yaml
+
 shannon_config:
   full_node_config:
     rpc_url: https://example_full_node_rpc_url.your_domain # replace with your full node rpc url
@@ -6,11 +8,11 @@ shannon_config:
     lazy_mode: false # set to true to disable PATH caching mechanism
   gateway_config:
     gateway_mode: centralized # replace with your gateway mode centralized|delegated|trusted
-    gateway_address: example_gateway_address_pokt1710ed9a8d0986d8 # replace with your gateway address
-    gateway_private_key_hex: example_gateway_private_key_52734539d033e35c6e6d1ce5ad96bcacb911 # replace with your gateway private key
+    gateway_address: pokt10f3838db8c7830f172329442ac0be0a6340804 # replace with your gateway address
+    gateway_private_key_hex: 4c43d5142b5217b91b3d8659ad691657cde1050f9260fb0a722feabe329b536a # replace with your gateway private key
     # Not applicable for delegated gateway mode
     owned_apps_private_keys_hex: # replace with delegated app addresses
-      - example_owned_app_private_key_pokt1a3b8ef9b
+      - db9cab4a9e26eaf6357b3345c3e59e4b0150925bfe660626ca5761d2e65c97bd
 
 services:
   "F00C":

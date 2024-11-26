@@ -8,6 +8,9 @@ type: object
 additionalProperties: false
 required:
   - services
+oneOf:
+  - required: ["morse_config"]
+  - required: ["shannon_config"]
 
 properties:
   # NOTE: Exactly one of either "morse_config" or "shannon_config" must be present
@@ -30,20 +33,25 @@ properties:
           url:
             type: string
             pattern: "^(http|https)://.*$"
+            description: "The URL of the full node for Morse gateways. This URL is used to connect to the Morse full node to get data from the Pocket blockchain.."
           relay_signing_key:
             type: string
             pattern: "^[0-9a-fA-F]{128}$"
+            description: "The relay signing key for Morse gateways. This key is used to sign relays sent through the Morse gateway."
           http_config:
             type: object
             additionalProperties: false
             properties:
               retries:
                 type: integer
+                description: "Number of retries for HTTP requests using the Pocket Go SDK. (optional, defaults to 0)"
               timeout:
                 type: string
+                description: "Timeout duration for HTTP requests using the Pocket Go SDK. (optional, defaults to 5 seconds)"
               transport:
                 type: object
                 additionalProperties: false
+                description: "HTTP transport configuration for the Pocket Go SDK. (optional, sensible defaults are provided)"
                 properties:
                   max_conns_per_host:
                     type: integer
@@ -57,12 +65,6 @@ properties:
                     type: string
                   keep_alive:
                     type: string
-          request_config:
-            type: object
-            additionalProperties: false
-            properties:
-              retries:
-                type: integer
       signed_aats:
         type: object
         additionalProperties: false
@@ -74,12 +76,15 @@ properties:
               client_public_key:
                 type: string
                 pattern: "^[0-9a-fA-F]{64}$"
+                description: "Client public key for the application. This key is used to identify the client application in the Morse network."
               application_public_key:
                 type: string
                 pattern: "^[0-9a-fA-F]{64}$"
+                description: "Application public key. This key is used to identify the application in the Morse network."
               application_signature:
                 type: string
                 pattern: "^[0-9a-fA-F]{128}$"
+                description: "Signature of the application. This signature is used to verify the authenticity of the application in the Morse network."
             required:
               - client_public_key
               - application_public_key
@@ -103,6 +108,7 @@ properties:
           rpc_url:
             type: string
             pattern: "^(http|https)://.*$"
+            description: "RPC URL for Shannon gateways."
           grpc_config:
             type: object
             additionalProperties: false
@@ -112,22 +118,30 @@ properties:
               host_port:
                 type: string
                 pattern: "^[^:]+:[0-9]+$"
+                description: "Host and port for gRPC connections."
               insecure:
                 type: boolean
                 default: false
+                description: "Indicates if the gRPC connection is insecure."
               base_delay:
                 type: string
+                description: "Base delay for gRPC retries."
               max_delay:
                 type: string
+                description: "Maximum delay for gRPC retries."
               min_connect_timeout:
                 type: string
+                description: "Minimum connection timeout for gRPC."
               keep_alive_time:
                 type: string
+                description: "Keep-alive time for gRPC connections."
               keep_alive_timeout:
                 type: string
+                description: "Keep-alive timeout for gRPC connections."
           lazy_mode:
             type: boolean
             default: false
+            description: "Indicates if lazy mode is enabled for full node connections."
       gateway_config:
         type: object
         additionalProperties: false
@@ -139,17 +153,21 @@ properties:
           gateway_mode:
             type: string
             enum: ["centralized", "delegated", "permissionless"]
+            description: "Mode of the gateway operation."
           gateway_address:
             type: string
-            pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
+            pattern: "^pokt1[0-9a-zA-Z]{38}$"
+            description: "Address of the gateway."
           gateway_private_key_hex:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
-          owned_apps_private_keys_hex: # Not required in delegated gateway mode
+            description: "Private key of the gateway in hexadecimal format."
+          owned_apps_private_keys_hex:
             type: array
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
+            description: "Private keys of owned applications in hexadecimal format."
 
   # Services Configuration (required)
   services:
@@ -162,8 +180,10 @@ properties:
         properties:
           alias:
             type: string
+            description: "Alias for the service."
           request_timeout:
             type: string
+            description: "Timeout duration for service requests."
 
   # Router Configuration (optional)
   router_config:
@@ -172,14 +192,19 @@ properties:
     properties:
       port:
         type: integer
+        description: "Port number for the router."
       max_request_body_size:
         type: integer
+        description: "Maximum size of the request body."
       read_timeout:
         type: string
+        description: "Read timeout duration for the router."
       write_timeout:
         type: string
+        description: "Write timeout duration for the router."
       idle_timeout:
         type: string
+        description: "Idle timeout duration for the router."
 
   # Hydrator Configuration (optional)
   hydrator_config:
@@ -190,3 +215,4 @@ properties:
         type: array
         items:
           type: string
+        description: "List of service IDs for the hydrator."
