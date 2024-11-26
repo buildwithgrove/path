@@ -11,9 +11,9 @@ import (
 
 	"github.com/buildwithgrove/path/config/morse"
 	"github.com/buildwithgrove/path/config/shannon"
-	"github.com/buildwithgrove/path/relayer"
-	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
-	shannonRelayer "github.com/buildwithgrove/path/relayer/shannon"
+	"github.com/buildwithgrove/path/protocol"
+	morseprotocol "github.com/buildwithgrove/path/protocol/morse"
+	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
@@ -29,10 +29,10 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			filePath: "./testdata/morse.example.yaml",
 			want: GatewayConfig{
 				MorseConfig: &morse.MorseGatewayConfig{
-					FullNodeConfig: morseRelayer.FullNodeConfig{
+					FullNodeConfig: morseprotocol.FullNodeConfig{
 						URL:             "https://full-node-url.io",
 						RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-						HttpConfig: morseRelayer.HttpConfig{
+						HttpConfig: morseprotocol.HttpConfig{
 							Retries: 3,
 							Timeout: 5000 * time.Millisecond,
 						},
@@ -53,7 +53,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 					},
 				},
-				Services: map[relayer.ServiceID]ServiceConfig{
+				Services: map[protocol.ServiceID]ServiceConfig{
 					"F00C": {
 						Alias:          "eth",
 						RequestTimeout: 3000 * time.Millisecond,
@@ -67,7 +67,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
 				},
-				serviceAliases: map[string]relayer.ServiceID{
+				serviceAliases: map[string]protocol.ServiceID{
 					"eth": "F00C",
 				},
 			},
@@ -78,20 +78,23 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			filePath: "./testdata/shannon.example.yaml",
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
-					FullNodeConfig: shannonRelayer.FullNodeConfig{
+					FullNodeConfig: shannonprotocol.FullNodeConfig{
 						RpcURL: "https://rpc-url.io",
-						GRPCConfig: shannonRelayer.GRPCConfig{
+						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "grpc-url.io:443",
 						},
-						GatewayPrivateKey: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
-						GatewayAddress:    "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
-						DelegatedApps: []string{
-							"pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0",
-							"pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0",
+					},
+					GatewayConfig: shannonprotocol.GatewayConfig{
+						GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
+						GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
+						GatewayMode:          protocol.GatewayModeCentralized,
+						OwnedAppsPrivateKeysHex: []string{
+							"e5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
+							"f5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
 						},
 					},
 				},
-				Services: map[relayer.ServiceID]ServiceConfig{
+				Services: map[protocol.ServiceID]ServiceConfig{
 					"0021": {
 						Alias:          "eth-mainnet",
 						RequestTimeout: 3000 * time.Millisecond,
@@ -105,7 +108,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       5000 * time.Millisecond,
 					IdleTimeout:        5000 * time.Millisecond,
 				},
-				serviceAliases: map[string]relayer.ServiceID{
+				serviceAliases: map[string]protocol.ServiceID{
 					"eth-mainnet": "0021",
 				},
 			},
@@ -119,7 +122,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "invalid-url"
 			    grpc_url: "grpcs://grpc-url.io"
-			    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
 			`,
 			wantErr: true,
 		},
@@ -131,7 +133,10 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			  full_node_config:
 			    rpc_url: "https://rpc-url.io"
 			    grpc_url: "grpcs://grpc-url.io"
+			  gateway_config:
 			    gateway_address: "invalid_gateway_address"
+                            gateway_hex_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
+                            gateway_mode: "delegated"
 			`,
 			wantErr: true,
 		},
@@ -273,13 +278,13 @@ func Test_GetServiceIDFromAlias(t *testing.T) {
 		name   string
 		config GatewayConfig
 		alias  string
-		want   relayer.ServiceID
+		want   protocol.ServiceID
 		ok     bool
 	}{
 		{
 			name: "should return service ID for existing alias",
 			config: GatewayConfig{
-				serviceAliases: map[string]relayer.ServiceID{
+				serviceAliases: map[string]protocol.ServiceID{
 					"eth-mainnet": "0021",
 				},
 			},
@@ -290,7 +295,7 @@ func Test_GetServiceIDFromAlias(t *testing.T) {
 		{
 			name: "should return false for non-existing alias",
 			config: GatewayConfig{
-				serviceAliases: map[string]relayer.ServiceID{
+				serviceAliases: map[string]protocol.ServiceID{
 					"eth-mainnet": "0021",
 				},
 			},
@@ -324,14 +329,14 @@ func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	c.Equal(want.serviceAliases, got.serviceAliases)
 }
 
-func compareMorseFullNodeConfig(c *require.Assertions, want, got morseRelayer.FullNodeConfig) {
+func compareMorseFullNodeConfig(c *require.Assertions, want, got morseprotocol.FullNodeConfig) {
 	c.Equal(want.URL, got.URL)
 	c.Equal(want.RelaySigningKey, got.RelaySigningKey)
 	c.Equal(want.RequestConfig, got.RequestConfig)
 	compareHTTPConfig(c, want.HttpConfig, got.HttpConfig)
 }
 
-func compareHTTPConfig(c *require.Assertions, want, got morseRelayer.HttpConfig) {
+func compareHTTPConfig(c *require.Assertions, want, got morseprotocol.HttpConfig) {
 	c.Equal(want.Retries, got.Retries)
 	c.Equal(want.Timeout, got.Timeout)
 	if want.Transport != nil {

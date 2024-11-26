@@ -7,8 +7,8 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
-	"github.com/buildwithgrove/path/relayer"
 )
 
 // TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
@@ -26,8 +26,8 @@ func getServiceQoSInstances(
 	gatewayConfig config.GatewayConfig,
 	logger polylog.Logger,
 ) (
-	map[relayer.ServiceID]gateway.QoSService,
-	map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
+	map[protocol.ServiceID]gateway.QoSService,
+	map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator,
 	error,
 ) {
 	// Build a map of services configured for the hydrator
@@ -37,8 +37,8 @@ func getServiceQoSInstances(
 
 	// TODO_TECHDEBT: refactor this function to remove
 	// the need for manually adding entries for every new QoS implmenetation.
-	gatewayQoSService := make(map[relayer.ServiceID]gateway.QoSService)
-	hydratorQoSGenerators := make(map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator)
+	gatewayQoSService := make(map[protocol.ServiceID]gateway.QoSService)
+	hydratorQoSGenerators := make(map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator)
 
 	// TODO_FUTURE: support serviceQoS-specific configuration.
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
@@ -46,11 +46,11 @@ func getServiceQoSInstances(
 	for _, serviceID := range allServiceIDs {
 
 		// Get the QoS type for the service ID.
-		serviceQoSType := serviceQoSTypes[serviceID]
+		serviceQoSType := config.ServiceQoSTypes[serviceID]
 
 		switch serviceQoSType {
 
-		case serviceIDEVM:
+		case config.ServiceIDEVM:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
@@ -65,13 +65,16 @@ func getServiceQoSInstances(
 				hydratorQoSGenerators[serviceID] = evmEndpointStore
 			}
 
-		case serviceIDSolana:
+		// TODO_FUTURE: The logic here is complex enough to justify using a builder/factory function pattern here.
+		// At-least having something like func buildSolanaQoSInstance(...) in a solana.go file either here or under
+		// config package will make the initialization/configuration code easier to read and maintain.
+		case config.ServiceIDSolana:
 			// TODO_TECHDEBT: add solana qos service here
 
-		case serviceIDPOKT:
+		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 
-		case serviceIDE2E:
+		case config.ServiceIDE2E:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
@@ -92,8 +95,8 @@ func getServiceQoSInstances(
 }
 
 // buildServiceIDsIdx builds a map of the provided service IDs to allow one-line lookups.
-func buildServiceIDsIdx(ids []relayer.ServiceID) map[relayer.ServiceID]struct{} {
-	idx := make(map[relayer.ServiceID]struct{})
+func buildServiceIDsIdx(ids []protocol.ServiceID) map[protocol.ServiceID]struct{} {
+	idx := make(map[protocol.ServiceID]struct{})
 	for _, id := range ids {
 		idx[id] = struct{}{}
 	}

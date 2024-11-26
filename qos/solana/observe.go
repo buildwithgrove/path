@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // observationSet provides all the functionality required
@@ -30,7 +30,7 @@ type observationSet struct {
 	EndpointStore *EndpointStore
 	ServiceState  *ServiceState
 
-	Observations map[relayer.EndpointAddr][]observation
+	Observations map[protocol.EndpointAddr][]observation
 }
 
 // TODO_UPNEXT(@adshmh): implement marshalling to allow the
@@ -53,15 +53,15 @@ func (os observationSet) Broadcast() error {
 // TODO_TECHDEBT: factor-out any code that is common between the endpoint stores of diffrent QoS instances.
 // Alternatively, have a ServiceState instance wrapped around an endpoint store: the ServiceState performs all
 // endpoint selection/verification, using a minimal set of load/store operations from an endpoint store.
-func (es *EndpointStore) ProcessObservations(endpointObservations map[relayer.EndpointAddr][]observation) map[relayer.EndpointAddr]*endpoint {
+func (es *EndpointStore) ProcessObservations(endpointObservations map[protocol.EndpointAddr][]observation) map[protocol.EndpointAddr]*endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
 	if es.endpoints == nil {
-		es.endpoints = make(map[relayer.EndpointAddr]endpoint)
+		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
 	}
 
-	updatedEndpoints := make(map[relayer.EndpointAddr]*endpoint)
+	updatedEndpoints := make(map[protocol.EndpointAddr]*endpoint)
 	for endpointAddr, observations := range endpointObservations {
 		logger := es.Logger.With(
 			"endpoint", endpointAddr,
