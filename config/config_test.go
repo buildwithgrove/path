@@ -135,7 +135,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			    grpc_url: "grpcs://grpc-url.io"
 			  gateway_config:
 			    gateway_address: "invalid_gateway_address"
-			    gateway_hex_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
+			    gateway_private_key_hex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
 			    gateway_mode: "delegated"
 			`,
 			wantErr: true,
