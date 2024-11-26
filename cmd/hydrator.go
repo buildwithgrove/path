@@ -6,7 +6,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // setupEndpointHydrator initializes and starts an instance of
@@ -14,10 +14,9 @@ import (
 // The EndpointHydrator will not be started if no
 // service QoS generators are specified.
 func setupEndpointHydrator(
-	endpointLister gateway.EndpointLister,
-	relayer *relayer.Relayer,
+	protocol gateway.Protocol,
 	qosPublisher gateway.QoSPublisher,
-	qosGenerators map[relayer.ServiceID]gateway.QoSEndpointCheckGenerator,
+	qosGenerators map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator,
 	logger polylog.Logger,
 ) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
@@ -29,16 +28,8 @@ func setupEndpointHydrator(
 		return nil, nil
 	}
 
-	if qosPublisher == nil {
-		return nil, errors.New("endpoint hydrator enabled but no QoS publishers provided")
-	}
-
-	if endpointLister == nil {
-		return nil, errors.New("endpoint hydrator enabled but no endpointLister instance provided")
-	}
-
-	if relayer == nil {
-		return nil, errors.New("endpoint hydrator enabled but no relayer provided")
+	if protocol == nil {
+		return nil, errors.New("endpoint hydrator enabled but no protocol provided")
 	}
 
 	if qosPublisher == nil {
@@ -46,8 +37,7 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-		EndpointLister:       endpointLister,
-		Relayer:              relayer,
+		Protocol:             protocol,
 		QoSPublisher:         qosPublisher,
 		ServiceQoSGenerators: qosGenerators,
 		Logger:               logger,

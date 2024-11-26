@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/utils"
-	morseRelayer "github.com/buildwithgrove/path/relayer/morse"
+	morseprotocol "github.com/buildwithgrove/path/protocol/morse"
 )
 
 const (
@@ -30,8 +30,8 @@ const (
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type (
 	MorseGatewayConfig struct {
-		FullNodeConfig morseRelayer.FullNodeConfig `yaml:"full_node_config"`
-		Transport      FullNodeHTTPTransportConfig `yaml:"transport_config"`
+		FullNodeConfig morseprotocol.FullNodeConfig `yaml:"full_node_config"`
+		Transport      FullNodeHTTPTransportConfig  `yaml:"transport_config"`
 		// SignedAATs is a map of applications' addresses to their corresponding signed AATs.
 		SignedAATs map[string]SignedAAT `yaml:"signed_aats"`
 	}
@@ -79,7 +79,7 @@ func (c MorseGatewayConfig) GetSignedAAT(appID string) (provider.PocketAAT, bool
 }
 
 // GetFullNodeConfig returns the full node configuration.
-func (c MorseGatewayConfig) GetFullNodeConfig() morseRelayer.FullNodeConfig {
+func (c MorseGatewayConfig) GetFullNodeConfig() morseprotocol.FullNodeConfig {
 	return c.FullNodeConfig
 }
 

@@ -215,9 +215,9 @@ services:
 ### 4.4 Other Examples
 
 - Full example config YAML files:
-  - [Morse](./cmd/config/testdata/morse.example.yaml)
-  - [Shannon](./cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](./config/config.schema.yaml)
+  - [Morse](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+  - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
+- [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ## 5. Authorization & Rate Limiting
 
@@ -235,7 +235,7 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](./cmd/config/testdata).**
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
@@ -283,7 +283,7 @@ make copy_test_config
 
 Then update the `protocol.shannon_config.full_node_config` values with the appropriate values.
 
-You can find the example configuration file [here](./e2e/.example.test.yaml).
+You can find the example configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/.example.test.yaml).
 
 Currently, the E2E tests are configured to run against the Shannon testnet.
 

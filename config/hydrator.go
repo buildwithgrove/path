@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // EndpointHydratorConfig stores all the configuration
@@ -12,5 +12,5 @@ import (
 type EndpointHydratorConfig struct {
 	// ServiceIDs is the list of IDs of services to be handled by
 	// the Endpoint Hydrator.
-	ServiceIDs []relayer.ServiceID `yaml:"service_ids"`
+	ServiceIDs []protocol.ServiceID `yaml:"service_ids"`
 }

@@ -146,12 +146,10 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
 
 # TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
+# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
 .PHONY: gen_mocks
 gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
 	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
-
-# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
 
 ########################
 #### Documentation  ####
