@@ -134,8 +134,7 @@ properties:
         required:
           - gateway_mode
           - gateway_address
-          - gateway_hex_private_key
-          - owned_apps_hex_private_keys
+          - gateway_private_key_hex
         properties:
           gateway_mode:
             type: string
@@ -143,10 +142,10 @@ properties:
           gateway_address:
             type: string
             pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
-          gateway_hex_private_key:
+          gateway_private_key_hex:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
-          owned_apps_hex_private_keys:
+          owned_apps_private_keys_hex: # Not required in delegated gateway mode
             type: array
             items:
               type: string
