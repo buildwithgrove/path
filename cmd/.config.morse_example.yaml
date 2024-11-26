@@ -18,8 +18,8 @@ morse_config:
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
     request_timeout: "3000ms"
 
 # router_config is optional and allows configuration of the router settings.

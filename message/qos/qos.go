@@ -11,7 +11,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // The topic used by QoS publishers and subscribers
@@ -30,8 +30,8 @@ type ServiceQoS interface {
 // ObservationSetMessage is the expected format of QoS messages shared
 // between multiple PATH instances, using the provided MessagePlatform
 type ObservationSetMessage struct {
-	relayer.ServiceID `json:"service_id"`
-	Payload           []byte `json:"payload"`
+	protocol.ServiceID `json:"service_id"`
+	Payload            []byte `json:"payload"`
 }
 
 // TODO_UPNEXT(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
@@ -47,7 +47,7 @@ type MessagePlatform interface {
 
 type Messenger struct {
 	MessagePlatform
-	Services map[relayer.ServiceID]ServiceQoS
+	Services map[protocol.ServiceID]ServiceQoS
 	Logger   polylog.Logger
 }
 

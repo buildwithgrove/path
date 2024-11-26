@@ -37,6 +37,7 @@
   - [7.1. Running Tests](#71-running-tests)
 - [8. Troubleshooting](#8-troubleshooting)
   - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
+- [Special Thanks](#special-thanks)
 
 ## 1. Introduction
 
@@ -89,10 +90,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -122,10 +123,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth-mainnet`:
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth-mainnet.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -156,7 +157,7 @@ The configuration is divided into several sections:
 3. **Services Configuration (`services`)**:
 
    - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `0021`) and the value is the service configuration.
+   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
    - Only the Service ID is required. All other fields are optional.
 
 4. **Router Configuration (`router_config`)**:
@@ -179,8 +180,8 @@ shannon_config:
       - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
 
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
 ```
 
 ### 4.3 Example Morse Configuration Format
@@ -206,17 +207,17 @@ morse_config:
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"
     request_timeout: "3000ms"
 ```
 
 ### 4.4 Other Examples
 
 - Full example config YAML files:
-  - [Morse](./cmd/config/testdata/morse.example.yaml)
-  - [Shannon](./cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](./config/config.schema.yaml)
+  - [Morse](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+  - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
+- [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ## 5. Authorization & Rate Limiting
 
@@ -234,7 +235,7 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](./cmd/config/testdata).**
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
@@ -282,7 +283,7 @@ make copy_test_config
 
 Then update the `protocol.shannon_config.full_node_config` values with the appropriate values.
 
-You can find the example configuration file [here](./e2e/.example.test.yaml).
+You can find the example configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/.example.test.yaml).
 
 Currently, the E2E tests are configured to run against the Shannon testnet.
 
@@ -314,3 +315,16 @@ or just copy-paste the following command:
 ```bash
 sudo chmod 666 /var/run/docker.sock
 ```
+
+## Special Thanks
+
+The origins of this repository were inspired by the work kicked off in [gateway-server](https://github.com/pokt-network/gateway-server) by the
+[Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
+
+However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
+- Enabling multi-protocol support; Morse, Shanon and beyond
+- Set a foundation to migrate Grove's quality of service and data pipelineta
+- Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
+- Etc...
+
+<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) --> 

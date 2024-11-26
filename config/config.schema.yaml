@@ -89,6 +89,9 @@ properties:
   shannon_config:
     type: object
     additionalProperties: false
+    required:
+      - full_node_config
+      - gateway_config
     properties:
       full_node_config:
         type: object
@@ -96,9 +99,6 @@ properties:
         required:
           - rpc_url
           - grpc_config
-          - gateway_address
-          - gateway_private_key
-          - delegated_app_addresses
         properties:
           rpc_url:
             type: string
@@ -106,6 +106,8 @@ properties:
           grpc_config:
             type: object
             additionalProperties: false
+            required:
+              - host_port
             properties:
               host_port:
                 type: string
@@ -123,19 +125,32 @@ properties:
                 type: string
               keep_alive_timeout:
                 type: string
-            required:
-              - host_port
+          lazy_mode:
+            type: boolean
+            default: false
+      gateway_config:
+        type: object
+        additionalProperties: false
+        required:
+          - gateway_mode
+          - gateway_address
+          - gateway_hex_private_key
+          - owned_apps_hex_private_keys
+        properties:
+          gateway_mode:
+            type: string
+            pattern: "^[a-zA-Z0-9]+$"
           gateway_address:
             type: string
             pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
-          gateway_private_key:
+          gateway_hex_private_key:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
-          delegated_app_addresses:
+          owned_apps_hex_private_keys:
             type: array
             items:
               type: string
-              pattern: "^pokt1[0-9a-zA-Z]{38}$" # 43 total characters
+              pattern: "^[0-9a-fA-F]{64}$"
 
   # Services Configuration (required)
   services:

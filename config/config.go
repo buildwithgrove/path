@@ -11,7 +11,7 @@ import (
 	"github.com/buildwithgrove/path/config/morse"
 	"github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/config/utils"
-	"github.com/buildwithgrove/path/relayer"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */
@@ -25,13 +25,13 @@ type (
 		MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
 		ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
-		Services        map[relayer.ServiceID]ServiceConfig `yaml:"services"`
-		Router          RouterConfig                        `yaml:"router_config"`
-		HydratorConfig  EndpointHydratorConfig              `yaml:"hydrator_config"`
-		MessagingConfig MessagingConfig                     `yaml:"messaging_config"`
+		Services        map[protocol.ServiceID]ServiceConfig `yaml:"services"`
+		Router          RouterConfig                         `yaml:"router_config"`
+		HydratorConfig  EndpointHydratorConfig               `yaml:"hydrator_config"`
+		MessagingConfig MessagingConfig                      `yaml:"messaging_config"`
 
 		// A map from human readable aliases (e.g. eth-mainnet) to service ID (e.g. 0021)
-		serviceAliases map[string]relayer.ServiceID
+		serviceAliases map[string]protocol.ServiceID
 	}
 	ServiceConfig struct {
 		Alias          string        `yaml:"alias"`
@@ -79,16 +79,16 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 //
 // This method allows for the use of a user-friendly string service alias in the
 // URL subdomain, enabling more user-friendly URLs. For example, instead of
-// using a ServiceID like "0021", an alias such as "eth-mainnet" can be used,
-// resulting in a URL like "eth-mainnet.rpc.gateway.io" instead of "0021.rpc.gateway.io".
-func (c GatewayConfig) GetServiceIDFromAlias(alias string) (relayer.ServiceID, bool) {
+// using a ServiceID like "F00C", an alias such as "eth" can be used,
+// resulting in a URL like "eth.rpc.gateway.io" instead of "F00C.rpc.gateway.io".
+func (c GatewayConfig) GetServiceIDFromAlias(alias string) (protocol.ServiceID, bool) {
 	serviceID, ok := c.serviceAliases[alias]
 	return serviceID, ok
 }
 
 // GetEnabledServiceIDs() returns the list of enabled service IDs.
-func (c GatewayConfig) GetEnabledServiceIDs() []relayer.ServiceID {
-	var enabledServices []relayer.ServiceID
+func (c GatewayConfig) GetEnabledServiceIDs() []protocol.ServiceID {
+	var enabledServices []protocol.ServiceID
 	for serviceID := range c.Services {
 		enabledServices = append(enabledServices, serviceID)
 	}
@@ -99,7 +99,7 @@ func (c GatewayConfig) GetEnabledServiceIDs() []relayer.ServiceID {
 
 func (c *GatewayConfig) hydrateServiceAliases() error {
 	if c.serviceAliases == nil {
-		c.serviceAliases = make(map[string]relayer.ServiceID)
+		c.serviceAliases = make(map[string]protocol.ServiceID)
 	}
 	for serviceID, service := range c.Services {
 		if service.Alias != "" {
