@@ -6,10 +6,9 @@ observability:
   enabled: true
   grafana:
     defaultDashboardsEnabled: false
+# DEV_NOTE: to use a local copy of Helm charts, set BOTH of the following:
+#   1. enabled: true
+#   2. path: {PATH_TO_LOCAL_HELM_CHART}
 helm_chart_local_repo:
-  # DEV_NOTEi: to use a local copy of Helm charts, set the following:
-  # 1. enabled: true, and
-  # 2. path: the path to the local Helm chart repo
-  #
   enabled: false
   path: ../helm-charts

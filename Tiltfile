@@ -10,8 +10,8 @@ hot_reload_dirs = ["cmd", "config", "gateway", "health", "message", "qos", "rela
 local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
-# TODO_UPNEXT(@HebertCL): Upload the Helm charts used for deployment of PATH on staging to the buildwithgrove repo.
-# Configure helm chart reference. If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
+# Configure helm chart reference.
+# If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
 helm_repo("buildwithgrove", "https://buildwithgrove.github.io/helm-charts/")
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
@@ -21,10 +21,10 @@ if local_config["helm_chart_local_repo"]["enabled"]:
     chart_prefix = helm_chart_local_repo + "/charts/"
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-# 1. Add place-holder files for sensitive data
-# 2. Add a secret per sensitive data item (e.g. gateway's private key)
-# 3. Load the secrets into environment variables of an init container
-# 4. Use an init container to run the scripts for updating config from environment variables.
+#   1. Add placeholder files for sensitive data
+#   2. Add a secret per sensitive data item (e.g. gateway's private key)
+#   3. Load the secrets into environment variables of an init container
+#   4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
 # Import configuration files into Kubernetes ConfigMap
@@ -43,7 +43,8 @@ docker_build_with_restart(
 helm_resource(
     "path",
     chart_prefix + "path",
-    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file, once the CLI flags feature has been implemented.
+    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+    # This can only be done once the CLI flags feature has been implemented.
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
 )

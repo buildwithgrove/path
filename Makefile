@@ -83,20 +83,39 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 	fi
 
 .PHONY: config_shannon_localnet
-config_shannon_localnet: ## Create a localnet config file for the Shannon relay
+config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
 	@if [ -f ./local/path/config/.config.yaml ]; then \
-		echo "./local/path/config/.config.yaml already exists, not overwriting."; \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
 	else \
 		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
-		echo "Created ./local/path/config/.config.yaml"; \
-		echo "Please update the gateway_private_key and gateway_address values in the .config.yaml file with the correct value."; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
 	fi
+
+.PHONY: config_morse_localnet
+config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
+		echo "##################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
+		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
+		echo "##################################################################################################################"; \
+	fi
+
 ###############################
 ### Generation Make Targets ###
 ###############################
 
-# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
+# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
+# TODO_TECHDEBT(@commoddity): Add all mock generation commands here
 
 ########################
 #### Documentation  ####
@@ -110,7 +129,7 @@ go_docs: ## Start Go documentation server
 .PHONY: docs_update
 ## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
 docs_update: ## Update documentation from README.
-	cat README.md > docusaurus/docs/README.md 
+	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
