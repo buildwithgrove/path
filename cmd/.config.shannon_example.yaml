@@ -9,5 +9,5 @@ shannon_config:
       - "example_delegated_app_address_pokt1a3b8ef9b"
 
 services:
-  "0021":
-    alias: "eth-mainnet"
+  "F00C":
+    alias: "eth"

@@ -137,6 +137,7 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
 
 # TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
+# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
 .PHONY: gen_mocks
 gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
 	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
@@ -149,6 +150,11 @@ gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
 go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
+
+.PHONY: docs_update
+## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
+docs_update: ## Update documentation from README.
+	cat README.md > docusaurus/docs/README.md 
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
