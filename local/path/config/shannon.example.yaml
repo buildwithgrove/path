@@ -6,18 +6,21 @@
 shannon_config:
   full_node_config:
     # DO NOT change rpc_url unless you know what you're doing
-    rpc_url: https://shannon-testnet-grove-seed-rpc.poktroll.com 
+    rpc_url: https://testnet-validated-validator-rpc.poktroll.com
     grpc_config:
       # DO NOT change host_port unless you know what you're doing
-      host_port: shannon-testnet-grove-seed-grpc.poktroll.com:443 
+      host_port: testnet-validated-validator-grpc.poktroll.com:443
+  gateway_config:
+    gateway_mode: "centralized"
     # IMPORTANT: gateway_private_key MUST BE replaced with your personal gateway private key secret
     # See the following link for instructions on creating a Shannon gateway.
     # https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough#d-creating-a-gateway-deploying-an-gateway-server
-    gateway_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177 
+    gateway_hex_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
     # IMPORTANT: gateway_address MUST BE replaced with your personal gateway's address
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw 
-    delegated_app_addresses: 
-      - pokt1gsufws4c5dhemd0z3njfh859xl0624xyyw5m87 
+    owned_apps_hex_private_keys:
+      # IMPORTANT: the application private key MUST BE replaced with the correct application private key secret
+      - cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
 services:
   "0021":
     alias: "eth-mainnet"
