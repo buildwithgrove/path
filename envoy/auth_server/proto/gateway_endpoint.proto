@@ -145,4 +145,5 @@ message Metadata {
 }
 
 // An Empty message is used to indicate that a field is not set.
+// TODO_IN_THIS_PR(@commoddity): Add `NoAuth` for the respective case.
 message Empty {}

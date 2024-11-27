@@ -20,6 +20,8 @@ import (
 )
 
 const (
+	// TODO_MVP(@commoddity): Eliminate the hard-coding of this prefix for all endpoints.
+	// See this thread for more information: https://github.com/buildwithgrove/path/pull/52/files#r1859632536
 	pathPrefix = "/v1/"
 
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests

@@ -39,6 +39,8 @@
   - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 
+<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+
 ## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -227,7 +229,11 @@ To enable authorization and rate limiting, you can run the PATH service with the
 
 This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
-**For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).**
+:::info
+
+For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+
+:::
 
 ## 6. Running PATH
 
@@ -235,41 +241,26 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
+   :::info
+   NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).
+   :::
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
-   **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+   :::warning
+   The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization.
+   :::
 
 ### 6.2. Start the Container
 
-**NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
-
-   - To run PATH with no dependencies, use:
-
-      ```sh
-      make path_up_gateway
-      ```
-
-     **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
-**
-   - To run PATH with authorization and rate limiting dependencies, use:
-
-      ```sh
-      make path_up
-      ```
-      **In this mode, all requests pass through Envoy Proxy, which runs on port `3001`.**
-
-2. Once the Docker container is running, you may send service requests to the PATH service.
-
-
-3. To stop the PATH service, use the following `make` target:
-
-   ```sh
-   make path_down
-   ```
+1. Populate `.config.yaml` correctly.
+2. Run one of the following `make` targets:
+   - `make path_up_gateway` - Start PATH without any dependencies (straight to the PATH service) on port `3000`.
+   - `make path_up` - Start PATH with all dependencies (through the Envoy Proxy) on port `3001`.
+3. Once the Docker container is running, you may send service requests to the PATH service.
+4. Run `make path_down` to stop the PATH service.
 
 ## 7. E2E Tests
 
@@ -322,9 +313,10 @@ The origins of this repository were inspired by the work kicked off in [gateway-
 [Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
 
 However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
+
 - Enabling multi-protocol support; Morse, Shanon and beyond
 - Set a foundation to migrate Grove's quality of service and data pipelineta
 - Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
 - Etc...
 
-<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) --> 
+<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->

@@ -308,8 +308,8 @@ The `Remote gRPC Server` is responsible for providing the `Go External Authoriza
 
 This service is available as a Docker image and may be configured to load data from a YAML file or using a simple Postgres database that adheres to the provided minimal schema.
 
-
 **Docker Image Registry:**
+
 ```bash
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
@@ -329,25 +329,25 @@ _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_F
 ```yaml
 endpoints:
   # 1. Example of a gateway endpoint using API Key Authorization
-  endpoint_1:                                                
+  endpoint_1:
     auth:
-      auth_type: "AUTH_TYPE_API_KEY"                         
-      api_key: "api_key_1"                                                     
+      auth_type: "AUTH_TYPE_API_KEY"
+      api_key: "api_key_1"
 
   # 2. Example of a gateway endpoint using JWT Authorization
   endpoint_2:
     auth:
-      auth_type: "AUTH_TYPE_JWT"                            
-      jwt_authorized_users:                                 
-        - "auth0|user_1"                                    
+      auth_type: "AUTH_TYPE_JWT"
+      jwt_authorized_users:
+        - "auth0|user_1"
         - "auth0|user_2"
 
   # 3. Example of a gateway endpoint with no authorization and rate limiting set
   endpoint_3:
-    rate_limiting:                                           
-      throughput_limit: 30                                   
-      capacity_limit: 100000                                 
-      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY" 
+    rate_limiting:
+      throughput_limit: 30
+      capacity_limit: 100000
+      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
 _In this example:_

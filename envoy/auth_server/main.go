@@ -7,15 +7,14 @@ import (
 	"net"
 	"os"
 	"strconv"
+	// autoload env vars
 
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-
-	// autoload env vars
-	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/buildwithgrove/path/envoy/auth_server/auth"
 	store "github.com/buildwithgrove/path/envoy/auth_server/endpoint_store"
@@ -24,6 +23,7 @@ import (
 
 // The auth server runs on port 10003.
 // This matches the port used by the Envoy gRPC filter as defined in `envoy.yaml`.
+// TODO_CONSIDER(@commoddity): Make this configurable. See thread here: https://github.com/buildwithgrove/path/pull/52/files/1a3e7a11f159f5b8d3c414f2417f7879bcfab410..258136504608c1269a27047bb9bded1ab4fefcc8#r1859409934
 const port = 10003
 
 const (
