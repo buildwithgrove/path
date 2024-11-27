@@ -4,8 +4,6 @@
 </div>
 <br/>
 
-<!-- TODO_UPNEXT(@commoddity): Document a cheatsheet to have a envoy/cheatsheet.md for a very quick & simple copy-pasta -->
-
 # Table of Contents <!-- omit in toc -->
 
 - [1. Overview](#1-overview)
@@ -21,14 +19,19 @@
   - [4.2 API Key Authorization](#42-api-key-authorization)
   - [4.3 No Authorization](#43-no-authorization)
 - [5. External Authorization Server](#5-external-authorization-server)
-  - [5.1. Gateway Endpoints gRPC Service](#51-gateway-endpoints-grpc-service)
-  - [5.2. Remote gRPC Auth Server](#52-remote-grpc-auth-server)
+  - [5.1. External Auth Service Sequence Diagram](#51-external-auth-service-sequence-diagram)
+  - [5.2. External Auth Service Environment Variables](#52-external-auth-service-environment-variables)
+  - [5.3. External Auth Service Getting Started](#53-external-auth-service-getting-started)
+  - [5.4. Gateway Endpoints gRPC Service](#54-gateway-endpoints-grpc-service)
+  - [5.5. Remote gRPC Auth Server](#55-remote-grpc-auth-server)
     - [5.2.1. PATH Auth Data Server](#521-path-auth-data-server)
     - [5.2.2. Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file)
     - [5.2.3. Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server)
 - [6. Rate Limiter](#6-rate-limiter)
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
+
+<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
 
 ## 1. Overview
 
@@ -40,6 +43,12 @@ Specifically, this is split into two logical parts:
 
 ### 1.1. Components
 
+:::tip
+
+A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
+
+:::
+
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
 - **External Authorization Server**: A Go/gRPC server that evaluates whether incoming requests are authorized to access the `PATH` service.
@@ -48,8 +57,6 @@ Specifically, this is split into two logical parts:
 - **Remote gRPC Server**: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
   - _See [5.2.1. PATH Auth Data Server](#521-path-auth-data-server) for more information._
-
-A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
 ```mermaid
 graph TD
@@ -63,7 +70,7 @@ graph TD
     Error[[Error Returned to User]]
     Result[[Result Returned to User]]
 
-    GRPCServer["Remote gRPC Server<br>(eg. PADS)"]
+    GRPCServer["Remote gRPC Server<br>(e.g. PADS)"]
     GRPCDB[("Postgres<br>Database")]
     GRPCConfig@{ shape: notch-rect, label: "YAML Config File" }
 
@@ -103,7 +110,7 @@ For example, if `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 https://eth-mainnet.rpc.grove.city/v1/a1b2c3d4
 ```
 
-Requests are rejected if:
+Requests are rejected if any of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
 - ID is not present in `Gateway Endpoint Store`
@@ -117,7 +124,11 @@ Requests are rejected if:
    - `gateway-endpoints.yaml` is populated with example data; you can modify this to your needs.
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-> **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart).
+:::tip
+
+For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
+
+:::
 
 ## 3. Envoy Proxy
 
@@ -136,15 +147,15 @@ Envoy acts as a gateway, handling incoming requests, performing auth checks, and
 
 ### 3.1. Contents
 
+- **ratelimit.yaml**: Configuration for the rate limiting service.
 - **envoy.template.yaml**: A template configuration file for Envoy Proxy.
-  - To create `envoy.yaml`, run `make copy_envoy_config`.
+  - Run `make copy_envoy_config` to create `envoy.yaml`.
   - This will prompt you to enter your auth provider's domain and audience and will output the result to `envoy.yaml`.
   - `envoy.yaml` is Git ignored as it contains sensitive information.
 - **gateway-endpoints.example.yaml**: An example file containing data on which endpoints are authorized to use the PATH service.
-  - To create `gateway-endpoints.yaml`, run `make copy_envoy_gateway_endpoints`.
-  - This file is only required if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
+  - **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
+  - Run `make copy_envoy_gateway_endpoints` to create `gateway-endpoints.yaml`.
   - `gateway-endpoints.yaml` is Git ignored as it may contain sensitive information.
-- **ratelimit.yaml**: Configuration for the rate limiting service.
 
 ### 3.2. Envoy HTTP Filters
 
@@ -170,22 +181,39 @@ sequenceDiagram
     Note over Client,Service: Downstream <-------------------------------------> Upstream
 
     Client->>Envoy: 1. Send Request
-    Envoy->>JWTFilter: 2. Parse JWT (if present)
-    JWTFilter-->>Envoy: 3. Return parsed x-jwt-user-id (if present)
-    Envoy->>AuthServer: 4. Forward Request
-    AuthServer->>AuthServer: 5. Authorize (if required)
-    AuthServer->>AuthServer: 6. Set Rate Limit headers (if required)
-    AuthServer-->>Envoy: 7a. Auth Failed (if rejected)
-    Envoy-->>Client: 7a. Reject Request (Auth Failed)
-    AuthServer-->>Envoy: 7b. Auth Success (if accepted)
-    Envoy->>Envoy: Set Rate Limit descriptors from headers
-    Envoy->>RateLimiter: 8. Perform Rate Limit Check
+
+    opt if JWT is present
+      Envoy->>+JWTFilter: 2. Parse JWT (if present)
+      JWTFilter->>-Envoy: 3. Return parsed x-jwt-user-id (if present)
+    end
+
+    Envoy->>+AuthServer: 4. Forward Request
+
+    opt if auth is required
+      AuthServer->>AuthServer: 5. Authorize (if required)
+      AuthServer->>AuthServer: 6. Set Rate Limit headers (if required)
+    end
+
+    alt Auth Failed
+      AuthServer->>+Envoy: 7a. Auth Failed (if rejected)
+      Envoy->>-Client: 7a. Reject Request (Auth Failed)
+    else Auth Success
+      AuthServer->>-Envoy: 7b. Auth Success (if accepted)
+      Envoy->>Envoy: Set Rate Limit descriptors from headers
+    end
+
+    Envoy->>+RateLimiter: 8. Perform Rate Limit Check
     RateLimiter->>RateLimiter: 9. Rate Limit Check
-    RateLimiter-->>Envoy: 10a. Rate Limit Check Failed
-    Envoy-->>Client: 10a. Reject Request (Rate Limit Exceeded)
-    RateLimiter-->>Envoy: 10b. Rate Limit Check Passed
-    Envoy->>Service: 11. Forward Request
-    Service-->>Client: 12. Return Response
+
+    alt Rate Limit Check Failed
+      RateLimiter->>Envoy: 10a. Rate Limit Check Failed
+      Envoy->>Client: 10a. Reject Request (Rate Limit Exceeded)
+    else
+      RateLimiter->>-Envoy: 10b. Rate Limit Check Passed
+    end
+
+    Envoy->>+Service: 11. Forward Request
+    Service->>-Client: 12. Return Response
 ```
 
 ## 4. Gateway Endpoint Authorization
@@ -194,9 +222,9 @@ The `Go External Authorization Server` evaluates whether incoming requests are a
 
 Three authorization types are supported:
 
-- [JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
-- [API Key Authorization](#42-api-key-authorization)
-- [No Authorization](#43-no-authorization)
+1. [JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
+2. [API Key Authorization](#42-api-key-authorization)
+3. [No Authorization](#43-no-authorization)
 
 ### 4.1 JSON Web Token (JWT) Authorization
 
@@ -214,19 +242,20 @@ The `Go External Authorization Server` will use the `x-jwt-user-id` header to ma
 
 _Example auth provider user ID header:_
 
-```
+```json
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
-For more information, see:
+:::info
+For more information, see the[Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
 
-- [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+:::
 
 ### 4.2 API Key Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `API_KEY_AUTH`, a static API key is required to access the PATH service.
 
-_Example Request Header (both Bearer and non-Bearer are supported):_
+_Example Request Header (both `Bearer` and `non-Bearer` are supported):_
 
 ```bash
 -H "Authorization: <API_KEY>"
@@ -243,9 +272,18 @@ All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` wil
 
 ## 5. External Authorization Server
 
+:::info
+
+See [PATH PADS](https://github.com/buildwithgrove/path-auth-data-server) for more
+information on authorization service provided by Grove for PATH support.
+
+:::
+
 The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
 This server communicates with a `Remote gRPC Server` to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
+
+### 5.1. External Auth Service Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -260,18 +298,22 @@ sequenceDiagram
     %% Grouping "Must be implemented by operator"
     Note over RemoteGRPC, DataSource: Must be implemented by operator<br>(PADS Docker image available)
 
-    DataSource-->>RemoteGRPC: Get Data
+    DataSource-->>RemoteGRPC: User/Authorization Data
     RemoteGRPC<<-->>GoAuthServer: Populate Gateway Endpoint Store
-    EnvoyProxy->>GoAuthServer: 1. Check Request
+    EnvoyProxy->>+GoAuthServer: 1. Check Request
     GoAuthServer->>GoAuthServer: 1a. Authorize Request
     GoAuthServer->>GoAuthServer: 1b. Set Rate Limit Headers
-    GoAuthServer->>EnvoyProxy: 2. Check Response<br>(Approve/Deny)
+    GoAuthServer->>-EnvoyProxy: 2. Check Response<br>(Approve/Reject)
 ```
+
+### 5.2. External Auth Service Environment Variables
 
 The external authorization server requires the following environment variables to be set:
 
 - `GRPC_HOST_PORT`: The host and port of the remote gRPC server.
 - `GRPC_USE_INSECURE`: Set to `true` if the remote gRPC server does not use TLS (default: `false`).
+
+### 5.3. External Auth Service Getting Started
 
 Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally in Docker.
 
@@ -280,7 +322,7 @@ For more information, see:
 - [Envoy External Authorization Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [Envoy Go Control Plane Auth Package](https://pkg.go.dev/github.com/envoyproxy/go-control-plane@v0.13.0/envoy/service/auth/v3)
 
-### 5.1. Gateway Endpoints gRPC Service
+### 5.4. Gateway Endpoints gRPC Service
 
 Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
 
@@ -296,11 +338,16 @@ service GatewayEndpoints {
 }
 ```
 
-### 5.2. Remote gRPC Auth Server
+### 5.5. Remote gRPC Auth Server
 
 The `Remote gRPC Server` is responsible for providing the `Go External Authorization Server` with data on which endpoints are authorized to use the PATH service.
 
-**The implementation of the remote gRPC server is up to the Gateway operator.**
+:::note
+
+The implementation of the remote gRPC server is up to the Gateway operator
+but PADS is provided as a functional implementation for most users.
+
+:::
 
 #### 5.2.1. PATH Auth Data Server
 
@@ -314,7 +361,7 @@ This service is available as a Docker image and may be configured to load data f
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
-<!-- TODO_NEXT(@commoddity): Update this section to refer to Tilt instead of docker-compose.yml once Envoy Tilt PR reconciled with `main` -->
+<!-- TODO_MVP(@commoddity): Update this section to refer to Tilt instead of docker-compose.yml once Envoy Tilt PR reconciled with `main` -->
 
 _This Docker image is loaded by default in the [docker-compose.yml](../docker-compose.yml#L90) file at the root of the PATH repo._
 
@@ -325,6 +372,12 @@ If the Gateway Operator wishes to implement a custom remote gRPC server, see the
 _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._
 
 [An example `gateway-endpoints.yaml` file may be seen in the PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
+
+The yaml file below provides an example for a particular gateway operator where:
+
+- `endpoint_1` is authorized with a static API Key
+- `endpoint_2` is authorized using an auth-provider issued JWT for two users
+- `endpoint_3` requires no authorization and has a rate limit set
 
 ```yaml
 endpoints:
@@ -350,14 +403,6 @@ endpoints:
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
-_In this example:_
-
-- `endpoint_1` is authorized with a static API Key
-- `endpoint_2` is authorized using an auth-provider issued JWT for two users
-- `endpoint_3` requires no authorization and has a rate limit set
-
-The contents of this file represent the gateway endpoints that are authorized to use the PATH service for a specific gateway operator.
-
 #### 5.2.3. Implementing a Custom Remote gRPC Server
 
 If the Gateway operator wishes to implement a custom remote gRPC server, the implementation must import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
@@ -373,13 +418,15 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
 
 Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
 
-The default throughput limit is 30 requests per second for GatewayEndpoints with the `PLAN_FREE` plan type.
+The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type.
 
 ### 6.1. Rate Limit Configuration
 
 1. The `Go External Authorization Server` sets the `x-rl-endpoint-id` and `x-rl-plan` headers if the `GatewayEndpoint` for the request should be rate limited.
 
 2. Envoy Proxy is configured to forward the `x-rl-endpoint-id` and `x-rl-plan` headers to the rate limiter service as descriptors.
+
+   _envoy.yaml_
 
    ```yaml
    rate_limits:
@@ -392,9 +439,9 @@ The default throughput limit is 30 requests per second for GatewayEndpoints with
              descriptor_key: "x-rl-plan"
    ```
 
-   _envoy.yaml_
-
 3. The rate limiter service is configured to limit the rate for `PLAN_FREE` GatewayEndpoints to 30 requests per second based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+
+   _ratelimit.yaml_
 
    ```yaml
    domain: rl
@@ -407,8 +454,6 @@ The default throughput limit is 30 requests per second for GatewayEndpoints with
              unit: second
              requests_per_unit: 30
    ```
-
-   _ratelimit.yaml_
 
 ### 6.2. Documentation and Examples
 
