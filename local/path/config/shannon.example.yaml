@@ -1,8 +1,9 @@
 # DEV_NOTE: To use this for local development:
 #   1. Run `make config_shannon_localnet` to make a local copy
-#   2. Update the following two values in `protocol.shannon_config.full_node_config`:
-#     - `gateway_private_key`
+#   2. Update the following values in `shannon_config.gateway_config`:
+#     - `gateway_private_key_hex`
 #     - `gateway_address`
+#     - `owned_apps_private_keys_hex`
 #
 # This is an example config file to run a local development environment using the Shannon protocol as a relayer.
 shannon_config:
@@ -14,13 +15,13 @@ shannon_config:
       host_port: testnet-validated-validator-grpc.poktroll.com:443
   gateway_config:
     gateway_mode: "centralized"
-    # README: `gateway_private_key`` MUST BE replaced with your personal gateway private key secret
+    # README: `gateway_private_key_hex`` MUST BE replaced with your personal gateway private key secret
     # See the following link for instructions on creating a Shannon gateway.
     # https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough#d-creating-a-gateway-deploying-an-gateway-server
-    gateway_hex_private_key: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
+    gateway_private_key_hex: cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
     # README: `gateway_address`` MUST BE replaced with your personal gateway's address
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
-    owned_apps_hex_private_keys:
+    owned_apps_private_keys_hex:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
 services:
