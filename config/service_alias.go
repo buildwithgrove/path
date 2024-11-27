@@ -2,6 +2,7 @@ package config
 
 import "github.com/buildwithgrove/path/protocol"
 
+// TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
 // IMPORTANT: All service IDs supported by PATH must be registered in this file.
 
 // The ServiceQoSType type corresponds to a specific implementation of the
@@ -10,7 +11,7 @@ import "github.com/buildwithgrove/path/protocol"
 type ServiceQoSType string
 
 const (
-	// TODO_IMPROVE: consider using protocol scope for the service IDs.
+	// TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
 	ServiceIDEVM    ServiceQoSType = "evm"        // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
 	ServiceIDSolana ServiceQoSType = "solana"     // ServiceIDSolana represents the Solana blockchain service type.
 	ServiceIDPOKT   ServiceQoSType = "pokt"       // ServiceIDPOKT represents the POKT blockchain service type.
@@ -23,10 +24,15 @@ var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// TODO_IMPROVE(@commoddity): Add all EVM service IDs here.
 	"0021": ServiceIDEVM, // Ethereum Mainnet
 	"F00C": ServiceIDEVM, // Full-chain Ethereum ID (Morse only)
+	"anvil": ServiceIDEVM, // Local ETH node for development & testing purposes
+	"eth": ServiceIDEVM, // General purpose ETH catch-all
+	"eth-mainnet": ServiceIDEVM, // General purpose ETH MainNet catch-all
 
 	// TODO_IMPROVE(@commoddity): Use actual service IDs for Solana and POKT.
 	"solana": ServiceIDSolana,
+
 	"pokt":   ServiceIDPOKT,
+	"morse":   ServiceIDPOKT,
 
 	// Gateway E2E service ID is used only for running PATH's Morse and Shannon E2E tests.
 	"gatewaye2e": ServiceIDE2E,
