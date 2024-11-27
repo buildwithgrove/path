@@ -83,14 +83,18 @@ message Auth {
   AuthType auth_type = 1;
 
   oneof auth_type_details {
+    //
     Empty no_auth = 2;
+
     // The API key authorization settings for the GatewayEndpoint.
     string api_key = 3;
+
     // The JWT authorization settings for the GatewayEndpoint.
     JWT jwt = 4;
   }
 }
 
+// JWT is the JSON Web Token authorization settings for a GatewayEndpoint.
 message JWT {
   // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
   map<string, Empty> authorized_users = 2;
@@ -101,9 +105,11 @@ message RateLimiting {
   // ThroughputLimit refers to rate limiting per-second (TPS).
   // This is used to prevent DoS or DDoS attacks, as well as enforce pricing plan limits.
   int32 throughput_limit = 1;
+
   // CapacityLimit refers to rate limiting over longer periods, such as a day, week or month.
   // This is to prevent abuse of the services provided, as well enforce pricing plan limits.
   int32 capacity_limit = 2;
+
   // The period over which the CapacityLimit is enforced. One of `daily`, `weekly` or `monthly`.
   CapacityLimitPeriod capacity_limit_period = 3;
 }
