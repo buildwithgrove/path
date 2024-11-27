@@ -58,7 +58,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_free",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_JWT_AUTH,
+					AuthType: proto.Auth_AUTH_TYPE_JWT,
 					AuthTypeDetails: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
@@ -152,9 +152,11 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "api_key_endpoint",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_API_KEY_AUTH,
-					AuthTypeDetails: &proto.Auth_ApiKey{
-						ApiKey: "api_key_good",
+					AuthType: proto.Auth_AUTH_TYPE_API_KEY,
+					AuthTypeDetails: &proto.Auth_StaticApiKey{
+						StaticApiKey: &proto.StaticAPIKey{
+							ApiKey: "api_key_good",
+						},
 					},
 				},
 			},
@@ -190,7 +192,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "jwt_endpoint",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_JWT_AUTH,
+					AuthType: proto.Auth_AUTH_TYPE_JWT,
 					AuthTypeDetails: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
@@ -301,9 +303,11 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_api_key",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_API_KEY_AUTH,
-					AuthTypeDetails: &proto.Auth_ApiKey{
-						ApiKey: "api_key_no_this_one",
+					AuthType: proto.Auth_AUTH_TYPE_API_KEY,
+					AuthTypeDetails: &proto.Auth_StaticApiKey{
+						StaticApiKey: &proto.StaticAPIKey{
+							ApiKey: "api_key_not_this_one",
+						},
 					},
 				},
 			},
@@ -340,7 +344,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_jwt_auth",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_JWT_AUTH,
+					AuthType: proto.Auth_AUTH_TYPE_JWT,
 					AuthTypeDetails: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
@@ -368,8 +372,8 @@ func Test_Check(t *testing.T) {
 			authHandler := &AuthHandler{
 				EndpointStore: mockStore,
 				Authorizers: map[proto.Auth_AuthType]Authorizer{
-					proto.Auth_API_KEY_AUTH: &APIKeyAuthorizer{},
-					proto.Auth_JWT_AUTH:     &JWTAuthorizer{},
+					proto.Auth_AUTH_TYPE_API_KEY: &APIKeyAuthorizer{},
+					proto.Auth_AUTH_TYPE_JWT:     &JWTAuthorizer{},
 				},
 				Logger: polyzero.NewLogger(),
 			}

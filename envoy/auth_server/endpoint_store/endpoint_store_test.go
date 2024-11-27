@@ -27,7 +27,7 @@ func (m *MockStream) Recv() (*proto.AuthDataUpdate, error) {
 	return update, nil
 }
 
-func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.AuthDataUpdate, ctrl *gomock.Controller) *EndpointStore {
+func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.AuthDataUpdate, ctrl *gomock.Controller) *endpointStore {
 	mockClient := NewMockGatewayEndpointsClient(ctrl)
 
 	// Set up the expected call for FetchAuthDataSync

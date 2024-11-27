@@ -13,11 +13,12 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/envoy/auth_server/auth"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
-// EndpointStore is an in-memory store that stores gateway endpoints and their associated data.
-type EndpointStore struct {
+// endpointStore is an in-memory store that stores gateway endpoints and their associated data.
+type endpointStore struct {
 	grpcClient proto.GatewayEndpointsClient
 
 	gatewayEndpoints   map[string]*proto.GatewayEndpoint
@@ -26,10 +27,13 @@ type EndpointStore struct {
 	logger polylog.Logger
 }
 
+// Enforce that the EndpointStore implements the endpointStore interface.
+var _ auth.EndpointStore = &endpointStore{}
+
 // NewEndpointStore creates a new endpoint store, which stores GatewayEndpoints in memory for fast access.
 // It initializes the store by requesting data from a remote gRPC server and listens for updates from the remote server to update the store.
-func NewEndpointStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*EndpointStore, error) {
-	store := &EndpointStore{
+func NewEndpointStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*endpointStore, error) {
+	store := &endpointStore{
 		grpcClient: grpcClient,
 
 		gatewayEndpoints:   make(map[string]*proto.GatewayEndpoint),
@@ -50,7 +54,7 @@ func NewEndpointStore(ctx context.Context, grpcClient proto.GatewayEndpointsClie
 }
 
 // GetGatewayEndpoint returns a GatewayEndpoint from the store and a bool indicating if it exists in the store.
-func (c *EndpointStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
+func (c *endpointStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
 	c.gatewayEndpointsMu.RLock()
 	defer c.gatewayEndpointsMu.RUnlock()
 
@@ -59,7 +63,7 @@ func (c *EndpointStore) GetGatewayEndpoint(endpointID string) (*proto.GatewayEnd
 }
 
 // initializeStoreFromRemote requests the initial data from the remote gRPC server to set the store.
-func (c *EndpointStore) initializeStoreFromRemote(ctx context.Context) error {
+func (c *endpointStore) initializeStoreFromRemote(ctx context.Context) error {
 	gatewayEndpointsResponse, err := c.grpcClient.FetchAuthDataSync(ctx, &proto.AuthDataRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get initial data from remote server: %w", err)
@@ -77,7 +81,7 @@ func (c *EndpointStore) initializeStoreFromRemote(ctx context.Context) error {
 // 3. A new GatewayEndpoint was created
 // 1. An existing GatewayEndpoint was updated
 // 2. An existing GatewayEndpoint was deleted
-func (c *EndpointStore) listenForRemoteUpdates(ctx context.Context) {
+func (c *endpointStore) listenForRemoteUpdates(ctx context.Context) {
 	for {
 		// TODO_IMPROVE(@commoddity): improve the reconnection logic to better handle the
 		// remote server restarting or other connection issues that may arise.
@@ -89,7 +93,7 @@ func (c *EndpointStore) listenForRemoteUpdates(ctx context.Context) {
 }
 
 // connectAndProcessUpdates connects to the remote gRPC server and processes updates from the server.
-func (c *EndpointStore) connectAndProcessUpdates(ctx context.Context) error {
+func (c *endpointStore) connectAndProcessUpdates(ctx context.Context) error {
 	stream, err := c.grpcClient.StreamAuthDataUpdates(ctx, &proto.AuthDataUpdatesRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to stream updates from remote server: %w", err)

@@ -16,7 +16,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
-	store "github.com/buildwithgrove/path/envoy/auth_server/endpoint_store"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
@@ -32,18 +31,15 @@ const (
 
 // The endpointStore interface contains an in-memory store of GatewayEndpoints
 // and their associated data from the connected Postgres database.
-type endpointStore interface {
+type EndpointStore interface {
 	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
-
-// Enforce that the EndpointStore implements the endpointStore interface.
-var _ endpointStore = &store.EndpointStore{}
 
 // struct with check method
 type AuthHandler struct {
 	// The endpointStore contains an in-memory store of GatewayEndpoints
 	// and their associated data from the connected Postgres database.
-	EndpointStore endpointStore
+	EndpointStore EndpointStore
 	// The authorizers represents a list of authorization types that must
 	// pass before a request may be forwarded to the PATH service.
 	// Configured in `main.go` and passed to the filter.
@@ -128,7 +124,7 @@ func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndp
 	authType := gatewayEndpoint.GetAuth().GetAuthType()
 
 	// If the endpoint has no authorization requirements, return no error
-	if authType == proto.Auth_NO_AUTH {
+	if authType == proto.Auth_AUTH_TYPE_UNSPECIFIED {
 		return nil
 	}
 
