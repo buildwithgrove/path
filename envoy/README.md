@@ -117,11 +117,7 @@ Requests are rejected if:
    - `gateway-endpoints.yaml` is populated with example data; you can modify this to your needs.
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-:::tip
-
-For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
-
-:::
+> **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart).
 
 ## 3. Envoy Proxy
 
