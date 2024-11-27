@@ -19,6 +19,7 @@ go.work.sum
 
 # Config
 *.*.yaml
+.config.yaml
 !.config.example.yaml
 !.config.shannon_example.yaml
 !.config.morse_example.yaml
@@ -31,6 +32,7 @@ go.work.sum
 # Env
 .env
 .env.*
+!.env.example
 
 # Macos
 .DS_Store
