@@ -25,7 +25,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	}{
 		{
 			name:     "should load valid morse config without error",
-			filePath: "../cmd/examples/.config.morse_example.yaml",
+			filePath: "./examples/.config.morse_example.yaml",
 			want: GatewayConfig{
 				MorseConfig: &morse.MorseGatewayConfig{
 					FullNodeConfig: morseprotocol.FullNodeConfig{
@@ -69,7 +69,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 		},
 		{
 			name:     "should load valid shannon config without error",
-			filePath: "../cmd/examples/.config.shannon_example.yaml",
+			filePath: "./examples/.config.shannon_example.yaml",
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{

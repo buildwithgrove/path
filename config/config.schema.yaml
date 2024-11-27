@@ -22,23 +22,25 @@ properties:
 
   # Morse Configuration (required for Morse gateways)
   morse_config:
+    description: "Configuration for the Morse gateway; if specified, the PATH instance will use the Morse version of the Pocket protocol."
     type: object
     additionalProperties: false
     properties:
       full_node_config:
+        description: "Configuration for the full node for Morse gateways. This configuration is used to connect to the Morse full node to get data from the Pocket blockchain."
         type: object
         additionalProperties: false
         required:
           - url
         properties:
           url:
+            description: "The URL of the full Morse Pocket node."
             type: string
             pattern: "^(http|https)://.*$"
-            description: "The URL of the full node for Morse gateways. This URL is used to connect to the Morse full node to get data from the Pocket blockchain.."
           relay_signing_key:
+            description: "The relay signing key for Morse gateways. This key is used to sign relays sent through the Morse gateway."
             type: string
             pattern: "^[0-9a-fA-F]{128}$"
-            description: "The relay signing key for Morse gateways. This key is used to sign relays sent through the Morse gateway."
           http_config:
             type: object
             additionalProperties: false
@@ -47,12 +49,12 @@ properties:
                 type: integer
                 description: "Number of retries for HTTP requests using the Pocket Go SDK. (optional, defaults to 0)"
               timeout:
-                type: string
                 description: "Timeout duration for HTTP requests using the Pocket Go SDK. (optional, defaults to 5 seconds)"
+                type: string
               transport:
+                description: "HTTP transport configuration for the Pocket Go SDK. (optional, sensible defaults are provided)"
                 type: object
                 additionalProperties: false
-                description: "HTTP transport configuration for the Pocket Go SDK. (optional, sensible defaults are provided)"
                 properties:
                   max_conns_per_host:
                     type: integer
@@ -73,26 +75,27 @@ properties:
           "^[0-9a-fA-F]{40}$":
             type: object
             additionalProperties: false
-            properties:
-              client_public_key:
-                type: string
-                pattern: "^[0-9a-fA-F]{64}$"
-                description: "Client public key for the application. This key is used to identify the client application in the Morse network."
-              application_public_key:
-                type: string
-                pattern: "^[0-9a-fA-F]{64}$"
-                description: "Application public key. This key is used to identify the application in the Morse network."
-              application_signature:
-                type: string
-                pattern: "^[0-9a-fA-F]{128}$"
-                description: "Signature of the application. This signature is used to verify the authenticity of the application in the Morse network."
             required:
               - client_public_key
               - application_public_key
               - application_signature
+            properties:
+              client_public_key:
+                description: "Client public key for the Morse AAT."
+                type: string
+                pattern: "^[0-9a-fA-F]{64}$"
+              application_public_key:
+                description: "Application public key for the Morse AAT."
+                type: string
+                pattern: "^[0-9a-fA-F]{64}$"
+              application_signature:
+                type: string
+                pattern: "^[0-9a-fA-F]{128}$"
+                description: "Signature of the application for the Morse AAT."
 
   # Shannon Configuration (required for Shannon gateways)
   shannon_config:
+    description: "Configuration for the Shannon gateway; if specified, the PATH instance will use the Shannon version of the Pocket protocol."
     type: object
     additionalProperties: false
     required:
@@ -100,6 +103,7 @@ properties:
       - gateway_config
     properties:
       full_node_config:
+        description: "Configuration for the Shannon full node. This configuration is used to connect to the Shannon full node to get data from the Pocket blockchain."
         type: object
         additionalProperties: false
         required:
@@ -107,43 +111,45 @@ properties:
           - grpc_config
         properties:
           rpc_url:
+            description: "HTTP URL for the Shannon full node."
             type: string
             pattern: "^(http|https)://.*$"
-            description: "RPC URL for Shannon gateways."
           grpc_config:
+            description: "gRPC configuration for the Shannon full node."
             type: object
             additionalProperties: false
             required:
               - host_port
             properties:
               host_port:
+                description: "Host and port for gRPC connections, eg. 127.0.0.1:4040"
                 type: string
                 pattern: "^[^:]+:[0-9]+$"
-                description: "Host and port for gRPC connections."
               insecure:
+                description: "Indicates if the gRPC connection is insecure. Must be specified if the full node is notusing TLS."
                 type: boolean
                 default: false
-                description: "Indicates if the gRPC connection is insecure."
               base_delay:
-                type: string
                 description: "Base delay for gRPC retries."
+                type: string
               max_delay:
-                type: string
                 description: "Maximum delay for gRPC retries."
+                type: string
               min_connect_timeout:
-                type: string
                 description: "Minimum connection timeout for gRPC."
+                type: string
               keep_alive_time:
-                type: string
                 description: "Keep-alive time for gRPC connections."
-              keep_alive_timeout:
                 type: string
+              keep_alive_timeout:
                 description: "Keep-alive timeout for gRPC connections."
+                type: string
           lazy_mode:
+            description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
             default: false
-            description: "Indicates if lazy mode is enabled for full node connections."
       gateway_config:
+        description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
         type: object
         additionalProperties: false
         required:
@@ -152,23 +158,23 @@ properties:
           - gateway_private_key_hex
         properties:
           gateway_mode:
+            description: "Mode of the gateway operation."
             type: string
             enum: ["centralized", "delegated", "permissionless"]
-            description: "Mode of the gateway operation."
           gateway_address:
+            description: "Address of the Shannon gateway."
             type: string
             pattern: "^pokt1[0-9a-zA-Z]{38}$"
-            description: "Address of the gateway."
           gateway_private_key_hex:
+            description: "Private key of the Shannon gateway in hexadecimal format."
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
-            description: "Private key of the gateway in hexadecimal format."
           owned_apps_private_keys_hex:
             type: array
+            description: "Private keys of Shannon Applications owned by the Gateway in hexadecimal format."
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-            description: "Private keys of owned applications in hexadecimal format."
 
   # Services Configuration (required)
   services:
@@ -176,6 +182,7 @@ properties:
     additionalProperties: false
     patternProperties:
       "^[a-zA-Z0-9]+$":
+        description: "Configuration for a service, containing its unique service ID and string alias."
         type: object
         additionalProperties: false
         properties:
@@ -188,32 +195,34 @@ properties:
 
   # Router Configuration (optional)
   router_config:
+    description: "Optional configuration for the router, which is used to route requests to the correct service."
     type: object
     additionalProperties: false
     properties:
       port:
-        type: integer
         description: "Port number for the router."
-      max_request_body_size:
         type: integer
+      max_request_body_size:
         description: "Maximum size of the request body."
+        type: integer
       read_timeout:
-        type: string
         description: "Read timeout duration for the router."
+        type: string
       write_timeout:
-        type: string
         description: "Write timeout duration for the router."
-      idle_timeout:
         type: string
+      idle_timeout:
         description: "Idle timeout duration for the router."
+        type: string
 
   # Hydrator Configuration (optional)
   hydrator_config:
+    description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."
     type: object
     additionalProperties: false
     properties:
       service_ids:
+        description: "List of service IDs for the hydrator."
         type: array
         items:
           type: string
-        description: "List of service IDs for the hydrator."

@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../config/config.schema.yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
 
 # For a morse gateway, the following config is required:
 morse_config:

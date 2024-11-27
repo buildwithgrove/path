@@ -26,9 +26,9 @@
   - [3.2 Morse Quickstart](#32-morse-quickstart)
 - [4. Configuration](#4-configuration)
   - [4.1 Configuration File](#41-configuration-file)
-  - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
-  - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
-  - [4.4 Other Examples](#44-other-examples)
+- [4.2 Config YAML Format](#42-config-yaml-format)
+  - [4.2.1 Config YAML Schema](#421-config-yaml-schema)
+  - [4.2.2 Example Config YAML Files](#422-example-config-yaml-files)
 - [5. Running PATH](#5-running-path)
   - [5.1. Setup Config YAML](#51-setup-config-yaml)
   - [5.2. Start the Container](#52-start-the-container)
@@ -163,57 +163,30 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-### 4.2 Example Shannon Configuration Format
+5. **Hydrator Configuration (`hydrator_config`)**:
+
+   - _Optional. Default values will be used if not specified._
+   - Configures which services to run QoS checks against.
+
+## 4.2 Config YAML Format
+
+### 4.2.1 Config YAML Schema
+
+[Config YAML Schema](./config/config.schema.yaml)
+
+A Config YAML schema is provided to help with validation of the `.config.yaml` file.
+
+If using VSCode, you can install the [YAML Language Server](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension to get inline validation of the `.config.yaml` file by placing the following comment at the top of the file:
 
 ```yaml
-shannon_config:
-  full_node_config:
-    rpc_url: "https://rpc-url.io"
-    grpc_config:
-      host_port: "grpc-url.io:443"
-    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
-    gateway_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
-    delegated_app_addresses:
-      - "pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0"
-      - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
-
-services:
-  "F00C":
-    alias: "eth"
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
 ```
 
-### 4.3 Example Morse Configuration Format
+### 4.2.2 Example Config YAML Files
 
-```yaml
-# For a morse gateway, the following config is required:
-morse_config:
-  full_node_config:
-    url: "https://pocket-network-full-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key"
-    http_config:
-      retries: 3
-      timeout: "5000ms"
+[Example Shannon Configuration](./config/examples/.config.shannon_example.yaml)
 
-  signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
-
-# services is required. At least one service must be configured with a valid id.
-# All fields are optional but the id is required.
-services:
-  "F00C":
-    alias: "eth"
-    request_timeout: "3000ms"
-```
-
-### 4.4 Other Examples
-
-- Full example config YAML files:
-  - [Morse](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
-  - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
+[Example Morse Configuration](./config/examples/.config.morse_example.yaml)
 
 ## 5. Running PATH
 
