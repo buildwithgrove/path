@@ -68,7 +68,7 @@ message GatewayEndpoint {
   RateLimiting rate_limiting = 3;
 
   // Optional metadata for the GatewayEndpoint, which can be set to any additional information.
-  map<string, string> metadata = 4;
+  Metadata metadata = 4;
 }
 
 // The authorization settings for a GatewayEndpoint.
@@ -122,11 +122,25 @@ message RateLimiting {
 // For example: CapacityLimit=`100,000` and CapacityLimitPeriod=`daily`
 // enforces a rate limit of 100,000 requests per day.
 enum CapacityLimitPeriod {
-    CAPACITY_LIMIT_PERIOD_UNSPECIFIED = 0;
-    CAPACITY_LIMIT_PERIOD_DAILY = 1;
-    CAPACITY_LIMIT_PERIOD_WEEKLY = 2;
-    CAPACITY_LIMIT_PERIOD_MONTHLY = 3;
-  }
+  CAPACITY_LIMIT_PERIOD_UNSPECIFIED = 0;
+  CAPACITY_LIMIT_PERIOD_DAILY = 1;
+  CAPACITY_LIMIT_PERIOD_WEEKLY = 2;
+  CAPACITY_LIMIT_PERIOD_MONTHLY = 3;
+}
+
+// Metadata is the metadata for a GatewayEndpoint, defined as fields that are not
+// required for perform technical tasks related to the Envoy Auth implementation.
+//
+// These fields are intended to be used for billing, metrics, and other purposes.
+// All fields are optional and may be left blank if not applicable.
+message Metadata {
+  string name = 1;             // The name of the GatewayEndpoint
+  string account_id = 2;       // Unique identifier for the user's account
+  string user_id = 3;          // Identifier for a specific user within the system
+  string plan_type = 4;        // Subscription or account plan type (e.g., "Free", "Pro", "Enterprise")
+  string email = 5;            // The email address associated with the GatewayEndpoint
+  string environment = 6;      // The environment the GatewayEndpoint is in (e.g., "development", "staging", "production")
+}
 
 // An Empty message is used to indicate that a field is not set.
 message Empty {}
