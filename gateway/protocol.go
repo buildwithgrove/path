@@ -1,5 +1,3 @@
-//go:generate mockgen -destination ../testutil/gateway/mocks/protocol_mock.go -package mocks . Protocol,ProtocolRequestContext
-
 package gateway
 
 import (
