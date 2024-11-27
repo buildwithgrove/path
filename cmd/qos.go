@@ -65,7 +65,7 @@ func getServiceQoSInstances(
 				hydratorQoSGenerators[serviceID] = evmEndpointStore
 			}
 
-		// TODO_FUTURE: The logic here is complex enough to justify using a builder/factory function pattern.
+		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.
 		// At-least having something like func buildSolanaQoSInstance(...) in a solana.go file either here or under
 		// config package will make the initialization/configuration code easier to read and maintain.
 		case config.ServiceIDSolana:
