@@ -90,25 +90,31 @@ When auth is enabled, the required URL format for the PATH service is:
 https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 ```
 
-eg.
+For example, if `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 
 ```
 https://eth-mainnet.rpc.grove.city/v1/a1b2c3d4
 ```
 
-_In this example the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`._
+Requests are rejected if:
 
-Requests that are either missing the `<GATEWAY_ENDPOINT_ID>` or which contain an ID that is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store` will be rejected.
+- The `<GATEWAY_ENDPOINT_ID>` is missing
+- ID is not present in `Gateway Endpoint Store`
+- ID is not returned by `Go External Authorization Server`
 
 ## 2. Quickstart
 
-1. Create all required config files by running `make init_envoy`.
+1. Run `make init_envoy` to create all the required config files
    - `envoy.yaml` is created with your auth provider's domain and audience.
    - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
    - `gateway-endpoints.yaml` is populated with example data; you can modify this to your needs.
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-_For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)._
+:::tip
+
+For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
+
+:::
 
 ## 3. Envoy Proxy
 
@@ -121,7 +127,9 @@ _For instructions on how to run PATH without any auth or rate limiting, see the 
 
 PATH uses Envoy Proxy to handle authorization and rate limiting.
 
-The `/envoy` directory houses the configuration files and settings for Envoy Proxy. Envoy acts as a gateway, handling incoming requests, performing auth checks, and routing authorized requests to the PATH service.
+The `/envoy` directory houses the configuration files and settings for Envoy Proxy.
+
+Envoy acts as a gateway, handling incoming requests, performing auth checks, and routing authorized requests to the PATH service.
 
 ### 3.1. Contents
 
