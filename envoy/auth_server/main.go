@@ -23,8 +23,7 @@ import (
 )
 
 // The auth server runs on port 10003.
-// This matches the port used by the Envoy
-// gRPC filter as defined in `envoy.yaml`.
+// This matches the port used by the Envoy gRPC filter as defined in `envoy.yaml`.
 const port = 10003
 
 const (

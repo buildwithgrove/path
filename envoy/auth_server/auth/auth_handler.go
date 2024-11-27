@@ -29,16 +29,20 @@ const (
 	errBody = `{"code": %d, "message": "%s"}`
 )
 
-// The endpointStore interface contains an in-memory store of GatewayEndpoints
-// and their associated data from the connected Postgres database.
+// The EndpointStore interface contains an in-memory store of GatewayEndpoints
+// and their associated data from the PADS (PATH Auth Data Server).
+// See: https://github.com/buildwithgrove/path-auth-data-server
+//
+// It used to allow fast lookups of authorization data for PATH when processing requests.
 type EndpointStore interface {
 	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
 
-// struct with check method
+// The AuthHandler struct contains the methods for processing requests from Envoy,
+// primarily the Check method that is called by Envoy for each request.
 type AuthHandler struct {
-	// The endpointStore contains an in-memory store of GatewayEndpoints
-	// and their associated data from the connected Postgres database.
+	// The EndpointStore contains an in-memory store of GatewayEndpoints
+	// and their associated data from the PADS (PATH Auth Data Server).
 	EndpointStore EndpointStore
 	// The authorizers represents a list of authorization types that must
 	// pass before a request may be forwarded to the PATH service.
@@ -54,9 +58,10 @@ type AuthHandler struct {
 // - Fetches the GatewayEndpoint from the database
 // - Performs all configured authorization checks
 // - Returns a response with the HTTP headers set
-func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
+func (a *AuthHandler) Check(
+	ctx context.Context,
+	checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
-
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 	if req == nil {
@@ -140,7 +145,6 @@ func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndp
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded
 func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint) []*envoy_core.HeaderValueOption {
-
 	// Set endpoint ID header on all requests
 	headers := []*envoy_core.HeaderValueOption{
 		{

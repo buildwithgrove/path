@@ -4,6 +4,8 @@
 </div>
 <br/>
 
+<!-- TODO_UPNEXT(@commoddity): Document a cheatsheet to have a envoy/cheatsheet.md for a very quick & simple copy-pasta -->
+
 # Table of Contents <!-- omit in toc -->
 
 - [1. Overview](#1-overview)
@@ -22,8 +24,8 @@
   - [5.1. Gateway Endpoints gRPC Service](#51-gateway-endpoints-grpc-service)
   - [5.2. Remote gRPC Auth Server](#52-remote-grpc-auth-server)
     - [5.2.1. PATH Auth Data Server](#521-path-auth-data-server)
-    - [5.2.2. Example Gateway Endpoint YAML File](#522-example-gateway-endpoint-yaml-file)
-    - [5.2.3. Custom Remote gRPC Server Implementation](#523-custom-remote-grpc-server-implementation)
+    - [5.2.2. Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file)
+    - [5.2.3. Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server)
 - [6. Rate Limiter](#6-rate-limiter)
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
@@ -42,44 +44,49 @@ Specifically, this is split into two logical parts:
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
 - **External Authorization Server**: A Go/gRPC server that evaluates whether incoming requests are authorized to access the `PATH` service.
 - **Rate Limiter**: A service that coordinates all rate limiting.
-- **Redis**: A key-value store used by the rate limiter to share state and coordinate rate limiting among all services.
-- **Remote gRPC Server** _(Implemented by Gateway Operator)_: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
-  - _A basic implementation of the remote gRPC server that loads data from a YAML file is available as a Docker image._
+- **Redis**: A key-value store used by the rate limiter to share state and coordinate rate limiting across any number of PATH instances behind the same Envoy Proxy.
+- **Remote gRPC Server**: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
+  - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
+  - _See [5.2.1. PATH Auth Data Server](#521-path-auth-data-server) for more information._
 
 A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
 ```mermaid
 graph TD
-    User([User])
-    Envoy[Envoy Proxy]
+    User@{ shape: trapezoid, label: "<big>PATH<br>User</big>" }
+    Envoy[<big>Envoy Proxy</big>]
 
     AUTH["Auth Server <br> "]
-    AUTH_DECISION{Did Authorize Request?}
-    PATH[PATH Service]
+    AUTH_DECISION{Did<br>Authorize<br>Request?}
+    PATH[<big>PATH Service</big>]
 
     Error[[Error Returned to User]]
     Result[[Result Returned to User]]
 
-    GRPCServer["gRPC Remote Server  <br> NOT part of PATH <br> (Impl. up to Operator)"]
-    GRPCDB[("Optional Database <br> (Stores User Metadata)")]
-    GRPCConfig@{ shape: notch-rect, label: "Optional Config File <br> (Stores User Metadata)" }
+    GRPCServer["Remote gRPC Server<br>(eg. PADS)"]
+    GRPCDB[("Postgres<br>Database")]
+    GRPCConfig@{ shape: notch-rect, label: "YAML Config File" }
 
     subgraph AUTH["Auth Server (ext_authz)"]
         GRPCClient["gRPC Client"]
-         Cache@{ shape: odd, label: "Stores gRPC Server Data" }
+         Cache@{ shape: odd, label: "Gateway Endpoint<br>Data Store" }
     end
 
     User -->|1.Send Request| Envoy
-    Envoy -->|2.Authenticate  Request| AUTH
-    AUTH -->|3.Authentication Result| Envoy
+    Envoy -->|2.Authorization Check| AUTH
+    AUTH -->|3.Authorization Result| Envoy
     Envoy --> AUTH_DECISION
     AUTH_DECISION -->|4.No <br> Forward Request| Error
     AUTH_DECISION -->|4.Yes <br> Forward Request| PATH
     PATH -->|5.Response| Result
 
-    GRPCServer <-.-> |Retrieve User <> Endpoint <br> Data over gRPC| AUTH
-    GRPCServer <-.->GRPCDB
-    GRPCServer <-.->GRPCConfig
+    subgraph DataSource["Gateway Endpoint<br>Data Source<br>"]
+        GRPCDB
+        GRPCConfig
+    end
+
+    GRPCServer <-.-> |Fetch & Stream<br>Gateway Endpoint Data<br>Over gRPC Connection| AUTH
+    GRPCServer <-.-> DataSource
 ```
 
 ### 1.2 URL Format
@@ -248,14 +255,14 @@ This server communicates with a `Remote gRPC Server` to populate its in-memory `
 sequenceDiagram
     participant EnvoyProxy as Envoy Proxy<br>(ext_authz filter)
     participant GoAuthServer as Go External<br>Authorization Server
-    participant RemoteGRPC as Remote gRPC Server
+    participant RemoteGRPC as Remote gRPC Server<br>(eg. PADS)
     participant DataSource as Data Source<br>(YAML, Postgres, etc.)
 
     %% Grouping "Included in PATH"
     Note over EnvoyProxy, GoAuthServer: Included in PATH
 
     %% Grouping "Must be implemented by operator"
-    Note over RemoteGRPC, DataSource: Must be implemented by operator
+    Note over RemoteGRPC, DataSource: Must be implemented by operator<br>(PADS Docker image available)
 
     DataSource-->>RemoteGRPC: Get Data
     RemoteGRPC<<-->>GoAuthServer: Populate Gateway Endpoint Store
@@ -301,178 +308,70 @@ The `Remote gRPC Server` is responsible for providing the `Go External Authoriza
 
 #### 5.2.1. PATH Auth Data Server
 
-The `PATH Auth Data Server (PADS)` is an implementation of the `Remote gRPC Server` that provides `Gateway Endpoint` data to the `Go External Authorization Server` in order to enable authorization for the PATH Gateway.
+[The PADS repo provides a functioning implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
-It is provided to allow an easy default implementation of the remote gRPC server by Gateway operators, or as a starting point for custom implementations.
+This service is available as a Docker image and may be configured to load data from a YAML file or using a simple Postgres database that adheres to the provided minimal schema.
 
-The Docker image for `PADS` is available at:
 
+**Docker Image Registry:**
 ```bash
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
+<!-- TODO_NEXT(@commoddity): Update this section to refer to Tilt instead of docker-compose.yml once Envoy Tilt PR reconciled with `main` -->
+
 _This Docker image is loaded by default in the [docker-compose.yml](../docker-compose.yml#L90) file at the root of the PATH repo._
 
-_`PADS` loads data from the `gateway-endpoints.yaml` file specified by the `YAML_FILEPATH` environment variable._
+If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server) section.
 
-#### 5.2.2. Example Gateway Endpoint YAML File
+#### 5.2.2. Gateway Endpoint YAML File
 
-An example `gateway-endpoints.yaml` file is provided at [envoy/gateway-endpoints.example.yaml](./gateway-endpoints.example.yaml).
+_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._
+
+[An example `gateway-endpoints.yaml` file may be seen in the PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
 
 ```yaml
 endpoints:
-  endpoint_1:
-    endpoint_id: "endpoint_1"
+  # 1. Example of a gateway endpoint using API Key Authorization
+  endpoint_1:                                                
     auth:
-      require_auth: true
-      authorized_users:
-        "auth0|user_1": {}
-    user_account:
-      account_id: "account_1"
-      plan_type: "PLAN_UNLIMITED"
+      auth_type: "AUTH_TYPE_API_KEY"                         
+      api_key: "api_key_1"                                                     
 
+  # 2. Example of a gateway endpoint using JWT Authorization
   endpoint_2:
-    endpoint_id: "endpoint_2"
     auth:
-      require_auth: false
-    user_account:
-      account_id: "account_2"
-      plan_type: "PLAN_FREE"
-    rate_limiting:
-      throughput_limit: 30
-      capacity_limit: 100000
-      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
+      auth_type: "AUTH_TYPE_JWT"                            
+      jwt_authorized_users:                                 
+        - "auth0|user_1"                                    
+        - "auth0|user_2"
+
+  # 3. Example of a gateway endpoint with no authorization and rate limiting set
+  endpoint_3:
+    rate_limiting:                                           
+      throughput_limit: 30                                   
+      capacity_limit: 100000                                 
+      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY" 
 ```
 
-_In this example, `endpoint_1` is authorized for `user_1` and `endpoint_2` is authorized for all users._
+_In this example:_
 
-Run `make copy_envoy_gateway_endpoints` to create an example `gateway-endpoints.yaml` file used by the remote gRPC server.
+- `endpoint_1` is authorized with a static API Key
+- `endpoint_2` is authorized using an auth-provider issued JWT for two users
+- `endpoint_3` requires no authorization and has a rate limit set
 
 The contents of this file represent the gateway endpoints that are authorized to use the PATH service for a specific gateway operator.
 
-#### 5.2.3. Custom Remote gRPC Server Implementation
+#### 5.2.3. Implementing a Custom Remote gRPC Server
 
-If wishing to implement a custom remote gRPC server, the implementation should import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
+If the Gateway operator wishes to implement a custom remote gRPC server, the implementation must import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
 
-[The custom implementation must use the methods defined in the `GatewayEndpoints` service:](#51-gateway-endpoints-grpc-service)
+The custom implementation must use the methods defined in the `GatewayEndpoints` service:
 
-- `GetInitialData`
-- `StreamUpdates`
+- `FetchAuthDataSync`
+- `StreamAuthDataUpdates`
 
-Example simple Go implementation:
-
-_server.go_
-
-```go
-// Implementation of DataSource interface up to the Gateway operator.
-// eg. It could load data from a Postgres database or YAML file.
-type DataSource interface {
-	GetInitialData() (*proto.InitialDataResponse, error)
-	SubscribeUpdates() (<-chan *proto.Update, error)
-}
-
-// Server implements the gRPC server for GatewayEndpoints.
-// It uses a DataSource to retrieve initial data and updates.
-type Server struct {
-	proto.UnimplementedGatewayEndpointsServer
-	GatewayEndpoints map[string]*proto.GatewayEndpoint
-	updateCh         chan *proto.Update
-	mu               sync.RWMutex
-	dataSource       DataSource
-}
-
-// NewServer creates a new Server instance using the provided DataSource.
-func NewServer(dataSource DataSource) (*Server, error) {
-	server := &Server{
-		GatewayEndpoints: make(map[string]*proto.GatewayEndpoint),
-		updateCh:         make(chan *proto.Update, 100),
-		dataSource:       dataSource,
-	}
-
-	initialData, err := dataSource.GetInitialData()
-	if err != nil {
-		return nil, err
-	}
-
-	server.mu.Lock()
-	server.GatewayEndpoints = initialData.Endpoints
-	server.mu.Unlock()
-
-	updatesCh, err := dataSource.SubscribeUpdates()
-	if err != nil {
-		return nil, err
-	}
-
-	go server.handleDataSourceUpdates(updatesCh)
-
-	return server, nil
-}
-
-// GetInitialData handles the gRPC request to retrieve initial GatewayEndpoints data.
-func (s *Server) GetInitialData(ctx context.Context, req *proto.InitialDataRequest) (*proto.InitialDataResponse, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return &proto.InitialDataResponse{Endpoints: s.GatewayEndpoints}, nil
-}
-
-// StreamUpdates streams updates to the client whenever the data source changes.
-func (s *Server) StreamUpdates(req *proto.UpdatesRequest, stream proto.GatewayEndpoints_StreamUpdatesServer) error {
-	for update := range s.updateCh {
-		if err := stream.Send(update); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// handleDataSourceUpdates listens for updates from the DataSource and updates the server state accordingly.
-func (s *Server) handleDataSourceUpdates(updatesCh <-chan *proto.Update) {
-	for update := range updatesCh {
-		s.mu.Lock()
-		if update.Delete {
-			delete(s.GatewayEndpoints, update.EndpointId)
-		} else {
-			s.GatewayEndpoints[update.EndpointId] = update.GatewayEndpoint
-		}
-		s.mu.Unlock()
-
-		// Send the update to any clients streaming updates.
-		s.updateCh <- update
-	}
-}
-```
-
-_main.go_
-
-```go
-func main() {
-
-	// Implementation of DataSource interface up to the Gateway operator.
-	dataSource, err := NewDataSource()
-	if err != nil {
-		panic(fmt.Sprintf("failed to create YAML data source: %v", err))
-	}
-
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		panic(fmt.Sprintf("failed to listen: %v", err))
-	}
-
-	server, err := server.NewServer(dataSource)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create server: %v", err))
-	}
-
-	grpcServer := grpc.NewServer()
-	proto.RegisterGatewayEndpointsServer(grpcServer, server)
-	httpServer := &http.Server{Handler: grpcServer}
-
-	if err := httpServer.Serve(lis); err != nil {
-		panic(fmt.Sprintf("failed to serve: %v", err))
-	}
-}
-
-```
+Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
 
 ## 6. Rate Limiter
 

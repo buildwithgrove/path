@@ -114,19 +114,10 @@ copy_envoy_env: ## copies the example envoy environment variables file to .env f
 		echo "./envoy/auth_server/.env already exists, not overwriting."; \
 	fi
 
-.PHONY: copy_envoy_gateway_endpoints
-copy_envoy_gateway_endpoints: ## copies the example envoy gateway endpoints file to gateway-endpoints.yaml
-	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
-		cp ./envoy/gateway-endpoints.example.yaml ./envoy/gateway-endpoints.yaml; \
-	else \
-		echo "./envoy/gateway-endpoints.yaml already exists, not overwriting."; \
-	fi
-
 .PHONY: init_envoy
 init_envoy: ## copies the example envoy configuration and gateway endpoints files to their respective files
 	@make copy_envoy_config
 	@make copy_envoy_env
-	@make copy_envoy_gateway_endpoints
 
 ###############################
 ### Generation Make Targets ###

@@ -79,28 +79,28 @@ message Auth {
     AUTH_TYPE_JWT = 2;
   }
 
-  // The type of authentication being used.
+  // The type of authorization being used.
   AuthType auth_type = 1;
 
   oneof auth_type_details {
-    //
+    // Indicates that the GatewayEndpoint does not require authorization.
     Empty no_auth = 2;
-
-    // The API key authorization settings for the GatewayEndpoint.
+    // Indicates that the GatewayEndpoint uses a static API key for authorization.
     StaticAPIKey static_api_key = 3;
-    // The JWT authorization settings for the GatewayEndpoint.
+    // Indicates that the GatewayEndpoint uses an auth provider issued JWT for authorization.
     JWT jwt = 4;
   }
 }
 
 message StaticAPIKey {
-  // The API key to use for authentication.
+  // The API key to use for authorization.
   string api_key = 1;
 }
 
 // JWT is the JSON Web Token authorization settings for a GatewayEndpoint.
 message JWT {
-  // A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
+  // A map of user IDs authorized to access this UserAccount's GatewayEndpoints.
+  // For example, if the auth provider is Auth0, the user ID will be in the format `auth0|1234567890`.
   map<string, Empty> authorized_users = 2;
 }
 

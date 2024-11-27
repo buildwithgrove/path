@@ -1,5 +1,7 @@
 // The endpointstore package contains the implementation of an in-memory store that stores
-// GatewayEndpoints and their associated data from the connected Postgres database.
+// GatewayEndpoints and their associated data from PADS (PATH Auth Data Server).
+// See: https://github.com/buildwithgrove/path-auth-data-server
+//
 // It fetches this data from the remote gRPC server through an initial store update
 // on startup, then listens for updates from the remote gRPC server to update the store.
 package endpointstore
@@ -16,6 +18,8 @@ import (
 	"github.com/buildwithgrove/path/envoy/auth_server/auth"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
+
+const reconnectDelay = time.Second * 2
 
 // endpointStore is an in-memory store that stores gateway endpoints and their associated data.
 type endpointStore struct {
@@ -78,16 +82,16 @@ func (c *endpointStore) initializeStoreFromRemote(ctx context.Context) error {
 
 // listenForRemoteUpdates listens for updates from the remote gRPC server and updates the store accordingly.
 // Updates will be one of three cases:
-// 3. A new GatewayEndpoint was created
-// 1. An existing GatewayEndpoint was updated
-// 2. An existing GatewayEndpoint was deleted
+// 1. A new GatewayEndpoint was created
+// 2. An existing GatewayEndpoint was updated
+// 3. An existing GatewayEndpoint was deleted
 func (c *endpointStore) listenForRemoteUpdates(ctx context.Context) {
 	for {
 		// TODO_IMPROVE(@commoddity): improve the reconnection logic to better handle the
 		// remote server restarting or other connection issues that may arise.
 		if err := c.connectAndProcessUpdates(ctx); err != nil {
 			c.logger.Error().Err(err).Msg("error in update stream, retrying")
-			<-time.After(time.Second * 2)
+			<-time.After(reconnectDelay)
 		}
 	}
 }
