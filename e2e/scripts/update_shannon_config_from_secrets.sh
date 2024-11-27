@@ -19,8 +19,8 @@ update_shannon_config_from_env() {
     fi
 
     yq -i '
-	.shannon_config.gateway_config.gateway_hex_private_key = env(SHANNON_GATEWAY_PRIVATE_KEY) |
-	.shannon_config.gateway_config.owned_apps_hex_private_keys= env(SHANNON_OWNED_APPS_PRIVATE_KEYS)
+	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
+	.shannon_config.gateway_config.owned_apps_private_keys_hex = env(SHANNON_OWNED_APPS_PRIVATE_KEYS)
     ' $CONFIG_FILE
 }
 

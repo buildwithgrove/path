@@ -44,8 +44,8 @@ type (
 	GatewayConfig struct {
 		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
 		GatewayAddress          string               `yaml:"gateway_address"`
-		GatewayPrivateKeyHex    string               `yaml:"gateway_hex_private_key"`
-		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_hex_private_keys"`
+		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
+		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
