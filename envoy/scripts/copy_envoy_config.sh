@@ -25,6 +25,6 @@ read -p "Enter AUTH_AUDIENCE (eg. 'https://auth.example.com/oauth/token'): " AUT
 # Substitute sensitive variables manually using bash parameter expansion
 sed -e "s|\${AUTH_DOMAIN}|$AUTH_DOMAIN|g" \
     -e "s|\${AUTH_AUDIENCE}|$AUTH_AUDIENCE|g" \
-    "$SCRIPT_DIR/../envoy.template.yaml" > "$ENVOY_CONFIG_PATH"
+    "$SCRIPT_DIR/../envoy.template.yaml" >"$ENVOY_CONFIG_PATH"
 
 echo "envoy.yaml has been created at $ENVOY_CONFIG_PATH"
