@@ -25,6 +25,8 @@ service GatewayEndpoints {
 
 message AuthDataRequest {}
 
+// An AuthDataResponse message is sent from the remote gRPC server to the Auth Server
+// containing the full current set of GatewayEndpoints from the remote gRPC server's data source.
 message AuthDataResponse {
   map<string, GatewayEndpoint> endpoints = 1;
 }

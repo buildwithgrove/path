@@ -165,6 +165,8 @@ func (*AuthDataRequest) Descriptor() ([]byte, []int) {
 	return file_envoy_auth_server_proto_gateway_endpoint_proto_rawDescGZIP(), []int{0}
 }
 
+// An AuthDataResponse message is sent from the remote gRPC server to the Auth Server
+// containing the full current set of GatewayEndpoints from the remote gRPC server's data source.
 type AuthDataResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -404,7 +406,7 @@ type Auth struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The type of authentication being used.
+	// The type of authorization being used.
 	AuthType Auth_AuthType `protobuf:"varint,1,opt,name=auth_type,json=authType,proto3,enum=proto.Auth_AuthType" json:"auth_type,omitempty"`
 	// Types that are assignable to AuthTypeDetails:
 	//
@@ -484,16 +486,17 @@ type isAuth_AuthTypeDetails interface {
 }
 
 type Auth_NoAuth struct {
+	// Indicates that the GatewayEndpoint does not require authorization.
 	NoAuth *Empty `protobuf:"bytes,2,opt,name=no_auth,json=noAuth,proto3,oneof"`
 }
 
 type Auth_StaticApiKey struct {
-	// The API key authorization settings for the GatewayEndpoint.
+	// Indicates that the GatewayEndpoint uses a static API key for authorization.
 	StaticApiKey *StaticAPIKey `protobuf:"bytes,3,opt,name=static_api_key,json=staticApiKey,proto3,oneof"`
 }
 
 type Auth_Jwt struct {
-	// The JWT authorization settings for the GatewayEndpoint.
+	// Indicates that the GatewayEndpoint uses an auth provider issued JWT for authorization.
 	Jwt *JWT `protobuf:"bytes,4,opt,name=jwt,proto3,oneof"`
 }
 
@@ -508,7 +511,7 @@ type StaticAPIKey struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The API key to use for authentication.
+	// The API key to use for authorization.
 	ApiKey string `protobuf:"bytes,1,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 }
 
@@ -555,7 +558,8 @@ type JWT struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// A map of ProviderUserIDs authorized to access this UserAccount's GatewayEndpoints.
+	// A map of user IDs authorized to access this UserAccount's GatewayEndpoints.
+	// For example, if the auth provider is Auth0, the user ID will be in the format `auth0|1234567890`.
 	AuthorizedUsers map[string]*Empty `protobuf:"bytes,2,rep,name=authorized_users,json=authorizedUsers,proto3" json:"authorized_users,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
