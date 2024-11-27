@@ -16,7 +16,6 @@ import (
 // See the following link for more details on PATH's different modes of operation.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5
 //
-// TODO_MVP(@adshmh): Add the GatewayModePermissionless to the output once it is supported.
 // SupportedGatewayModes returns the list of gateway modes supported by the Shannon protocol integration.
 // This method implements the gateway.Protocol interface.
 func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
