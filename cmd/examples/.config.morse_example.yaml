@@ -1,10 +1,10 @@
-# yaml-language-server: $schema=../config/config.schema.yaml
+# yaml-language-server: $schema=../../config/config.schema.yaml
 
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:
     url: "https://pocket-network-full-full-node-url.io" # replace with your full node url
-    relay_signing_key: "ea5768843c5ad06897d43faa70b9ad39f143f3c7be8930d2b380022dbfbde3858b96695a0acc3458f84c2062c6d04f0dc44cf012d4244c688a60060f87940ef5" # replace with your relay signing key
+    relay_signing_key: "ea5768843c5ad06897d43faa70b9ad39f143f3c7be8930d2b380022dbfbde3858b96695a0acc3458f84c2062c6d04f0dc44cf012d4244c688a60060f87940ef5" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
     http_config:
       retries: 3
       timeout: "5000ms"
@@ -20,13 +20,9 @@ morse_config:
 services:
   "F00C":
     alias: "eth"
-    request_timeout: "3000ms"
+  "0001": {} # Example of a service with no additional configuration
 
-# router_config is optional and allows configuration of the router settings.
-# Only uncomment this if you know what you're doing.
-# router_config:
-#   port: 8080
-#   max_request_body_size: 512000
-#   read_timeout: "5000ms"
-#   write_timeout: "5000ms"
-#   idle_timeout: "5000ms"
+# Enable endpoint hydrator to run QoS checks against endpoints of service F00C
+hydrator_config:
+  service_ids:
+    - "F00C"
