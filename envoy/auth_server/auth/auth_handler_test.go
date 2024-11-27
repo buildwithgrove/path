@@ -70,9 +70,9 @@ func Test_Check(t *testing.T) {
 				RateLimiting: &proto.RateLimiting{
 					ThroughputLimit: 30,
 				},
-				Metadata: map[string]string{
-					"account_id": "account_1",
-					"plan_type":  "PLAN_FREE",
+				Metadata: &proto.Metadata{
+					AccountId: "account_1",
+					PlanType:  "PLAN_FREE",
 				},
 			},
 		},
@@ -115,9 +115,9 @@ func Test_Check(t *testing.T) {
 						},
 					},
 				},
-				Metadata: map[string]string{
-					"account_id": "account_2",
-					"plan_type":  "PLAN_UNLIMITED",
+				Metadata: &proto.Metadata{
+					AccountId: "account_2",
+					PlanType:  "PLAN_UNLIMITED",
 				},
 			},
 		},
