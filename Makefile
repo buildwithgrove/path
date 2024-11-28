@@ -70,54 +70,88 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
 	else \
-		echo ".config.yaml already exists, not overwriting."; \
+		echo "###########################################################"; \
+		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
 	fi
 
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
 	else \
-		echo ".config.yaml already exists, not overwriting."; \
+		echo "###########################################################"; \
+		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
+		echo "###############################################################################################################"; \
+		echo "### Created ./e2e/.shannon.config.yaml                                                                      ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "###############################################################################################################"; \
 	else \
-		echo "./e2e/.shannon.config.yaml already exists, not overwriting."; \
+		echo "###################################################################"; \
+		echo "### ./e2e/.shannon.config.yaml already exists, not overwriting. ###"; \
+		echo "###################################################################"; \
 	fi
 
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
+		echo "#############################################################################################################"; \
+		echo "### Created ./e2e/.morse.config.yaml                                                                      ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#############################################################################################################"; \
 	else \
-		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
+		echo "#################################################################"; \
+		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
+		echo "#################################################################"; \
 	fi
 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
 	@if [ ! -f ./envoy/envoy.yaml ]; then \
 		./envoy/scripts/copy_envoy_config.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./envoy/envoy.yaml                          ###"; \
+		echo "### README: Please ensure the configuration is correct. ###"; \
+		echo "###########################################################"; \
 	else \
-		echo "./envoy/envoy.yaml already exists, not overwriting."; \
+		echo "###########################################################"; \
+		echo "### ./envoy/envoy.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
 	fi
 
 .PHONY: copy_envoy_env
 copy_envoy_env: ## copies the example envoy environment variables file to .env file
 	@if [ ! -f ./envoy/auth_server/.env ]; then \
 		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
+		echo "##################################################################"; \
+		echo "### Created ./envoy/auth_server/.env                           ###"; \
+		echo "### README: Please update the environment variables as needed. ###"; \
+		echo "##################################################################"; \
 	else \
-		echo "./envoy/auth_server/.env already exists, not overwriting."; \
+		echo "#################################################################"; \
+		echo "### ./envoy/auth_server/.env already exists, not overwriting. ###"; \
+		echo "#################################################################"; \
 	fi
 
 .PHONY: init_envoy
-init_envoy: ## copies the example envoy configuration and gateway endpoints files to their respective files
-	@make copy_envoy_config
-	@make copy_envoy_env
+init_envoy: copy_envoy_config copy_envoy_env ## Runs copy_envoy_config and copy_envoy_env
 
 ###############################
 ### Generation Make Targets ###
