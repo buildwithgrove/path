@@ -235,7 +235,7 @@ func Test_Check(t *testing.T) {
 				EndpointId: "public_endpoint",
 				Auth: &proto.Auth{
 					AuthTypeDetails: &proto.Auth_NoAuth{
-						NoAuth: &proto.Empty{},
+						NoAuth: &proto.NoAuth{},
 					},
 				},
 			},

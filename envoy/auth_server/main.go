@@ -7,10 +7,9 @@ import (
 	"net"
 	"os"
 	"strconv"
-	// autoload env vars
 
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	_ "github.com/joho/godotenv/autoload"
+	_ "github.com/joho/godotenv/autoload" // autoload env vars
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

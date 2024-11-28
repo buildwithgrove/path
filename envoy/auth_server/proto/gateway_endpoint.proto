@@ -86,13 +86,17 @@ message Auth {
 
   oneof auth_type_details {
     // Indicates that the GatewayEndpoint does not require authorization.
-    Empty no_auth = 2;
+    NoAuth no_auth = 2;
     // Indicates that the GatewayEndpoint uses a static API key for authorization.
     StaticAPIKey static_api_key = 3;
     // Indicates that the GatewayEndpoint uses an auth provider issued JWT for authorization.
     JWT jwt = 4;
   }
 }
+
+// NoAuth indicates that the GatewayEndpoint does not require authorization.
+// It is simply an empty field, named explicitly to avoid confusion with the `Empty` message.
+message NoAuth {}
 
 message StaticAPIKey {
   // The API key to use for authorization.
@@ -145,5 +149,5 @@ message Metadata {
 }
 
 // An Empty message is used to indicate that a field is not set.
-// TODO_IN_THIS_PR(@commoddity): Add `NoAuth` for the respective case.
 message Empty {}
+

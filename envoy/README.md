@@ -1,6 +1,6 @@
 <div align="center">
 <h1>PATH<br/>Authorization & Rate Limiting</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
+<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500" style="border: thin solid red;"/>
 </div>
 <br/>
 
@@ -43,11 +43,8 @@ Specifically, this is split into two logical parts:
 
 ### 1.1. Components
 
-:::tip
+  > 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
-A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
-
-:::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -123,12 +120,10 @@ Requests are rejected if any of the following are true:
    - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
    - `gateway-endpoints.yaml` is populated with example data; you can modify this to your needs.
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
+   
+<br/>
 
-:::tip
-
-For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
-
-:::
+> 💡 **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
 
 ## 3. Envoy Proxy
 
@@ -153,7 +148,7 @@ Envoy acts as a gateway, handling incoming requests, performing auth checks, and
   - This will prompt you to enter your auth provider's domain and audience and will output the result to `envoy.yaml`.
   - `envoy.yaml` is Git ignored as it contains sensitive information.
 - **gateway-endpoints.example.yaml**: An example file containing data on which endpoints are authorized to use the PATH service.
-  - **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
+  - ℹ️ **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
   - Run `make copy_envoy_gateway_endpoints` to create `gateway-endpoints.yaml`.
   - `gateway-endpoints.yaml` is Git ignored as it may contain sensitive information.
 
@@ -242,14 +237,11 @@ The `Go External Authorization Server` will use the `x-jwt-user-id` header to ma
 
 _Example auth provider user ID header:_
 
-```json
+```
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
-:::info
-For more information, see the[Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
-
-:::
+> 💡 For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
 
 ### 4.2 API Key Authorization
 
@@ -272,12 +264,7 @@ All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` wil
 
 ## 5. External Authorization Server
 
-:::info
-
-See [PATH PADS](https://github.com/buildwithgrove/path-auth-data-server) for more
-information on authorization service provided by Grove for PATH support.
-
-:::
+> 💡 See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
 
 The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
@@ -342,12 +329,7 @@ service GatewayEndpoints {
 
 The `Remote gRPC Server` is responsible for providing the `Go External Authorization Server` with data on which endpoints are authorized to use the PATH service.
 
-:::note
-
-The implementation of the remote gRPC server is up to the Gateway operator
-but PADS is provided as a functional implementation for most users.
-
-:::
+> ℹ️ **Note:** The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
 
 #### 5.2.1. PATH Auth Data Server
 
@@ -412,13 +394,9 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `FetchAuthDataSync`
 - `StreamAuthDataUpdates`
 
-Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+> 💡 **TIP:** Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
 
 ## 6. Rate Limiter
-
-Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
-
-The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type.
 
 ### 6.1. Rate Limit Configuration
 
@@ -439,7 +417,8 @@ The default throughput limit is **30 requests per second** for GatewayEndpoints 
              descriptor_key: "x-rl-plan"
    ```
 
-3. The rate limiter service is configured to limit the rate for `PLAN_FREE` GatewayEndpoints to 30 requests per second based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
+
 
    _ratelimit.yaml_
 
@@ -455,6 +434,10 @@ The default throughput limit is **30 requests per second** for GatewayEndpoints 
              requests_per_unit: 30
    ```
 
+   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors. 
+
+   _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+   
 ### 6.2. Documentation and Examples
 
 As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
