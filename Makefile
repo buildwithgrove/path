@@ -150,8 +150,22 @@ copy_envoy_env: ## copies the example envoy environment variables file to .env f
 		echo "#################################################################"; \
 	fi
 
+.PHONY: copy_gateway_endpoints
+copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
+	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
+		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./envoy/gateway-endpoints.yaml              ###"; \
+		echo "### README: Please update this file with your own data. ###"; \
+		echo "###########################################################"; \
+	else \
+		echo "#######################################################################"; \
+		echo "### ./envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
+		echo "#######################################################################"; \
+	fi
+
 .PHONY: init_envoy
-init_envoy: copy_envoy_config copy_envoy_env ## Runs copy_envoy_config and copy_envoy_env
+init_envoy: copy_envoy_config copy_envoy_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, and copy_gateway_endpoints
 
 ###############################
 ### Generation Make Targets ###

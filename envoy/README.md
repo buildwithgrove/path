@@ -1,15 +1,15 @@
 <div align="center">
 <h1>PATH<br/>Authorization & Rate Limiting</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500" style="border: thin solid red;"/>
+<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 </div>
 <br/>
 
 # Table of Contents <!-- omit in toc -->
 
-- [1. Overview](#1-overview)
-  - [1.1. Components](#11-components)
-  - [1.2 URL Format](#12-url-format)
-- [2. Quickstart](#2-quickstart)
+- [1. Quickstart](#1-quickstart)
+- [2. Overview](#2-overview)
+  - [2.1. Components](#21-components)
+  - [2.2 URL Format](#22-url-format)
 - [3. Envoy Proxy](#3-envoy-proxy)
   - [3.1. Contents](#31-contents)
   - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
@@ -33,7 +33,17 @@
 
 <!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
 
-## 1. Overview
+## 1. Quickstart
+
+1. Run `make init_envoy` to create all the required config files
+   - `envoy.yaml` is created with your auth provider's domain and audience.
+   - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
+   - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
+     - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
+2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
+
+
+## 2. Overview
 
 This folder contains everything necessary for managing authorization and rate limiting in the PATH service.
 Specifically, this is split into two logical parts:
@@ -41,7 +51,7 @@ Specifically, this is split into two logical parts:
 1. The `Envoy Proxy configuration`
 2. The `Go External Authorization Server`
 
-### 1.1. Components
+### 2.1. Components
 
   > 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
@@ -93,7 +103,7 @@ graph TD
     GRPCServer <-.-> DataSource
 ```
 
-### 1.2 URL Format
+### 2.2 URL Format
 
 When auth is enabled, the required URL format for the PATH service is:
 
@@ -101,26 +111,18 @@ When auth is enabled, the required URL format for the PATH service is:
 https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 ```
 
-For example, if `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
+For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 
 ```
-https://eth-mainnet.rpc.grove.city/v1/a1b2c3d4
+https://eth.rpc.grove.city/v1/a1b2c3d4
 ```
 
-Requests are rejected if any of the following are true:
+Requests are rejected if either of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
-- ID is not present in `Gateway Endpoint Store`
-- ID is not returned by `Go External Authorization Server`
+- ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
 
-## 2. Quickstart
 
-1. Run `make init_envoy` to create all the required config files
-   - `envoy.yaml` is created with your auth provider's domain and audience.
-   - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
-   - `gateway-endpoints.yaml` is populated with example data; you can modify this to your needs.
-2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
-   
 <br/>
 
 > 💡 **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
@@ -247,11 +249,10 @@ x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 
 For GatewayEndpoints with the `AuthType` field set to `API_KEY_AUTH`, a static API key is required to access the PATH service.
 
-_Example Request Header (both `Bearer` and `non-Bearer` are supported):_
+_Example Request Header:_
 
 ```bash
 -H "Authorization: <API_KEY>"
--H "Authorization: Bearer <API_KEY>"
 ```
 
 The `Go External Authorization Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
@@ -384,6 +385,8 @@ endpoints:
       capacity_limit: 100000
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
+
+> 💡 **TIP:** The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
 
 #### 5.2.3. Implementing a Custom Remote gRPC Server
 
