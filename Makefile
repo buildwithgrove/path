@@ -15,25 +15,17 @@ help: ## Prints all the targets in all the Makefiles
 ### Run Path Make Targets ###
 #############################
 
-.PHONY: path_up_gateway
-path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose up -d --no-deps path_gateway
-
-.PHONY: path_up_build_gateway
-path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose up -d --build --no-deps path_gateway
+.PHONY: path_build
+path_build: ## build the path binary
+	go build -o bin/path ./cmd
 
 .PHONY: path_up
-path_up: ## Run the PATH gateway and all related dependencies
-	docker compose up -d
-
-.PHONY: path_up_build
-path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
+	tilt up
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down
+	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -90,12 +82,40 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
 	fi
 
+.PHONY: config_shannon_localnet
+config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
+	fi
+
+.PHONY: config_morse_localnet
+config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
+		echo "##################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
+		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
+		echo "##################################################################################################################"; \
+	fi
+
 ###############################
 ### Generation Make Targets ###
 ###############################
 
-# // TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-# // TODO_TECHDEBT(@commoddity): Add all mock generation commands here
+# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
+# TODO_TECHDEBT(@commoddity): Add all mock generation commands here
 
 ########################
 #### Documentation  ####
@@ -109,7 +129,7 @@ go_docs: ## Start Go documentation server
 .PHONY: docs_update
 ## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
 docs_update: ## Update documentation from README.
-	cat README.md > docusaurus/docs/README.md 
+	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
