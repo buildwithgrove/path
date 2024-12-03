@@ -46,11 +46,12 @@ type AuthHandler struct {
 	// The EndpointStore contains an in-memory store of GatewayEndpoints
 	// and their associated data from the PADS (PATH Auth Data Server).
 	EndpointStore EndpointStore
-	// The authorizers represents a list of authorization types that must
-	// pass before a request may be forwarded to the PATH service.
-	// Configured in `main.go` and passed to the filter.
-	Authorizers map[proto.Auth_AuthType]Authorizer
-	Logger      polylog.Logger
+
+	// The authorizers to be used for the request
+	APIKeyAuthorizer Authorizer
+	JWTAuthorizer    Authorizer
+
+	Logger polylog.Logger
 }
 
 // Check satisfies the implementation of the Envoy External Authorization gRPC service.
@@ -128,21 +129,22 @@ func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpo
 
 // authGatewayEndpoint performs all configured authorization checks on the request
 func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndpoint *proto.GatewayEndpoint) error {
+	// Get the authorization type for the gateway endpoint
 	authType := gatewayEndpoint.GetAuth().GetAuthType()
 
-	// If the endpoint has no authorization requirements, return no error
-	if authType == proto.Auth_AUTH_TYPE_UNSPECIFIED {
-		return nil
-	}
+	switch authType.(type) {
+	case *proto.Auth_NoAuth:
+		return nil // If the endpoint has no authorization requirements, return no error
 
-	// If the endpoint has authorization requirements, get the authorizer for the request
-	requestAuthorizer, ok := a.Authorizers[authType]
-	if !ok {
-		return fmt.Errorf("invalid authorization type: %s", authType)
-	}
+	case *proto.Auth_StaticApiKey:
+		return a.APIKeyAuthorizer.authorizeRequest(headers, gatewayEndpoint)
 
-	// Authorize the request using the authorizer configured for the gateway endpoint
-	return requestAuthorizer.authorizeRequest(headers, gatewayEndpoint)
+	case *proto.Auth_Jwt:
+		return a.JWTAuthorizer.authorizeRequest(headers, gatewayEndpoint)
+
+	default:
+		return fmt.Errorf("invalid authorization type")
+	}
 }
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded

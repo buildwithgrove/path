@@ -125,7 +125,7 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 			"endpoint_1": {
 				EndpointId: "endpoint_1",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_1": {},
@@ -147,7 +147,7 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 			"endpoint_2": {
 				EndpointId: "endpoint_2",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_2": {},
@@ -181,7 +181,7 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 			GatewayEndpoint: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_3",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_3": {},
@@ -206,7 +206,7 @@ func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 			GatewayEndpoint: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_2",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_2": {},

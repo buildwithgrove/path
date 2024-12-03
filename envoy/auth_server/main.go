@@ -99,13 +99,10 @@ func main() {
 
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
-		EndpointStore: endpointStore,
-		// TODO_IMPROVE(@commoddity): allow configuration of authorizers using an environment variable
-		Authorizers: map[proto.Auth_AuthType]auth.Authorizer{
-			proto.Auth_AUTH_TYPE_API_KEY: &auth.APIKeyAuthorizer{},
-			proto.Auth_AUTH_TYPE_JWT:     &auth.JWTAuthorizer{},
-		},
-		Logger: logger,
+		EndpointStore:    endpointStore,
+		APIKeyAuthorizer: &auth.APIKeyAuthorizer{},
+		JWTAuthorizer:    &auth.JWTAuthorizer{},
+		Logger:           logger,
 	}
 
 	// Create a new gRPC server for handling auth requests from Envoy

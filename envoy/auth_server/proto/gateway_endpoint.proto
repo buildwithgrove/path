@@ -75,22 +75,13 @@ message GatewayEndpoint {
 
 // The authorization settings for a GatewayEndpoint.
 message Auth {
-  enum AuthType {
-    AUTH_TYPE_UNSPECIFIED = 0;
-    AUTH_TYPE_API_KEY = 1;
-    AUTH_TYPE_JWT = 2;
-  }
-
-  // The type of authorization being used.
-  AuthType auth_type = 1;
-
-  oneof auth_type_details {
+  oneof auth_type {
     // Indicates that the GatewayEndpoint does not require authorization.
-    NoAuth no_auth = 2;
+    NoAuth no_auth = 1;
     // Indicates that the GatewayEndpoint uses a static API key for authorization.
-    StaticAPIKey static_api_key = 3;
+    StaticAPIKey static_api_key = 2;
     // Indicates that the GatewayEndpoint uses an auth provider issued JWT for authorization.
-    JWT jwt = 4;
+    JWT jwt = 3;
   }
 }
 

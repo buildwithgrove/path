@@ -58,8 +58,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_free",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_AUTH_TYPE_JWT,
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|ulfric_stormcloak": {},
@@ -107,7 +106,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_unlimited",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|frodo_baggins": {},
@@ -152,8 +151,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "api_key_endpoint",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_AUTH_TYPE_API_KEY,
-					AuthTypeDetails: &proto.Auth_StaticApiKey{
+					AuthType: &proto.Auth_StaticApiKey{
 						StaticApiKey: &proto.StaticAPIKey{
 							ApiKey: "api_key_good",
 						},
@@ -192,8 +190,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "jwt_endpoint",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_AUTH_TYPE_JWT,
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|yennefer_of_vengerberg": {},
@@ -234,7 +231,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "public_endpoint",
 				Auth: &proto.Auth{
-					AuthTypeDetails: &proto.Auth_NoAuth{
+					AuthType: &proto.Auth_NoAuth{
 						NoAuth: &proto.NoAuth{},
 					},
 				},
@@ -303,8 +300,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_api_key",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_AUTH_TYPE_API_KEY,
-					AuthTypeDetails: &proto.Auth_StaticApiKey{
+					AuthType: &proto.Auth_StaticApiKey{
 						StaticApiKey: &proto.StaticAPIKey{
 							ApiKey: "api_key_not_this_one",
 						},
@@ -344,8 +340,7 @@ func Test_Check(t *testing.T) {
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_jwt_auth",
 				Auth: &proto.Auth{
-					AuthType: proto.Auth_AUTH_TYPE_JWT,
-					AuthTypeDetails: &proto.Auth_Jwt{
+					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|chrisjen_avasarala": {},
@@ -370,12 +365,10 @@ func Test_Check(t *testing.T) {
 			}
 
 			authHandler := &AuthHandler{
-				EndpointStore: mockStore,
-				Authorizers: map[proto.Auth_AuthType]Authorizer{
-					proto.Auth_AUTH_TYPE_API_KEY: &APIKeyAuthorizer{},
-					proto.Auth_AUTH_TYPE_JWT:     &JWTAuthorizer{},
-				},
-				Logger: polyzero.NewLogger(),
+				EndpointStore:    mockStore,
+				APIKeyAuthorizer: &APIKeyAuthorizer{},
+				JWTAuthorizer:    &JWTAuthorizer{},
+				Logger:           polyzero.NewLogger(),
 			}
 
 			resp, err := authHandler.Check(context.Background(), test.checkReq)
