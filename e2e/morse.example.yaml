@@ -1,20 +1,24 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # To run E2E tests, copy this file and rename it to .morse.config.yaml, then update.
 # morse_config is required for Morse E2E tests.
 morse_config:
   full_node_config:
     url: "https://pocket-network-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
     http_config:
       retries: 3
       timeout: "5000ms"
     request_config:
       retries: 3
 
-  signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
+  signed_aats: # ATTENTION: all signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
+    "40af4e7e1b311c76a573610fe115cd2adf1eeade":
+      client_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_signature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
 
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
