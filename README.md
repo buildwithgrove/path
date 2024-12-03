@@ -34,6 +34,9 @@
   - [5.2. Start the Container](#52-start-the-container)
 - [6. E2E Tests](#6-e2e-tests)
   - [6.1. Running Tests](#61-running-tests)
+- [7. Running Localnet](#7-running-localnet)
+  - [7.1 Pre-requisites](#71-pre-requisites)
+  - [7.2 Spinning up / Tearing down Localnet](#72-spinning-up--tearing-down-localnet)
 - [Troubleshooting](#troubleshooting)
   - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
@@ -281,6 +284,26 @@ make test_unit
 # Shannon E2E test only
 make test_e2e_shannon_relay
 ```
+
+## 7. Running Localnet
+
+You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
+
+### 7.1 Pre-requisites
+
+Make sure you have the following tools installed:
+
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
+
+Once you have these tools installed, make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
+
+### 7.2 Spinning up / Tearing down Localnet
+
+Localnet can be spin up/tear down using the following targets:
+
+- `localnet_up` -> Spins up localnet environment using Kind + Tilt
+- `localnet_down` -> Tears down localnet.
 
 ## Troubleshooting
 

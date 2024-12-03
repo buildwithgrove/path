@@ -4,7 +4,17 @@ load("ext://configmap", "configmap_create")
 
 # A list of directories where changes trigger a hot-reload of PATH.
 # Note: this list needs to be updated each time a new package is added to the repo.
-hot_reload_dirs = ["cmd", "config", "gateway", "health", "message", "qos", "relayer", "request", "router"]
+hot_reload_dirs = [
+    "cmd",
+    "config",
+    "gateway",
+    "health",
+    "message",
+    "qos",
+    "relayer",
+    "request",
+    "router",
+]
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
 local_config_path = "local_config.yaml"
@@ -27,9 +37,6 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 #   4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Import configuration files into Kubernetes ConfigMap
-configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
-
 # Build an image with a path binary
 docker_build_with_restart(
     "path",
@@ -43,6 +50,9 @@ docker_build_with_restart(
 helm_resource(
     "path",
     chart_prefix + "path",
+    flags=[
+        "--values=./local/path/config/path-values.yaml",
+    ],
     # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
     # This can only be done once the CLI flags feature has been implemented.
     image_deps=["path"],
@@ -60,8 +70,8 @@ helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
-       "--values=./local/kubernetes/observability-prometheus-stack.yaml",
-       "--set=grafana.defaultDashboardsEnabled=true",
+        "--values=./local/kubernetes/observability-prometheus-stack.yaml",
+        "--set=grafana.defaultDashboardsEnabled=true",
     ],
     resource_deps=["prometheus-community"],
 )

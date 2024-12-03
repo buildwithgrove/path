@@ -111,6 +111,26 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 	fi
 
 ###############################
+###  Localnet Make targets  ###
+###############################
+.PHONY: localnet_up
+localnet_up: ## Spins up Kind cluster for local development and brings up Tilt from file
+	@echo "Spinning up localnet..."
+	@kind create cluster --name kind-path-localnet
+	@kubectl config use-context kind-path-localnet
+	@kubectl create secret generic path-config-local \
+		--from-file=.config.yaml=./local/path/config/.config.yaml
+	@tilt up
+
+.PHONY: localnet_down
+localnet_down: ## Tears down Kind cluster
+	@echo "Tearing down localnet..."
+	@tilt down
+	@kubectl delete secret path-config-local
+	@kind delete cluster --name kind-path-localnet
+
+
+###############################
 ### Generation Make Targets ###
 ###############################
 
