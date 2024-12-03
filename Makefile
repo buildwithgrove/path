@@ -26,18 +26,17 @@ path_up_build_gateway: ## Run and build just the PATH gateway without any depend
 .PHONY: path_down_gateway
 path_down_gateway: ## Stop just the PATH gateway
 	docker compose --profile path-gateway down --remove-orphans path_gateway
+.PHONY: path_build
+path_build: ## build the path binary
+	go build -o bin/path ./cmd
 
 .PHONY: path_up
-path_up: ## Run the PATH gateway and all related dependencies
-	docker compose up -d
-
-.PHONY: path_up_build
-path_up_build: ## Run and build the PATH gateway and all related dependencies
-	docker compose up -d --build
+path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
+	tilt up
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
-	docker compose down --remove-orphans
+	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -167,6 +166,34 @@ copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
 .PHONY: init_envoy
 init_envoy: copy_envoy_config copy_envoy_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, and copy_gateway_endpoints
 
+.PHONY: config_shannon_localnet
+config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
+	fi
+
+.PHONY: config_morse_localnet
+config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
+		echo "##################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
+		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
+		echo "##################################################################################################################"; \
+	fi
+
 ###############################
 ### Generation Make Targets ###
 ###############################
@@ -176,10 +203,6 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
 
 # TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-.PHONY: gen_mocks
-gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
-	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
 
 ########################
 #### Documentation  ####
@@ -193,7 +216,7 @@ go_docs: ## Start Go documentation server
 .PHONY: docs_update
 ## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
 docs_update: ## Update documentation from README.
-	cat README.md > docusaurus/docs/README.md 
+	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
