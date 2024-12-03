@@ -100,7 +100,7 @@ func (p *Protocol) BuildRequestContext(
 func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
 	apps, found := p.getServiceApps(serviceID)
 	if !found {
-		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
+		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
 	}
 
 	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID, apps)
