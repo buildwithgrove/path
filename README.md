@@ -32,11 +32,10 @@
 - [5. Authorization \& Rate Limiting](#5-authorization--rate-limiting)
 - [6. Running PATH](#6-running-path)
   - [6.1. Setup Config YAML](#61-setup-config-yaml)
-  - [6.2. Start the Container](#62-start-the-container)
+  - [6.2. Run the PATH binary](#62-run-the-path-binary)
 - [7. E2E Tests](#7-e2e-tests)
-  - [7.1. Running Tests](#71-running-tests)
-- [8. Troubleshooting](#8-troubleshooting)
-  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
+  - [7.1. Running the E2E tests against Shannon Testnet](#71-running-the-e2e-tests-against-shannon-testnet)
+  - [7.2. Running the E2E tests against Morse](#72-running-the-e2e-tests-against-morse)
 - [Special Thanks](#special-thanks)
 
 <!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
@@ -227,6 +226,7 @@ By default, the PATH service runs without any authorization or rate limiting. Th
 
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
+<!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
 This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
   > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
