@@ -1,0 +1,199 @@
+static_resources:
+  clusters:
+    # Cluster for the PATH Gateway service, which handles requests for the PATH API.
+    - name: path_gateway_service
+      connect_timeout: 0.25s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: path_gateway_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: path
+                      port_value: 3000 # Port where the PATH API service runs.
+
+    # Cluster to fetch the JSON Web Key Set (JWKS) from the authentication provider.
+    - name: auth_jwks_cluster
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: auth_jwks_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      # SENSITIVE VALUE - DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                      address: ${AUTH_DOMAIN}
+                      port_value: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          # SENSITIVE VALUE - DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+          sni: ${AUTH_DOMAIN}
+
+    # Cluster for handling external authorization checks.
+    - name: ext-authz
+      type: STRICT_DNS
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: ext-authz
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ext_authz
+                      port_value: 10003
+
+    # Cluster for the rate-limiting service.
+    - name: ratelimit
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: ROUND_ROBIN
+      protocol_selection: USE_CONFIGURED_PROTOCOL
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: ratelimit
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ratelimit
+                      port_value: 8081
+
+  # Listener configuration: entry point for all incoming requests to the PATH API.
+  # Documentation: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto
+  listeners:
+    - name: listener_0
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 3001 # Port for incoming requests to the PATH API.
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                http_filters:
+                  # Removes the `x-jwt-user-id` header before forwarding the request to the external authorization filter.
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter
+                  - name: envoy.filters.http.header_mutation
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+                      mutations:
+                        request_mutations:
+                          - remove: x-jwt-user-id
+                  # Verifies JWT tokens and sets the `x-jwt-user-id` header based on the token claims.
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter
+                  - name: envoy.filters.http.jwt_authn
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                      rules:
+                        - match:
+                            prefix: "/v1"
+                          requires:
+                            requires_any:
+                              requirements:
+                                # Allows requests without a JWT. In such cases, `x-jwt-user-id` is not set.
+                                - allow_missing: {}
+                                # Enforces JWT validation if a token is present.
+                                - provider_name: auth_provider
+                      providers:
+                        auth_provider:
+                          # SENSITIVE VALUE - DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                          issuer: https://${AUTH_DOMAIN}/
+                          audiences:
+                            # SENSITIVE VALUE - DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                            - ${AUTH_AUDIENCE}
+                          remote_jwks:
+                            http_uri:
+                              # SENSITIVE VALUE - DO NOT SHARE OUTSIDE YOUR ORGANIZATION
+                              uri: https://${AUTH_DOMAIN}/.well-known/jwks.json
+                              cluster: auth_jwks_cluster
+                              timeout: 1s
+                          forward: true
+                          claim_to_headers:
+                            - header_name: x-jwt-user-id
+                              claim_name: sub
+                  # External authorization filter to handle permission checks.
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filte
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: ext-authz
+                        timeout: 0.5s
+                      failure_mode_allow: false
+                      include_peer_certificate: true
+                  # Rate-limiting filter to control API usage.
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ratelimit_filter
+                  - name: envoy.filters.http.ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+                      domain: rl
+                      request_type: external
+                      stage: 0
+                      rate_limited_as_resource_exhausted: true
+                      failure_mode_deny: false
+                      enable_x_ratelimit_headers: DRAFT_VERSION_03
+                      rate_limit_service:
+                        grpc_service:
+                          envoy_grpc:
+                            cluster_name: ratelimit
+                  # Router filter for forwarding requests to the appropriate service.
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                # Routing configuration for incoming requests.
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"] # Matches all domains.
+                      routes:
+                        # Route for /healthz
+                        - match:
+                            path: "/healthz"
+                          route:
+                            cluster: path_gateway_service
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        # Main API route for /v1 with path modifications.
+                        - match:
+                            prefix: "/v1"
+                          route:
+                            cluster: path_gateway_service
+                            # strip the endpoint ID from the path before forwarding to PATH to work with PATH's ability to serve requests without any dependencies
+                            regex_rewrite:
+                              pattern:
+                                google_re2: {}
+                                regex: "^/v1/(.*)"
+                              substitution: "/v1"
+                            # Configures rate limiting descriptors.
+                            rate_limits:
+                              - actions:
+                                  # Sends descriptors for rate limiting based on custom headers.
+                                  - request_headers:
+                                      header_name: "x-rl-endpoint-id"
+                                      descriptor_key: "x-rl-endpoint-id"
+                                  - request_headers:
+                                      header_name: "x-rl-throughput"
+                                      descriptor_key: "x-rl-throughput"
