@@ -14,21 +14,13 @@ help: ## Prints all the targets in all the Makefiles
 #############################
 ### Run Path Make Targets ###
 #############################
-
-.PHONY: path_up_gateway
-path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --no-deps path_gateway 
-
-.PHONY: path_up_build_gateway
-path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --build --no-deps path_gateway
-
-.PHONY: path_down_gateway
-path_down_gateway: ## Stop just the PATH gateway
-	docker compose --profile path-gateway down --remove-orphans path_gateway
 .PHONY: path_build
 path_build: ## build the path binary
 	go build -o bin/path ./cmd
+
+.PHONY: path_run
+path_run: path_build
+	(cd bin; ./path)
 
 .PHONY: path_up
 path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
@@ -43,7 +35,7 @@ path_down: ## Stop the PATH gateway and all related dependencies
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_auth_plugin test_e2e_shannon_relay
+test_all: test_unit test_auth_plugin test_e2e_shannon_relay test_e2e_morse_relay
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
@@ -67,30 +59,34 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 
 .PHONY: copy_shannon_config
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		mkdir -p bin/config; \
+		cp ./cmd/.config.shannon_example.yaml ./bin/config/.config.yaml; \
 		echo "#######################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
+		echo "### Created ./bin/config/.config.yaml                                                               ###"; \
 		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
 		echo "#######################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##################################################################"; \
+		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##################################################################"; \
 	fi
 
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		mkdir -p bin/config; \
+		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
 		echo "#######################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
+		echo "### Created ./bin/config/.config.yaml                                                               ###"; \
 		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
 		echo "#######################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##################################################################"; \
+		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##################################################################"; \
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+	else \
 	fi
 
 .PHONY: copy_shannon_e2e_config
