@@ -20,6 +20,14 @@ path_build: ## build the path binary
 
 .PHONY: path_run
 path_run: path_build
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		echo "#########################################################################################"; \
+		echo "### ./bin/config/.config.yaml does not exist, use ONE the following to initialize it: ###"; \
+		echo "A. make copy_shannon_config                                                           ###"; \
+		echo "B. make copy_morse_config                                                             ###"; \
+		echo "#########################################################################################"; \
+		exit; \
+	fi; \
 	(cd bin; ./path)
 
 .PHONY: path_up
@@ -85,8 +93,6 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 		echo "##################################################################"; \
 		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
 		echo "##################################################################"; \
-	@if [ ! -f ./bin/config/.config.yaml ]; then \
-	else \
 	fi
 
 .PHONY: copy_shannon_e2e_config
