@@ -69,10 +69,10 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
-		echo "#######################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
-		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "#######################################################################################################"; \
+		echo "###########################################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                                          ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
+		echo "###########################################################################################################################"; \
 	else \
 		echo "###########################################################"; \
 		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
@@ -83,10 +83,10 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
-		echo "#######################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                      ###"; \
-		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "#######################################################################################################"; \
+		echo "#############################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                            ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
+		echo "#############################################################################################################"; \
 	else \
 		echo "###########################################################"; \
 		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
@@ -97,10 +97,10 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
-		echo "###############################################################################################################"; \
-		echo "### Created ./e2e/.shannon.config.yaml                                                                      ###"; \
-		echo "### README: Please update the the following in .shannon.config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "###############################################################################################################"; \
+		echo "###################################################################################################################################"; \
+		echo "### Created ./e2e/.shannon.config.yaml                                                                                          ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
+		echo "###################################################################################################################################"; \
 	else \
 		echo "###################################################################"; \
 		echo "### ./e2e/.shannon.config.yaml already exists, not overwriting. ###"; \
@@ -111,10 +111,10 @@ copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml f
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
-		echo "#############################################################################################################"; \
-		echo "### Created ./e2e/.morse.config.yaml                                                                      ###"; \
-		echo "### README: Please update the the following in .morse.config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "#############################################################################################################"; \
+		echo "###################################################################################################################"; \
+		echo "### Created ./e2e/.morse.config.yaml                                                                            ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
+		echo "###################################################################################################################"; \
 	else \
 		echo "#################################################################"; \
 		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
