@@ -117,10 +117,6 @@ if MODE == "path_with_auth":
     configmap_create("gateway-endpoints", from_file="./local/path/envoy/.gateway-endpoints.yaml", watch=True)
     configmap_create("ratelimit-config", from_file="./local/path/envoy/.ratelimit.yaml", watch=True)
 
-    # Import External Authorization Server environment variables into Kubernetes ConfigMaps
-    configmap_create("ext-authz-env", from_env_file="./local/path/envoy/.env.auth_server", watch=True)
-    configmap_create("pads-env", from_env_file="./local/path/envoy/.env.pads", watch=True)
-
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(
         "ext-authz",

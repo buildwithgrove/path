@@ -18,7 +18,7 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            if [ ! -f /etc/envoy/.envoy.yaml ]; then echo '.envoy.yaml not found. Run `make copy-envoy-config` to generate it.' && exit 1; fi; /usr/local/bin/envoy -c /etc/envoy/.envoy.yaml
+            if [ ! -f /etc/envoy/.envoy.yaml ]; then echo '.envoy.yaml not found.' && exit 1; fi; /usr/local/bin/envoy -c /etc/envoy/.envoy.yaml
         volumeMounts:
         - name: envoy-config
           mountPath: /etc/envoy/.envoy.yaml

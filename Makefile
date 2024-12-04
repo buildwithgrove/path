@@ -148,10 +148,10 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 #########################################
 
 .PHONY: init_envoy
-init_envoy: copy_envoy_config copy_envoy_env copy_pads_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, copy_pads_env, and copy_gateway_endpoints
+init_envoy: copy_envoy_config copy_gateway_endpoints ## Runs copy_envoy_config and copy_gateway_endpoints
 
 .PHONY: copy_envoy_config
-copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
 	@if [ ! -f ./local/path/envoy/envoy.yaml ]; then \
 		./envoy/scripts/copy_envoy_config.sh; \
 		echo "###########################################################"; \
@@ -164,36 +164,8 @@ copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in t
 		echo "######################################################################"; \
 	fi
 
-.PHONY: copy_envoy_env
-copy_envoy_env: ## copies the example envoy environment variables file to .env file
-	@if [ ! -f ./local/path/envoy/.env.auth_server ]; then \
-		cp ./envoy/auth_server/.env.example ./local/path/envoy/.env.auth_server; \
-		echo "##################################################################"; \
-		echo "### Created ./local/path/envoy/.env.auth_server                ###"; \
-		echo "### README: Please update the environment variables as needed. ###"; \
-		echo "##################################################################"; \
-	else \
-		echo "############################################################################"; \
-		echo "### ./local/path/envoy/.env.auth_server already exists, not overwriting. ###"; \
-		echo "############################################################################"; \
-	fi
-
-.PHONY: copy_pads_env
-copy_pads_env: ## copies the example pads environment variables file to .env.pads file
-	@if [ ! -f ./local/path/envoy/.env.pads ]; then \
-		./envoy/scripts/copy_pads_env.sh; \
-		echo "##################################################################"; \
-		echo "### Created ./local/path/envoy/.env.pads                       ###"; \
-		echo "### README: Please update the environment variables as needed. ###"; \
-		echo "##################################################################"; \
-	else \
-		echo "#####################################################################"; \
-		echo "### ./local/path/envoy/.env.pads already exists, not overwriting. ###"; \
-		echo "#####################################################################"; \
-	fi
-
 .PHONY: copy_gateway_endpoints
-copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
+copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from the PADS repo to ./local/path/envoy/.gateway-endpoints.yaml
 	@if [ ! -f ./local/path/envoy/gateway-endpoints.yaml ]; then \
 		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
 		echo "###########################################################"; \

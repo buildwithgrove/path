@@ -12,13 +12,17 @@ spec:
       labels:
         app: path-auth-data-server
     spec:
-
       containers:
       - name: path-auth-data-server
         image: ghcr.io/buildwithgrove/path-auth-data-server:latest
-        envFrom:
-        - configMapRef:
-            name: pads-env
+        env:
+        # Exactly one of the following variables below must be set:
+        # - YAML_FILEPATH
+        # - POSTGRES_CONNECTION_STRING
+        # An error will be thrown if neither or both are set.
+        - name: YAML_FILEPATH
+          # The .gateway-endpoints.yaml file is mounted by Tilt from ./local/path/envoy/.gateway-endpoints.yaml
+          value: ".gateway-endpoints.yaml"
         ports:
         - containerPort: 50051
         volumeMounts:
