@@ -25,23 +25,6 @@ hot_reload_dirs = [
 local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
-# TODO_UPNEXT(@adshmh): Package the default Helm chart for PATH and upload the pokt-network repo.
-# Configure helm chart reference. If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
-helm_repo("pokt-network", "https://pokt-network.github.io/helm-charts/")
-chart_prefix = "pokt-network/"
-if local_config["helm_chart_local_repo"]["enabled"]:
-    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
-    hot_reload_dirs.append(helm_chart_local_repo)
-    print("Using local helm chart repo " + helm_chart_local_repo)
-    chart_prefix = helm_chart_local_repo + "/charts/"
-
-# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-# 1. Add place-holder files for sensitive data
-# 2. Add a secret per sensitive data item (e.g. gateway's private key)
-# 3. Load the secrets into environment variables of an init container
-# 4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
-
 # Define modes:
 # Mode determines which resources are loaded. Possible options are:
 # 1. path_only - Loads only the PATH service.
@@ -56,16 +39,33 @@ MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
 # 1. PATH Service                                                             #
 # --------------------------------------------------------------------------- #
 
-# Import PATH configuration file into Kubernetes ConfigMaps
-configmap_create("path-config", from_file="./local/path/config/.config.yaml", watch=True)
+# Configure helm chart reference.
+# If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
+helm_repo("buildwithgrove", "https://buildwithgrove.github.io/helm-charts/")
+chart_prefix = "buildwithgrove/"
+if local_config["helm_chart_local_repo"]["enabled"]:
+    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
+    hot_reload_dirs.append(helm_chart_local_repo)
+    print("Using local helm chart repo " + helm_chart_local_repo)
+    chart_prefix = helm_chart_local_repo + "/charts/"
 
-# Build the PATH image from the Dockerfile in the root directory
+# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
+# 1. Add place-holder files for sensitive data
+# 2. Add a secret per sensitive data item (e.g. gateway's private key)
+# 3. Load the secrets into environment variables of an init container
+# 4. Use an init container to run the scripts for updating config from environment variables.
+# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
+
+# Import configuration files into Kubernetes ConfigMap
+configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
+
+# Build an image with a path binary
 docker_build_with_restart(
     "path",
-    context=".",
-    dockerfile="./Dockerfile",
-    entrypoint=["/app/path"],
-    live_update=[sync(".", "/app/path")],
+    ".",
+    dockerfile="Dockerfile",
+    entrypoint="/app/path",
+    live_update=[sync("bin/path", "/app/path")],
 )
 
 # Conditionally add port forwarding based on the mode
@@ -177,7 +177,6 @@ helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
 # Increase timeout for building the image
 update_settings(k8s_upsert_timeout_secs=60)
 
-# 1. Load the Kubernetes YAML for the prometheus-stack service
 helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
@@ -188,7 +187,6 @@ helm_resource(
     resource_deps=["prometheus-community"],
 )
 
-# 2. Load the Kubernetes YAML for the loki-stack service
 helm_resource(
     "loki",
     "grafana-helm-repo/loki-stack",

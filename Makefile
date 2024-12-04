@@ -20,11 +20,11 @@ path_build: ## build the path binary
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	MODE=path_gateway tilt up
+	MODE=path_gateway tilt up tilt up --cleanup
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
-	tilt up
+	tilt up --cleanup
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
@@ -112,8 +112,6 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
 		echo "#################################################################"; \
 	fi
-
-
 
 .PHONY: config_shannon_localnet
 config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
