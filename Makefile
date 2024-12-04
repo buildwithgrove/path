@@ -9,7 +9,11 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
-# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
+#.PHONY: go_mockgen
+go_mockgen: ## Use `mockgen` to generate mocks used for testing purposes of all the modules.
+	find . -name "*_mock.go" | xargs --no-run-if-empty rm
+	go generate ./gateway/
+	go generate ./protocol/
 
 #############################
 ### Run Path Make Targets ###
@@ -37,6 +41,24 @@ path_up: config_shannon_localnet ## Run the PATH gateway and all related depende
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
 	tilt down
+
+#######################
+### Proto  Helpers ####
+#######################
+
+.PHONY: proto_gen
+proto_gen: ## Generate protobuf artifacts
+	protoc -I=./proto --go_out=./observation --go_opt=module='github.com/buildwithgrove/path/observation' \
+		./proto/path/*.proto \
+		./proto/path/protocol/*.proto \
+		./proto/path/qos/*.proto
+
+.PHONY: proto_clean
+proto_clean: ## Delete existing .pb.go or .pb.gw.go files
+	find . \( -name "*.pb.go" \) | xargs --no-run-if-empty rm
+
+.PHONY: proto_regen
+proto_regen: proto_clean proto_gen ## Regenerate protobuf artifacts
 
 #########################
 ### Test Make Targets ###

@@ -8,7 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/message"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -30,7 +30,7 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // response defines the functionality required from
 // a parsed endpoint response.
 type response interface {
-	GetObservation() (observation, bool)
+	GetObservation() qosobservations.SolanaEndpointDetails
 	GetResponsePayload() []byte
 	// TODO_TECHDEBT: add method(s) to support retrying a request, e.g. IsUserError(), IsEndpointError().
 }
@@ -45,7 +45,6 @@ type endpointResponse struct {
 // to support QoS for a Solana blockchain service.
 type requestContext struct {
 	JSONRPCReq    jsonrpc.Request
-	ServiceState  *ServiceState
 	EndpointStore *EndpointStore
 	Logger        polylog.Logger
 
@@ -137,27 +136,20 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
-func (rc requestContext) GetObservationSet() message.ObservationSet {
-	// No updates needed if the request was invalid
-	if !rc.isValid {
-		return observationSet{}
+// This method implements the gateway.RequestQoSContext interface.
+func (rc requestContext) GetObservations() qosobservations.QoSDetails {
+	observations := make([]*qosobservations.SolanaEndpointDetails, len(rc.endpointResponses))
+	for idx, endpointResponse := range rc.endpointResponses {
+		obs := endpointResponse.response.GetObservation()
+		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+		observations[idx] = &obs
 	}
 
-	observations := make(map[protocol.EndpointAddr][]observation)
-	for _, response := range rc.endpointResponses {
-		obs, ok := response.GetObservation()
-		if !ok {
-			continue
-		}
-
-		addr := response.EndpointAddr
-		observations[addr] = append(observations[addr], obs)
-	}
-
-	return observationSet{
-		EndpointStore: rc.EndpointStore,
-		ServiceState:  rc.ServiceState,
-		Observations:  observations,
+	return qosobservations.QoSDetails{
+		SolanaDetails: &qosobservations.SolanaDetails{
+			// TODO_TECHDEBT: set the JSONRPCRequest field.
+			EndpointDetails: observations,
+		},
 	}
 }
 

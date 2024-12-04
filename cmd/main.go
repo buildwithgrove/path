@@ -9,8 +9,12 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
 	"github.com/buildwithgrove/path/config"
+	morseConfig "github.com/buildwithgrove/path/config/morse"
+	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/protocol/morse"
+	"github.com/buildwithgrove/path/protocol/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
 )

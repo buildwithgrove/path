@@ -134,6 +134,25 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
+// This method implements the gateway.RequestQoSContext interface.
+func (rc requestContext) GetObservations() qosobservations.QoSDetails {
+	observations := make([]*qosobservations.SolanaEndpointDetails, len(rc.endpointResponses))
+	for idx, endpointResponse := range rc.endpointResponses {
+		obs := endpointResponse.response.GetObservation()
+		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+		observations[idx] = &obs
+	}
+
+	return qosobservations.QoSDetails{
+		SolanaDetails: &qosobservations.SolanaDetails{
+			// TODO_TECHDEBT: set the JSONRPCRequest field.
+			EndpointDetails: observations,
+		},
+	}
+}
+
+
+
 func (rc requestContext) GetObservationSet() message.ObservationSet {
 	// No updates needed if the request was invalid
 	if !rc.isValid {

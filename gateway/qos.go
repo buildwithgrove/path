@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/buildwithgrove/path/message"
+	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -43,7 +43,7 @@ type RequestQoSContext interface {
 	// GetObservationSet returns the list of observations resulting from
 	// the response(s) received from one or more endpoints as part of fulfilling
 	// the request underlying the RequestQoSContext instance.
-	GetObservationSet() message.ObservationSet
+	GetObservations() qos.QoSDetails
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
@@ -78,12 +78,6 @@ type QoSEndpointCheckGenerator interface {
 	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
 }
 
-// QoSPublisher is used to publish a message package's ObservationSet.
-// This is used to share QoS data between PATH instances.
-type QoSPublisher interface {
-	Publish(message.ObservationSet) error
-}
-
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
 // e.g. a QoSService implementation for Ethereum, another for Solana, and third one for a RESTful service.
 //
@@ -93,4 +87,11 @@ type QoSPublisher interface {
 // 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
 type QoSService interface {
 	QoSContextBuilder
+	QoSEndpointCheckGenerator
+
+	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
+	// The observatios can be:
+	// A. "local", i.e. from requests sent to an endpoint by this PATH instance, or
+	// B. "shared": i.e. from QoS observations shared by other PATH instances.
+	ApplyObservations(qos.QoSDetails) error
 }

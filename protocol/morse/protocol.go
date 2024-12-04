@@ -12,10 +12,11 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// relayer package's Protocol interface is fulfilled by the Protocol struct
+// gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ gateway.Protocol = &Protocol{}
 
@@ -118,6 +119,14 @@ func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint,
 	}
 
 	return endpoints, nil
+}
+
+// TODO_MVP(@adshmh): implement protocol state update using the observations by completing the ApplyObservations method below.
+//
+// ApplyObservations applies the Shannon protocol-level observations to the endpoint store.
+// e.g. Observation showing an endpoint has maxed out on a specific app for the current session.
+func (p *Protocol) ApplyObservations(protocolobservations.ProtocolDetails) error {
+	return nil
 }
 
 // Name satisfies the HealthCheck#Name interface function

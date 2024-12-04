@@ -1,0 +1,20 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+message JsonRpcRequest {
+  string id=1;
+  string method=2;
+}
+
+message JsonRpcResponse {
+  string id=1;
+  string result=2;
+  optional JsonRpcResponseError err=3;
+}
+
+message JsonRpcResponseError {
+  int64 code=1;
+  string message=2;
+}

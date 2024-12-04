@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/health"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -18,6 +19,7 @@ type Protocol interface {
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode
 
+	ApplyObservations(protocolobservations.ProtocolDetails) error
 	health.Check
 }
 
@@ -47,4 +49,6 @@ type ProtocolRequestContext interface {
 	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
 	// See the Shannon package's operation_mode.go file for more details.
 	AvailableEndpoints() ([]protocol.Endpoint, error)
+
+	GetObservations() protocolobservations.ProtocolDetails
 }

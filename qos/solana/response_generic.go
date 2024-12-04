@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -47,8 +48,12 @@ type responseGeneric struct {
 	Logger polylog.Logger
 }
 
-func (r responseGeneric) GetObservation() (observation, bool) {
-	return nil, false
+// This method implements the response interface used by the requestContext struct. 
+func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointDetails {
+	isGeneric := true
+	return qosobservations.SolanaEndpointDetails{
+		GenericRequest: &isGeneric,
+	}
 }
 
 func (r responseGeneric) GetResponsePayload() []byte {

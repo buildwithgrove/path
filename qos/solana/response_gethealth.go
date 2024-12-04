@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -59,10 +60,12 @@ type responseToGetHealth struct {
 	Logger polylog.Logger
 }
 
-func (r responseToGetHealth) GetObservation() (observation, bool) {
-	return getHealthResponseObservation{
-		HealthResult: r.HealthResult,
-	}, true
+// GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getHealth` request.
+// This method implements the response interface used by the requestContext struct. 
+func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointDetails {
+	return qosobservations.SolanaEndpointDetails{
+		HealthResult: &r.HealthResult,
+	}
 }
 
 // TODO_UPNEXT(@adshmh): handle the following scenarios:
@@ -79,17 +82,4 @@ func (r responseToGetHealth) GetResponsePayload() []byte {
 		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshalling JSONRPC response failed.")
 	}
 	return bz
-}
-
-// getHealthResponseObservation provides the functionality defined by the response interface, specific to a response matching
-// a `getHealth` request.
-var _ observation = getHealthResponseObservation{}
-
-// epochInfoResponseObservation holds the epochInfo struct built from a response, and applies it to the (supplied) corresponding endpoint's struct.
-type getHealthResponseObservation struct {
-	HealthResult string
-}
-
-func (o getHealthResponseObservation) Apply(ep *endpoint) {
-	ep.GetHealthResult = &o.HealthResult
 }

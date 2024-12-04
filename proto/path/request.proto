@@ -1,0 +1,17 @@
+syntax = "proto3";
+package path;
+
+option go_package = "github.com/buildwithgrove/path/observation";
+
+import "path/http.proto";
+import "path/gateway.proto";
+import "path/protocol/protocol.proto";
+import "path/qos/qos.proto";
+
+message RequestResponseDetails {
+  string service_id=1;
+  HTTPRequestDetails http_request=2;
+  GatewayDetails gateway=3;
+  protocol.ProtocolDetails protocol=4;
+  qos.QoSDetails qos=5; 
+}

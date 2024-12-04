@@ -19,6 +19,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -40,11 +41,10 @@ type Gateway struct {
 	// sending the service payload to an endpoint.
 	Protocol
 
-	// QoSPublisher is used to publish QoS-related observations.
-	// It can be "local" i.e. inform the local QoS
-	// instance, or publisher that sends QoS observations over
-	// a messaging platform to share among multiple PATH instances.
-	QoSPublisher
+	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
+	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	MetricsReporter RequestResponseReporter
+	DataReporter    RequestResponseReporter
 
 	Logger polylog.Logger
 }
@@ -66,14 +66,23 @@ type Gateway struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	var httpRes HTTPResponse
+	var (
+		httpRes             HTTPResponse
+		serviceID           protocol.ServiceID
+		serviceQoS          QoSService
+		gatewayObservations observation.GatewayDetails
+		httpObservations    observation.HTTPRequestDetails
+		serviceRequestCtx   RequestQoSContext
+		protocolRequestCtx  ProtocolRequestContext
+	)
 
-	// TODO_INCOMPLETE: add request response observation and uncomment the following line when implemented.
-	// defer g.RequestResponseObserver.ObserveReqRes(ctx, httpReq, httpRes)
+	defer func() {
+		// TODO_IN_THIS_PR: build the gateway observation data and pass it to the publisher method.
+		// TODO_IN_THIS_PR: build the HTTP request observation data and pass it to the publisher method.
+		g.observeReqRes(serviceID, serviceQoS, gatewayObservations, httpObservations, serviceRequestCtx, protocolRequestCtx)
+	}()
 
-	// TODO_TECHDEBT: add request authentication: e.g. using a portal app ID extracted from the HTTP request's path.
-	// This is currently out of scope since the gateway MVP is to accept all incoming HTTP requests.
-
+	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
 	// Extract the service ID and find the target service's corresponding QoS instance.
 	serviceID, serviceQoS, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
 	if err != nil {
@@ -96,7 +105,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
-	protocolRequestCtx, err := g.buildProtocolRequestCtx(serviceID, httpReq)
+	protocolRequestCtx, err = g.buildProtocolRequestCtx(serviceID, httpReq)
 	if err != nil {
 		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
@@ -136,19 +145,6 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// a) whether the endpoint failed to provide a valid response, and
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
-
-	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
-	// This is called in a Goroutine to avoid potentially blocking the HTTP handler.
-	go func() {
-		if err := g.QoSPublisher.Publish(serviceRequestCtx.GetObservationSet()); err != nil {
-			logger := g.Logger.With(
-				"service", string(serviceID),
-				"endpoint", string(endpointResponse.EndpointAddr),
-			)
-
-			logger.Warn().Msg("Failed to publish endpoint observations")
-		}
-	}()
 }
 
 // TODO_INCOMPLETE: writeResponse should use the context to write the user-facing
@@ -178,4 +174,36 @@ func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq 
 	}
 
 	return protocolCtx, err
+}
+
+// observeReqRes delivers the collected details regarding all aspects of the service request to all the interested parties, e.g. the QoS service instance.
+func (g *Gateway) observeReqRes(
+	serviceID protocol.ServiceID,
+	serviceQoS QoSService,
+	gatewayObservations observation.GatewayDetails,
+	httpObservations observation.HTTPRequestDetails,
+	serviceRequestCtx RequestQoSContext,
+	protocolRequestCtx ProtocolRequestContext,
+) {
+	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
+	go func() {
+		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
+		// the observation.QoSDetails struct.
+		// This ensures that separate PATH instances can communicate and share their QoS observations.
+		qosObservations := serviceRequestCtx.GetObservations()
+		protocolObservations := protocolRequestCtx.GetObservations()
+
+		serviceQoS.ApplyObservations(qosObservations)
+		g.Protocol.ApplyObservations(protocolObservations)
+
+		requestResponseDetails := observation.RequestResponseDetails{
+			HttpRequest: &httpObservations,
+			Gateway:     &gatewayObservations,
+			Protocol:    &protocolObservations,
+			Qos:         &qosObservations,
+		}
+
+		g.MetricsReporter.Publish(requestResponseDetails)
+		g.DataReporter.Publish(requestResponseDetails)
+	}()
 }

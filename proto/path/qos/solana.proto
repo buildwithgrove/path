@@ -1,0 +1,26 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+message SolanaDetails {
+  JsonRpcRequest jsonrpc_request=1;
+  repeated SolanaEndpointDetails endpoint_details=2;
+}
+
+message SolanaEndpointDetails {
+  string endpoint_addr=1;
+  optional JsonRpcResponse jsonrpc_response=2;
+  // Both epoch and block_height are stored as string to allow any PATH instance that receives an observation to detect an invalid response from the corresponding endpoint.
+  optional string health_result=3;
+  optional SolanaEpochInfoResponse epoch_info=4;
+  // generic_request is set to true if the request was considered `generic`, i.e. ignored by the service state update and endpoint validation methods.
+  optional bool generic_request=5;
+}
+
+message SolanaEpochInfoResponse {
+	uint64 block_height=1;
+	uint64 epoch=2;
+}
