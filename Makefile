@@ -61,32 +61,129 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
+		echo "###########################################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                                          ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
+		echo "###########################################################################################################################"; \
 	else \
-		echo ".config.yaml already exists, not overwriting."; \
+		echo "###########################################################"; \
+		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
 	fi
 
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./cmd/.config.yaml ]; then \
 		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+		echo "#############################################################################################################"; \
+		echo "### Created ./cmd/.config.yaml                                                                            ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
+		echo "#############################################################################################################"; \
 	else \
-		echo ".config.yaml already exists, not overwriting."; \
+		echo "###########################################################"; \
+		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
+		echo "###################################################################################################################################"; \
+		echo "### Created ./e2e/.shannon.config.yaml                                                                                          ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
+		echo "###################################################################################################################################"; \
 	else \
-		echo "./e2e/.shannon.config.yaml already exists, not overwriting."; \
+		echo "###################################################################"; \
+		echo "### ./e2e/.shannon.config.yaml already exists, not overwriting. ###"; \
+		echo "###################################################################"; \
 	fi
 
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
+		echo "###################################################################################################################"; \
+		echo "### Created ./e2e/.morse.config.yaml                                                                            ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
+		echo "###################################################################################################################"; \
 	else \
-		echo "./e2e/.morse.config.yaml already exists, not overwriting."; \
+		echo "#################################################################"; \
+		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
+		echo "#################################################################"; \
+	fi
+
+.PHONY: copy_envoy_config
+copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+	@if [ ! -f ./envoy/envoy.yaml ]; then \
+		./envoy/scripts/copy_envoy_config.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./envoy/envoy.yaml                          ###"; \
+		echo "### README: Please ensure the configuration is correct. ###"; \
+		echo "###########################################################"; \
+	else \
+		echo "###########################################################"; \
+		echo "### ./envoy/envoy.yaml already exists, not overwriting. ###"; \
+		echo "###########################################################"; \
+	fi
+
+.PHONY: copy_envoy_env
+copy_envoy_env: ## copies the example envoy environment variables file to .env file
+	@if [ ! -f ./envoy/auth_server/.env ]; then \
+		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
+		echo "##################################################################"; \
+		echo "### Created ./envoy/auth_server/.env                           ###"; \
+		echo "### README: Please update the environment variables as needed. ###"; \
+		echo "##################################################################"; \
+	else \
+		echo "#################################################################"; \
+		echo "### ./envoy/auth_server/.env already exists, not overwriting. ###"; \
+		echo "#################################################################"; \
+	fi
+
+.PHONY: copy_gateway_endpoints
+copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
+	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
+		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./envoy/gateway-endpoints.yaml              ###"; \
+		echo "### README: Please update this file with your own data. ###"; \
+		echo "###########################################################"; \
+	else \
+		echo "#######################################################################"; \
+		echo "### ./envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
+		echo "#######################################################################"; \
+	fi
+
+.PHONY: init_envoy
+init_envoy: copy_envoy_config copy_envoy_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, and copy_gateway_endpoints
+
+.PHONY: config_shannon_localnet
+config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
+	fi
+
+.PHONY: config_morse_localnet
+config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
+		echo "##################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
+		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
+		echo "##################################################################################################################"; \
 	fi
 
 .PHONY: copy_envoy_config
@@ -146,10 +243,6 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
 
 # TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-# TODO_TECHDEBT(@commoddity): move all mocks to a shared mocks package
-.PHONY: gen_mocks
-gen_mocks: ## Generate the mock code from the gateway_endpoint.proto file
-	mockgen -source=./envoy/auth_server/proto/gateway_endpoint_grpc.pb.go -destination=./envoy/auth_server/endpoint_store/client_mock_test.go -package=endpointstore -mock_names=GatewayEndpointsClient=MockGatewayEndpointsClient
 
 ########################
 #### Documentation  ####
@@ -163,7 +256,7 @@ go_docs: ## Start Go documentation server
 .PHONY: docs_update
 ## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
 docs_update: ## Update documentation from README.
-	cat README.md > docusaurus/docs/README.md 
+	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server

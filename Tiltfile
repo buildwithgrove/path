@@ -68,22 +68,29 @@ docker_build_with_restart(
     live_update=[sync(".", "/app/path")],
 )
 
-# Load the Kubernetes YAML for the PATH service
-k8s_yaml("./localnet/kubernetes/manifests/path.yaml")
-
 # Conditionally add port forwarding based on the mode
 if MODE == "path_only":
     # Run PATH without any dependencies and port 3000 exposed
-    k8s_resource(
+    helm_resource(
         "path",
+        chart_prefix + "path",
+        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+        # This can only be done once the CLI flags feature has been implemented.
+        image_deps=["path"],
+        image_keys=[("image.repository", "image.tag")],
         labels=["path"],
         port_forwards=["3000:3000"],
     )
 else:
     # Run PATH with all dependencies and no port exposed 
     # as all traffic must be routed through Envoy Proxy.
-    k8s_resource(
+    helm_resource(
         "path",
+        chart_prefix + "path",
+        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+        # This can only be done once the CLI flags feature has been implemented.
+        image_deps=["path"],
+        image_keys=[("image.repository", "image.tag")],
         labels=["path"],
         resource_deps=[
             "ext-authz",
@@ -179,7 +186,7 @@ helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
-       "--values=./localnet/kubernetes/observability/prometheus-stack.yaml",
+       "--values=./local/kubernetes/observability-prometheus-stack.yaml",
        "--set=grafana.defaultDashboardsEnabled=true",
     ],
     resource_deps=["prometheus-community"],
@@ -190,13 +197,12 @@ helm_resource(
     "loki",
     "grafana-helm-repo/loki-stack",
     flags=[
-        "--values=./localnet/kubernetes/observability/loki-stack.yaml",
+        "--values=./local/kubernetes/observability-loki-stack.yaml",
     ],
     labels=["monitoring"],
     resource_deps=["grafana-helm-repo"],
 )
 
-# 3. Load the Kubernetes YAML for the Frafana service
 k8s_resource(
     new_name="grafana",
     workload="observability",

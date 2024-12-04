@@ -7,7 +7,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define the absolute path for envoy.yaml
-ENVOY_CONFIG_PATH="$SCRIPT_DIR/../../localnet/path/envoy/.envoy.yaml"
+ENVOY_CONFIG_PATH="$SCRIPT_DIR/../../local/path/envoy/.envoy.yaml"
 
 # Check if envoy.yaml exists and throw an error if it does
 if [ -f "$ENVOY_CONFIG_PATH" ]; then

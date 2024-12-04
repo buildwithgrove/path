@@ -6,9 +6,9 @@ shannon_config:
       host_port: "grpc-url.io:443"
   gateway_config:
     gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
-    gateway_hex_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
+    gateway_private_key_hex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
     gateway_mode: "centralized"
-    owned_apps_hex_private_keys:
+    owned_apps_private_keys_hex:
       - "e5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
       - "f5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
 

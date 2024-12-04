@@ -16,11 +16,12 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
-	store "github.com/buildwithgrove/path/envoy/auth_server/endpoint_store"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 const (
+	// TODO_MVP(@commoddity): Eliminate the hard-coding of this prefix for all endpoints.
+	// See this thread for more information: https://github.com/buildwithgrove/path/pull/52/files#r1859632536
 	pathPrefix = "/v1/"
 
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
@@ -30,25 +31,27 @@ const (
 	errBody = `{"code": %d, "message": "%s"}`
 )
 
-// The endpointStore interface contains an in-memory store of GatewayEndpoints
-// and their associated data from the connected Postgres database.
-type endpointStore interface {
+// The EndpointStore interface contains an in-memory store of GatewayEndpoints
+// and their associated data from the PADS (PATH Auth Data Server).
+// See: https://github.com/buildwithgrove/path-auth-data-server
+//
+// It used to allow fast lookups of authorization data for PATH when processing requests.
+type EndpointStore interface {
 	GetGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool)
 }
 
-// Enforce that the EndpointStore implements the endpointStore interface.
-var _ endpointStore = &store.EndpointStore{}
-
-// struct with check method
+// The AuthHandler struct contains the methods for processing requests from Envoy,
+// primarily the Check method that is called by Envoy for each request.
 type AuthHandler struct {
-	// The endpointStore contains an in-memory store of GatewayEndpoints
-	// and their associated data from the connected Postgres database.
-	EndpointStore endpointStore
-	// The authorizers represents a list of authorization types that must
-	// pass before a request may be forwarded to the PATH service.
-	// Configured in `main.go` and passed to the filter.
-	Authorizers map[proto.Auth_AuthType]Authorizer
-	Logger      polylog.Logger
+	// The EndpointStore contains an in-memory store of GatewayEndpoints
+	// and their associated data from the PADS (PATH Auth Data Server).
+	EndpointStore EndpointStore
+
+	// The authorizers to be used for the request
+	APIKeyAuthorizer Authorizer
+	JWTAuthorizer    Authorizer
+
+	Logger polylog.Logger
 }
 
 // Check satisfies the implementation of the Envoy External Authorization gRPC service.
@@ -58,9 +61,10 @@ type AuthHandler struct {
 // - Fetches the GatewayEndpoint from the database
 // - Performs all configured authorization checks
 // - Returns a response with the HTTP headers set
-func (a *AuthHandler) Check(ctx context.Context, checkReq *envoy_auth.CheckRequest,
+func (a *AuthHandler) Check(
+	ctx context.Context,
+	checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
-
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 	if req == nil {
@@ -125,26 +129,26 @@ func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpo
 
 // authGatewayEndpoint performs all configured authorization checks on the request
 func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndpoint *proto.GatewayEndpoint) error {
+	// Get the authorization type for the gateway endpoint
 	authType := gatewayEndpoint.GetAuth().GetAuthType()
 
-	// If the endpoint has no authorization requirements, return no error
-	if authType == proto.Auth_NO_AUTH {
-		return nil
-	}
+	switch authType.(type) {
+	case *proto.Auth_NoAuth:
+		return nil // If the endpoint has no authorization requirements, return no error
 
-	// If the endpoint has authorization requirements, get the authorizer for the request
-	requestAuthorizer, ok := a.Authorizers[authType]
-	if !ok {
-		return fmt.Errorf("invalid authorization type: %s", authType)
-	}
+	case *proto.Auth_StaticApiKey:
+		return a.APIKeyAuthorizer.authorizeRequest(headers, gatewayEndpoint)
 
-	// Authorize the request using the authorizer configured for the gateway endpoint
-	return requestAuthorizer.authorizeRequest(headers, gatewayEndpoint)
+	case *proto.Auth_Jwt:
+		return a.JWTAuthorizer.authorizeRequest(headers, gatewayEndpoint)
+
+	default:
+		return fmt.Errorf("invalid authorization type")
+	}
 }
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded
 func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint) []*envoy_core.HeaderValueOption {
-
 	// Set endpoint ID header on all requests
 	headers := []*envoy_core.HeaderValueOption{
 		{

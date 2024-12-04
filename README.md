@@ -39,6 +39,8 @@
   - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 
+<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+
 ## 1. Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -85,8 +87,8 @@ docker pull ghcr.io/buildwithgrove/path
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
-   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
+   > 💡 **TIP:** If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
@@ -227,7 +229,8 @@ To enable authorization and rate limiting, you can run the PATH service with the
 
 This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
-**For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).**
+  > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+
 
 ## 6. Running PATH
 
@@ -235,11 +238,11 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
+    > 💡 For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
-   **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+    > 🚨 **Warning: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization.**
 
 ### 6.2. Start the Container
 
@@ -322,9 +325,10 @@ The origins of this repository were inspired by the work kicked off in [gateway-
 [Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
 
 However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
+
 - Enabling multi-protocol support; Morse, Shanon and beyond
 - Set a foundation to migrate Grove's quality of service and data pipelineta
 - Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
 - Etc...
 
-<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) --> 
+<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->

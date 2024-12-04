@@ -1,0 +1,14 @@
+path:
+  count: 1
+  delve:
+    enabled: false
+observability:
+  enabled: true
+  grafana:
+    defaultDashboardsEnabled: false
+# DEV_NOTE: to use a local copy of Helm charts, set BOTH of the following:
+#   1. enabled: true
+#   2. path: {PATH_TO_LOCAL_HELM_CHART}
+helm_chart_local_repo:
+  enabled: false
+  path: ../helm-charts

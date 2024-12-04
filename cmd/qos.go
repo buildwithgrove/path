@@ -42,9 +42,15 @@ func getServiceQoSInstances(
 
 	// TODO_FUTURE: support serviceQoS-specific configuration.
 	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
+
 	for _, serviceID := range allServiceIDs {
-		switch serviceID {
-		case config.ServiceIDEVM, config.ServiceIDFEVM:
+
+		// Get the QoS type for the service ID.
+		serviceQoSType := config.ServiceQoSTypes[serviceID]
+
+		switch serviceQoSType {
+
+		case config.ServiceIDEVM:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
 					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
@@ -58,10 +64,16 @@ func getServiceQoSInstances(
 			if _, ok := hydratorServiceIDsIdx[serviceID]; ok {
 				hydratorQoSGenerators[serviceID] = evmEndpointStore
 			}
+
+		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.
+		// At-least having something like func buildSolanaQoSInstance(...) in a solana.go file either here or under
+		// config package will make the initialization/configuration code easier to read and maintain.
 		case config.ServiceIDSolana:
 			// TODO_TECHDEBT: add solana qos service here
+
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
+
 		case config.ServiceIDE2E:
 			evmEndpointStore := &evm.EndpointStore{
 				Config: evm.EndpointStoreConfig{
@@ -73,8 +85,9 @@ func getServiceQoSInstances(
 			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
 				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
 			}
+
 		default:
-			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not recognized", serviceID)
+			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
 	}
 
