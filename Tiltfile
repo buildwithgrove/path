@@ -22,15 +22,15 @@ hot_reload_dirs = [
 ]
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
-localnet_config_path = "localnet_config.yaml"
-localnet_config = read_yaml(localnet_config_path, default={})
+local_config_path = "local_config.yaml"
+local_config = read_yaml(local_config_path, default={})
 
 # TODO_UPNEXT(@adshmh): Package the default Helm chart for PATH and upload the pokt-network repo.
 # Configure helm chart reference. If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
 helm_repo("pokt-network", "https://pokt-network.github.io/helm-charts/")
 chart_prefix = "pokt-network/"
-if localnet_config["helm_chart_local_repo"]["enabled"]:
-    helm_chart_local_repo = localnet_config["helm_chart_local_repo"]["path"]
+if local_config["helm_chart_local_repo"]["enabled"]:
+    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
     hot_reload_dirs.append(helm_chart_local_repo)
     print("Using local helm chart repo " + helm_chart_local_repo)
     chart_prefix = helm_chart_local_repo + "/charts/"
@@ -57,7 +57,7 @@ MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
 # --------------------------------------------------------------------------- #
 
 # Import PATH configuration file into Kubernetes ConfigMaps
-configmap_create("path-config", from_file="./localnet/path/config/.config.yaml", watch=True)
+configmap_create("path-config", from_file="./local/path/config/.config.yaml", watch=True)
 
 # Build the PATH image from the Dockerfile in the root directory
 docker_build_with_restart(
@@ -113,13 +113,13 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
 
     # Import Envoy Auth configuration file into Kubernetes ConfigMaps
-    configmap_create("envoy-config", from_file="./localnet/path/envoy/.envoy.yaml", watch=True)
-    configmap_create("gateway-endpoints", from_file="./localnet/path/envoy/.gateway-endpoints.yaml", watch=True)
-    configmap_create("ratelimit-config", from_file="./localnet/path/envoy/.ratelimit.yaml", watch=True)
+    configmap_create("envoy-config", from_file="./local/path/envoy/.envoy.yaml", watch=True)
+    configmap_create("gateway-endpoints", from_file="./local/path/envoy/.gateway-endpoints.yaml", watch=True)
+    configmap_create("ratelimit-config", from_file="./local/path/envoy/.ratelimit.yaml", watch=True)
 
     # Import External Authorization Server environment variables into Kubernetes ConfigMaps
-    configmap_create("ext-authz-env", from_env_file="./localnet/path/envoy/.env.auth_server", watch=True)
-    configmap_create("pads-env", from_env_file="./localnet/path/envoy/.env.pads", watch=True)
+    configmap_create("ext-authz-env", from_env_file="./local/path/envoy/.env.auth_server", watch=True)
+    configmap_create("pads-env", from_env_file="./local/path/envoy/.env.pads", watch=True)
 
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(
@@ -129,7 +129,7 @@ if MODE == "path_with_auth":
         live_update=[sync("./envoy/auth_server", "/app")],
     )
     # Load the Kubernetes YAML for the External Authorization Server
-    k8s_yaml("./localnet/kubernetes/manifests/ext-authz.yaml")
+    k8s_yaml("./local/kubernetes/envoy-ext-authz.yaml")
     k8s_resource(
         "ext-authz",
         labels=["envoy_auth"],
@@ -138,7 +138,7 @@ if MODE == "path_with_auth":
     )
 
     # 2. Load the Kubernetes YAML for the envoy-proxy service
-    k8s_yaml("./localnet/kubernetes/manifests/envoy-proxy.yaml")
+    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
     k8s_resource(
         "envoy-proxy",
         labels=["envoy_auth"],
@@ -146,14 +146,14 @@ if MODE == "path_with_auth":
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
-    k8s_yaml("./localnet/kubernetes/manifests/path-auth-data-server.yaml")
+    k8s_yaml("./local/kubernetes/envoy-pads.yaml")
     k8s_resource(
         "path-auth-data-server",
         labels=["envoy_auth"],        
     )
 
     # 4. Load the Kubernetes YAML for the ratelimit service
-    k8s_yaml("./localnet/kubernetes/manifests/ratelimit.yaml")
+    k8s_yaml("./local/kubernetes/envoy-ratelimit.yaml")
     k8s_resource(
         "ratelimit",
         labels=["envoy_auth"],        
@@ -161,7 +161,7 @@ if MODE == "path_with_auth":
     )
 
     # 5. Load the Kubernetes YAML for the redis service
-    k8s_yaml("./localnet/kubernetes/manifests/redis.yaml")
+    k8s_yaml("./local/kubernetes/envoy-redis.yaml")
     k8s_resource(
         "redis",
         labels=["envoy_auth"],

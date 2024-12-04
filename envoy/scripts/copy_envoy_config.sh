@@ -27,3 +27,8 @@ sed -e "s|\${AUTH_DOMAIN}|$AUTH_DOMAIN|g" \
     "$SCRIPT_DIR/../envoy.template.yaml" > "$ENVOY_CONFIG_PATH"
 
 echo "envoy.yaml has been created at $ENVOY_CONFIG_PATH"
+
+# Define the absolute path for ratelimit.yaml
+RATELIMIT_CONFIG_PATH="$SCRIPT_DIR/../../local/path/envoy/.ratelimit.yaml"
+
+cp "$SCRIPT_DIR/../ratelimit.yaml" "$RATELIMIT_CONFIG_PATH"

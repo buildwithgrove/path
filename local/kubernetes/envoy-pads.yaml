@@ -16,7 +16,6 @@ spec:
       containers:
       - name: path-auth-data-server
         image: ghcr.io/buildwithgrove/path-auth-data-server:latest
-        imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
             name: pads-env
