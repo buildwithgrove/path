@@ -17,7 +17,7 @@ help: ## Prints all the targets in all the Makefiles
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --no-deps path_gateway 
+	docker compose --profile path-gateway up -d --no-deps path_gateway
 
 .PHONY: path_up_build_gateway
 path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
@@ -43,7 +43,7 @@ path_down: ## Stop the PATH gateway and all related dependencies
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_auth_plugin test_e2e_shannon_relay
+test_all: test_unit test_auth_plugin test_e2e
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
@@ -52,6 +52,10 @@ test_unit: ## Run all unit tests
 .PHONY: test_auth_server
 test_auth_server: ## Run the auth server tests
 	(cd envoy/auth_server && go test ./... -count=1)
+
+.PHONY: test_e2e
+test_e2e: ## Run all e2e tests
+	go test ./... -tags=e2e -count=1
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: ## Run an E2E shannon relay test
