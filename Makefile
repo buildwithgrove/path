@@ -183,7 +183,7 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 localnet_up: ## Spins up Kind cluster for local development and brings up Tilt from file
 	@echo "Spinning up localnet..."
 	@kind create cluster --name kind-path-localnet
-	@kubectl config use-context kind-path-localnet
+	@kubectl config use-context kind-kind-path-localnet
 	@kubectl create secret generic path-config-local \
 		--from-file=.config.yaml=./local/path/config/.config.yaml
 	@tilt up

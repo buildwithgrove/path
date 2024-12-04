@@ -28,7 +28,7 @@ local_config = read_yaml(local_config_path, default={})
 # Define modes:
 # Mode determines which resources are loaded. Possible options are:
 # 1. path_only - Loads only the PATH service.
-# 2. path_with_auth - Loads the PATH service, Envoy Proxy, External Authorization Server, Ratelimit, and Redis.
+# 2. path_with_auth - Loads the PATH service, Envoy Proxy, External Authorization Server, PADS, Ratelimit, and Redis.
 # 
 # Observability stack is loaded in both modes.
 MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
@@ -54,7 +54,10 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 # 2. Add a secret per sensitive data item (e.g. gateway's private key)
 # 3. Load the secrets into environment variables of an init container
 # 4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
+# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.\\
+
+# Import configuration files into Kubernetes ConfigMap
+configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
 
 # Build an image with a path binary
 docker_build_with_restart(
@@ -102,6 +105,7 @@ else:
             "ratelimit",
             "redis",
         ],
+        port_forwards=["3000:3000"],
     )
 
 if MODE == "path_with_auth":
@@ -110,7 +114,7 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     # 1. External Authorization Server                                             #
     # 2. Envoy Proxy                                                               #
-    # 3. Path Auth Data Server                                                     #
+    # 3. Path Auth Data Server (PADS)                                              #
     # 4. Ratelimit                                                                 #
     # 5. Redis                                                                     #
     # ---------------------------------------------------------------------------- #
