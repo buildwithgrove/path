@@ -20,11 +20,11 @@ path_build: ## build the path binary
 
 .PHONY: path_up_gateway
 path_up_gateway: ## Run just the PATH gateway without any dependencies
-	MODE=path_gateway tilt up tilt up --cleanup
+	MODE=path_gateway tilt up tilt up
 
 .PHONY: path_up
 path_up: ## Run the PATH gateway and all related dependencies
-	tilt up --cleanup
+	tilt up
 
 .PHONY: path_down
 path_down: ## Stop the PATH gateway and all related dependencies
@@ -175,6 +175,26 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 		echo "### ./local/path/envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
 		echo "##################################################################################"; \
 	fi
+
+###############################
+###  Localnet Make targets  ###
+###############################
+.PHONY: localnet_up
+localnet_up: ## Spins up Kind cluster for local development and brings up Tilt from file
+	@echo "Spinning up localnet..."
+	@kind create cluster --name kind-path-localnet
+	@kubectl config use-context kind-path-localnet
+	@kubectl create secret generic path-config-local \
+		--from-file=.config.yaml=./local/path/config/.config.yaml
+	@tilt up
+
+.PHONY: localnet_down
+localnet_down: ## Tears down Kind cluster
+	@echo "Tearing down localnet..."
+	@tilt down
+	@kubectl delete secret path-config-local
+	@kind delete cluster --name kind-path-localnet
+
 
 ###############################
 ### Generation Make Targets ###

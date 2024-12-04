@@ -1,0 +1,46 @@
+global:
+  imagePullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    name: "path-sa"
+  
+path:
+  mountSecrets:
+    - name: path-config-local
+      mountPath: /app/.config.yaml
+      subPath: .config.yaml
+      items:
+        - key: .config.yaml
+          path: .config.yaml
+      
+  replicas: 1
+  resources:
+    limits:
+      memory: 2G
+      cpu: 4
+    requests:
+      cpu: 1.8
+      memory: 800Mi
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+      service:
+        type: ClusterIP
+
+  # TODO_TECHDEBT(@HebertCL): Probes doesn't seem to be working in Tilt.
+  # readinessProbe:
+  #   failureThreshold: 6
+  #   httpGet:
+  #     path: /healthz
+  #     port: 3000
+  #     scheme: HTTP
+  # livenessProbe:
+  #   failureThreshold: 6
+  #   httpGet:
+  #     path: /healthz
+  #     port: 3000
+  #     scheme: HTTP
+      
+  delve:
+    enabled: false

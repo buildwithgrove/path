@@ -56,9 +56,6 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Import configuration files into Kubernetes ConfigMap
-configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
-
 # Build an image with a path binary
 docker_build_with_restart(
     "path",
@@ -74,6 +71,9 @@ if MODE == "path_only":
     helm_resource(
         "path",
         chart_prefix + "path",
+        flags=[
+            "--values=./local/path/config/path-values.yaml",
+        ],
         # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
         # This can only be done once the CLI flags feature has been implemented.
         image_deps=["path"],
@@ -87,6 +87,9 @@ else:
     helm_resource(
         "path",
         chart_prefix + "path",
+        flags=[
+            "--values=./local/path/config/path-values.yaml",
+        ],
         # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
         # This can only be done once the CLI flags feature has been implemented.
         image_deps=["path"],
@@ -181,8 +184,8 @@ helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
-       "--values=./local/kubernetes/observability-prometheus-stack.yaml",
-       "--set=grafana.defaultDashboardsEnabled=true",
+        "--values=./local/kubernetes/observability-prometheus-stack.yaml",
+        "--set=grafana.defaultDashboardsEnabled=true",
     ],
     resource_deps=["prometheus-community"],
 )
