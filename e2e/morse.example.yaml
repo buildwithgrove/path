@@ -11,8 +11,6 @@ morse_config:
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
   signed_aats: # ATTENTION: all signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
     "40af4e7e1b311c76a573610fe115cd2adf1eeade":

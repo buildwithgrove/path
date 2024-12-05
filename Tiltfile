@@ -75,7 +75,7 @@ if MODE == "path_only":
         "path",
         chart_prefix + "path",
         flags=[
-            "--values=./local/path/config/path-values.yaml",
+            "--values=./local/kubernetes/path-values.yaml",
         ],
         # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
         # This can only be done once the CLI flags feature has been implemented.
@@ -91,7 +91,7 @@ else:
         "path",
         chart_prefix + "path",
         flags=[
-            "--values=./local/path/config/path-values.yaml",
+            "--values=./local/kubernetes/path-values.yaml",
         ],
         # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
         # This can only be done once the CLI flags feature has been implemented.
@@ -105,7 +105,6 @@ else:
             "ratelimit",
             "redis",
         ],
-        port_forwards=["3000:3000"],
     )
 
 if MODE == "path_with_auth":

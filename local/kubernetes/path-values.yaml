@@ -27,20 +27,23 @@ path:
       protocol: TCP
       service:
         type: ClusterIP
+        labels:
+          app.kubernetes.io/name: path
+        selector:
+          app.kubernetes.io/name: path
 
-  # TODO_TECHDEBT(@HebertCL): Probes doesn't seem to be working in Tilt.
-  # readinessProbe:
-  #   failureThreshold: 6
-  #   httpGet:
-  #     path: /healthz
-  #     port: 3000
-  #     scheme: HTTP
-  # livenessProbe:
-  #   failureThreshold: 6
-  #   httpGet:
-  #     path: /healthz
-  #     port: 3000
-  #     scheme: HTTP
+  readinessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /healthz
+      port: 3000
+      scheme: HTTP
+  livenessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /healthz
+      port: 3000
+      scheme: HTTP
       
   delve:
     enabled: false
