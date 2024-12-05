@@ -29,20 +29,20 @@
   - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
   - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
   - [4.4 Other Examples](#44-other-examples)
-- [5. Authorization \& Rate Limiting](#5-authorization--rate-limiting)
-- [6. Running PATH](#6-running-path)
-  - [6.1. Setup Config YAML](#61-setup-config-yaml)
-  - [6.2. Start the Container](#62-start-the-container)
-- [7. E2E Tests](#7-e2e-tests)
-  - [7.1. Running Tests](#71-running-tests)
+- [5. Running PATH](#5-running-path)
+  - [5.1. Setup Config YAML](#51-setup-config-yaml)
+  - [5.2. Start the Container](#52-start-the-container)
+- [6. E2E Tests](#6-e2e-tests)
+  - [6.1. Running Tests](#61-running-tests)
 - [8. Running Localnet](#8-running-localnet)
   - [8.1 Pre-requisites](#81-pre-requisites)
   - [8.2 Spinning up / Tearing down Localnet](#82-spinning-up--tearing-down-localnet)
 - [9. Troubleshooting](#9-troubleshooting)
   - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
+- [Troubleshooting](#troubleshooting)
+  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
-
-<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+- [License](#license)
 
 ## 1. Introduction
 
@@ -90,8 +90,8 @@ docker pull ghcr.io/buildwithgrove/path
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
-   > 💡 **TIP:** If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.
+   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
@@ -224,41 +224,39 @@ services:
   - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
-## 5. Authorization & Rate Limiting
+## 5. Running PATH
 
-By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
-
-To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
-
-This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
-
-  > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
-
-
-## 6. Running PATH
-
-### 6.1. Setup Config YAML
+### 5.1. Setup Config YAML
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-    > 💡 For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
-    > 🚨 **Warning: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization.**
+   **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 6.2. Start the Container
+### 5.2. Start the Container
 
-The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.
+1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
 
-1. Populate `.config.yaml` correctly.
-2. Run one of the following `make` targets:
-   - `make path_up_gateway` - Start PATH without any dependencies (straight to the PATH service) on port `3000`.
-   - `make path_up` - Start PATH with all dependencies (through the Envoy Proxy) on port `3001`.
-3. Once the Docker container is running, you may send service requests to the PATH service.
-4. Run `make path_down` to stop the PATH service.
+   ```sh
+   make path_up
+   ```
 
-## 7. E2E Tests
+   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+
+2. Once the Docker container is running, you may send service requests to the PATH service.
+
+   By default, the PATH service will run on port `3000`.
+
+3. To stop the PATH service, use the following `make` target:
+
+   ```sh
+   make path_down
+   ```
+
+## 6. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
@@ -276,7 +274,7 @@ Currently, the E2E tests are configured to run against the Shannon testnet.
 
 Future work will include adding support for other protocols.
 
-### 7.1. Running Tests
+### 6.1. Running Tests
 
 To run the tests, use the following `make` targets:
 
@@ -291,6 +289,7 @@ make test_unit
 make test_e2e_shannon_relay
 ```
 
+<<<<<<< HEAD
 ## 8. Running Localnet
 
 You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
@@ -314,6 +313,11 @@ Localnet can be spin up/tear down using the following targets:
 ## 9. Troubleshooting
 
 ### 9.1. Docker Permissions Issues - Need to run sudo?
+=======
+## Troubleshooting
+
+### Docker Permissions Issues - Need to run sudo?
+>>>>>>> 187732dd0a5d6dd4be01a2ecb66c3a7b8d8479e9
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
@@ -336,3 +340,9 @@ However, after a week-long sprint, the team deemed that starting from scratch wa
 - Etc...
 
 <!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->
+
+---
+
+## License
+
+This project is licensed under the MIT License; see the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.

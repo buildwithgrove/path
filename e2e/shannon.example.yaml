@@ -5,10 +5,10 @@
 shannon_config:
   full_node_config:
     # do not change rpc_url
-    rpc_url: https://testnet-validated-validator-rpc.poktroll.com
+    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com"
     grpc_config:
       # do not change host_port
-      host_port: testnet-validated-validator-grpc.poktroll.com:443
+      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
   gateway_config:
     gateway_mode: "centralized"
     # NOTE: gateway_private_key_hex must be replaced with the correct gateway private key secret
@@ -23,8 +23,8 @@ services:
   "gatewaye2e":
     # do not change alias
     alias: "test-service"
-  "0021":
+  "F00C":
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
-    - "0021"
+    - "F00C"
