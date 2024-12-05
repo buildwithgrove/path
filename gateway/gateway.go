@@ -18,8 +18,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -68,6 +66,7 @@ type Gateway struct {
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	var httpRes HTTPResponse
 
+	logger := g.getHTTPRequestLogger(httpReq)
 	// TODO_INCOMPLETE: add request response observation and uncomment the following line when implemented.
 	// defer g.RequestResponseObserver.ObserveReqRes(ctx, httpReq, httpRes)
 
@@ -79,8 +78,10 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	if err != nil {
 		httpRes = g.HTTPRequestParser.GetHTTPErrorResponse(ctx, err)
 		g.writeResponse(ctx, httpRes, w)
+		logger.Info().Err(err).Msg("Could not get a ServiceQoS instance for the HTTP request.")
 		return
 	}
+	logger = logger.With("service_id", serviceID)
 
 	// TODO_TECHDEBT: add request authorization, e.g. rate limiting would block an otherwise valid service request.
 	// This is currently out fo scope since the gateway MVP is to accept and serve all incoming HTTP requests.
@@ -89,18 +90,24 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// This poyload will be sent to an endpoint matching the requested service.
 	serviceRequestCtx, isValid := serviceQoS.ParseHTTPRequest(ctx, httpReq)
 	if !isValid {
+		httpResponse := serviceRequestCtx.GetHTTPResponse()
 		// Use the offchain service spec to decide the HTTP response returned to the user.
 		// This is service-specific because we know which service the user is requesting.
 		// e.g. for a JSONRPC service, the offchain spec enforcer can return a JSONRPC-formatted payload for the HTTP response returned to the user.
-		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+		g.writeResponse(ctx, httpResponse, w)
+		logger.With(
+			"service_qos_response_body", string(httpResponse.GetPayload()),
+			"service_qos_response_http_status", httpResponse.GetHTTPStatusCode(),
+		).Info().Msg("HTTP request rejected by service QoS as invalid.")
 		return
 	}
 
-	protocolRequestCtx, err := g.buildProtocolRequestCtx(serviceID, httpReq)
+	protocolRequestCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
 	if err != nil {
 		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+		logger.Info().Err(err).Msg("Failed to create a protocol request context for the HTTP request.")
 		return
 	}
 
@@ -115,7 +122,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		// a response could be retrying with another endpoint, depending on the error.
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
-
+		logger.Info().Err(err).Msg("Failed to send a relay request for the HTTP request.")
 		return
 	}
 
@@ -136,6 +143,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// a) whether the endpoint failed to provide a valid response, and
 	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	g.writeResponse(ctx, serviceRequestCtx.GetHTTPResponse(), w)
+	logger.Info().Msg("Completed processing the HTTP request and returned an HTTP response.")
 
 	// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s).
 	// This is called in a Goroutine to avoid potentially blocking the HTTP handler.
@@ -170,12 +178,17 @@ func (g Gateway) writeResponse(ctx context.Context, response HTTPResponse, w htt
 	_, _ = w.Write(response.GetPayload())
 }
 
-// buildProtocolRequestCtx builds a protocol-level context for the supplied service ID and HTTP request.
-func (g *Gateway) buildProtocolRequestCtx(serviceID protocol.ServiceID, httpReq *http.Request) (ProtocolRequestContext, error) {
-	protocolCtx, err := g.Protocol.BuildRequestContext(serviceID, httpReq)
-	if err != nil {
-		g.Logger.With("service", string(serviceID)).Warn().Err(err).Msg("Failed to create a protocol request context")
+// getHTTPRequestLogger returns a logger with attributes set using the supplied HTTP request.
+func (g Gateway) getHTTPRequestLogger(httpReq *http.Request) polylog.Logger {
+	var urlStr string
+	if httpReq.URL != nil {
+		urlStr = httpReq.URL.String()
 	}
 
-	return protocolCtx, err
+	return g.Logger.With(
+		"http_req_url", urlStr,
+		"http_req_host", httpReq.Host,
+		"http_req_remote_addr", httpReq.RemoteAddr,
+		"http_req_content_length", httpReq.ContentLength,
+	)
 }
