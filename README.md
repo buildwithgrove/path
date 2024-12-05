@@ -41,8 +41,7 @@
 - [9. Troubleshooting](#9-troubleshooting)
   - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
-
-<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+- [License](#license)
 
 ## 1. Introduction
 
@@ -90,8 +89,8 @@ docker pull ghcr.io/buildwithgrove/path
 
    Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
 
-   > 💡 **TIP:** If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.
+   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
 3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
 
@@ -234,18 +233,17 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
   > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
 
-
 ## 6. Running PATH
 
 ### 6.1. Setup Config YAML
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
-    > 💡 For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
-    > 🚨 **Warning: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization.**
+   **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
 ### 6.2. Start the Container
 
@@ -270,6 +268,18 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 2. Once the Docker container is running, you may send service requests to the PATH service.
 
+
+3. To stop the PATH service, use the following `make` target:
+
+   ```sh
+   make path_down
+   ```
+
+   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+
+2. Once the Docker container is running, you may send service requests to the PATH service.
+
+   By default, the PATH service will run on port `3000`.
 
 3. To stop the PATH service, use the following `make` target:
 
@@ -355,3 +365,9 @@ However, after a week-long sprint, the team deemed that starting from scratch wa
 - Etc...
 
 <!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->
+
+---
+
+## License
+
+This project is licensed under the MIT License; see the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.
