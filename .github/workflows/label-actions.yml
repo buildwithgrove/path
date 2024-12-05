@@ -1,0 +1,22 @@
+name: "Label Actions"
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+  pull_request_target:
+    types: [labeled, unlabeled]
+  discussion:
+    types: [labeled, unlabeled]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  discussions: write
+
+jobs:
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      # TODO_TECHDEBT: switch to `dessant/label-actions@v3` when https://github.com/dessant/label-actions/pull/29 is merged.
+      - uses: okdas/label-actions@patch-1
