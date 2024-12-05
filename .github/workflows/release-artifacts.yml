@@ -1,10 +1,7 @@
 name: Tag and Release
 
 on:
-  workflow_run:
-    workflows: ["Path tests"]
-    types:
-      - completed
+  push:
     branches:
       - main
   workflow_dispatch: # Added to enable manual trigger via GitHub UI
