@@ -3,7 +3,7 @@ global:
   serviceAccount:
     create: true
     name: "path-sa"
-  
+
 path:
   mountSecrets:
     - name: path-config-local
@@ -27,10 +27,6 @@ path:
       protocol: TCP
       service:
         type: ClusterIP
-        labels:
-          app.kubernetes.io/name: path
-        selector:
-          app.kubernetes.io/name: path
 
   readinessProbe:
     failureThreshold: 6
