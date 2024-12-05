@@ -67,30 +67,30 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 
 .PHONY: copy_shannon_config
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./config/.config.yaml ]; then \
+		cp ./cmd/.config.shannon_example.yaml ./config/.config.yaml; \
 		echo "###########################################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                                          ###"; \
+		echo "### Created ./config/.config.yaml                                                                                       ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
 		echo "###########################################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##############################################################"; \
+		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##############################################################"; \
 	fi
 
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./config/.config.yaml ]; then \
+		cp ./cmd/.config.morse_example.yaml ./config/.config.yaml; \
 		echo "#############################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                            ###"; \
+		echo "### Created ./config/.config.yaml                                                                         ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
 		echo "#############################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##############################################################"; \
+		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##############################################################"; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
