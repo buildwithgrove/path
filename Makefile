@@ -1,9 +1,11 @@
 ########################
 ### Makefile Helpers ###
 ########################
+
 .PHONY: list
 list: ## List all make targets
 	@${MAKE} -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
+
 .PHONY: help
 .DEFAULT_GOAL := help
 help: ## Prints all the targets in all the Makefiles
@@ -12,31 +14,12 @@ help: ## Prints all the targets in all the Makefiles
 # TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
 
 #############################
-### Run Path Make Targets ###
+####  Build Path Targets  ###
 #############################
 
-.PHONY: path_up_gateway
-path_up_gateway: ## Run just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --no-deps path_gateway 
-
-.PHONY: path_up_build_gateway
-path_up_build_gateway: ## Run and build just the PATH gateway without any dependencies
-	docker compose --profile path-gateway up -d --build --no-deps path_gateway
-
-.PHONY: path_down_gateway
-path_down_gateway: ## Stop just the PATH gateway
-	docker compose --profile path-gateway down --remove-orphans path_gateway
 .PHONY: path_build
 path_build: ## build the path binary
 	go build -o bin/path ./cmd
-
-.PHONY: path_up
-path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
-	tilt up
-
-.PHONY: path_down
-path_down: ## Stop the PATH gateway and all related dependencies
-	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -197,22 +180,13 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 ###############################
 ###  Localnet Make targets  ###
 ###############################
+
 .PHONY: localnet_up
-localnet_up: ## Spins up Kind cluster for local development and brings up Tilt from file
-	@echo "Spinning up localnet..."
-	@kind create cluster --name kind-path-localnet
-	@kubectl config use-context kind-path-localnet
-	@kubectl create secret generic path-config-local \
-		--from-file=.config.yaml=./local/path/config/.config.yaml
+localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster)
 	@tilt up
 
 .PHONY: localnet_down
-localnet_down: ## Tears down Kind cluster
-	@echo "Tearing down localnet..."
-	@tilt down
-	@kubectl delete secret path-config-local
-	@kind delete cluster --name kind-path-localnet
-
+localnet_down: dev_down ## Tears down local Tilt development environment (using kind cluster)
 
 ###############################
 ### Generation Make Targets ###
@@ -241,3 +215,9 @@ docs_update: ## Update documentation from README.
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
 	cd docusaurus && npm i && npm run start
+
+###############################
+###    Makefile imports     ###
+###############################
+
+include ./makefiles/localnet.mk
