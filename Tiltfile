@@ -25,12 +25,10 @@ hot_reload_dirs = [
 local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
-# Define modes:
-# Mode determines which resources are loaded. Possible options are:
-# 1. path_only - Loads only the PATH service.
-# 2. path_with_auth - Loads the PATH service, Envoy Proxy, External Authorization Server, PADS, Ratelimit, and Redis.
-# 
-# Observability stack is loaded in both modes.
+# PATH operation modes determine which services are loaded:
+# 1. path_only - PATH Service Only
+# 2. path_with_auth - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
+# The observability stack is loaded in both modes.
 MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
 
 # --------------------------------------------------------------------------- #
@@ -85,7 +83,7 @@ if MODE == "path_only":
         port_forwards=["3000:3000"],
     )
 else:
-    # Run PATH with all dependencies and no port exposed 
+    # Run PATH with all dependencies and no port exposed
     # as all traffic must be routed through Envoy Proxy.
     helm_resource(
         "path",
@@ -105,6 +103,7 @@ else:
             "ratelimit",
             "redis",
         ],
+        port_forwards=["3000:3000"],
     )
 
 if MODE == "path_with_auth":
@@ -114,14 +113,22 @@ if MODE == "path_with_auth":
     # 1. External Authorization Server                                             #
     # 2. Envoy Proxy                                                               #
     # 3. Path Auth Data Server (PADS)                                              #
-    # 4. Ratelimit                                                                 #
+    # 4. Rate Limiter                                                              #
     # 5. Redis                                                                     #
     # ---------------------------------------------------------------------------- #
 
     # Import Envoy Auth configuration file into Kubernetes ConfigMaps
-    configmap_create("envoy-config", from_file="./local/path/envoy/.envoy.yaml", watch=True)
-    configmap_create("gateway-endpoints", from_file="./local/path/envoy/.gateway-endpoints.yaml", watch=True)
-    configmap_create("ratelimit-config", from_file="./local/path/envoy/.ratelimit.yaml", watch=True)
+    configmap_create(
+        "envoy-config", from_file="./local/path/envoy/.envoy.yaml", watch=True
+    )
+    configmap_create(
+        "gateway-endpoints",
+        from_file="./local/path/envoy/.gateway-endpoints.yaml",
+        watch=True,
+    )
+    configmap_create(
+        "ratelimit-config", from_file="./local/path/envoy/.ratelimit.yaml", watch=True
+    )
 
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
     docker_build(
@@ -135,7 +142,7 @@ if MODE == "path_with_auth":
     k8s_resource(
         "ext-authz",
         labels=["envoy_auth"],
-        port_forwards=["10003:10003"],        
+        port_forwards=["10003:10003"],
         resource_deps=["path-auth-data-server"],
     )
 
@@ -144,21 +151,21 @@ if MODE == "path_with_auth":
     k8s_resource(
         "envoy-proxy",
         labels=["envoy_auth"],
-        port_forwards=["3001:3001"],        
+        port_forwards=["3001:3001"],
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
     k8s_yaml("./local/kubernetes/envoy-pads.yaml")
     k8s_resource(
         "path-auth-data-server",
-        labels=["envoy_auth"],        
+        labels=["envoy_auth"],
     )
 
     # 4. Load the Kubernetes YAML for the ratelimit service
     k8s_yaml("./local/kubernetes/envoy-ratelimit.yaml")
     k8s_resource(
         "ratelimit",
-        labels=["envoy_auth"],        
+        labels=["envoy_auth"],
         resource_deps=["redis"],
     )
 

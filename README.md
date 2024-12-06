@@ -51,11 +51,19 @@ access to a decentralized supply network.
 It provides various tools and libraries to streamline the integration and
 interaction with decentralized protocols.
 
+We use Tilt + Kind to spin up local environment for development and local testing purposes.
+
+<!--TODO_UPNEXT(@HebertCL): Create a FAQ just like Poktroll for additional explanation on the chosen tooling -->
+
+Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
+
 ### 1.1. Prerequisites
 
 **Deployment:**
 
 - [Docker](https://docs.docker.com/get-docker/)
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -231,7 +239,7 @@ To enable authorization and rate limiting, you can run the PATH service with the
 
 This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
-  > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
 
 ## 6. Running PATH
 
@@ -249,43 +257,45 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
+1.  Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
 
-   - To run PATH with no dependencies, use:
+    - To run PATH with no dependencies, use:
 
-      ```sh
-      make path_up_gateway
-      ```
+            ```sh
+            make path_up_gateway
+            ```
 
-     **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
-**
-   - To run PATH with authorization and rate limiting dependencies, use:
+           **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
+
+      \*\*
+
+    - To run PATH with authorization and rate limiting dependencies, use:
 
       ```sh
       make path_up
       ```
+
       **In this mode, all requests pass through Envoy Proxy, which runs on port `3001`.**
 
-2. Once the Docker container is running, you may send service requests to the PATH service.
+2.  Once the Docker container is running, you may send service requests to the PATH service.
 
+3.  To stop the PATH service, use the following `make` target:
 
-3. To stop the PATH service, use the following `make` target:
+    ```sh
+    make path_down
+    ```
 
-   ```sh
-   make path_down
-   ```
+    **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+4.  Once the Docker container is running, you may send service requests to the PATH service.
 
-2. Once the Docker container is running, you may send service requests to the PATH service.
+    By default, the PATH service will run on port `3000`.
 
-   By default, the PATH service will run on port `3000`.
+5.  To stop the PATH service, use the following `make` target:
 
-3. To stop the PATH service, use the following `make` target:
-
-   ```sh
-   make path_down
-   ```
+    ```sh
+    make path_down
+    ```
 
 ## 7. E2E Tests
 

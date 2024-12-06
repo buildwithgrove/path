@@ -1,9 +1,11 @@
 ########################
 ### Makefile Helpers ###
 ########################
+
 .PHONY: list
 list: ## List all make targets
 	@${MAKE} -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
+
 .PHONY: help
 .DEFAULT_GOAL := help
 help: ## Prints all the targets in all the Makefiles
@@ -12,23 +14,12 @@ help: ## Prints all the targets in all the Makefiles
 # TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
 
 #############################
-### Run Path Make Targets ###
+####  Build Path Targets  ###
 #############################
+
 .PHONY: path_build
 path_build: ## build the path binary
 	go build -o bin/path ./cmd
-
-.PHONY: path_up_gateway
-path_up_gateway: ## Run just the PATH gateway without any dependencies
-	MODE=path_gateway tilt up tilt up
-
-.PHONY: path_up
-path_up: ## Run the PATH gateway and all related dependencies
-	tilt up
-
-.PHONY: path_down
-path_down: ## Stop the PATH gateway and all related dependencies
-	tilt down
 
 #########################
 ### Test Make Targets ###
@@ -59,30 +50,30 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 
 .PHONY: copy_shannon_config
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.shannon_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./config/.config.yaml ]; then \
+		cp ./cmd/.config.shannon_example.yaml ./config/.config.yaml; \
 		echo "###########################################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                                          ###"; \
+		echo "### Created ./config/.config.yaml                                                                                       ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
 		echo "###########################################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##############################################################"; \
+		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##############################################################"; \
 	fi
 
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
-	@if [ ! -f ./cmd/.config.yaml ]; then \
-		cp ./cmd/.config.morse_example.yaml ./cmd/.config.yaml; \
+	@if [ ! -f ./config/.config.yaml ]; then \
+		cp ./cmd/.config.morse_example.yaml ./config/.config.yaml; \
 		echo "#############################################################################################################"; \
-		echo "### Created ./cmd/.config.yaml                                                                            ###"; \
+		echo "### Created ./config/.config.yaml                                                                         ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
 		echo "#############################################################################################################"; \
 	else \
-		echo "###########################################################"; \
-		echo "### ./cmd/.config.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
+		echo "##############################################################"; \
+		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##############################################################"; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
@@ -179,21 +170,13 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 ###############################
 ###  Localnet Make targets  ###
 ###############################
+
 .PHONY: localnet_up
-localnet_up: ## Spins up Kind cluster for local development and brings up Tilt from file
-	@echo "Spinning up localnet..."
-	@kind create cluster --name path-localnet
-	@kubectl config use-context kind-path-localnet
-	@kubectl create secret generic path-config-local \
-		--from-file=.config.yaml=./local/path/config/.config.yaml
+localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster)
 	@tilt up
 
 .PHONY: localnet_down
-localnet_down: ## Tears down Kind cluster
-	@echo "Tearing down localnet..."
-	@tilt down
-	@kubectl delete secret path-config-local
-	@kind delete cluster --name path-localnet
+localnet_down: dev_down ## Tears down local Tilt development environment (using kind cluster)
 
 ###############################
 ### Generation Make Targets ###
@@ -222,3 +205,9 @@ docs_update: ## Update documentation from README.
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
 	cd docusaurus && npm i && npm run start
+
+###############################
+###    Makefile imports     ###
+###############################
+
+include ./makefiles/localnet.mk
