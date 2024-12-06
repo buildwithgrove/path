@@ -12,9 +12,10 @@ import (
 )
 
 const (
+	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
 	// The default timeout when sending a request to
 	// an EVM blockchain endpoint.
-	defaultServiceRequestTimeoutMillisec = 5000
+	defaultServiceRequestTimeoutMillisec = 10000
 )
 
 // requestContext provides the support required by the gateway
