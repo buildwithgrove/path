@@ -1,9 +1,11 @@
 ########################
 ### Makefile Helpers ###
 ########################
+
 .PHONY: list
 list: ## List all make targets
 	@${MAKE} -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
+
 .PHONY: help
 .DEFAULT_GOAL := help
 help: ## Prints all the targets in all the Makefiles
@@ -180,11 +182,11 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 ###############################
 
 .PHONY: localnet_up
-localnet_up: dev_up config_path_secrets ## Spins up Kind cluster for local development and brings up Tilt from file
+localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster)
 	@tilt up
 
 .PHONY: localnet_down
-localnet_down: dev_down ## Tears down Kind cluster
+localnet_down: dev_down ## Tears down local Tilt development environment (using kind cluster)
 
 ###############################
 ### Generation Make Targets ###
@@ -217,4 +219,5 @@ docusaurus_start: ## Start docusaurus server
 ###############################
 ###    Makefile imports     ###
 ###############################
+
 include ./makefiles/localnet.mk

@@ -52,6 +52,7 @@ interaction with decentralized protocols.
 We use Tilt + Kind to spin up local environment for development and local testing purposes.
 
 <!--TODO_UPNEXT(@HebertCL): Create a FAQ just like Poktroll for additional explanation on the chosen tooling -->
+
 Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
 
 ### 1.1. Prerequisites
