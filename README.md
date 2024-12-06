@@ -29,13 +29,15 @@
   - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
   - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
   - [4.4 Other Examples](#44-other-examples)
-- [5. Running PATH](#5-running-path)
-  - [5.1. Setup Config YAML](#51-setup-config-yaml)
-  - [5.2. Start the Container](#52-start-the-container)
-- [6. E2E Tests](#6-e2e-tests)
-  - [6.1. Running Tests](#61-running-tests)
+- [5. Authorization \& Rate Limiting](#5-authorization--rate-limiting)
+- [6. Running PATH](#6-running-path)
+  - [6.1. Setup Config YAML](#61-setup-config-yaml)
+  - [6.2. Start the Container](#62-start-the-container)
+- [7. E2E Tests](#7-e2e-tests)
+  - [7.1. Running Tests](#71-running-tests)
 - [8. Running Localnet](#8-running-localnet)
-  - [8.1 Spinning up / Tearing down Localnet](#81-spinning-up--tearing-down-localnet)
+  - [8.1 Pre-requisites](#81-pre-requisites)
+  - [8.2 Spinning up / Tearing down Localnet](#82-spinning-up--tearing-down-localnet)
 - [9. Troubleshooting](#9-troubleshooting)
   - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
@@ -229,9 +231,19 @@ services:
   - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
-## 5. Running PATH
+## 5. Authorization & Rate Limiting
 
-### 5.1. Setup Config YAML
+By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
+
+To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
+
+This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
+
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+
+## 6. Running PATH
+
+### 6.1. Setup Config YAML
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
 
@@ -241,27 +253,51 @@ services:
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 5.2. Start the Container
+### 6.2. Start the Container
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
+**NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-   ```sh
-   make path_up
-   ```
+1.  Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
 
-   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+    - To run PATH with no dependencies, use:
 
-2. Once the Docker container is running, you may send service requests to the PATH service.
+            ```sh
+            make path_up_gateway
+            ```
 
-   By default, the PATH service will run on port `3000`.
+           **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
 
-3. To stop the PATH service, use the following `make` target:
+      \*\*
 
-   ```sh
-   make path_down
-   ```
+    - To run PATH with authorization and rate limiting dependencies, use:
 
-## 6. E2E Tests
+      ```sh
+      make path_up
+      ```
+
+      **In this mode, all requests pass through Envoy Proxy, which runs on port `3001`.**
+
+2.  Once the Docker container is running, you may send service requests to the PATH service.
+
+3.  To stop the PATH service, use the following `make` target:
+
+    ```sh
+    make path_down
+    ```
+
+    **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+
+4.  Once the Docker container is running, you may send service requests to the PATH service.
+
+    By default, the PATH service will run on port `3000`.
+
+5.  To stop the PATH service, use the following `make` target:
+
+    ```sh
+    make path_down
+    ```
+
+## 7. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
@@ -279,7 +315,7 @@ Currently, the E2E tests are configured to run against the Shannon testnet.
 
 Future work will include adding support for other protocols.
 
-### 6.1. Running Tests
+### 7.1. Running Tests
 
 To run the tests, use the following `make` targets:
 
@@ -298,9 +334,16 @@ make test_e2e_shannon_relay
 
 You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
 
-Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
+### 8.1 Pre-requisites
 
-### 8.1 Spinning up / Tearing down Localnet
+Make sure you have the following tools installed:
+
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
+
+Once you have these tools installed, make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
+
+### 8.2 Spinning up / Tearing down Localnet
 
 Localnet can be spin up/tear down using the following targets:
 

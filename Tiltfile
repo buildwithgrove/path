@@ -1,3 +1,4 @@
+# Load necessary Tilt extensions
 load("ext://restart_process", "docker_build_with_restart")
 load("ext://helm_resource", "helm_resource", "helm_repo")
 load("ext://configmap", "configmap_create")
@@ -5,15 +6,19 @@ load("ext://configmap", "configmap_create")
 # A list of directories where changes trigger a hot-reload of PATH.
 # Note: this list needs to be updated each time a new package is added to the repo.
 hot_reload_dirs = [
-    "cmd",
-    "config",
-    "gateway",
-    "health",
-    "message",
-    "qos",
-    "relayer",
-    "request",
-    "router",
+    "./cmd",
+    "./config",
+    "./gateway",
+    "./health",
+    "./message",
+    "./qos",
+    "./relayer",
+    "./request",
+    "./router",
+    "./envoy",
+    "./envoy/auth_server/auth",
+    "./envoy/auth_server/endpoint_store",
+    "./envoy/auth_server/proto",
 ]
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
@@ -43,11 +48,14 @@ if local_config["helm_chart_local_repo"]["enabled"]:
     chart_prefix = helm_chart_local_repo + "/charts/"
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-#   1. Add placeholder files for sensitive data
-#   2. Add a secret per sensitive data item (e.g. gateway's private key)
-#   3. Load the secrets into environment variables of an init container
-#   4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
+# 1. Add place-holder files for sensitive data
+# 2. Add a secret per sensitive data item (e.g. gateway's private key)
+# 3. Load the secrets into environment variables of an init container
+# 4. Use an init container to run the scripts for updating config from environment variables.
+# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.\\
+
+# Import configuration files into Kubernetes ConfigMap
+configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
 
 # Build an image with a path binary
 docker_build_with_restart(
@@ -176,7 +184,6 @@ if MODE == "path_with_auth":
 # 3. Grafana                                                                    #
 # ----------------------------------------------------------------------------- #
 
-# Observability
 helm_repo("prometheus-community", "https://prometheus-community.github.io/helm-charts")
 helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
 

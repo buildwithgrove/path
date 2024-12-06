@@ -3,7 +3,7 @@ global:
   serviceAccount:
     create: true
     name: "path-sa"
-  
+
 path:
   mountSecrets:
     - name: path-config-local
@@ -28,19 +28,18 @@ path:
       service:
         type: ClusterIP
 
-  # TODO_TECHDEBT(@HebertCL): Probes doesn't seem to be working in Tilt.
-  # readinessProbe:
-  #   failureThreshold: 6
-  #   httpGet:
-  #     path: /healthz
-  #     port: 3000
-  #     scheme: HTTP
-  # livenessProbe:
-  #   failureThreshold: 6
-  #   httpGet:
-  #     path: /healthz
-  #     port: 3000
-  #     scheme: HTTP
+  readinessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /healthz
+      port: 3000
+      scheme: HTTP
+  livenessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /healthz
+      port: 3000
+      scheme: HTTP
       
   delve:
     enabled: false

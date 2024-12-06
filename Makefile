@@ -104,51 +104,6 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "#################################################################"; \
 	fi
 
-.PHONY: copy_envoy_config
-copy_envoy_config: ## substitutes the sensitive Auth0 environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	@if [ ! -f ./envoy/envoy.yaml ]; then \
-		./envoy/scripts/copy_envoy_config.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./envoy/envoy.yaml                          ###"; \
-		echo "### README: Please ensure the configuration is correct. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "###########################################################"; \
-		echo "### ./envoy/envoy.yaml already exists, not overwriting. ###"; \
-		echo "###########################################################"; \
-	fi
-
-.PHONY: copy_envoy_env
-copy_envoy_env: ## copies the example envoy environment variables file to .env file
-	@if [ ! -f ./envoy/auth_server/.env ]; then \
-		cp ./envoy/auth_server/.env.example ./envoy/auth_server/.env; \
-		echo "##################################################################"; \
-		echo "### Created ./envoy/auth_server/.env                           ###"; \
-		echo "### README: Please update the environment variables as needed. ###"; \
-		echo "##################################################################"; \
-	else \
-		echo "#################################################################"; \
-		echo "### ./envoy/auth_server/.env already exists, not overwriting. ###"; \
-		echo "#################################################################"; \
-	fi
-
-.PHONY: copy_gateway_endpoints
-copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
-	@if [ ! -f ./envoy/gateway-endpoints.yaml ]; then \
-		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./envoy/gateway-endpoints.yaml              ###"; \
-		echo "### README: Please update this file with your own data. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "#######################################################################"; \
-		echo "### ./envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
-		echo "#######################################################################"; \
-	fi
-
-.PHONY: init_envoy
-init_envoy: copy_envoy_config copy_envoy_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, and copy_gateway_endpoints
-
 .PHONY: config_shannon_localnet
 config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
 	@if [ -f ./local/path/config/.config.yaml ]; then \
@@ -175,6 +130,41 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
 		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
 		echo "##################################################################################################################"; \
+	fi
+
+#########################################
+### Envoy Initialization Make Targets ###
+#########################################
+
+.PHONY: init_envoy
+init_envoy: copy_envoy_config copy_gateway_endpoints ## Runs copy_envoy_config and copy_gateway_endpoints
+
+.PHONY: copy_envoy_config
+copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
+	@if [ ! -f ./local/path/envoy/envoy.yaml ]; then \
+		./envoy/scripts/copy_envoy_config.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./local/path/envoy/envoy.yaml               ###"; \
+		echo "### README: Please ensure the configuration is correct. ###"; \
+		echo "###########################################################"; \
+	else \
+		echo "######################################################################"; \
+		echo "### ./local/path/envoy/envoy.yaml already exists, not overwriting. ###"; \
+		echo "######################################################################"; \
+	fi
+
+.PHONY: copy_gateway_endpoints
+copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from the PADS repo to ./local/path/envoy/.gateway-endpoints.yaml
+	@if [ ! -f ./local/path/envoy/gateway-endpoints.yaml ]; then \
+		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
+		echo "###########################################################"; \
+		echo "### Created ./local/path/envoy/gateway-endpoints.yaml   ###"; \
+		echo "### README: Please update this file with your own data. ###"; \
+		echo "###########################################################"; \
+	else \
+		echo "##################################################################################"; \
+		echo "### ./local/path/envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
+		echo "##################################################################################"; \
 	fi
 
 ###############################

@@ -164,7 +164,6 @@ The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoypr
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
 
 ### 3.3. Request Lifecycle
-
 ```mermaid
 sequenceDiagram
     participant Client
@@ -228,7 +227,6 @@ Three authorization types are supported:
 For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
 
 _Example Request Header:_
-
 ```bash
 -H "Authorization: Bearer <JWT>"
 ```
@@ -238,7 +236,6 @@ The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id
 The `Go External Authorization Server` will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
-
 ```
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
@@ -315,7 +312,6 @@ For more information, see:
 Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
 
 This service defines two main methods for populating the `Go External Authorization Server`'s `Gateway Endpoint Store`:
-
 ```proto
 service GatewayEndpoints {
   // GetInitialData requests the initial set of GatewayEndpoints from the remote gRPC server.
