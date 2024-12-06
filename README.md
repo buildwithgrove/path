@@ -34,8 +34,10 @@
   - [5.2. Start the Container](#52-start-the-container)
 - [6. E2E Tests](#6-e2e-tests)
   - [6.1. Running Tests](#61-running-tests)
-- [Troubleshooting](#troubleshooting)
-  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
+- [8. Running Localnet](#8-running-localnet)
+  - [8.1 Spinning up / Tearing down Localnet](#81-spinning-up--tearing-down-localnet)
+- [9. Troubleshooting](#9-troubleshooting)
+  - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -47,11 +49,19 @@ access to a decentralized supply network.
 It provides various tools and libraries to streamline the integration and
 interaction with decentralized protocols.
 
+We use Tilt + Kind to spin up local environment for development and local testing purposes.
+
+<!--TODO_UPNEXT(@HebertCL): Create a FAQ just like Poktroll for additional explanation on the chosen tooling -->
+
+Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
+
 ### 1.1. Prerequisites
 
 **Deployment:**
 
 - [Docker](https://docs.docker.com/get-docker/)
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -284,9 +294,22 @@ make test_unit
 make test_e2e_shannon_relay
 ```
 
-## Troubleshooting
+## 8. Running Localnet
 
-### Docker Permissions Issues - Need to run sudo?
+You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
+
+Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
+
+### 8.1 Spinning up / Tearing down Localnet
+
+Localnet can be spin up/tear down using the following targets:
+
+- `localnet_up` -> Spins up localnet environment using Kind + Tilt
+- `localnet_down` -> Tears down localnet.
+
+## 9. Troubleshooting
+
+### 9.1. Docker Permissions Issues - Need to run sudo?
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
