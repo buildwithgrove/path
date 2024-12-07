@@ -42,7 +42,6 @@
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-
 ## 2. Overview
 
 This folder contains everything necessary for managing authorization and rate limiting in the PATH service.
@@ -53,8 +52,7 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-  > 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
-
+> 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -122,7 +120,6 @@ Requests are rejected if either of the following are true:
 - The `<GATEWAY_ENDPOINT_ID>` is missing
 - ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
 
-
 <br/>
 
 > 💡 **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
@@ -164,6 +161,7 @@ The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoypr
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
 
 ### 3.3. Request Lifecycle
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -227,6 +225,7 @@ Three authorization types are supported:
 For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
 
 _Example Request Header:_
+
 ```bash
 -H "Authorization: Bearer <JWT>"
 ```
@@ -236,6 +235,7 @@ The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id
 The `Go External Authorization Server` will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
+
 ```
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
@@ -312,6 +312,7 @@ For more information, see:
 Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
 
 This service defines two main methods for populating the `Go External Authorization Server`'s `Gateway Endpoint Store`:
+
 ```proto
 service GatewayEndpoints {
   // GetInitialData requests the initial set of GatewayEndpoints from the remote gRPC server.
@@ -340,9 +341,7 @@ This service is available as a Docker image and may be configured to load data f
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
-<!-- TODO_MVP(@commoddity): Update this section to refer to Tilt instead of docker-compose.yml once Envoy Tilt PR reconciled with `main` -->
-
-_This Docker image is loaded by default in the [docker-compose.yml](../docker-compose.yml#L90) file at the root of the PATH repo._
+_This Docker image is loaded by default in the [Tiltfile](./Tiltfile) file at the root of the PATH repo._
 
 If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server) section.
 
@@ -418,7 +417,6 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 
 3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
 
-
    _ratelimit.yaml_
 
    ```yaml
@@ -433,10 +431,10 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
              requests_per_unit: 30
    ```
 
-   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors. 
+   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
 
    _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
-   
+
 ### 6.2. Documentation and Examples
 
 As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
