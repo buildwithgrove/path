@@ -13,36 +13,36 @@ spec:
         app: ratelimit
     spec:
       containers:
-      - name: ratelimit
-        image: envoyproxy/ratelimit:master
-        command: ["/bin/ratelimit"]
-        env:
-        - name: USE_STATSD
-          value: "false"
-        - name: LOG_LEVEL
-          value: "error"
-        - name: REDIS_SOCKET_TYPE
-          value: "tcp"
-        - name: REDIS_URL
-          value: "redis:6379"
-        - name: RUNTIME_ROOT
-          value: "/data"
-        - name: RUNTIME_SUBDIRECTORY
-          value: "ratelimit"
-        - name: RUNTIME_WATCH_ROOT
-          value: "false"
-        - name: CONFIG_TYPE
-          value: "FILE"
-        ports:
-        - containerPort: 8081
-        volumeMounts:
-        - name: ratelimit-config
-          mountPath: /data/ratelimit/config/.config.yaml
-          subPath: .config.yaml
+        - name: ratelimit
+          image: envoyproxy/ratelimit:master
+          command: ["/bin/ratelimit"]
+          env:
+            - name: USE_STATSD
+              value: "false"
+            - name: LOG_LEVEL
+              value: "error"
+            - name: REDIS_SOCKET_TYPE
+              value: "tcp"
+            - name: REDIS_URL
+              value: "redis:6379"
+            - name: RUNTIME_ROOT
+              value: "/data"
+            - name: RUNTIME_SUBDIRECTORY
+              value: "ratelimit"
+            - name: RUNTIME_WATCH_ROOT
+              value: "false"
+            - name: CONFIG_TYPE
+              value: "FILE"
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: ratelimit-config
+              mountPath: /data/ratelimit/config/.config.yaml
+              subPath: .config.yaml
       volumes:
-      - name: ratelimit-config
-        configMap:
-          name: ratelimit-config
+        - name: ratelimit-config
+          configMap:
+            name: ratelimit-config
 ---
 apiVersion: v1
 kind: Service
@@ -50,8 +50,8 @@ metadata:
   name: ratelimit
 spec:
   ports:
-  - port: 8081
-    targetPort: 8081
+    - port: 8081
+      targetPort: 8081
   selector:
     app: ratelimit
   type: ClusterIP
