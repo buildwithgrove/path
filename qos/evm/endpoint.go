@@ -17,6 +17,7 @@ type endpoint struct {
 }
 
 func (e *endpoint) Process(observations []observation) {
+	// TODO_MVP(@adshmh): add debug logs to allow tracking issues related to individual endpoints.
 	for _, observation := range observations {
 		if observation.ChainID != "" {
 			e.ChainID = observation.ChainID
