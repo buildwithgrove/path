@@ -26,7 +26,6 @@
   - [3.2 Morse Quickstart](#32-morse-quickstart)
 - [4. Configuration](#4-configuration)
   - [4.1 Configuration File](#41-configuration-file)
-  - [4.4 Other Examples](#44-other-examples)
 - [5. Running PATH](#5-running-path)
   - [5.1. Setup Config YAML](#51-setup-config-yaml)
   - [5.2. Run the PATH binary](#52-run-the-path-binary)
@@ -181,16 +180,9 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-- [Example Shannon Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
-- [Example Morse Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+- [Example Shannon Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/examples/config.shannon_example.yaml)
+- [Example Morse Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/examples/config.morse_example.yaml)
 - [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
-
-### 4.4 Other Examples
-
-- Full example config YAML files:
-  - [Morse](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
-  - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ## 5. Running PATH
 
@@ -207,7 +199,7 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `bin/config/.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/examples).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 

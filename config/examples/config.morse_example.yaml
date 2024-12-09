@@ -2,28 +2,29 @@
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
 
-# DEV_NOTE: To use this for local development:
-#   1. Run `make config_morse_localnet` to make a local copy
-#   2. Update the following three values in `protocol.morse_config`:
-#     - `full_node_config.relay_signing_key`
-#     - `signed_aats`
-#
-# This is an example config file to run a local development environment using the Morse protocol as a relayer.
+###############################################
+### Example Morse Configuration YAML Format ###
+###############################################
+
 morse_config:
   full_node_config:
     # DO NOT change rpc_url unless you know what you're doing
     url: "https://pocket-rpc.liquify.com"
+    
     # README: relay_signing_key MUST BE replaced with your personal gateway private key secret
-    relay_signing_key: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388" 
+
     http_config:
       retries: 3
       timeout: "5000ms"
 
   # README: signed_aats MUST BE replaced with the AATs of your Morse applications.
+  # All signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
   # See the following link for more details:
   # https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats
-  signed_aats:
-    "af929e588bb37d8e6bbc8cb25ba4b4d9383f9238":
+  signed_aats: 
+    "40af4e7e1b311c76a573610fe115cd2adf1eeade":
       client_public_key: "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619"
       application_public_key: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce"
       application_signature: "57d73225f83383e93571d0178f01368f26af9e552aaf073233d54600b60464043ba7013633d082b05d03ac7271667b307b09f47b8ac04000b19205cc1f99555d"
@@ -31,12 +32,15 @@ morse_config:
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.
 services:
-  "0021":
-    # DO NOT change service alias: it is used in the Morse E2E tests to identify the target service.
-    alias: "eth-mainnet"
+  "F00C":
+    # do not change service alias: it is used in the Morse E2E tests to identify the target service.
+    alias: "eth"
     request_timeout: "3000ms"
 
-# Enable endpoint hydrator to run QoS checks against endpoints of service 0021
+  # "0021" is an example of a service with no further configuration.
+  "0021": {}
+
+# Enable endpoint hydrator to run QoS checks against endpoints of service F00C
 hydrator_config:
   service_ids:
-    - "0021"
+    - "F00C"
