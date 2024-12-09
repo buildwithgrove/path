@@ -31,16 +31,23 @@
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
 
-<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
 
 ## 1. Quickstart
 
-1. Run `make init_envoy` to create all the required config files
+<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+
+1. Install all prerequisites:
+   - [Docker](https://docs.docker.com/get-docker/)
+   - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+   - [Tilt](https://docs.tilt.dev/install.html)
+   - [Helm](https://helm.sh/docs/intro/install/)
+
+2. Run `make init_envoy` to create all the required config files
    - `envoy.yaml` is created with your auth provider's domain and audience.
    - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
    - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
-2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
+3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
 ## 2. Overview
 
@@ -52,7 +59,7 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-> 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
+> 💡 **Tip:** A [Tiltfile](../Tiltfile) is provided to run all of these services locally.
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -300,7 +307,7 @@ The external authorization server requires the following environment variables t
 
 ### 5.3. External Auth Service Getting Started
 
-Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally in Docker.
+Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally.
 
 For more information, see:
 
