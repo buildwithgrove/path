@@ -12,7 +12,7 @@ path:
       items:
         - key: .config.yaml
           path: .config.yaml
-      
+
   replicas: 1
   resources:
     limits:
@@ -34,12 +34,13 @@ path:
       path: /healthz
       port: 3000
       scheme: HTTP
+
   livenessProbe:
     failureThreshold: 6
     httpGet:
       path: /healthz
       port: 3000
       scheme: HTTP
-      
+
   delve:
     enabled: false

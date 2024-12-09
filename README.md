@@ -36,12 +36,16 @@
 - [7. E2E Tests](#7-e2e-tests)
   - [7.1. Running Tests](#71-running-tests)
 - [8. Running Localnet](#8-running-localnet)
-  - [8.1 Pre-requisites](#81-pre-requisites)
-  - [8.2 Spinning up / Tearing down Localnet](#82-spinning-up--tearing-down-localnet)
+  - [8.1 Spinning up / Tearing down Localnet](#81-spinning-up--tearing-down-localnet)
 - [9. Troubleshooting](#9-troubleshooting)
   - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
+
+<!--
+TODO_UPNEXT(@commoddity): Convert all the tips, notes & warnings int his file into
+docusaurus admonitions; https://docusaurus.io/docs/markdown-features/admonitions.
+-->
 
 ## 1. Introduction
 
@@ -51,11 +55,19 @@ access to a decentralized supply network.
 It provides various tools and libraries to streamline the integration and
 interaction with decentralized protocols.
 
+We use Tilt + Kind to spin up local environment for development and local testing purposes.
+
+<!--TODO_UPNEXT(@HebertCL): Create a FAQ just like Poktroll for additional explanation on the chosen tooling -->
+
+Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
+
 ### 1.1. Prerequisites
 
 **Deployment:**
 
 - [Docker](https://docs.docker.com/get-docker/)
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -229,9 +241,9 @@ By default, the PATH service runs without any authorization or rate limiting. Th
 
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
-This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
+This will start the PATH service with all the appropriate dependencies configured in the [Tiltfile](./Tiltfile).
 
-  > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
 
 ## 6. Running PATH
 
@@ -249,43 +261,13 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use one of the following `make` targets:
+1. Once the `.config.yaml` file is populated,start the PATH service like so: `make path_up`
 
-   - To run PATH with no dependencies, use:
+   - All requests pass through Envoy Proxy on port `3001`
+   - The PATH service runs on port `3000`
 
-      ```sh
-      make path_up_gateway
-      ```
-
-     **In this mode, all requests go directly to the PATH service, which runs on port `3000`.
-**
-   - To run PATH with authorization and rate limiting dependencies, use:
-
-      ```sh
-      make path_up
-      ```
-      **In this mode, all requests pass through Envoy Proxy, which runs on port `3001`.**
-
-2. Once the Docker container is running, you may send service requests to the PATH service.
-
-
-3. To stop the PATH service, use the following `make` target:
-
-   ```sh
-   make path_down
-   ```
-
-   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
-
-2. Once the Docker container is running, you may send service requests to the PATH service.
-
-   By default, the PATH service will run on port `3000`.
-
-3. To stop the PATH service, use the following `make` target:
-
-   ```sh
-   make path_down
-   ```
+2. To stop the PATH service, use the following `make` target: `make path_down`
+3. NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.
 
 ## 7. E2E Tests
 
@@ -324,21 +306,12 @@ make test_e2e_shannon_relay
 
 You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
 
-### 8.1 Pre-requisites
-
-Make sure you have the following tools installed:
-
-- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [Tilt](https://docs.tilt.dev/install.html)
-
-Once you have these tools installed, make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
-
-### 8.2 Spinning up / Tearing down Localnet
+### 8.1 Spinning up / Tearing down Localnet
 
 Localnet can be spin up/tear down using the following targets:
 
-- `localnet_up` -> Spins up localnet environment using Kind + Tilt
-- `localnet_down` -> Tears down localnet.
+- `path_up` -> Spins up localnet environment using Kind + Tilt
+- `path_down` -> Tears down localnet.
 
 ## 9. Troubleshooting
 
