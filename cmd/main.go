@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -15,8 +15,16 @@ import (
 	"github.com/buildwithgrove/path/router"
 )
 
-// TODO_UPNEXT(@adshmh): add CLI flags for specifying the config file's path.
-var configPath = filepath.Join("config", ".config.yaml")
+// Define a variable to hold the config path
+var configPath string
+
+const defaultConfigPath = "/app/.config.yaml"
+
+func init() {
+	// Initialize the config path using a command-line flag
+	flag.StringVar(&configPath, "config", defaultConfigPath, "Path to the configuration file")
+	flag.Parse()
+}
 
 func main() {
 	logger := polyzero.NewLogger()

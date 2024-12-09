@@ -1,19 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:
     url: "https://pocket-network-full-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key"
+    relay_signing_key: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e"
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
   signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
+    "af929e588bb37d8e6bbc8cb25ba4b4d9383f9238":
+      client_public_key: "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619"
+      application_public_key: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce"
+      application_signature: "57d73225f83383e93571d0178f01368f26af9e552aaf073233d54600b60464043ba7013633d082b05d03ac7271667b307b09f47b8ac04000b19205cc1f99555d"
 
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pokt-foundation/pocket-go/provider"
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config/morse"
@@ -35,9 +34,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						HttpConfig: morseprotocol.HttpConfig{
 							Retries: 3,
 							Timeout: 5000 * time.Millisecond,
-						},
-						RequestConfig: provider.RequestConfigOpts{
-							Retries: 3,
 						},
 					},
 					SignedAATs: map[string]morse.SignedAAT{
@@ -332,7 +328,6 @@ func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 func compareMorseFullNodeConfig(c *require.Assertions, want, got morseprotocol.FullNodeConfig) {
 	c.Equal(want.URL, got.URL)
 	c.Equal(want.RelaySigningKey, got.RelaySigningKey)
-	c.Equal(want.RequestConfig, got.RequestConfig)
 	compareHTTPConfig(c, want.HttpConfig, got.HttpConfig)
 }
 

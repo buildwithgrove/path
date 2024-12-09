@@ -26,8 +26,6 @@
   - [3.2 Morse Quickstart](#32-morse-quickstart)
 - [4. Configuration](#4-configuration)
   - [4.1 Configuration File](#41-configuration-file)
-  - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
-  - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
   - [4.4 Other Examples](#44-other-examples)
 - [5. Running PATH](#5-running-path)
   - [5.1. Setup Config YAML](#51-setup-config-yaml)
@@ -45,6 +43,11 @@
   - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
+
+<!--
+TODO_UPNEXT(@commoddity): Convert all the tips, notes & warnings int his file into
+docusaurus admonitions; https://docusaurus.io/docs/markdown-features/admonitions.
+-->
 
 ## 1. Introduction
 
@@ -67,11 +70,11 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
 - [Tilt](https://docs.tilt.dev/install.html)
+- [Helm](https://helm.sh/docs/intro/install/)
 
 **Development only:**
 
-- [SQLC](https://docs.sqlc.dev/)
-- [Mockgen](https://github.com/uber-go/mock)
+- [Uber Mockgen](https://github.com/uber-go/mock)
 
 ## 2. Path Releases
 
@@ -180,52 +183,9 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-### 4.2 Example Shannon Configuration Format
-
-```yaml
-shannon_config:
-  full_node_config:
-    rpc_url: "https://rpc-url.io"
-    grpc_config:
-      host_port: "grpc-url.io:443"
-    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
-    gateway_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
-    delegated_app_addresses:
-      - "pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0"
-      - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
-
-services:
-  "F00C":
-    alias: "eth"
-```
-
-### 4.3 Example Morse Configuration Format
-
-```yaml
-# For a morse gateway, the following config is required:
-morse_config:
-  full_node_config:
-    url: "https://pocket-network-full-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key"
-    http_config:
-      retries: 3
-      timeout: "5000ms"
-    request_config:
-      retries: 3
-
-  signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
-
-# services is required. At least one service must be configured with a valid id.
-# All fields are optional but the id is required.
-services:
-  "F00C":
-    alias: "eth"
-    request_timeout: "3000ms"
-```
+- [Example Shannon Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
+- [Example Morse Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+- [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ### 4.4 Other Examples
 
@@ -264,7 +224,8 @@ This will start the PATH service with all the appropriate dependencies, seen in 
    make path_run
    ```
 
-   **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+   - All requests pass through Envoy Proxy on port `3001`
+   - The PATH service runs on port `3000`
 
 2. Once PATH is running, you may send service requests to it.
 
@@ -339,8 +300,8 @@ Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/
 
 Localnet can be spun up/torn down using the following targets:
 
-- `localnet_up` -> Spins up localnet environment using Kind + Tilt
-- `localnet_down` -> Tears down localnet.
+- `path_up` -> Spins up localnet environment using Kind + Tilt
+- `path_down` -> Tears down localnet.
 
 ## 8. Troubleshooting
 

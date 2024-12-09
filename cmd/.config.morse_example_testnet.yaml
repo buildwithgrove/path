@@ -1,3 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:
@@ -7,8 +11,6 @@ morse_config:
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
   # Generated using the instructions here: https://www.notion.so/buildwithgrove/PATH-Morse-Configuration-Helpers-Instructions-111a36edfff6807c8846f78244394e74?pvs=4#111a36edfff680f4ba2dce854f59d2fe
   # TODO_DOCUMENT: Make Morse AAT generation instructions public

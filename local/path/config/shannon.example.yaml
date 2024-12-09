@@ -1,3 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
 # DEV_NOTE: To use this for local development:
 #   1. Run `make config_shannon_localnet` to make a local copy
 #   2. Update the following values in `shannon_config.gateway_config`:
@@ -29,4 +33,4 @@ services:
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
-    - 0021
+    - "0021"
