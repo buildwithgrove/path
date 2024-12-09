@@ -26,19 +26,21 @@
   - [3.2 Morse Quickstart](#32-morse-quickstart)
 - [4. Configuration](#4-configuration)
   - [4.1 Configuration File](#41-configuration-file)
-  - [4.2 Example Shannon Configuration Format](#42-example-shannon-configuration-format)
-  - [4.3 Example Morse Configuration Format](#43-example-morse-configuration-format)
   - [4.4 Other Examples](#44-other-examples)
-- [5. Authorization \& Rate Limiting](#5-authorization--rate-limiting)
-- [6. Running PATH](#6-running-path)
-  - [6.1. Setup Config YAML](#61-setup-config-yaml)
-  - [6.2. Start the Container](#62-start-the-container)
-- [7. E2E Tests](#7-e2e-tests)
-  - [7.1. Running Tests](#71-running-tests)
-- [8. Running Localnet](#8-running-localnet)
-  - [8.1 Spinning up / Tearing down Localnet](#81-spinning-up--tearing-down-localnet)
-- [9. Troubleshooting](#9-troubleshooting)
-  - [9.1. Docker Permissions Issues - Need to run sudo?](#91-docker-permissions-issues---need-to-run-sudo)
+- [5. Running PATH](#5-running-path)
+  - [5.1. Setup Config YAML](#51-setup-config-yaml)
+  - [5.2. Run the PATH binary](#52-run-the-path-binary)
+- [6. E2E Tests](#6-e2e-tests)
+  - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
+    - [6.1.1 Preparing the configuration](#611-preparing-the-configuration)
+    - [6.1.2 Running the E2E tests](#612-running-the-e2e-tests)
+  - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
+    - [6.2.1. Preparing the configuration](#621-preparing-the-configuration)
+    - [6.2.2 Running the E2E tests](#622-running-the-e2e-tests)
+- [7. Running Localnet](#7-running-localnet)
+  - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
+- [8. Troubleshooting](#8-troubleshooting)
+  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -68,11 +70,11 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
 - [Tilt](https://docs.tilt.dev/install.html)
+- [Helm](https://helm.sh/docs/intro/install/)
 
 **Development only:**
 
-- [SQLC](https://docs.sqlc.dev/)
-- [Mockgen](https://github.com/uber-go/mock)
+- [Uber Mockgen](https://github.com/uber-go/mock)
 
 ## 2. Path Releases
 
@@ -97,14 +99,14 @@ docker pull ghcr.io/buildwithgrove/path
 
 1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
 
-2. **Populate Config File:** Run `make copy_shannon_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make config_shannon_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
+   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key & address and your Application's address.
 
    \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
    to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
+3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
 
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
@@ -128,16 +130,16 @@ docker pull ghcr.io/buildwithgrove/path
    - [pocket-core/doc/specs/cli/apps.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/cli/apps.md)
    - [Gateway Server Kit instructions (as a reference)](https://github.com/pokt-network/gateway-server/blob/main/docs/quick-onboarding-guide.md#5-insert-app-stake-private-keys)
 
-2. **Populate Config File:** Run `make copy_morse_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make config_morse_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key, address and your delegated Application's address.
+   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key, address and your delegated Application's address.
 
    2.1 **If you're a Grove employee**, you can use copy-paste the PROD configs from [here](https://www.notion.so/buildwithgrove/PATH-Morse-Configuration-Helpers-Instructions-111a36edfff6807c8846f78244394e74?pvs=4).
 
    2.2 **If you're a community member**, run the following command to get started quickly with a prefilled configuration
    for Bitcoin MainNet on Pocket Morse TestNet: `cp ./cmd/.config.morse_example_testnet.yaml ./cmd/.config.yaml`
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
+3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
 
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
@@ -181,52 +183,9 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-### 4.2 Example Shannon Configuration Format
-
-```yaml
-shannon_config:
-  full_node_config:
-    rpc_url: "https://rpc-url.io"
-    grpc_config:
-      host_port: "grpc-url.io:443"
-    gateway_address: "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba"
-    gateway_private_key: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d"
-    delegated_app_addresses:
-      - "pokt1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0"
-      - "pokt1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0"
-
-services:
-  "F00C":
-    alias: "eth"
-```
-
-### 4.3 Example Morse Configuration Format
-
-```yaml
-# For a morse gateway, the following config is required:
-morse_config:
-  full_node_config:
-    url: "https://pocket-network-full-full-node-url.io"
-    relay_signing_key: "example_relay_signing_key"
-    http_config:
-      retries: 3
-      timeout: "5000ms"
-    request_config:
-      retries: 3
-
-  signed_aats:
-    "example_application_address":
-      client_public_key: "example_application_client_public_key"
-      application_public_key: "example_application_public_key"
-      application_signature: "example_application_signature"
-
-# services is required. At least one service must be configured with a valid id.
-# All fields are optional but the id is required.
-services:
-  "F00C":
-    alias: "eth"
-    request_timeout: "3000ms"
-```
+- [Example Shannon Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
+- [Example Morse Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+- [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ### 4.4 Other Examples
 
@@ -235,21 +194,21 @@ services:
   - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
 - [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
-## 5. Authorization & Rate Limiting
+## 5. Running PATH
 
 By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
 
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
-This will start the PATH service with all the appropriate dependencies configured in the [Tiltfile](./Tiltfile).
+<!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
+
+This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
 > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
 
-## 6. Running PATH
+### 5.1. Setup Config YAML
 
-### 6.1. Setup Config YAML
-
-1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
+1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `bin/config/.config.yaml` file.
 
    **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
@@ -257,65 +216,96 @@ This will start the PATH service with all the appropriate dependencies configure
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 6.2. Start the Container
+### 5.2. Run the PATH binary
 
-**NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
+1. Once the `.config.yaml` file is populated under the `bin/config` directory, to start the PATH service for a specific protocol, use the following make target to run path:
 
-1. Once the `.config.yaml` file is populated,start the PATH service like so: `make path_up`
+   ```sh
+   make path_run
+   ```
 
    - All requests pass through Envoy Proxy on port `3001`
    - The PATH service runs on port `3000`
 
-2. To stop the PATH service, use the following `make` target: `make path_down`
-3. NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.
+2. Once PATH is running, you may send service requests to it.
 
-## 7. E2E Tests
+   By default, PATH will listen on port `3000`.
+
+3. To stop the PATH instance, press Ctrl-C in the terminal from which the `make path_run` command was issued.
+
+## 6. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
-To use E2E tests, a `make` target is provided to copy the example configuration file to the `.config.test.yaml` needed by the E2E tests:
+### 6.1. Running the E2E tests against Shannon Testnet
+
+#### 6.1.1 Preparing the configuration
+
+A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
 
 ```sh
-make copy_test_config
+make copy_shannon_e2e_config
 ```
 
-Then update the `protocol.shannon_config.full_node_config` values with the appropriate values.
+Then update the `shannon_config.gateway_config` values with the appropriate values.
 
-You can find the example configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/.example.test.yaml).
+You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
 
-Currently, the E2E tests are configured to run against the Shannon testnet.
-
-Future work will include adding support for other protocols.
-
-### 7.1. Running Tests
+#### 6.1.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
 ```sh
+# Run E2E tests against Shannon Testnet
+make test_e2e_shannon_relay
+
 # Run all tests
 make test_all
-
-# Unit tests only
-make test_unit
-
-# Shannon E2E test only
-make test_e2e_shannon_relay
 ```
 
-## 8. Running Localnet
+### 6.2. Running the E2E tests against Morse
+
+#### 6.2.1. Preparing the configuration
+
+A `make` target is provided to copy the example Morse configuration file to the `e2e/.morse.config.yaml` needed by the E2E tests on Morse.
+To run the tests, use the following `make` targets:
+
+```sh
+make copy_morse_e2e_config
+```
+
+Then update the `morse_config.full_node_config` and `morse_config.signed_aats` values with the appropriate values.
+
+You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
+
+#### 6.2.2 Running the E2E tests
+
+To run the tests, use the following `make` targets:
+
+```sh
+# Run E2E tests against Morse
+make test_e2e_morse_relay
+
+# Run all tests
+make test_all
+```
+
+## 7. Running Localnet
 
 You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
 
-### 8.1 Spinning up / Tearing down Localnet
+Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
 
-Localnet can be spin up/tear down using the following targets:
+### 7.1. Spinning up / Tearing down Localnet
+
+Localnet can be spun up/torn down using the following targets:
 
 - `path_up` -> Spins up localnet environment using Kind + Tilt
 - `path_down` -> Tears down localnet.
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
-### 9.1. Docker Permissions Issues - Need to run sudo?
+### 8.1. Docker Permissions Issues - Need to run sudo?
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)

@@ -32,13 +32,15 @@
   - [5.2. Run the PATH binary](#52-run-the-path-binary)
 - [6. E2E Tests](#6-e2e-tests)
   - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
-    - [6.1.1. Preparing the configuration](#611-preparing-the-configuration)
-    - [6.1.2. Running the E2E tests](#612-running-the-e2e-tests)
+    - [6.1.1 Preparing the configuration](#611-preparing-the-configuration)
+    - [6.1.2 Running the E2E tests](#612-running-the-e2e-tests)
   - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
     - [6.2.1. Preparing the configuration](#621-preparing-the-configuration)
-    - [6.2.2. Running the E2E tests](#622-running-the-e2e-tests)
+    - [6.2.2 Running the E2E tests](#622-running-the-e2e-tests)
 - [7. Running Localnet](#7-running-localnet)
   - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
+- [8. Troubleshooting](#8-troubleshooting)
+  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -199,9 +201,10 @@ By default, the PATH service runs without any authorization or rate limiting. Th
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
 <!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
+
 This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
 
-  > 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
 
 ### 5.1. Setup Config YAML
 
@@ -236,7 +239,7 @@ This repository contains end-to-end (E2E) tests for the Shannon relay protocol. 
 
 ### 6.1. Running the E2E tests against Shannon Testnet
 
-#### 6.1.1. Preparing the configuration
+#### 6.1.1 Preparing the configuration
 
 A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
 
@@ -248,7 +251,7 @@ Then update the `shannon_config.gateway_config` values with the appropriate valu
 
 You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
 
-#### 6.1.2. Running the E2E tests
+#### 6.1.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
@@ -275,7 +278,7 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-#### 6.2.2. Running the E2E tests
+#### 6.2.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
@@ -295,12 +298,22 @@ Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/
 
 ### 7.1. Spinning up / Tearing down Localnet
 
-Localnet can be spin up/tear down using the following targets:
+Localnet can be spun up/torn down using the following targets:
 
 - `path_up` -> Spins up localnet environment using Kind + Tilt
 - `path_down` -> Tears down localnet.
 
-<!-- TODO(@adshmh): Reintroduce the Troubleshooting section once we encounter relevant issues -->
+## 8. Troubleshooting
+
+### 8.1. Docker Permissions Issues - Need to run sudo?
+
+If you're hitting docker permission issues (e.g. you need to use sudo),
+see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
+or just copy-paste the following command:
+
+```bash
+sudo chmod 666 /var/run/docker.sock
+```
 
 ## Special Thanks
 
