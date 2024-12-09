@@ -14,32 +14,53 @@ help: ## Prints all the targets in all the Makefiles
 # TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
 
 #############################
-####  Build Path Targets  ###
+#### PATH Build Targets   ###
 #############################
 
+# tl;dr Quick testing & debugging of PATH as a standalone
+
+# This section is intended to just build and run the PATH binary.
+# It mimics an E2E real environment.
+
 .PHONY: path_build
-path_build: ## build the path binary
+path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
 .PHONY: path_run
-path_run: path_build
+path_run: path_build ## Run the path binary as a standalone binary
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		echo "#########################################################################################"; \
 		echo "### ./bin/config/.config.yaml does not exist, use ONE the following to initialize it: ###"; \
-		echo "A. make copy_shannon_config                                                           ###"; \
-		echo "B. make copy_morse_config                                                             ###"; \
+		echo "### 	A. make copy_shannon_config                                                     ###"; \
+		echo "### 	B. make copy_morse_config                                                       ###"; \
 		echo "#########################################################################################"; \
 		exit; \
 	fi; \
 	(cd bin; ./path)
 
-.PHONY: path_up
-path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
-	tilt up
+###############################
+###  Localnet Make targets  ###
+###############################
 
+# tl;dr Mimic an E2E real environment.
+
+# This section is intended to spin up and develop a full modular stack that includes
+# PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
+
+.PHONY: localnet_up
+localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+	@tilt up
+
+# NOTE: This is an intentional copy of localnet_up to enforce that the two are the same.
+.PHONY: path_up
+path_up: localnet_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+
+.PHONY: localnet_down
+localnet_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+
+# NOTE: This is an intentional copy of localnet_down to enforce that the two are the same.
 .PHONY: path_down
-path_down: ## Stop the PATH gateway and all related dependencies
-	tilt down
+path_down: localnet_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
 #########################
 ### Test Make Targets ###
@@ -198,17 +219,6 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
 		echo "##################################################################################################################"; \
 	fi
-
-###############################
-###  Localnet Make targets  ###
-###############################
-
-.PHONY: localnet_up
-localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster)
-	@tilt up
-
-.PHONY: localnet_down
-localnet_down: dev_down ## Tears down local Tilt development environment (using kind cluster)
 
 ###############################
 ### Generation Make Targets ###
