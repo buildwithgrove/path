@@ -22,17 +22,17 @@ const (
 // gateway.QoSService interface, which is used to handle requests for a given service ID.
 var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// TODO_IMPROVE(@commoddity): Add all EVM service IDs here.
-	"0021": ServiceIDEVM, // Ethereum Mainnet
-	"F00C": ServiceIDEVM, // Full-chain Ethereum ID (Morse only)
-	"anvil": ServiceIDEVM, // Local ETH node for development & testing purposes
-	"eth": ServiceIDEVM, // General purpose ETH catch-all
+	"0021":        ServiceIDEVM, // Ethereum Mainnet
+	"F00C":        ServiceIDEVM, // Full-chain Ethereum ID
+	"anvil":       ServiceIDEVM, // Local ETH node for development & testing purposes
+	"eth":         ServiceIDEVM, // General purpose ETH catch-all
 	"eth-mainnet": ServiceIDEVM, // General purpose ETH MainNet catch-all
 
 	// TODO_IMPROVE(@commoddity): Use actual service IDs for Solana and POKT.
 	"solana": ServiceIDSolana,
 
-	"pokt":   ServiceIDPOKT,
-	"morse":   ServiceIDPOKT,
+	"pokt":  ServiceIDPOKT,
+	"morse": ServiceIDPOKT,
 
 	// Gateway E2E service ID is used only for running PATH's Morse and Shannon E2E tests.
 	"gatewaye2e": ServiceIDE2E,

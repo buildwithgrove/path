@@ -26,19 +26,19 @@ path_run: path_build
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		echo "#########################################################################################"; \
 		echo "### ./bin/config/.config.yaml does not exist, use ONE the following to initialize it: ###"; \
-		echo "A. make copy_shannon_config                                                           ###"; \
-		echo "B. make copy_morse_config                                                             ###"; \
+		echo "### A. make copy_shannon_config                                                       ###"; \
+		echo "### B. make copy_morse_config                                                         ###"; \
 		echo "#########################################################################################"; \
 		exit; \
 	fi; \
-	(cd bin; ./path)
+	(cd bin; ./path -config ./config/.config.yaml)
 
 .PHONY: path_up
-path_up: config_shannon_localnet ## Run the PATH gateway and all related dependencies
+path_up: config_shannon_localnet dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster) then runs the PATH gateway and all related dependencies
 	tilt up
 
 .PHONY: path_down
-path_down: ## Stop the PATH gateway and all related dependencies
+path_down: dev_down ## Tears down local Tilt development environment (using kind cluster) then stops the PATH gateway and all related dependencies
 	tilt down
 
 #########################
@@ -72,7 +72,7 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
-		cp ./cmd/.config.shannon_example.yaml ./bin/config/.config.yaml; \
+		cp ./config/examples/config.shannon_example.yaml ./bin/config/.config.yaml; \
 		echo "###########################################################################################################################"; \
 		echo "### Created ./bin/config/.config.yaml                                                                                   ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
@@ -87,7 +87,7 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
-		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
+		cp ./config/examples/config.morse_example.yaml ./bin/config/.config.yaml; \
 		echo "#############################################################################################################"; \
 		echo "### Created ./bin/config/.config.yaml                                                                     ###"; \
 		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
@@ -101,7 +101,7 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 .PHONY: copy_shannon_e2e_config
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
-		cp ./e2e/shannon.example.yaml ./e2e/.shannon.config.yaml; \
+		cp ./config/examples/config.shannon_example.yaml ./e2e/.shannon.config.yaml; \
 		echo "###################################################################################################################################"; \
 		echo "### Created ./e2e/.shannon.config.yaml                                                                                          ###"; \
 		echo "### README: Please update the the following in .shannon.config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
@@ -115,7 +115,7 @@ copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml f
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
-		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
+		cp ./config/examples/config.morse_example.yaml ./e2e/.morse.config.yaml; \
 		echo "###################################################################################################################"; \
 		echo "### Created ./e2e/.morse.config.yaml                                                                            ###"; \
 		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
@@ -128,30 +128,32 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 
 .PHONY: config_shannon_localnet
 config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
-	@if [ -f ./local/path/config/.config.yaml ]; then \
+	@if [ ! -f ./local/path/config/.config.yaml ]; then \
+		mkdir -p local/path/config; \
+		cp ./config/examples/config.shannon_example.yaml  local/path/config/.config.yaml; \
+		echo "###########################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml for Shannon localnet.                                         			  ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
+		echo "###########################################################################################################################"; \
+	else \
 		echo "#########################################################################"; \
 		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
 		echo "#########################################################################"; \
-	else \
-		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
-		echo "#######################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
-		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "#######################################################################################################"; \
 	fi
 
 .PHONY: config_morse_localnet
 config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
-	@if [ -f ./local/path/config/.config.yaml ]; then \
+	@if [ ! -f ./local/path/config/.config.yaml ]; then \
+		mkdir -p local/path/config; \
+		cp ./config/examples/config.morse_example.yaml  local/path/config/.config.yaml; \
+		echo "######################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml for Morse localnet. 										             ###"; \
+		echo "### README: Please update the the following in .config.yaml: 'full_node_config.relay_signing_key' & 'signed_aats'. ###"; \
+		echo "######################################################################################################################"; \
+	else \
 		echo "#########################################################################"; \
 		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
 		echo "#########################################################################"; \
-	else \
-		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
-		echo "##################################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
-		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
-		echo "##################################################################################################################"; \
 	fi
 
 #########################################
@@ -164,6 +166,7 @@ init_envoy: copy_envoy_config copy_gateway_endpoints ## Runs copy_envoy_config a
 .PHONY: copy_envoy_config
 copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
 	@if [ ! -f ./local/path/envoy/envoy.yaml ]; then \
+		mkdir -p local/path/envoy; \
 		./envoy/scripts/copy_envoy_config.sh; \
 		echo "###########################################################"; \
 		echo "### Created ./local/path/envoy/envoy.yaml               ###"; \
@@ -178,6 +181,7 @@ copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in t
 .PHONY: copy_gateway_endpoints
 copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from the PADS repo to ./local/path/envoy/.gateway-endpoints.yaml
 	@if [ ! -f ./local/path/envoy/gateway-endpoints.yaml ]; then \
+		mkdir -p local/path/envoy; \
 		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
 		echo "###########################################################"; \
 		echo "### Created ./local/path/envoy/gateway-endpoints.yaml   ###"; \
