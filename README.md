@@ -34,7 +34,11 @@
   - [5.2. Run the PATH binary](#52-run-the-path-binary)
 - [6. E2E Tests](#6-e2e-tests)
   - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
+    - [6.1.1 Preparing the configuration](#611-preparing-the-configuration)
+    - [6.1.2 Running the E2E tests](#612-running-the-e2e-tests)
   - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
+    - [6.2.1. Preparing the configuration](#621-preparing-the-configuration)
+    - [6.2.2 Running the E2E tests](#622-running-the-e2e-tests)
 - [7. Running Localnet](#7-running-localnet)
   - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
 - [8. Troubleshooting](#8-troubleshooting)
@@ -274,7 +278,7 @@ This repository contains end-to-end (E2E) tests for the Shannon relay protocol. 
 
 ### 6.1. Running the E2E tests against Shannon Testnet
 
-1. Preparing the configuration
+#### 6.1.1 Preparing the configuration
 
 A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
 
@@ -286,7 +290,7 @@ Then update the `shannon_config.gateway_config` values with the appropriate valu
 
 You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
 
-2. Running the E2E tests
+#### 6.1.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
@@ -300,7 +304,7 @@ make test_all
 
 ### 6.2. Running the E2E tests against Morse
 
-1. Preparing the configuration
+#### 6.2.1. Preparing the configuration
 
 A `make` target is provided to copy the example Morse configuration file to the `e2e/.morse.config.yaml` needed by the E2E tests on Morse.
 To run the tests, use the following `make` targets:
@@ -313,7 +317,7 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-2. Running the E2E tests
+#### 6.2.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
