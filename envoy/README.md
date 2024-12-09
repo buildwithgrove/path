@@ -42,7 +42,6 @@
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
 2. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-
 ## 2. Overview
 
 This folder contains everything necessary for managing authorization and rate limiting in the PATH service.
@@ -53,8 +52,7 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-  > 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
-
+> 💡 **Tip:** A [docker-compose.yaml](./docker-compose.yaml) file is provided to run all of these services locally.
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -121,7 +119,6 @@ Requests are rejected if either of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
 - ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
-
 
 <br/>
 
@@ -422,7 +419,6 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 
 3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
 
-
    _ratelimit.yaml_
 
    ```yaml
@@ -437,10 +433,10 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
              requests_per_unit: 30
    ```
 
-   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors. 
+   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
 
    _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
-   
+
 ### 6.2. Documentation and Examples
 
 As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
