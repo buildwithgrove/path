@@ -330,7 +330,7 @@ Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/
 
 ### 7.1. Spinning up / Tearing down Localnet
 
-Localnet can be spin up/tear down using the following targets:
+Localnet can be spun up/torn down using the following targets:
 
 - `localnet_up` -> Spins up localnet environment using Kind + Tilt
 - `localnet_down` -> Tears down localnet.
