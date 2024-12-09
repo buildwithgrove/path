@@ -36,7 +36,7 @@
   - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
   - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
 - [7. Running Localnet](#7-running-localnet)
-  - [7.1 Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
+  - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -328,7 +328,7 @@ You can use path configuration under `/local` to spin up a local development env
 
 Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
 
-### 7.1 Spinning up / Tearing down Localnet
+### 7.1. Spinning up / Tearing down Localnet
 
 Localnet can be spin up/tear down using the following targets:
 
