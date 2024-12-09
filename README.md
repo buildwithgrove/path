@@ -242,9 +242,11 @@ To enable authorization and rate limiting, you can run the PATH service with the
 
 <!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
 
-This will start the PATH service with all the appropriate dependencies, seen in the [docker-compose.yml](./docker-compose.yml) file, under the **Profile 2: PATH Entire Stack** section.
+This will start the PATH service with all the appropriate dependencies, seen in the `docker-compose.yml file, under the **Profile 2: PATH Entire Stack** section.
 
-> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](./envoy/README.md).
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
+
+<!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
 
 ### 5.1. Setup Config YAML
 
