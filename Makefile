@@ -14,19 +14,60 @@ help: ## Prints all the targets in all the Makefiles
 # TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
 
 #############################
-####  Build Path Targets  ###
+#### PATH Build Targets   ###
 #############################
 
+# tl;dr Quick testing & debugging of PATH as a standalone
+
+# This section is intended to just build and run the PATH binary.
+# It mimics an E2E real environment.
+
 .PHONY: path_build
-path_build: ## build the path binary
+path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
+
+.PHONY: path_run
+path_run: path_build ## Run the path binary as a standalone binary
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		echo "#########################################################################################"; \
+		echo "### ./bin/config/.config.yaml does not exist, use ONE the following to initialize it: ###"; \
+		echo "### 	A. make copy_shannon_config                                                     ###"; \
+		echo "### 	B. make copy_morse_config                                                       ###"; \
+		echo "#########################################################################################"; \
+		exit; \
+	fi; \
+	(cd bin; ./path)
+
+###############################
+###  Localnet Make targets  ###
+###############################
+
+# tl;dr Mimic an E2E real environment.
+
+# This section is intended to spin up and develop a full modular stack that includes
+# PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
+
+.PHONY: localnet_up
+localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+	@tilt up
+
+# NOTE: This is an intentional copy of localnet_up to enforce that the two are the same.
+.PHONY: path_up
+path_up: localnet_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+
+.PHONY: localnet_down
+localnet_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+
+# NOTE: This is an intentional copy of localnet_down to enforce that the two are the same.
+.PHONY: path_down
+path_down: localnet_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
 #########################
 ### Test Make Targets ###
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_auth_plugin test_e2e_shannon_relay
+test_all: test_unit test_auth_plugin test_e2e_shannon_relay test_e2e_morse_relay
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
@@ -48,32 +89,22 @@ test_e2e_morse_relay: ## Run an E2E Morse relay test
 ### Copy Config Make Targets ###
 ################################
 
+# TODO_MVP(@commoddity): Consolidate the copy_*_config targets into fewer targets once
+# the config files are consolidated as well.
+
 .PHONY: copy_shannon_config
 copy_shannon_config: ## copies the example shannon configuration yaml file to .config.yaml file
-	@if [ ! -f ./config/.config.yaml ]; then \
-		cp ./cmd/.config.shannon_example.yaml ./config/.config.yaml; \
-		echo "###########################################################################################################################"; \
-		echo "### Created ./config/.config.yaml                                                                                       ###"; \
-		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
-		echo "###########################################################################################################################"; \
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		mkdir -p bin/config; \
+		cp ./cmd/.config.shannon_example.yaml ./bin/config/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./bin/config/.config.yaml                                                               ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
 	else \
-		echo "##############################################################"; \
-		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
-		echo "##############################################################"; \
-	fi
-
-.PHONY: copy_morse_config
-copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
-	@if [ ! -f ./config/.config.yaml ]; then \
-		cp ./cmd/.config.morse_example.yaml ./config/.config.yaml; \
-		echo "#############################################################################################################"; \
-		echo "### Created ./config/.config.yaml                                                                         ###"; \
-		echo "### README: Please update the the following in .config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
-		echo "#############################################################################################################"; \
-	else \
-		echo "##############################################################"; \
-		echo "### ./config/.config.yaml already exists, not overwriting. ###"; \
-		echo "##############################################################"; \
+		echo "##################################################################"; \
+		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##################################################################"; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
@@ -90,6 +121,35 @@ copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml f
 		echo "###################################################################"; \
 	fi
 
+.PHONY: config_shannon_localnet
+config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
+		echo "#######################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
+		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
+		echo "#######################################################################################################"; \
+	fi
+
+.PHONY: copy_morse_config
+copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
+	@if [ ! -f ./bin/config/.config.yaml ]; then \
+		mkdir -p bin/config; \
+		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
+		echo "###################################################################################################################"; \
+		echo "### Created ./bin/config/.config.yaml                                                                           ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
+		echo "###################################################################################################################"; \
+	else \
+		echo "##################################################################"; \
+		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "##################################################################"; \
+	fi
+
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
@@ -102,6 +162,20 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "#################################################################"; \
 		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
 		echo "#################################################################"; \
+	fi
+
+.PHONY: config_morse_localnet
+config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
+	@if [ -f ./local/path/config/.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
+		echo "#########################################################################"; \
+	else \
+		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
+		echo "##################################################################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
+		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
+		echo "##################################################################################################################"; \
 	fi
 
 .PHONY: copy_envoy_config
@@ -149,44 +223,6 @@ copy_gateway_endpoints: ## Copies the gateway endpoints YAML file
 .PHONY: init_envoy
 init_envoy: copy_envoy_config copy_envoy_env copy_gateway_endpoints ## Runs copy_envoy_config, copy_envoy_env, and copy_gateway_endpoints
 
-.PHONY: config_shannon_localnet
-config_shannon_localnet: ## Create a localnet config file to serve as a Shannon gateway
-	@if [ -f ./local/path/config/.config.yaml ]; then \
-		echo "#########################################################################"; \
-		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
-		echo "#########################################################################"; \
-	else \
-		cp local/path/config/shannon.example.yaml  local/path/config/.config.yaml; \
-		echo "#######################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml                                                        ###"; \
-		echo "### README: Please update the the following in .config.yaml: gateway_private_key & gateway_address. ###"; \
-		echo "#######################################################################################################"; \
-	fi
-
-.PHONY: config_morse_localnet
-config_morse_localnet: ## Create a localnet config file to serve as a Morse gateway
-	@if [ -f ./local/path/config/.config.yaml ]; then \
-		echo "#########################################################################"; \
-		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
-		echo "#########################################################################"; \
-	else \
-		cp local/path/config/morse.example.yaml  local/path/config/.config.yaml; \
-		echo "##################################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml                                                                   ###"; \
-		echo "### README: Please update the the following in .config.yaml: full_node_config.relay_signing_key & signed_aats. ###"; \
-		echo "##################################################################################################################"; \
-	fi
-
-###############################
-###  Localnet Make targets  ###
-###############################
-
-.PHONY: localnet_up
-localnet_up: dev_up config_path_secrets ## Brings up local Tilt development environment (using kind cluster)
-	@tilt up
-
-.PHONY: localnet_down
-localnet_down: dev_down ## Tears down local Tilt development environment (using kind cluster)
 
 ###############################
 ### Generation Make Targets ###
