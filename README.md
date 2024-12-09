@@ -31,11 +31,18 @@
   - [4.4 Other Examples](#44-other-examples)
 - [5. Running PATH](#5-running-path)
   - [5.1. Setup Config YAML](#51-setup-config-yaml)
-  - [5.2. Start the Container](#52-start-the-container)
+  - [5.2. Run the PATH binary](#52-run-the-path-binary)
 - [6. E2E Tests](#6-e2e-tests)
-  - [6.1. Running Tests](#61-running-tests)
-- [Troubleshooting](#troubleshooting)
-  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
+  - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
+    - [6.1.1 Preparing the configuration](#611-preparing-the-configuration)
+    - [6.1.2 Running the E2E tests](#612-running-the-e2e-tests)
+  - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
+    - [6.2.1. Preparing the configuration](#621-preparing-the-configuration)
+    - [6.2.2 Running the E2E tests](#622-running-the-e2e-tests)
+- [7. Running Localnet](#7-running-localnet)
+  - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
+- [8. Troubleshooting](#8-troubleshooting)
+  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -47,11 +54,19 @@ access to a decentralized supply network.
 It provides various tools and libraries to streamline the integration and
 interaction with decentralized protocols.
 
+We use Tilt + Kind to spin up local environment for development and local testing purposes.
+
+<!--TODO_UPNEXT(@HebertCL): Create a FAQ just like Poktroll for additional explanation on the chosen tooling -->
+
+Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
+
 ### 1.1. Prerequisites
 
 **Deployment:**
 
 - [Docker](https://docs.docker.com/get-docker/)
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -81,14 +96,14 @@ docker pull ghcr.io/buildwithgrove/path
 
 1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
 
-2. **Populate Config File:** Run `make copy_shannon_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make config_shannon_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key & address and your delegated Application's address.
+   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key & address and your Application's address.
 
    \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
    to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build the PATH gateway.
+3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
 
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
@@ -112,16 +127,16 @@ docker pull ghcr.io/buildwithgrove/path
    - [pocket-core/doc/specs/cli/apps.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/cli/apps.md)
    - [Gateway Server Kit instructions (as a reference)](https://github.com/pokt-network/gateway-server/blob/main/docs/quick-onboarding-guide.md#5-insert-app-stake-private-keys)
 
-2. **Populate Config File:** Run `make copy_morse_config` to copy the example configuration file to `cmd/.config.yaml`.
+2. **Populate Config File:** Run `make config_morse_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
 
-   Update the configuration file `cmd/.config.yaml` with your Gateway's private key, address and your delegated Application's address.
+   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key, address and your delegated Application's address.
 
    2.1 **If you're a Grove employee**, you can use copy-paste the PROD configs from [here](https://www.notion.so/buildwithgrove/PATH-Morse-Configuration-Helpers-Instructions-111a36edfff6807c8846f78244394e74?pvs=4).
 
    2.2 **If you're a community member**, run the following command to get started quickly with a prefilled configuration
    for Bitcoin MainNet on Pocket Morse TestNet: `cp ./cmd/.config.morse_example_testnet.yaml ./cmd/.config.yaml`
 
-3. **Start the PATH Container:** Run `make path_up_build_gateway` or `make path_up_gateway` to start & build PATH gateway
+3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
 
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
@@ -221,9 +236,21 @@ services:
 
 ## 5. Running PATH
 
+By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
+
+To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
+
+<!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
+
+This will start the PATH service with all the appropriate dependencies, seen in the `docker-compose.yml file, under the **Profile 2: PATH Entire Stack** section.
+
+> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
+
+<!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
+
 ### 5.1. Setup Config YAML
 
-1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `.config.yaml` file.
+1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `bin/config/.config.yaml` file.
 
    **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
 
@@ -231,62 +258,95 @@ services:
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 5.2. Start the Container
+### 5.2. Run the PATH binary
 
-1. Once the `.config.yaml` file is populated, to start the PATH service for a specific protocol, use the `make` target:
+1. Once the `.config.yaml` file is populated under the `bin/config` directory, to start the PATH service for a specific protocol, use the following make target to run path:
 
    ```sh
-   make path_up
+   make path_run
    ```
 
    **NOTE: The protocol version (`morse` or `shannon`) depends on whether `morse_config` or `shannon_config` is populated in the `.config.yaml` file.**
 
-2. Once the Docker container is running, you may send service requests to the PATH service.
+2. Once PATH is running, you may send service requests to it.
 
-   By default, the PATH service will run on port `3000`.
+   By default, PATH will listen on port `3000`.
 
-3. To stop the PATH service, use the following `make` target:
-
-   ```sh
-   make path_down
-   ```
+3. To stop the PATH instance, press Ctrl-C in the terminal from which the `make path_run` command was issued.
 
 ## 6. E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
-To use E2E tests, a `make` target is provided to copy the example configuration file to the `.config.test.yaml` needed by the E2E tests:
+### 6.1. Running the E2E tests against Shannon Testnet
+
+#### 6.1.1 Preparing the configuration
+
+A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
 
 ```sh
-make copy_test_config
+make copy_shannon_e2e_config
 ```
 
-Then update the `protocol.shannon_config.full_node_config` values with the appropriate values.
+Then update the `shannon_config.gateway_config` values with the appropriate values.
 
-You can find the example configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/.example.test.yaml).
+You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
 
-Currently, the E2E tests are configured to run against the Shannon testnet.
-
-Future work will include adding support for other protocols.
-
-### 6.1. Running Tests
+#### 6.1.2 Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
 ```sh
+# Run E2E tests against Shannon Testnet
+make test_e2e_shannon_relay
+
 # Run all tests
 make test_all
-
-# Unit tests only
-make test_unit
-
-# Shannon E2E test only
-make test_e2e_shannon_relay
 ```
 
-## Troubleshooting
+### 6.2. Running the E2E tests against Morse
 
-### Docker Permissions Issues - Need to run sudo?
+#### 6.2.1. Preparing the configuration
+
+A `make` target is provided to copy the example Morse configuration file to the `e2e/.morse.config.yaml` needed by the E2E tests on Morse.
+To run the tests, use the following `make` targets:
+
+```sh
+make copy_morse_e2e_config
+```
+
+Then update the `morse_config.full_node_config` and `morse_config.signed_aats` values with the appropriate values.
+
+You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
+
+#### 6.2.2 Running the E2E tests
+
+To run the tests, use the following `make` targets:
+
+```sh
+# Run E2E tests against Morse
+make test_e2e_morse_relay
+
+# Run all tests
+make test_all
+```
+
+## 7. Running Localnet
+
+You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
+
+Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
+
+### 7.1. Spinning up / Tearing down Localnet
+
+Localnet can be spun up/torn down using the following targets:
+
+- `localnet_up` -> Spins up localnet environment using Kind + Tilt
+- `localnet_down` -> Tears down localnet.
+
+## 8. Troubleshooting
+
+### 8.1. Docker Permissions Issues - Need to run sudo?
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
