@@ -18,7 +18,7 @@ import (
 // Define a variable to hold the config path
 var configPath string
 
-const defaultConfigPath = "/app/.config.yaml"
+const defaultConfigPath = "/app/config/.config.yaml"
 
 func init() {
 	// Initialize the config path using a command-line flag
