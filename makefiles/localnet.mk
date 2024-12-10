@@ -45,7 +45,6 @@ check_path_config:
 .PHONY: dev_up
 # Internal helper: Spins up Kind cluster if it doesn't already exist
 dev_up: check_kind
-# @echo "Checking if Kind cluster 'path-localnet' exists..."
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
 		echo "Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet; \
