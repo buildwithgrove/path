@@ -38,9 +38,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 					SignedAATs: map[string]morse.SignedAAT{
 						"40af4e7e1b311c76a573610fe115cd2adf1eeade": {
-							ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
-							ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
-							ApplicationSignature: "57d73225f83383e93571d0178f01368f26af9e552aaf073233d54600b60464043ba7013633d082b05d03ac7271667b307b09f47b8ac04000b19205cc1f99555d",
+							ClientPublicKey:      "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
+							ApplicationPublicKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
+							ApplicationSignature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
 					},
 				},
@@ -81,11 +81,11 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
-						GatewayPrivateKeyHex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
-						GatewayAddress:       "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw",
 						GatewayMode:          protocol.GatewayModeCentralized,
+						GatewayAddress:       "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw",
+						GatewayPrivateKeyHex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						OwnedAppsPrivateKeysHex: []string{
-							"cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177",
+							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
 					},
 				},

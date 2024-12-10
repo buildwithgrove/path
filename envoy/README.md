@@ -31,21 +31,23 @@
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
 
-
 ## 1. Quickstart
 
 <!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
 
 1. Install all prerequisites:
+
    - [Docker](https://docs.docker.com/get-docker/)
    - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
    - [Tilt](https://docs.tilt.dev/install.html)
    - [Helm](https://helm.sh/docs/intro/install/)
 
 2. Run `make init_envoy` to create all the required config files
+
    - `envoy.yaml` is created with your auth provider's domain and audience.
    - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
+
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
 ## 2. Overview

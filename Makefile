@@ -255,9 +255,9 @@ go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
 
-.PHONY: docs_update
-## TODO_UPNEXT(@HebertCL): handle documentation update like poktroll
-docs_update: ## Update documentation from README.
+.PHONY: docusaurus_main_update
+## TODO_UPNEXT(@HebertCL): handle automatic documentation updates like in poktroll
+docusaurus_main_update: ## Update the main README in docusaurus docs.
 	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start

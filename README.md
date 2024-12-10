@@ -165,7 +165,6 @@ The configuration for PATH is defined in a YAML file, which should be named `.co
 - [Example Morse Config YAML File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
 - [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
-
 This file is required for setting up a PATH instance and must be populated with the appropriate values.
 
 The configuration is divided into several sections:
