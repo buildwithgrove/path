@@ -2,6 +2,8 @@
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
 
+# DEV_NOTE: The keys in this file are just random hex codes to bypass schema validation.
+
 # For a morse gateway, the following config is required:
 morse_config:
   full_node_config:

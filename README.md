@@ -165,7 +165,6 @@ The configuration for PATH is defined in a YAML file, which should be named `.co
 - [Example Morse Config YAML File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
 - [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
-
 This file is required for setting up a PATH instance and must be populated with the appropriate values.
 
 The configuration is divided into several sections:
@@ -211,7 +210,7 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `bin/config/.config.yaml` file.
 
-   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata).**
+   **NOTE: For a full example of the config YAML format for both Shannon and Morse protocols, see the [example config YAML files](https://github.com/buildwithgrove/path/tree/main/cmd/config/examples).**
 
 2. You will then need to populate the `.config.yaml` file with the appropriate values for the protocol you wish to use.
 
