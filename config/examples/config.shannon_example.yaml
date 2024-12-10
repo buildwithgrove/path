@@ -26,7 +26,7 @@ shannon_config:
 
     # If this config is used for Shannon E2E tests, do not change gateway_address.
     # Otherwise, replace with the correct gateway address.
-    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw 
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
 
     # README: gateway_private_key_hex MUST BE replaced with the correct gateway private key secret
     # See the following link for instructions on creating a Shannon gateway.
@@ -43,11 +43,18 @@ services:
   "gatewaye2e":
     alias: "test-service"
 
-  # "F00C" is the service ID for the Ethereum mainnet service.
+  # "anvil" is a test service alias used in the Shannon E2E tests.
+  # If this config is used for Shannon E2E tests, do not remove or change this service.
+  # This is used for testing a dedicated Ethereum endpoint that is not of any public network.
+  "anvil":
+    alias: "test-service-eth"
+
+  # "F00C" is the service ID for the Ethereum MainNet Archival.
   "F00C":
     alias: "eth"
 
-  # "0021" is an example of a service with no further configuration.
+  # "0021" is the service ID for the Ethereum MainNet Archival.
+  # This example has no further configuration or details.
   "0021": {}
 
 # Enable endpoint hydrator to run QoS checks against endpoints of service F00C
