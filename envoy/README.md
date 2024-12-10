@@ -44,7 +44,6 @@
 
 2. Run `make init_envoy` to create all the required config files
    - `envoy.yaml` is created with your auth provider's domain and audience.
-   - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
    - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
