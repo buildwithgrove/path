@@ -26,7 +26,6 @@
   - [3.2 Morse Quickstart](#32-morse-quickstart)
 - [4. Configuration](#4-configuration)
   - [4.1 Configuration File](#41-configuration-file)
-  - [4.4 Other Examples](#44-other-examples)
 - [5. Running PATH](#5-running-path)
   - [5.1. Setup Config YAML](#51-setup-config-yaml)
   - [5.2. Run the PATH binary](#52-run-the-path-binary)
@@ -152,9 +151,20 @@ docker pull ghcr.io/buildwithgrove/path
 
 ## 4. Configuration
 
+The location of the configuration file may be set using the `-config` flag.
+
+For example, when running the compiled PATH binary using `make path_run`, the configuration file will be located at `./bin/config/.config.yaml`.
+
+When running PATH in Tilt, the configuration file mount point is `/app/config/.config.yaml`.
+
 ### 4.1 Configuration File
 
 The configuration for PATH is defined in a YAML file, which should be named `.config.yaml`.
+
+- [Example Shannon Config YAML File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
+- [Example Morse Config YAML File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
+- [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
+
 
 This file is required for setting up a PATH instance and must be populated with the appropriate values.
 
@@ -182,17 +192,6 @@ The configuration is divided into several sections:
 
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
-
-- [Example Shannon Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
-- [Example Morse Configuration File](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
-- [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
-
-### 4.4 Other Examples
-
-- Full example config YAML files:
-  - [Morse](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/morse.example.yaml)
-  - [Shannon](https://github.com/buildwithgrove/path/tree/main/cmd/config/testdata/shannon.example.yaml)
-- [Config YAML Schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
 
 ## 5. Running PATH
 
