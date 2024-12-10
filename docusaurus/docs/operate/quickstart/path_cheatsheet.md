@@ -82,9 +82,9 @@ git clone https://github.com/buildwithgrove/path.git
 
 Assuming you have followed the instructions in the [Gateway Cheatsheet's Account Setup section](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet), the following should be true:
 
-1. You have created, funded and stake a `Gateway`.
-2. You have created, funded and stake a `Application`.
-3. You have from the staked `Application` to staked the `Gateway`.
+1. You have created, funded and staked a `Gateway`.
+2. You have created, funded and staked a `Application`.
+3. You have delegated the staked `Application` to the staked `Gateway`.
 
 Now you can populate the configuration files required to run the full `PATH Gateway` instance.
 
@@ -102,7 +102,7 @@ When you're done, run `cat local/path/config/.config.yaml` to view the updated c
 
 ### 2.2 Populate the `Envoy Proxy` config files
 
-Run the following command to generate the d Envoy config files in `local/path/envoy`.
+Run the following command to generate the 3 Envoy config files in `local/path/envoy`.
 
 - `.envoy.yaml`
 - `.ratelimit.yaml`
@@ -119,6 +119,8 @@ If you wish to use an 0Auth provider _(for example [Auth0](https://auth0.com))_ 
 If you do not wish to use an OAuth provider, simply answer `no` when prompted. This will allow authorizing requests with a static API key only.
 
 :::
+
+<!-- TODO_TECHDEBT(@commoddity): Update the `make init_envoy` script to remove the JWT HTTP filter if the operator selects to use a static API key only. -->
 
 ## 3. Run the `PATH` Gateway
 
