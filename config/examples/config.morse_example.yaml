@@ -6,6 +6,8 @@
 ### Example Morse Configuration YAML Format ###
 ###############################################
 
+# DEV_NOTE: The keys in this file are just random hex codes to bypass schema validation.
+
 morse_config:
   full_node_config:
     # DO NOT change rpc_url unless you know what you're doing
@@ -25,9 +27,9 @@ morse_config:
   # https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats
   signed_aats: 
     "40af4e7e1b311c76a573610fe115cd2adf1eeade":
-      client_public_key: "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619"
-      application_public_key: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce"
-      application_signature: "57d73225f83383e93571d0178f01368f26af9e552aaf073233d54600b60464043ba7013633d082b05d03ac7271667b307b09f47b8ac04000b19205cc1f99555d"
+      client_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_signature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
 
 # services is required. At least one service must be configured with a valid id.
 # All fields are optional but the id is required.

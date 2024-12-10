@@ -6,6 +6,9 @@
 ### Example Shannon Configuration YAML Format ###
 #################################################
 
+# DEV_NOTE: The `gateway_private_key_hex` and `owned_apps_private_keys_hex`
+# fields in this file are just random hex codes to bypass schema validation.
+
 shannon_config:
   full_node_config:
     # If this config is used for Shannon E2E tests, do not change rpc_url
