@@ -7,8 +7,7 @@ global:
 path:
   mountSecrets:
     - name: path-config-local
-      ## TODO_FIX(@commoddity): figure out how to mount the config file to /app/config/.config.yaml
-      mountPath: /app/.config.yaml
+      mountPath: /app/config/.config.yaml
       subPath: .config.yaml
       items:
         - key: .config.yaml
