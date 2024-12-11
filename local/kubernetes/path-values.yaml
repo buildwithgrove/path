@@ -7,7 +7,7 @@ global:
 path:
   mountSecrets:
     - name: path-config-local
-      mountPath: /app/.config.yaml
+      mountPath: /app/config/.config.yaml
       subPath: .config.yaml
       items:
         - key: .config.yaml

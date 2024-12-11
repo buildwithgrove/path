@@ -57,6 +57,6 @@ config_path_secrets: check_path_config
 dev_down:
 	@echo "Tearing down local environment..."
 	@tilt down
-	@kuebctl delete secret path-config-local
-	@kind delete cluster --name kind-path-localnet
+	@kubectl delete secret path-config-local
+	@kind delete cluster --name path-localnet
 	@kubectl config delete-context kind-path-localnet
