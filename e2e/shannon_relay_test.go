@@ -28,7 +28,6 @@ func Test_ShannonRelay(t *testing.T) {
 	tests := []struct {
 		name         string
 		reqMethod    string
-		reqPath      string
 		serviceID    string
 		serviceAlias string
 		relayID      string
@@ -39,7 +38,6 @@ func Test_ShannonRelay(t *testing.T) {
 			// single endpoint, maintained by Grove.
 			name:         "should successfully relay eth_blockNumber for gatewaye2e",
 			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
 			serviceAlias: "test-service",
 			relayID:      "1001",
 			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
@@ -47,7 +45,6 @@ func Test_ShannonRelay(t *testing.T) {
 		{
 			name:         "should successfully relay eth_chainId for gatewaye2e",
 			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
 			serviceAlias: "test-service",
 			relayID:      "1002",
 			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
@@ -55,7 +52,6 @@ func Test_ShannonRelay(t *testing.T) {
 		{
 			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
 			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
 			serviceAlias: "eth-mainnet",
 			relayID:      "1101",
 			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
@@ -64,12 +60,13 @@ func Test_ShannonRelay(t *testing.T) {
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
+	reqPath := "/v1/abcdef12"
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, test.reqPath)
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
