@@ -45,7 +45,7 @@ install_kubectl() {
     else
         echo "$(date) - Installing kubectl..." >> install.log
         KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/darwin/amd64/kubectl"
+        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
         chmod +x kubectl
         mv kubectl /usr/local/bin/kubectl
         echo "$(date) - kubectl installation complete." >> install.log
