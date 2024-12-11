@@ -27,5 +27,4 @@ services:
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
-    - "F00C"
     - "anvil"
