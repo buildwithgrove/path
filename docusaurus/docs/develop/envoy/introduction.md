@@ -66,7 +66,7 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-> 💡 **Tip:** A [Tiltfile](../Tiltfile) is provided to run all of these services locally.
+> 💡 **Tip:** A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -321,7 +321,7 @@ For more information, see:
 
 ### 5.4. Gateway Endpoints gRPC Service
 
-Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](./auth_server/proto/gateway_endpoint.proto) file.
+Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
 This service defines two main methods for populating the `Go External Authorization Server`'s `Gateway Endpoint Store`:
 
@@ -353,7 +353,7 @@ This service is available as a Docker image and may be configured to load data f
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
-_This Docker image is loaded by default in the [Tiltfile](./Tiltfile) file at the root of the PATH repo._
+_This Docker image is loaded by default in the [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) file at the root of the PATH repo._
 
 If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server) section.
 
@@ -427,7 +427,7 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
              descriptor_key: "x-rl-plan"
    ```
 
-3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](./ratelimit.yaml) file.
+3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml) file.
 
    _ratelimit.yaml_
 

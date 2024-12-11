@@ -28,7 +28,7 @@ interaction with decentralized protocols.
 
 Please visit [path.grove.city](https://path.grove.city) for documentation.
 
-The source code for the documentation is available in the [docs](./docusaurus/docs/) directory.
+The source code for the documentation is available in the `docs` directory.
 
 ---
 
