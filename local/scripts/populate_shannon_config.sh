@@ -5,7 +5,7 @@
 CONFIG_FILE="./local/path/config/.config.yaml"
 
 # Make a copy of the default config file
-make copy_shannon_config
+make config_shannon_localnet
 
 # Replace endpoints as needed
 sed -i "s|rpc_url: \".*\"|rpc_url: $NODE|" "$CONFIG_FILE"

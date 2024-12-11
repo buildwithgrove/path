@@ -196,8 +196,8 @@ install_poktroll: ## Installs the poktrolld binary
 	./local/scripts/install_poktroll.sh
 
 .PHONY: populate_shannon_config
-populate_config: ## Populates the config file with the correct values
-	./local/scripts/populate_config.sh
+populate_shannon_config: ## Populates the config file with the correct values
+	./local/scripts/populate_shannon_config.sh
 
 #########################################
 ### Envoy Initialization Make Targets ###
