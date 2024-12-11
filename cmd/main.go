@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -15,19 +17,18 @@ import (
 	"github.com/buildwithgrove/path/router"
 )
 
-// Define a variable to hold the config path
-var configPath string
-
-const defaultConfigPath = "/app/config/.config.yaml"
-
-func init() {
-	// Initialize the config path using a command-line flag
-	flag.StringVar(&configPath, "config", defaultConfigPath, "Path to the configuration file")
-	flag.Parse()
-}
+// defaultConfigPath will be appended to the location of
+// the executable to get the full path to the config file.
+const defaultConfigPath = "config/.config.yaml"
 
 func main() {
 	logger := polyzero.NewLogger()
+
+	configPath, err := getConfigPath()
+	if err != nil {
+		log.Fatalf("failed to get config path: %v", err)
+	}
+	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	config, err := config.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
@@ -95,6 +96,38 @@ func main() {
 
 /* -------------------- Gateway Init Helpers -------------------- */
 
+// getConfigPath returns the full path to the config file
+// based on the current working directory of the executable.
+//
+// For example if the binary is in:
+// - `/app` the full config path will be `/app/config/.config.yaml`
+// - `./bin` the full config path will be `./bin/config/.config.yaml`
+func getConfigPath() (string, error) {
+	var configPath string
+
+	// The config path can be overridden using the `-config` flag.
+	flag.StringVar(&configPath, "config", "", "override the default config path")
+	flag.Parse()
+	if configPath != "" {
+		return configPath, nil
+	}
+
+	// Otherwise, use the default config path based on the executable path
+	exeDir, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %v", err)
+	}
+
+	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)
+
+	return configPath, nil
+}
+
+// getProtocol returns the protocol instance based on the config YAML.
+//
+// - If `shannon_config` is set it returns a Shannon protocol instance.
+// - If `morse_config` is set it returns a Morse protocol instance.
+// - If neither is set, it returns an error.
 func getProtocol(config config.GatewayConfig, logger polylog.Logger) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
 		return getShannonProtocol(shannonConfig, logger)
