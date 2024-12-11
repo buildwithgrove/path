@@ -19,12 +19,13 @@ shannon_config:
       # NOTE: the application private key must be replaced with the correct application private key secret
       - cf09805c952fa999e9a63a9f434147b0a5abfd10f268879694c6b5a70e1ae177
 services:
-  # do not change gatewaye2e
-  "gatewaye2e":
+  # do not change anvil
+  "anvil":
     # do not change alias
-    alias: "test-service"
+    alias: "anvil"
   "F00C":
     alias: "eth-mainnet"
 hydrator_config:
   service_ids:
     - "F00C"
+    - "anvil"
