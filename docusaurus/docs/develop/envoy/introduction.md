@@ -136,8 +136,6 @@ Requests are rejected if either of the following are true:
 
 <br/>
 
-> 💡 **Tip:** For instructions on how to run PATH without any auth or rate limiting, see the [PATH README - Quickstart Section](../README.md#quickstart)
-
 ## 3. Envoy Proxy
 
 <div align="center">
