@@ -15,16 +15,27 @@ if [ -f "$ENVOY_CONFIG_PATH" ]; then
     exit 1
 fi
 
-# Prompt for AUTH_DOMAIN
-read -p "Enter AUTH_DOMAIN (eg. 'auth.example.com'): " AUTH_DOMAIN
+# Prompt the user if they wish to use an OAuth provider
+read -p "Do you wish to use an OAuth provider to enable authorizing requests using JWT? (yes/no): " USE_OAUTH
 
-# Prompt for AUTH_AUDIENCE
-read -p "Enter AUTH_AUDIENCE (eg. 'https://auth.example.com/oauth/token'): " AUTH_AUDIENCE
+if [[ "$USE_OAUTH" =~ ^(yes|y)$ ]]; then
+    # Prompt for AUTH_DOMAIN
+    read -p "Enter AUTH_DOMAIN (eg. 'auth.example.com'): " AUTH_DOMAIN
 
-# Substitute sensitive variables manually using bash parameter expansion
-sed -e "s|\${AUTH_DOMAIN}|$AUTH_DOMAIN|g" \
-    -e "s|\${AUTH_AUDIENCE}|$AUTH_AUDIENCE|g" \
-    "$SCRIPT_DIR/../envoy.template.yaml" > "$ENVOY_CONFIG_PATH"
+    # Prompt for AUTH_AUDIENCE
+    read -p "Enter AUTH_AUDIENCE (eg. 'https://auth.example.com/oauth/token'): " AUTH_AUDIENCE
+
+    # Substitute sensitive variables manually using bash parameter expansion
+    sed -e "s|\${AUTH_DOMAIN}|$AUTH_DOMAIN|g" \
+        -e "s|\${AUTH_AUDIENCE}|$AUTH_AUDIENCE|g" \
+        "$SCRIPT_DIR/../envoy.template.yaml" > "$ENVOY_CONFIG_PATH"
+elif [[ "$USE_OAUTH" =~ ^(no|n)$ ]]; then
+    # Just copy the file without substitution
+    cp "$SCRIPT_DIR/../envoy.template.yaml" "$ENVOY_CONFIG_PATH"
+else
+    echo "Error: Invalid response. Please enter 'yes' or 'no'."
+    exit 1
+fi
 
 echo "envoy.yaml has been created at $ENVOY_CONFIG_PATH"
 
