@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+title: Introduction
+---
+
 <div align="center">
 <h1>PATH<br/>Authorization & Rate Limiting</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
