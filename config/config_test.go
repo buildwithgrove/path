@@ -113,8 +113,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					ServiceIDs: []protocol.ServiceID{"F00C"},
 				},
 				serviceAliases: map[string]protocol.ServiceID{
-					"test-service": "gatewaye2e",
-					"eth":          "F00C",
+					"test-service":     "gatewaye2e",
+					"eth":              "F00C",
+					"test-service-eth": "anvil",
 				},
 			},
 			wantErr: false,

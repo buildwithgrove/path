@@ -13,22 +13,22 @@ spec:
         app: envoy-proxy
     spec:
       containers:
-      - name: envoy
-        image: envoyproxy/envoy:v1.32-latest
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            if [ ! -f /etc/envoy/.envoy.yaml ]; then echo '.envoy.yaml not found.' && exit 1; fi; /usr/local/bin/envoy -c /etc/envoy/.envoy.yaml
-        volumeMounts:
-        - name: envoy-config
-          mountPath: /etc/envoy/.envoy.yaml
-          subPath: .envoy.yaml
-        ports:
-        - containerPort: 3001
+        - name: envoy
+          image: envoyproxy/envoy:v1.32-latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if [ ! -f /etc/envoy/.envoy.yaml ]; then echo '.envoy.yaml not found.' && exit 1; fi; /usr/local/bin/envoy -c /etc/envoy/.envoy.yaml
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /etc/envoy/.envoy.yaml
+              subPath: .envoy.yaml
+          ports:
+            - containerPort: 3001
       volumes:
-      - name: envoy-config
-        configMap:
-          name: envoy-config
+        - name: envoy-config
+          configMap:
+            name: envoy-config
 ---
 apiVersion: v1
 kind: Service
@@ -36,8 +36,8 @@ metadata:
   name: envoy-proxy
 spec:
   ports:
-  - port: 3001
-    targetPort: 3001
+    - port: 3001
+      targetPort: 3001
   selector:
     app: envoy-proxy
   type: ClusterIP

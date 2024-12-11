@@ -36,7 +36,7 @@ path_run: path_build ## Run the path binary as a standalone binary
 		echo "#########################################################################################"; \
 		exit; \
 	fi; \
-	(cd bin; ./path -config ./config/.config.yaml)
+	(cd bin; ./path)
 
 ###############################
 ###  Localnet Make targets  ###
@@ -154,7 +154,7 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
-		cp ./e2e/morse.example.yaml ./e2e/.morse.config.yaml; \
+		cp ./config/examples/config.morse_example.yaml ./e2e/.morse.config.yaml; \
 		echo "###################################################################################################################"; \
 		echo "### Created ./e2e/.morse.config.yaml                                                                            ###"; \
 		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
