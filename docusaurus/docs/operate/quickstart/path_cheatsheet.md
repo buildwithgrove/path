@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 title: PATH Cheat Sheet
 ---
 
@@ -25,18 +25,28 @@ The following instructions are specific to setting up a PATH instance on Shannon
 ## Table of Contents <!-- omit in toc -->
 
 - [1. Pre-Requisites](#1-pre-requisites)
-  - [1.1 Tools](#11-tools)
-  - [1.2 Shannon Account Setup](#12-shannon-account-setup)
-  - [1.3 Clone the `PATH` Repository](#13-clone-the-path-repository)
+  - [1.1 Clone the `PATH` Repository](#11-clone-the-path-repository)
+  - [1.2 Install Dependencies](#12-install-dependencies)
+  - [1.3 Setup Shannon Account](#13-setup-shannon-account)
 - [2. Populate Required Config Files](#2-populate-required-config-files)
   - [2.1 Populate the `PATH` config YAML file](#21-populate-the-path-config-yaml-file)
   - [2.2 Populate the `Envoy Proxy` config files](#22-populate-the-envoy-proxy-config-files)
 - [3. Run the `PATH` Gateway](#3-run-the-path-gateway)
-- [4. Sending a Relay](#4-sending-a-relay)
+- [4. Send a Relay](#4-send-a-relay)
 
 ## 1. Pre-Requisites
 
-### 1.1 Tools
+### 1.1 Clone the `PATH` Repository
+
+```bash
+mkdir -p ~/workspace
+cd ~/workspace
+git clone https://github.com/buildwithgrove/path.git
+cd ./path
+```
+
+### 1.2 Install Dependencies
+
 The following tools are required to start a local PATH instance in Tilt:
 
 - [Poktroll CLI](https://dev.poktroll.com/operate/user_guide/install)
@@ -58,11 +68,11 @@ This will check if the required tools are installed and install them if they are
 :::
 
 
-### 1.2 Shannon Account Setup
+### 1.3 Setup Shannon Account
 
 Before starting a PATH instance, you will need to set up both a [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways) and [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications) account on Shannon.
 
-For a quick and easy way to set up a Shannon account, [see the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet).
+For a quick and easy way to set up your Shannon account, see [the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet).
 
 :::tip
 
@@ -70,17 +80,9 @@ If you ran `make install_deps`, you will already have the `poktrolld` CLI instal
 
 :::
 
-### 1.3 Clone the `PATH` Repository
-
-```bash
-mkdir -p ~/workspace
-cd ~/workspace
-git clone https://github.com/buildwithgrove/path.git
-```
-
 ## 2. Populate Required Config Files
 
-Assuming you have followed the instructions in the [Gateway Cheatsheet's Account Setup section](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet), the following should be true:
+Assuming you have followed the instructions in [the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet), the following should be true:
 
 1. You have created, funded and staked a `Gateway`.
 2. You have created, funded and staked a `Application`.
@@ -169,7 +171,9 @@ You can visit http://localhost:10350 in your browser to view the Tilt dashboard,
 
 :::note
 
-The `PATH Gateway` stack may take a minute or more to initialize the first time you run it as it must download all required Docker images. You will be able to tell it is ready when you see log output like this in the `path` Resource in the  Tilt dashboard:
+The `PATH Gateway` stack may take a minute or more to initialize the first time you run it as it must download all required Docker images. 
+
+You will be able to tell it is ready when you see log output like this in the `path` Resource in the  Tilt dashboard:
 ```json
 {"level":"info","message":"Starting PATH gateway with Shannon protocol"}
 {"level":"info","message":"Starting the cache update process."}
@@ -180,7 +184,7 @@ The `PATH Gateway` stack may take a minute or more to initialize the first time 
 
 Once the `PATH Gateway` container is ready, you may send a relay to test. 
 
-## 4. Sending a Relay
+## 4. Send a Relay
 
 Check that the `PATH Gateway` is serving relays by running the following command yourself:
 
@@ -194,9 +198,11 @@ curl http://eth.localhost:3001/v1/endpoint_1 \
 
 :::tip
 
-The GatewayEndpoint ID `endpoint_1` and API Key `api_key_1` are defined in the `local/path/envoy/.gateway-endpoints.yaml` file.
+The `GatewayEndpoint` ID `endpoint_1` and API Key `api_key_1` are defined in the `local/path/envoy/.gateway-endpoints.yaml` file.
 
-To add new `GatewayEndpoints`, you may modify this file.
+To add or modify the `GatewayEndpoints` that are authorized to use your PATH instance, you may modify this file. 
+
+Saving this file will trigger a hot-reloading of the PATH Auth Data Server (PADS) resource in Tilt.
 
 For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, [see the PATH Auth Data Server section of the PATH Auth README.md](https://github.com/buildwithgrove/path/tree/main/envoy#55-remote-grpc-auth-server).
 
