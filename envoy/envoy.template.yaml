@@ -12,7 +12,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: path
+                      address: path-http
                       port_value: 3000 # Port where the PATH API service runs.
 
     # Cluster to fetch the JSON Web Key Set (JWKS) from the authentication provider.
@@ -51,7 +51,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: ext_authz
+                      address: ext-authz
                       port_value: 10003
 
     # Cluster for the rate-limiting service.
@@ -181,12 +181,6 @@ static_resources:
                             prefix: "/v1"
                           route:
                             cluster: path_gateway_service
-                            # strip the endpoint ID from the path before forwarding to PATH to work with PATH's ability to serve requests without any dependencies
-                            regex_rewrite:
-                              pattern:
-                                google_re2: {}
-                                regex: "^/v1/(.*)"
-                              substitution: "/v1"
                             # Configures rate limiting descriptors.
                             rate_limits:
                               - actions:

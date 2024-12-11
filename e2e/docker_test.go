@@ -87,7 +87,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("config file does not exist: %s", configFilePath)
 	}
 
-	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/.config.yaml
+	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/config/.config.yaml
 	containerConfigMount := configFilePath + configMountPoint
 
 	// Initialize the dockertest pool
