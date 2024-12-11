@@ -24,7 +24,10 @@ const defaultConfigPath = "config/.config.yaml"
 func main() {
 	logger := polyzero.NewLogger()
 
-	configPath := getConfigPath()
+	configPath, err := getConfigPath()
+	if err != nil {
+		log.Fatalf("failed to get config path: %v", err)
+	}
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	config, err := config.LoadGatewayConfigFromYAML(configPath)
@@ -99,22 +102,25 @@ func main() {
 // For example if the binary is in:
 // - `/app` the full config path will be `/app/config/.config.yaml`
 // - `./bin` the full config path will be `./bin/config/.config.yaml`
-func getConfigPath() string {
-	// The config path can be overridden using the `-config` flag.
+func getConfigPath() (string, error) {
 	var configPath string
+
+	// The config path can be overridden using the `-config` flag.
 	flag.StringVar(&configPath, "config", "", "override the default config path")
 	flag.Parse()
 	if configPath != "" {
-		return configPath
+		return configPath, nil
 	}
 
 	// Otherwise, use the default config path based on the executable path
 	exeDir, err := os.Executable()
 	if err != nil {
-		log.Fatalf("failed to get executable path: %v", err)
+		return "", fmt.Errorf("failed to get executable path: %v", err)
 	}
 
-	return filepath.Join(filepath.Dir(exeDir), defaultConfigPath)
+	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)
+
+	return configPath, nil
 }
 
 // getProtocol returns the protocol instance based on the config YAML.
