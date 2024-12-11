@@ -38,6 +38,20 @@ install_kind() {
     fi
 }
 
+# Function to install kubectl if not present
+install_kubectl() {
+    if command_exists kubectl; then
+        echo "$(date) - kubectl already installed." >> install.log
+    else
+        echo "$(date) - Installing kubectl..." >> install.log
+        KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/darwin/amd64/kubectl"
+        chmod +x kubectl
+        mv kubectl /usr/local/bin/kubectl
+        echo "$(date) - kubectl installation complete." >> install.log
+    fi
+}
+
 # Function to install Helm if not present
 # This function checks if Helm is installed. If not, it uses the Helm install script to get the latest version.
 install_helm() {
@@ -67,6 +81,7 @@ echo "$(date) - Starting installation script..." >> install.log
 
 install_docker
 install_kind
+install_kubectl
 install_helm
 install_tilt
 

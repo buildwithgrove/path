@@ -52,6 +52,7 @@ The following tools are required to start a local PATH instance in Tilt:
 - [Poktroll CLI](https://dev.poktroll.com/operate/user_guide/install)
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 - [Helm](https://helm.sh/docs/intro/install/)
 - [Tilt](https://docs.tilt.dev/install.html)
 
