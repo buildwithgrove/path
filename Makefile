@@ -36,7 +36,7 @@ path_run: path_build ## Run the path binary as a standalone binary
 		echo "#########################################################################################"; \
 		exit; \
 	fi; \
-	(cd bin; ./path -config ./config/.config.yaml)
+	(cd bin; ./path)
 
 ###############################
 ###  Localnet Make targets  ###
