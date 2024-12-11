@@ -181,12 +181,6 @@ static_resources:
                             prefix: "/v1"
                           route:
                             cluster: path_gateway_service
-                            # strip the endpoint ID from the path before forwarding to PATH to work with PATH's ability to serve requests without any dependencies
-                            regex_rewrite:
-                              pattern:
-                                google_re2: {}
-                                regex: "^/v1/(.*)"
-                              substitution: "/v1"
                             # Configures rate limiting descriptors.
                             rate_limits:
                               - actions:
