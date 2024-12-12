@@ -50,13 +50,14 @@ func Test_ShannonRelay(t *testing.T) {
 	}
 
 	reqPath := "/v1/abcdef12"
-	serviceAlias := "anvil"
+	serviceID := "anvil"
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://anvil.localdev.me:55006/v1/abcdef12"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", serviceAlias, localdevMe, pathContainerPort, reqPath)
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", serviceID, localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
