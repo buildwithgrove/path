@@ -29,11 +29,14 @@ const (
 	envVarGRPCHostPort                = "GRPC_HOST_PORT"
 	envVarGRPCUseInsecure             = "GRPC_USE_INSECURE"
 	defaultGRPCUseInsecureCredentials = false
+	envVarEndpointIDExtractor         = "ENDPOINT_ID_EXTRACTOR"
+	defaultEndpointIDExtractor        = auth.EndpointIDExtractorTypeURLPath
 )
 
 type options struct {
 	grpcHostPort               string
 	grpcUseInsecureCredentials bool
+	endpointIDExtractor        auth.EndpointIDExtractorType
 }
 
 func gatherOptions() options {
@@ -49,9 +52,15 @@ func gatherOptions() options {
 		}
 	}
 
+	endpointIDExtractor := auth.EndpointIDExtractorType(os.Getenv(envVarEndpointIDExtractor))
+	if !endpointIDExtractor.IsValid() {
+		endpointIDExtractor = defaultEndpointIDExtractor
+	}
+
 	return options{
 		grpcHostPort:               grpcHostPort,
 		grpcUseInsecureCredentials: grpcUseInsecureCredentials,
+		endpointIDExtractor:        endpointIDExtractor,
 	}
 }
 
@@ -97,12 +106,23 @@ func main() {
 		panic(err)
 	}
 
+	// Determine which gateway endpoint ID extractor to use
+	// If the extractor is not set, use the default "url_path" extractor
+	var endpointIDExtractor auth.EndpointIDExtractor
+	switch opts.endpointIDExtractor {
+	case auth.EndpointIDExtractorTypeURLPath:
+		endpointIDExtractor = &auth.URLPathExtractor{}
+	case auth.EndpointIDExtractorTypeHeader:
+		endpointIDExtractor = &auth.HeaderExtractor{}
+	}
+
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
-		EndpointStore:    endpointStore,
-		APIKeyAuthorizer: &auth.APIKeyAuthorizer{},
-		JWTAuthorizer:    &auth.JWTAuthorizer{},
-		Logger:           logger,
+		EndpointStore:       endpointStore,
+		APIKeyAuthorizer:    &auth.APIKeyAuthorizer{},
+		JWTAuthorizer:       &auth.JWTAuthorizer{},
+		EndpointIDExtractor: endpointIDExtractor,
+		Logger:              logger,
 	}
 
 	// Create a new gRPC server for handling auth requests from Envoy

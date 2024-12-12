@@ -7,7 +7,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -20,8 +19,7 @@ import (
 )
 
 const (
-	// TODO_MVP(@commoddity): Eliminate the hard-coding of this prefix for all endpoints.
-	// See this thread for more information: https://github.com/buildwithgrove/path/pull/52/files#r1859632536
+	// TODO_MVP(@commoddity):
 	pathPrefix = "/v1/"
 
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
@@ -51,6 +49,9 @@ type AuthHandler struct {
 	APIKeyAuthorizer Authorizer
 	JWTAuthorizer    Authorizer
 
+	// The endpoint ID extractor to be used for the request
+	EndpointIDExtractor EndpointIDExtractor
+
 	Logger polylog.Logger
 }
 
@@ -65,8 +66,6 @@ func (a *AuthHandler) Check(
 	ctx context.Context,
 	checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
-	a.Logger.Info().Str("path", checkReq.GetAttributes().GetRequest().GetHttp().GetPath()).Msg("path")
-
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 	if req == nil {
@@ -85,11 +84,14 @@ func (a *AuthHandler) Check(
 		return getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
 	}
 
-	// Extract the endpoint ID from the path
-	endpointID, err := extractEndpointID(path)
+	// Extract the endpoint ID from the request
+	// It may be extracted from the URL path or the headers
+	endpointID, err := a.EndpointIDExtractor.extractGatewayEndpointID(req)
 	if err != nil {
-		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_Forbidden), nil
+		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_BadRequest), nil
 	}
+
+	a.Logger.Info().Str("path", path).Str("endpoint_id", endpointID).Msg("handling check request")
 
 	// Fetch GatewayEndpoint from endpoint store
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)
@@ -111,18 +113,6 @@ func (a *AuthHandler) Check(
 }
 
 /* --------------------------------- Helpers -------------------------------- */
-
-// extractEndpointID extracts the endpoint ID from the URL path.
-// The endpoint ID is the part of the path after "/v1/" and is used to identify the GatewayEndpoint.
-func extractEndpointID(urlPath string) (string, error) {
-	if strings.HasPrefix(urlPath, pathPrefix) {
-		if endpointID := strings.TrimPrefix(urlPath, pathPrefix); endpointID != "" {
-			return endpointID, nil
-		}
-		return "", fmt.Errorf("endpoint ID not provided")
-	}
-	return "", fmt.Errorf("invalid path: %s", urlPath)
-}
 
 // getGatewayEndpoint fetches the GatewayEndpoint from the endpoint store and a bool indicating if it was found
 func (a *AuthHandler) getGatewayEndpoint(endpointID string) (*proto.GatewayEndpoint, bool) {
