@@ -15,7 +15,7 @@ update_shannon_config_from_env() {
     local CONFIG_FILE="./.shannon.config.yaml"
     if [[ ! -f $CONFIG_FILE ]]; then
         echo "config file" $CONFIG_FILE "not found in" $PWD
-	return 1
+        return 1
     fi
 
     yq -i '
