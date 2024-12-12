@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pokt-foundation/pocket-go/provider"
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config/morse"
@@ -26,46 +25,43 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	}{
 		{
 			name:     "should load valid morse config without error",
-			filePath: "./testdata/morse.example.yaml",
+			filePath: "./examples/config.morse_example.yaml",
 			want: GatewayConfig{
 				MorseConfig: &morse.MorseGatewayConfig{
 					FullNodeConfig: morseprotocol.FullNodeConfig{
-						URL:             "https://full-node-url.io",
-						RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
+						URL:             "https://pocket-rpc.liquify.com",
+						RelaySigningKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						HttpConfig: morseprotocol.HttpConfig{
 							Retries: 3,
 							Timeout: 5000 * time.Millisecond,
 						},
-						RequestConfig: provider.RequestConfigOpts{
-							Retries: 3,
-						},
 					},
 					SignedAATs: map[string]morse.SignedAAT{
-						"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
-							ClientPublicKey:      "a6258b46ecad0628b72099f91e87eef1b040a8747ed2d476f56ad359372bf619",
-							ApplicationPublicKey: "5a8c62e4701f349a3b9288cfbd825db230a8ec74fd234e7cb0849e915bc6d6ce",
-							ApplicationSignature: "57d73225f83383e93571d0178f01368f26af9e552aaf073233d54600b60464043ba7013633d082b05d03ac7271667b307b09f47b8ac04000b19205cc1f99555d",
-						},
-						"f9076ec39b2a495883eb59740d566d5fa2e2b222": {
-							ClientPublicKey:      "8604213b0c1ec52b5ae43eb854ce486a3756ec97cc194f3afe518947766aac11",
-							ApplicationPublicKey: "71dd0e166022f1665dbba91b223998b0f328e9af2193a363456412a8eb4272e4",
-							ApplicationSignature: "bb04cb9cb34ea6e2d57fb679f7b1e73ff77992e0f39a1e7db0c8ed2a91aed3668d0b6399ea70614a0f51b714a3ad3bd3ca2bc4a75302c14ce207d44c738cdbbf",
+						"40af4e7e1b311c76a573610fe115cd2adf1eeade": {
+							ClientPublicKey:      "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
+							ApplicationPublicKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
+							ApplicationSignature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
 					},
 				},
 				Services: map[protocol.ServiceID]ServiceConfig{
 					"F00C": {
 						Alias:          "eth",
-						RequestTimeout: 3000 * time.Millisecond,
+						RequestTimeout: 3_000 * time.Millisecond,
 					},
-					"0001": {}, // Example of a service with no additional configuration
+					"0021": {
+						RequestTimeout: 3_000 * time.Millisecond,
+					},
 				},
 				Router: RouterConfig{
-					Port:               8080,
-					MaxRequestBodySize: 512000,
-					ReadTimeout:        5000 * time.Millisecond,
-					WriteTimeout:       5000 * time.Millisecond,
-					IdleTimeout:        5000 * time.Millisecond,
+					Port:               defaultPort,
+					MaxRequestBodySize: defaultMaxRequestBodySize,
+					ReadTimeout:        defaultReadTimeout,
+					WriteTimeout:       defaultWriteTimeout,
+					IdleTimeout:        defaultIdleTimeout,
+				},
+				HydratorConfig: EndpointHydratorConfig{
+					ServiceIDs: []protocol.ServiceID{"F00C"},
 				},
 				serviceAliases: map[string]protocol.ServiceID{
 					"eth": "F00C",
@@ -75,41 +71,42 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 		},
 		{
 			name:     "should load valid shannon config without error",
-			filePath: "./testdata/shannon.example.yaml",
+			filePath: "./examples/config.shannon_example.yaml",
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://rpc-url.io",
+						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
 						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "grpc-url.io:443",
+							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
-						GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
-						GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
 						GatewayMode:          protocol.GatewayModeCentralized,
+						GatewayAddress:       "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw",
+						GatewayPrivateKeyHex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						OwnedAppsPrivateKeysHex: []string{
-							"e5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
-							"f5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
+							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
 					},
 				},
 				Services: map[protocol.ServiceID]ServiceConfig{
-					"0021": {
-						Alias:          "eth-mainnet",
-						RequestTimeout: 3000 * time.Millisecond,
+					"anvil": {
+						RequestTimeout: 3_000 * time.Millisecond,
 					},
-					"0001": {}, // Example of a service with no additional configuration
+					"F00C": {
+						Alias:          "eth",
+						RequestTimeout: 3_000 * time.Millisecond,
+					},
 				},
 				Router: RouterConfig{
-					Port:               8080,
-					MaxRequestBodySize: 512000,
-					ReadTimeout:        5000 * time.Millisecond,
-					WriteTimeout:       5000 * time.Millisecond,
-					IdleTimeout:        5000 * time.Millisecond,
+					Port:               defaultPort,
+					MaxRequestBodySize: defaultMaxRequestBodySize,
+					ReadTimeout:        defaultReadTimeout,
+					WriteTimeout:       defaultWriteTimeout,
+					IdleTimeout:        defaultIdleTimeout,
 				},
 				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
+					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -332,7 +329,6 @@ func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 func compareMorseFullNodeConfig(c *require.Assertions, want, got morseprotocol.FullNodeConfig) {
 	c.Equal(want.URL, got.URL)
 	c.Equal(want.RelaySigningKey, got.RelaySigningKey)
-	c.Equal(want.RequestConfig, got.RequestConfig)
 	compareHTTPConfig(c, want.HttpConfig, got.HttpConfig)
 }
 

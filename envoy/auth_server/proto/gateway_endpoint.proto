@@ -18,7 +18,6 @@ option go_package = ".;proto";
 service GatewayEndpoints {
   // FetchAuthDataSync requests the initial set of GatewayEndpoints from the remote gRPC server.
   rpc FetchAuthDataSync(AuthDataRequest) returns (AuthDataResponse);
-
   // StreamAuthDataUpdates listens for updates from the remote gRPC server and streams them to the client.
   rpc StreamAuthDataUpdates(AuthDataUpdatesRequest) returns (stream AuthDataUpdate);
 }

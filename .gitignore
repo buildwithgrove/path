@@ -41,16 +41,9 @@ go.work.sum
 
 # Development
 .vscode
-.env
 .idea/
 .mise.local.toml
 
 # tmp directory
 tmp
 tmp/*
-
-# Envoy config with sensitive information
-envoy.yaml
-
-# Gateway Endpoints YAML file for loading local auth data
-gateway-endpoints.yaml

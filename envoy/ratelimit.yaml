@@ -1,10 +1,10 @@
 ---
-domain: rl # must match the domain in the envoy.filters.http.ratelimit definition in envoy.yaml
+domain: rl # must match the domain in the envoy.filters.http.ratelimit definition in .envoy.yaml
 # Configure the rate limits under the descriptors key
 descriptors:
   # The descriptors under `x-rl-endpoint-id` are applied to each unique value of `x-rl-endpoint-id`
   - key: x-rl-endpoint-id
-    # The descriptors under `x-rl-plan` are applied only to the specified value of `x-rl-plan`
+    # The descriptors under `x-rl-throughput` are applied only to the specified value of `x-rl-throughput`
     descriptors:
       # [Rule] - Rate limit requests for throughput limit "30" at 30 requests per second
       - key: x-rl-throughput
