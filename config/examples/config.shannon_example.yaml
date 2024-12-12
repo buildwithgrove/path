@@ -47,7 +47,7 @@ services:
 
   # "F00C" is the service ID for the Ethereum MainNet Archival.
   # Note that this service has an alias, meaning it can be reached
-  # both by its service ID and by its alias, 
+  # both by its service ID and by its alias.
   # eg. https://F00C.path.grove.city and https://eth.path.grove.city.
   "F00C":
     alias: "eth"
