@@ -77,13 +77,21 @@ test_unit: ## Run all unit tests
 test_auth_server: ## Run the auth server tests
 	(cd envoy/auth_server && go test ./... -count=1)
 
+.PHONY: test_e2e_shannon_relay_iterate
+test_e2e_shannon_relay_iterate: ## Instructions on how to iterate locally for an E2E shannon relay
+	@echo "go build -o bin/path ./cmd"
+	@echo "# Update ./bin/config/.config.yaml"
+	@echo "./bin/path"
+	@echo "curl http://anvil.localhost:3000/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
+
 .PHONY: test_e2e_shannon_relay
-test_e2e_shannon_relay: ## Run an E2E shannon relay test
-	go test ./... -tags=e2e -count=1 -run Test_ShannonRelay
+test_e2e_shannon_relay: ## Run an E2E shannon relay test (iterate)
+	@echo "README: If you are iterating on E2E tests, stop this and run the following for instructions instead: 'make test_e2e_shannon_relay_iterate'."
+	go test -v ./e2e/... -tags=e2e -count=1 -run Test_ShannonRelay
 
 .PHONY: test_e2e_morse_relay
 test_e2e_morse_relay: ## Run an E2E Morse relay test
-	go test ./... -tags=e2e -count=1 -run Test_MorseRelay
+	go test -v ./e2e/... -tags=e2e -count=1 -run Test_MorseRelay
 
 ################################
 ### Copy Config Make Targets ###
