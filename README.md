@@ -107,8 +107,10 @@ docker pull ghcr.io/buildwithgrove/path
 
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
+    \*TIP: the `/test` that follows `/v1` can be replaced with any string, but cannot be empty, when running PATH in standalone mode.
+
    ```bash
-   curl http://eth.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1/test \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
