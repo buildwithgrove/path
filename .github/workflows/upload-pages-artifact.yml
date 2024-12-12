@@ -26,9 +26,6 @@ jobs:
           cache: "yarn"
           cache-dependency-path: docusaurus/yarn.lock
 
-      - name: Update docs page
-        run: make docusaurus_main_update
-
       - name: Install dependencies
         run: |
           cd docusaurus
@@ -59,9 +56,6 @@ jobs:
           node-version: 18
           cache: "yarn"
           cache-dependency-path: docusaurus/yarn.lock
-
-      - name: Update docs page
-        run: make docusaurus_main_update
 
       - name: Install dependencies
         run: |
