@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ext-authz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ext-authz
+  template:
+    metadata:
+      labels:
+        app: ext-authz
+    spec:
+      containers:
+        - name: ext-authz
+          image: ext-authz:latest
+          env:
+            # REQUIRED: The host and port for the remote gRPC server connection
+            # that provides the GatewayEndpoint data for the auth server.
+            # Example: "localhost:50051" or "auth-server.buildwithgrove.com:443"
+            - name: GRPC_HOST_PORT
+              value: "path-auth-data-server:50051" # Default value points to the PADS instance in the Tilt stack.
+            # OPTIONAL: Whether to use insecure credentials for the gRPC connection.
+            # Default is "false" if not set.
+            - name: GRPC_USE_INSECURE
+              value: "true" # Remove this value if using a TLS-enabled connection.
+          ports:
+            - containerPort: 10003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-authz
+spec:
+  ports:
+    - port: 10003
+      targetPort: 10003
+  selector:
+    app: ext-authz
+  type: ClusterIP

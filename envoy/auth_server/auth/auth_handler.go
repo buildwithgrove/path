@@ -65,6 +65,8 @@ func (a *AuthHandler) Check(
 	ctx context.Context,
 	checkReq *envoy_auth.CheckRequest,
 ) (*envoy_auth.CheckResponse, error) {
+	a.Logger.Info().Str("path", checkReq.GetAttributes().GetRequest().GetHttp().GetPath()).Msg("path")
+
 	// Get the HTTP request
 	req := checkReq.GetAttributes().GetRequest().GetHttp()
 	if req == nil {

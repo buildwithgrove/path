@@ -2,19 +2,30 @@
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
 
-# To run E2E tests, copy this file and rename it to .morse.config.yaml, then update.
-# morse_config is required for Morse E2E tests.
+###############################################
+### Example Morse Configuration YAML Format ###
+###############################################
+
+# DEV_NOTE: The keys in this file are just random hex codes to bypass schema validation.
+
 morse_config:
   full_node_config:
-    url: "https://pocket-network-full-node-url.io"
-    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388" # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    # DO NOT change rpc_url unless you know what you're doing
+    url: "https://pocket-rpc.liquify.com"
+
+    # README: relay_signing_key MUST BE replaced with your personal gateway private key secret
+    # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+
     http_config:
       retries: 3
       timeout: "5000ms"
-    request_config:
-      retries: 3
 
-  signed_aats: # ATTENTION: all signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
+  # README: signed_aats MUST BE replaced with the AATs of your Morse applications.
+  # All signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
+  # See the following link for more details:
+  # https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats
+  signed_aats:
     "40af4e7e1b311c76a573610fe115cd2adf1eeade":
       client_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
       application_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
@@ -27,6 +38,9 @@ services:
     # do not change service alias: it is used in the Morse E2E tests to identify the target service.
     alias: "eth"
     request_timeout: "3000ms"
+
+  # "0021" is an example of a service with no further configuration.
+  "0021": {}
 
 # Enable endpoint hydrator to run QoS checks against endpoints of service F00C
 hydrator_config:

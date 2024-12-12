@@ -15,12 +15,12 @@ update_shannon_config_from_env() {
     local CONFIG_FILE="./.shannon.config.yaml"
     if [[ ! -f $CONFIG_FILE ]]; then
         echo "config file" $CONFIG_FILE "not found in" $PWD
-	return 1
+        return 1
     fi
 
     yq -i '
 	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
-	.shannon_config.gateway_config.owned_apps_private_keys_hex = env(SHANNON_OWNED_APPS_PRIVATE_KEYS)
+	.shannon_config.gateway_config.owned_apps_private_keys_hex = [env(SHANNON_OWNED_APPS_PRIVATE_KEYS)]
     ' $CONFIG_FILE
 }
 
