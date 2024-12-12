@@ -5,7 +5,7 @@
 shannon_config:
   full_node_config:
     # do not change rpc_url
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com"
+    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
     grpc_config:
       # do not change host_port
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
