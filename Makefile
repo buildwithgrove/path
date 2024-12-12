@@ -97,10 +97,12 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
 		cp ./config/examples/config.shannon_example.yaml ./bin/config/.config.yaml; \
-		echo "###########################################################################################################################"; \
-		echo "### Created ./bin/config/.config.yaml                                                                                   ###"; \
-		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
-		echo "###########################################################################################################################"; \
+		echo "########################################################################"; \
+		echo "### Created ./bin/config/.config.yaml                                ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: ###"; \
+		echo "### 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'.       ###"; \
+		echo "########################################################################"; \
+		echo "########################################################################"; \
 	else \
 		echo "##################################################################"; \
 		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
@@ -111,10 +113,11 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./config/examples/config.shannon_example.yaml ./e2e/.shannon.config.yaml; \
-		echo "###################################################################################################################################"; \
-		echo "### Created ./e2e/.shannon.config.yaml                                                                                          ###"; \
-		echo "### README: Please update the the following in .shannon.config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
-		echo "###################################################################################################################################"; \
+		echo "########################################################################"; \
+		echo "### Created ./e2e/.shannon.config.yaml                               ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: ###"; \
+		echo "### 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'.       ###"; \
+		echo "########################################################################"; \
 	else \
 		echo "###################################################################"; \
 		echo "### ./e2e/.shannon.config.yaml already exists, not overwriting. ###"; \
@@ -126,10 +129,11 @@ config_shannon_localnet: ## Create a localnet config file to serve as a Shannon 
 	@if [ ! -f ./local/path/config/.config.yaml ]; then \
 		mkdir -p local/path/config; \
 		cp ./config/examples/config.shannon_example.yaml  local/path/config/.config.yaml; \
-		echo "###########################################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml for Shannon localnet.                                         			  ###"; \
-		echo "### README: Please update the the following in .config.yaml: 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'. ###"; \
-		echo "###########################################################################################################################"; \
+		echo "########################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml for Shannon localnet.   ###"; \
+		echo "### README: Please update the the following in .shannon.config.yaml: ###"; \
+		echo "### 'gateway_private_key_hex' & 'owned_apps_private_keys_hex'.       ###"; \
+		echo "########################################################################"; \
 	else \
 		echo "#########################################################################"; \
 		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
@@ -141,10 +145,11 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
 		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
-		echo "###################################################################################################################"; \
-		echo "### Created ./bin/config/.config.yaml                                                                           ###"; \
-		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
-		echo "###################################################################################################################"; \
+		echo "######################################################################"; \
+		echo "### Created ./bin/config/.config.yaml                              ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
+		echo "### 'url', 'relay_signing_key', & 'signed_aats'.                   ###"; \
+		echo "######################################################################"; \
 	else \
 		echo "##################################################################"; \
 		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
@@ -155,10 +160,11 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./config/examples/config.morse_example.yaml ./e2e/.morse.config.yaml; \
-		echo "###################################################################################################################"; \
-		echo "### Created ./e2e/.morse.config.yaml                                                                            ###"; \
-		echo "### README: Please update the the following in .morse.config.yaml: 'url', 'relay_signing_key', & 'signed_aats'. ###"; \
-		echo "###################################################################################################################"; \
+		echo "######################################################################"; \
+		echo "### Created ./e2e/.morse.config.yaml                               ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
+		echo "### 'url', 'relay_signing_key', & 'signed_aats'.                   ###"; \
+		echo "######################################################################"; \
 	else \
 		echo "#################################################################"; \
 		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
@@ -170,10 +176,11 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 	@if [ ! -f ./local/path/config/.config.yaml ]; then \
 		mkdir -p local/path/config; \
 		cp ./config/examples/config.morse_example.yaml  local/path/config/.config.yaml; \
-		echo "######################################################################################################################"; \
-		echo "### Created ./local/path/config/.config.yaml for Morse localnet. 										             ###"; \
-		echo "### README: Please update the the following in .config.yaml: 'full_node_config.relay_signing_key' & 'signed_aats'. ###"; \
-		echo "######################################################################################################################"; \
+		echo "######################################################################"; \
+		echo "### Created ./local/path/config/.config.yaml for Morse localnet.   ###"; \
+		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
+		echo "### 'url', 'relay_signing_key', & 'signed_aats'.                   ###"; \
+		echo "######################################################################"; \
 	else \
 		echo "#########################################################################"; \
 		echo "### ./local/path/config/.config.yaml already exists, not overwriting. ###"; \
@@ -254,11 +261,6 @@ gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 go_docs: ## Start Go documentation server
 	@echo "Visit http://localhost:6060/pkg/github.com/buildwithgrove/path"
 	godoc -http=:6060
-
-.PHONY: docusaurus_main_update
-## TODO_UPNEXT(@HebertCL): handle automatic documentation updates like in poktroll
-docusaurus_main_update: ## Update the main README in docusaurus docs.
-	cat README.md > docusaurus/docs/README.md
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server

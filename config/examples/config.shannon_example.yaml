@@ -38,26 +38,23 @@ shannon_config:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
 services:
-  # "gatewaye2e" is a test service alias used in the Shannon E2E tests.
-  # If this config is used for Shannon E2E tests, do not remove or change this service.
-  "gatewaye2e":
-    alias: "test-service"
-
   # "anvil" is a test service alias used in the Shannon E2E tests.
   # If this config is used for Shannon E2E tests, do not remove or change this service.
   # This is used for testing a dedicated Ethereum endpoint that is not of any public network.
-  "anvil":
-    alias: "test-service-eth"
+  # Note that this service has no alias, meaning it can be reached only by its service ID.
+  # eg. https://anvil.path.grove.city
+  "anvil": {}
 
   # "F00C" is the service ID for the Ethereum MainNet Archival.
+  # Note that this service has an alias, meaning it can be reached
+  # both by its service ID and by its alias.
+  # eg. https://F00C.path.grove.city and https://eth.path.grove.city.
   "F00C":
     alias: "eth"
 
-  # "0021" is the service ID for the Ethereum MainNet Archival.
-  # This example has no further configuration or details.
-  "0021": {}
-
-# Enable endpoint hydrator to run QoS checks against endpoints of service F00C
-hydrator_config:
-  service_ids:
-    - "F00C"
+# To enable endpoint hydrator to run QoS checks against 
+# service endpoints, add the following to the config:
+# hydrator_config:
+#   service_ids:
+#     - "anvil"
+#     - "F00C"
