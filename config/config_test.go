@@ -90,15 +90,11 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Services: map[protocol.ServiceID]ServiceConfig{
-					"gatewaye2e": {
-						Alias:          "test-service",
+					"anvil": {
 						RequestTimeout: 3_000 * time.Millisecond,
 					},
 					"F00C": {
 						Alias:          "eth",
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
-					"0021": {
 						RequestTimeout: 3_000 * time.Millisecond,
 					},
 				},
@@ -109,13 +105,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       defaultWriteTimeout,
 					IdleTimeout:        defaultIdleTimeout,
 				},
-				HydratorConfig: EndpointHydratorConfig{
-					ServiceIDs: []protocol.ServiceID{"F00C"},
-				},
 				serviceAliases: map[string]protocol.ServiceID{
-					"test-service":     "gatewaye2e",
-					"eth":              "F00C",
-					"test-service-eth": "anvil",
+					"eth": "F00C",
 				},
 			},
 			wantErr: false,
