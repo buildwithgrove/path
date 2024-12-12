@@ -26,6 +26,7 @@ spec:
             - name: GRPC_USE_INSECURE
               value: "true" # Remove this value if using a TLS-enabled connection.
             # OPTIONAL: The type of extractor to use for the endpoint ID.
+            # Options are "url_path" or "header".
             # Default is "url_path" if not set.
             - name: ENDPOINT_ID_EXTRACTOR
               value: "url_path"

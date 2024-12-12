@@ -50,10 +50,9 @@ func (p *URLPathExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeCon
 		if len(segments) > 0 && segments[0] != "" {
 			return segments[0], nil
 		}
-		return "", fmt.Errorf("endpoint ID not provided")
 	}
 
-	return "", fmt.Errorf("invalid path: %s", path)
+	return "", fmt.Errorf("endpoint ID not provided")
 }
 
 // HeaderExtractor satisfies the EndpointIDExtractor interface.

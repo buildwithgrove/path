@@ -91,7 +91,7 @@ func (a *AuthHandler) Check(
 		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_BadRequest), nil
 	}
 
-	a.Logger.Info().Str("path", path).Str("endpoint_id", endpointID).Msg("handling check request")
+	a.Logger.Info().Str("endpoint_id", endpointID).Msg("handling check request")
 
 	// Fetch GatewayEndpoint from endpoint store
 	gatewayEndpoint, ok := a.getGatewayEndpoint(endpointID)

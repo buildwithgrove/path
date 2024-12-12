@@ -178,9 +178,12 @@ static_resources:
                               disabled: true
                         # Main API route for /v1 with path modifications.
                         - match:
-                            prefix: "/v1"
+                            safe_regex:
+                              regex: "^/v1(/.*)?$"
                           route:
                             cluster: path_gateway_service
+                            # Ensure the request is forwarded to PATH with a trailing slash.
+                            prefix_rewrite: "/v1/"
                             # Configures rate limiting descriptors.
                             rate_limits:
                               - actions:
