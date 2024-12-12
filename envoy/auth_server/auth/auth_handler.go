@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	// TODO_MVP(@commoddity):
+	// TODO_TECHDEBT(@commoddity): This path segment should be configurable via a single source of truth.
+	// Not sure the best way to do this as it is referred to in multiple disparate places (eg. envoy.yaml, PATH's router.go & here)
 	pathPrefix = "/v1/"
 
 	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests

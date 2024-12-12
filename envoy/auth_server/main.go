@@ -25,7 +25,7 @@ import (
 // TODO_CONSIDER(@commoddity): Make this configurable. See thread here: https://github.com/buildwithgrove/path/pull/52/files/1a3e7a11f159f5b8d3c414f2417f7879bcfab410..258136504608c1269a27047bb9bded1ab4fefcc8#r1859409934
 const port = 10003
 
-// TODO_TECHDEBT(@commoddity): Make these values part of the config YAML and remove the dependency on environment variables.
+// TODO_TECHDEBT(@commoddity): Make these values part of PATH's config YAML and remove the dependency on environment variables.
 const (
 	envVarGRPCHostPort                = "GRPC_HOST_PORT"
 	envVarGRPCUseInsecure             = "GRPC_USE_INSECURE"
