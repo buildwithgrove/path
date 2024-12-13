@@ -152,8 +152,8 @@ Envoy acts as a gateway, handling incoming requests, performing auth checks, and
 
 The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
 
-- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `x-jwt-user-id` header set before it is forwarded upstream.
-- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `x-jwt-user-id` header.
+- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `jwt-user-id` header set before it is forwarded upstream.
+- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
 - **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
 
@@ -175,7 +175,7 @@ sequenceDiagram
 
     opt if JWT is present
       Envoy->>+JWTFilter: 2. Parse JWT (if present)
-      JWTFilter->>-Envoy: 3. Return parsed x-jwt-user-id (if present)
+      JWTFilter->>-Envoy: 3. Return parsed jwt-user-id (if present)
     end
 
     Envoy->>+AuthServer: 4. Forward Request
@@ -231,7 +231,7 @@ Requests are rejected if either of the following are true:
 :::
 
 :::info
-Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `x-endpoint-id` header if the reuqest is forwarded to the PATH Service.
+Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `endpoint-id` header if the reuqest is forwarded to the PATH Service.
 :::
 
 ### 4.1 URL Path
@@ -253,19 +253,19 @@ curl http://anvil.localhost:3001/v1/endpoint_3 \
 
 ### 4.2 Header
 
-When using the `header` extractor, the Gateway Endpoint ID must be specified in the `x-endpoint-id` header.
+When using the `header` extractor, the Gateway Endpoint ID must be specified in the `endpoint-id` header.
 
 ```
--H "x-endpoint-id: <GATEWAY_ENDPOINT_ID>"
+-H "endpoint-id: <GATEWAY_ENDPOINT_ID>"
 ```
 
-For example, if the `x-endpoint-id` header is set to `a1b2c3d4`:
+For example, if the `endpoint-id` header is set to `a1b2c3d4`:
 
 ```
 curl http://anvil.localhost:3001/v1 \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "x-endpoint-id: endpoint_3" \
+  -H "endpoint-id: endpoint_3" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
@@ -312,14 +312,14 @@ _Example Request Header:_
 -H "Authorization: Bearer <JWT>"
 ```
 
-The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error.
+The `jwt_authn` filter will verify the JWT and, if valid, set the `jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error.
 
-The `Go External Authorization Server` will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
+The `Go External Authorization Server` will use the `jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
 
 ```
-x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
+jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
 :::info
@@ -490,9 +490,9 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
 
 ### 6.1. Rate Limit Configuration
 
-1. The `Go External Authorization Server` sets the `x-rl-endpoint-id` and `x-rl-plan` headers if the `GatewayEndpoint` for the request should be rate limited.
+1. The `Go External Authorization Server` sets the `rl-endpoint-id` and `rl-throughput` headers if the `GatewayEndpoint` for the request should be rate limited.
 
-2. Envoy Proxy is configured to forward the `x-rl-endpoint-id` and `x-rl-plan` headers to the rate limiter service as descriptors.
+2. Envoy Proxy is configured to forward the `rl-endpoint-id` and `rl-throughput` headers to the rate limiter service as descriptors.
 
    _envoy.yaml_
 
@@ -500,11 +500,11 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
    rate_limits:
      - actions:
          - request_headers:
-             header_name: "x-rl-endpoint-id"
-             descriptor_key: "x-rl-endpoint-id"
+             header_name: "rl-endpoint-id"
+             descriptor_key: "rl-endpoint-id"
          - request_headers:
-             header_name: "x-rl-plan"
-             descriptor_key: "x-rl-plan"
+             header_name: "rl-throughput"
+             descriptor_key: "rl-throughput"
    ```
 
 3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml) file.
@@ -514,9 +514,9 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
    ```yaml
    domain: rl
    descriptors:
-     - key: x-rl-endpoint-id
+     - key: rl-endpoint-id
        descriptors:
-         - key: x-rl-plan
+         - key: rl-throughput
            value: "PLAN_FREE"
            rate_limit:
              unit: second
@@ -524,7 +524,7 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
    ```
 
 :::info
-The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `rl-endpoint-id` and `rl-throughput` descriptors.
    
 _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
 :::

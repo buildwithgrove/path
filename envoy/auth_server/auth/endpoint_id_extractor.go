@@ -16,7 +16,7 @@ const (
 	EndpointIDExtractorTypeURLPath EndpointIDExtractorType = "url_path"
 
 	// EndpointIDExtractorTypeHeader specifies that the endpoint ID is extracted from the HTTP headers.
-	// Example: Header = "x-endpoint-id: 1a2b3c4d" -> endpointID = "1a2b3c4d"
+	// Example: Header = "endpoint-id: 1a2b3c4d" -> endpointID = "1a2b3c4d"
 	EndpointIDExtractorTypeHeader EndpointIDExtractorType = "header"
 )
 
@@ -69,11 +69,13 @@ var _ EndpointIDExtractor = &HeaderExtractor{}
 type HeaderExtractor struct{}
 
 // ExtractGatewayEndpointID extracts the endpoint ID from the HTTP headers.
-// The endpoint ID is expected to be in the "x-endpoint-id" header.
+// The endpoint ID is expected to be in the "endpoint-id" header.
 //
-// eg. Header = "x-endpoint-id: 1a2b3c4d" -> endpointID = "1a2b3c4d"
+// eg. Header = "endpoint-id: 1a2b3c4d" -> endpointID = "1a2b3c4d"
 func (h *HeaderExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeContext_HttpRequest) (string, error) {
 	headers := req.GetHeaders()
+
+	fmt.Println("headers", headers)
 
 	endpointID, ok := headers[reqHeaderEndpointID]
 	if !ok {

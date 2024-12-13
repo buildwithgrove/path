@@ -23,9 +23,9 @@ const (
 	// Not sure the best way to do this as it is referred to in multiple disparate places (eg. envoy.yaml, PATH's router.go & here)
 	pathPrefix = "/v1/"
 
-	reqHeaderEndpointID          = "x-endpoint-id"    // Set on all service requests
-	reqHeaderRateLimitEndpointID = "x-rl-endpoint-id" // Set only on service requests that should be rate limited
-	reqHeaderRateLimitThroughput = "x-rl-throughput"  // Set only on service requests that should be rate limited
+	reqHeaderEndpointID          = "endpoint-id"    // Set on all service requests
+	reqHeaderRateLimitEndpointID = "rl-endpoint-id" // Set only on service requests that should be rate limited
+	reqHeaderRateLimitThroughput = "rl-throughput"  // Set only on service requests that should be rate limited
 
 	errBody = `{"code": %d, "message": "%s"}`
 )

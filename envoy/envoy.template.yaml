@@ -90,15 +90,34 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # Removes the `x-jwt-user-id` header before forwarding the request to the external authorization filter.
+                  # Removes the `jwt-user-id` header before forwarding the request to the external authorization filter.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter
                   - name: envoy.filters.http.header_mutation
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
                       mutations:
                         request_mutations:
-                          - remove: x-jwt-user-id
-                  # Verifies JWT tokens and sets the `x-jwt-user-id` header based on the token claims.
+                          - remove: jwt-user-id
+                  # DEV_NOTE: uncomment the 'envoy.filters.http.lua' filter section if you wish for 
+                  # users to specify the target service ID using the subdomain of the request's host field. 
+                  # This will require the subdomain to be specified in the request's host field; otherwise 
+                  # the request will be rejected. eg. host = "eth.path.grove.city" -> Header: "target-service-id: eth"
+                  #
+                  # Extracts the Service ID from the subdomain of the request's host field and attaches it 
+                  # to the request as the `target-service-id` header. 
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter
+                  # - name: envoy.filters.http.lua
+                  #   typed_config:
+                  #     "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                  #     inline_code: |
+                  #       function envoy_on_request(handle)
+                  #         local host = handle:headers():get(":authority")
+                  #         local subdomain = string.match(host, "^([^.]+)")
+                  #         if subdomain ~= nil and subdomain ~= "" then
+                  #           handle:headers():add("target-service-id", subdomain)
+                  #         end
+                  #       end
+                  # Verifies JWT tokens and sets the `jwt-user-id` header based on the token claims.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
@@ -109,7 +128,7 @@ static_resources:
                           requires:
                             requires_any:
                               requirements:
-                                # Allows requests without a JWT. In such cases, `x-jwt-user-id` is not set.
+                                # Allows requests without a JWT. In such cases, `jwt-user-id` is not set.
                                 - allow_missing: {}
                                 # Enforces JWT validation if a token is present.
                                 - provider_name: auth_provider
@@ -128,7 +147,7 @@ static_resources:
                               timeout: 1s
                           forward: true
                           claim_to_headers:
-                            - header_name: x-jwt-user-id
+                            - header_name: jwt-user-id
                               claim_name: sub
                   # External authorization filter to handle permission checks.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filte
@@ -189,8 +208,8 @@ static_resources:
                               - actions:
                                   # Sends descriptors for rate limiting based on custom headers.
                                   - request_headers:
-                                      header_name: "x-rl-endpoint-id"
-                                      descriptor_key: "x-rl-endpoint-id"
+                                      header_name: "rl-endpoint-id"
+                                      descriptor_key: "rl-endpoint-id"
                                   - request_headers:
-                                      header_name: "x-rl-throughput"
-                                      descriptor_key: "x-rl-throughput"
+                                      header_name: "rl-throughput"
+                                      descriptor_key: "rl-throughput"
