@@ -78,9 +78,9 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 // eg. host = "eth.gateway.pokt.network" -> serviceID = "eth"
 func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 	// Prefer the custom HTTP Header for specification of the Target Service ID
-	svcID := req.Header.Get(HTTPHeaderTargetServiceID)
-	if svcID != "" {
-		return p.getServiceIDFromAlias(svcID), nil
+	serviceID := req.Header.Get(HTTPHeaderTargetServiceID)
+	if serviceID != "" {
+		return p.getServiceIDFromAlias(serviceID), nil
 	}
 
 	// Fallback to using the HTTP request's host field's domain if the custom HTTP header is not set.
