@@ -14,6 +14,7 @@ const (
 	EndpointIDExtractorTypeHeader  EndpointIDExtractorType = "header"
 )
 
+// IsValid ensure the endpoint ID extractor type is supported
 func (e EndpointIDExtractorType) IsValid() bool {
 	switch e {
 	case EndpointIDExtractorTypeURLPath, EndpointIDExtractorTypeHeader:
@@ -23,8 +24,8 @@ func (e EndpointIDExtractorType) IsValid() bool {
 	}
 }
 
-// EndpointIDExtractor defines an interface for extracting an endpoint ID
-// from a given source, which could be a URL path or an HTTP header.
+// EndpointIDExtractor defines an interface for extracting an endpoint ID from a given source.
+// This could be a URL path, HTTP header, etc...
 type EndpointIDExtractor interface {
 	// Extract extracts the endpoint ID from the provided source.
 	// The sourceType parameter specifies whether the source is a "path" or "header".
@@ -38,7 +39,7 @@ var _ EndpointIDExtractor = &URLPathExtractor{}
 // that extracts the endpoint ID from the URL path.
 type URLPathExtractor struct{}
 
-// ExtractGatewayEndpointID extracts the endpoint ID from the URL path.
+// extractGatewayEndpointID extracts the endpoint ID from the URL path.
 // The endpoint ID is expected to be the first segment of the path after the pathPrefix (/v1/)
 //
 // eg. http://eth.path.grove.city/v1/1a2b3c4d -> endpointID = "1a2b3c4d"
