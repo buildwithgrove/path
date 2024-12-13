@@ -25,11 +25,7 @@ import (
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target service's ID.
 // Please see the following link for more details on not including `X-` prefix in the HTTP header parameter names.
 // https://www.rfc-editor.org/rfc/rfc6648#section-3
-<<<<<<< HEAD
 const HTTPHeaderTargetServiceID = "target-service-id"
-=======
-const HTTPHeaderTargetServiceID = "Target-Service-ID"
->>>>>>> af4a32ffcd5f0f67d97668fbe8271675cb8db219
 
 type (
 	Parser struct {
