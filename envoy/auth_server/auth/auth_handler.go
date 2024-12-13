@@ -89,6 +89,7 @@ func (a *AuthHandler) Check(
 	// It may be extracted from the URL path or the headers
 	endpointID, err := a.EndpointIDExtractor.extractGatewayEndpointID(req)
 	if err != nil {
+		a.Logger.Info().Err(err).Msg("unable to extract endpoint ID from request")
 		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_BadRequest), nil
 	}
 

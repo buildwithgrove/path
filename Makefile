@@ -247,6 +247,25 @@ go_docs: ## Start Go documentation server
 docusaurus_start: ## Start docusaurus server
 	cd docusaurus && npm i && npm run start
 
+#######################
+#### Test Requests ####
+#######################
+
+.PHONY: test_request_with_url_path
+test_request_with_url_path: ## Test the auth_server URL path endpoint ID extractor (must have Envoy running)
+	curl http://anvil.localhost:3001/v1/endpoint_3 \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+.PHONY: test_request_with_header
+test_request_with_header: ## Test the auth_server header endpoint ID extractor (must have Envoy running)
+	curl http://anvil.localhost:3001/v1 \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "x-endpoint-id: endpoint_3" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
 ###############################
 ###    Makefile imports     ###
 ###############################

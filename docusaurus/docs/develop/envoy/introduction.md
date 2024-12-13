@@ -14,16 +14,18 @@ title: Introduction
 - [1. Quickstart](#1-quickstart)
 - [2. Overview](#2-overview)
   - [2.1. Components](#21-components)
-  - [2.2 URL Format](#22-url-format)
 - [3. Envoy Proxy](#3-envoy-proxy)
   - [3.1. Contents](#31-contents)
   - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
   - [3.3. Request Lifecycle](#33-request-lifecycle)
-- [4. Gateway Endpoint Authorization](#4-gateway-endpoint-authorization)
-  - [4.1 JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
-  - [4.2 API Key Authorization](#42-api-key-authorization)
-  - [4.3 No Authorization](#43-no-authorization)
-- [5. External Authorization Server](#5-external-authorization-server)
+- [4. Specifying the Gateway Endpoint ID](#4-specifying-the-gateway-endpoint-id)
+  - [4.1 URL Path](#41-url-path)
+  - [4.2 Header](#42-header)
+- [5. Gateway Endpoint Authorization](#5-gateway-endpoint-authorization)
+  - [5.1 JSON Web Token (JWT) Authorization](#51-json-web-token-jwt-authorization)
+  - [5.2 API Key Authorization](#52-api-key-authorization)
+  - [5.3 No Authorization](#53-no-authorization)
+- [6. External Authorization Server](#6-external-authorization-server)
   - [5.1. External Auth Service Sequence Diagram](#51-external-auth-service-sequence-diagram)
   - [5.2. External Auth Service Environment Variables](#52-external-auth-service-environment-variables)
   - [5.3. External Auth Service Getting Started](#53-external-auth-service-getting-started)
@@ -66,7 +68,9 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-> 💡 **Tip:** A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+:::tip
+A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+:::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -115,26 +119,7 @@ graph TD
     GRPCServer <-.-> DataSource
 ```
 
-### 2.2 URL Format
 
-When auth is enabled, the required URL format for the PATH service is:
-
-```
-https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
-```
-
-For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
-
-```
-https://eth.rpc.grove.city/v1/a1b2c3d4
-```
-
-Requests are rejected if either of the following are true:
-
-- The `<GATEWAY_ENDPOINT_ID>` is missing
-- ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
-
-<br/>
 
 ## 3. Envoy Proxy
 
@@ -222,19 +207,104 @@ sequenceDiagram
     Service->>-Client: 12. Return Response
 ```
 
-## 4. Gateway Endpoint Authorization
+## 4. Specifying the Gateway Endpoint ID
+
+The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
+
+1. [URL Path](#221-url-path)
+2. [Header](#222-header)
+
+This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file.
+
+Valid options are:
+
+- `url_path`
+- `header`
+
+If the `ENDPOINT_ID_EXTRACTOR` environment variable is not set, the default `url_path` extractor is used.
+
+:::warning
+Requests are rejected if either of the following are true:
+
+- The `<GATEWAY_ENDPOINT_ID>` is missing
+- ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
+:::
+
+:::info
+Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `x-endpoint-id` header if the reuqest is forwarded to the PATH Service.
+:::
+
+### 4.1 URL Path
+
+When using the `url_path` extractor, the Gateway Endpoint ID must be specified in the URL path.
+
+```
+https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
+```
+
+For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
+
+```
+curl http://anvil.localhost:3001/v1/endpoint_3 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### 4.2 Header
+
+When using the `header` extractor, the Gateway Endpoint ID must be specified in the `x-endpoint-id` header.
+
+```
+-H "x-endpoint-id: <GATEWAY_ENDPOINT_ID>"
+```
+
+For example, if the `x-endpoint-id` header is set to `a1b2c3d4`:
+
+```
+curl http://anvil.localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "x-endpoint-id: endpoint_3" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+:::tip
+Make targets are provided to send test requests with both the `url_path` and `header` extractors.
+
+```
+make test_request_with_url_path
+make test_request_with_header
+```
+:::info
+`endpoint_3` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
+
+See the [Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
+:::
+
+<br/>
+
+## 5. Gateway Endpoint Authorization
 
 The `Go External Authorization Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct.
 
 Three authorization types are supported:
 
-1. [JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
-2. [API Key Authorization](#42-api-key-authorization)
-3. [No Authorization](#43-no-authorization)
+1. [JSON Web Token (JWT) Authorization](#51-json-web-token-jwt-authorization)
+2. [API Key Authorization](#52-api-key-authorization)
+3. [No Authorization](#53-no-authorization)
 
-### 4.1 JSON Web Token (JWT) Authorization
+### 5.1 JSON Web Token (JWT) Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
+
+:::tip
+Auth0 is an example of a JWT issuer that can be used with PATH.
+
+Their docs page on JWTs gives a good overview of the JWT format and how to issue JWTs to your users:
+
+- [Auth0 JWT Docs](https://auth0.com/docs/secure/tokens/json-web-tokens)
+:::
 
 _Example Request Header:_
 
@@ -252,9 +322,11 @@ _Example auth provider user ID header:_
 x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
-> 💡 For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+:::info
+For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+:::
 
-### 4.2 API Key Authorization
+### 5.2 API Key Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `API_KEY_AUTH`, a static API key is required to access the PATH service.
 
@@ -266,15 +338,17 @@ _Example Request Header:_
 
 The `Go External Authorization Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
 
-### 4.3 No Authorization
+### 5.3 No Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service.
 
 All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Authorization Server`.
 
-## 5. External Authorization Server
+## 6. External Authorization Server
 
-> 💡 See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
+:::info
+See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
+:::
 
 The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
@@ -339,7 +413,9 @@ service GatewayEndpoints {
 
 The `Remote gRPC Server` is responsible for providing the `Go External Authorization Server` with data on which endpoints are authorized to use the PATH service.
 
-> ℹ️ **Note:** The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
+:::info
+The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
+:::
 
 #### 5.2.1. PATH Auth Data Server
 
@@ -393,7 +469,9 @@ endpoints:
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
-> 💡 **TIP:** The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
+:::tip
+The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
+:::
 
 #### 5.2.3. Implementing a Custom Remote gRPC Server
 
@@ -404,7 +482,9 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `FetchAuthDataSync`
 - `StreamAuthDataUpdates`
 
-> 💡 **TIP:** Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+:::tip
+Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+:::
 
 ## 6. Rate Limiter
 
@@ -443,9 +523,12 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
              requests_per_unit: 30
    ```
 
-   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+:::info
+The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+   
+_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+:::
 
-   _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
 
 ### 6.2. Documentation and Examples
 

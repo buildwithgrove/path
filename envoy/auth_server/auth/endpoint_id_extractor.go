@@ -7,14 +7,20 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 )
 
+// EndpointIDExtractorType specifies the type of endpoint ID extractor to use.
 type EndpointIDExtractorType string
 
 const (
+	// EndpointIDExtractorTypeURLPath specifies that the endpoint ID is extracted from the URL path.
+	// Example: http://eth.path.grove.city/v1/1a2b3c4d -> endpointID = "1a2b3c4d"
 	EndpointIDExtractorTypeURLPath EndpointIDExtractorType = "url_path"
-	EndpointIDExtractorTypeHeader  EndpointIDExtractorType = "header"
+
+	// EndpointIDExtractorTypeHeader specifies that the endpoint ID is extracted from the HTTP headers.
+	// Example: Header = "x-endpoint-id: 1a2b3c4d" -> endpointID = "1a2b3c4d"
+	EndpointIDExtractorTypeHeader EndpointIDExtractorType = "header"
 )
 
-// IsValid ensure the endpoint ID extractor type is supported
+// IsValid ensure the endpoint ID extractor type is supported.
 func (e EndpointIDExtractorType) IsValid() bool {
 	switch e {
 	case EndpointIDExtractorTypeURLPath, EndpointIDExtractorTypeHeader:
@@ -27,8 +33,7 @@ func (e EndpointIDExtractorType) IsValid() bool {
 // EndpointIDExtractor defines an interface for extracting an endpoint ID from a given source.
 // This could be a URL path, HTTP header, etc...
 type EndpointIDExtractor interface {
-	// Extract extracts the endpoint ID from the provided source.
-	// The sourceType parameter specifies whether the source is a "path" or "header".
+	// extractGatewayEndpointID extracts the endpoint ID from the check request.
 	extractGatewayEndpointID(req *envoy_auth.AttributeContext_HttpRequest) (string, error)
 }
 
