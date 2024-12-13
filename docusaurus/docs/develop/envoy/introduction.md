@@ -119,8 +119,6 @@ graph TD
     GRPCServer <-.-> DataSource
 ```
 
-
-
 ## 3. Envoy Proxy
 
 <div align="center">
@@ -156,6 +154,9 @@ The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoypr
 - **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
 - **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
+- **[lua (optional)](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
+  - Use only if you wish to specify the Service ID using the subdomain of the request's host field, 
+  - eg. `host = "eth.path.grove.city" -> Header: "target-service-id: eth"`.
 
 ### 3.3. Request Lifecycle
 
