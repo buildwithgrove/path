@@ -18,8 +18,8 @@ update_shannon_config_from_env() {
         return 1
     fi
 
-    # Set the config values from the Github secrets environment variables.
-    # This also sets lazy_mode to minimize confusing log entries if an E2E test fails in the CI.
+    # Update the PATH Shannon config to reflect secrets on GitHub.
+    # Also set lazy_mode to true in order to minimize verbosity of log entries in CI E2E tests.
     yq -i '
 	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
 	.shannon_config.gateway_config.owned_apps_private_keys_hex = [env(SHANNON_OWNED_APPS_PRIVATE_KEYS)] |
