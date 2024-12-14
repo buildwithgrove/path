@@ -1,16 +1,17 @@
 ---
 sidebar_position: 2
-title: PATH Cheat Sheet
+title: Cheat Sheet
 ---
 
 # PATH Cheat Sheet <!-- omit in toc -->
 
-This guide provides quick reference commands for setting up and running a local PATH
-instance in Tilt.
+This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
+for setting up and running a local PATH instance in Tilt.
 
 :::warning
 
-These instructions are intended to run on a Linux machine.
+1. These instructions are intended to run on a Linux machine.
+2. These instructionsobfuscate a lot of the underlying details to get you up and running quickly.
 
 TODO_TECHDEBT(@commoddity): Adapt the instructions to be macOS friendly.
 
@@ -18,13 +19,13 @@ TODO_TECHDEBT(@commoddity): Adapt the instructions to be macOS friendly.
 
 :::info
 
-The following instructions are specific to setting up a PATH instance on Shannon.
+The following instructions are specific to setting up a `PATH` instance on `Shannon`.
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
-- [1. Pre-Requisites](#1-pre-requisites)
+- [1. Prerequisites](#1-prerequisites)
   - [1.1 Clone the `PATH` Repository](#11-clone-the-path-repository)
   - [1.2 Install Dependencies](#12-install-dependencies)
   - [1.3 Setup Shannon Account](#13-setup-shannon-account)
@@ -34,7 +35,7 @@ The following instructions are specific to setting up a PATH instance on Shannon
 - [3. Run the `PATH` Gateway](#3-run-the-path-gateway)
 - [4. Send a Relay](#4-send-a-relay)
 
-## 1. Pre-Requisites
+## 1. Prerequisites
 
 ### 1.1 Clone the `PATH` Repository
 
@@ -51,8 +52,8 @@ The following tools are required to start a local PATH instance in Tilt:
 
 - [Poktroll CLI](https://dev.poktroll.com/operate/user_guide/install)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage):
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl):
 - [Helm](https://helm.sh/docs/intro/install/)
 - [Tilt](https://docs.tilt.dev/install.html)
 
@@ -68,18 +69,11 @@ This will check if the required tools are installed and install them if they are
 
 :::
 
-
 ### 1.3 Setup Shannon Account
 
 Before starting a PATH instance, you will need to set up both a [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways) and [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications) account on Shannon.
 
 For a quick and easy way to set up your Shannon account, see [the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet).
-
-:::tip
-
-If you ran `make install_deps`, you will already have the `poktrolld` CLI installed.
-
-:::
 
 ## 2. Populate Required Config Files
 
@@ -98,10 +92,36 @@ Run the following command to generate a default Shannon config in `local/path/co
 _NOTE: You'll be prompted to confirm the `Gateway` account private key export._
 
 ```bash
-make populate_shannon_config
+make shannon_populate_config
 ```
 
 When you're done, run `cat local/path/config/.config.yaml` to view the updated config file.
+
+It should look something like this:
+
+```yaml
+shannon_config:
+  full_node_config:
+    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    grpc_config:
+      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+    lazy_mode: false
+  gateway_config:
+    gateway_mode: centralized
+    gateway_address: pokt1...
+    gateway_private_key_hex: { REDACTED }
+    owned_apps_private_keys_hex:
+      - { REDACTED }
+services:
+  "anvil":
+    alias: "eth"
+```
+
+:::note
+
+TODO(@olshansk): Pre-prepare a handful of apps/gateways to get users started EVEN faster.
+
+:::
 
 ### 2.2 Populate the `Envoy Proxy` config files
 
@@ -144,11 +164,11 @@ No kind clusters found.
 Cluster 'path-localnet' not found. Creating it...
 Creating cluster "path-localnet" ...
  ✓ Ensuring node image (kindest/node:v1.31.2) 🖼
- ✓ Preparing nodes 📦  
- ✓ Writing configuration 📜 
- ✓ Starting control-plane 🕹️ 
- ✓ Installing CNI 🔌 
- ✓ Installing StorageClass 💾 
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
 Set kubectl context to "kind-path-localnet"
 You can now use your cluster with:
 
@@ -170,20 +190,22 @@ v0.33.21, built 2024-11-08
 
 You can visit http://localhost:10350 in your browser to view the Tilt dashboard, which allows you to view the log output for all running containers.
 
-:::note
+:::caution
 
-The `PATH Gateway` stack may take a minute or more to initialize the first time you run it as it must download all required Docker images. 
+The `PATH Gateway` stack may take a minute or more to initialize the first time you run it as it must download all required Docker images.
 
-You will be able to tell it is ready when you see log output like this in the `path` Resource in the  Tilt dashboard:
+You will be able to tell it is ready when you see log output like this in the `path` Resource in the Tilt dashboard:
+
 ```json
 {"level":"info","message":"Starting PATH gateway with Shannon protocol"}
 {"level":"info","message":"Starting the cache update process."}
 {"level":"info","package":"router","message":"PATH gateway running on port 3000"}
 {"level":"info","services count":1,"message":"Running Hydrator"}
 ```
+
 :::
 
-Once the `PATH Gateway` container is ready, you may send a relay to test. 
+Once the `PATH Gateway` container is ready, you may send a relay to test.
 
 ## 4. Send a Relay
 
@@ -201,7 +223,7 @@ curl http://eth.localhost:3001/v1/endpoint_1 \
 
 The `GatewayEndpoint` ID `endpoint_1` and API Key `api_key_1` are defined in the `local/path/envoy/.gateway-endpoints.yaml` file.
 
-To add or modify the `GatewayEndpoints` that are authorized to use your PATH instance, you may modify this file. 
+To add or modify the `GatewayEndpoints` that are authorized to use your PATH instance, you may modify this file.
 
 Saving this file will trigger a hot-reloading of the PATH Auth Data Server (PADS) resource in Tilt.
 

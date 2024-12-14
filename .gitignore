@@ -47,3 +47,6 @@ go.work.sum
 # tmp directory
 tmp
 tmp/*
+
+# PATH artifacts
+install.log

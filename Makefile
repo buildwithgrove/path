@@ -195,25 +195,6 @@ config_morse_localnet: ## Create a localnet config file to serve as a Morse gate
 		echo "#########################################################################"; \
 	fi
 
-###############################
-### Quickstart Make Targets ###
-###############################
-
-.PHONY: install_deps
-install_deps: install_tools install_poktroll ## Installs the dependencies to start a PATH instance in Tilt
-
-.PHONY: install_tools
-install_tools: ## Installs the tools to start a PATH instance in Tilt
-	./local/scripts/install_tools.sh
-
-.PHONY: install_poktroll
-install_poktroll: ## Installs the poktrolld binary
-	./local/scripts/install_poktroll.sh
-
-.PHONY: populate_shannon_config
-populate_shannon_config: ## Populates the config file with the correct values
-	./local/scripts/populate_shannon_config.sh
-
 #########################################
 ### Envoy Initialization Make Targets ###
 #########################################
@@ -279,3 +260,4 @@ docusaurus_start: ## Start docusaurus server
 ###############################
 
 include ./makefiles/localnet.mk
+include ./makefiles/quickstart.mk
