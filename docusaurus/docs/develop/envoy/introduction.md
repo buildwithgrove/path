@@ -35,17 +35,17 @@ title: Introduction
 - [6. Rate Limiter](#6-rate-limiter)
   - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
   - [6.2. Documentation and Examples](#62-documentation-and-examples)
+  - [6.2. Documentation and Examples](#62-documentation-and-examples-1)
 
 ## 1. Quickstart
-
-<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
 
 1. Install all prerequisites:
 
    - [Docker](https://docs.docker.com/get-docker/)
    - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-   - [Tilt](https://docs.tilt.dev/install.html)
+   - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
    - [Helm](https://helm.sh/docs/intro/install/)
+   - [Tilt](https://docs.tilt.dev/install.html)
 
 2. Run `make init_envoy` to create all the required config files
 
@@ -65,7 +65,11 @@ Specifically, this is split into two logical parts:
 
 ### 2.1. Components
 
-> 💡 **Tip:** A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+  :::tip
+
+  A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+
+  :::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -364,20 +368,20 @@ _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_F
 
 The yaml file below provides an example for a particular gateway operator where:
 
-- `endpoint_1` is authorized with a static API Key
-- `endpoint_2` is authorized using an auth-provider issued JWT for two users
-- `endpoint_3` requires no authorization and has a rate limit set
+- `endpoint_1_static_key` is authorized with a static API Key
+- `endpoint_2_jwt` is authorized using an auth-provider issued JWT for two users
+- `endpoint_3_no_auth` requires no authorization and has a rate limit set
 
 ```yaml
 endpoints:
   # 1. Example of a gateway endpoint using API Key Authorization
-  endpoint_1:
+  endpoint_1_static_key:
     auth:
       auth_type: "AUTH_TYPE_API_KEY"
       api_key: "api_key_1"
 
   # 2. Example of a gateway endpoint using JWT Authorization
-  endpoint_2:
+  endpoint_2_jwt:
     auth:
       auth_type: "AUTH_TYPE_JWT"
       jwt_authorized_users:
@@ -385,14 +389,18 @@ endpoints:
         - "auth0|user_2"
 
   # 3. Example of a gateway endpoint with no authorization and rate limiting set
-  endpoint_3:
+  endpoint_3_no_auth:
     rate_limiting:
       throughput_limit: 30
       capacity_limit: 100000
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
 
-> 💡 **TIP:** The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
+:::tip
+
+The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
+
+:::
 
 #### 5.2.3. Implementing a Custom Remote gRPC Server
 
@@ -403,7 +411,11 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `FetchAuthDataSync`
 - `StreamAuthDataUpdates`
 
-> 💡 **TIP:** Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+::: tip
+
+Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+
+:::
 
 ## 6. Rate Limiter
 
@@ -442,10 +454,15 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
              requests_per_unit: 30
    ```
 
-   > 💡 **NOTE:** The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
+:::info
 
-   _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
 
+_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+
+:::
+
+### 6.2. Documentation and Examples
 ### 6.2. Documentation and Examples
 
 As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
