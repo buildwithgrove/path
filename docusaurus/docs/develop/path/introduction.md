@@ -48,10 +48,6 @@ title: Introduction
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
-<!--
-TODO_UPNEXT(@commoddity): Convert all the tips, notes & warnings int his file into
-docusaurus admonitions; https://docusaurus.io/docs/markdown-features/admonitions.
--->
 
 ## 1. Introduction
 
@@ -107,12 +103,16 @@ docker pull ghcr.io/buildwithgrove/path
 
    Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key & address and your Application's address.
 
-   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
+   :::tip
 
-3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
+   If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.
 
-4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
+   :::
+
+1. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
+
+2. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
    curl http://eth.localhost:3000/v1 \
@@ -203,13 +203,16 @@ By default, the PATH service runs without any authorization or rate limiting. Th
 
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
-<!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
-
 This will start the PATH service with all the appropriate dependencies, seen in the `docker-compose.yml file, under the **Profile 2: PATH Entire Stack** section.
 
-> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
+:::tip
+
+For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
 
 <!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
+
+:::
+
 
 ### 5.1. Setup Config YAML
 

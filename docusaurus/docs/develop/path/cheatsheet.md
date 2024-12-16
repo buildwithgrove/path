@@ -34,6 +34,8 @@ The following instructions are specific to setting up a `PATH` instance on `Shan
   - [2.2 Populate the `Envoy Proxy` config files](#22-populate-the-envoy-proxy-config-files)
 - [3. Run the `PATH` Gateway](#3-run-the-path-gateway)
 - [4. Send a Relay](#4-send-a-relay)
+  - [4.1 **Endpoint with Static Key Authorization**](#41-endpoint-with-static-key-authorization)
+  - [4.2 **Endpoint with No Authorization**](#42-endpoint-with-no-authorization)
 
 ## 1. Prerequisites
 
@@ -52,8 +54,8 @@ The following tools are required to start a local PATH instance in Tilt:
 
 - [Poktroll CLI](https://dev.poktroll.com/operate/user_guide/install)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Kind](https://kind.sigs.k8s.io/#installation-and-usage):
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl):
+- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 - [Helm](https://helm.sh/docs/intro/install/)
 - [Tilt](https://docs.tilt.dev/install.html)
 
@@ -143,8 +145,6 @@ If you do not wish to use an OAuth provider, simply answer `no` when prompted. T
 
 :::
 
-<!-- TODO_TECHDEBT(@commoddity): Update the `make init_envoy` script to remove the JWT HTTP filter if the operator selects to use a static API key only. -->
-
 ## 3. Run the `PATH` Gateway
 
 ```bash
@@ -211,17 +211,28 @@ Once the `PATH Gateway` container is ready, you may send a relay to test.
 
 Check that the `PATH Gateway` is serving relays by running the following command yourself:
 
+
+### 4.1 **Endpoint with Static Key Authorization**
 ```bash
-curl http://eth.localhost:3001/v1/endpoint_1 \
+curl http://eth.localhost:3001/v1/endpoint_1_static_key \
     -X POST \
     -H "Content-Type: application/json" \
     -H "Authorization: api_key_1" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
+### 4.2 **Endpoint with No Authorization**
+
+```bash
+curl http://eth.localhost:3001/v1/endpoint_3_no_auth \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
 :::tip
 
-The `GatewayEndpoint` ID `endpoint_1` and API Key `api_key_1` are defined in the `local/path/envoy/.gateway-endpoints.yaml` file.
+The `GatewayEndpoint` IDs `endpoint_1_static_key` and `endpoint_3_no_auth`, as well as the API key `api_key_1` are defined in the `local/path/envoy/.gateway-endpoints.yaml` file.
 
 To add or modify the `GatewayEndpoints` that are authorized to use your PATH instance, you may modify this file.
 
