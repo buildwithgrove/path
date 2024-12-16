@@ -23,7 +23,7 @@ import (
 )
 
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target service's ID.
-// Please see the following link for more details on not including `X-` prefix in the HTTP header parameter names.
+// Please see the following link on the deprecation of X- prefix in the HTTP header parameter names and why it wasn't used.
 // https://www.rfc-editor.org/rfc/rfc6648#section-3
 const HTTPHeaderTargetServiceID = "target-service-id"
 
