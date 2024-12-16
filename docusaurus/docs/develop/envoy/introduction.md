@@ -70,6 +70,7 @@ Specifically, this is split into two logical parts:
 
 :::tip
 A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+
 :::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
@@ -211,17 +212,13 @@ sequenceDiagram
 
 The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
 
-1. [URL Path](#221-url-path)
-2. [Header](#222-header)
+1. [URL Path](#221-url-path): e.g. ...
+2. [Header](#222-header): Example or details ...
 
-This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file.
+This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file. One of:
 
-Valid options are:
-
-- `url_path`
+- `url_path` (default)
 - `header`
-
-If the `ENDPOINT_ID_EXTRACTOR` environment variable is not set, the default `url_path` extractor is used.
 
 :::warning
 Requests are rejected if either of the following are true:
@@ -234,7 +231,7 @@ Requests are rejected if either of the following are true:
 Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `x-endpoint-id` header if the reuqest is forwarded to the PATH Service.
 :::
 
-### 4.1 URL Path
+### 4.1 URL Path Endpoint ID Extractor
 
 When using the `url_path` extractor, the Gateway Endpoint ID must be specified in the URL path.
 
@@ -251,7 +248,7 @@ curl http://anvil.localhost:3001/v1/endpoint_3 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-### 4.2 Header
+### 4.2 Header Endpoint ID Extractor
 
 When using the `header` extractor, the Gateway Endpoint ID must be specified in the `x-endpoint-id` header.
 
