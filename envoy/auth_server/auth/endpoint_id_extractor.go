@@ -75,8 +75,6 @@ type HeaderExtractor struct{}
 func (h *HeaderExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeContext_HttpRequest) (string, error) {
 	headers := req.GetHeaders()
 
-	fmt.Println("headers", headers)
-
 	endpointID, ok := headers[reqHeaderEndpointID]
 	if !ok {
 		return "", fmt.Errorf("endpoint ID header not found")
