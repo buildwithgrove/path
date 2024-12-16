@@ -19,8 +19,8 @@ title: Introduction
   - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
   - [3.3. Request Lifecycle](#33-request-lifecycle)
 - [4. Specifying the Gateway Endpoint ID](#4-specifying-the-gateway-endpoint-id)
-  - [4.1 URL Path](#41-url-path)
-  - [4.2 Header](#42-header)
+  - [4.1 URL Path Endpoint ID Extractor](#41-url-path-endpoint-id-extractor)
+  - [4.2 Header Endpoint ID Extractor](#42-header-endpoint-id-extractor)
 - [5. Gateway Endpoint Authorization](#5-gateway-endpoint-authorization)
   - [5.1 JSON Web Token (JWT) Authorization](#51-json-web-token-jwt-authorization)
   - [5.2 API Key Authorization](#52-api-key-authorization)
@@ -70,6 +70,7 @@ Specifically, this is split into two logical parts:
 
 :::tip
 A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+
 :::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
@@ -212,30 +213,28 @@ sequenceDiagram
 
 The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
 
-1. [URL Path](#221-url-path)
-2. [Header](#222-header)
+1. [URL Path](#221-url-path): e.g. ...
+2. [Header](#222-header): Example or details ...
 
-This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file.
+This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file. One of:
 
-Valid options are:
-
-- `url_path`
+- `url_path` (default)
 - `header`
 
-If the `ENDPOINT_ID_EXTRACTOR` environment variable is not set, the default `url_path` extractor is used.
-
 :::warning
+
 Requests are rejected if either of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
 - ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
+- 
 :::
 
 :::info
 Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `endpoint-id` header if the reuqest is forwarded to the PATH Service.
 :::
 
-### 4.1 URL Path
+### 4.1 URL Path Endpoint ID Extractor
 
 When using the `url_path` extractor, the Gateway Endpoint ID must be specified in the URL path.
 
@@ -252,7 +251,7 @@ curl http://anvil.localhost:3001/v1/endpoint_3 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-### 4.2 Header
+### 4.2 Header Endpoint ID Extractor
 
 When using the `header` extractor, the Gateway Endpoint ID must be specified in the `endpoint-id` header.
 
@@ -484,7 +483,7 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `StreamAuthDataUpdates`
 
 :::tip
-Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+If you wish to implement your own custom database driver, forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
 :::
 
 ## 6. Rate Limiter
