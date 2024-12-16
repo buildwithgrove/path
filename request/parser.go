@@ -23,7 +23,7 @@ import (
 )
 
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target service's ID.
-// Please see the following link for more details on not including `X-` prefix in the HTTP header parameter names.
+// Please see the following link on the deprecation of X- prefix in the HTTP header parameter names and why it wasn't used.
 // https://www.rfc-editor.org/rfc/rfc6648#section-3
 const HTTPHeaderTargetServiceID = "Target-Service-ID"
 
@@ -71,11 +71,11 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 }
 
 // getServiceID extracts the target service ID from the supplied HTTP request.
-// As of now, it supports two options for specifying the target service ID, in the order of priority:
-// 1. The value of the HTTP Header Target-Service-ID, if defined.
-// e.g. `Target-Service-ID: eth` is interpreted as `eth` target service ID.
-// 2. The subdomain of the HTTP request's Host field.
-// eg. host = "eth.gateway.pokt.network" -> serviceID = "eth"
+// As of #101, it supports two options for specifying the target service ID, in order of priority:
+//  1. The value of the HTTP Header Target-Service-ID, if defined.
+//     e.g. `Target-Service-ID: eth` is interpreted as `eth` target service ID
+//  2. The subdomain of the HTTP request's Host field.
+//     e.g. host = "eth.gateway.pokt.network" -> serviceID = "eth"
 func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 	// Prefer the custom HTTP Header for specification of the Target Service ID
 	serviceID := req.Header.Get(HTTPHeaderTargetServiceID)
