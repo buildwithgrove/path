@@ -18,12 +18,39 @@ const (
 	ServiceIDE2E    ServiceQoSType = "gatewaye2e" // ServiceIDE2E represents the service created for running PATH gateway's E2E tests.
 )
 
-// The ServiceQoSTypes map associates each supported service ID with a specific implementation of the
-// gateway.QoSService interface.
-// THis is to handle requests for a given service ID.
-var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
-	// All Morse EVM Services as of 12/17/2024 (#103)
-	// TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
+// The ServiceQoSTypes map associates each supported service ID with a specific
+// implementation of the gateway.QoSService interface.
+// This is to handle requests for a given service ID.
+var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{}
+
+func init() {
+	for k, v := range shannonQoSTypes {
+		ServiceQoSTypes[k] = v
+	}
+	for k, v := range legacyMorseQoSTypes {
+		ServiceQoSTypes[k] = v
+	}
+}
+
+var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
+	// TODO_IMPROVE Add all non-EVM Morse Services and requisite initialization
+
+	// Shannon Service IDs
+	"anvil": ServiceIDEVM, // ETH Local (development/testing)
+
+	// TODO_IMPROVE(@commoddity): Use actual service IDs for Solana and POKT.
+	"solana": ServiceIDSolana,
+
+	"pokt":  ServiceIDPOKT,
+	"morse": ServiceIDPOKT,
+
+	// Gateway E2E service ID is used only for running PATH's Morse and Shannon E2E tests.
+	"gatewaye2e": ServiceIDE2E,
+}
+
+// All Morse EVM Services as of 12/17/2024 (#103)
+// TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
+var legacyMorseQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	"F001": ServiceIDEVM, // Arbitrum One
 	"F002": ServiceIDEVM, // Arbitrum Sepolia Testnet
 	"F003": ServiceIDEVM, // Avalanche
@@ -61,18 +88,4 @@ var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	"F029": ServiceIDEVM, // Polygon zkEVM
 	"F02A": ServiceIDEVM, // zkLink
 	"F02B": ServiceIDEVM, // zkSync
-
-	// TODO_IMPROVE Add all non-EVM Morse Services and requisite initialization
-
-	// Shannon Service IDs
-	"anvil": ServiceIDEVM, // ETH Local (development/testing)
-
-	// TODO_IMPROVE(@commoddity): Use actual service IDs for Solana and POKT.
-	"solana": ServiceIDSolana,
-
-	"pokt":  ServiceIDPOKT,
-	"morse": ServiceIDPOKT,
-
-	// Gateway E2E service ID is used only for running PATH's Morse and Shannon E2E tests.
-	"gatewaye2e": ServiceIDE2E,
 }
