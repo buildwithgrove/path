@@ -240,8 +240,5 @@ docusaurus_start: ## Start docusaurus server
 ###############################
 
 include ./makefiles/localnet.mk
-<<<<<<< HEAD
 include ./makefiles/quickstart.mk
-=======
 include ./makefiles/test_requests.mk
->>>>>>> envoy-set-header-from-subdomain
