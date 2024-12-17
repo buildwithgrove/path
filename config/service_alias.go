@@ -22,7 +22,8 @@ const (
 // gateway.QoSService interface.
 // THis is to handle requests for a given service ID.
 var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
-	// All Morse EVM Services as of 12/17/2024
+	// All Morse EVM Services as of 12/17/2024 (#103)
+	// TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
 	"F001": ServiceIDEVM, // Arbitrum One
 	"F002": ServiceIDEVM, // Arbitrum Sepolia Testnet
 	"F003": ServiceIDEVM, // Avalanche
@@ -63,11 +64,8 @@ var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 
 	// TODO_IMPROVE Add all non-EVM Morse Services and requisite initialization
 
-	// Other Services (Shannon / Testing)
-	"0021":        ServiceIDEVM, // ETH Mainnet
-	"anvil":       ServiceIDEVM, // ETH Local (development/testing)
-	"eth":         ServiceIDEVM, // ETH general-purpose catch-all
-	"eth-mainnet": ServiceIDEVM, // ETH MainNet general-purpose catch-all
+	// Shannon Service IDs
+	"anvil": ServiceIDEVM, // ETH Local (development/testing)
 
 	// TODO_IMPROVE(@commoddity): Use actual service IDs for Solana and POKT.
 	"solana": ServiceIDSolana,
