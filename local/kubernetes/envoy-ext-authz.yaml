@@ -15,6 +15,7 @@ spec:
       containers:
         - name: ext-authz
           image: ext-authz:latest
+          # TODO_MVP(@commoddity): get these values from PATH's .config.yaml file.
           env:
             # REQUIRED: The host and port for the remote gRPC server connection
             # that provides the GatewayEndpoint data for the auth server.
@@ -29,7 +30,7 @@ spec:
             # Options are "url_path" or "header".
             # Default is "url_path" if not set.
             - name: ENDPOINT_ID_EXTRACTOR
-              value: "header"
+              value: "url_path"
           ports:
             - containerPort: 10003
 ---
