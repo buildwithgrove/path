@@ -1,5 +1,6 @@
 -- IMPORTANT: All Services for the PATH Service Gateway must be listed here for Envoy Proxy to forward requests to PATH.
 -- The service IDs configured here are used in the `envoy.filters.http.lua` HTTP filter defined in `.envoy.yaml` config file.
+-- The `.allowed-services.lua` file must be mounted as a file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
 --
 -- If you wish to define aliases for existing services, you must define the alias as the key and the service ID as the value.
 --
