@@ -28,5 +28,5 @@ to learn how PATH works, how to configure it and how to run it locally.
 
 ### Envoy
 
-Start by going through the [Envoy Introduction Guide](./develop/path/introduction.md)
+Start by going through the [Envoy Introduction Guide](./develop/envoy/introduction.md)
 to learn how our Envoy integration works, how to configure it and how to run it locally.

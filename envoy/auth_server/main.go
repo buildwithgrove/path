@@ -25,15 +25,19 @@ import (
 // TODO_CONSIDER(@commoddity): Make this configurable. See thread here: https://github.com/buildwithgrove/path/pull/52/files/1a3e7a11f159f5b8d3c414f2417f7879bcfab410..258136504608c1269a27047bb9bded1ab4fefcc8#r1859409934
 const port = 10003
 
+// TODO_MVP(@commoddity): Make these values part of PATH's config YAML and remove the dependency on environment variables.
 const (
 	envVarGRPCHostPort                = "GRPC_HOST_PORT"
 	envVarGRPCUseInsecure             = "GRPC_USE_INSECURE"
 	defaultGRPCUseInsecureCredentials = false
+	envVarEndpointIDExtractor         = "ENDPOINT_ID_EXTRACTOR"
+	defaultEndpointIDExtractor        = auth.EndpointIDExtractorTypeURLPath
 )
 
 type options struct {
 	grpcHostPort               string
 	grpcUseInsecureCredentials bool
+	endpointIDExtractor        auth.EndpointIDExtractorType
 }
 
 func gatherOptions() options {
@@ -49,9 +53,19 @@ func gatherOptions() options {
 		}
 	}
 
+	endpointIDExtractor := auth.EndpointIDExtractorType(os.Getenv(envVarEndpointIDExtractor))
+	if endpointIDExtractor == "" {
+		endpointIDExtractor = defaultEndpointIDExtractor
+	}
+	if !endpointIDExtractor.IsValid() {
+		fmt.Printf("invalid endpoint ID extractor type: %s, using default: %s\n", endpointIDExtractor, defaultEndpointIDExtractor)
+		endpointIDExtractor = defaultEndpointIDExtractor
+	}
+
 	return options{
 		grpcHostPort:               grpcHostPort,
 		grpcUseInsecureCredentials: grpcUseInsecureCredentials,
+		endpointIDExtractor:        endpointIDExtractor,
 	}
 }
 
@@ -63,6 +77,16 @@ func connectGRPC(hostPort string, useInsecureCredentials bool) (*grpc.ClientConn
 		transport = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	}
 	return grpc.NewClient(hostPort, transport)
+}
+
+func getEndpointIDExtractor(endpointIDExtractorType auth.EndpointIDExtractorType) auth.EndpointIDExtractor {
+	switch endpointIDExtractorType {
+	case auth.EndpointIDExtractorTypeURLPath:
+		return &auth.URLPathExtractor{}
+	case auth.EndpointIDExtractorTypeHeader:
+		return &auth.HeaderExtractor{}
+	}
+	return nil // this should never happen
 }
 
 func main() {
@@ -97,12 +121,17 @@ func main() {
 		panic(err)
 	}
 
+	// Determine which gateway endpoint ID extractor to use
+	// If the extractor is not set, use the default "url_path" extractor
+	endpointIDExtractor := getEndpointIDExtractor(opts.endpointIDExtractor)
+
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
-		EndpointStore:    endpointStore,
-		APIKeyAuthorizer: &auth.APIKeyAuthorizer{},
-		JWTAuthorizer:    &auth.JWTAuthorizer{},
-		Logger:           logger,
+		EndpointStore:       endpointStore,
+		APIKeyAuthorizer:    &auth.APIKeyAuthorizer{},
+		JWTAuthorizer:       &auth.JWTAuthorizer{},
+		EndpointIDExtractor: endpointIDExtractor,
+		Logger:              logger,
 	}
 
 	// Create a new gRPC server for handling auth requests from Envoy
