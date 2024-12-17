@@ -234,7 +234,7 @@ Requests are rejected if either of the following are true:
 
 :::info
 
-Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `endpoint-id` header if the reuqest is forwarded to the PATH Service.
+Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `endpoint-id` header if the request is forwarded to the PATH Service.
 
 :::
 
