@@ -27,6 +27,7 @@ title: Introduction
   - [API Key Authorization](#api-key-authorization)
   - [No Authorization](#no-authorization)
 - [Service ID Specification](#service-id-specification)
+  - [Allowed Services File](#allowed-services-file)
   - [Target Service ID Header](#target-service-id-header)
   - [URL Subdomain](#url-subdomain)
 - [External Authorization Server](#external-authorization-server)
@@ -55,9 +56,13 @@ title: Introduction
 
 2. Run `make init_envoy` to create all the required config files
 
-   - `envoy.yaml` is created with your auth provider's domain and audience.
-   - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
+   - `.envoy.yaml` is created with your auth provider's domain and audience.
+   - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
+     - ℹ️ _Please update `allowed-services.lua` with the service IDs allowed by your PATH instance._
+     - For more details, see the [Allowed Services Map](#allowed-services-map) section.
+   - `.gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
+     - For more details, see the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section.
 
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
@@ -296,8 +301,6 @@ See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for mo
 
 :::
 
-<br/>
-
 ## Gateway Endpoint Authorization
 
 The `Go External Authorization Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct.
@@ -373,18 +376,39 @@ There are two methods for specifying this header in the request:
 
 1. [Target Service ID Header](#target-service-id-header)
 2. [URL Subdomain](#url-subdomain)
-3. 
-:::tip
 
-The `make init_envoy` command will prompt you about which service ID specification method to use.
+### Allowed Services File
+
+
+The file `local/path/envoy/.allowed-services.lua` defines the mapping of service IDs to the service IDs used by the PATH service.
+
+All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
+
+:::info
+
+_Example `.allowed-services.lua` format:_
+
+```lua
+return {
+  -- 1. Shannon Service IDs
+  ["anvil"] = "anvil", -- Anvil (Authoritative ID)
+
+  -- 2. Morse Service IDs
+  ["F000"] = "F000",   -- Pocket (Authoritative ID)
+  ["pocket"] = "F000", -- Pocket (Alias)
+}
+```
 
 :::
 
 ### Target Service ID Header
 
-The `target-service-id` header is set directly on the request.
+The service ID (or a configured alias) may be specified in the `target-service-id` header.
+
+:::info
 
 _Example request:_
+
 ```bash
 curl http://localhost:3001/v1 \
   -X POST \
@@ -394,20 +418,28 @@ curl http://localhost:3001/v1 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
+:::
+
 ### URL Subdomain
 
-The `target-service-id` header is set by the `lua` HTTP filter in the Envoy configuration file from the subdomain of the request's host field.
+The service ID (or a configured alias) may be specified in the URL subdomain.
 
-eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
+eg. `host = "pocket.path.grove.city" -> Header: "target-service-id: F000"`
+
+_This example resolves the `pocket` alias to the `F000` authoritative service ID._
+
+:::info
 
 _Example request:_
 ```bash
-curl http://anvil.localhost:3001/v1 \
+curl http://pocket.localhost:3001/v1 \
   -X POST \
   -H "Content-Type: application/json" \
   -H "endpoint-id: endpoint_3_no_auth" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
+
+:::
 
 ## External Authorization Server
 
@@ -500,8 +532,9 @@ If the Gateway Operator wishes to implement a custom remote gRPC server, see the
 
 #### Gateway Endpoint YAML File
 
-_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._
+_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._\
 
+:::info
 [An example `gateway-endpoints.yaml` file may be seen in the PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
 
 The yaml file below provides an example for a particular gateway operator where:
@@ -539,6 +572,7 @@ endpoints:
 The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
 
 :::
+
 
 #### Implementing a Custom Remote gRPC Server
 

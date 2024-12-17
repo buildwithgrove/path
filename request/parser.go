@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -29,18 +28,13 @@ const HTTPHeaderTargetServiceID = "target-service-id"
 
 type (
 	Parser struct {
-		Backend     Backend
 		QoSServices map[protocol.ServiceID]gateway.QoSService
 		Logger      polylog.Logger
 	}
-	Backend interface {
-		GetServiceIDFromAlias(string) (protocol.ServiceID, bool)
-	}
 )
 
-func NewParser(backend Backend, enabledServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
+func NewParser(enabledServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
 	return &Parser{
-		Backend:     backend,
 		QoSServices: enabledServices,
 		Logger:      logger,
 	}, nil
@@ -70,41 +64,12 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 	return &parserErrorResponse{err: err.Error(), code: http.StatusNotFound}
 }
 
-// TODO_TECHDEBT(@commoddity): Remove the ability to set the target service ID using the subdomain and
-// instead enforce the use of the HTTP Header 'target-service-id'. Envoy Proxy can handle setting the
-// header from the subdomain to continue supporting URLs like 'eth.path.grove.city'.
-//
-// getServiceID extracts the target service ID from the supplied HTTP request.
-// As of now, it supports two options for specifying the target service ID, in order of priority:
-//
-// 1. The value of the HTTP Header target-service-id, if defined.
-// e.g. `target-service-id: eth` is interpreted as `eth` target service ID.
-//
-// 2. The subdomain of the HTTP request's Host field.
-// eg. host = "eth.gateway.pokt.network" -> serviceID = "eth"
+// getServiceID extracts the target service ID from the HTTP request's headers.
 func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 	// Prefer the custom HTTP Header for specification of the Target Service ID
-	serviceID := req.Header.Get(HTTPHeaderTargetServiceID)
-	if serviceID != "" {
-		return p.getServiceIDFromAlias(serviceID), nil
+	if serviceID := req.Header.Get(HTTPHeaderTargetServiceID); serviceID != "" {
+		return protocol.ServiceID(serviceID), nil
 	}
 
-	// Fallback to using the HTTP request's host field's domain if the custom HTTP header is not set.
-	hostParts := strings.Split(req.Host, ".")
-	if len(hostParts) < 2 {
-		return "", errNoServiceIDProvided
-	}
-
-	subdomain := hostParts[0]
-	return p.getServiceIDFromAlias(subdomain), nil
-}
-
-// TODO_TECHDEBT(@adshmh): consider removing the alias concept altogether: it looks like a DNS/Load Balancer level concept rather than a gateway feature.
-// getServiceIDFromAlias returns the service ID for the supplied alias. The serviceAlias is returned as-is if no matching service IDs are found.
-func (p *Parser) getServiceIDFromAlias(serviceAlias string) protocol.ServiceID {
-	if serviceIDFromAlias, ok := p.Backend.GetServiceIDFromAlias(serviceAlias); ok {
-		return serviceIDFromAlias
-	}
-
-	return protocol.ServiceID(serviceAlias)
+	return "", errNoServiceIDProvided
 }

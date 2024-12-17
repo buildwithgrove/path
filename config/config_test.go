@@ -46,10 +46,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				},
 				Services: map[protocol.ServiceID]ServiceConfig{
 					"F00C": {
-						Alias:          "eth",
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
-					"0021": {
 						RequestTimeout: 3_000 * time.Millisecond,
 					},
 				},
@@ -62,9 +58,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				},
 				HydratorConfig: EndpointHydratorConfig{
 					ServiceIDs: []protocol.ServiceID{"F00C"},
-				},
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -93,10 +86,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					"anvil": {
 						RequestTimeout: 3_000 * time.Millisecond,
 					},
-					"F00C": {
-						Alias:          "eth",
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
 				},
 				Router: RouterConfig{
 					Port:               defaultPort,
@@ -104,9 +93,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					ReadTimeout:        defaultReadTimeout,
 					WriteTimeout:       defaultWriteTimeout,
 					IdleTimeout:        defaultIdleTimeout,
-				},
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth": "F00C",
 				},
 			},
 			wantErr: false,
@@ -151,17 +137,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "should return error for invalid service alias",
-			filePath: "invalid_service_alias.yaml",
-			yamlData: `
-			morse_config:
-			  serviceAliases:
-			    invalid_alias!@#:
-			      id: "0001"
-			`,
-			wantErr: true,
-		},
-		{
 			name:     "should return error for invalid client public key",
 			filePath: "invalid_client_public_key.yaml",
 			yamlData: `
@@ -194,12 +169,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			morse_config:
 			  services:
 			    0001:
-			      id: "0001"
-			      config:
-			        alias: "pokt-mainnet"
-			        fallback_url: "invalid-url"
-			        service_type_override: "REST"
-			        request_timeout_seconds: 30
+			      request_timeout: 30
 			`,
 			wantErr: true,
 		},
@@ -213,8 +183,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			    http_config:
 			      retries: 3
 			      timeout: 5000
-			    request_config:
-			      retries: 3
 			    relay_signing_key: "gateway-private-key"
 			  signed_aats:
 			    f9076ec39b2a495883eb59740d566d5fa2e2b222:
@@ -235,17 +203,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			filePath: "invalid_config.yaml",
 			yamlData: "invalid_yaml: [",
 			wantErr:  true,
-		},
-		{
-			name:     "should return error for duplicate service alias",
-			filePath: "duplicate_service_alias.yaml",
-			yamlData: `
-			morse_config:
-			  serviceAliases:
-			    eth: "0021"
-			    eth: "0022"
-			`,
-			wantErr: true,
 		},
 	}
 
@@ -270,50 +227,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	}
 }
 
-func Test_GetServiceIDFromAlias(t *testing.T) {
-	test := []struct {
-		name   string
-		config GatewayConfig
-		alias  string
-		want   protocol.ServiceID
-		ok     bool
-	}{
-		{
-			name: "should return service ID for existing alias",
-			config: GatewayConfig{
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
-				},
-			},
-			alias: "eth-mainnet",
-			want:  "0021",
-			ok:    true,
-		},
-		{
-			name: "should return false for non-existing alias",
-			config: GatewayConfig{
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
-				},
-			},
-			alias: "btc-mainnet",
-			want:  "",
-			ok:    false,
-		},
-	}
-
-	for _, test := range test {
-		t.Run(test.name, func(t *testing.T) {
-			c := require.New(t)
-			got, ok := test.config.GetServiceIDFromAlias(test.alias)
-			c.Equal(test.ok, ok)
-			if ok {
-				c.Equal(test.want, got)
-			}
-		})
-	}
-}
-
 func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	c.Equal(want.Router, got.Router)
 	if want.MorseConfig != nil {
@@ -323,7 +236,6 @@ func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	if want.ShannonConfig != nil {
 		c.Equal(want.ShannonConfig, got.ShannonConfig)
 	}
-	c.Equal(want.serviceAliases, got.serviceAliases)
 }
 
 func compareMorseFullNodeConfig(c *require.Assertions, want, got morseprotocol.FullNodeConfig) {
