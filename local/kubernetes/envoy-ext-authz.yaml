@@ -29,7 +29,7 @@ spec:
             # Options are "url_path" or "header".
             # Default is "url_path" if not set.
             - name: ENDPOINT_ID_EXTRACTOR
-              value: "url_path"
+              value: "header"
           ports:
             - containerPort: 10003
 ---
