@@ -81,7 +81,7 @@ A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provi
 - **Redis**: A key-value store used by the rate limiter to share state and coordinate rate limiting across any number of PATH instances behind the same Envoy Proxy.
 - **Remote gRPC Server**: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
-  - _See [5.2.1. PATH Auth Data Server](#521-path-auth-data-server) for more information._
+  - _See [PATH Auth Data Server](#path-auth-data-server) for more information._
 
 ```mermaid
 graph TD
@@ -214,8 +214,8 @@ sequenceDiagram
 
 The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
 
-1. [URL Path Endpoint ID Extractor](#41-url-path-endpoint-id-extractor)
-2. [Header Endpoint ID Extractor](#42-header-endpoint-id-extractor)
+1. [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
+2. [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
 
 This is determined by the **`ENDPOINT_ID_EXTRACTOR`** environment variable in the `auth_server/.env` file. One of:
 
@@ -301,9 +301,9 @@ The `Go External Authorization Server` evaluates whether incoming requests are a
 
 Three authorization types are supported:
 
-1. [JSON Web Token (JWT) Authorization](#51-json-web-token-jwt-authorization)
-2. [API Key Authorization](#52-api-key-authorization)
-3. [No Authorization](#53-no-authorization)
+1. [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
+2. [API Key Authorization](#api-key-authorization)
+3. [No Authorization](#no-authorization)
 
 ### JSON Web Token (JWT) Authorization
 
@@ -442,7 +442,7 @@ ghcr.io/buildwithgrove/path-auth-data-server:latest
 
 _This Docker image is loaded by default in the [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) file at the root of the PATH repo._
 
-If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server) section.
+If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server) section.
 
 #### Gateway Endpoint YAML File
 
