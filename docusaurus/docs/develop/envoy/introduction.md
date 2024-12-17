@@ -21,6 +21,7 @@ title: Introduction
 - [4. Specifying the Gateway Endpoint ID](#4-specifying-the-gateway-endpoint-id)
   - [4.1 URL Path Endpoint ID Extractor](#41-url-path-endpoint-id-extractor)
   - [4.2 Header Endpoint ID Extractor](#42-header-endpoint-id-extractor)
+  - [4.3 Example cURL Requests](#43-example-curl-requests)
 - [5. Gateway Endpoint Authorization](#5-gateway-endpoint-authorization)
   - [5.1 JSON Web Token (JWT) Authorization](#51-json-web-token-jwt-authorization)
   - [5.2 API Key Authorization](#52-api-key-authorization)
@@ -212,10 +213,10 @@ sequenceDiagram
 
 The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
 
-1. [URL Path](#221-url-path): e.g. ...
-2. [Header](#222-header): Example or details ...
+1. [URL Path Endpoint ID Extractor](#41-url-path-endpoint-id-extractor)
+2. [Header Endpoint ID Extractor](#42-header-endpoint-id-extractor)
 
-This is determined by the `ENDPOINT_ID_EXTRACTOR` environment variable in the `auth_server/.env` file. One of:
+This is determined by the **`ENDPOINT_ID_EXTRACTOR`** environment variable in the `auth_server/.env` file. One of:
 
 - `url_path` (default)
 - `header`
@@ -226,7 +227,7 @@ Requests are rejected if either of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
 - ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
-- 
+
 :::
 
 :::info
@@ -279,6 +280,12 @@ make test_request_with_header
 `endpoint_3` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
 
 See the [Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
+:::
+
+### 4.3 Example cURL Requests
+
+:::tip
+A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
 :::
 
 <br/>
