@@ -25,6 +25,9 @@ title: Introduction
   - [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
   - [API Key Authorization](#api-key-authorization)
   - [No Authorization](#no-authorization)
+- [Service ID Specification](#service-id-specification)
+  - [Target Service ID Header](#target-service-id-header)
+  - [URL Subdomain](#url-subdomain)
 - [External Authorization Server](#external-authorization-server)
   - [External Auth Service Sequence Diagram](#external-auth-service-sequence-diagram)
   - [External Auth Service Environment Variables](#external-auth-service-environment-variables)
@@ -310,6 +313,11 @@ Three authorization types are supported:
 For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
 
 :::tip
+
+The `make init_envoy` command will prompt you about whether you wish to use JWT authorization. 
+
+If you do wish to use it, you will be asked to enter your auth provider's domain and audience.
+
 Auth0 is an example of a JWT issuer that can be used with PATH.
 
 Their docs page on JWTs gives a good overview of the JWT format and how to issue JWTs to your users:
@@ -334,7 +342,9 @@ jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
 :::info
+
 For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+
 :::
 
 ### API Key Authorization
@@ -354,6 +364,50 @@ The `Go External Authorization Server` will use the `authorization` header to ma
 For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service.
 
 All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Authorization Server`.
+
+## Service ID Specification
+
+The `target-service-id` header is used to specify the Service ID in the request.
+
+There are two methods for specifying this header in the request:
+
+1. [Target Service ID Header](#target-service-id-header)
+2. [URL Subdomain](#url-subdomain)
+3. 
+:::tip
+
+The `make init_envoy` command will prompt you about which service ID specification method to use.
+
+:::
+
+### Target Service ID Header
+
+The `target-service-id` header is set directly on the request.
+
+_Example request:_
+```bash
+curl http://localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "target-service-id: anvil" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### URL Subdomain
+
+The `target-service-id` header is set by the `lua` HTTP filter in the Envoy configuration file from the subdomain of the request's host field.
+
+eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
+
+_Example request:_
+```bash
+curl http://anvil.localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
 
 ## External Authorization Server
 
