@@ -204,34 +204,13 @@ init_envoy: copy_envoy_config copy_gateway_endpoints ## Runs copy_envoy_config a
 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	@if [ ! -f ./local/path/envoy/.envoy.yaml ]; then \
-		mkdir -p local/path/envoy; \
-		./envoy/scripts/copy_envoy_config.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./local/path/envoy/.envoy.yaml              ###"; \
-		echo "### Created ./local/path/envoy/.ratelimit.yaml          ###"; \
-		echo "### README: Please ensure the configuration is correct. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "#######################################################################"; \
-		echo "### ./local/path/envoy/.envoy.yaml already exists, not overwriting. ###"; \
-		echo "#######################################################################"; \
-	fi
+	@mkdir -p local/path/envoy;
+	@./envoy/scripts/copy_envoy_config.sh;
 
 .PHONY: copy_gateway_endpoints
 copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from the PADS repo to ./local/path/envoy/.gateway-endpoints.yaml
-	@if [ ! -f ./local/path/envoy/.gateway-endpoints.yaml ]; then \
-		mkdir -p local/path/envoy; \
-		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./local/path/envoy/.gateway-endpoints.yaml  ###"; \
-		echo "### README: Please update this file with your own data. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "###################################################################################"; \
-		echo "### ./local/path/envoy/.gateway-endpoints.yaml already exists, not overwriting. ###"; \
-		echo "###################################################################################"; \
-	fi
+	@mkdir -p local/path/envoy;
+	@./envoy/scripts/copy_gateway_endpoints_yaml.sh;
 
 ###############################
 ### Generation Make Targets ###
@@ -261,4 +240,8 @@ docusaurus_start: ## Start docusaurus server
 ###############################
 
 include ./makefiles/localnet.mk
+<<<<<<< HEAD
 include ./makefiles/quickstart.mk
+=======
+include ./makefiles/test_requests.mk
+>>>>>>> envoy-set-header-from-subdomain

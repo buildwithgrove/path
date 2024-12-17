@@ -19,11 +19,12 @@ import (
 
 func Test_Check(t *testing.T) {
 	tests := []struct {
-		name               string
-		checkReq           *envoy_auth.CheckRequest
-		expectedResp       *envoy_auth.CheckResponse
-		endpointID         string
-		mockEndpointReturn *proto.GatewayEndpoint
+		name                string
+		checkReq            *envoy_auth.CheckRequest
+		expectedResp        *envoy_auth.CheckResponse
+		endpointID          string
+		endpointIDExtractor EndpointIDExtractor
+		mockEndpointReturn  *proto.GatewayEndpoint
 	}{
 		{
 			name: "should return OK check response if check request is valid and user is authorized to access endpoint with rate limit headers set",
@@ -54,7 +55,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "endpoint_free",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "endpoint_free",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_free",
 				Auth: &proto.Auth{
@@ -102,7 +104,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "endpoint_unlimited",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "endpoint_unlimited",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_unlimited",
 				Auth: &proto.Auth{
@@ -147,7 +150,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "api_key_endpoint",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "api_key_endpoint",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "api_key_endpoint",
 				Auth: &proto.Auth{
@@ -186,7 +190,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "jwt_endpoint",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "jwt_endpoint",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "jwt_endpoint",
 				Auth: &proto.Auth{
@@ -227,9 +232,48 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "public_endpoint",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "public_endpoint",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "public_endpoint",
+				Auth: &proto.Auth{
+					AuthType: &proto.Auth_NoAuth{
+						NoAuth: &proto.NoAuth{},
+					},
+				},
+			},
+		},
+		{
+			name: "should return ok check response if endpoint ID is passed via header",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1",
+							Headers: map[string]string{
+								reqHeaderEndpointID: "endpoint_id_from_header",
+							},
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.OK),
+					Message: "ok",
+				},
+				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+					OkResponse: &envoy_auth.OkHttpResponse{
+						Headers: []*envoy_core.HeaderValueOption{
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_id_from_header"}},
+						},
+					},
+				},
+			},
+			endpointIDExtractor: &HeaderExtractor{},
+			endpointID:          "endpoint_id_from_header",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "endpoint_id_from_header",
 				Auth: &proto.Auth{
 					AuthType: &proto.Auth_NoAuth{
 						NoAuth: &proto.NoAuth{},
@@ -265,8 +309,9 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID:         "endpoint_not_found",
-			mockEndpointReturn: &proto.GatewayEndpoint{},
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "endpoint_not_found",
+			mockEndpointReturn:  &proto.GatewayEndpoint{},
 		},
 		{
 			name: "should return denied check response if user is not authorized to access endpoint using API key auth",
@@ -296,7 +341,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "endpoint_api_key",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "endpoint_api_key",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_api_key",
 				Auth: &proto.Auth{
@@ -336,7 +382,8 @@ func Test_Check(t *testing.T) {
 					},
 				},
 			},
-			endpointID: "endpoint_jwt_auth",
+			endpointIDExtractor: &URLPathExtractor{},
+			endpointID:          "endpoint_jwt_auth",
 			mockEndpointReturn: &proto.GatewayEndpoint{
 				EndpointId: "endpoint_jwt_auth",
 				Auth: &proto.Auth{
@@ -365,10 +412,11 @@ func Test_Check(t *testing.T) {
 			}
 
 			authHandler := &AuthHandler{
-				EndpointStore:    mockStore,
-				APIKeyAuthorizer: &APIKeyAuthorizer{},
-				JWTAuthorizer:    &JWTAuthorizer{},
-				Logger:           polyzero.NewLogger(),
+				EndpointStore:       mockStore,
+				APIKeyAuthorizer:    &APIKeyAuthorizer{},
+				JWTAuthorizer:       &JWTAuthorizer{},
+				EndpointIDExtractor: test.endpointIDExtractor,
+				Logger:              polyzero.NewLogger(),
 			}
 
 			resp, err := authHandler.Check(context.Background(), test.checkReq)

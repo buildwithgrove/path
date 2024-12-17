@@ -23,33 +23,33 @@ title: Introduction
 
 # Table of Contents <!-- omit in toc -->
 
-- [1. Introduction](#1-introduction)
-  - [1.1. Prerequisites](#11-prerequisites)
-- [2. Path Releases](#2-path-releases)
-- [3. Quickstart](#3-quickstart)
-  - [3.1 Shannon Quickstart](#31-shannon-quickstart)
-  - [3.2 Morse Quickstart](#32-morse-quickstart)
-- [4. Configuration](#4-configuration)
-  - [4.1 Configuration File](#41-configuration-file)
-- [5. Running PATH](#5-running-path)
-  - [5.1. Setup Config YAML](#51-setup-config-yaml)
-  - [5.2. Run the PATH binary](#52-run-the-path-binary)
-- [6. E2E Tests](#6-e2e-tests)
-  - [6.1. Running the E2E tests against Shannon Testnet](#61-running-the-e2e-tests-against-shannon-testnet)
-    - [6.1.1 Preparing the configuration](#611-preparing-the-configuration)
-    - [6.1.2 Running the E2E tests](#612-running-the-e2e-tests)
-  - [6.2. Running the E2E tests against Morse](#62-running-the-e2e-tests-against-morse)
-    - [6.2.1. Preparing the configuration](#621-preparing-the-configuration)
-    - [6.2.2 Running the E2E tests](#622-running-the-e2e-tests)
-- [7. Running Localnet](#7-running-localnet)
-  - [7.1. Spinning up / Tearing down Localnet](#71-spinning-up--tearing-down-localnet)
-- [8. Troubleshooting](#8-troubleshooting)
-  - [8.1. Docker Permissions Issues - Need to run sudo?](#81-docker-permissions-issues---need-to-run-sudo)
+- [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+- [Path Releases](#path-releases)
+- [Quickstart](#quickstart)
+  - [Shannon Quickstart](#shannon-quickstart)
+  - [Morse Quickstart](#morse-quickstart)
+- [Configuration](#configuration)
+  - [Configuration File](#configuration-file)
+- [Running PATH](#running-path)
+  - [Setup Config YAML](#setup-config-yaml)
+  - [Run the PATH binary](#run-the-path-binary)
+- [E2E Tests](#e2e-tests)
+  - [Running the E2E tests against Shannon Testnet](#running-the-e2e-tests-against-shannon-testnet)
+    - [Preparing the configuration](#preparing-the-configuration)
+    - [Running the E2E tests](#running-the-e2e-tests)
+  - [Running the E2E tests against Morse](#running-the-e2e-tests-against-morse)
+    - [Preparing the configuration](#preparing-the-configuration-1)
+    - [Running the E2E tests](#running-the-e2e-tests-1)
+- [Running Localnet](#running-localnet)
+  - [Spinning up / Tearing down Localnet](#spinning-up--tearing-down-localnet)
+- [Troubleshooting](#troubleshooting)
+  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
 
-## 1. Introduction
+## Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
 access to a decentralized supply network.
@@ -63,7 +63,7 @@ We use Tilt + Kind to spin up local environment for development and local testin
 
 Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
 
-### 1.1. Prerequisites
+### Prerequisites
 
 **Deployment:**
 
@@ -76,7 +76,7 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 
 - [Uber Mockgen](https://github.com/uber-go/mock)
 
-## 2. Path Releases
+## Path Releases
 
 Path releases provide a Docker image you can start using right away to bootstrap
 your Path gateway without the need of building your own image.
@@ -93,9 +93,9 @@ You can pull them directly using the following command:
 docker pull ghcr.io/buildwithgrove/path
 ```
 
-## 3. Quickstart
+## Quickstart
 
-### 3.1 Shannon Quickstart
+### Shannon Quickstart
 
 1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
 
@@ -121,7 +121,7 @@ docker pull ghcr.io/buildwithgrove/path
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
-### 3.2 Morse Quickstart
+### Morse Quickstart
 
 1. **Retrieve Application Authentication Token & Keys**
 
@@ -154,7 +154,7 @@ docker pull ghcr.io/buildwithgrove/path
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
-## 4. Configuration
+## Configuration
 
 The location of the configuration file may be set using the `-config` flag.
 
@@ -162,7 +162,7 @@ For example, when running the compiled PATH binary using `make path_run`, the co
 
 When running PATH in Tilt, the configuration file mount point is `/app/config/.config.yaml`.
 
-### 4.1 Configuration File
+### Configuration File
 
 The configuration for PATH is defined in a YAML file, which should be named `.config.yaml`.
 
@@ -197,7 +197,7 @@ The configuration is divided into several sections:
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
 
-## 5. Running PATH
+## Running PATH
 
 By default, the PATH service runs without any authorization or rate limiting. This means all requests are allowed.
 
@@ -209,12 +209,11 @@ This will start the PATH service with all the appropriate dependencies, seen in 
 
 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
 
-<!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
-
 :::
 
+<!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
 
-### 5.1. Setup Config YAML
+### Setup Config YAML
 
 1. Run `make copy_shannon_config` or `make copy_morse_config` to prepare the `bin/config/.config.yaml` file.
 
@@ -224,7 +223,7 @@ For more information about PATH's authorization and rate limiting, see the [Envo
 
    **⚠️ IMPORTANT: The data required to populate the `.config.yaml` file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
-### 5.2. Run the PATH binary
+### Run the PATH binary
 
 1. Once the `.config.yaml` file is populated under the `bin/config` directory, to start the PATH service for a specific protocol, use the following make target to run path:
 
@@ -241,13 +240,13 @@ For more information about PATH's authorization and rate limiting, see the [Envo
 
 3. To stop the PATH instance, press Ctrl-C in the terminal from which the `make path_run` command was issued.
 
-## 6. E2E Tests
+## E2E Tests
 
 This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
 
-### 6.1. Running the E2E tests against Shannon Testnet
+### Running the E2E tests against Shannon Testnet
 
-#### 6.1.1 Preparing the configuration
+#### Preparing the configuration
 
 A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
 
@@ -259,7 +258,7 @@ Then update the `shannon_config.gateway_config` values with the appropriate valu
 
 You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
 
-#### 6.1.2 Running the E2E tests
+#### Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
@@ -271,9 +270,9 @@ make test_e2e_shannon_relay
 make test_all
 ```
 
-### 6.2. Running the E2E tests against Morse
+### Running the E2E tests against Morse
 
-#### 6.2.1. Preparing the configuration
+#### Preparing the configuration
 
 A `make` target is provided to copy the example Morse configuration file to the `e2e/.morse.config.yaml` needed by the E2E tests on Morse.
 To run the tests, use the following `make` targets:
@@ -286,7 +285,7 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-#### 6.2.2 Running the E2E tests
+#### Running the E2E tests
 
 To run the tests, use the following `make` targets:
 
@@ -298,22 +297,22 @@ make test_e2e_morse_relay
 make test_all
 ```
 
-## 7. Running Localnet
+## Running Localnet
 
 You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
 
 Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
 
-### 7.1. Spinning up / Tearing down Localnet
+### Spinning up / Tearing down Localnet
 
 Localnet can be spun up/torn down using the following targets:
 
 - `path_up` -> Spins up localnet environment using Kind + Tilt
 - `path_down` -> Tears down localnet.
 
-## 8. Troubleshooting
+## Troubleshooting
 
-### 8.1. Docker Permissions Issues - Need to run sudo?
+### Docker Permissions Issues - Need to run sudo?
 
 If you're hitting docker permission issues (e.g. you need to use sudo),
 see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)

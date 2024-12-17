@@ -11,33 +11,39 @@ title: Introduction
 
 # Table of Contents <!-- omit in toc -->
 
-- [1. Quickstart](#1-quickstart)
-- [2. Overview](#2-overview)
-  - [2.1. Components](#21-components)
-  - [2.2 URL Format](#22-url-format)
-- [3. Envoy Proxy](#3-envoy-proxy)
-  - [3.1. Contents](#31-contents)
-  - [3.2. Envoy HTTP Filters](#32-envoy-http-filters)
-  - [3.3. Request Lifecycle](#33-request-lifecycle)
-- [4. Gateway Endpoint Authorization](#4-gateway-endpoint-authorization)
-  - [4.1 JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
-  - [4.2 API Key Authorization](#42-api-key-authorization)
-  - [4.3 No Authorization](#43-no-authorization)
-- [5. External Authorization Server](#5-external-authorization-server)
-  - [5.1. External Auth Service Sequence Diagram](#51-external-auth-service-sequence-diagram)
-  - [5.2. External Auth Service Environment Variables](#52-external-auth-service-environment-variables)
-  - [5.3. External Auth Service Getting Started](#53-external-auth-service-getting-started)
-  - [5.4. Gateway Endpoints gRPC Service](#54-gateway-endpoints-grpc-service)
-  - [5.5. Remote gRPC Auth Server](#55-remote-grpc-auth-server)
-    - [5.2.1. PATH Auth Data Server](#521-path-auth-data-server)
-    - [5.2.2. Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file)
-    - [5.2.3. Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server)
-- [6. Rate Limiter](#6-rate-limiter)
-  - [6.1. Rate Limit Configuration](#61-rate-limit-configuration)
-  - [6.2. Documentation and Examples](#62-documentation-and-examples)
-  - [6.2. Documentation and Examples](#62-documentation-and-examples-1)
+<<<<<<< HEAD
+- [Quickstart](#quickstart)
+- [Overview](#overview)
+  - [Components](#components)
+- [Envoy Proxy](#envoy-proxy)
+  - [Contents](#contents)
+  - [Envoy HTTP Filters](#envoy-http-filters)
+  - [Request Lifecycle](#request-lifecycle)
+- [Specifying the Gateway Endpoint ID](#specifying-the-gateway-endpoint-id)
+  - [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
+  - [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
+- [Gateway Endpoint Authorization](#gateway-endpoint-authorization)
+  - [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
+  - [API Key Authorization](#api-key-authorization)
+  - [No Authorization](#no-authorization)
+- [Service ID Specification](#service-id-specification)
+  - [Target Service ID Header](#target-service-id-header)
+  - [URL Subdomain](#url-subdomain)
+- [External Authorization Server](#external-authorization-server)
+  - [External Auth Service Sequence Diagram](#external-auth-service-sequence-diagram)
+  - [External Auth Service Environment Variables](#external-auth-service-environment-variables)
+  - [External Auth Service Getting Started](#external-auth-service-getting-started)
+  - [Gateway Endpoints gRPC Service](#gateway-endpoints-grpc-service)
+  - [Remote gRPC Auth Server](#remote-grpc-auth-server)
+    - [PATH Auth Data Server](#path-auth-data-server)
+    - [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file)
+    - [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server)
+- [Rate Limiter](#rate-limiter)
+  - [Rate Limit Configuration](#rate-limit-configuration)
+  - [Documentation and Examples](#documentation-and-examples)
+>>>>>>> envoy-set-header-from-subdomain
 
-## 1. Quickstart
+## Quickstart
 
 1. Install all prerequisites:
 
@@ -55,7 +61,7 @@ title: Introduction
 
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
-## 2. Overview
+## Overview
 
 This folder contains everything necessary for managing authorization and rate limiting in the PATH service.
 Specifically, this is split into two logical parts:
@@ -63,7 +69,7 @@ Specifically, this is split into two logical parts:
 1. The `Envoy Proxy configuration`
 2. The `Go External Authorization Server`
 
-### 2.1. Components
+### Components
 
   :::tip
 
@@ -78,7 +84,7 @@ Specifically, this is split into two logical parts:
 - **Redis**: A key-value store used by the rate limiter to share state and coordinate rate limiting across any number of PATH instances behind the same Envoy Proxy.
 - **Remote gRPC Server**: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
-  - _See [5.2.1. PATH Auth Data Server](#521-path-auth-data-server) for more information._
+  - _See [PATH Auth Data Server](#path-auth-data-server) for more information._
 
 ```mermaid
 graph TD
@@ -118,28 +124,7 @@ graph TD
     GRPCServer <-.-> DataSource
 ```
 
-### 2.2 URL Format
-
-When auth is enabled, the required URL format for the PATH service is:
-
-```
-https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
-```
-
-For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
-
-```
-https://eth.rpc.grove.city/v1/a1b2c3d4
-```
-
-Requests are rejected if either of the following are true:
-
-- The `<GATEWAY_ENDPOINT_ID>` is missing
-- ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
-
-<br/>
-
-## 3. Envoy Proxy
+## Envoy Proxy
 
 <div align="center">
   <a href="https://www.envoyproxy.io/docs/envoy/latest/">
@@ -154,28 +139,31 @@ The `/envoy` directory houses the configuration files and settings for Envoy Pro
 
 Envoy acts as a gateway, handling incoming requests, performing auth checks, and routing authorized requests to the PATH service.
 
-### 3.1. Contents
+### Contents
 
-- **ratelimit.yaml**: Configuration for the rate limiting service.
+- **ratelimit.template.yaml**: A template configuration file for the rate limiting service.
 - **envoy.template.yaml**: A template configuration file for Envoy Proxy.
-  - Run `make copy_envoy_config` to create `envoy.yaml`.
-  - This will prompt you to enter your auth provider's domain and audience and will output the result to `envoy.yaml`.
-  - `envoy.yaml` is Git ignored as it contains sensitive information.
+  - Run `make copy_envoy_config` to create `.envoy.yaml`.
+  - This will prompt you to enter your auth provider's domain and audience and will output the result to `.envoy.yaml`.
+  - `.envoy.yaml` is Git ignored as it contains sensitive information.
 - **gateway-endpoints.example.yaml**: An example file containing data on which endpoints are authorized to use the PATH service.
   - ℹ️ **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
   - Run `make copy_envoy_gateway_endpoints` to create `gateway-endpoints.yaml`.
   - `gateway-endpoints.yaml` is Git ignored as it may contain sensitive information.
 
-### 3.2. Envoy HTTP Filters
+### Envoy HTTP Filters
 
 The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
 
-- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `x-jwt-user-id` header set before it is forwarded upstream.
-- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `x-jwt-user-id` header.
+- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `jwt-user-id` header set before it is forwarded upstream.
+- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
 - **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
+- **[lua (optional)](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
+  - Use only if you wish to specify the Service ID using the subdomain of the request's host field, 
+  - eg. `host = "eth.path.grove.city" -> Header: "target-service-id: eth"`.
 
-### 3.3. Request Lifecycle
+### Request Lifecycle
 
 ```mermaid
 sequenceDiagram
@@ -193,7 +181,7 @@ sequenceDiagram
 
     opt if JWT is present
       Envoy->>+JWTFilter: 2. Parse JWT (if present)
-      JWTFilter->>-Envoy: 3. Return parsed x-jwt-user-id (if present)
+      JWTFilter->>-Envoy: 3. Return parsed jwt-user-id (if present)
     end
 
     Envoy->>+AuthServer: 4. Forward Request
@@ -225,19 +213,117 @@ sequenceDiagram
     Service->>-Client: 12. Return Response
 ```
 
-## 4. Gateway Endpoint Authorization
+## Specifying the Gateway Endpoint ID
+
+The Auth Server may extract the Gateway Endpoint ID from the request in one of two ways:
+
+1. [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
+2. [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
+
+This is determined by the **`ENDPOINT_ID_EXTRACTOR`** environment variable in the `auth_server/.env` file. One of:
+
+- `url_path` (default)
+- `header`
+
+:::warning
+
+Requests are rejected if either of the following are true:
+
+- The `<GATEWAY_ENDPOINT_ID>` is missing
+- ID is not present in the `Go External Authorization Server`'s `Gateway Endpoint Store`
+
+:::
+
+:::info
+
+Regardless of which extractor is used, the Gateway Endpoint ID will always be set in the `endpoint-id` header if the request is forwarded to the PATH Service.
+
+:::
+
+### URL Path Endpoint ID Extractor
+
+When using the `url_path` extractor, the Gateway Endpoint ID must be specified in the URL path.
+
+```
+https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
+```
+
+For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
+
+```
+curl http://anvil.localhost:3001/v1/endpoint_3_no_auth \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### Header Endpoint ID Extractor
+
+When using the `header` extractor, the Gateway Endpoint ID must be specified in the `endpoint-id` header.
+
+```
+-H "endpoint-id: <GATEWAY_ENDPOINT_ID>"
+```
+
+For example, if the `endpoint-id` header is set to `a1b2c3d4`:
+
+```
+curl http://anvil.localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+:::tip
+
+A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
+
+_eg._
+```bash
+## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
+make test_request_no_auth_url_path
+
+## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
+make test_request_no_auth_header
+```
+
+:::info
+
+`endpoint_3_no_auth` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
+
+See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
+
+:::
+
+<br/>
+
+## Gateway Endpoint Authorization
 
 The `Go External Authorization Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct.
 
 Three authorization types are supported:
 
-1. [JSON Web Token (JWT) Authorization](#41-json-web-token-jwt-authorization)
-2. [API Key Authorization](#42-api-key-authorization)
-3. [No Authorization](#43-no-authorization)
+1. [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
+2. [API Key Authorization](#api-key-authorization)
+3. [No Authorization](#no-authorization)
 
-### 4.1 JSON Web Token (JWT) Authorization
+### JSON Web Token (JWT) Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `JWT_AUTH`, a valid JWT issued by the auth provider specified in the `envoy.yaml` file is required to access the PATH service.
+
+:::tip
+
+The `make init_envoy` command will prompt you about whether you wish to use JWT authorization. 
+
+If you do wish to use it, you will be asked to enter your auth provider's domain and audience.
+
+Auth0 is an example of a JWT issuer that can be used with PATH.
+
+Their docs page on JWTs gives a good overview of the JWT format and how to issue JWTs to your users:
+
+- [Auth0 JWT Docs](https://auth0.com/docs/secure/tokens/json-web-tokens)
+:::
 
 _Example Request Header:_
 
@@ -245,19 +331,23 @@ _Example Request Header:_
 -H "Authorization: Bearer <JWT>"
 ```
 
-The `jwt_authn` filter will verify the JWT and, if valid, set the `x-jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error.
+The `jwt_authn` filter will verify the JWT and, if valid, set the `jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error.
 
-The `Go External Authorization Server` will use the `x-jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `x-jwt-user-id` value, the request will be authorized.
+The `Go External Authorization Server` will use the `jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
 
 ```
-x-jwt-user-id: auth0|a12b3c4d5e6f7g8h9
+jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
-> 💡 For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+:::info
 
-### 4.2 API Key Authorization
+For more information, see the [Envoy JWT Authn Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)
+
+:::
+
+### API Key Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `API_KEY_AUTH`, a static API key is required to access the PATH service.
 
@@ -269,21 +359,67 @@ _Example Request Header:_
 
 The `Go External Authorization Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
 
-### 4.3 No Authorization
+### No Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service.
 
 All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Authorization Server`.
 
-## 5. External Authorization Server
+## Service ID Specification
 
-> 💡 See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
+The `target-service-id` header is used to specify the Service ID in the request.
+
+There are two methods for specifying this header in the request:
+
+1. [Target Service ID Header](#target-service-id-header)
+2. [URL Subdomain](#url-subdomain)
+3. 
+:::tip
+
+The `make init_envoy` command will prompt you about which service ID specification method to use.
+
+:::
+
+### Target Service ID Header
+
+The `target-service-id` header is set directly on the request.
+
+_Example request:_
+```bash
+curl http://localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "target-service-id: anvil" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### URL Subdomain
+
+The `target-service-id` header is set by the `lua` HTTP filter in the Envoy configuration file from the subdomain of the request's host field.
+
+eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
+
+_Example request:_
+```bash
+curl http://anvil.localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+## External Authorization Server
+
+:::info
+See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
+:::
 
 The `envoy/auth_server` directory contains the `Go External Authorization Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
 This server communicates with a `Remote gRPC Server` to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
 
-### 5.1. External Auth Service Sequence Diagram
+### External Auth Service Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -306,14 +442,14 @@ sequenceDiagram
     GoAuthServer->>-EnvoyProxy: 2. Check Response<br>(Approve/Reject)
 ```
 
-### 5.2. External Auth Service Environment Variables
+### External Auth Service Environment Variables
 
 The external authorization server requires the following environment variables to be set:
 
 - `GRPC_HOST_PORT`: The host and port of the remote gRPC server.
 - `GRPC_USE_INSECURE`: Set to `true` if the remote gRPC server does not use TLS (default: `false`).
 
-### 5.3. External Auth Service Getting Started
+### External Auth Service Getting Started
 
 Run `make copy_envoy_env` to create the `.env` file needed to run the external authorization server locally.
 
@@ -322,7 +458,7 @@ For more information, see:
 - [Envoy External Authorization Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [Envoy Go Control Plane Auth Package](https://pkg.go.dev/github.com/envoyproxy/go-control-plane@v0.13.0/envoy/service/auth/v3)
 
-### 5.4. Gateway Endpoints gRPC Service
+### Gateway Endpoints gRPC Service
 
 Both the `Go External Authorization Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
@@ -338,13 +474,15 @@ service GatewayEndpoints {
 }
 ```
 
-### 5.5. Remote gRPC Auth Server
+### Remote gRPC Auth Server
 
 The `Remote gRPC Server` is responsible for providing the `Go External Authorization Server` with data on which endpoints are authorized to use the PATH service.
 
-> ℹ️ **Note:** The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
+:::info
+The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
+:::
 
-#### 5.2.1. PATH Auth Data Server
+#### PATH Auth Data Server
 
 [The PADS repo provides a functioning implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
@@ -358,9 +496,9 @@ ghcr.io/buildwithgrove/path-auth-data-server:latest
 
 _This Docker image is loaded by default in the [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) file at the root of the PATH repo._
 
-If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#523-implementing-a-custom-remote-grpc-server) section.
+If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server) section.
 
-#### 5.2.2. Gateway Endpoint YAML File
+#### Gateway Endpoint YAML File
 
 _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._
 
@@ -402,7 +540,7 @@ The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file
 
 :::
 
-#### 5.2.3. Implementing a Custom Remote gRPC Server
+#### Implementing a Custom Remote gRPC Server
 
 If the Gateway operator wishes to implement a custom remote gRPC server, the implementation must import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
@@ -411,43 +549,43 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `FetchAuthDataSync`
 - `StreamAuthDataUpdates`
 
-::: tip
+:::tip
 
-Forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+If you wish to implement your own custom database driver, forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
 
 :::
 
-## 6. Rate Limiter
+## Rate Limiter
 
-### 6.1. Rate Limit Configuration
+### Rate Limit Configuration
 
-1. The `Go External Authorization Server` sets the `x-rl-endpoint-id` and `x-rl-plan` headers if the `GatewayEndpoint` for the request should be rate limited.
+1. The `Go External Authorization Server` sets the `rl-endpoint-id` and `rl-throughput` headers if the `GatewayEndpoint` for the request should be rate limited.
 
-2. Envoy Proxy is configured to forward the `x-rl-endpoint-id` and `x-rl-plan` headers to the rate limiter service as descriptors.
+2. Envoy Proxy is configured to forward the `rl-endpoint-id` and `rl-throughput` headers to the rate limiter service as descriptors.
 
-   _envoy.yaml_
+   _.envoy.yaml_
 
    ```yaml
    rate_limits:
      - actions:
          - request_headers:
-             header_name: "x-rl-endpoint-id"
-             descriptor_key: "x-rl-endpoint-id"
+             header_name: "rl-endpoint-id"
+             descriptor_key: "rl-endpoint-id"
          - request_headers:
-             header_name: "x-rl-plan"
-             descriptor_key: "x-rl-plan"
+             header_name: "rl-throughput"
+             descriptor_key: "rl-throughput"
    ```
 
-3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml) file.
+3. Rate limiting is configured through the `.ratelimit.yaml` file.
 
-   _ratelimit.yaml_
+   _.ratelimit.yaml_
 
    ```yaml
    domain: rl
    descriptors:
-     - key: x-rl-endpoint-id
+     - key: rl-endpoint-id
        descriptors:
-         - key: x-rl-plan
+         - key: rl-throughput
            value: "PLAN_FREE"
            rate_limit:
              unit: second
@@ -456,14 +594,14 @@ Forking the PADS repo is the easiest way to get started, though any gRPC server 
 
 :::info
 
-The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `x-rl-endpoint-id` and `x-rl-plan` descriptors.
-
-_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `rl-endpoint-id` and `rl-throughput` descriptors.
+   
+_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `.ratelimit.yaml` file._
 
 :::
 
-### 6.2. Documentation and Examples
-### 6.2. Documentation and Examples
+
+### Documentation and Examples
 
 As Envoy's rate limiting configuration is fairly complex, this blog article provides a good overview of the configuration options:
 
