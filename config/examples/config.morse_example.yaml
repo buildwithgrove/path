@@ -35,8 +35,6 @@ morse_config:
 # All fields are optional but the id is required.
 services:
   "F00C":
-    # do not change service alias: it is used in the Morse E2E tests to identify the target service.
-    alias: "eth"
     request_timeout: "3000ms"
 
   # "0021" is an example of a service with no further configuration.

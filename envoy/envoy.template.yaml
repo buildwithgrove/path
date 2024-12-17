@@ -90,15 +90,20 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # Extracts the Service ID from the subdomain of the request's host field and attaches it 
-                  # to the request as the `target-service-id` header. 
-                  # This will require the subdomain to be specified in the request's host field; otherwise 
-                  # the request will be rejected. 
-                  # eg. host = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
-                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter
+                  # Extracts the Service ID from either the subdomain of the request's host field or the 
+                  # `target-service-id` header and attaches it to the request as the `target-service-id` header.
                   #
-                  # DEV_NOTE: If the Gateway Operator wishes to specify the Service ID using the 
-                  # `target-service-id` header, this filter will be removed from the configuration file.
+                  # This will require the service ID to be specified in the request's host field or a valid 
+                  # `target-service-id` header; otherwise, the request will be rejected.
+                  #
+                  # eg 1. host = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
+                  # eg 2. header = "target-service-id: anvil" will be transformed to Header: "target-service-id: anvil"
+                  #
+                  # IMPORTANT: The `.allowed-services.lua` file must contain all service IDs allowed by the PATH instance.
+                  # Only requests for services defined in `.allowed-services.lua` will be forwarded to PATH; 
+                  # otherwise, the request will be rejected.
+                  #
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter
                   - name: envoy.filters.http.lua
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
@@ -106,8 +111,33 @@ static_resources:
                         function envoy_on_request(handle)
                           local host = handle:headers():get(":authority")
                           local subdomain = string.match(host, "^([^.]+)")
-                          if subdomain ~= nil and subdomain ~= "" then
-                            handle:headers():add("target-service-id", subdomain)
+                          local target_service_id_header = handle:headers():get("target-service-id")
+                        
+                          -- Load the mapping of subdomains to service IDs from an external file
+                          local subdomain_to_service_id = dofile("/etc/envoy/.allowed-services.lua")
+                        
+                          -- Function to resolve service ID from a given key
+                          local function resolve_service_id(key)
+                            return subdomain_to_service_id[key]
+                          end
+                        
+                          -- Attempt to resolve service ID from subdomain
+                          local service_id = resolve_service_id(subdomain)
+                        
+                          -- If not found, attempt to resolve from "target-service-id" header
+                          if not service_id and target_service_id_header then
+                            service_id = resolve_service_id(target_service_id_header)
+                          end
+                        
+                          if service_id then
+                            -- Update the "target-service-id" header with the resolved service ID
+                            handle:headers():replace("target-service-id", service_id)
+                          else
+                            -- Reject the request if the service ID is not found in both subdomain and header
+                            handle:respond(
+                                {[":status"] = "404"},
+                                "Not Found: No valid service ID found for subdomain or 'target-service-id' header"
+                            )
                           end
                         end
                   # Removes the `jwt-user-id` header before forwarding the request to the external authorization filter.

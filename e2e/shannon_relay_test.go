@@ -28,7 +28,6 @@ func Test_ShannonRelay(t *testing.T) {
 	tests := []struct {
 		name      string
 		reqMethod string
-		serviceID string
 		relayID   string
 		body      string
 	}{
@@ -56,8 +55,8 @@ func Test_ShannonRelay(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://anvil.localdev.me:55006/v1/abcdef12"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", serviceID, localdevMe, pathContainerPort, reqPath)
+			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
@@ -65,6 +64,7 @@ func Test_ShannonRelay(t *testing.T) {
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("target-service-id", serviceID)
 
 			var success bool
 			var allErrors []error

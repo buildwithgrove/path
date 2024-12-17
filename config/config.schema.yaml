@@ -182,13 +182,10 @@ properties:
     additionalProperties: false
     patternProperties:
       "^[a-zA-Z0-9]+$":
-        description: "Configuration for a service, containing its unique service ID and string alias."
+        description: "Configuration for a service, containing its unique service ID and other optional configuration."
         type: object
         additionalProperties: false
         properties:
-          alias:
-            type: string
-            description: "Alias for the service."
           request_timeout:
             type: string
             description: "Timeout duration for service requests."

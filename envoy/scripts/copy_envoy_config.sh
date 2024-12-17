@@ -9,14 +9,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source file names
 ENVOY_TEMPLATE_FILE_NAME="envoy.template.yaml"
 ENVOY_RATELIMIT_TEMPLATE_FILE_NAME="ratelimit.template.yaml"
+ALLOWED_SERVICES_TEMPLATE_FILE_NAME="allowed-services.template.lua"
 
 # Destination file names
 ENVOY_FILE_NAME=".envoy.yaml"
 ENVOY_RATELIMIT_FILE_NAME=".ratelimit.yaml"
+ALLOWED_SERVICES_FILE_NAME=".allowed-services.lua"
 
 # Define the absolute paths
 ENVOY_CONFIG_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ENVOY_FILE_NAME")
 RATELIMIT_CONFIG_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ENVOY_RATELIMIT_FILE_NAME")
+ALLOWED_SERVICES_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ALLOWED_SERVICES_FILE_NAME")
 
 # Function to handle envoy.yaml creation
 create_envoy_config() {
@@ -54,14 +57,6 @@ create_envoy_config() {
             echo "🔑 JWT Authorization is disabled"
         fi
 
-        # Prompt the user for Service ID specification method
-        prompt_service_id_method
-
-        # If the user selects the 'target-service-id' header, remove the Lua filter
-        if [[ "$SERVICE_ID_METHOD" == "1" ]]; then
-            yq eval 'del(.static_resources.listeners[].filter_chains[].filters[].typed_config.http_filters[] | select(.name == "envoy.filters.http.lua"))' -i "$ENVOY_CONFIG_PATH"
-        fi
-
         echo "✅ $ENVOY_FILE_NAME has been created at $ENVOY_CONFIG_PATH"
     fi
 }
@@ -74,6 +69,17 @@ create_ratelimit_config() {
     else
         cp "$SCRIPT_DIR/../$ENVOY_RATELIMIT_TEMPLATE_FILE_NAME" "$RATELIMIT_CONFIG_PATH"
         echo "✅ $ENVOY_RATELIMIT_FILE_NAME has been created at $RATELIMIT_CONFIG_PATH"
+    fi
+}
+
+# Function to handle allowed-services.lua creation
+create_allowed_services_config() {
+    # Check if allowed-services.lua exists
+    if [ -f "$ALLOWED_SERVICES_PATH" ]; then
+        echo "💡 $ALLOWED_SERVICES_PATH already exists, not overwriting."
+    else
+        cp "$SCRIPT_DIR/../$ALLOWED_SERVICES_TEMPLATE_FILE_NAME" "$ALLOWED_SERVICES_PATH"
+        echo "✅ $ALLOWED_SERVICES_FILE_NAME has been created at $ALLOWED_SERVICES_PATH"
     fi
 }
 
@@ -94,27 +100,7 @@ prompt_oauth_usage() {
     done
 }
 
-# Function to prompt the user for Service ID specification method
-prompt_service_id_method() {
-    while true; do
-        echo "🔧 Configure Service ID Specification Method:"
-        echo "   1️⃣  As the 'target-service-id' header"
-        echo "       e.g., Header: 'target-service-id: anvil' -> Service ID: 'anvil'"
-        echo "   2️⃣  As the URL subdomain"
-        echo "       e.g., http://anvil.path.grove.city/v1 -> Service ID: 'anvil'"
-        read -p "👉 Select an option (1 or 2): " SERVICE_ID_METHOD
-        if [[ "$SERVICE_ID_METHOD" == "1" ]]; then
-            echo "ℹ️  Service ID will be determined from the 'target-service-id' header."
-            return 0
-        elif [[ "$SERVICE_ID_METHOD" == "2" ]]; then
-            echo "ℹ️  Service ID will be determined from the URL subdomain."
-            return 1
-        else
-            echo "❌ Invalid selection. Please enter '1' or '2'."
-        fi
-    done
-}
-
 # Execute the functions
 create_envoy_config
 create_ratelimit_config
+create_allowed_services_config

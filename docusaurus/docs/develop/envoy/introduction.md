@@ -26,6 +26,7 @@ title: Introduction
   - [API Key Authorization](#api-key-authorization)
   - [No Authorization](#no-authorization)
 - [Service ID Specification](#service-id-specification)
+  - [Allowed Services File](#allowed-services-file)
   - [Target Service ID Header](#target-service-id-header)
   - [URL Subdomain](#url-subdomain)
 - [External Authorization Server](#external-authorization-server)
@@ -54,10 +55,13 @@ title: Introduction
 
 2. Run `make init_envoy` to create all the required config files
 
-   - `envoy.yaml` is created with your auth provider's domain and audience.
-   - `auth_server/.env` is created with the host and port of the provided remote gRPC server.
-   - `gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
+   - `.envoy.yaml` is created with your auth provider's domain and audience.
+   - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
+     - ℹ️ _Please update `allowed-services.lua` with the service IDs allowed by your PATH instance._
+     - For more details, see the [Allowed Services Map](#allowed-services-map) section.
+   - `.gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
+     - For more details, see the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section.
 
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
 
@@ -373,18 +377,36 @@ There are two methods for specifying this header in the request:
 
 1. [Target Service ID Header](#target-service-id-header)
 2. [URL Subdomain](#url-subdomain)
-3. 
-:::tip
 
-The `make init_envoy` command will prompt you about which service ID specification method to use.
+### Allowed Services File
+
+
+The file `local/path/envoy/.allowed-services.lua` defines the mapping of service IDs to the service IDs used by the PATH service.
+
+All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
+
+:::info
+
+_Example `.allowed-services.lua` file:_
+
+```lua
+return {
+  F00C = "F00C", -- Ethereum Service (Authoritative ID)
+  eth = "F00C",  -- Ethereum Service (Alias)
+  anvil = "anvil",  -- Anvil Service (Authoritative ID)
+}
+```
 
 :::
 
 ### Target Service ID Header
 
-The `target-service-id` header is set directly on the request.
+The service ID (or a configured alias) may be specified in the `target-service-id` header.
+
+:::info
 
 _Example request:_
+
 ```bash
 curl http://localhost:3001/v1 \
   -X POST \
@@ -394,11 +416,15 @@ curl http://localhost:3001/v1 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
+:::
+
 ### URL Subdomain
 
-The `target-service-id` header is set by the `lua` HTTP filter in the Envoy configuration file from the subdomain of the request's host field.
+The service ID (or a configured alias) may be specified in the URL subdomain.
 
 eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
+
+:::info
 
 _Example request:_
 ```bash
@@ -408,6 +434,8 @@ curl http://anvil.localhost:3001/v1 \
   -H "endpoint-id: endpoint_3_no_auth" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
+
+:::
 
 ## External Authorization Server
 
@@ -500,8 +528,9 @@ If the Gateway Operator wishes to implement a custom remote gRPC server, see the
 
 #### Gateway Endpoint YAML File
 
-_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._
+_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._\
 
+:::info
 [An example `gateway-endpoints.yaml` file may be seen in the PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
 
 The yaml file below provides an example for a particular gateway operator where:
@@ -535,8 +564,11 @@ endpoints:
 ```
 
 :::tip
+
 The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
+
 :::
+
 
 #### Implementing a Custom Remote gRPC Server
 
@@ -548,7 +580,9 @@ The custom implementation must use the methods defined in the `GatewayEndpoints`
 - `StreamAuthDataUpdates`
 
 :::tip
+
 If you wish to implement your own custom database driver, forking the PADS repo is the easiest way to get started, though any gRPC server implementation that adheres to the `gateway_endpoint.proto` service definition should suffice.
+
 :::
 
 ## Rate Limiter

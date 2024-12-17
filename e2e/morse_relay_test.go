@@ -24,26 +24,25 @@ func Test_MorseRelay(t *testing.T) {
 	defer teardownFn()
 
 	tests := []struct {
-		name         string
-		reqMethod    string
-		serviceID    string
-		serviceAlias string
-		relayID      string
-		body         string
+		name      string
+		reqMethod string
+		serviceID string
+		relayID   string
+		body      string
 	}{
 		{
-			name:         "should successfully relay eth_chainId for eth (F00C)",
-			reqMethod:    http.MethodPost,
-			serviceAlias: "eth",
-			relayID:      "1201",
-			body:         `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
+			name:      "should successfully relay eth_chainId for eth (F00C)",
+			reqMethod: http.MethodPost,
+			serviceID: "F00C",
+			relayID:   "1201",
+			body:      `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
 		{
-			name:         "should successfully relay eth_blockNumber for eth (F00C)",
-			reqMethod:    http.MethodPost,
-			serviceAlias: "eth",
-			relayID:      "1202",
-			body:         `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
+			name:      "should successfully relay eth_blockNumber for eth (F00C)",
+			reqMethod: http.MethodPost,
+			serviceID: "F00C",
+			relayID:   "1202",
+			body:      `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
 
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
@@ -60,7 +59,7 @@ func Test_MorseRelay(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, reqPath)
+			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceID, localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
