@@ -138,11 +138,11 @@ Envoy acts as a gateway, handling incoming requests, performing auth checks, and
 
 ### Contents
 
-- **ratelimit.yaml**: Configuration for the rate limiting service.
+- **ratelimit.template.yaml**: A template configuration file for the rate limiting service.
 - **envoy.template.yaml**: A template configuration file for Envoy Proxy.
-  - Run `make copy_envoy_config` to create `envoy.yaml`.
-  - This will prompt you to enter your auth provider's domain and audience and will output the result to `envoy.yaml`.
-  - `envoy.yaml` is Git ignored as it contains sensitive information.
+  - Run `make copy_envoy_config` to create `.envoy.yaml`.
+  - This will prompt you to enter your auth provider's domain and audience and will output the result to `.envoy.yaml`.
+  - `.envoy.yaml` is Git ignored as it contains sensitive information.
 - **gateway-endpoints.example.yaml**: An example file containing data on which endpoints are authorized to use the PATH service.
   - ℹ️ **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
   - Run `make copy_envoy_gateway_endpoints` to create `gateway-endpoints.yaml`.
@@ -505,7 +505,7 @@ If you wish to implement your own custom database driver, forking the PADS repo 
 
 2. Envoy Proxy is configured to forward the `rl-endpoint-id` and `rl-throughput` headers to the rate limiter service as descriptors.
 
-   _envoy.yaml_
+   _.envoy.yaml_
 
    ```yaml
    rate_limits:
@@ -518,9 +518,9 @@ If you wish to implement your own custom database driver, forking the PADS repo 
              descriptor_key: "rl-throughput"
    ```
 
-3. Rate limiting is configured through the [`/envoy/ratelimit.yaml`](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml) file.
+3. Rate limiting is configured through the `.ratelimit.yaml` file.
 
-   _ratelimit.yaml_
+   _.ratelimit.yaml_
 
    ```yaml
    domain: rl
@@ -538,7 +538,7 @@ If you wish to implement your own custom database driver, forking the PADS repo 
 
 The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `rl-endpoint-id` and `rl-throughput` descriptors.
    
-_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `ratelimit.yaml` file._
+_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `.ratelimit.yaml` file._
 
 :::
 
