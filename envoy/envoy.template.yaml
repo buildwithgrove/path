@@ -110,16 +110,19 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
                       inline_code: |
                         function envoy_on_request(handle)
+                          -- Check if the subdomain_to_service_id is already loaded
+                          if not _G.subdomain_to_service_id then
+                            -- Load the mapping of subdomains to service IDs from an external file
+                            _G.subdomain_to_service_id = dofile("/etc/envoy/.allowed-services.lua")
+                          end
+                        
                           local host = handle:headers():get(":authority")
                           local subdomain = string.match(host, "^([^.]+)")
                           local target_service_id_header = handle:headers():get("target-service-id")
                         
-                          -- Load the mapping of subdomains to service IDs from an external file
-                          local subdomain_to_service_id = dofile("/etc/envoy/.allowed-services.lua")
-                        
                           -- Function to resolve service ID from a given key
                           local function resolve_service_id(key)
-                            return subdomain_to_service_id[key]
+                            return _G.subdomain_to_service_id[key]
                           end
                         
                           -- Attempt to resolve service ID from subdomain
