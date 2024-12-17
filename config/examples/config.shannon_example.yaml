@@ -38,7 +38,7 @@ shannon_config:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
 services:
-  # "anvil" is a test service alias used in the Shannon E2E tests.
+  # "anvil" is a test service ID used in the Shannon E2E tests.
   # If this config is used for Shannon E2E tests, do not remove or change this service.
   # This is used for testing a dedicated Ethereum endpoint that is not of any public network.
   "anvil": {}

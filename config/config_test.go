@@ -48,9 +48,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					"F00C": {
 						RequestTimeout: 3_000 * time.Millisecond,
 					},
-					"0021": {
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
 				},
 				Router: RouterConfig{
 					Port:               defaultPort,
