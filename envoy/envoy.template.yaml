@@ -93,11 +93,12 @@ static_resources:
                   # Extracts the Service ID from either the subdomain of the request's host field or the 
                   # `target-service-id` header and attaches it to the request as the `target-service-id` header.
                   #
-                  # This will require the service ID to be specified in the request's host field or a valid 
+                  # This will require the service ID to be specified in the request's subdomain or a valid 
                   # `target-service-id` header; otherwise, the request will be rejected.
                   #
-                  # eg 1. host = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
+                  # eg 1. subdomain = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
                   # eg 2. header = "target-service-id: anvil" will be transformed to Header: "target-service-id: anvil"
+                  # eg 3. header (aliased) = "target-service-id: eth" will be transformed to Header: "target-service-id: F00C"
                   #
                   # IMPORTANT: The `.allowed-services.lua` file must contain all service IDs allowed by the PATH instance.
                   # Only requests for services defined in `.allowed-services.lua` will be forwarded to PATH; 
