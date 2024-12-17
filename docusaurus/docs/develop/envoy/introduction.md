@@ -21,7 +21,6 @@ title: Introduction
 - [Specifying the Gateway Endpoint ID](#specifying-the-gateway-endpoint-id)
   - [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
   - [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
-  - [Example cURL Requests](#example-curl-requests)
 - [Gateway Endpoint Authorization](#gateway-endpoint-authorization)
   - [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
   - [API Key Authorization](#api-key-authorization)
@@ -249,7 +248,7 @@ https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 
 ```
-curl http://anvil.localhost:3001/v1/endpoint_3 \
+curl http://anvil.localhost:3001/v1/endpoint_3_no_auth \
   -X POST \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -257,43 +256,40 @@ curl http://anvil.localhost:3001/v1/endpoint_3 \
 
 ### Header Endpoint ID Extractor
 
-When using the `header` extractor, the Gateway Endpoint ID must be specified in the `x-endpoint-id` header.
+When using the `header` extractor, the Gateway Endpoint ID must be specified in the `endpoint-id` header.
 
 ```
 -H "endpoint-id: <GATEWAY_ENDPOINT_ID>"
 ```
 
-For example, if the `x-endpoint-id` header is set to `a1b2c3d4`:
+For example, if the `endpoint-id` header is set to `a1b2c3d4`:
 
 ```
 curl http://anvil.localhost:3001/v1 \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "endpoint-id: endpoint_3" \
+  -H "endpoint-id: endpoint_3_no_auth" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 :::tip
-Make targets are provided to send test requests with both the `url_path` and `header` extractors.
 
-```
-make test_request_with_url_path
-make test_request_with_header
+A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
+
+_eg._
+```bash
+## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
+make test_request_no_auth_url_path
+
+## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
+make test_request_no_auth_header
 ```
 
 :::info
 
-`endpoint_3` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
+`endpoint_3_no_auth` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
 
-See the [Gateway Endpoint YAML File](#522-gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
-
-:::
-
-### Example cURL Requests
-
-:::tip
-
-A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
+See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
 
 :::
 
@@ -456,20 +452,20 @@ _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_F
 
 The yaml file below provides an example for a particular gateway operator where:
 
-- `endpoint_1` is authorized with a static API Key
-- `endpoint_2` is authorized using an auth-provider issued JWT for two users
-- `endpoint_3` requires no authorization and has a rate limit set
+- `endpoint_1_static_key` is authorized with a static API Key
+- `endpoint_2_jwt` is authorized using an auth-provider issued JWT for two users
+- `endpoint_3_no_auth` requires no authorization and has a rate limit set
 
 ```yaml
 endpoints:
   # 1. Example of a gateway endpoint using API Key Authorization
-  endpoint_1:
+  endpoint_1_static_key:
     auth:
       auth_type: "AUTH_TYPE_API_KEY"
       api_key: "api_key_1"
 
   # 2. Example of a gateway endpoint using JWT Authorization
-  endpoint_2:
+  endpoint_2_jwt:
     auth:
       auth_type: "AUTH_TYPE_JWT"
       jwt_authorized_users:
@@ -477,7 +473,7 @@ endpoints:
         - "auth0|user_2"
 
   # 3. Example of a gateway endpoint with no authorization and rate limiting set
-  endpoint_3:
+  endpoint_3_no_auth:
     rate_limiting:
       throughput_limit: 30
       capacity_limit: 100000

@@ -5,7 +5,7 @@
 # This Makefile provides examples of the various ways to make requests to PATH:
 # - Auth: static API key or no auth (JWT requires a non-expired JWT token, which cannot be statically set)
 # - Service ID: passed as the subdomain or in the 'target-service-id' header
-# - Endpoint ID: passed in the URL path or in the 'x-endpoint-id' header
+# - Endpoint ID: passed in the URL path or in the 'endpoint-id' header
 
 # For all of the below requests:
 # - The full PATH stack including Envoy Proxy must be running
@@ -19,19 +19,19 @@ test_request_no_auth_url_path: ## Test request with no auth, endpoint ID passed 
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request_no_auth_header
-test_request_no_auth_header: ## Test request with no auth, endpoint ID passed in the x-endpoint-id header and the service ID passed as the subdomain
+test_request_no_auth_header: ## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
 	curl http://anvil.localhost:3001/v1 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		-H "x-endpoint-id: endpoint_3_no_auth" \
+		-H "endpoint-id: endpoint_3_no_auth" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 		
 .PHONY: test_request_static_key_auth
-test_request_static_key_auth: ## Test request with static key auth, endpoint ID passed in the x-endpoint-id header and the service ID passed as the subdomain
+test_request_static_key_auth: ## Test request with static key auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
 	curl http://anvil.localhost:3001/v1 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		-H "x-endpoint-id: endpoint_1_static_key" \
+		-H "endpoint-id: endpoint_1_static_key" \
 		-H "authorization: api_key_1" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
