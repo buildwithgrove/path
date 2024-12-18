@@ -12,10 +12,9 @@ type ServiceQoSType string
 
 const (
 	// TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
-	ServiceIDEVM    ServiceQoSType = "evm"        // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
-	ServiceIDSolana ServiceQoSType = "solana"     // ServiceIDSolana represents the Solana blockchain service type.
-	ServiceIDPOKT   ServiceQoSType = "pokt"       // ServiceIDPOKT represents the POKT blockchain service type.
-	ServiceIDE2E    ServiceQoSType = "gatewaye2e" // ServiceIDE2E represents the service created for running PATH gateway's E2E tests.
+	ServiceIDEVM    ServiceQoSType = "evm"    // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
+	ServiceIDSolana ServiceQoSType = "solana" // ServiceIDSolana represents the Solana blockchain service type.
+	ServiceIDPOKT   ServiceQoSType = "pokt"   // ServiceIDPOKT represents the POKT blockchain service type.
 )
 
 // The ServiceQoSTypes map associates each supported service ID with a specific
@@ -56,9 +55,6 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 var testQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Shannon Service IDs
 	"anvil": ServiceIDEVM, // ETH Local (development/testing)
-
-	// Gateway E2E service ID is used only for running PATH's Morse and Shannon E2E tests.
-	"gatewaye2e": ServiceIDE2E,
 }
 
 // TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
