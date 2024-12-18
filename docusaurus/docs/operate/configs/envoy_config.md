@@ -36,7 +36,7 @@ There are a total of four files used to configure Envoy Proxy in PATH:
 
 4. `.gateway-endpoints.yaml`
 
-    The example `.gateway-endpoints.yaml` file is located in the [PADS repo](https://github.com/buildwithgrove/path-auth-data-service/tree/main/envoy/gateway-endpoints.yaml).
+    The example `.gateway-endpoints.yaml` file is located in the [PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
 
 :::
 
