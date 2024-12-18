@@ -19,6 +19,7 @@ go.work.sum
 
 # Config
 .*.yaml
+.*.lua
 .config.yaml
 .config.*.yaml
 !.config.example.yaml
