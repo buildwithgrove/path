@@ -14,10 +14,15 @@ title: Introduction
 - [Quickstart](#quickstart)
 - [Overview](#overview)
   - [Components](#components)
+  - [Architecture Diagram](#architecture-diagram)
 - [Envoy Proxy](#envoy-proxy)
-  - [Contents](#contents)
+  - [Envoy Configuration](#envoy-configuration)
   - [Envoy HTTP Filters](#envoy-http-filters)
   - [Request Lifecycle](#request-lifecycle)
+- [Service ID Specification](#service-id-specification)
+  - [Allowed Services File](#allowed-services-file)
+  - [Target Service ID Header](#target-service-id-header)
+  - [URL Subdomain](#url-subdomain)
 - [Specifying the Gateway Endpoint ID](#specifying-the-gateway-endpoint-id)
   - [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
   - [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
@@ -25,10 +30,6 @@ title: Introduction
   - [JSON Web Token (JWT) Authorization](#json-web-token-jwt-authorization)
   - [API Key Authorization](#api-key-authorization)
   - [No Authorization](#no-authorization)
-- [Service ID Specification](#service-id-specification)
-  - [Allowed Services File](#allowed-services-file)
-  - [Target Service ID Header](#target-service-id-header)
-  - [URL Subdomain](#url-subdomain)
 - [External Authorization Server](#external-authorization-server)
   - [External Auth Service Sequence Diagram](#external-auth-service-sequence-diagram)
   - [External Auth Service Environment Variables](#external-auth-service-environment-variables)
@@ -44,7 +45,7 @@ title: Introduction
 
 ## Quickstart
 
-<!-- TODO_MVP(@commoddity): Prepare a cheatsheet version of this README and add a separate docusaurus page for it. -->
+<!-- TODO_MVP(@commoddity): Replace the quickstart section with a link to the cheatsheet. -->
 
 1. Install all prerequisites:
 
@@ -55,10 +56,11 @@ title: Introduction
 
 2. Run `make init_envoy` to create all the required config files
 
-   - `.envoy.yaml` is created with your auth provider's domain and audience.
    - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
      - ℹ️ _Please update `allowed-services.lua` with the service IDs allowed by your PATH instance._
      - For more details, see the [Allowed Services Map](#allowed-services-map) section.
+   - `.envoy.yaml` is created with your auth provider's domain and audience.
+   - `.ratelimit.yaml` is created with the rate limiting configuration for the PATH instance.
    - `.gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
      - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
      - For more details, see the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section.
@@ -89,6 +91,9 @@ A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provi
 - **Remote gRPC Server**: A server that provides the external authorization server with data on which endpoints are authorized to use the PATH service.
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
   - _See [PATH Auth Data Server](#path-auth-data-server) for more information._
+
+
+### Architecture Diagram
 
 ```mermaid
 graph TD
@@ -141,31 +146,23 @@ PATH uses Envoy Proxy to handle authorization and rate limiting.
 
 The `/envoy` directory houses the configuration files and settings for Envoy Proxy.
 
-Envoy acts as a gateway, handling incoming requests, performing auth checks, and routing authorized requests to the PATH service.
+Envoy acts as a gateway, handling incoming requests, determining allowed services, performing auth checks, and routing authorized requests to the PATH service.
 
-### Contents
+### Envoy Configuration
 
-- **ratelimit.template.yaml**: A template configuration file for the rate limiting service.
-- **envoy.template.yaml**: A template configuration file for Envoy Proxy.
-  - Run `make copy_envoy_config` to create `.envoy.yaml`.
-  - This will prompt you to enter your auth provider's domain and audience and will output the result to `.envoy.yaml`.
-  - `.envoy.yaml` is Git ignored as it contains sensitive information.
-- **gateway-endpoints.example.yaml**: An example file containing data on which endpoints are authorized to use the PATH service.
-  - ℹ️ **ONLY REQUIRED** if loading `GatewayEndpoint` data from a YAML file and used to load data in the `external authorization server` from the `remote gRPC server`.
-  - Run `make copy_envoy_gateway_endpoints` to create `gateway-endpoints.yaml`.
-  - `gateway-endpoints.yaml` is Git ignored as it may contain sensitive information.
+[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../../operate/configs/envoy_config.md)
 
 ### Envoy HTTP Filters
 
 The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
 
+- **[lua](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
 - **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `jwt-user-id` header set before it is forwarded upstream.
+  - `header_mutation` is used only if the PATH instance has JWT auth enabled.
 - **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
+  - `jwt_authn` is used only if the PATH instance has JWT auth enabled.
 - **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
 - **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
-- **[lua (optional)](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
-  - Use only if you wish to specify the Service ID using the subdomain of the request's host field, 
-  - eg. `host = "eth.path.grove.city" -> Header: "target-service-id: eth"`.
 
 ### Request Lifecycle
 
@@ -216,6 +213,76 @@ sequenceDiagram
     Envoy->>+Service: 11. Forward Request
     Service->>-Client: 12. Return Response
 ```
+
+## Service ID Specification
+
+The `target-service-id` header is used to specify the Service ID in the request.
+
+There are two methods for specifying this header in the request:
+
+1. [Target Service ID Header](#target-service-id-header)
+2. [URL Subdomain](#url-subdomain)
+
+### Allowed Services File
+
+
+The file `local/path/envoy/.allowed-services.lua` defines the mapping of service IDs to the service IDs used by the PATH service.
+
+All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
+
+:::info
+
+_`.allowed-services.lua` format:_
+```lua
+return {
+  -- 1. Shannon Service IDs
+  ["anvil"] = "anvil", -- Anvil (Authoritative ID)
+
+  -- 2. Morse Service IDs
+  ["F000"] = "F000",   -- Pocket (Authoritative ID)
+  ["pocket"] = "F000", -- Pocket (Alias)
+}
+```
+
+:::
+
+### Target Service ID Header
+
+The service ID (or a configured alias) may be specified in the `target-service-id` header.
+
+:::info
+
+_Example request:_
+
+```bash
+curl http://localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "target-service-id: anvil" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+:::
+
+### URL Subdomain
+
+The service ID (or a configured alias) may be specified in the URL subdomain.
+
+eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
+
+:::info
+
+_Example request:_
+```bash
+curl http://anvil.localhost:3001/v1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "endpoint-id: endpoint_3_no_auth" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+:::
 
 ## Specifying the Gateway Endpoint ID
 
@@ -368,74 +435,6 @@ The `Go External Authorization Server` will use the `authorization` header to ma
 For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service.
 
 All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Authorization Server`.
-
-## Service ID Specification
-
-The `target-service-id` header is used to specify the Service ID in the request.
-
-There are two methods for specifying this header in the request:
-
-1. [Target Service ID Header](#target-service-id-header)
-2. [URL Subdomain](#url-subdomain)
-
-### Allowed Services File
-
-
-The file `local/path/envoy/.allowed-services.lua` defines the mapping of service IDs to the service IDs used by the PATH service.
-
-All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
-
-:::info
-
-_Example `.allowed-services.lua` file:_
-
-```lua
-return {
-  F00C = "F00C", -- Ethereum Service (Authoritative ID)
-  eth = "F00C",  -- Ethereum Service (Alias)
-  anvil = "anvil",  -- Anvil Service (Authoritative ID)
-}
-```
-
-:::
-
-### Target Service ID Header
-
-The service ID (or a configured alias) may be specified in the `target-service-id` header.
-
-:::info
-
-_Example request:_
-
-```bash
-curl http://localhost:3001/v1 \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "target-service-id: anvil" \
-  -H "endpoint-id: endpoint_3_no_auth" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-:::
-
-### URL Subdomain
-
-The service ID (or a configured alias) may be specified in the URL subdomain.
-
-eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
-
-:::info
-
-_Example request:_
-```bash
-curl http://anvil.localhost:3001/v1 \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "endpoint-id: endpoint_3_no_auth" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-:::
 
 ## External Authorization Server
 

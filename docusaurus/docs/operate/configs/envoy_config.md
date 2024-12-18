@@ -3,7 +3,14 @@ title: Envoy Proxy config
 sidebar_position: 4
 ---
 
-# Envoy Proxy config <!-- omit in toc -->
+<div align="center">
+  <a href="https://www.envoyproxy.io/docs/envoy/latest/">
+    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="275"/>
+  <p><b>Envoy Proxy Docs</b></p>
+  </a>
+</div>
+
+# Envoy Proxy Configuration <!-- omit in toc -->
 
 This document describes the configuration options for PATH's Envoy Proxy.
 
@@ -59,17 +66,23 @@ This will generate the following files in the `local/path/envoy` directory:
 - `.ratelimit.yaml`
 - `.gateway-endpoints.yaml`
 
-:::warning
+**All of these files are git ignored from the PATH repo as they are specific to each PATH instance and may contain sensitive information.**
 
-All of these files are git ignored from the PATH repo as they are specific to each PATH instance and may contain sensitive information.
-
-:::
 
 ## Allowed Services - `.allowed-services.lua`
+
 
 The `.allowed-services.lua` file is used to define the allowed services for the Envoy Proxy.
 
 Once created in `local/path/envoy`, the `.allowed-services.lua` file is mounted as a file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
+
+:::warning
+
+All service IDs allowed by the PATH instance must be defined in the `.allowed-services.lua` file.
+
+**Requests for services not defined in this file will be rejected.**
+
+:::
 
 ### File Format
 
@@ -84,25 +97,22 @@ return {
   ["pocket"] = "F000", -- Pocket (Alias)
 }
 ```
-
-The key may either be the **authoritative service ID** or an **alias**. The value must be the **authoritative service ID**.
-
 - [`.allowed-services.lua` template file](https://github.com/buildwithgrove/path/tree/main/envoy/allowed-services.template.lua).
-
-:::warning
-
-All service IDs allowed by the PATH instance must be defined in the `.allowed-services.lua` file.
-
-**Requests for services not defined in this file will be rejected.**
-
-:::
 
 ### Terminology
 
 - **Authoritative ID**: The service ID that that PATH uses to identify a service.
 - **Alias**: A string that resolves to a service ID, which is useful for creating human-readable subdomains for services.
+  
+The key may either be the **authoritative service ID** or an **alias**. The value must be the **authoritative service ID**.
 
-  **Regardless of the method used to pass the service ID or alias to Envoy Proxy, the Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.**
+:::info
+
+The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
+
+For more information, see the [ Service ID Specification section of the Envoy Proxy documentation](../../develop/envoy/introduction.md#service-id-specification).
+
+:::
 
 ## Envoy Proxy Configuration - `.envoy.yaml`
 
