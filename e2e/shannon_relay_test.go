@@ -30,7 +30,6 @@ func Test_ShannonRelay(t *testing.T) {
 		name      string
 		reqMethod string
 		serviceID protocol.ServiceID
-		reqPath   string
 		relayID   string
 		body      string
 	}{
@@ -40,7 +39,6 @@ func Test_ShannonRelay(t *testing.T) {
 			name:      "should successfully relay eth_blockNumber for anvil",
 			reqMethod: http.MethodPost,
 			serviceID: "anvil",
-			reqPath:   "/v1/abcdef12",
 			relayID:   "1001",
 			body:      `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
@@ -48,19 +46,22 @@ func Test_ShannonRelay(t *testing.T) {
 			name:      "should successfully relay eth_chainId for anvil",
 			reqMethod: http.MethodPost,
 			serviceID: "anvil",
-			reqPath:   "/v1/abcdef12",
 			relayID:   "1002",
 			body:      `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
+	// Request path is arbitrary, as it is not current used by PATH.
+	// It is here only to ensure all paths following the `/v1` segment are valid.
+	reqPath := "/v1/abcdef12"
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
-			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, test.reqPath)
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 

@@ -28,7 +28,6 @@ func Test_MorseRelay(t *testing.T) {
 		name      string
 		reqMethod string
 		serviceID protocol.ServiceID
-		reqPath   string
 		relayID   string
 		body      string
 	}{
@@ -36,7 +35,6 @@ func Test_MorseRelay(t *testing.T) {
 			name:      "should successfully relay eth_chainId for eth (F00C)",
 			reqMethod: http.MethodPost,
 			serviceID: "F00C",
-			reqPath:   "/v1/abcdef12",
 			relayID:   "1201",
 			body:      `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
@@ -44,7 +42,6 @@ func Test_MorseRelay(t *testing.T) {
 			name:      "should successfully relay eth_blockNumber for eth (F00C)",
 			reqMethod: http.MethodPost,
 			serviceID: "F00C",
-			reqPath:   "/v1/abcdef12",
 			relayID:   "1202",
 			body:      `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
@@ -57,12 +54,14 @@ func Test_MorseRelay(t *testing.T) {
 		//      4. Invalid generic request
 	}
 
+	reqPath := "/v1/abcdef12"
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
 			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
-			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, test.reqPath)
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
