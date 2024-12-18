@@ -34,14 +34,14 @@ func Test_MorseRelay(t *testing.T) {
 		{
 			name:         "should successfully relay eth_chainId for eth (F00C)",
 			reqMethod:    http.MethodPost,
-			serviceAlias: "eth",
+			serviceAlias: "F00C",
 			relayID:      "1201",
 			body:         `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
 		{
 			name:         "should successfully relay eth_blockNumber for eth (F00C)",
 			reqMethod:    http.MethodPost,
-			serviceAlias: "eth",
+			serviceAlias: "F00C",
 			relayID:      "1202",
 			body:         `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
@@ -59,7 +59,7 @@ func Test_MorseRelay(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
+			// eg. fullURL = "http://F00C.localdev.me:55006/v1/abcdef12"
 			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
