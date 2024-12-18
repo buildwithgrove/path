@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -26,7 +29,8 @@ func Test_MorseRelay(t *testing.T) {
 	tests := []struct {
 		name      string
 		reqMethod string
-		serviceID string
+		serviceID protocol.ServiceID
+		reqPath   string
 		relayID   string
 		body      string
 	}{
@@ -34,6 +38,7 @@ func Test_MorseRelay(t *testing.T) {
 			name:      "should successfully relay eth_chainId for eth (F00C)",
 			reqMethod: http.MethodPost,
 			serviceID: "F00C",
+			reqPath:   "/v1/abcdef12",
 			relayID:   "1201",
 			body:      `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
@@ -41,6 +46,7 @@ func Test_MorseRelay(t *testing.T) {
 			name:      "should successfully relay eth_blockNumber for eth (F00C)",
 			reqMethod: http.MethodPost,
 			serviceID: "F00C",
+			reqPath:   "/v1/abcdef12",
 			relayID:   "1202",
 			body:      `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
@@ -53,13 +59,12 @@ func Test_MorseRelay(t *testing.T) {
 		//      4. Invalid generic request
 	}
 
-	reqPath := "/v1/abcdef12"
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
+			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, test.reqPath)
 
 			client := &http.Client{}
 
@@ -67,7 +72,9 @@ func Test_MorseRelay(t *testing.T) {
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("target-service-id", test.serviceID)
+
+			// Assign the target service ID to the request header.
+			req.Header.Set(request.HTTPHeaderTargetServiceID, string(test.serviceID))
 
 			var success bool
 			var allErrors []error

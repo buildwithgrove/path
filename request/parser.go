@@ -26,12 +26,10 @@ import (
 // https://www.rfc-editor.org/rfc/rfc6648#section-3
 const HTTPHeaderTargetServiceID = "target-service-id"
 
-type (
-	Parser struct {
-		QoSServices map[protocol.ServiceID]gateway.QoSService
-		Logger      polylog.Logger
-	}
-)
+type Parser struct {
+	QoSServices map[protocol.ServiceID]gateway.QoSService
+	Logger      polylog.Logger
+}
 
 func NewParser(enabledServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
 	return &Parser{
@@ -43,7 +41,6 @@ func NewParser(enabledServices map[protocol.ServiceID]gateway.QoSService, logger
 /* --------------------------------- HTTP Request Parsing -------------------------------- */
 
 func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol.ServiceID, gateway.QoSService, error) {
-
 	serviceID, err := p.getServiceID(req)
 	if err != nil {
 		return "", nil, err
@@ -66,10 +63,8 @@ func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HT
 
 // getServiceID extracts the target service ID from the HTTP request's headers.
 func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
-	// Prefer the custom HTTP Header for specification of the Target Service ID
 	if serviceID := req.Header.Get(HTTPHeaderTargetServiceID); serviceID != "" {
 		return protocol.ServiceID(serviceID), nil
 	}
-
 	return "", errNoServiceIDProvided
 }
