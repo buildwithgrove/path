@@ -78,24 +78,26 @@ test_auth_server: ## Run the auth server tests
 	(cd envoy/auth_server && go test ./... -count=1)
 
 .PHONY: test_e2e_shannon_relay_iterate
-test_e2e_shannon_relay_iterate: ## Instructions on how to iterate locally for an E2E shannon relay
+test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
 	@echo "go build -o bin/path ./cmd"
 	@echo "# Update ./bin/config/.config.yaml"
 	@echo "./bin/path"
 	@echo "curl http://anvil.localhost:3000/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
 
 .PHONY: test_e2e_shannon_relay
-test_e2e_shannon_relay: ## Run an E2E shannon relay test (iterate)
-	@echo "README: If you are iterating on E2E tests, stop this and run the following for instructions instead: 'make test_e2e_shannon_relay_iterate'."
+test_e2e_shannon_relay: shannon_e2e_config_warning ## Run an E2E Shannon relay test
+	@echo "###############################################################################################################################################################"
+	@echo "### README: If you are intending to iterate on E2E tests, stop this and run the following for instructions instead: 'make test_e2e_shannon_relay_iterate'. ###"
+	@echo "###############################################################################################################################################################"
 	go test -v ./e2e/... -tags=e2e -count=1 -run Test_ShannonRelay
 
 .PHONY: test_e2e_morse_relay
-test_e2e_morse_relay: ## Run an E2E Morse relay test
+test_e2e_morse_relay: morse_e2e_config_warning ## Run an E2E Morse relay test
 	go test -v ./e2e/... -tags=e2e -count=1 -run Test_MorseRelay
 
-################################
-### Copy Config Make Targets ###
-################################
+###################################
+### Shannon Config Make Targets ###
+###################################
 
 # TODO_MVP(@commoddity): Consolidate the copy_*_config targets into fewer targets once
 # the config files are consolidated as well.
@@ -115,6 +117,15 @@ copy_shannon_config: ## copies the example shannon configuration yaml file to .c
 		echo "##################################################################"; \
 		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
 		echo "##################################################################"; \
+	fi
+
+.PHONY: shannon_e2e_config_warning
+shannon_e2e_config_warning: ## Prints a warning if the shannon E2E config is not populated
+	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
+		echo "#########################################################################"; \
+		echo "### Shannon E2E config not found, run: 'make copy_shannon_e2e_config' ###"; \
+		echo "#########################################################################"; \
+		exit; \
 	fi
 
 .PHONY: copy_shannon_e2e_config
@@ -148,6 +159,10 @@ config_shannon_localnet: ## Create a localnet config file to serve as a Shannon 
 		echo "#########################################################################"; \
 	fi
 
+###################################
+### Morse Config Make Targets ###
+###################################
+
 .PHONY: copy_morse_config
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
@@ -162,6 +177,15 @@ copy_morse_config: ## copies the example morse configuration yaml file to .confi
 		echo "##################################################################"; \
 		echo "### ./bin/config/.config.yaml already exists, not overwriting. ###"; \
 		echo "##################################################################"; \
+	fi
+
+.PHONY: morse_e2e_config_warning
+morse_e2e_config_warning: ## Prints a warning if the shannon E2E config is not populated
+	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
+		echo "#####################################################################"; \
+		echo "### Morse E2E config not found, run: 'make copy_morse_e2e_config' ###"; \
+		echo "#####################################################################"; \
+		exit; \
 	fi
 
 .PHONY: copy_morse_e2e_config
