@@ -235,6 +235,11 @@ static_resources:
                           route:
                             cluster: path_gateway_service
                           typed_per_filter_config:
+                            # Disable Lua filter for health check requests.
+                            envoy.filters.http.lua:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
+                              disabled: true
+                            # Disable ext_authz filter for health check requests.
                             envoy.filters.http.ext_authz:
                               "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                               disabled: true
