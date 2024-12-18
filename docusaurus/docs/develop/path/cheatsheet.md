@@ -3,15 +3,17 @@ sidebar_position: 2
 title: Cheat Sheet
 ---
 
-# PATH Cheat Sheet <!-- omit in toc -->
+<div align="center">
+<h1>PATH<br/>Quickstart Cheat Sheet</h1>
+<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
+</div>
 
-This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
-for setting up and running a local PATH instance in Tilt.
+#### This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers) for setting up and running a local PATH instance in Tilt. <!-- omit in toc -->
 
 :::warning
 
 1. These instructions are intended to run on a Linux machine.
-2. These instructionsobfuscate a lot of the underlying details to get you up and running quickly.
+2. These instructions obfuscate a lot of the underlying details to get you up and running quickly.
 
 TODO_TECHDEBT(@commoddity): Adapt the instructions to be macOS friendly.
 
@@ -20,6 +22,8 @@ TODO_TECHDEBT(@commoddity): Adapt the instructions to be macOS friendly.
 :::info
 
 The following instructions are specific to setting up a `PATH` instance on `Shannon`.
+
+TODO_TECHDEBT(@commoddity): Adapt the instructions to include a Morse example.
 
 :::
 
@@ -127,8 +131,9 @@ TODO(@olshansk): Pre-prepare a handful of apps/gateways to get users started EVE
 
 ### 2.2 Populate the `Envoy Proxy` config files
 
-Run the following command to generate the 3 Envoy config files in `local/path/envoy`.
+Run the following command to generate the 4 Envoy config files in `local/path/envoy`.
 
+- `.allowed-services.lua`
 - `.envoy.yaml`
 - `.ratelimit.yaml`
 - `.gateway-endpoints.yaml`
@@ -190,7 +195,7 @@ v0.33.21, built 2024-11-08
 
 You can visit http://localhost:10350 in your browser to view the Tilt dashboard, which allows you to view the log output for all running containers.
 
-:::caution
+:::info
 
 The `PATH Gateway` stack may take a minute or more to initialize the first time you run it as it must download all required Docker images.
 
@@ -214,19 +219,19 @@ Check that the `PATH Gateway` is serving relays by running the following command
 
 ### 4.1 **Endpoint with Static Key Authorization**
 ```bash
-curl http://eth.localhost:3001/v1/endpoint_1_static_key \
+curl http://localhost:3001/v1/endpoint_1_static_key \
     -X POST \
-    -H "Content-Type: application/json" \
-    -H "Authorization: api_key_1" \
+    -H "authorization: api_key_1" \
+    -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 ### 4.2 **Endpoint with No Authorization**
 
 ```bash
-curl http://eth.localhost:3001/v1/endpoint_3_no_auth \
+curl http://localhost:3001/v1/endpoint_3_no_auth \
     -X POST \
-    -H "Content-Type: application/json" \
+    -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 

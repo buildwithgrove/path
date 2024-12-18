@@ -69,8 +69,9 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [Tilt](https://docs.tilt.dev/install.html)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 - [Helm](https://helm.sh/docs/intro/install/)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -97,29 +98,7 @@ docker pull ghcr.io/buildwithgrove/path
 
 ### Shannon Quickstart
 
-1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
-
-2. **Populate Config File:** Run `make config_shannon_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
-
-   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key & address and your Application's address.
-
-   :::tip
-
-   If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
-   to get you most of the way there. Make sure to review the `gateway_private_key` field.
-
-   :::
-
-1. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
-
-2. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
-
-   ```bash
-   curl http://eth.localhost:3000/v1 \
-       -X POST \
-       -H "Content-Type: application/json" \
-       -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-   ```
+[See the PATH Quickstart Cheat Sheet for instructions on how to get started with a local PATH instance on Shannon.](../path/cheatsheet.md)
 
 ### Morse Quickstart
 
