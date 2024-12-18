@@ -128,6 +128,7 @@ shannon_e2e_config_warning: ## Prints a warning if the shannon E2E config is not
 		exit; \
 	fi
 
+# If you are a Grove employee, search for this UUID in 1Password: 47k7kidj3y6nd3cghlakg76nlm
 .PHONY: copy_shannon_e2e_config
 copy_shannon_e2e_config: ## copies the example Shannon test configuration yaml file to .gitignored .shannon.config.yaml file
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
@@ -188,6 +189,7 @@ morse_e2e_config_warning: ## Prints a warning if the shannon E2E config is not p
 		exit; \
 	fi
 
+# If you are a Grove employee, search for this UUID in 1Password: un76qmz6xunx43icttjmagzlri
 .PHONY: copy_morse_e2e_config
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
