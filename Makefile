@@ -67,7 +67,7 @@ path_down: localnet_down ## Tears down local Tilt development environment which 
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_auth_plugin test_e2e_shannon_relay test_e2e_morse_relay
+test_all: test_unit test_auth_server test_e2e_shannon_relay test_e2e_morse_relay
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
