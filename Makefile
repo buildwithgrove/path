@@ -260,3 +260,4 @@ docusaurus_start: ## Start docusaurus server
 ###############################
 
 include ./makefiles/localnet.mk
+include ./makefiles/test_requests.mk
