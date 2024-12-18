@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -26,7 +29,7 @@ func Test_MorseRelay(t *testing.T) {
 	tests := []struct {
 		name      string
 		reqMethod string
-		serviceID string
+		serviceID protocol.ServiceID
 		relayID   string
 		body      string
 	}{
@@ -53,12 +56,15 @@ func Test_MorseRelay(t *testing.T) {
 		//      4. Invalid generic request
 	}
 
+	// Request path is arbitrary, as it is not current used by PATH.
+	// It is here only to ensure all paths following the `/v1` segment are valid.
 	reqPath := "/v1/abcdef12"
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://localdev.me:55006/v1"
+			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
 			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
@@ -67,7 +73,9 @@ func Test_MorseRelay(t *testing.T) {
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("target-service-id", test.serviceID)
+
+			// Assign the target service ID to the request header.
+			req.Header.Set(request.HTTPHeaderTargetServiceID, string(test.serviceID))
 
 			var success bool
 			var allErrors []error
