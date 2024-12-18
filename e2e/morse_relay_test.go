@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -72,7 +74,7 @@ func Test_MorseRelay(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Assign the target service ID to the request header.
-			req.Header.Set("target-service-id", string(test.serviceID))
+			req.Header.Set(request.HTTPHeaderTargetServiceID, string(test.serviceID))
 
 			var success bool
 			var allErrors []error
