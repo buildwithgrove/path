@@ -32,9 +32,8 @@ morse_config:
       application_signature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
 
 # services is required. At least one service must be configured with a valid id.
-# All fields are optional but the id is required.
 services:
-  # "F00C" is a service ID used in the Morse E2E tests; it resolves to the "eth" service.
+  # "F00C" is the service ID for the full-chain Ethereum network.
   # If this config is used for Morse E2E tests, do not remove or change this service.
   "F00C": {}
 

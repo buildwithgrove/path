@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,25 +25,28 @@ func Test_MorseRelay(t *testing.T) {
 	defer teardownFn()
 
 	tests := []struct {
-		name         string
-		reqMethod    string
-		serviceAlias string
-		relayID      string
-		body         string
+		name      string
+		reqMethod string
+		serviceID protocol.ServiceID
+		reqPath   string
+		relayID   string
+		body      string
 	}{
 		{
-			name:         "should successfully relay eth_chainId for eth (F00C)",
-			reqMethod:    http.MethodPost,
-			serviceAlias: "F00C",
-			relayID:      "1201",
-			body:         `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
+			name:      "should successfully relay eth_chainId for eth (F00C)",
+			reqMethod: http.MethodPost,
+			serviceID: "F00C",
+			reqPath:   "/v1/abcdef12",
+			relayID:   "1201",
+			body:      `{"jsonrpc": "2.0", "id": "1201", "method": "eth_chainId"}`,
 		},
 		{
-			name:         "should successfully relay eth_blockNumber for eth (F00C)",
-			reqMethod:    http.MethodPost,
-			serviceAlias: "F00C",
-			relayID:      "1202",
-			body:         `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
+			name:      "should successfully relay eth_blockNumber for eth (F00C)",
+			reqMethod: http.MethodPost,
+			serviceID: "F00C",
+			reqPath:   "/v1/abcdef12",
+			relayID:   "1202",
+			body:      `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
 
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
@@ -53,13 +57,12 @@ func Test_MorseRelay(t *testing.T) {
 		//      4. Invalid generic request
 	}
 
-	reqPath := "/v1/abcdef12"
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://F00C.localdev.me:55006/v1/abcdef12"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, reqPath)
+			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, test.reqPath)
 
 			client := &http.Client{}
 
@@ -67,7 +70,9 @@ func Test_MorseRelay(t *testing.T) {
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("target-service-id", test.serviceAlias)
+
+			// Assign the target service ID to the request header.
+			req.Header.Set("target-service-id", string(test.serviceID))
 
 			var success bool
 			var allErrors []error

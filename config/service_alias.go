@@ -60,9 +60,6 @@ var testQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 // TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
 // Service IDs transferred from Morse to Shannon for backwards compatibility.
 var legacyMorseQoSTypes = map[protocol.ServiceID]ServiceQoSType{
-	// Deprecated Morse EVM chains
-	"0021": ServiceIDEVM, // ETH Mainnet
-
 	// All Morse EVM F-Chain Services as of 12/17/2024 (#103)
 	"F001": ServiceIDEVM, // Arbitrum One
 	"F002": ServiceIDEVM, // Arbitrum Sepolia Testnet
