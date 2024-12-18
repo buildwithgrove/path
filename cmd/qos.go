@@ -74,18 +74,6 @@ func getServiceQoSInstances(
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 
-		case config.ServiceIDE2E:
-			evmEndpointStore := &evm.EndpointStore{
-				Config: evm.EndpointStoreConfig{
-					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
-					ChainID: "0x1",
-				},
-				Logger: logger,
-			}
-			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
-				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
-			}
-
 		default:
 			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
