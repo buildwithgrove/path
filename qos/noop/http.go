@@ -29,6 +29,7 @@ func (h *HTTPResponse) GetHTTPStatusCode() int {
 }
 
 // GetHTTPHeaders always returns nil, as HTTP headers are not used by noop QoS as of PR #106.
+// See: https://github.com/buildwithgrove/path/pull/106
 // This method implements the gateway.HTTPResponse interface.
 func (h *HTTPResponse) GetHTTPHeaders() map[string]string {
 	return nil
