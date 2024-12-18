@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
-	"strconv"
+	"path/filepath"
 
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	_ "github.com/joho/godotenv/autoload" // autoload env vars
@@ -16,89 +18,32 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/buildwithgrove/path/envoy/auth_server/auth"
+	"github.com/buildwithgrove/path/envoy/auth_server/config"
 	store "github.com/buildwithgrove/path/envoy/auth_server/endpoint_store"
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
-// The auth server runs on port 10003.
-// This matches the port used by the Envoy gRPC filter as defined in `envoy.yaml`.
-// TODO_CONSIDER(@commoddity): Make this configurable. See thread here: https://github.com/buildwithgrove/path/pull/52/files/1a3e7a11f159f5b8d3c414f2417f7879bcfab410..258136504608c1269a27047bb9bded1ab4fefcc8#r1859409934
-const port = 10003
-
-// TODO_MVP(@commoddity): Make these values part of PATH's config YAML and remove the dependency on environment variables.
-const (
-	envVarGRPCHostPort                = "GRPC_HOST_PORT"
-	envVarGRPCUseInsecure             = "GRPC_USE_INSECURE"
-	defaultGRPCUseInsecureCredentials = false
-	envVarEndpointIDExtractor         = "ENDPOINT_ID_EXTRACTOR"
-	defaultEndpointIDExtractor        = auth.EndpointIDExtractorTypeURLPath
-)
-
-type options struct {
-	grpcHostPort               string
-	grpcUseInsecureCredentials bool
-	endpointIDExtractor        auth.EndpointIDExtractorType
-}
-
-func gatherOptions() options {
-	grpcHostPort := os.Getenv(envVarGRPCHostPort)
-	if grpcHostPort == "" {
-		panic(fmt.Sprintf("%s is not set in the environment", envVarGRPCHostPort))
-	}
-
-	grpcUseInsecureCredentials := defaultGRPCUseInsecureCredentials
-	if insecureStr := os.Getenv(envVarGRPCUseInsecure); insecureStr != "" {
-		if insecure, err := strconv.ParseBool(insecureStr); err == nil {
-			grpcUseInsecureCredentials = insecure
-		}
-	}
-
-	endpointIDExtractor := auth.EndpointIDExtractorType(os.Getenv(envVarEndpointIDExtractor))
-	if endpointIDExtractor == "" {
-		endpointIDExtractor = defaultEndpointIDExtractor
-	}
-	if !endpointIDExtractor.IsValid() {
-		fmt.Printf("invalid endpoint ID extractor type: %s, using default: %s\n", endpointIDExtractor, defaultEndpointIDExtractor)
-		endpointIDExtractor = defaultEndpointIDExtractor
-	}
-
-	return options{
-		grpcHostPort:               grpcHostPort,
-		grpcUseInsecureCredentials: grpcUseInsecureCredentials,
-		endpointIDExtractor:        endpointIDExtractor,
-	}
-}
-
-func connectGRPC(hostPort string, useInsecureCredentials bool) (*grpc.ClientConn, error) {
-	var transport grpc.DialOption
-	if useInsecureCredentials {
-		transport = grpc.WithTransportCredentials(insecure.NewCredentials())
-	} else {
-		transport = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
-	}
-	return grpc.NewClient(hostPort, transport)
-}
-
-func getEndpointIDExtractor(endpointIDExtractorType auth.EndpointIDExtractorType) auth.EndpointIDExtractor {
-	switch endpointIDExtractorType {
-	case auth.EndpointIDExtractorTypeURLPath:
-		return &auth.URLPathExtractor{}
-	case auth.EndpointIDExtractorTypeHeader:
-		return &auth.HeaderExtractor{}
-	}
-	return nil // this should never happen
-}
+// defaultConfigPath will be appended to the location of
+// the executable to get the full path to the config file.
+const defaultConfigPath = "config/.config.yaml"
 
 func main() {
-
 	// Initialize new polylog logger
 	logger := polyzero.NewLogger()
 
-	// Gather options from environment variables
-	opts := gatherOptions()
+	configPath, err := getConfigPath()
+	if err != nil {
+		log.Fatalf("failed to get config path: %v", err)
+	}
+	logger.Info().Msgf("Starting Envoy Auth Server using config file: %s", configPath)
+
+	config, err := config.LoadAuthServerConfigFromYAML(configPath)
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
 
 	// Connect to the gRPC server for the GatewayEndpoints service
-	conn, err := connectGRPC(opts.grpcHostPort, opts.grpcUseInsecureCredentials)
+	conn, err := connectGRPC(config.GRPCHostPort, config.GRPCUseInsecureCredentials)
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to gRPC server: %v", err))
 	}
@@ -116,14 +61,14 @@ func main() {
 	}
 
 	// Create a new listener to listen for requests from Envoy
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 	if err != nil {
 		panic(err)
 	}
 
 	// Determine which gateway endpoint ID extractor to use
-	// If the extractor is not set, use the default "url_path" extractor
-	endpointIDExtractor := getEndpointIDExtractor(opts.endpointIDExtractor)
+	// If the extractor is not set in the config, the default "url_path" extractor is used
+	endpointIDExtractor := getEndpointIDExtractor(config.EndpointIDExtractorType)
 
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
@@ -140,8 +85,60 @@ func main() {
 	// Register envoy proto server
 	envoy_auth.RegisterAuthorizationServer(grpcServer, authHandler)
 
-	fmt.Printf("Auth server starting on port %d...\n", port)
+	fmt.Printf("Auth server starting on port %d...\n", config.Port)
 	if err = grpcServer.Serve(listen); err != nil {
 		panic(err)
 	}
+}
+
+/* -------------------- Gateway Init Helpers -------------------- */
+
+// getConfigPath returns the full path to the config file
+// based on the current working directory of the executable.
+//
+// For example if the binary is in:
+// - `/app` the full config path will be `/app/config/.config.yaml`
+// - `./bin` the full config path will be `./bin/config/.config.yaml`
+func getConfigPath() (string, error) {
+	var configPath string
+
+	// The config path can be overridden using the `-config` flag.
+	flag.StringVar(&configPath, "config", "", "override the default config path")
+	flag.Parse()
+	if configPath != "" {
+		return configPath, nil
+	}
+
+	// Otherwise, use the default config path based on the executable path
+	exeDir, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %v", err)
+	}
+
+	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)
+
+	return configPath, nil
+}
+
+// connectGRPC connects to the gRPC server for the GatewayEndpoints service
+// and returns a gRPC client connection.
+func connectGRPC(hostPort string, useInsecureCredentials bool) (*grpc.ClientConn, error) {
+	var transport grpc.DialOption
+	if useInsecureCredentials {
+		transport = grpc.WithTransportCredentials(insecure.NewCredentials())
+	} else {
+		transport = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	}
+	return grpc.NewClient(hostPort, transport)
+}
+
+// getEndpointIDExtractor returns the endpoint ID extractor based on the config YAML.
+func getEndpointIDExtractor(endpointIDExtractorType auth.EndpointIDExtractorType) auth.EndpointIDExtractor {
+	switch endpointIDExtractorType {
+	case auth.EndpointIDExtractorTypeURLPath:
+		return &auth.URLPathExtractor{}
+	case auth.EndpointIDExtractorTypeHeader:
+		return &auth.HeaderExtractor{}
+	}
+	return nil // this should never happen
 }
