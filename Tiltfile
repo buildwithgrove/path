@@ -119,7 +119,14 @@ if MODE == "path_with_auth":
 
     # Import Envoy Auth configuration file into Kubernetes ConfigMaps
     configmap_create(
-        "envoy-config", from_file="./local/path/envoy/.envoy.yaml", watch=True
+        "envoy-config",
+        from_file="./local/path/envoy/.envoy.yaml",
+        watch=True,
+    )
+    configmap_create(
+        "allowed-services",
+        from_file="./local/path/envoy/.allowed-services.lua",
+        watch=True,
     )
     configmap_create(
         "gateway-endpoints",
@@ -127,7 +134,9 @@ if MODE == "path_with_auth":
         watch=True,
     )
     configmap_create(
-        "ratelimit-config", from_file="./local/path/envoy/.ratelimit.yaml", watch=True
+        "ratelimit-config",
+        from_file="./local/path/envoy/.ratelimit.yaml",
+        watch=True,
     )
 
     # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
