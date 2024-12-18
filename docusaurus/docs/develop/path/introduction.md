@@ -69,8 +69,9 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [Tilt](https://docs.tilt.dev/install.html)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 - [Helm](https://helm.sh/docs/intro/install/)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 

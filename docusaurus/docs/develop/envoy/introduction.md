@@ -11,14 +11,13 @@ title: Introduction
 
 # Table of Contents <!-- omit in toc -->
 
-<<<<<<< HEAD
 - [Quickstart](#quickstart)
 - [Overview](#overview)
   - [Components](#components)
-  - [Architecture Diagram](#architecture-diagram)
 - [Envoy Proxy](#envoy-proxy)
   - [Envoy Configuration](#envoy-configuration)
   - [Envoy HTTP Filters](#envoy-http-filters)
+  - [Architecture Diagram](#architecture-diagram)
   - [Request Lifecycle](#request-lifecycle)
 - [Service ID Specification](#service-id-specification)
   - [Allowed Services File](#allowed-services-file)
@@ -43,32 +42,10 @@ title: Introduction
 - [Rate Limiter](#rate-limiter)
   - [Rate Limit Configuration](#rate-limit-configuration)
   - [Documentation and Examples](#documentation-and-examples)
->>>>>>> envoy-set-header-from-subdomain
 
 ## Quickstart
 
-<!-- TODO_MVP(@commoddity): Replace the quickstart section with a link to the cheatsheet. -->
-
-1. Install all prerequisites:
-
-   - [Docker](https://docs.docker.com/get-docker/)
-   - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-   - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-   - [Helm](https://helm.sh/docs/intro/install/)
-   - [Tilt](https://docs.tilt.dev/install.html)
-
-2. Run `make init_envoy` to create all the required config files
-
-   - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
-     - ℹ️ _Please update `allowed-services.lua` with the service IDs allowed by your PATH instance._
-     - For more details, see the [Allowed Services Map](#allowed-services-map) section.
-   - `.envoy.yaml` is created with your auth provider's domain and audience.
-   - `.ratelimit.yaml` is created with the rate limiting configuration for the PATH instance.
-   - `.gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
-     - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
-     - For more details, see the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section.
-
-3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
+[See the PATH Cheat Sheet for instructions on how to get started with a local PATH instance.](../path/cheatsheet.md)
 
 ## Overview
 
@@ -80,11 +57,11 @@ Specifically, this is split into two logical parts:
 
 ### Components
 
-  :::tip
+:::tip
 
-  A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
+A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provided to run all of these services locally.
 
-  :::
+:::
 
 - **PATH Service**: The service that handles requests after they have been authorized.
 - **Envoy Proxy**: A proxy server that handles incoming requests, performs auth checks, and routes authorized requests to the `PATH` service.
@@ -95,6 +72,36 @@ Specifically, this is split into two logical parts:
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
   - _See [PATH Auth Data Server](#path-auth-data-server) for more information._
 
+## Envoy Proxy
+
+<div align="center">
+  <a href="https://www.envoyproxy.io/docs/envoy/latest/">
+    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="200"/>
+  <p><b>Envoy Proxy Docs</b></p>
+  </a>
+</div>
+
+PATH uses Envoy Proxy to handle authorization and rate limiting.
+
+The `/envoy` directory houses the configuration files and settings for Envoy Proxy.
+
+Envoy acts as a gateway, handling incoming requests, determining allowed services, performing auth checks, and routing authorized requests to the PATH service.
+
+### Envoy Configuration
+
+[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../../operate/configs/envoy_config.md)
+
+### Envoy HTTP Filters
+
+The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
+
+- **[lua](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
+- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `jwt-user-id` header set before it is forwarded upstream.
+  - `header_mutation` is used only if the PATH instance has JWT auth enabled.
+- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
+  - `jwt_authn` is used only if the PATH instance has JWT auth enabled.
+- **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
+- **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
 
 ### Architecture Diagram
 
@@ -135,37 +142,6 @@ graph TD
     GRPCServer <-.-> |Fetch & Stream<br>Gateway Endpoint Data<br>Over gRPC Connection| AUTH
     GRPCServer <-.-> DataSource
 ```
-
-## Envoy Proxy
-
-<div align="center">
-  <a href="https://www.envoyproxy.io/docs/envoy/latest/">
-    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="200"/>
-  <p><b>Envoy Proxy Docs</b></p>
-  </a>
-</div>
-
-PATH uses Envoy Proxy to handle authorization and rate limiting.
-
-The `/envoy` directory houses the configuration files and settings for Envoy Proxy.
-
-Envoy acts as a gateway, handling incoming requests, determining allowed services, performing auth checks, and routing authorized requests to the PATH service.
-
-### Envoy Configuration
-
-[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../../operate/configs/envoy_config.md)
-
-### Envoy HTTP Filters
-
-The PATH Auth Server uses the following [Envoy HTTP filters](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters) to handle authorization:
-
-- **[lua](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter)**: Extracts the Service ID from the subdomain of the request's host field and attaches it to the request as the `target-service-id` header.
-- **[header_mutation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter)**: Ensures the request does not have the `jwt-user-id` header set before it is forwarded upstream.
-  - `header_mutation` is used only if the PATH instance has JWT auth enabled.
-- **[jwt_authn](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter)**: Performs JWT verification and sets the `jwt-user-id` header.
-  - `jwt_authn` is used only if the PATH instance has JWT auth enabled.
-- **[ext_authz](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)**: Performs authorization checks using the PATH Auth Server external authorization server.
-- **[ratelimit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter)**: Performs rate limiting checks using the Rate Limiter service.
 
 ### Request Lifecycle
 
