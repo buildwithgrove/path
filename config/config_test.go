@@ -44,11 +44,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 					},
 				},
-				Services: map[protocol.ServiceID]ServiceConfig{
-					"F00C": {
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
-				},
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
@@ -80,11 +75,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						OwnedAppsPrivateKeysHex: []string{
 							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
-					},
-				},
-				Services: map[protocol.ServiceID]ServiceConfig{
-					"anvil": {
-						RequestTimeout: 3_000 * time.Millisecond,
 					},
 				},
 				Router: RouterConfig{
@@ -159,17 +149,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			      client_public_key: "8604213b0c1ec52b5ae43eb854ce486a3756ec97cc194f3afe518947766aac11"
 			      application_public_key: "71dd0e166022f1665dbba91b223998b0f328e9af2193a363456412a8eb4272e4"
 			      application_signature: "invalid_application_signature"
-			`,
-			wantErr: true,
-		},
-		{
-			name:     "should return error for invalid fallback URL",
-			filePath: "invalid_fallback_url.yaml",
-			yamlData: `
-			morse_config:
-			  services:
-			    0001:
-			      request_timeout: 30
 			`,
 			wantErr: true,
 		},
