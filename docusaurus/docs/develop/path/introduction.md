@@ -278,6 +278,10 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
+   **NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
+
+   **⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+
 #### Running the E2E tests
 
 To run the tests, use the following `make` targets:
@@ -285,9 +289,6 @@ To run the tests, use the following `make` targets:
 ```sh
 # Run E2E tests against Morse
 make test_e2e_morse_relay
-
-# Run all tests
-make test_all
 ```
 
 ## Running Localnet
