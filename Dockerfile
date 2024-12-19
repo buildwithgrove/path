@@ -1,9 +1,8 @@
 FROM golang:1.23-alpine3.19 AS builder
-RUN apk add --no-cache git
+RUN apk add --no-cache git make build-base
 
 WORKDIR /go/src/github.com/buildwithgrove/path
 COPY . .
-RUN apk add --no-cache make build-base
 RUN go build -o /go/bin/path ./cmd
 
 FROM alpine:3.19
