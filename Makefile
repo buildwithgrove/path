@@ -198,7 +198,7 @@ copy_morse_e2e_config: ## copies the example Morse test configuration yaml file 
 		echo "### Created ./e2e/.morse.config.yaml                                                      ###"; \
 		echo "###                                                                                       ###"; \
 		echo "### If you are a Grove employee, use the instructions from the link below to get the      ###"; \
-		echo "### correct config file, and COPY IT OVER the ./e2e/.more.config.yaml file.               ###"; \
+		echo "### correct config file, and COPY IT OVER the ./e2e/.morse.config.yaml file.              ###"; \
 		echo "### https://path.grove.city/develop/path/introduction#running-the-e2e-tests-against-morse ###"; \
 		echo "###                                                                                       ###"; \
 		echo "### Otherwise, please update the the following in .morse.config.yaml:                     ###"; \
