@@ -1,6 +1,6 @@
 ---
-title: Envoy Proxy config
-sidebar_position: 4
+title: Envoy Proxy Configuration
+sidebar_position: 1
 ---
 
 <div align="center">
@@ -10,50 +10,39 @@ sidebar_position: 4
   </a>
 </div>
 
-# Envoy Proxy Configuration <!-- omit in toc -->
+This document describes the configuration options for PATH's Envoy Proxy which is responsible for:
 
-This document describes the configuration options for PATH's Envoy Proxy.
+1. Defining the set of allowed services it can process
+2. Authorizing incoming requests
+3. Rate limiting
 
-In PATH, Envoy Proxy is responsible for:
-
-- Defining allowed services
-- Request authorization
-- Rate limiting
-
-:::info
+### tl;dr Just show me the config files <!-- omit in toc -->
 
 There are a total of four files used to configure Envoy Proxy in PATH:
 
-**Envoy Config Files**
+1. `.allowed-services.lua` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/allowed-services.template.lua))
+2. `.envoy.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/envoy.template.yaml))
+3. `.ratelimit.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml))
+4. `.gateway-endpoints.yaml` ([template example](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml))
 
-1. `.allowed-services.lua`
-2. `.envoy.yaml`
-3. `.ratelimit.yaml`
+## Table of Contents <!-- omit in toc -->
 
-    The templates used to generate these Envoy config files [may be found here](https://github.com/buildwithgrove/path/tree/main/envoy).
-
-**Gateway Endpoints File**
-
-4. `.gateway-endpoints.yaml`
-
-    The example `.gateway-endpoints.yaml` file is located in the [PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
-
-:::
-
-- [Initialization](#initialization)
+- [Initialization of configuration files](#initialization-of-configuration-files)
 - [Allowed Services - `.allowed-services.lua`](#allowed-services---allowed-serviceslua)
-  - [File Format](#file-format)
   - [Terminology](#terminology)
+  - [Allowed Services Functionality](#allowed-services-functionality)
+  - [Allowed Services File Format](#allowed-services-file-format)
 - [Envoy Proxy Configuration - `.envoy.yaml`](#envoy-proxy-configuration---envoyyaml)
 - [Ratelimit Configuration - `.ratelimit.yaml`](#ratelimit-configuration---ratelimityaml)
-  - [File Format](#file-format-1)
+  - [Ratelimit File Format](#ratelimit-file-format)
+  - [Ratelimit Customizations](#ratelimit-customizations)
 - [Gateway Endpoints Data - `.gateway-endpoints.yaml`](#gateway-endpoints-data---gateway-endpointsyaml)
-  - [File Format](#file-format-2)
+  - [Gateway Endpoint Functionality](#gateway-endpoint-functionality)
+  - [Gateway Endpoint File Format](#gateway-endpoint-file-format)
 
+## Initialization of configuration files
 
-## Initialization
-
-The required Envoy configuration files may be generated from their templates by running the make target:
+The required Envoy configuration files can be generated from their templates by running:
 
 ```bash
 make init_envoy
@@ -66,15 +55,34 @@ This will generate the following files in the `local/path/envoy` directory:
 - `.ratelimit.yaml`
 - `.gateway-endpoints.yaml`
 
-**All of these files are git ignored from the PATH repo as they are specific to each PATH instance and may contain sensitive information.**
+:::note
 
+All of these files are git ignored from the PATH repo as they are specific to
+each PATH instance and may contain sensitive information.
+
+:::
 
 ## Allowed Services - `.allowed-services.lua`
 
-
 The `.allowed-services.lua` file is used to define the allowed services for the Envoy Proxy.
 
-Once created in `local/path/envoy`, the `.allowed-services.lua` file is mounted as a file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
+Once created in `local/path/envoy`, the `.allowed-services.lua` file is mounted as a
+file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
+
+### Terminology
+
+- **Authoritative ID**: The service ID that that PATH uses to identify a service.
+- **Alias**: A string that resolves to a service ID, useful for creating human-readable subdomains for services.
+
+The **key** in the config file may either be the **authoritative service ID** or an **alias**.
+
+The **value** in the config file must be the **authoritative service ID**.
+
+### Allowed Services Functionality
+
+The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
+
+For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../../develop/envoy/introduction.md#service-id-specification).
 
 :::warning
 
@@ -84,9 +92,11 @@ All service IDs allowed by the PATH instance must be defined in the `.allowed-se
 
 :::
 
-### File Format
+### Allowed Services File Format
 
-_`.allowed-services.lua` format:_
+Below is the expect file format for `.allowed-services.lua`.
+You can find a template file [here](https://github.com/buildwithgrove/path/tree/main/envoy/allowed-services.template.lua).
+
 ```lua
 return {
   -- 1. Shannon Service IDs
@@ -97,22 +107,6 @@ return {
   ["pocket"] = "F000", -- Pocket (Alias)
 }
 ```
-- [`.allowed-services.lua` template file](https://github.com/buildwithgrove/path/tree/main/envoy/allowed-services.template.lua).
-
-### Terminology
-
-- **Authoritative ID**: The service ID that that PATH uses to identify a service.
-- **Alias**: A string that resolves to a service ID, which is useful for creating human-readable subdomains for services.
-  
-The key may either be the **authoritative service ID** or an **alias**. The value must be the **authoritative service ID**.
-
-:::info
-
-The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
-
-For more information, see the [ Service ID Specification section of the Envoy Proxy documentation](../../develop/envoy/introduction.md#service-id-specification).
-
-:::
 
 ## Envoy Proxy Configuration - `.envoy.yaml`
 
@@ -120,17 +114,13 @@ The `.envoy.yaml` file is used to configure the Envoy Proxy.
 
 Once created in `local/path/envoy`, the `.envoy.yaml` file is mounted as a file in the Envoy Proxy container at `/etc/envoy/.envoy.yaml`.
 
+For more information on Envoy Proxy configuration file, see the [Envoy Proxy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/examples#static).
+
 :::warning
 
 Once configured using the prompts in the `make init_envoy` target, the `.envoy.yaml` file does not require further modification.
 
 **It is not recommended to modify the `.envoy.yaml` file directly unless you know what you are doing.**
-
-:::
-
-:::tip
-
-[For more information on Envoy Proxy configuration file, see the Envoy Proxy documentation.](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/examples#static)
 
 :::
 
@@ -142,12 +132,18 @@ Once created in `local/path/envoy`, the `.ratelimit.yaml` file is mounted as a f
 
 **To make changes to the Ratelimit service, modify the `.ratelimit.yaml` file.**
 
-### File Format
+### Ratelimit File Format
 
-_`.ratelimit.yaml` format:_
+Below is the expect file format for `.ratelimit.yaml`.
+You can find a template file [here](https://github.com/buildwithgrove/path/tree/main/envoy/ratelimit.template.lua).
+
+For more information on Rate Limit descriptors, see the [documentation in the Envoy Rate Limit repository](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions).
+
+`.ratelimit.yaml` format:
+
 ```yaml
 ---
-domain: rl 
+domain: rl
 descriptors:
   - key: rl-endpoint-id
     descriptors:
@@ -158,20 +154,13 @@ descriptors:
           requests_per_unit: 30
 ```
 
-- [`.ratelimit.yaml` template file](https://github.com/buildwithgrove/path/tree/main/envoy/ratelimit.template.yaml).
+### Ratelimit Customizations
 
 To add new throughput limits, add a new descriptor array item under the `descriptors` key.
 
-:::tip
-
-[For more information on Rate Limit descriptors, see the documentation in the Envoy Rate Limit repository.](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions)
-
-:::
-
+For more information on Rate Limit descriptors, see the [documentation in the Envoy Rate Limit repository](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions).
 
 ## Gateway Endpoints Data - `.gateway-endpoints.yaml`
-
-:::info
 
 A `GatewayEndpoint` is how PATH defines a single endpoint that is authorized to use the PATH service.
 
@@ -179,7 +168,7 @@ It is used to define the **authorization method**, **rate limits**, and **metada
 
 For more information, see the [Gateway Endpoint section in the Envoy docs](../../develop/envoy/introduction.md#gateway-endpoint-authorization).
 
-:::
+### Gateway Endpoint Functionality
 
 The `.gateway-endpoints.yaml` file is used to define the Gateway Endpoints that are authorized to make requests to the PATH instance.
 
@@ -187,20 +176,25 @@ Once created in `local/path/envoy`, the `.gateway-endpoints.yaml` file is mounte
 
 :::tip
 
-This YAML file is provided as an easy default way to define Gateway Endpoints to get started with PATH. For more complex use cases, you may wish to use a database as the data source for Gateway Endpoints.
+This YAML file is provided as an easy default way to define Gateway Endpoints to get started with PATH.
+
+For more complex use cases, you may wish to use a database as the data source for Gateway Endpoints.
 
 **For more information on how to use a database as the data source for Gateway Endpoints, [see the PATH Auth Data Server (PADS) section of the Envoy docs](../../develop/envoy/introduction.md#path-auth-data-server).**
 
 :::
 
+### Gateway Endpoint File Format
 
-### File Format
+Below is the expect file format for `.gateway-endpoints.yaml`.
+You can find an example file [here](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml) which
+uses [this schema](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml).
 
 ```yaml
 endpoints:
-  endpoint_1_static_key: 
-    auth: 
-      api_key: "api_key_1" 
+  endpoint_1_static_key:
+    auth:
+      api_key: "api_key_1"
 
   endpoint_2_jwt:
     auth:
