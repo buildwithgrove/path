@@ -1,4 +1,5 @@
 -- IMPORTANT: All Services for the PATH Service Gateway must be listed here for Envoy Proxy to forward requests to PATH.
+--
 -- The service IDs configured here are used in the `envoy.filters.http.lua` HTTP filter defined in `.envoy.yaml` config file.
 -- The `.allowed-services.lua` file must be mounted as a file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
 --
@@ -9,6 +10,7 @@
 --
 -- To utilize PATH's Quality of Service (QoS) features, the service ID must match the value in PATH's `qos` module.
 -- TODO_IMPROVE(@commoddity): Add link to the file & line in the QoS module once 'no-op' QoS feature is completed.
+--
 return {
   -- 1. Shannon Service IDs
   ["anvil"] = "anvil", -- Anvil (Authoritative ID)
