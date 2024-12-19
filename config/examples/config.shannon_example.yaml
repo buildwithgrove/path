@@ -39,18 +39,9 @@ shannon_config:
 
 services:
   # "anvil" is a test service alias used in the Shannon E2E tests.
-  # If this config is used for Shannon E2E tests, do not remove or change this service.
   # This is used for testing a dedicated Ethereum endpoint that is not of any public network.
-  # Note that this service has no alias, meaning it can be reached only by its service ID.
-  # eg. https://anvil.path.grove.city
+  # If this config is used for Shannon E2E tests, do not remove or change this service.
   "anvil": {}
-
-  # "F00C" is the service ID for the Ethereum MainNet Archival.
-  # Note that this service has an alias, meaning it can be reached
-  # both by its service ID and by its alias.
-  # eg. https://F00C.path.grove.city and https://eth.path.grove.city.
-  "F00C":
-    alias: "eth"
 
 # To enable endpoint hydrator to run QoS checks against 
 # service endpoints, add the following to the config:
