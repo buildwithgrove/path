@@ -90,7 +90,7 @@ type QoSService interface {
 	QoSEndpointCheckGenerator
 
 	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
-	// The observatios can be:
+	// The observations can be:
 	// A. "local", i.e. from requests sent to an endpoint by this PATH instance, or
 	// B. "shared": i.e. from QoS observations shared by other PATH instances.
 	ApplyObservations(qos.QoSDetails) error
