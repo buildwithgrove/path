@@ -48,7 +48,7 @@ type responseGeneric struct {
 	Logger polylog.Logger
 }
 
-// This method implements the response interface used by the requestContext struct. 
+// GetObservation implements the response interface used by the requestContext struct. 
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointDetails {
 	isGeneric := true
 	return qosobservations.SolanaEndpointDetails{

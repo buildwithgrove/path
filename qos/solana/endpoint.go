@@ -29,9 +29,9 @@ type endpoint struct {
 	GetHealthResult *string
 
 	// GetEpochInfoResult stores the result of processing the endpoint's response to a `getEpochInfo` request.
-	// A pointer is used to distinguish between the following scenarios:
-	// A. There has NOT been an observation of the endpoint's response to a `getEpochInfo` request, and
-	// B. There has been an observation the endpoint's response to a `getEpochInfo` request.
+	// A pointer is used to distinguish between the following scenarios two scenarios:
+	// 	1. There has NOT been an observation of the endpoint's response to a `getEpochInfo` request
+	// 	2. There has been an observation the endpoint's response to a `getEpochInfo` request
 	GetEpochInfoResult *qosobservations.SolanaEpochInfoResponse 
 
 	// TODO_FUTURE: support archival endpoints.
