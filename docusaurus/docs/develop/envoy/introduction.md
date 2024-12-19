@@ -56,16 +56,21 @@ title: Introduction
 
 2. Run `make init_envoy` to create all the required config files
 
-   - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
-     - ℹ️ _Please update `allowed-services.lua` with the service IDs allowed by your PATH instance._
-     - For more details, see the [Allowed Services Map](#allowed-services-map) section.
    - `.envoy.yaml` is created with your auth provider's domain and audience.
    - `.ratelimit.yaml` is created with the rate limiting configuration for the PATH instance.
+   - `.allowed-services.lua` is created with the service IDs allowed by the PATH instance.
+     - For more details, see the [Allowed Services Map](#allowed-services-map) section.
    - `.gateway-endpoints.yaml` is created from the example file in the [PADS Repository](https://github.com/buildwithgrove/path-auth-data-server/tree/main/yaml/testdata).
-     - ℹ️ _Please update `gateway-endpoints.yaml` with your own data._
      - For more details, see the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section.
 
 3. Run `make path_up` to start the services with all auth and rate limiting dependencies.
+
+:::info MAKE SURE TO UPDATE THESE FILES
+
+ℹ️ Please update `allowed-services.lua` with the service IDs allowed by your PATH instance
+and `gateway-endpoints.yaml` with your own data.
+
+:::
 
 ## Overview
 
@@ -219,8 +224,8 @@ The `target-service-id` header is used to specify the Service ID in the request.
 
 There are two methods for specifying this header in the request:
 
-1. [Target Service ID Header](#target-service-id-header)
-2. [URL Subdomain](#url-subdomain)
+1. [Target Service ID Header](#target-service-id-header) (_e.g. -H "target-service-id: anvil"_)
+2. [URL Subdomain](#url-subdomain) (_e.g. http://anvil.localhost:3001/v1_)
 
 ### Allowed Services File
 
@@ -228,9 +233,7 @@ The file `local/path/envoy/.allowed-services.lua` defines the mapping of service
 
 All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
 
-:::info
-
-_`.allowed-services.lua` format:_
+:::info `.allowed-services.lua` format
 
 ```lua
 return {
@@ -249,9 +252,7 @@ return {
 
 The service ID (or a configured alias) may be specified in the `target-service-id` header.
 
-:::info
-
-_Example request:_
+:::info Example request
 
 ```bash
 curl http://localhost:3001/v1 \
@@ -270,9 +271,7 @@ The service ID (or a configured alias) may be specified in the URL subdomain.
 
 eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
 
-:::info
-
-_Example request:_
+:::info Example request
 
 ```bash
 curl http://anvil.localhost:3001/v1 \
@@ -346,11 +345,9 @@ curl http://anvil.localhost:3001/v1 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-:::tip
+:::tip Example curl requests
 
-A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
-
-_eg._
+A variety of example cURL requests to the PATH service can be found in the [`test_requests.mk` file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
 
 ```bash
 ## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
