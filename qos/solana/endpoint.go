@@ -28,7 +28,7 @@ type endpoint struct {
 	// B. There has been an observation of the endpoint's response to a `getHealth` request.
 	GetHealthResult *string
 
-	// GetEpochInfo stores the result of processing the endpoint's response to a `getEpochInfo` request.
+	// GetEpochInfoResult stores the result of processing the endpoint's response to a `getEpochInfo` request.
 	// A pointer is used to distinguish between the following scenarios:
 	// A. There has NOT been an observation of the endpoint's response to a `getEpochInfo` request, and
 	// B. There has been an observation the endpoint's response to a `getEpochInfo` request.
