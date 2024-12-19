@@ -43,7 +43,7 @@ type EndpointHydrator struct {
 
 	// ActiveQoSService provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
-	// ActiveQoSService should not be modified after the hydrator is started.
+	// IMPORTANT: ActiveQoSService should not be modified after the hydrator is started.
 	ActiveQoSServices map[protocol.ServiceID]QoSService
 	Logger           polylog.Logger
 
