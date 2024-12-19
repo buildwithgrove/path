@@ -7,8 +7,6 @@
 description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for either Morse or Shannon."
 type: object
 additionalProperties: false
-required:
-  - services
 oneOf:
   - required: ["morse_config"]
   - required: ["shannon_config"]
@@ -175,20 +173,6 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-
-  # Services Configuration (required)
-  services:
-    type: object
-    additionalProperties: false
-    patternProperties:
-      "^[a-zA-Z0-9]+$":
-        description: "Configuration for a service, containing its unique service ID and other optional configuration."
-        type: object
-        additionalProperties: false
-        properties:
-          request_timeout:
-            type: string
-            description: "Timeout duration for service requests."
 
   # Router Configuration (optional)
   router_config:

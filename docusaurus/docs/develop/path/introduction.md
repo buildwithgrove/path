@@ -148,9 +148,10 @@ docker pull ghcr.io/buildwithgrove/path
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth.localhost:3000/v1 \
+   curl http://localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
+       -H "Target-Service-ID: eth" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
@@ -186,13 +187,7 @@ The configuration is divided into several sections:
    - Must include RPC URL, gRPC host/port, and gateway address/private key.
    - Must include the addresses of the onchain Applications that are delegated to the onchain Gateway.
 
-3. **Services Configuration (`services`)**:
-
-   - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
-   - Only the Service ID is required. All other fields are optional.
-
-4. **Router Configuration (`router_config`)**:
+3. **Router Configuration (`router_config`)**:
 
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
@@ -283,6 +278,10 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
+   **NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
+
+   **⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+
 #### Running the E2E tests
 
 To run the tests, use the following `make` targets:
@@ -290,9 +289,6 @@ To run the tests, use the following `make` targets:
 ```sh
 # Run E2E tests against Morse
 make test_e2e_morse_relay
-
-# Run all tests
-make test_all
 ```
 
 ## Running Localnet
