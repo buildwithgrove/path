@@ -45,10 +45,6 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 		return GatewayConfig{}, err
 	}
 
-	// // hydrate required fields and set defaults for optional fields
-	// if err := config.hydrateServiceAliases(); err != nil {
-	// 	return GatewayConfig{}, err
-	// }
 	config.hydrateRouterConfig()
 
 	return config, config.validate()
