@@ -4,5 +4,4 @@
 // 2. Protocol-level observations: e.g. latency of an endpoint.
 // 3. QoS-level observations: e.g. Solana blockchain Epoch reported by an endpoint.
 //
-// All the struct are generated using protobuf compiler, from .proto files under proto directory.
 package observation
