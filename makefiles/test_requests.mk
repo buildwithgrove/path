@@ -2,14 +2,34 @@
 #### Test Requests ####
 #######################
 
-# This Makefile provides examples of the various ways to make requests to PATH:
-# - Auth: static API key or no auth (JWT requires a non-expired JWT token, which cannot be statically set)
-# - Service ID: passed as the subdomain or in the 'target-service-id' header
-# - Endpoint ID: passed in the URL path or in the 'x-endpoint-id' header
+# This Makefile provides examples of the various ways to make requests to PATH.
+
+# NOTE: All of these requests assume a Shannon Gateway, as the service ID is 'anvil'.
+
+############################
+#### PATH Test Requests ####
+############################
+
+.PHONY: test_request_path_only
+test_request_path_only: ## Test request against the PATH Gateway running on port 3000 without Envoy Proxy
+	curl http://localhost:3000/v1/ \
+		-X POST \
+		-H "Content-Type: application/json" \
+		-H "target-service-id: anvil" \
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+####################################
+#### PATH + Envoy Test Requests ####
+####################################
 
 # For all of the below requests:
 # - The full PATH stack including Envoy Proxy must be running
 # - The 'anvil' service must be configured in the '.config.yaml' file.
+
+# The following are the various ways to make requests to PATH with Envoy running:
+# - Auth: static API key or no auth (JWT requires a non-expired JWT token, which cannot be statically set)
+# - Service ID: passed as the subdomain or in the 'target-service-id' header
+# - Endpoint ID: passed in the URL path or in the 'x-endpoint-id' header
 
 .PHONY: test_request_no_auth_url_path
 test_request_no_auth_url_path: ## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain

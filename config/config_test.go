@@ -44,11 +44,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 					},
 				},
-				Services: map[protocol.ServiceID]ServiceConfig{
-					"F00C": {
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
-				},
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
@@ -59,7 +54,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				HydratorConfig: EndpointHydratorConfig{
 					ServiceIDs: []protocol.ServiceID{"F00C"},
 				},
-				serviceAliases: map[string]protocol.ServiceID{},
 			},
 			wantErr: false,
 		},
@@ -83,11 +77,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 					},
 				},
-				Services: map[protocol.ServiceID]ServiceConfig{
-					"anvil": {
-						RequestTimeout: 3_000 * time.Millisecond,
-					},
-				},
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
@@ -95,7 +84,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       defaultWriteTimeout,
 					IdleTimeout:        defaultIdleTimeout,
 				},
-				serviceAliases: map[string]protocol.ServiceID{},
 			},
 			wantErr: false,
 		},
@@ -139,17 +127,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "should return error for invalid service alias",
-			filePath: "invalid_service_alias.yaml",
-			yamlData: `
-			morse_config:
-			  serviceAliases:
-			    invalid_alias!@#:
-			      id: "0001"
-			`,
-			wantErr: true,
-		},
-		{
 			name:     "should return error for invalid client public key",
 			filePath: "invalid_client_public_key.yaml",
 			yamlData: `
@@ -172,22 +149,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			      client_public_key: "8604213b0c1ec52b5ae43eb854ce486a3756ec97cc194f3afe518947766aac11"
 			      application_public_key: "71dd0e166022f1665dbba91b223998b0f328e9af2193a363456412a8eb4272e4"
 			      application_signature: "invalid_application_signature"
-			`,
-			wantErr: true,
-		},
-		{
-			name:     "should return error for invalid fallback URL",
-			filePath: "invalid_fallback_url.yaml",
-			yamlData: `
-			morse_config:
-			  services:
-			    0001:
-			      id: "0001"
-			      config:
-			        alias: "pokt-mainnet"
-			        fallback_url: "invalid-url"
-			        service_type_override: "REST"
-			        request_timeout_seconds: 30
 			`,
 			wantErr: true,
 		},
@@ -258,50 +219,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	}
 }
 
-func Test_GetServiceIDFromAlias(t *testing.T) {
-	test := []struct {
-		name   string
-		config GatewayConfig
-		alias  string
-		want   protocol.ServiceID
-		ok     bool
-	}{
-		{
-			name: "should return service ID for existing alias",
-			config: GatewayConfig{
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
-				},
-			},
-			alias: "eth-mainnet",
-			want:  "0021",
-			ok:    true,
-		},
-		{
-			name: "should return false for non-existing alias",
-			config: GatewayConfig{
-				serviceAliases: map[string]protocol.ServiceID{
-					"eth-mainnet": "0021",
-				},
-			},
-			alias: "btc-mainnet",
-			want:  "",
-			ok:    false,
-		},
-	}
-
-	for _, test := range test {
-		t.Run(test.name, func(t *testing.T) {
-			c := require.New(t)
-			got, ok := test.config.GetServiceIDFromAlias(test.alias)
-			c.Equal(test.ok, ok)
-			if ok {
-				c.Equal(test.want, got)
-			}
-		})
-	}
-}
-
 func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	c.Equal(want.Router, got.Router)
 	if want.MorseConfig != nil {
@@ -311,7 +228,6 @@ func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	if want.ShannonConfig != nil {
 		c.Equal(want.ShannonConfig, got.ShannonConfig)
 	}
-	c.Equal(want.serviceAliases, got.serviceAliases)
 }
 
 func compareMorseFullNodeConfig(c *require.Assertions, want, got morseprotocol.FullNodeConfig) {

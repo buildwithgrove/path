@@ -58,10 +58,7 @@ func main() {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	requestParser, err := request.NewParser(config, gatewayQoSInstances, logger)
-	if err != nil {
-		log.Fatalf("failed to create request parser: %v", err)
-	}
+	requestParser := request.NewParser(gatewayQoSInstances, logger)
 
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,

@@ -1,104 +1,78 @@
 // Request package is responsible for parsing and forwarding user requests.
 // It is not responsible for QoS, authorization, etc...
+// For example, Processing should fail here only if no authoritative service ID is provided - Bad Request
 //
-// For example, Processing should fail here only if:
-// A) No service is provided - Bad Request
-// B) The provided service is not found/configured for the gateway instance - Not Found
-//
-// The responsibility of the `request` package is to extract the service ID and find the target service's corresponding QoS instance.
+// The responsibility of the `request` package is to extract the authoritative service ID and return the target service's corresponding QoS instance.
 // See: https://github.com/buildwithgrove/path/blob/e0067eb0f9ab0956127c952980b09909a795b300/gateway/gateway.go#L52C2-L52C45
 package request
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/noop"
 )
 
-// HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target service's ID.
-// Please see the following link on the deprecation of X- prefix in the HTTP header parameter names and why it wasn't used.
-// https://www.rfc-editor.org/rfc/rfc6648#section-3
+// HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
+// service's ID. Please see the following link on the deprecation of X- prefix in HTTP header
+// parameter names and why it wasn't used: https://www.rfc-editor.org/rfc/rfc6648#section-3
 const HTTPHeaderTargetServiceID = "Target-Service-ID"
 
-type (
-	Parser struct {
-		Backend     Backend
-		QoSServices map[protocol.ServiceID]gateway.QoSService
-		Logger      polylog.Logger
-	}
-	Backend interface {
-		GetServiceIDFromAlias(string) (protocol.ServiceID, bool)
-	}
-)
+// The Parser struct is responsible for parsing the authoritative service ID from the request's
+// 'Target-Service-ID' header and returning the corresponding QoS service implementation.
+type Parser struct {
+	qosServices map[protocol.ServiceID]gateway.QoSService
+	logger      polylog.Logger
+}
 
-func NewParser(backend Backend, enabledServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) (*Parser, error) {
+func NewParser(qosServices map[protocol.ServiceID]gateway.QoSService, logger polylog.Logger) *Parser {
 	return &Parser{
-		Backend:     backend,
-		QoSServices: enabledServices,
-		Logger:      logger,
-	}, nil
+		qosServices: qosServices,
+		logger:      logger,
+	}
 }
 
 /* --------------------------------- HTTP Request Parsing -------------------------------- */
 
+// GetQoSService returns the QoS service implementation for the given request, as well as the authoritative service ID.
+// If the service ID does not have a corresponding QoS implementation, the NoOp QoS service is returned.
 func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol.ServiceID, gateway.QoSService, error) {
-
+	// Get the authoritative service ID from the request's header.
 	serviceID, err := p.getServiceID(req)
 	if err != nil {
 		return "", nil, err
 	}
 
-	qosService, ok := p.QoSServices[serviceID]
-	if !ok {
-		return serviceID, nil, fmt.Errorf("service ID %q not supported", serviceID)
+	// Return the QoS service implementation for the request's service ID if it exists.
+	if qosService, ok := p.qosServices[serviceID]; ok {
+		return serviceID, qosService, nil
 	}
 
-	return serviceID, qosService, nil
+	// If the service does not have a corresponding QoS implementation,
+	// return the NoOp QoS service, which will select a random endpoint.
+	return serviceID, noop.NoOpQoS{}, nil
 }
 
+// getServiceID extracts the authoritative service ID from the HTTP request's `Target-Service-ID` header.
+func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
+	if serviceID := req.Header.Get(HTTPHeaderTargetServiceID); serviceID != "" {
+		return protocol.ServiceID(serviceID), nil
+	}
+	return "", errNoServiceIDProvided
+}
+
+/* --------------------------------- HTTP Error Response -------------------------------- */
+
+// GetHTTPErrorResponse returns an HTTP response with the appropriate status code and
+// error message, which ensures the error response is returned in a valid JSON format.
 func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HTTPResponse {
 	if errors.Is(err, errNoServiceIDProvided) {
 		return &parserErrorResponse{err: err.Error(), code: http.StatusBadRequest}
 	}
 	return &parserErrorResponse{err: err.Error(), code: http.StatusNotFound}
-}
-
-// getServiceID extracts the target service ID from the supplied HTTP request.
-// As of #101, it supports two options for specifying the target service ID, in order of priority:
-//  1. The value of the HTTP Header Target-Service-ID, if defined.
-//     e.g. `Target-Service-ID: eth` is interpreted as `eth` target service ID
-//  2. The subdomain of the HTTP request's Host field.
-//     e.g. host = "eth.gateway.pokt.network" -> serviceID = "eth"
-func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
-	// Prefer the custom HTTP Header for specification of the Target Service ID
-	serviceID := req.Header.Get(HTTPHeaderTargetServiceID)
-	if serviceID != "" {
-		return p.getServiceIDFromAlias(serviceID), nil
-	}
-
-	// Fallback to using the HTTP request's host field's domain if the custom HTTP header is not set.
-	hostParts := strings.Split(req.Host, ".")
-	if len(hostParts) < 2 {
-		return "", errNoServiceIDProvided
-	}
-
-	subdomain := hostParts[0]
-	return p.getServiceIDFromAlias(subdomain), nil
-}
-
-// TODO_TECHDEBT(@adshmh): consider removing the alias concept altogether: it look like a DNS/Load Balancer level concept rather than a gateway feature.
-// getServiceIDFromAlias returns the service ID for the supplied alias. The serviceAlias is returned as-is if no matching service IDs are found.
-func (p *Parser) getServiceIDFromAlias(serviceAlias string) protocol.ServiceID {
-	if serviceIDFromAlias, ok := p.Backend.GetServiceIDFromAlias(serviceAlias); ok {
-		return serviceIDFromAlias
-	}
-
-	return protocol.ServiceID(serviceAlias)
 }
