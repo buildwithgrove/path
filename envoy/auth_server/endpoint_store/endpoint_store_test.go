@@ -5,12 +5,13 @@ import (
 	"io"
 	"testing"
 
-	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 	protoPkg "google.golang.org/protobuf/proto"
+
+	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
 // MockStream is a mock implementation of the grpc.ClientStream interface.
@@ -53,40 +54,40 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 	}{
 		{
 			name:                    "should return gateway endpoint when found",
-			endpointID:              "endpoint_1",
-			expectedGatewayEndpoint: getTestGatewayEndpoints().Endpoints["endpoint_1"],
+			endpointID:              "endpoint_1_static_key",
+			expectedGatewayEndpoint: getTestGatewayEndpoints().Endpoints["endpoint_1_static_key"],
 			expectedEndpointFound:   true,
 		},
 		{
 			name:                    "should return different gateway endpoint when found",
-			endpointID:              "endpoint_2",
-			expectedGatewayEndpoint: getTestGatewayEndpoints().Endpoints["endpoint_2"],
+			endpointID:              "endpoint_2_jwt",
+			expectedGatewayEndpoint: getTestGatewayEndpoints().Endpoints["endpoint_2_jwt"],
 			expectedEndpointFound:   true,
 		},
 		{
 			name:                    "should return brand new gateway endpoint when update is received for new endpoint",
-			endpointID:              "endpoint_3",
-			update:                  getTestUpdate("endpoint_3"),
-			expectedGatewayEndpoint: getTestUpdate("endpoint_3").GatewayEndpoint,
+			endpointID:              "endpoint_3_no_auth",
+			update:                  getTestUpdate("endpoint_3_no_auth"),
+			expectedGatewayEndpoint: getTestUpdate("endpoint_3_no_auth").GatewayEndpoint,
 			expectedEndpointFound:   true,
 		},
 		{
 			name:                    "should return updated existing gateway endpoint when update is received for existing endpoint",
-			endpointID:              "endpoint_2",
-			update:                  getTestUpdate("endpoint_2"),
-			expectedGatewayEndpoint: getTestUpdate("endpoint_2").GatewayEndpoint,
+			endpointID:              "endpoint_2_jwt",
+			update:                  getTestUpdate("endpoint_2_jwt"),
+			expectedGatewayEndpoint: getTestUpdate("endpoint_2_jwt").GatewayEndpoint,
 			expectedEndpointFound:   true,
 		},
 		{
 			name:                    "should not return gateway endpoint when update is received to delete endpoint",
-			endpointID:              "endpoint_1",
-			update:                  getTestUpdate("endpoint_1"),
+			endpointID:              "endpoint_1_static_key",
+			update:                  getTestUpdate("endpoint_1_static_key"),
 			expectedGatewayEndpoint: nil,
 			expectedEndpointFound:   false,
 		},
 		{
 			name:                    "should return false when gateway endpoint not found",
-			endpointID:              "endpoint_3",
+			endpointID:              "endpoint_3_no_auth",
 			expectedGatewayEndpoint: nil,
 			expectedEndpointFound:   false,
 		},
@@ -122,47 +123,39 @@ func Test_GetGatewayEndpoint(t *testing.T) {
 func getTestGatewayEndpoints() *proto.AuthDataResponse {
 	return &proto.AuthDataResponse{
 		Endpoints: map[string]*proto.GatewayEndpoint{
-			"endpoint_1": {
-				EndpointId: "endpoint_1",
+			"endpoint_1_static_key": {
+				EndpointId: "endpoint_1_static_key",
+				Auth: &proto.Auth{
+					AuthType: &proto.Auth_StaticApiKey{
+						StaticApiKey: &proto.StaticAPIKey{
+							ApiKey: "api_key_1",
+						},
+					},
+				},
+				RateLimiting: &proto.RateLimiting{},
+				Metadata: &proto.Metadata{
+					AccountId: "account_1",
+					PlanType:  "PLAN_UNLIMITED",
+					Email:     "amos.burton@opa.belt",
+				},
+			},
+			"endpoint_2_jwt": {
+				EndpointId: "endpoint_2_jwt",
 				Auth: &proto.Auth{
 					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_1": {},
-								"auth0|user_4": {},
-							},
-						},
-					},
-				},
-				RateLimiting: &proto.RateLimiting{
-					ThroughputLimit:     30,
-					CapacityLimit:       100,
-					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_DAILY,
-				},
-				Metadata: &proto.Metadata{
-					AccountId: "account_1",
-					PlanType:  "PLAN_FREE",
-				},
-			},
-			"endpoint_2": {
-				EndpointId: "endpoint_2",
-				Auth: &proto.Auth{
-					AuthType: &proto.Auth_Jwt{
-						Jwt: &proto.JWT{
-							AuthorizedUsers: map[string]*proto.Empty{
 								"auth0|user_2": {},
 							},
 						},
 					},
 				},
-				RateLimiting: &proto.RateLimiting{
-					ThroughputLimit:     50,
-					CapacityLimit:       200,
-					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
-				},
+				RateLimiting: &proto.RateLimiting{},
 				Metadata: &proto.Metadata{
 					AccountId: "account_2",
 					PlanType:  "PLAN_UNLIMITED",
+					Email:     "paul.atreides@arrakis.com",
 				},
 			},
 		},
@@ -176,59 +169,51 @@ func getTestGatewayEndpoints() *proto.AuthDataResponse {
 // 3. An existing GatewayEndpoint was deleted (endpoint_1)
 func getTestUpdate(endpointID string) *proto.AuthDataUpdate {
 	updatesMap := map[string]*proto.AuthDataUpdate{
-		"endpoint_3": {
-			EndpointId: "endpoint_3",
+		"endpoint_2_jwt": {
+			EndpointId: "endpoint_2_jwt",
 			GatewayEndpoint: &proto.GatewayEndpoint{
-				EndpointId: "endpoint_3",
+				EndpointId: "endpoint_2_jwt",
 				Auth: &proto.Auth{
 					AuthType: &proto.Auth_Jwt{
 						Jwt: &proto.JWT{
 							AuthorizedUsers: map[string]*proto.Empty{
-								"auth0|user_3": {},
-							},
-						},
-					},
-				},
-				RateLimiting: &proto.RateLimiting{
-					ThroughputLimit:     100,
-					CapacityLimit:       500,
-					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
-				},
-				Metadata: &proto.Metadata{
-					AccountId: "account_3",
-					PlanType:  "PLAN_ENTERPRISE",
-				},
-			},
-			Delete: false,
-		},
-		"endpoint_2": {
-			EndpointId: "endpoint_2",
-			GatewayEndpoint: &proto.GatewayEndpoint{
-				EndpointId: "endpoint_2",
-				Auth: &proto.Auth{
-					AuthType: &proto.Auth_Jwt{
-						Jwt: &proto.JWT{
-							AuthorizedUsers: map[string]*proto.Empty{
+								"auth0|user_1": {},
 								"auth0|user_2": {},
-								"auth0|user_5": {},
 							},
 						},
 					},
 				},
-				RateLimiting: &proto.RateLimiting{
-					ThroughputLimit:     60,
-					CapacityLimit:       250,
-					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_WEEKLY,
-				},
+				RateLimiting: &proto.RateLimiting{},
 				Metadata: &proto.Metadata{
 					AccountId: "account_2",
 					PlanType:  "PLAN_UNLIMITED",
+					Email:     "paul.atreides@arrakis.com",
 				},
 			},
 			Delete: false,
 		},
-		"endpoint_1": {
-			EndpointId: "endpoint_1",
+		"endpoint_3_no_auth": {
+			EndpointId: "endpoint_3_no_auth",
+			GatewayEndpoint: &proto.GatewayEndpoint{
+				EndpointId: "endpoint_3_no_auth",
+				Auth: &proto.Auth{
+					AuthType: &proto.Auth_NoAuth{},
+				},
+				RateLimiting: &proto.RateLimiting{
+					ThroughputLimit:     30,
+					CapacityLimit:       100_000,
+					CapacityLimitPeriod: proto.CapacityLimitPeriod_CAPACITY_LIMIT_PERIOD_MONTHLY,
+				},
+				Metadata: &proto.Metadata{
+					AccountId: "account_2",
+					PlanType:  "PLAN_FREE",
+					Email:     "frodo.baggins@shire.io",
+				},
+			},
+			Delete: false,
+		},
+		"endpoint_1_static_key": {
+			EndpointId: "endpoint_1_static_key",
 			Delete:     true,
 		},
 	}

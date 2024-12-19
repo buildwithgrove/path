@@ -96,6 +96,7 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
+// TODO_TECHDEBT(@dashmh): validate the provided request's service ID is supported by the Shannon protocol.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
