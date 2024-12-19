@@ -168,7 +168,7 @@ config_shannon_localnet: ## Create a localnet config file to serve as a Shannon 
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
-		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
+		cp ./config/examples/config.morse_example.yaml ./bin/config/.config.yaml; \
 		echo "######################################################################"; \
 		echo "### Created ./bin/config/.config.yaml                              ###"; \
 		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
