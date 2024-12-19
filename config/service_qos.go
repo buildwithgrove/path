@@ -2,8 +2,14 @@ package config
 
 import "github.com/buildwithgrove/path/protocol"
 
+/* IMPORTANT: In order for PATH to run Quality of Service (QoS) checks against the endpoints for a service,
+the authoritative service ID MUST be registered in this file in order for it to be added to the ServiceQoSTypes map.
+
+Services that are not registered in this file will be supported but will have the NoOp service QoS type,
+which does not perform any observations or QoS checks, meaning a random endpoint for the given service
+ID will be selected for the request. */
+
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
-// IMPORTANT: All service IDs supported by PATH must be registered in this file.
 
 // The ServiceQoSType type corresponds to a specific implementation of the
 // gateway.QoSService interface, which is used to build the request QoS context
@@ -11,29 +17,37 @@ import "github.com/buildwithgrove/path/protocol"
 type ServiceQoSType string
 
 const (
-	// TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
 	ServiceIDEVM    ServiceQoSType = "evm"    // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
 	ServiceIDSolana ServiceQoSType = "solana" // ServiceIDSolana represents the Solana blockchain service type.
 	ServiceIDPOKT   ServiceQoSType = "pokt"   // ServiceIDPOKT represents the POKT blockchain service type.
-	ServiceIDNoop   ServiceQoSType = "noop"   // ServiceIDNoop represents the NoOp service type.
 )
 
 // The ServiceQoSTypes map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
 // This is to handle requests for a given service ID.
+//
+// IMPORTANT: Only service IDs that are part of this map will have QoS checks performed.
+// All other service IDS will be supported but will have the NoOp service QoS type,
+// which does not perform any observations or QoS checks, meaning a random endpoint
+// for the given service ID will be selected for the request.
+//
+// DEV_NOTE: The ServiceQoSTypes map is initialized in the init() function.
 var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{}
 
 func init() {
 	for k, v := range shannonQoSTypes {
 		ServiceQoSTypes[k] = v
 	}
-	for k, v := range legacyMorseQoSTypes {
+	for k, v := range morseQoSTypes {
 		ServiceQoSTypes[k] = v
 	}
-	for k, v := range testQoSTypes {
+	for k, v := range shannonTestQoSTypes {
 		ServiceQoSTypes[k] = v
 	}
 }
+
+// IMPORTANT: To run QoS checks against a service, the service ID MUST be registered in one of the below maps.
+// TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
 
 // Shannon service IDs.
 // As of 12/2024, these service IDs are on Beta TestNet and intended to be moved
@@ -53,15 +67,13 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 // Shannon test service IDs.
 // As of 12/2024, these service IDs are on Beta TestNet and primarily used
 // for E2E testing. They may or may not be moved over to MainNet once the network.
-var testQoSTypes = map[protocol.ServiceID]ServiceQoSType{
+var shannonTestQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Shannon Service IDs
-	"anvil":       ServiceIDEVM, // ETH Local (development/testing)
-	"proto-anvil": ServiceIDNoop,
+	"anvil": ServiceIDEVM, // ETH Local (development/testing)
 }
 
-// TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
 // Service IDs transferred from Morse to Shannon for backwards compatibility.
-var legacyMorseQoSTypes = map[protocol.ServiceID]ServiceQoSType{
+var morseQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// All Morse EVM F-Chain Services as of 12/17/2024 (#103)
 	"F001": ServiceIDEVM, // Arbitrum One
 	"F002": ServiceIDEVM, // Arbitrum Sepolia Testnet

@@ -186,13 +186,7 @@ The configuration is divided into several sections:
    - Must include RPC URL, gRPC host/port, and gateway address/private key.
    - Must include the addresses of the onchain Applications that are delegated to the onchain Gateway.
 
-3. **Services Configuration (`services`)**:
-
-   - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
-   - Only the Service ID is required. All other fields are optional.
-
-4. **Router Configuration (`router_config`)**:
+3. **Router Configuration (`router_config`)**:
 
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.

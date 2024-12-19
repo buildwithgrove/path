@@ -17,7 +17,7 @@ import (
 // 2. Build a Solana QoS instance using any required configuration options.
 // 3. Pass the Solana QoS instance to the endpoint hydrator, if enabled.
 // 4. Pass the Solana QoS instance to the gateway.
-//
+
 // getServiceQoSInstances returns all QoS instances
 // to be used by the Gateway and EndpointHydrator, respectively.
 // This is done to ensure the same QoS instance is used in both
@@ -31,24 +31,20 @@ func getServiceQoSInstances(
 	map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator,
 	error,
 ) {
-	// Build a map of services configured for the hydrator
-	// and the gateway to allow easy lookup.
+	// Build a map of services configured for the hydrator to allow easy lookup.
 	hydratorServiceIDsIdx := buildServiceIDsIdx(gatewayConfig.HydratorConfig.ServiceIDs)
-	gatewayServiceIDsIdx := buildServiceIDsIdx(gatewayConfig.GetEnabledServiceIDs())
 
-	// TODO_TECHDEBT: refactor this function to remove
-	// the need for manually adding entries for every new QoS implmenetation.
+	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
+	// need to manually add entries for every new QoS implementation.
 	gatewayQoSService := make(map[protocol.ServiceID]gateway.QoSService)
 	hydratorQoSGenerators := make(map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator)
 
-	// TODO_FUTURE: support serviceQoS-specific configuration.
-	allServiceIDs := append(gatewayConfig.GetEnabledServiceIDs(), gatewayConfig.HydratorConfig.ServiceIDs...)
+	// Initialize NoOp QoS service to handle services without a corresponding QoS implementation.
+	gatewayQoSService[protocol.ServiceIDNoOp] = noop.NoOpQoS{}
 
-	for _, serviceID := range allServiceIDs {
-
-		// Get the QoS type for the service ID.
-		serviceQoSType := config.ServiceQoSTypes[serviceID]
-
+	// Initialize QoS services for all service IDs with a corresponding QoS
+	// implementation, as defined in the `config/service_qos.go` file.
+	for serviceID, serviceQoSType := range config.ServiceQoSTypes {
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
@@ -59,9 +55,10 @@ func getServiceQoSInstances(
 				},
 				Logger: logger,
 			}
-			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
-				gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
-			}
+			gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
+
+			// If the service is configured for the hydrator in the configuration YAML file,
+			// add its authoritative service ID to the hydrator's QoS generators map.
 			if _, ok := hydratorServiceIDsIdx[serviceID]; ok {
 				hydratorQoSGenerators[serviceID] = evmEndpointStore
 			}
@@ -75,12 +72,7 @@ func getServiceQoSInstances(
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
 
-		case config.ServiceIDNoop:
-			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
-				gatewayQoSService[serviceID] = noop.NoOpQoS{}
-			}
-
-		default:
+		default: // this should never happen
 			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
 	}
