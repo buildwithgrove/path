@@ -20,7 +20,9 @@ message SolanaEndpointDetails {
   optional bool generic_request=5;
 }
 
+// The response to a endpoint name (if available)
+// Link to RPC spec (if available)
 message SolanaEpochInfoResponse {
-	uint64 block_height=1;
-	uint64 epoch=2;
+  uint64 block_height = 1;
+  uint64 epoch = 2;
 }
