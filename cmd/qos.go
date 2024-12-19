@@ -9,6 +9,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
+	"github.com/buildwithgrove/path/qos/noop"
 )
 
 // TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
@@ -73,6 +74,11 @@ func getServiceQoSInstances(
 
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
+
+		case config.ServiceIDNoop:
+			if _, ok := gatewayServiceIDsIdx[serviceID]; ok {
+				gatewayQoSService[serviceID] = noop.NoOpQoS{}
+			}
 
 		default:
 			return nil, nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
