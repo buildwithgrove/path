@@ -21,10 +21,10 @@ import (
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
 // service's ID. Please see the following link on the deprecation of X- prefix in HTTP header
 // parameter names and why it wasn't used: https://www.rfc-editor.org/rfc/rfc6648#section-3
-const HTTPHeaderTargetServiceID = "Target-Service-ID"
+const HTTPHeaderTargetServiceID = "target-service-id"
 
 // The Parser struct is responsible for parsing the authoritative service ID from the request's
-// 'Target-Service-ID' header and returning the corresponding QoS service implementation.
+// 'target-service-id' header and returning the corresponding QoS service implementation.
 type Parser struct {
 	qosServices map[protocol.ServiceID]gateway.QoSService
 	logger      polylog.Logger
@@ -58,7 +58,7 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol
 	return serviceID, noop.NoOpQoS{}, nil
 }
 
-// getServiceID extracts the authoritative service ID from the HTTP request's `Target-Service-ID` header.
+// getServiceID extracts the authoritative service ID from the HTTP request's `target-service-id` header.
 func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 	if serviceID := req.Header.Get(HTTPHeaderTargetServiceID); serviceID != "" {
 		return protocol.ServiceID(serviceID), nil

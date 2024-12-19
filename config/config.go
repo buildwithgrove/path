@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -16,21 +15,15 @@ import (
 // GatewayConfig is the top level struct that contains configuration details
 // that which are parsed from a YAML config file. It contains all the various
 // configuration details that are needed to operate a gateway.
-type (
-	GatewayConfig struct {
-		// Only one of the following configs may be set
-		MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
-		ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
+type GatewayConfig struct {
+	// Only one of the following configs may be set
+	MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
+	ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
-		Router          RouterConfig           `yaml:"router_config"`
-		HydratorConfig  EndpointHydratorConfig `yaml:"hydrator_config"`
-		MessagingConfig MessagingConfig        `yaml:"messaging_config"`
-	}
-	ServiceConfig struct {
-		Alias          string        `yaml:"alias"`
-		RequestTimeout time.Duration `yaml:"request_timeout"`
-	}
-)
+	Router          RouterConfig           `yaml:"router_config"`
+	HydratorConfig  EndpointHydratorConfig `yaml:"hydrator_config"`
+	MessagingConfig MessagingConfig        `yaml:"messaging_config"`
+}
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path
 // and unmarshals its content into a GatewayConfig instance.

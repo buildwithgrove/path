@@ -12,6 +12,24 @@ const config = {
   tagline: "All paths lead to Grove",
   favicon: "img/grove-leaf.jpeg",
 
+  markdown: {
+    mermaid: true,
+  },
+  themes: [
+    "@docusaurus/theme-mermaid",
+    [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      /** @type {import('@easyops-cn/docusaurus-search-local').PluginOptions} **/
+      {
+        docsRouteBasePath: "/",
+        hashed: false,
+        indexBlog: false,
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+      },
+    ],
+  ],
+
   // Set the production url of your site here
   url: "https://grove.city",
   baseUrl: "/",
@@ -123,6 +141,15 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: [
+          "gherkin",
+          "protobuf",
+          "json",
+          "makefile",
+          "diff",
+          "lua",
+          "bash",
+        ],
       },
     }),
 };

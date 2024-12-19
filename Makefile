@@ -168,7 +168,7 @@ config_shannon_localnet: ## Create a localnet config file to serve as a Shannon 
 copy_morse_config: ## copies the example morse configuration yaml file to .config.yaml file
 	@if [ ! -f ./bin/config/.config.yaml ]; then \
 		mkdir -p bin/config; \
-		cp ./cmd/.config.morse_example.yaml ./bin/config/.config.yaml; \
+		cp ./config/examples/config.morse_example.yaml ./bin/config/.config.yaml; \
 		echo "######################################################################"; \
 		echo "### Created ./bin/config/.config.yaml                              ###"; \
 		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
@@ -235,33 +235,13 @@ init_envoy: copy_envoy_config copy_gateway_endpoints ## Runs copy_envoy_config a
 
 .PHONY: copy_envoy_config
 copy_envoy_config: ## Substitutes the sensitive 0Auth environment variables in the template envoy configuration yaml file and outputs the result to .envoy.yaml
-	@if [ ! -f ./local/path/envoy/envoy.yaml ]; then \
-		mkdir -p local/path/envoy; \
-		./envoy/scripts/copy_envoy_config.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./local/path/envoy/envoy.yaml               ###"; \
-		echo "### README: Please ensure the configuration is correct. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "######################################################################"; \
-		echo "### ./local/path/envoy/envoy.yaml already exists, not overwriting. ###"; \
-		echo "######################################################################"; \
-	fi
+	@mkdir -p local/path/envoy;
+	@./envoy/scripts/copy_envoy_config.sh;
 
 .PHONY: copy_gateway_endpoints
 copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from the PADS repo to ./local/path/envoy/.gateway-endpoints.yaml
-	@if [ ! -f ./local/path/envoy/gateway-endpoints.yaml ]; then \
-		mkdir -p local/path/envoy; \
-		./envoy/scripts/copy_gateway_endpoints_yaml.sh; \
-		echo "###########################################################"; \
-		echo "### Created ./local/path/envoy/gateway-endpoints.yaml   ###"; \
-		echo "### README: Please update this file with your own data. ###"; \
-		echo "###########################################################"; \
-	else \
-		echo "##################################################################################"; \
-		echo "### ./local/path/envoy/gateway-endpoints.yaml already exists, not overwriting. ###"; \
-		echo "##################################################################################"; \
-	fi
+	@mkdir -p local/path/envoy;
+	@./envoy/scripts/copy_gateway_endpoints_yaml.sh;
 
 ###############################
 ### Generation Make Targets ###

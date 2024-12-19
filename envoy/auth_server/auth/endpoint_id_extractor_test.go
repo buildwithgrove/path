@@ -65,7 +65,7 @@ func Test_HeaderExtractor(t *testing.T) {
 			name: "should extract endpoint ID from header",
 			request: &envoy_auth.AttributeContext_HttpRequest{
 				Headers: map[string]string{
-					"x-endpoint-id": "1a2b3c4d",
+					"endpoint-id": "1a2b3c4d",
 				},
 			},
 			want:    "1a2b3c4d",
@@ -83,7 +83,7 @@ func Test_HeaderExtractor(t *testing.T) {
 			name: "should return error if header is empty",
 			request: &envoy_auth.AttributeContext_HttpRequest{
 				Headers: map[string]string{
-					"x-endpoint-id": "",
+					"endpoint-id": "",
 				},
 			},
 			want:    "",

@@ -90,16 +90,80 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # Removes the `x-jwt-user-id` header before forwarding the request to the external authorization filter.
+                  # Extracts the Service ID from one of:
+                  # 1. The subdomain of the request's host field
+                  # 2. The `target-service-id` header
+                  #
+                  # In both of the above cases, the filter attaches the extracted
+                  # service ID to the request as the `target-service-id` header.
+                  #
+                  # If a valid service ID is not found, the request will be rejected.
+                  #
+                  # Three concrete examples:
+                  # 1. subdomain = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
+                  # 2. header = "target-service-id: anvil" will be transformed to Header: "target-service-id: anvil"
+                  # 3. header (aliased) = "target-service-id: eth" will be transformed to Header: "target-service-id: F00C"
+                  #
+                  # IMPORTANT: The `.allowed-services.lua` file must contain all service IDs allowed by the PATH instance.
+                  # Only requests for services defined in `.allowed-services.lua` will be forwarded to PATH;
+                  # otherwise, the request will be rejected.
+                  #
+                  # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter
+                  - name: envoy.filters.http.lua
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                      inline_code: |
+                        function envoy_on_request(handle)
+                          -- Check if the subdomain_to_service_id is already loaded
+                          if not _G.subdomain_to_service_id then
+                            -- Load the mapping of subdomains to service IDs from an external file
+                            _G.subdomain_to_service_id = dofile("/etc/envoy/.allowed-services.lua")
+                          end
+
+                          local host = handle:headers():get(":authority")
+                          local subdomain = string.match(host, "^([^.]+)")
+                          local target_service_id_header = handle:headers():get("target-service-id")
+
+                          -- Function to resolve service ID from a given key
+                          local function resolve_service_id(key)
+                            return _G.subdomain_to_service_id[key]
+                          end
+
+                          -- Attempt to resolve service ID from subdomain
+                          local service_id = resolve_service_id(subdomain)
+
+                          -- If not found, attempt to resolve from "target-service-id" header
+                          if not service_id and target_service_id_header then
+                            service_id = resolve_service_id(target_service_id_header)
+                          end
+
+                          if service_id then
+                            -- Update the "target-service-id" header with the resolved service ID
+                            handle:headers():replace("target-service-id", service_id)
+                          else
+                            -- Reject the request if the service ID is not found in both subdomain and header
+                            handle:respond(
+                                {[":status"] = "404"},
+                                "Not Found: No valid service ID found for subdomain or 'target-service-id' header"
+                            )
+                          end
+                        end
+                  # Removes the `jwt-user-id` header before forwarding the request to the external authorization filter.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/header_mutation_filter
+                  #
+                  # DEV_NOTE: If the Gateway Operator does not wish to use JWT authorization,
+                  # this filter will be removed from the configuration file.
                   - name: envoy.filters.http.header_mutation
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
                       mutations:
                         request_mutations:
-                          - remove: x-jwt-user-id
-                  # Verifies JWT tokens and sets the `x-jwt-user-id` header based on the token claims.
+                          - remove: jwt-user-id
+                  # Verifies JWT tokens and sets the `jwt-user-id` header based on the token claims.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter
+                  #
+                  # DEV_NOTE: If the Gateway Operator does not wish to use JWT authorization,
+                  # this filter will be removed from the configuration file.
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -109,7 +173,7 @@ static_resources:
                           requires:
                             requires_any:
                               requirements:
-                                # Allows requests without a JWT. In such cases, `x-jwt-user-id` is not set.
+                                # Allows requests without a JWT. In such cases, `jwt-user-id` is not set.
                                 - allow_missing: {}
                                 # Enforces JWT validation if a token is present.
                                 - provider_name: auth_provider
@@ -128,7 +192,7 @@ static_resources:
                               timeout: 1s
                           forward: true
                           claim_to_headers:
-                            - header_name: x-jwt-user-id
+                            - header_name: jwt-user-id
                               claim_name: sub
                   # External authorization filter to handle permission checks.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filte
@@ -173,6 +237,11 @@ static_resources:
                           route:
                             cluster: path_gateway_service
                           typed_per_filter_config:
+                            # Disable Lua filter for health check requests.
+                            envoy.filters.http.lua:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
+                              disabled: true
+                            # Disable ext_authz filter for health check requests.
                             envoy.filters.http.ext_authz:
                               "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                               disabled: true
@@ -189,8 +258,8 @@ static_resources:
                               - actions:
                                   # Sends descriptors for rate limiting based on custom headers.
                                   - request_headers:
-                                      header_name: "x-rl-endpoint-id"
-                                      descriptor_key: "x-rl-endpoint-id"
+                                      header_name: "rl-endpoint-id"
+                                      descriptor_key: "rl-endpoint-id"
                                   - request_headers:
-                                      header_name: "x-rl-throughput"
-                                      descriptor_key: "x-rl-throughput"
+                                      header_name: "rl-throughput"
+                                      descriptor_key: "rl-throughput"
