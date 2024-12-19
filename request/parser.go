@@ -21,7 +21,7 @@ import (
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
 // service's ID. Please see the following link on the deprecation of X- prefix in HTTP header
 // parameter names and why it wasn't used: https://www.rfc-editor.org/rfc/rfc6648#section-3
-const HTTPHeaderTargetServiceID = "Target-Service-ID"
+const HTTPHeaderTargetServiceID = "target-service-id"
 
 // The Parser struct is responsible for parsing the authoritative service ID from the request's
 // 'Target-Service-ID' header and returning the corresponding QoS service implementation.

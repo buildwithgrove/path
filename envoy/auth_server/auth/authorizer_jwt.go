@@ -4,7 +4,7 @@ import (
 	"github.com/buildwithgrove/path/envoy/auth_server/proto"
 )
 
-const reqHeaderJWTUserID = "x-jwt-user-id" // Defined in envoy.yaml
+const reqHeaderJWTUserID = "jwt-user-id" // Defined in envoy.yaml
 
 // JWTAuthorizer is an Authorizer that ensures the request is authorized
 // by checking if the account user ID is in the GatewayEndpoint's authorized users.

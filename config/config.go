@@ -27,7 +27,6 @@ type (
 		MessagingConfig MessagingConfig        `yaml:"messaging_config"`
 	}
 	ServiceConfig struct {
-		Alias          string        `yaml:"alias"`
 		RequestTimeout time.Duration `yaml:"request_timeout"`
 	}
 )

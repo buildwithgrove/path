@@ -162,8 +162,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			    http_config:
 			      retries: 3
 			      timeout: 5000
-			    request_config:
-			      retries: 3
 			    relay_signing_key: "gateway-private-key"
 			  signed_aats:
 			    f9076ec39b2a495883eb59740d566d5fa2e2b222:
@@ -184,17 +182,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			filePath: "invalid_config.yaml",
 			yamlData: "invalid_yaml: [",
 			wantErr:  true,
-		},
-		{
-			name:     "should return error for duplicate service alias",
-			filePath: "duplicate_service_alias.yaml",
-			yamlData: `
-			morse_config:
-			  serviceAliases:
-			    eth: "0021"
-			    eth: "0022"
-			`,
-			wantErr: true,
 		},
 	}
 

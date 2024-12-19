@@ -35,23 +35,20 @@ test_request_path_only: ## Test request against the PATH Gateway running on port
 test_request_no_auth_url_path: ## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
 	curl http://anvil.localhost:3001/v1/endpoint_3_no_auth \
 		-X POST \
-		-H "Content-Type: application/json" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request_no_auth_header
-test_request_no_auth_header: ## Test request with no auth, endpoint ID passed in the x-endpoint-id header and the service ID passed as the subdomain
+test_request_no_auth_header: ## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
 	curl http://anvil.localhost:3001/v1 \
 		-X POST \
-		-H "Content-Type: application/json" \
-		-H "x-endpoint-id: endpoint_3_no_auth" \
+		-H "endpoint-id: endpoint_3_no_auth" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 		
 .PHONY: test_request_static_key_auth
-test_request_static_key_auth: ## Test request with static key auth, endpoint ID passed in the x-endpoint-id header and the service ID passed as the subdomain
+test_request_static_key_auth: ## Test request with static key auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
 	curl http://anvil.localhost:3001/v1 \
 		-X POST \
-		-H "Content-Type: application/json" \
-		-H "x-endpoint-id: endpoint_1_static_key" \
+		-H "endpoint-id: endpoint_1_static_key" \
 		-H "authorization: api_key_1" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
@@ -59,6 +56,14 @@ test_request_static_key_auth: ## Test request with static key auth, endpoint ID 
 test_request_service_id_header: ## Test request with the service ID passed in the target-service-id header, no auth and the endpoint ID passed in the URL path
 	curl http://localhost:3001/v1/endpoint_3_no_auth \
 		-X POST \
-		-H "Content-Type: application/json" \
+		-H "target-service-id: anvil" \
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+.PHONY: test_request_all_headers
+test_request_all_headers: ## Test request with all possible values passed as headers: service ID, endpoint ID and authorization
+	curl http://localhost:3001/v1 \
+		-X POST \
+		-H "endpoint-id: endpoint_1_static_key" \
+		-H "authorization: api_key_1" \
 		-H "target-service-id: anvil" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
