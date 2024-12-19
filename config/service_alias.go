@@ -15,6 +15,7 @@ const (
 	ServiceIDEVM    ServiceQoSType = "evm"    // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
 	ServiceIDSolana ServiceQoSType = "solana" // ServiceIDSolana represents the Solana blockchain service type.
 	ServiceIDPOKT   ServiceQoSType = "pokt"   // ServiceIDPOKT represents the POKT blockchain service type.
+	ServiceIDNoop   ServiceQoSType = "noop"   // ServiceIDNoop represents the NoOp service type.
 )
 
 // The ServiceQoSTypes map associates each supported service ID with a specific
@@ -54,7 +55,8 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 // for E2E testing. They may or may not be moved over to MainNet once the network.
 var testQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Shannon Service IDs
-	"anvil": ServiceIDEVM, // ETH Local (development/testing)
+	"anvil":       ServiceIDEVM, // ETH Local (development/testing)
+	"proto-anvil": ServiceIDNoop,
 }
 
 // TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
