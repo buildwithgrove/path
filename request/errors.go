@@ -1,14 +1,13 @@
 package request
 
 import (
-	"errors"
 	"fmt"
 )
 
 const parserErrorTemplate = `{"code":%d,"message":"%s"}`
 
 var (
-	errNoServiceIDProvided = errors.New("no service ID provided")
+	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header", HTTPHeaderTargetServiceID)
 )
 
 /* Parser Error Response */

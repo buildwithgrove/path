@@ -67,7 +67,7 @@ func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 
 	return &HTTPResponse{
 		httpStatusCode: http.StatusOK,
-		payload:        rc.receivedResponses[len(rc.receivedResponses)].ResponseBytes,
+		payload:        rc.receivedResponses[len(rc.receivedResponses)-1].ResponseBytes,
 	}
 }
 

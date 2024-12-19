@@ -148,9 +148,10 @@ docker pull ghcr.io/buildwithgrove/path
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth.localhost:3000/v1 \
+   curl http://localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
+       -H "Target-Service-ID: eth" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
@@ -186,13 +187,7 @@ The configuration is divided into several sections:
    - Must include RPC URL, gRPC host/port, and gateway address/private key.
    - Must include the addresses of the onchain Applications that are delegated to the onchain Gateway.
 
-3. **Services Configuration (`services`)**:
-
-   - **Required for all gateways; at least one service must be listed.**
-   - The key is the Service ID (e.g. `F00C`) and the value is the service configuration.
-   - Only the Service ID is required. All other fields are optional.
-
-4. **Router Configuration (`router_config`)**:
+3. **Router Configuration (`router_config`)**:
 
    - _Optional. Default values will be used if not specified._
    - Configures router settings such as port and timeouts.
