@@ -54,7 +54,9 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 // for E2E testing. They may or may not be moved over to MainNet once the network.
 var testQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Shannon Service IDs
-	"anvil": ServiceIDEVM, // ETH Local (development/testing)
+	"anvil":            ServiceIDEVM, // ETH Local (development/testing)
+	"proto-anvil":      ServiceIDEVM, // ETH TestNet Isolated ETH (development/testing)
+	"proto-static-ngx": ServiceIDEVM, // ETH TestNet Isolated ETH / static response (development/testing)
 }
 
 // TODO_TECHDEBT(@fredteumer): Revisit and consider removing these once #105 is complete.
