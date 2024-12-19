@@ -151,7 +151,7 @@ docker pull ghcr.io/buildwithgrove/path
    curl http://localhost:3000/v1 \
        -X POST \
        -H "Content-Type: application/json" \
-       -H "Target-Service-ID: eth" \
+       -H "target-service-id: eth" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
    ```
 
