@@ -9,7 +9,6 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
-	"github.com/buildwithgrove/path/qos/noop"
 )
 
 // TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
@@ -38,9 +37,6 @@ func getServiceQoSInstances(
 	// need to manually add entries for every new QoS implementation.
 	gatewayQoSService := make(map[protocol.ServiceID]gateway.QoSService)
 	hydratorQoSGenerators := make(map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator)
-
-	// Initialize NoOp QoS service to handle services without a corresponding QoS implementation.
-	gatewayQoSService[protocol.ServiceIDNoOp] = noop.NoOpQoS{}
 
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.

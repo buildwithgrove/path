@@ -15,6 +15,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/noop"
 )
 
 // HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
@@ -47,25 +48,14 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol
 		return "", nil, err
 	}
 
-	// Get the QoS service implementation for the request's service ID.
-	qosService, ok := p.qosServices[serviceID]
-
-	// If the service ID is not supported, use the NoOp QoS service, which will select a random endpoint.
-	// The NoOp QoS service is initialized in the `cmd/qos.go` file on startup of PATH.
-	if !ok {
-		qosService = p.qosServices[protocol.ServiceIDNoOp]
+	// Return the QoS service implementation for the request's service ID if it exists.
+	if qosService, ok := p.qosServices[serviceID]; ok {
+		return serviceID, qosService, nil
 	}
 
-	return serviceID, qosService, nil
-}
-
-// GetHTTPErrorResponse returns an HTTP response with the appropriate status code and
-// error message, which ensures the error response is returned in a valid JSON format.
-func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HTTPResponse {
-	if errors.Is(err, errNoServiceIDProvided) {
-		return &parserErrorResponse{err: err.Error(), code: http.StatusBadRequest}
-	}
-	return &parserErrorResponse{err: err.Error(), code: http.StatusNotFound}
+	// If the service does not have a corresponding QoS implementation,
+	// return the NoOp QoS service, which will select a random endpoint.
+	return serviceID, noop.NoOpQoS{}, nil
 }
 
 // getServiceID extracts the authoritative service ID from the HTTP request's `Target-Service-ID` header.
@@ -74,4 +64,15 @@ func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
 		return protocol.ServiceID(serviceID), nil
 	}
 	return "", errNoServiceIDProvided
+}
+
+/* --------------------------------- HTTP Error Response -------------------------------- */
+
+// GetHTTPErrorResponse returns an HTTP response with the appropriate status code and
+// error message, which ensures the error response is returned in a valid JSON format.
+func (p *Parser) GetHTTPErrorResponse(ctx context.Context, err error) gateway.HTTPResponse {
+	if errors.Is(err, errNoServiceIDProvided) {
+		return &parserErrorResponse{err: err.Error(), code: http.StatusBadRequest}
+	}
+	return &parserErrorResponse{err: err.Error(), code: http.StatusNotFound}
 }
