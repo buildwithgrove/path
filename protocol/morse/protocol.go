@@ -123,7 +123,7 @@ func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint,
 
 // TODO_MVP(@adshmh): implement protocol state update using the observations by completing the ApplyObservations method below.
 //
-// ApplyObservations applies the Shannon protocol-level observations to the endpoint store.
+// ApplyObservations applies the Morse protocol-level observations to the endpoint store.
 // e.g. Observation showing an endpoint has maxed out on a specific app for the current session.
 func (p *Protocol) ApplyObservations(protocolobservations.ProtocolDetails) error {
 	return nil
