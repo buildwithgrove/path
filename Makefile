@@ -194,11 +194,16 @@ morse_e2e_config_warning: ## Prints a warning if the shannon E2E config is not p
 copy_morse_e2e_config: ## copies the example Morse test configuration yaml file to .gitignored ..morse.config.yaml file.
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./config/examples/config.morse_example.yaml ./e2e/.morse.config.yaml; \
-		echo "######################################################################"; \
-		echo "### Created ./e2e/.morse.config.yaml                               ###"; \
-		echo "### README: Please update the the following in .morse.config.yaml: ###"; \
-		echo "### 'url', 'relay_signing_key', & 'signed_aats'.                   ###"; \
-		echo "######################################################################"; \
+		echo "#############################################################################################"; \
+		echo "### Created ./e2e/.morse.config.yaml                                                      ###"; \
+		echo "###                                                                                       ###"; \
+		echo "### If you are a Grove employee, use the instructions from the link below to get the      ###"; \
+		echo "### correct config file, and COPY IT OVER the ./e2e/.more.config.yaml file.               ###"; \
+		echo "### https://path.grove.city/develop/path/introduction#running-the-e2e-tests-against-morse ###"; \
+		echo "###                                                                                       ###"; \
+		echo "### Otherwise, please update the the following in .morse.config.yaml:                     ###"; \
+		echo "### 'url', 'relay_signing_key', & 'signed_aats'.                                          ###"; \
+		echo "#############################################################################################"; \
 	else \
 		echo "#################################################################"; \
 		echo "### ./e2e/.morse.config.yaml already exists, not overwriting. ###"; \
