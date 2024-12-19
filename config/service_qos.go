@@ -3,11 +3,10 @@ package config
 import "github.com/buildwithgrove/path/protocol"
 
 /* IMPORTANT: In order for PATH to run Quality of Service (QoS) checks against the endpoints for a service,
-the authoritative service ID MUST be registered in this file in order for it to be added to the ServiceQoSTypes map.
+the authoritative service ID MUST be registered in this file, which is used to build the ServiceQoSTypes map.
 
-Services that are not registered in this file will be supported but will have the NoOp service QoS type,
-which does not perform any observations or QoS checks, meaning a random endpoint for the given service
-ID will be selected for the request. */
+Services that are not registered in this file will be supported but will use the NoOp service QoS type,
+which selects a random endpoint for the given service and does not perform any observations or QoS checks. */
 
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
 
