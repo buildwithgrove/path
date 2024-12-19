@@ -12,7 +12,7 @@ enum RequestType {
   Synthetic=1; // Service request sent by the endpoint hydrator: see gateway/hydrator.go.
 }
 
-message GatewayDetails {
+message GatewayObservations {
   // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
   string region=1; // A string representing the region in which the PATH instance that processed the request is deployed.
   RequestType request_type=2;  
