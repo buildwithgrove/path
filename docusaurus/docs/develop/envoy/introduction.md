@@ -34,10 +34,9 @@ title: Introduction
 - [External Auth Server](#external-auth-server)
   - [External Auth Server Sequence Diagram](#external-auth-server-sequence-diagram)
   - [External Auth Server Configuration](#external-auth-server-configuration)
-  - [Gateway Endpoints gRPC Service](#gateway-endpoints-grpc-service)
+  - [`gateway_endpoint.proto` file](#gateway_endpointproto-file)
   - [Remote gRPC Auth Server](#remote-grpc-auth-server)
     - [PATH Auth Data Server](#path-auth-data-server)
-    - [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file)
     - [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server)
 - [Rate Limiter](#rate-limiter)
   - [Rate Limit Configuration](#rate-limit-configuration)
@@ -51,8 +50,10 @@ title: Introduction
 
 :::info MAKE SURE TO UPDATE THESE FILES
 
-ℹ️ After copying config files by running `make init_envoy`, please update `local/path/envoy/.allowed-services.lua` with the service IDs allowed by your PATH instance
-and `local/path/envoy/.gateway-endpoints.yaml` with your own data.
+ℹ️ After copying config files by running `make init_envoy`, which will create the required files in the `local/path/envoy` directory, please update the following files:
+
+- `.allowed-services.lua` with the service IDs allowed by your PATH instance
+- `.gateway-endpoints.yaml` with your own data
 
 :::
 
@@ -464,7 +465,7 @@ For more information on external authorization using Envoy Proxy, see the Envoy 
 - [Envoy External Authorization Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [Envoy Go Control Plane Auth Package](https://pkg.go.dev/github.com/envoyproxy/go-control-plane@v0.13.0/envoy/service/auth/v3)
 
-### Gateway Endpoints gRPC Service
+### `gateway_endpoint.proto` file
 
 Both the `External Auth Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
@@ -490,61 +491,21 @@ The implementation of the remote gRPC server is up to the Gateway operator but P
 
 #### PATH Auth Data Server
 
+:::info Repository
+
+[See the PADS Documentation for more information on the PATH Auth Data Server.](../pads/introduction.md)
+
+:::
+
 [The PADS repo provides a functioning implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
-This service is available as a Docker image and may be configured to load data from a YAML file or using a simple Postgres database that adheres to the provided minimal schema.
-
-**Docker Image Registry:**
+This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 
 ```bash
 ghcr.io/buildwithgrove/path-auth-data-server:latest
 ```
 
 _This Docker image is loaded by default in the [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) file at the root of the PATH repo._
-
-If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server) section.
-
-#### Gateway Endpoint YAML File
-
-_`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._\
-
-:::info
-[An example `gateway-endpoints.yaml` file may be seen in the PADS repo](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
-
-The yaml file below provides an example for a particular gateway operator where:
-
-- `endpoint_1_static_key` is authorized with a static API Key
-- `endpoint_2_jwt` is authorized using an auth-provider issued JWT for two users
-- `endpoint_3_no_auth` requires no authorization and has a rate limit set
-
-```yaml
-endpoints:
-  # 1. Example of a gateway endpoint using API Key Authorization
-  endpoint_1_static_key:
-    auth:
-      api_key: "api_key_1"
-
-  # 2. Example of a gateway endpoint using JWT Authorization
-  endpoint_2_jwt:
-    auth:
-      jwt_authorized_users:
-        - "auth0|user_1"
-        - "auth0|user_2"
-
-  # 3. Example of a gateway endpoint with no authorization and rate limiting set
-  endpoint_3_no_auth:
-    rate_limiting:
-      throughput_limit: 30
-      capacity_limit: 100000
-      capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
-```
-
-:::tip
-
-The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml), which can be used to validate the configuration.
-
-:::
-
 
 #### Implementing a Custom Remote gRPC Server
 

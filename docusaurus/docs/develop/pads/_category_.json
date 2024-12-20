@@ -1,0 +1,8 @@
+{
+  "label": "PADS Developer Guide",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation for PATH Auth Data Server (PADS) developers."
+  }
+}
