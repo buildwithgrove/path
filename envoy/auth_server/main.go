@@ -31,7 +31,9 @@ func main() {
 	// Initialize new polylog logger
 	logger := polyzero.NewLogger()
 
-	configPath, err := getConfigPath()
+	// Get the config path based on the path of the executable
+	// If the `-config` flag is set, it takes precedence and its value is used.
+	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)
 	}
@@ -93,13 +95,16 @@ func main() {
 
 /* -------------------- Gateway Init Helpers -------------------- */
 
-// getConfigPath returns the full path to the config file
-// based on the current working directory of the executable.
+// getConfigPath returns the full path to the config file.
+// If the `-config` flag is set, it takes precedence and its value is used.
+//
+// Otherwise, the default path is constructed using the executable's directory
+// and the provided defaultConfigPath.
 //
 // For example if the binary is in:
 // - `/app` the full config path will be `/app/config/.config.yaml`
 // - `./bin` the full config path will be `./bin/config/.config.yaml`
-func getConfigPath() (string, error) {
+func getConfigPath(defaultConfigPath string) (string, error) {
 	var configPath string
 
 	// The config path can be overridden using the `-config` flag.
@@ -123,13 +128,13 @@ func getConfigPath() (string, error) {
 // connectGRPC connects to the gRPC server for the GatewayEndpoints service
 // and returns a gRPC client connection.
 func connectGRPC(hostPort string, useInsecureCredentials bool) (*grpc.ClientConn, error) {
-	var transport grpc.DialOption
+	var creds credentials.TransportCredentials
 	if useInsecureCredentials {
-		transport = grpc.WithTransportCredentials(insecure.NewCredentials())
+		creds = insecure.NewCredentials()
 	} else {
-		transport = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+		creds = credentials.NewTLS(&tls.Config{})
 	}
-	return grpc.NewClient(hostPort, transport)
+	return grpc.NewClient(hostPort, grpc.WithTransportCredentials(creds))
 }
 
 // getEndpointIDExtractor returns the endpoint ID extractor based on the config YAML.
@@ -139,6 +144,7 @@ func getEndpointIDExtractor(endpointIDExtractorType auth.EndpointIDExtractorType
 		return &auth.URLPathExtractor{}
 	case auth.EndpointIDExtractorTypeHeader:
 		return &auth.HeaderExtractor{}
+	default: // this should never happen
+		panic(fmt.Sprintf("invalid endpoint ID extractor type: %v", endpointIDExtractorType))
 	}
-	return nil // this should never happen
 }

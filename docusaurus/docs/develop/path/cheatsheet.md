@@ -202,6 +202,7 @@ The `PATH Gateway` stack may take a minute or more to initialize the first time 
 You will be able to tell it is ready when you see log output like this in the `path` Resource in the Tilt dashboard:
 
 ```json
+{"level":"info","message":"Starting PATH using config file: /app/config/.config.yaml"}
 {"level":"info","message":"Starting PATH gateway with Shannon protocol"}
 {"level":"info","message":"Starting the cache update process."}
 {"level":"info","package":"router","message":"PATH gateway running on port 3000"}

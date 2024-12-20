@@ -110,7 +110,7 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
-    # 1. External Authorization Server                                             #
+    # 1. External Auth Server                                                      #
     # 2. Envoy Proxy                                                               #
     # 3. Path Auth Data Server (PADS)                                              #
     # 4. Rate Limiter                                                              #
@@ -139,14 +139,14 @@ if MODE == "path_with_auth":
         watch=True,
     )
 
-    # 1. Build the External Authorization Server image from envoy/auth_server/Dockerfile
+    # 1. Build the External Auth Server image from envoy/auth_server/Dockerfile
     docker_build(
         "ext-authz",
         context="./envoy/auth_server",
         dockerfile="./envoy/auth_server/Dockerfile",
         live_update=[sync("./envoy/auth_server", "/app")],
     )
-    # Load the Kubernetes YAML for the External Authorization Server
+    # Load the Kubernetes YAML for the External Auth Server
     k8s_yaml("./local/kubernetes/envoy-ext-authz.yaml")
     k8s_resource(
         "ext-authz",
