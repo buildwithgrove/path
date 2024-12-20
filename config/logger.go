@@ -8,7 +8,7 @@ import (
 /* --------------------------------- Logger Config Defaults -------------------------------- */
 
 const (
-	defaultLogLevel = "debug"
+	defaultLogLevel = "info"
 )
 
 /* --------------------------------- Logger Config Struct -------------------------------- */
