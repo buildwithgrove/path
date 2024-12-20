@@ -21,6 +21,7 @@ type GatewayConfig struct {
 	ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
 	Router          RouterConfig           `yaml:"router_config"`
+	Logger          LoggerConfig           `yaml:"logger_config"`
 	HydratorConfig  EndpointHydratorConfig `yaml:"hydrator_config"`
 	MessagingConfig MessagingConfig        `yaml:"messaging_config"`
 }
@@ -61,12 +62,16 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 
 func (c *GatewayConfig) hydrateRouterConfig() {
 	c.Router.hydrateRouterDefaults()
+	c.Logger.hydrateLoggerDefaults()
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */
 
 func (c GatewayConfig) validate() error {
 	if err := c.validateProtocolConfig(); err != nil {
+		return err
+	}
+	if err := c.Logger.Validate(); err != nil {
 		return err
 	}
 	return nil
