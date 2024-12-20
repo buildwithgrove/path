@@ -79,7 +79,7 @@ This folder contains everything necessary for managing authorization and rate li
 Specifically, this is split into two logical parts:
 
 1. The `Envoy Proxy configuration`
-2. The `Go External Auth Server`
+2. The `External Auth Server`
 
 ### Components
 
@@ -105,7 +105,7 @@ graph TD
     User[/"<big>PATH<br>User</big>"\]
     Envoy[<big>Envoy Proxy</big>]
 
-    AUTH["Auth Server <br> "]
+    AUTH["External Auth Server"]
     AUTH_DECISION{Did<br>Authorize<br>Request?}
     PATH[<big>PATH Service</big>]
 
@@ -116,7 +116,7 @@ graph TD
     GRPCDB[("Postgres<br>Database")]
     GRPCConfig["YAML Config File"]
 
-    subgraph AUTH["Auth Server (ext_authz)"]
+    subgraph AUTH["External Auth Server"]
         GRPCClient["gRPC Client"]
         Cache["Gateway Endpoint<br>Data Store"]
     end
@@ -176,7 +176,7 @@ sequenceDiagram
     participant Client
     participant Envoy as Envoy<br>Proxy
     participant JWTFilter as JWT HTTP Filter<br>(jwt_authn)
-    participant AuthServer as PATH Auth Server<br>(ext_authz)
+    participant AuthServer as External<br>Auth Server<br>(ext_authz)
     participant RateLimiter as PATH Rate Limiter<br>(ratelimit)
     participant Service as PATH<br>Service
 
@@ -300,7 +300,7 @@ This is determined by the **`ENDPOINT_ID_EXTRACTOR`** environment variable in th
 Requests are rejected if either of the following are true:
 
 - The `<GATEWAY_ENDPOINT_ID>` is missing
-- ID is not present in the `Go External Auth Server`'s `Gateway Endpoint Store`
+- ID is not present in the `External Auth Server`'s `Gateway Endpoint Store`
 
 :::
 
@@ -364,7 +364,7 @@ See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for mo
 
 ## Gateway Endpoint Authorization
 
-The `Go External Auth Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct.
+The `External Auth Server` evaluates whether incoming requests are authorized to access the PATH service based on the `AuthType` field of the `GatewayEndpoint` proto struct.
 
 Three authorization types are supported:
 
@@ -397,7 +397,7 @@ _Example Request Header:_
 
 The `jwt_authn` filter will verify the JWT and, if valid, set the `jwt-user-id` header from the `sub` claim of the JWT. An invalid JWT will result in an error.
 
-The `Go External Auth Server` will use the `jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `jwt-user-id` value, the request will be authorized.
+The `External Auth Server` will use the `jwt-user-id` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.AuthorizedUsers` field contains the `jwt-user-id` value, the request will be authorized.
 
 _Example auth provider user ID header:_
 
@@ -421,13 +421,13 @@ _Example Request Header:_
 -H "Authorization: <API_KEY>"
 ```
 
-The `Go External Auth Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
+The `External Auth Server` will use the `authorization` header to make an authorization decision; if the `GatewayEndpoint`'s `Auth.ApiKey` field matches the `API_KEY` value, the request will be authorized.
 
 ### No Authorization
 
 For GatewayEndpoints with the `AuthType` field set to `NO_AUTH`, no authorization is required to access the PATH service.
 
-All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `Go External Auth Server`.
+All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` will be authorized by the `External Auth Server`.
 
 ## External Auth Server
 
@@ -435,7 +435,7 @@ All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` wil
 See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
 :::
 
-The `envoy/auth_server` directory contains the `Go External Auth Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
+The `envoy/auth_server` directory contains the `External Auth Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
 This server communicates with a `Remote gRPC Server` to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
 
@@ -444,7 +444,7 @@ This server communicates with a `Remote gRPC Server` to populate its in-memory `
 ```mermaid
 sequenceDiagram
     participant EnvoyProxy as Envoy Proxy<br>(ext_authz filter)
-    participant GoAuthServer as Go External<br>Authorization Server
+    participant GoAuthServer as External<br>Auth Server
     participant RemoteGRPC as Remote gRPC Server<br>(eg. PADS)
     participant DataSource as Data Source<br>(YAML, Postgres, etc.)
 
@@ -483,9 +483,9 @@ For more information on external authorization using Envoy Proxy, see the Envoy 
 
 ### Gateway Endpoints gRPC Service
 
-Both the `Go External Auth Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
+Both the `External Auth Server` and the `Remote gRPC Server` use the gRPC service and types defined in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
-This service defines two main methods for populating the `Go External Auth Server`'s `Gateway Endpoint Store`:
+This service defines two main methods for populating the `External Auth Server`'s `Gateway Endpoint Store`:
 
 ```proto
 service GatewayEndpoints {
@@ -499,7 +499,7 @@ service GatewayEndpoints {
 
 ### Remote gRPC Auth Server
 
-The `Remote gRPC Server` is responsible for providing the `Go External Auth Server` with data on which endpoints are authorized to use the PATH service.
+The `Remote gRPC Server` is responsible for providing the `External Auth Server` with data on which endpoints are authorized to use the PATH service.
 
 :::info
 The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
@@ -582,7 +582,7 @@ If you wish to implement your own custom database driver, forking the PADS repo 
 
 ### Rate Limit Configuration
 
-1. The `Go External Auth Server` sets the `rl-endpoint-id` and `rl-throughput` headers if the `GatewayEndpoint` for the request should be rate limited.
+1. The `External Auth Server` sets the `rl-endpoint-id` and `rl-throughput` headers if the `GatewayEndpoint` for the request should be rate limited.
 
 2. Envoy Proxy is configured to forward the `rl-endpoint-id` and `rl-throughput` headers to the rate limiter service as descriptors.
 
