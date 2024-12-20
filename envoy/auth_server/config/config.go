@@ -20,6 +20,11 @@ const (
 var grpcHostPortPattern = "^[^:]+:[0-9]+$"
 
 type (
+	// TODO_DISCUSS/TODO_MVP(@commoddity, @olshansk, @adshmh): See the discussion
+	// in this thread to make a decision if `auth_server_config` should be moved
+	// out into a separate configuration.
+	// https://github.com/buildwithgrove/path/pull/108#discussion_r1893326146
+
 	// GatewayConfig is the top level struct that contains configuration details
 	// that which are parsed from a YAML config file. For the purposes of this
 	// files, only the `auth_server` configurable needs to be loaded from the YAML.
