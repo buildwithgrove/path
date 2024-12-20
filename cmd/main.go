@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -34,7 +33,7 @@ func main() {
 	}
 
 	loggerOpts := []polylog.LoggerOption{
-		polyzero.WithLevel(polyzero.ParseLevel(strings.ToLower(config.Logger.Level))),
+		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
 	}
 
 	logger := polyzero.NewLogger(loggerOpts...)
