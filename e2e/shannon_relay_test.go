@@ -12,6 +12,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -26,50 +29,41 @@ func Test_ShannonRelay(t *testing.T) {
 	defer teardownFn()
 
 	tests := []struct {
-		name         string
-		reqMethod    string
-		reqPath      string
-		serviceID    string
-		serviceAlias string
-		relayID      string
-		body         string
+		name      string
+		reqMethod string
+		serviceID protocol.ServiceID
+		relayID   string
+		body      string
 	}{
 		{
-			// gatewaye2e is a service created for e2e tests: it is supported by a
+			// anvil is a service created for e2e tests: it is supported by a
 			// single endpoint, maintained by Grove.
-			name:         "should successfully relay eth_blockNumber for gatewaye2e",
-			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
-			serviceAlias: "test-service",
-			relayID:      "1001",
-			body:         `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
+			name:      "should successfully relay eth_blockNumber for anvil",
+			reqMethod: http.MethodPost,
+			serviceID: "anvil",
+			relayID:   "1001",
+			body:      `{"jsonrpc": "2.0", "id": "1001", "method": "eth_blockNumber"}`,
 		},
 		{
-			name:         "should successfully relay eth_chainId for gatewaye2e",
-			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
-			serviceAlias: "test-service",
-			relayID:      "1002",
-			body:         `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
+			name:      "should successfully relay eth_chainId for anvil",
+			reqMethod: http.MethodPost,
+			serviceID: "anvil",
+			relayID:   "1002",
+			body:      `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
-		{
-			name:         "should successfully relay eth_blockNumber for eth-mainnet (0021)",
-			reqMethod:    http.MethodPost,
-			reqPath:      "/v1",
-			serviceAlias: "eth-mainnet",
-			relayID:      "1101",
-			body:         `{"jsonrpc": "2.0", "id": "1101", "method": "eth_blockNumber"}`,
-		},
-
 		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
+
+	// Request path is arbitrary, as it is not current used by PATH.
+	// It is here only to ensure all paths following the `/v1` segment are valid.
+	reqPath := "/v1/abcdef12"
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := require.New(t)
 
-			// eg. fullURL = "http://test-service.localdev.me:55006/v1"
-			fullURL := fmt.Sprintf("http://%s.%s:%s%s", test.serviceAlias, localdevMe, pathContainerPort, test.reqPath)
+			// eg. fullURL = "http://localdev.me:55006/v1/abcdef12"
+			fullURL := fmt.Sprintf("http://%s:%s%s", localdevMe, pathContainerPort, reqPath)
 
 			client := &http.Client{}
 
@@ -77,6 +71,9 @@ func Test_ShannonRelay(t *testing.T) {
 			req, err := http.NewRequest(test.reqMethod, fullURL, bytes.NewBuffer([]byte(test.body)))
 			c.NoError(err)
 			req.Header.Set("Content-Type", "application/json")
+
+			// Assign the target service ID to the request header.
+			req.Header.Set(request.HTTPHeaderTargetServiceID, string(test.serviceID))
 
 			var success bool
 			var allErrors []error

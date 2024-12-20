@@ -2,16 +2,12 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/morse"
 	"github.com/buildwithgrove/path/config/shannon"
-	"github.com/buildwithgrove/path/config/utils"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */
@@ -19,25 +15,15 @@ import (
 // GatewayConfig is the top level struct that contains configuration details
 // that which are parsed from a YAML config file. It contains all the various
 // configuration details that are needed to operate a gateway.
-type (
-	GatewayConfig struct {
-		// Only one of the following configs may be set
-		MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
-		ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
+type GatewayConfig struct {
+	// Only one of the following configs may be set
+	MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
+	ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
-		Services        map[protocol.ServiceID]ServiceConfig `yaml:"services"`
-		Router          RouterConfig                         `yaml:"router_config"`
-		HydratorConfig  EndpointHydratorConfig               `yaml:"hydrator_config"`
-		MessagingConfig MessagingConfig                      `yaml:"messaging_config"`
-
-		// A map from human readable aliases (e.g. eth-mainnet) to service ID (e.g. 0021)
-		serviceAliases map[string]protocol.ServiceID
-	}
-	ServiceConfig struct {
-		Alias          string        `yaml:"alias"`
-		RequestTimeout time.Duration `yaml:"request_timeout"`
-	}
-)
+	Router          RouterConfig           `yaml:"router_config"`
+	HydratorConfig  EndpointHydratorConfig `yaml:"hydrator_config"`
+	MessagingConfig MessagingConfig        `yaml:"messaging_config"`
+}
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path
 // and unmarshals its content into a GatewayConfig instance.
@@ -52,10 +38,6 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 		return GatewayConfig{}, err
 	}
 
-	// hydrate required fields and set defaults for optional fields
-	if err := config.hydrateServiceAliases(); err != nil {
-		return GatewayConfig{}, err
-	}
 	config.hydrateRouterConfig()
 
 	return config, config.validate()
@@ -75,42 +57,7 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 	return c.Router
 }
 
-// GetServiceIDFromAlias retrieves the ServiceID associated with a given service alias.
-//
-// This method allows for the use of a user-friendly string service alias in the
-// URL subdomain, enabling more user-friendly URLs. For example, instead of
-// using a ServiceID like "F00C", an alias such as "eth" can be used,
-// resulting in a URL like "eth.rpc.gateway.io" instead of "F00C.rpc.gateway.io".
-func (c GatewayConfig) GetServiceIDFromAlias(alias string) (protocol.ServiceID, bool) {
-	serviceID, ok := c.serviceAliases[alias]
-	return serviceID, ok
-}
-
-// GetEnabledServiceIDs() returns the list of enabled service IDs.
-func (c GatewayConfig) GetEnabledServiceIDs() []protocol.ServiceID {
-	var enabledServices []protocol.ServiceID
-	for serviceID := range c.Services {
-		enabledServices = append(enabledServices, serviceID)
-	}
-	return enabledServices
-}
-
 /* --------------------------------- Gateway Config Hydration Helpers -------------------------------- */
-
-func (c *GatewayConfig) hydrateServiceAliases() error {
-	if c.serviceAliases == nil {
-		c.serviceAliases = make(map[string]protocol.ServiceID)
-	}
-	for serviceID, service := range c.Services {
-		if service.Alias != "" {
-			if _, ok := c.serviceAliases[service.Alias]; ok {
-				return fmt.Errorf("duplicate service alias: %s", service.Alias)
-			}
-			c.serviceAliases[service.Alias] = serviceID
-		}
-	}
-	return nil
-}
 
 func (c *GatewayConfig) hydrateRouterConfig() {
 	c.Router.hydrateRouterDefaults()
@@ -122,10 +69,6 @@ func (c GatewayConfig) validate() error {
 	if err := c.validateProtocolConfig(); err != nil {
 		return err
 	}
-	if err := c.validateServiceConfig(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -142,24 +85,4 @@ func (c GatewayConfig) validateProtocolConfig() error {
 	default:
 		return errors.New("no protocol configured")
 	}
-}
-
-func (c GatewayConfig) validateServiceConfig() error {
-	if len(c.Services) == 0 {
-		return fmt.Errorf("at least one service must be configured")
-	}
-
-	for _, service := range c.Services {
-		if service.Alias != "" {
-			if !utils.IsValidSubdomain(service.Alias) {
-				return fmt.Errorf("invalid service alias %s: must be a valid URL subdomain", service.Alias)
-			}
-		}
-		if err := c.validateProtocolConfig(); err != nil {
-			return err
-		}
-
-	}
-
-	return nil
 }

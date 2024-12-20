@@ -18,6 +18,8 @@ bin
 go.work.sum
 
 # Config
+.*.yaml
+.*.lua
 .config.yaml
 .config.*.yaml
 !.config.example.yaml
@@ -29,22 +31,20 @@ go.work.sum
 # Shannon E2E config
 .shannon.config.yaml
 
+# Env
+.env
+.env.*
+!.env.example
+
 # Macos
 .DS_Store
 **/.DS_Store
 
 # Development
 .vscode
-.env
 .idea/
 .mise.local.toml
 
 # tmp directory
 tmp
 tmp/*
-
-# Envoy config with sensitive information
-envoy.yaml
-
-# Gateway Endpoints YAML file for loading local auth data
-gateway-endpoints.yaml

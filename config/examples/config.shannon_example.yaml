@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+#################################################
+### Example Shannon Configuration YAML Format ###
+#################################################
+
+# DEV_NOTE: The `gateway_private_key_hex` and `owned_apps_private_keys_hex`
+# fields in this file are just random hex codes to bypass schema validation.
+
+shannon_config:
+  full_node_config:
+    # If this config is used for Shannon E2E tests, do not change rpc_url
+    # Otherwise, replace with the correct full node RPC url.
+    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    grpc_config:
+      # If this config is used for Shannon E2E tests, do not change host_port
+      # Otherwise, replace with the correct full node GRPC host:port.
+      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+
+  gateway_config:
+    # If this config is used for Shannon E2E tests, do not change gateway_mode
+    # Otherwise, replace with the correct gateway mode: centralized|delegated|trusted
+    gateway_mode: "centralized"
+
+    # If this config is used for Shannon E2E tests, do not change gateway_address.
+    # Otherwise, replace with the correct gateway address.
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
+
+    # README: gateway_private_key_hex MUST BE replaced with the correct gateway private key secret
+    # See the following link for instructions on creating a Shannon gateway.
+    # https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough#d-creating-a-gateway-deploying-an-gateway-server
+    gateway_private_key_hex: 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+
+    owned_apps_private_keys_hex:
+      # README: the application private key MUST BE replaced with the correct application private key secret
+      - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+
+# To enable endpoint hydrator to run QoS checks against 
+# service endpoints, add the following to the config:
+# hydrator_config:
+#   service_ids:
+#     - "anvil"

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+###############################################
+### Example Morse Configuration YAML Format ###
+###############################################
+
+# DEV_NOTE: The keys in this file are just random hex codes to bypass schema validation.
+
+morse_config:
+  full_node_config:
+    # DO NOT change rpc_url unless you know what you're doing
+    url: "https://pocket-rpc.liquify.com"
+
+    # README: relay_signing_key MUST BE replaced with your personal gateway private key secret
+    # ATTENTION: this is a place-holder for a sensitive data item which should never be shared outside your organization.
+    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+
+    http_config:
+      retries: 3
+      timeout: "5000ms"
+
+  # README: signed_aats MUST BE replaced with the AATs of your Morse applications.
+  # All signed AAT fields are place-holders for sensitive data items which should never be shared outside your organization.
+  # See the following link for more details:
+  # https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats
+  signed_aats:
+    "40af4e7e1b311c76a573610fe115cd2adf1eeade":
+      client_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+      application_signature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+
+# Enable endpoint hydrator to run QoS checks against endpoints of service F00C
+hydrator_config:
+  service_ids:
+    - "F00C"

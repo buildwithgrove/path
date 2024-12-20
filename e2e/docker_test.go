@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -23,10 +24,14 @@ const (
 	internalPathPort     = "3000"
 	buildContextDir      = ".."
 	dockerfileName       = "Dockerfile"
-	configMountPoint     = ":/app/.config.yaml"
+	configMountPoint     = ":/app/config/.config.yaml"
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
-	timeoutSeconds       = 120
+	// containerExpirySeconds is the number of seconds after which the started PATH container should be removed by the dockertest library.
+	containerExpirySeconds = 240
+	// maxPathHealthCheckWaitTimeMillisec is the maximum amount of time a started PATH container has to report its status as healthy.
+	// Once this time expires, the associated E2E test is marked as failed and the PATH container is removed.
+	maxPathHealthCheckWaitTimeMillisec = 120000
 )
 
 var (
@@ -87,7 +92,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("config file does not exist: %s", configFilePath)
 	}
 
-	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/.config.yaml
+	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/config/.config.yaml
 	containerConfigMount := configFilePath + configMountPoint
 
 	// Initialize the dockertest pool
@@ -95,6 +100,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	if err != nil {
 		t.Fatalf("Could not construct pool: %s", err)
 	}
+	pool.MaxWait = time.Duration(maxPathHealthCheckWaitTimeMillisec) * time.Millisecond
 
 	// Build the image and log build output
 	buildOptions := docker.BuildImageOptions{
@@ -152,7 +158,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		}
 	}()
 
-	if err := resource.Expire(timeoutSeconds); err != nil {
+	if err := resource.Expire(containerExpirySeconds); err != nil {
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
