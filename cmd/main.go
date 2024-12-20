@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -22,18 +23,25 @@ import (
 const defaultConfigPath = "config/.config.yaml"
 
 func main() {
-	logger := polyzero.NewLogger()
-
+	// Parse log level from config
 	configPath, err := getConfigPath()
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)
 	}
-	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	config, err := config.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+
+	// Create logger with configured level
+	loggerOpts := []polylog.LoggerOption{
+		polyzero.WithLevel(polyzero.ParseLevel(strings.ToLower(config.Logger.Level))),
+	}
+
+	logger := polyzero.NewLogger(loggerOpts...)
+
+	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	protocol, err := getProtocol(config, logger)
 	if err != nil {
