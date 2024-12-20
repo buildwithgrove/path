@@ -115,7 +115,7 @@ docker pull ghcr.io/buildwithgrove/path
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://eth.localhost:3000/v1 \
+   curl http://eth.localhost:3000/v1/ \
        -X POST \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -148,7 +148,7 @@ docker pull ghcr.io/buildwithgrove/path
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://localhost:3000/v1 \
+   curl http://localhost:3000/v1/ \
        -X POST \
        -H "Content-Type: application/json" \
        -H "target-service-id: eth" \
