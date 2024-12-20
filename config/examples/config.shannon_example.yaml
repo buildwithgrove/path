@@ -37,8 +37,25 @@ shannon_config:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-# To enable endpoint hydrator to run QoS checks against 
+# To enable endpoint hydrator to run QoS checks against
 # service endpoints, add the following to the config:
 # hydrator_config:
 #   service_ids:
 #     - "anvil"
+
+# This configuration is loaded by the Go Auth Server only.
+# See the file in `envoy/auth_server/config/config.go` for more details.
+auth_server_config:
+  # [REQUIRED] The host and port for the remote gRPC server connection
+  # that provides the GatewayEndpoint data for the auth server.
+  # Example: "localhost:50051" or "auth-server.buildwithgrove.com:443"
+  grpc_host_port: path-auth-data-server:50051
+
+  # [OPTIONAL] Whether to use insecure credentials for the gRPC connection.
+  # Default is "false" if not set.
+  grpc_use_insecure_credentials: true
+
+  # [OPTIONAL] The type of extractor to use for the endpoint ID.
+  # Options are "url_path" or "header".
+  # Default is "url_path" if not set.
+  endpoint_id_extractor_type: url_path
