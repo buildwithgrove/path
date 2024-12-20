@@ -3,6 +3,10 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
-message ShannonDetails {
-  string supplier_address=1;
+message ShannonObservations {
+  string supplier_address = 1;
+}
+
+message ShannonObservationsList {
+	repeated ShannonObservations observations = 1;
 }

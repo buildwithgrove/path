@@ -58,7 +58,9 @@ func (e endpoint) ValidateBasic() error {
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
 // It Returns true if the observation was non-generic, i.e. mutated the endpoint.
-// TODO_TECHDEBT: add a method to distinguish a bad endpoint, i.e. an endpoint which failed to respond to a request, from an endpoint with no/incomplete observations.
+// TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
+// 	- an endpoint that returned in invalid response.
+//	- an endpoint with no/incomplete observations.
 func (e *endpoint) ApplyObservation(obs *qosobservations.SolanaEndpointDetails) bool {
 	if obs.GenericRequest != nil && *obs.GenericRequest == true {
 		return false

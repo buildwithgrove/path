@@ -70,8 +70,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		httpRes             HTTPResponse
 		serviceID           protocol.ServiceID
 		serviceQoS          QoSService
-		gatewayObservations observation.GatewayDetails
-		httpObservations    observation.HTTPRequestDetails
+		gatewayObservations observation.GatewayObservations
+		httpObservations    observation.HTTPRequestObservations
 		serviceRequestCtx   RequestQoSContext
 		protocolRequestCtx  ProtocolRequestContext
 	)
@@ -79,7 +79,14 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	defer func() {
 		// TODO_IN_THIS_PR: build the gateway observation data and pass it to the publisher method.
 		// TODO_IN_THIS_PR: build the HTTP request observation data and pass it to the publisher method.
-		g.observeReqRes(serviceID, serviceQoS, gatewayObservations, httpObservations, serviceRequestCtx, protocolRequestCtx)
+		g.observeReqRes(
+			serviceID, 
+			serviceQoS, 
+			gatewayObservations, 
+			httpObservations, 
+			serviceRequestCtx, 
+			protocolRequestCtx,
+		)
 	}()
 
 	logger := g.getHTTPRequestLogger(httpReq)
@@ -201,15 +208,15 @@ func (g Gateway) getHTTPRequestLogger(httpReq *http.Request) polylog.Logger {
 func (g *Gateway) observeReqRes(
 	serviceID protocol.ServiceID,
 	serviceQoS QoSService,
-	gatewayObservations observation.GatewayDetails,
-	httpObservations observation.HTTPRequestDetails,
+	gatewayObservations observation.GatewayObservations,
+	httpObservations observation.HTTPRequestObservations,
 	serviceRequestCtx RequestQoSContext,
 	protocolRequestCtx ProtocolRequestContext,
 ) {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-		// the observation.QoSDetails struct.
+		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		qosObservations := serviceRequestCtx.GetObservations()
 		protocolObservations := protocolRequestCtx.GetObservations()
@@ -217,14 +224,14 @@ func (g *Gateway) observeReqRes(
 		serviceQoS.ApplyObservations(qosObservations)
 		g.Protocol.ApplyObservations(protocolObservations)
 
-		requestResponseDetails := observation.RequestResponseDetails{
+		requestResponseObservations := observation.RequestResponseObservations{
 			HttpRequest: &httpObservations,
 			Gateway:     &gatewayObservations,
 			Protocol:    &protocolObservations,
 			Qos:         &qosObservations,
 		}
 
-		g.MetricsReporter.Publish(requestResponseDetails)
-		g.DataReporter.Publish(requestResponseDetails)
+		g.MetricsReporter.Publish(requestResponseObservations)
+		g.DataReporter.Publish(requestResponseObservations)
 	}()
 }

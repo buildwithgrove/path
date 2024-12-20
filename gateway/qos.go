@@ -40,9 +40,15 @@ type RequestQoSContext interface {
 	// with a 404 HTTP status code.
 	GetHTTPResponse() HTTPResponse
 
-	// GetObservationSet returns the list of observations resulting from
-	// the response(s) received from one or more endpoints as part of fulfilling
-	// the request underlying the RequestQoSContext instance.
+	// GetObservations returns the set of QoS-level observations contained in the context.
+	// For example:
+	// If the context is:
+	// 	- Service: Solana
+	// 	- SelectedEndpoint: `endpoint_101`
+	// 	- Request: `getHealth`
+	// 	- Endpoint response: an error
+	// Then the observation can be:
+	// 	- `endpoint_101` is unhealthy.
 	GetObservations() qos.QoSDetails
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
@@ -90,8 +96,8 @@ type QoSService interface {
 	QoSEndpointCheckGenerator
 
 	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
-	// The observations can be:
-	// A. "local", i.e. from requests sent to an endpoint by this PATH instance, or
-	// B. "shared": i.e. from QoS observations shared by other PATH instances.
+	// The observations can be either of:
+	// 	- "local": from requests sent to an endpoint by **THIS** PATH instance
+	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
 	ApplyObservations(qos.QoSDetails) error
 }

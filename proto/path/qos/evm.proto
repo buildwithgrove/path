@@ -5,17 +5,40 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
-message EVMDetails {
-  JsonRpcRequest jsonrpc_request=1;
-  repeated EVMEndpointDetails endpoint_details=2;
+message EVMObservations {
+  JsonRpcRequest jsonrpc_request = 1;
+  // A single request may create multiple observations.
+  // This can happen if:
+  // 	1. The originally selected endpoint fails, AND
+  //	2. The request is sent to additional endpoints.
+  repeated EVMEndpointObservation endpoint_observations = 2;
 }
 
-message EVMEndpointDetails {
-  string endpoint_addr=1;
-  optional JsonRpcResponse jsonrpc_response=2;
-  optional string chain_id=3;
-  optional string block_height_response=4;
-  // generic_request is set to true if the request was considered `generic`, i.e. ignored by the service state update and endpoint validation methods.
-  optional bool generic_request=5;
-  // TODO_MVP(@adshmh): add details for performing archival checks.
+// EVMEndpointObservation stores a single observation regarding an endpoint.
+// e.g. a specific endpoint's response to an `eth_getBlockNumber` request.
+message EVMEndpointObservation {
+  string endpoint_addr = 1;
+  oneof {
+    EVMChainIDObservation = 2;
+    EVMBlockHeightObservation = 3;
+    EVMUnrecognizedResponseObservation = 4;
+  }
+  // TODO_MVP(@adshmh): add observations for archival checks.
+}
+
+// EVMChainIDObservation stores the response to an `eth_chainId` request.
+message EVMChainIDObservation {
+  string chain_id_response = 1;
+}
+
+// EVMBlockHeightObservation stores the response to an `eth_getBlockNumber` request.
+message EVMBlockHeightObservation {
+  string block_height_response = 1;
+}
+
+// EVMUnrecognizedResponseObservation is utilized if the request's method is ignored by state update and endpoint validation methods.
+// For example, as of PR #72, an `eth_call` request is not used for endpoint validation.
+// Therefore only generic fields of the JSONRPC response (like `id`) are stored.
+message EVMUnrecognizedResponseObservation {
+  JsonRpcResponse jsonrpc_response = 1;
 }

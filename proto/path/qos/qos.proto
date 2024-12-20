@@ -5,7 +5,9 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/solana.proto";
 
-message QoSDetails {
-  optional SolanaDetails solana_details=1;
-  optional EVMDetails evm_details=2;
+message QoSObservations {
+  oneof {
+    SolanaObservations solana = 1;
+    EVMObservations evm = 2;
+  }
 }

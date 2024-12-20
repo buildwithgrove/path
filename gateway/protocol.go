@@ -19,7 +19,14 @@ type Protocol interface {
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode
 
-	ApplyObservations(protocolobservations.ProtocolDetails) error
+	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
+	// Example:
+	// 	- protocol: Morse
+	// 	- observation: "endpoint maxed-out"
+	// 	- result: skip the endpoint for a set time period.
+	ApplyObservations(protocolobservations.Observations) error
+
+	// health.Check interface is used to verify protocol instance's health status.
 	health.Check
 }
 
@@ -50,5 +57,14 @@ type ProtocolRequestContext interface {
 	// See the Shannon package's operation_mode.go file for more details.
 	AvailableEndpoints() ([]protocol.Endpoint, error)
 
-	GetObservations() protocolobservations.ProtocolDetails
+	// GetObservations builds and returns the set of protocol-specific observations using the current context.
+	// For example:
+	// If the context is:
+	// 	- Protocol: Morse
+	//	- SelectedEndpoint: `endpoint_101`
+	//	- Event: HandleServiceRequest returned a "maxed-out endpoint" error
+	//
+	// Then the observation can be:
+	//      - `maxed-out endpoint` on `endpoint_101`.
+	GetObservations() protocolobservations.Observations
 }

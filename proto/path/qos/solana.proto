@@ -5,24 +5,46 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
-message SolanaDetails {
-  JsonRpcRequest jsonrpc_request=1;
-  repeated SolanaEndpointDetails endpoint_details=2;
+// SolanaObservations stores all the observations made by the Solana QoS on a single request.
+// A single request can result in multiple observations if:
+// 	- The originally selected endpoint returns an invalid response, AND
+//	- A retry mechanism sends the request to additional endpoint(s).
+message SolanaObservations {
+  JsonRpcRequest jsonrpc_request = 1;
+  repeated SolanaEndpointObservations endpoint_observation = 2;
 }
 
-message SolanaEndpointDetails {
-  string endpoint_addr=1;
-  optional JsonRpcResponse jsonrpc_response=2;
-  // Both epoch and block_height are stored as string to allow any PATH instance that receives an observation to detect an invalid response from the corresponding endpoint.
-  optional string health_result=3;
-  optional SolanaEpochInfoResponse epoch_info=4;
-  // generic_request is set to true if the request was considered `generic`, i.e. ignored by the service state update and endpoint validation methods.
-  optional bool generic_request=5;
+// SolanaEndpointObservation captures a single observation regarding a single endpoint.
+// e.g.: an `ok` response to a `getHealth` request from an endpoint.
+message SolanaEndpointObservation {
+  string endpoint_addr = 1;
+  oneof {
+    SolanaGetEpochInfoResponse = 2;
+    SolanaGetHealthResponse = 3;
+    SolanaUnrecognizedResponse = 4;
+  }
 }
 
-// The response to a endpoint name (if available)
-// Link to RPC spec (if available)
-message SolanaEpochInfoResponse {
+// SolanaEpochInfoResponse stores an endpoint's response to a `getEpochInfo` request.
+// See the following link for more details:
+// https://solana.com/docs/rpc/http/getepochinfo
+message SolanaGetEpochInfoResponse {
+  // block_height is stored as a string to allow validation by any observing PATH instance.
   uint64 block_height = 1;
+  // epoch is stored as a string to allow validation by any observing PATH instance.
   uint64 epoch = 2;
+}
+
+// SolanaGetHealthResponse stores an endpoint's response to a `getHealth` request.
+// See the following link for more details:
+// https://solana.com/docs/rpc/http/gethealth
+message SolanaGetHealthResponse {
+  string get_health_result = 1;
+}
+
+// SolanaUnrecognizedResponse is utilized if the request's method is ignored by state update and endpoint validation methods.
+// For example, as of PR #72, neither of `getTokenSupply` or `getTransaction` requests are used for endpoint validation.
+// Therefore only generic fields of the JSONRPC response (like `id`) are stored.
+message SolanaUnrecognizedResponse {
+  JsonRpcResponse jsonrpc_response = 1;
 }

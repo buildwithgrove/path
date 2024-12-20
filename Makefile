@@ -11,11 +11,7 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
-#.PHONY: go_mockgen
-go_mockgen: ## Use `mockgen` to generate mocks used for testing purposes of all the modules.
-	find . -name "*_mock.go" | xargs --no-run-if-empty rm
-	go generate ./gateway/
-	go generate ./protocol/
+# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
 
 #############################
 #### PATH Build Targets   ###

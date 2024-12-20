@@ -6,6 +6,6 @@ option go_package = "github.com/buildwithgrove/path/observation";
 import "google/protobuf/timestamp.proto";
 
 message HTTPRequestDetails {
-  string host=1;
-  google.protobuf.Timestamp request_time=2;
+  string host = 1;
+  google.protobuf.Timestamp request_time = 2;
 }

@@ -48,11 +48,16 @@ type responseGeneric struct {
 	Logger polylog.Logger
 }
 
+// GetObservation on a generic response returns an observation not utilized for any endpoint validations.
 // GetObservation implements the response interface used by the requestContext struct. 
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointDetails {
-	isGeneric := true
 	return qosobservations.SolanaEndpointDetails{
-		GenericRequest: &isGeneric,
+		// TODO_TECHDEBT(@adshmh): set additional JSONRPC response fields on the observation.
+		SolanaUnrecognizedResponse: qosobservations.SolanaUnrecognizedResponse {
+			JsonrpcResponse: qosobservations.JsonRpcResponse {
+				ID: r.Response.GetID(),
+			},
+		}
 	}
 }
 
