@@ -12,6 +12,7 @@ title: Introduction
 ## Table of Contents <!-- omit in toc -->
 
 - [Quickstart](#quickstart)
+  - [Shannon Quickstart](#shannon-quickstart)
 - [Overview](#overview)
   - [Components](#components)
   - [Architecture Diagram](#architecture-diagram)
@@ -44,7 +45,9 @@ title: Introduction
 
 ## Quickstart
 
-<!-- TODO_MVP(@commoddity): Replace the quickstart section with a link to the cheatsheet. -->
+### Shannon Quickstart
+
+[See the PATH Quickstart Cheat Sheet for instructions on how to get started with a local PATH instance on Shannon.](../path/cheatsheet.md)
 
 1. Install all prerequisites:
 
@@ -66,8 +69,8 @@ title: Introduction
 
 :::info MAKE SURE TO UPDATE THESE FILES
 
-ℹ️ Please update `allowed-services.lua` with the service IDs allowed by your PATH instance
-and `gateway-endpoints.yaml` with your own data.
+ℹ️ After copying config files by running `make init_envoy`, please update `local/path/envoy/.allowed-services.lua` with the service IDs allowed by your PATH instance
+and `local/path/envoy/.gateway-endpoints.yaml` with your own data.
 
 :::
 

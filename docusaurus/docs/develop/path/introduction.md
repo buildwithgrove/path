@@ -48,11 +48,6 @@ title: Introduction
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
-<!--
-TODO_UPNEXT(@commoddity): Convert all the tips, notes & warnings int his file into
-docusaurus admonitions; https://docusaurus.io/docs/markdown-features/admonitions.
--->
-
 ## Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -73,8 +68,9 @@ Kind is intentionally used instead of Docker Kubernetes cluster since we have ob
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [Tilt](https://docs.tilt.dev/install.html)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 - [Helm](https://helm.sh/docs/intro/install/)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 **Development only:**
 
@@ -100,6 +96,8 @@ docker pull ghcr.io/buildwithgrove/path
 ## Quickstart
 
 ### Shannon Quickstart
+
+[See the PATH Quickstart Cheat Sheet for instructions on how to get started with a local PATH instance on Shannon.](../path/cheatsheet.md)
 
 1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
 
@@ -198,11 +196,13 @@ By default, the PATH service runs without any authorization or rate limiting. Th
 
 To enable authorization and rate limiting, you can run the PATH service with the dependencies using the `make path_up` target.
 
-<!-- TODO_MVP(@commoddity): Update this section to replace the docker-compose references with Local development / Tilt. -->
-
 This will start the PATH service with all the appropriate dependencies, seen in the `docker-compose.yml file, under the **Profile 2: PATH Entire Stack** section.
 
-> 💡 For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
+:::tip
+
+For more information about PATH's authorization and rate limiting, see the [Envoy Proxy & Auth Server README.md](https://github.com/buildwithgrove/path/blob/main/envoy/README.md).
+
+:::
 
 <!-- TODO_MVP(@olshansk): Make the envoy link above part of the README -->
 
@@ -278,9 +278,9 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-   **NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
+**NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
 
-   **⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+**⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
 #### Running the E2E tests
 

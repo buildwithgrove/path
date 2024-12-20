@@ -15,6 +15,7 @@ static_resources:
                       address: path-http
                       port_value: 3000 # Port where the PATH API service runs.
 
+    # DEV_NOTE: The following cluster is only necessary if you are using JWT authentication.
     # Cluster to fetch the JSON Web Key Set (JWKS) from the authentication provider.
     - name: auth_jwks_cluster
       type: STRICT_DNS
@@ -194,6 +195,7 @@ static_resources:
                           claim_to_headers:
                             - header_name: jwt-user-id
                               claim_name: sub
+
                   # External authorization filter to handle permission checks.
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filte
                   - name: envoy.filters.http.ext_authz
