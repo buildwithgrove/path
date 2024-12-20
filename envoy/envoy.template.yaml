@@ -136,7 +136,7 @@ static_resources:
                           if not service_id and target_service_id_header then
                             service_id = resolve_service_id(target_service_id_header)
                           end
-
+                        
                           if service_id then
                             -- Update the "target-service-id" header with the resolved service ID
                             handle:headers():replace("target-service-id", service_id)

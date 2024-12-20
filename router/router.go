@@ -45,9 +45,9 @@ func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
-	// TODO_TECHDEBT(@adshmh): define and enforce a more strict URL format for the `/v1` service endpoint.
+	// TODO_TECHDEBT(@adshmh): define and enforce a more strict URL format for the `/v1/` service endpoint.
 	// This depends on the EnvoyProxy behavior in accepting and possibly modifying the request's URL.
-	// * /v1 - handles service requests
+	// * /v1/ - handles service requests
 	r.mux.HandleFunc("/v1/", r.corsMiddleware(r.handleServiceRequest))
 }
 
