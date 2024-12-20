@@ -1,12 +1,7 @@
 ---
 sidebar_position: 2
-title: Cheat Sheet
+title: PATH Cheat Sheet
 ---
-
-<div align="center">
-<h1>PATH<br/>Quickstart Cheat Sheet</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
-</div>
 
 #### This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers) for setting up and running a local PATH instance in Tilt. <!-- omit in toc -->
 
@@ -133,20 +128,30 @@ TODO(@olshansk): Pre-prepare a handful of apps/gateways to get users started EVE
 
 Run the following command to generate the 4 Envoy config files in `local/path/envoy`.
 
+```bash
+make init_envoy
+```
+
 - `.allowed-services.lua`
 - `.envoy.yaml`
 - `.ratelimit.yaml`
 - `.gateway-endpoints.yaml`
 
-```bash
-make init_envoy
-```
 
 :::tip
 
 If you wish to use an 0Auth provider _(for example [Auth0](https://auth0.com))_ to enable authorizing requests using an issued JWT, you will need to provide the `AUTH_DOMAIN` and `AUTH_AUDIENCE` values to substitute the sensitive variables in the `envoy.yaml` file.
 
 If you do not wish to use an OAuth provider, simply answer `no` when prompted. This will allow authorizing requests with a static API key only.
+
+:::
+
+:::info MAKE SURE TO UPDATE THESE FILES
+
+ℹ️ After copying config files by running `make init_envoy`, which will create the required files in the `local/path/envoy` directory, please update the following files:
+
+- `.allowed-services.lua` with the service IDs allowed by your PATH instance
+- `.gateway-endpoints.yaml` with your own data
 
 :::
 

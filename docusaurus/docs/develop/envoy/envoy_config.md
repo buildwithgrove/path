@@ -1,6 +1,6 @@
 ---
-title: Envoy Proxy Configuration
-sidebar_position: 1
+title: Envoy Config
+sidebar_position: 2
 ---
 
 <div align="center">
@@ -12,7 +12,7 @@ sidebar_position: 1
 
 This document describes the configuration options for PATH's Envoy Proxy which is responsible for:
 
-1. Defining the set of allowed services it can process
+1. Defining the set of allowed services
 2. Authorizing incoming requests
 3. Rate limiting
 
