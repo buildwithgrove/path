@@ -1,29 +1,18 @@
 ---
 sidebar_position: 2
-title: Cheat Sheet
+title: PATH Cheat Sheet
 ---
 
-<div align="center">
-<h1>PATH<br/>Quickstart Cheat Sheet</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
-</div>
+This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
+for setting up and running a local PATH instance in Tilt. If you'd like to understand
+all the underlying details, please refer to the [PATH Introduction](../path/introduction.md).
 
-#### This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers) for setting up and running a local PATH instance in Tilt. <!-- omit in toc -->
-
-:::warning
+:::warning TODOs
 
 1. These instructions are intended to run on a Linux machine.
-2. These instructions obfuscate a lot of the underlying details to get you up and running quickly.
-
-TODO_TECHDEBT(@commoddity): Adapt the instructions to be macOS friendly.
-
-:::
-
-:::info
-
-The following instructions are specific to setting up a `PATH` instance on `Shannon`.
-
-TODO_TECHDEBT(@commoddity): Adapt the instructions to include a Morse example.
+   - TODO_TECHDEBT(@olshansk): Adapt the instructions to be macOS friendly.
+2. The following instructions are specific to setting up a `PATH` instance on `Shannon`.
+   - TODO_TECHDEBT(@commoddity): Adapt the instructions to include a Morse example.
 
 :::
 
@@ -46,8 +35,6 @@ TODO_TECHDEBT(@commoddity): Adapt the instructions to include a Morse example.
 ### 1.1 Clone the `PATH` Repository
 
 ```bash
-mkdir -p ~/workspace
-cd ~/workspace
 git clone https://github.com/buildwithgrove/path.git
 cd ./path
 ```
@@ -79,11 +66,11 @@ This will check if the required tools are installed and install them if they are
 
 Before starting a PATH instance, you will need to set up both a [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways) and [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications) account on Shannon.
 
-For a quick and easy way to set up your Shannon account, see [the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet).
+For a quick and easy way to set up your Shannon accounts, see [the Account Setup section of the Gateway cheat sheets](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet#account-setup).
 
 ## 2. Populate Required Config Files
 
-Assuming you have followed the instructions in [the Account Setup section of the Gateway Cheetsheet](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet), the following should be true:
+Assuming you have followed the instructions above, the following should be true:
 
 1. You have created, funded and staked a `Gateway`.
 2. You have created, funded and staked a `Application`.
@@ -95,13 +82,21 @@ Now you can populate the configuration files required to run the full `PATH Gate
 
 Run the following command to generate a default Shannon config in `local/path/config/.config.yaml` using the values from your `Gateway` and `Application` accounts:
 
-_NOTE: You'll be prompted to confirm the `Gateway` account private key export._
-
 ```bash
 make shannon_populate_config
 ```
 
-When you're done, run `cat local/path/config/.config.yaml` to view the updated config file.
+:::note Exporting private keys
+
+You'll be prompted to confirm the `Gateway` account private key export. **Say Yes**.
+
+:::
+
+When you're done, run the following command to view your updated config file:
+
+```bash
+cat local/path/config/.config.yaml
+```
 
 It should look something like this:
 
@@ -123,23 +118,27 @@ services:
     alias: "eth"
 ```
 
-:::note
+:::note TODO(@olshansk)
 
-TODO(@olshansk): Pre-prepare a handful of apps/gateways to get users started EVEN faster.
+Pre-prepare a handful of apps/gateways to get users started EVEN faster.
 
 :::
 
 ### 2.2 Populate the `Envoy Proxy` config files
 
-Run the following command to generate the 4 Envoy config files in `local/path/envoy`.
-
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
+Run the following command to generate the 4 Envoy config files:
 
 ```bash
 make init_envoy
+```
+
+You can view them by running the following command:
+
+```bash
+cat local/path/envoy/.allowed-services.lua
+cat local/path/envoy/.envoy.yaml
+cat local/path/envoy/.ratelimit.yaml
+cat local/path/envoy/.gateway-endpoints.yaml
 ```
 
 :::tip
@@ -152,11 +151,11 @@ If you do not wish to use an OAuth provider, simply answer `no` when prompted. T
 
 ## 3. Run the `PATH` Gateway
 
+Start the `PATH` Gateway by running the following command:
+
 ```bash
 make path_up
 ```
-
-This will start the `PATH` Gateway.
 
 You should see the following output:
 
@@ -193,7 +192,7 @@ v0.33.21, built 2024-11-08
 (ctrl-c) to exit
 ```
 
-You can visit http://localhost:10350 in your browser to view the Tilt dashboard, which allows you to view the log output for all running containers.
+You can visit [localhost:10350](http://localhost:10350) in your browser to view the Tilt dashboard, which allows you to view the log output for all running containers.
 
 :::info
 
@@ -211,14 +210,14 @@ You will be able to tell it is ready when you see log output like this in the `p
 
 :::
 
-Once the `PATH Gateway` container is ready, you may send a relay to test.
+**Once the `PATH Gateway` container is ready, you can send a relay to test.**
 
 ## 4. Send a Relay
 
 Check that the `PATH Gateway` is serving relays by running the following command yourself:
 
-
 ### 4.1 **Endpoint with Static Key Authorization**
+
 ```bash
 curl http://localhost:3001/v1/endpoint_1_static_key \
     -X POST \
