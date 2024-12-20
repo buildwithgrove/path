@@ -208,9 +208,3 @@ endpoints:
       capacity_limit: 100000
       capacity_limit_period: "CAPACITY_LIMIT_PERIOD_MONTHLY"
 ```
-
-- [`.gateway-endpoints.yaml` example file](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml).
-
-- [Gateway Endpoint YAML File Schema](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml).
-
-To define the Gateway Endpoints that are authorized to use the PATH service, edit the `.gateway-endpoints.yaml` file.

@@ -34,10 +34,10 @@ title: Introduction
   - [External Auth Server Sequence Diagram](#external-auth-server-sequence-diagram)
   - [External Auth Server Configuration](#external-auth-server-configuration)
   - [Gateway Endpoints gRPC Service](#gateway-endpoints-grpc-service)
-- [Remote gRPC Auth Server](#remote-grpc-auth-server)
-  - [PATH Auth Data Server](#path-auth-data-server)
-  - [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file)
-  - [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server)
+  - [Remote gRPC Auth Server](#remote-grpc-auth-server)
+    - [PATH Auth Data Server](#path-auth-data-server)
+    - [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file)
+    - [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server)
 - [Rate Limiter](#rate-limiter)
   - [Rate Limit Configuration](#rate-limit-configuration)
   - [Documentation and Examples](#documentation-and-examples)
@@ -98,10 +98,6 @@ A [Tiltfile](https://github.com/buildwithgrove/path/blob/main/Tiltfile) is provi
   - _PADS (PATH Auth Data Server) is provided as a functional implementation of the remote gRPC server that loads data from a YAML file or simple Postgres database._
   - _See [PATH Auth Data Server](#path-auth-data-server) for more information._
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 65aa0d56b4e75f67116d50f3c3c31961f6ecf153
 ### Architecture Diagram
 
 ```mermaid
@@ -238,9 +234,8 @@ The file `local/path/envoy/.allowed-services.lua` defines the mapping of service
 
 All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
 
-:::info
+:::info `.allowed-services.lua` format
 
-_`.allowed-services.lua` format:_
 ```lua
 return {
   -- 1. Shannon Service IDs
@@ -258,9 +253,7 @@ return {
 
 The service ID (or a configured alias) may be specified in the `target-service-id` header.
 
-:::info
-
-_Example request:_
+:::info _Example request:_
 
 ```bash
 curl http://localhost:3001/v1 \
@@ -279,9 +272,7 @@ The service ID (or a configured alias) may be specified in the URL subdomain.
 
 eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
 
-:::info
-
-_Example request:_
+:::info _Example request:_
 ```bash
 curl http://anvil.localhost:3001/v1 \
   -X POST \
@@ -358,13 +349,7 @@ curl http://anvil.localhost:3001/v1 \
 
 A variety of example cURL requests to the PATH service can be found in the [`test_requests.mk` file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
 
-```bash
-## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
-make test_request_no_auth_url_path
-
-## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
-make test_request_no_auth_header
-```
+:::
 
 :::info
 
@@ -372,17 +357,6 @@ make test_request_no_auth_header
 
 See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
 
-:::tip
-
-A variety of example cURL requests to the PATH service [may be found in the test_requests.mk file](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
-
-```bash
-## Test request with no auth, endpoint ID passed in the URL path and the service ID passed as the subdomain
-make test_request_no_auth_url_path
-
-## Test request with no auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
-make test_request_no_auth_header
-```
 
 :::
 
@@ -523,7 +497,7 @@ service GatewayEndpoints {
 }
 ```
 
-## Remote gRPC Auth Server
+### Remote gRPC Auth Server
 
 The `Remote gRPC Server` is responsible for providing the `Go External Auth Server` with data on which endpoints are authorized to use the PATH service.
 
@@ -531,7 +505,7 @@ The `Remote gRPC Server` is responsible for providing the `Go External Auth Serv
 The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
 :::
 
-### PATH Auth Data Server
+#### PATH Auth Data Server
 
 [The PADS repo provides a functioning implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
@@ -547,7 +521,7 @@ _This Docker image is loaded by default in the [Tiltfile](https://github.com/bui
 
 If the Gateway Operator wishes to implement a custom remote gRPC server, see the [Implementing a Custom Remote gRPC Server](#implementing-a-custom-remote-grpc-server) section.
 
-### Gateway Endpoint YAML File
+#### Gateway Endpoint YAML File
 
 _`PADS` loads data from the Gateway Endpoints YAML file specified by the `YAML_FILEPATH` environment variable._\
 
@@ -589,7 +563,7 @@ The PADS repo also provides a [YAML schema for the `gateway-endpoints.yaml` file
 :::
 
 
-### Implementing a Custom Remote gRPC Server
+#### Implementing a Custom Remote gRPC Server
 
 If the Gateway operator wishes to implement a custom remote gRPC server, the implementation must import the Go `github.com/buildwithgrove/path/envoy/auth_server/proto` package, which is autogenerated from the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
 
@@ -648,11 +622,6 @@ The default throughput limit is **30 requests per second** for GatewayEndpoints 
 _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `.ratelimit.yaml` file._
 
 :::
-
-The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `rl-endpoint-id` and `rl-throughput` descriptors.
-
-_The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `.ratelimit.yaml` file._
-
 
 ### Documentation and Examples
 
