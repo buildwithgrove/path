@@ -23,7 +23,6 @@ import (
 const defaultConfigPath = "config/.config.yaml"
 
 func main() {
-	// Parse log level from config
 	configPath, err := getConfigPath()
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)
@@ -34,7 +33,6 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// Create logger with configured level
 	loggerOpts := []polylog.LoggerOption{
 		polyzero.WithLevel(polyzero.ParseLevel(strings.ToLower(config.Logger.Level))),
 	}
