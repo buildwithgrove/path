@@ -7,7 +7,7 @@ URL="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Destination file path
-GATEWAY_CONFIG_FILE_NAME="gateway-endpoints.yaml"
+GATEWAY_CONFIG_FILE_NAME=".gateway-endpoints.yaml"
 BASE_ENVOY_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy")
 GATEWAY_CONFIG_FILE="$BASE_ENVOY_PATH/$GATEWAY_CONFIG_FILE_NAME"
 
