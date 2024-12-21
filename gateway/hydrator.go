@@ -172,6 +172,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
 			}
 
+			// publish all observations gathered through sending the synthetic service requests.
+			// e.g. protocol-level, qos-level observations.
 			gatewayRequestCtx.BroadcastAllObservations()
 		}
 	}
