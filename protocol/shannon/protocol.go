@@ -11,6 +11,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -122,6 +123,19 @@ func (p *Protocol) BuildRequestContext(
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 	}, nil
+}
+
+// TODO_MVP(@adshmh): complete the ApplyObservations method by implementing:
+//  1. An endpoint store to maintain a status for each endpoint.
+//  2. Validation logic that updates the endpoint store based on the supplied observations.
+//  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
+//     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
+//
+// ApplyObservations updates the protocol instance's internal state using the supplied observations.
+// e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
+// This method implements the gateway.Protocol interface.
+func (p *Protocol) ApplyObservations(protocolobservations.Observations) error {
+	return nil
 }
 
 // Name satisfies the HealthCheck#Name interface function

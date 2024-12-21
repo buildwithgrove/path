@@ -99,34 +99,16 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
-func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
-	apps, found := p.getServiceApps(serviceID)
-	if !found {
-		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
-	}
-
-	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID, apps)
-	if err != nil {
-		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
-	}
-
-	var endpoints []protocol.Endpoint
-	for _, endpoint := range endpointsIdx {
-		endpoints = append(endpoints, endpoint)
-	}
-
-	if len(endpoints) == 0 {
-		return nil, fmt.Errorf("endpoints: no endpoints found for service %s", serviceID)
-	}
-
-	return endpoints, nil
-}
-
-// TODO_MVP(@adshmh): implement protocol state update using the observations by completing the ApplyObservations method below.
+// TODO_MVP(@adshmh): complete the ApplyObservations method by implementing:
+//  1. An endpoint store to maintain a status for each endpoint.
+//  2. Validation logic that updates the endpoint store based on the supplied observations.
+//  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
+//     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
 //
-// ApplyObservations applies the Morse protocol-level observations to the endpoint store.
-// e.g. Observation showing an endpoint has maxed out on a specific app for the current session.
-func (p *Protocol) ApplyObservations(protocolobservations.ProtocolDetails) error {
+// ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.
+// e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
+// This method implements the gateway.Protocol interface.
+func (p *Protocol) ApplyObservations(protocolobservations.Observations) error {
 	return nil
 }
 

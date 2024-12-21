@@ -119,8 +119,8 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 // 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
 //
 // This method implements the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) GetObservations() protocolobservations.ProtocolDetails {
-	return protocolobservations.ProtocolDetails{}
+func (rc *requestContext) GetObservations() protocolobservations.Observations {
+	return protocolobservations.Observations{}
 }
 
 // sendRelay sends a the supplied payload as a relay request to the endpoint selected for the request context through the SelectEndpoint method.

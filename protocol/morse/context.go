@@ -98,18 +98,6 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 	return nil
 }
 
-// AvailableEndpoints returns the pre-set list of available endpoints.
-// It implements the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
-	var availableEndpoints []protocol.Endpoint
-
-	for _, endpoint := range rc.endpoints {
-		availableEndpoints = append(availableEndpoints, endpoint)
-	}
-
-	return availableEndpoints, nil
-}
-
 // TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
 // GetObservations returns the set of Shannon protocol-level observations for the current request context.
 // The returned observations are used to:
@@ -118,8 +106,8 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 // 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
 //
 // This method implements the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) GetObservations() protocolobservations.ProtocolDetails {
-	return protocolobservations.ProtocolDetails{}
+func (rc *requestContext) GetObservations() protocolobservations.Observations {
+	return protocolobservations.Observations{}
 }
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.
