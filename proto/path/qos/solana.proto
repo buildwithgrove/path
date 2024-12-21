@@ -11,17 +11,17 @@ import "path/qos/jsonrpc.proto";
 //	- A retry mechanism sends the request to additional endpoint(s).
 message SolanaObservations {
   JsonRpcRequest jsonrpc_request = 1;
-  repeated SolanaEndpointObservations endpoint_observation = 2;
+  repeated SolanaEndpointObservation endpoint_observation = 2;
 }
 
 // SolanaEndpointObservation captures a single observation regarding a single endpoint.
 // e.g.: an `ok` response to a `getHealth` request from an endpoint.
 message SolanaEndpointObservation {
   string endpoint_addr = 1;
-  oneof {
-    SolanaGetEpochInfoResponse = 2;
-    SolanaGetHealthResponse = 3;
-    SolanaUnrecognizedResponse = 4;
+  oneof response_observation {
+    SolanaGetEpochInfoResponse get_epoch_info_response = 2;
+    SolanaGetHealthResponse get_health_response = 3;
+    SolanaUnrecognizedResponse unrecognized_response = 4;
   }
 }
 

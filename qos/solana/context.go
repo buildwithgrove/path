@@ -115,6 +115,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
+// TODO_UPNEXT(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {

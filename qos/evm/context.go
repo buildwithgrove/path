@@ -109,6 +109,8 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
+// TODO_UPNEXT(@adshmh): add `Content-Type: application/json` header.
+//
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
 // single JSONRPC requests and tracking endpoints' response(s) to each.
 // This would also require combining the responses into a single, valid

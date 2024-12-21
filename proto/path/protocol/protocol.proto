@@ -6,9 +6,9 @@ option go_package = "github.com/buildwithgrove/path/observation/protocol";
 import "path/protocol/shannon.proto";
 import "path/protocol/morse.proto";
 
-message ProtocolObservations {
+message Observations {
   uint64 block_height = 1;
-  oneof {
+  oneof protocol {
     MorseObservationsList morse = 2;
     ShannonObservationsList shannon = 3;
   }

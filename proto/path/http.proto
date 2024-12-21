@@ -5,7 +5,10 @@ option go_package = "github.com/buildwithgrove/path/observation";
 
 import "google/protobuf/timestamp.proto";
 
-message HTTPRequestDetails {
+// HTTPRequestObservations captures all the observations regarding an HTTP service request.
+message HTTPRequestObservations {
+  // host stores the Host part of the HTTP request's URL.
   string host = 1;
+  // request_time stores the time the HTTP request was received.
   google.protobuf.Timestamp request_time = 2;
 }

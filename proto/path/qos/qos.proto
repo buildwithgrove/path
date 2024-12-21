@@ -3,10 +3,11 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
+import "path/qos/evm.proto";
 import "path/qos/solana.proto";
 
-message QoSObservations {
-  oneof {
+message Observations {
+  oneof service_observations {
     SolanaObservations solana = 1;
     EVMObservations evm = 2;
   }
