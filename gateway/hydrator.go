@@ -10,7 +10,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -45,7 +44,7 @@ type EndpointHydrator struct {
 	// it needs to invoke for generating synthetic service requests.
 	// IMPORTANT: ActiveQoSService should not be modified after the hydrator is started.
 	ActiveQoSServices map[protocol.ServiceID]QoSService
-	Logger           polylog.Logger
+	Logger            polylog.Logger
 
 	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
 	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
@@ -71,7 +70,7 @@ func (eph *EndpointHydrator) Start() error {
 		return errors.New("an instance of Protocol must be proivded.")
 	}
 
-	if len(eph.ActiveQoSService) == 0 {
+	if len(eph.ActiveQoSServices) == 0 {
 		return errors.New("at-least one covered service must be specified")
 	}
 
@@ -88,7 +87,7 @@ func (eph *EndpointHydrator) Start() error {
 }
 
 func (eph *EndpointHydrator) run() {
-	eph.Logger.With("services count", len(eph.ActiveQoSService)).Info().Msg("Running Hydrator")
+	eph.Logger.With("services_count", len(eph.ActiveQoSServices)).Info().Msg("Running Hydrator")
 
 	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
 	// has a timeout set.
@@ -97,7 +96,7 @@ func (eph *EndpointHydrator) run() {
 	// i.e. each map entry is written only once.
 	var successfulServiceChecks sync.Map
 
-	for svcID, svcQoS := range eph.ActiveQoSService {
+	for svcID, svcQoS := range eph.ActiveQoSServices {
 		wg.Add(1)
 		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
 			defer wg.Done()
@@ -123,7 +122,7 @@ func (eph *EndpointHydrator) run() {
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
-		"service", string(serviceID),
+		"service_id", string(serviceID),
 	)
 
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
@@ -141,7 +140,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		return err
 	}
 
-	logger = logger.With("number of endpoints", len(uniqueEndpoints))
+	logger = logger.With("number_of_endpoints", len(uniqueEndpoints))
 	// TODO_IMPROVE: use a single goroutine per endpoint
 	for _, endpoint := range uniqueEndpoints {
 		logger.With("endpoint", endpoint.Addr()).Info().Msg("running checks against the endpoint")
@@ -153,28 +152,16 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		}
 
 		for _, serviceRequestCtx := range requiredChecks {
-			// TODO_IN_THIS_PR: populate the fields of gatewayObservations struct.
-			gatewayObservations := observation.GatewayDetails{}
+			// TODO_IN_THIS_PR: populate the fields of gatewayObservations struct: marking the request as Synthetic.
+			gatewayRequestCtx := requestContext{
+				serviceID:   serviceID,
+				serviceQoS:  serviceQoS,
+				qosCtx:      serviceRequestCtx,
+				protocolCtx: protocolRequestCtx,
+				logger:      logger,
+			}
 
-			// TODO_IMPROVE: Sending a request here should use some method shared with
-			// the user request (i.e. HTTP request) handler.
-			// This would ensure that both organic, i.e. user-generated, and quality data augmenting service requests
-			// take the same execution path.
-			endpointResponse, err := SendRelay(
-				protocolRequestCtx,
-				serviceRequestCtx.GetServicePayload(),
-				serviceRequestCtx.GetEndpointSelector(),
-			)
-
-			// Ignore any errors returned from the SendRelay call above.
-			// These would be protocol-level errors, which are the responsibility
-			// of the specific protocol instance used in serving the request.
-			// e.g. the Protocol instance should drop an endpoint that is
-			// temporarily/permanently unavailable from the set returned by
-			// the Endpoints() method.
-			//
-			// There is no action required from the QoS perspective, if no
-			// responses were received from an endpoint.
+			err := gatewayRequestCtx.SendRelay()
 			if err != nil {
 				// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 				// e.g. if the endpoint is refusing connections it may be reasonable to skip it
@@ -182,13 +169,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				//
 				// TODO_FUTURE: consider retrying failed service requests
 				// as the failure may not be related to the quality of the endpoint.
-				logger.Warn().Err(err).Msg("Failed to send relay.")
-				continue
+				logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
 			}
 
-			serviceRequestCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
-
-			eph.observeReqRes(serviceID, serviceQoS, gatewayObservations, observation.HTTPRequestDetails{}, serviceRequestCtx, protocolRequestCtx)
+			gatewayRequestCtx.BroadcastAllObservations()
 		}
 	}
 
@@ -216,7 +200,7 @@ func (eph *EndpointHydrator) IsAlive() bool {
 func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) bool {
 	// TODO_FUTURE: allow reporting unhealthy status if
 	// certain services could not be processed.
-	for svcID := range eph.ActiveQoSService {
+	for svcID := range eph.ActiveQoSServices {
 		value, found := successfulServiceChecks.Load(svcID)
 		if !found {
 			return false
@@ -229,35 +213,4 @@ func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) 
 	}
 
 	return true
-}
-
-func (eph *EndpointHydrator) observeReqRes(
-	serviceID protocol.ServiceID,
-	serviceQoS QoSService,
-	gatewayObservations observation.GatewayDetails,
-	httpObservations observation.HTTPRequestDetails,
-	serviceRequestCtx RequestQoSContext,
-	protocolRequestCtx ProtocolRequestContext,
-) {
-	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
-	go func() {
-		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
-		// the observation.QoSDetails struct.
-		// This ensures that separate PATH instances can communicate and share their QoS observations.
-		qosObservations := serviceRequestCtx.GetObservations()
-		protocolObservations := protocolRequestCtx.GetObservations()
-
-		serviceQoS.ApplyObservations(qosObservations)
-		eph.Protocol.ApplyObservations(protocolObservations)
-
-		requestResponseDetails := observation.RequestResponseDetails{
-			HttpRequest: &httpObservations,
-			Gateway:     &gatewayObservations,
-			Protocol:    &protocolObservations,
-			Qos:         &qosObservations,
-		}
-
-		eph.MetricsReporter.Publish(requestResponseDetails)
-		eph.DataReporter.Publish(requestResponseDetails)
-	}()
 }

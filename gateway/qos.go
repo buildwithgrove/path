@@ -49,7 +49,7 @@ type RequestQoSContext interface {
 	// 	- Endpoint response: an error
 	// Then the observation can be:
 	// 	- `endpoint_101` is unhealthy.
-	GetObservations() qos.QoSDetails
+	GetObservations() qos.Observations
 
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
@@ -99,5 +99,5 @@ type QoSService interface {
 	// The observations can be either of:
 	// 	- "local": from requests sent to an endpoint by **THIS** PATH instance
 	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
-	ApplyObservations(qos.QoSDetails) error
+	ApplyObservations(qos.Observations) error
 }
