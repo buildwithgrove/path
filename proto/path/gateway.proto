@@ -19,6 +19,7 @@ enum RequestType {
 //	- RequestType: whether the request was sent by a user or synthetically generated, e.g. by the endpoint hydrator.
 message GatewayObservations {
   // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
-  string region = 1; // A string representing the region in which the PATH instance that processed the request is deployed.
+  // region captures the name of the region in which the PATH instance that processed the request is deployed.
+  string region = 1;
   RequestType request_type = 2;  
 }

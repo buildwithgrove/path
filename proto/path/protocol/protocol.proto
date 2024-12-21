@@ -6,10 +6,14 @@ option go_package = "github.com/buildwithgrove/path/observation/protocol";
 import "path/protocol/shannon.proto";
 import "path/protocol/morse.proto";
 
+// Observations holds all the protocol-level observations gathered while processing a service request.
 message Observations {
+  // block_height is the height of the protocol when processing the service request through a relay.
   uint64 block_height = 1;
   oneof protocol {
+    // morse holds all the observations specific to the Morse protocol.
     MorseObservationsList morse = 2;
+    // shannon holds all the observations specific to the Shannon protocol.
     ShannonObservationsList shannon = 3;
   }
 }

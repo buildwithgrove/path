@@ -3,10 +3,12 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
+// ShannonObservations contains all the observations specific to relays served through the Shannon protocol.
 message ShannonObservations {
+  // supplier_address contains the address of the supplier associated with the endpoint serving the request.
   string supplier_address = 1;
 }
 
 message ShannonObservationsList {
-	repeated ShannonObservations observations = 1;
+  repeated ShannonObservations observations = 1;
 }

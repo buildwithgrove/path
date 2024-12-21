@@ -5,8 +5,12 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
+// EVMObservations stores data specific to observations of the EVM blockchains service QoS.
 message EVMObservations {
+  // jsonrpc_request captures the EVM blockchain service's JSONRPC request.
   JsonRpcRequest jsonrpc_request = 1;
+  // endpoint_observations contains all EVM-specific observations made on endpoint(s) that
+  // responded to the service request.
   // A single request may create multiple observations.
   // This can happen if:
   // 	1. The originally selected endpoint fails, AND
@@ -17,28 +21,40 @@ message EVMObservations {
 // EVMEndpointObservation stores a single observation regarding an endpoint.
 // e.g. a specific endpoint's response to an `eth_getBlockNumber` request.
 message EVMEndpointObservation {
+  // endpoint_addr is the address of the endpoint that handled the EVM blockchain service request.
   string endpoint_addr = 1;
+  // response_observation contains details on the response received from the endpoint.
   oneof response_observation {
+    // chain_id_response stores the response to a `eth_chainId` request:
+    // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
     EVMChainIDResponse chain_id_response = 2;
+
+    // block_height_response stores the response to a `eth_blockNumber` request:
+    // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
     EVMBlockHeightResponse block_height_response = 3;
+
+    // unrecognized_response shares responses not used in endpoint validation.
+    // e.g. the JSONRPC ID field of a response to an `eth_call` request.
     EVMUnrecognizedResponse unrecognized_response = 4;
   }
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
 
 // EVMChainIDResponse stores the response to an `eth_chainId` request.
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 message EVMChainIDResponse {
   string chain_id_response = 1;
 }
 
 // EVMBlockHeightResponse stores the response to an `eth_getBlockNumber` request.
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 message EVMBlockHeightResponse {
   string block_height_response = 1;
 }
 
 // EVMUnrecognizedResponse is utilized if the request's method is ignored by state update and endpoint validation methods.
 // For example, as of PR #72, an `eth_call` request is not used for endpoint validation.
-// Therefore only generic fields of the JSONRPC response (like `id`) are stored.
+// This allows the service QoS to share its interpretation of a response with other components, e.g. the data pipeline.
 message EVMUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
 }

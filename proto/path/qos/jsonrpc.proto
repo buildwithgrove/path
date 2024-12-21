@@ -3,18 +3,38 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
+// JsonRpcRequest contains all the fields of a JSONRPC request that are captured as an observation.
+// https://www.jsonrpc.org/specification#request_object
+// 
+// JsonRpcRequest is NOT intended to capture the full JSONRPC spec.
 message JsonRpcRequest {
-  string id=1;
-  string method=2;
+  // id is the ID of the JSONRPC request.
+  string id = 1;
+  // method is the method specified by the JSONRPC request.
+  string method = 2;
 }
 
+// JsonRpcResponse contains the fields of a JSONRPC response that need to be captured as an observation:
+// https://www.jsonrpc.org/specification#response_object
+//
+// JsonRpcResponse is NOT intended to capture the full JSONRPC spec.
 message JsonRpcResponse {
-  string id=1;
-  string result=2;
+  // id is the ID field of the JSONRPC response.
+  string id = 1;
+  // result stores the `result` field of tje JSONRPC response.
+  string result = 2;
+  // err stores the JSONRPC response's error field, if set.
   optional JsonRpcResponseError err=3;
 }
 
+// JsonRpcResponseError contains the fields of a JSONRPC response error object:
+// https://www.jsonrpc.org/specification#error_object
+//
+// JsonRpcResponseError is NOT intended to capture the full JSONRPC spec:
+// it only maintains the data that is required for QoS observations.
 message JsonRpcResponseError {
-  int64 code=1;
-  string message=2;
+  // code stores the `code` field of a JSONRPC response's error object.
+  int64 code = 1;
+  // message stores the `message` field of a JSONRPC response's error object.
+  string message = 2;
 }
