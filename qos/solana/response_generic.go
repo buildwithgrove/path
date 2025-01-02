@@ -49,15 +49,17 @@ type responseGeneric struct {
 }
 
 // GetObservation on a generic response returns an observation not utilized for any endpoint validations.
-// GetObservation implements the response interface used by the requestContext struct. 
-func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointDetails {
-	return qosobservations.SolanaEndpointDetails{
+// GetObservation implements the response interface used by the requestContext struct.
+func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
+	return qosobservations.SolanaEndpointObservation{
 		// TODO_TECHDEBT(@adshmh): set additional JSONRPC response fields on the observation.
-		SolanaUnrecognizedResponse: qosobservations.SolanaUnrecognizedResponse {
-			JsonrpcResponse: qosobservations.JsonRpcResponse {
-				ID: r.Response.GetID(),
+		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
+			UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
+				JsonrpcResponse: &qosobservations.JsonRpcResponse{
+					Id: r.Response.ID.String(),
+				},
 			},
-		}
+		},
 	}
 }
 

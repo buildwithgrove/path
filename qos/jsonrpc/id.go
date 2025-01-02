@@ -13,6 +13,16 @@ type ID struct {
 	strID string
 }
 
+// String returns the string form of ID.
+// strID field, if set, takes precedence as the returned value.
+func (id ID) String() string {
+	if id.strID != "" {
+		return id.strID
+	}
+
+	return fmt.Sprintf("%d", id.intID)
+}
+
 func (id ID) MarshalJSON() ([]byte, error) {
 	if id.intID > 0 {
 		return []byte(fmt.Sprintf("%d", id.intID)), nil

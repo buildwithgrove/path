@@ -9,9 +9,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseUnmarshallerBlockNumber deserializes the provided payload
-// into a responseToBlockNumber struct, adding any encountered errors
-// to the returned struct.
+// responseUnmarshallerGetEpochInfo deserializes the provided payload into a responseToGetEpochInfo struct,
+// adding any encountered errors to the returned struct.
 func responseUnmarshallerGetEpochInfo(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
 	if jsonrpcResp.Error.Code != 0 { // The endpoint returned an error: no need to do further processing of the response.
 		// Note: this assumes the `getEpochInfo` request sent to the endpoint was valid.
@@ -59,12 +58,14 @@ type responseToGetEpochInfo struct {
 }
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getEpochInfo` request.
-// This method implements the response interface used by the requestContext struct. 
-func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointDetails {
-	return qosobservations.SolanaEndpointDetails{
-		EpochInfo    : &qosobservations.SolanaEpochInfoResponse {
-			BlockHeight: r.epochInfo.BlockHeight,
-			Epoch: r.epochInfo.Epoch,
+// This method implements the response interface used by the requestContext struct.
+func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointObservation {
+	return qosobservations.SolanaEndpointObservation{
+		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetEpochInfoResponse{
+			GetEpochInfoResponse: &qosobservations.SolanaGetEpochInfoResponse{
+				BlockHeight: r.epochInfo.BlockHeight,
+				Epoch:       r.epochInfo.Epoch,
+			},
 		},
 	}
 }

@@ -61,10 +61,14 @@ type responseToGetHealth struct {
 }
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getHealth` request.
-// This method implements the response interface used by the requestContext struct. 
-func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointDetails {
-	return qosobservations.SolanaEndpointDetails{
-		HealthResult: &r.HealthResult,
+// This method implements the response interface used by the requestContext struct.
+func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObservation {
+	return qosobservations.SolanaEndpointObservation{
+		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetHealthResponse{
+			GetHealthResponse: &qosobservations.SolanaGetHealthResponse{
+				Result: r.HealthResult,
+			},
+		},
 	}
 }
 

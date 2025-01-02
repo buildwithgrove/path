@@ -1,9 +1,9 @@
 package solana
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"context"
 	"io"
 	"net/http"
 
@@ -26,8 +26,8 @@ var _ gateway.QoSService = &QoS{}
 // response building, and endpoint validation/selection.
 type QoS struct {
 	*EndpointStore
-	ServiceState  ServiceState
-	Logger        polylog.Logger
+	ServiceState ServiceState
+	Logger       polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
@@ -58,8 +58,8 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 // ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
-func (q *QoS) ApplyObservations(observations qosobservations.QoSDetails) error {
-	solanaObservations := observations.SolanaDetails
+func (q *QoS) ApplyObservations(observations qosobservations.Observations) error {
+	solanaObservations := observations.GetSolana()
 	if solanaObservations == nil {
 		return errors.New("ApplyObservations: received nil Solana observation")
 	}

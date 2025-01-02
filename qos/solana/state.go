@@ -34,12 +34,12 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 		return err
 	}
 
-	if endpoint.GetEpochInfoResult.Epoch < s.estimatedEpoch {
-		return fmt.Errorf("endpoint has epoch %d, estimated current epoch is %d", endpoint.GetEpochInfoResult.Epoch, s.estimatedEpoch)
+	if endpoint.SolanaGetEpochInfoResponse.Epoch < s.estimatedEpoch {
+		return fmt.Errorf("endpoint has epoch %d, estimated current epoch is %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.estimatedEpoch)
 	}
 
-	if endpoint.GetEpochInfoResult.BlockHeight < s.estimatedBlockHeight {
-		return fmt.Errorf("endpoint has block height %d, estimated block height is %d", endpoint.GetEpochInfoResult.BlockHeight, s.estimatedBlockHeight)
+	if endpoint.SolanaGetEpochInfoResponse.BlockHeight < s.estimatedBlockHeight {
+		return fmt.Errorf("endpoint has block height %d, estimated block height is %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.estimatedBlockHeight)
 	}
 
 	return nil
@@ -57,20 +57,20 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		}
 
 		// The endpoint's Epoch should be at-least equal to the estimated epoch before being used to update the estimated state of Solana blockchain.
-		if endpoint.GetEpochInfoResult.Epoch < s.estimatedEpoch {
+		if endpoint.SolanaGetEpochInfoResponse.Epoch < s.estimatedEpoch {
 			continue
 		}
 
 		// The endpoint's BlockHeight should be greater than the estimated block height before being used to update the estimated state of Solana blockchain.
-		if endpoint.GetEpochInfoResult.BlockHeight <= s.estimatedBlockHeight {
+		if endpoint.SolanaGetEpochInfoResponse.BlockHeight <= s.estimatedBlockHeight {
 			continue
 		}
 
-		// TODO_TECHDEBT: use a more resilient method for updating block height.
+		// TODO_IMPROVE: use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
-		s.estimatedEpoch = endpoint.GetEpochInfoResult.Epoch
-		s.estimatedBlockHeight = endpoint.GetEpochInfoResult.BlockHeight
+		s.estimatedEpoch = endpoint.SolanaGetEpochInfoResponse.Epoch
+		s.estimatedBlockHeight = endpoint.SolanaGetEpochInfoResponse.BlockHeight
 
 		s.Logger.With(
 			"endpoint", endpointAddr,
