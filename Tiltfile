@@ -103,7 +103,6 @@ else:
             "ratelimit",
             "redis",
         ],
-        port_forwards=["3000:3000"],
     )
 
 if MODE == "path_with_auth":
