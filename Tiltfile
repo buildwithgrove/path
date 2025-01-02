@@ -109,8 +109,8 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
-    # 1. External Auth Server                                                      #
-    # 2. Envoy Proxy                                                               #
+    # 1. Envoy Proxy                                                               #
+    # 2. External Auth Server                                                      #
     # 3. Path Auth Data Server (PADS)                                              #
     # 4. Rate Limiter                                                              #
     # 5. Redis                                                                     #
@@ -138,7 +138,18 @@ if MODE == "path_with_auth":
         watch=True,
     )
 
-    # 1. Build the External Auth Server image from envoy/auth_server/Dockerfile
+    # 1. Load the Kubernetes YAML for the envoy-proxy service
+    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
+    k8s_resource(
+        "envoy-proxy",
+        labels=["envoy_auth"],
+        # By default the Envoy Proxy container will bind to 127.0.0.1:3001.
+        # If you wish Envoy Proxy to be acessible outside the host machine,
+        # you must specify `port_forwards=["0.0.0.0:3001:3001"]`.
+        port_forwards=["3001:3001"],
+    )
+
+    # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
     docker_build(
         "ext-authz",
         context="./envoy/auth_server",
@@ -152,14 +163,6 @@ if MODE == "path_with_auth":
         labels=["envoy_auth"],
         port_forwards=["10003:10003"],
         resource_deps=["path-auth-data-server"],
-    )
-
-    # 2. Load the Kubernetes YAML for the envoy-proxy service
-    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
-    k8s_resource(
-        "envoy-proxy",
-        labels=["envoy_auth"],
-        port_forwards=["3001:3001"],
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
