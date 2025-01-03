@@ -2,8 +2,6 @@ package evm
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/qos/evm"
 )
 
 // BuildEVMQoSInstance builds and returns an instance of the EVM QoS service.

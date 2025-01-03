@@ -11,12 +11,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
 	"github.com/buildwithgrove/path/config"
-	morseConfig "github.com/buildwithgrove/path/config/morse"
-	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/protocol/morse"
-	"github.com/buildwithgrove/path/protocol/shannon"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
 )
@@ -44,12 +40,7 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosPublisher, err := getQoSPublisher(config.MessagingConfig)
-	if err != nil {
-		log.Fatalf("failed to setup the QoS publisher: %v", err)
-	}
-
-	gatewayQoSInstances, hydratorQoSGenerators, err := getServiceQoSInstances(config, logger)
+	qosInstances, err := getServiceQoSInstances(config, logger)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
@@ -57,17 +48,21 @@ func main() {
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(protocol, qosPublisher, hydratorQoSGenerators, logger)
+	hydrator, err := setupEndpointHydrator(config.HydratorConfig, protocol, qosInstances, logger)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	requestParser := request.NewParser(gatewayQoSInstances, logger)
+	// setup the request parser which maps requests to the correst QoS instance.
+	requestParser := &request.Parser{
+		QoSServices: qosInstances,
+		Logger:      logger,
+	}
 
+	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
-		QoSPublisher:      qosPublisher,
 		Logger:            logger,
 	}
 
