@@ -50,6 +50,7 @@ type epochInfo struct {
 // responseToGetEpochInfo captures the fields expected in a
 // response to a `getEpochInfo` request.
 type responseToGetEpochInfo struct {
+	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonrpc.Response
 	Logger polylog.Logger
 

@@ -10,7 +10,7 @@ import (
 // TODO_TECHDEBT: factor-out any code that is common between the endpoint stores of diffrent QoS instances.
 // Alternatively, have a ServiceState instance wrapped around an endpoint store: the ServiceState performs all
 // endpoint selection/verification, using a minimal set of load/store operations from an endpoint store.
-
+//
 // UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
 func (es *EndpointStore) UpdateEndpointsFromObservations(

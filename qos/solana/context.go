@@ -137,6 +137,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
+// GetObservations returns all the observations contained in the request context.
 // This method implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	observations := make([]*qosobservations.SolanaEndpointObservation, len(rc.endpointResponses))
