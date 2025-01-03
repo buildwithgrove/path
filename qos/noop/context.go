@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/message"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -71,11 +71,11 @@ func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
-// GetObservationSet returns an empty struct that fulfill the required interface, since the noop QoS does not make or use
+// GetObservations returns an empty struct that fulfill the required interface, since the noop QoS does not make or use
 // any endpoint observations to improve endpoint selection.
 // This method implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) GetObservationSet() message.ObservationSet {
-	return observationSet{}
+func (rc *requestContext) GetObservations() qosobservations.Observations {
+	return qosobservations.Observations{}
 }
 
 // GetEndpointSelector returns an endpoint selector which simply makes a random selection among available endpoints.
