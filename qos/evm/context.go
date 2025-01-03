@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/message"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -29,7 +31,7 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // response defines the functionality required from
 // a parsed endpoint response.
 type response interface {
-	GetObservation() (observation, bool)
+	GetObservation() qosobservations.EVMEndpointObservation
 	GetResponsePayload() []byte
 }
 
@@ -45,6 +47,7 @@ type requestContext struct {
 	// TODO_TECHDEBT: support batch JSONRPC requests
 	jsonrpcReq    jsonrpc.Request
 	endpointStore *EndpointStore
+	logger        polylog.Logger
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
@@ -98,7 +101,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.jsonrpcReq.Method, responseBz)
+	response, err := unmarshalResponse(rc.jsonrpcReq, responseBz, rc.logger)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -125,7 +128,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// have been reported to the request context.
 	// intentionally ignoring the error here, since unmarshallResponse
 	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.jsonrpcReq.Method, []byte(""))
+	response, _ := unmarshalResponse(rc.jsonrpcReq, []byte(""), rc.logger)
 
 	if len(rc.endpointResponses) >= 1 {
 		// return the last endpoint response reported to the context.
@@ -137,45 +140,23 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
+// GetObservations returns all the observations contained in the request context.
 // This method implements the gateway.RequestQoSContext interface.
-func (rc requestContext) GetObservations() qosobservations.QoSDetails {
-	observations := make([]*qosobservations.SolanaEndpointDetails, len(rc.endpointResponses))
+func (rc requestContext) GetObservations() qosobservations.Observations {
+	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
 		obs := endpointResponse.response.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		observations[idx] = &obs
 	}
 
-	return qosobservations.QoSDetails{
-		SolanaDetails: &qosobservations.SolanaDetails{
-			// TODO_TECHDEBT: set the JSONRPCRequest field.
-			EndpointDetails: observations,
+	return qosobservations.Observations{
+		ServiceObservations: &qosobservations.Observations_EVM{
+			EVM: &qosobservations.EVMObservations{
+				// TODO_TECHDEBT(@adshmh): set the JSONRPCRequest field.
+				EndpointObservations: observations,
+			},
 		},
-	}
-}
-
-
-
-func (rc requestContext) GetObservationSet() message.ObservationSet {
-	// No updates needed if the request was invalid
-	if !rc.isValid {
-		return observationSet{}
-	}
-
-	observations := make(map[protocol.EndpointAddr][]observation)
-	for _, response := range rc.endpointResponses {
-		obs, ok := response.GetObservation()
-		if !ok {
-			continue
-		}
-
-		addr := response.EndpointAddr
-		observations[addr] = append(observations[addr], obs)
-	}
-
-	return observationSet{
-		EndpointStore: rc.endpointStore,
-		Observations:  observations,
 	}
 }
 

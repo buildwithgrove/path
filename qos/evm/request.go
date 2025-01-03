@@ -1,36 +1,5 @@
 package evm
 
-import (
-	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
-)
-
-// ParseHTTPRequest builds a request context from the provided HTTP request.
-// It returns an error if the HTTP request cannot be parsed as a JSONRPC request.
-func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return requestContextFromInternalError(err), false
-	}
-
-	var jsonrpcReq jsonrpc.Request
-	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(err), false
-	}
-
-	// TODO_IMPROVE: method-specific validation of the JSONRPC request.
-	return &requestContext{
-		endpointStore: qos.endpointStore,
-		jsonrpcReq:    jsonrpcReq,
-		isValid:       true,
-	}, true
-}
-
 // TODO_UPNEXT(@adshmh): return a request context to handle internal errors.
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.

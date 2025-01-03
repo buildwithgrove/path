@@ -95,7 +95,7 @@ type EVMEndpointObservation struct {
 	// Types that are assignable to ResponseObservation:
 	//
 	//	*EVMEndpointObservation_ChainIdResponse
-	//	*EVMEndpointObservation_BlockHeightResponse
+	//	*EVMEndpointObservation_BlockNumberResponse
 	//	*EVMEndpointObservation_UnrecognizedResponse
 	ResponseObservation isEVMEndpointObservation_ResponseObservation `protobuf_oneof:"response_observation"`
 }
@@ -151,9 +151,9 @@ func (x *EVMEndpointObservation) GetChainIdResponse() *EVMChainIDResponse {
 	return nil
 }
 
-func (x *EVMEndpointObservation) GetBlockHeightResponse() *EVMBlockHeightResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_BlockHeightResponse); ok {
-		return x.BlockHeightResponse
+func (x *EVMEndpointObservation) GetBlockNumberResponse() *EVMBlockNumberResponse {
+	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_BlockNumberResponse); ok {
+		return x.BlockNumberResponse
 	}
 	return nil
 }
@@ -175,10 +175,10 @@ type EVMEndpointObservation_ChainIdResponse struct {
 	ChainIdResponse *EVMChainIDResponse `protobuf:"bytes,2,opt,name=chain_id_response,json=chainIdResponse,proto3,oneof"`
 }
 
-type EVMEndpointObservation_BlockHeightResponse struct {
-	// block_height_response stores the response to a `eth_blockNumber` request:
+type EVMEndpointObservation_BlockNumberResponse struct {
+	// block_number_response stores the response to a `eth_blockNumber` request:
 	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
-	BlockHeightResponse *EVMBlockHeightResponse `protobuf:"bytes,3,opt,name=block_height_response,json=blockHeightResponse,proto3,oneof"`
+	BlockNumberResponse *EVMBlockNumberResponse `protobuf:"bytes,3,opt,name=block_number_response,json=blockNumberResponse,proto3,oneof"`
 }
 
 type EVMEndpointObservation_UnrecognizedResponse struct {
@@ -189,7 +189,7 @@ type EVMEndpointObservation_UnrecognizedResponse struct {
 
 func (*EVMEndpointObservation_ChainIdResponse) isEVMEndpointObservation_ResponseObservation() {}
 
-func (*EVMEndpointObservation_BlockHeightResponse) isEVMEndpointObservation_ResponseObservation() {}
+func (*EVMEndpointObservation_BlockNumberResponse) isEVMEndpointObservation_ResponseObservation() {}
 
 func (*EVMEndpointObservation_UnrecognizedResponse) isEVMEndpointObservation_ResponseObservation() {}
 
@@ -240,30 +240,30 @@ func (x *EVMChainIDResponse) GetChainIdResponse() string {
 	return ""
 }
 
-// EVMBlockHeightResponse stores the response to an `eth_getBlockNumber` request.
+// EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request.
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
-type EVMBlockHeightResponse struct {
+type EVMBlockNumberResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BlockHeightResponse string `protobuf:"bytes,1,opt,name=block_height_response,json=blockHeightResponse,proto3" json:"block_height_response,omitempty"`
+	BlockNumberResponse string `protobuf:"bytes,1,opt,name=block_number_response,json=blockNumberResponse,proto3" json:"block_number_response,omitempty"`
 }
 
-func (x *EVMBlockHeightResponse) Reset() {
-	*x = EVMBlockHeightResponse{}
+func (x *EVMBlockNumberResponse) Reset() {
+	*x = EVMBlockNumberResponse{}
 	mi := &file_path_qos_evm_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EVMBlockHeightResponse) String() string {
+func (x *EVMBlockNumberResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EVMBlockHeightResponse) ProtoMessage() {}
+func (*EVMBlockNumberResponse) ProtoMessage() {}
 
-func (x *EVMBlockHeightResponse) ProtoReflect() protoreflect.Message {
+func (x *EVMBlockNumberResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_path_qos_evm_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -275,14 +275,14 @@ func (x *EVMBlockHeightResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EVMBlockHeightResponse.ProtoReflect.Descriptor instead.
-func (*EVMBlockHeightResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use EVMBlockNumberResponse.ProtoReflect.Descriptor instead.
+func (*EVMBlockNumberResponse) Descriptor() ([]byte, []int) {
 	return file_path_qos_evm_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *EVMBlockHeightResponse) GetBlockHeightResponse() string {
+func (x *EVMBlockNumberResponse) GetBlockNumberResponse() string {
 	if x != nil {
-		return x.BlockHeightResponse
+		return x.BlockNumberResponse
 	}
 	return ""
 }
@@ -361,11 +361,11 @@ var file_path_qos_evm_proto_rawDesc = []byte{
 	0x1c, 0x2e, 0x70, 0x61, 0x74, 0x68, 0x2e, 0x71, 0x6f, 0x73, 0x2e, 0x45, 0x56, 0x4d, 0x43, 0x68,
 	0x61, 0x69, 0x6e, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x00, 0x52,
 	0x0f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x56, 0x0a, 0x15, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x12, 0x56, 0x0a, 0x15, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72,
 	0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x20, 0x2e, 0x70, 0x61, 0x74, 0x68, 0x2e, 0x71, 0x6f, 0x73, 0x2e, 0x45, 0x56, 0x4d, 0x42, 0x6c,
-	0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x48, 0x00, 0x52, 0x13, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x48, 0x00, 0x52, 0x13, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x58, 0x0a, 0x15, 0x75, 0x6e, 0x72, 0x65,
 	0x63, 0x6f, 0x67, 0x6e, 0x69, 0x7a, 0x65, 0x64, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x70, 0x61, 0x74, 0x68, 0x2e, 0x71,
@@ -378,11 +378,11 @@ var file_path_qos_evm_proto_rawDesc = []byte{
 	0x12, 0x2a, 0x0a, 0x11, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x5f, 0x72, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x63, 0x68, 0x61,
 	0x69, 0x6e, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4c, 0x0a, 0x16,
-	0x45, 0x56, 0x4d, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65,
+	0x45, 0x56, 0x4d, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x65,
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x32, 0x0a, 0x15, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f,
-	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67,
-	0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5f, 0x0a, 0x17, 0x45, 0x56,
+	0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62,
+	0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5f, 0x0a, 0x17, 0x45, 0x56,
 	0x4d, 0x55, 0x6e, 0x72, 0x65, 0x63, 0x6f, 0x67, 0x6e, 0x69, 0x7a, 0x65, 0x64, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x44, 0x0a, 0x10, 0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63,
 	0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
@@ -412,7 +412,7 @@ var file_path_qos_evm_proto_goTypes = []any{
 	(*EVMObservations)(nil),         // 0: path.qos.EVMObservations
 	(*EVMEndpointObservation)(nil),  // 1: path.qos.EVMEndpointObservation
 	(*EVMChainIDResponse)(nil),      // 2: path.qos.EVMChainIDResponse
-	(*EVMBlockHeightResponse)(nil),  // 3: path.qos.EVMBlockHeightResponse
+	(*EVMBlockNumberResponse)(nil),  // 3: path.qos.EVMBlockNumberResponse
 	(*EVMUnrecognizedResponse)(nil), // 4: path.qos.EVMUnrecognizedResponse
 	(*JsonRpcRequest)(nil),          // 5: path.qos.JsonRpcRequest
 	(*JsonRpcResponse)(nil),         // 6: path.qos.JsonRpcResponse
@@ -421,7 +421,7 @@ var file_path_qos_evm_proto_depIdxs = []int32{
 	5, // 0: path.qos.EVMObservations.jsonrpc_request:type_name -> path.qos.JsonRpcRequest
 	1, // 1: path.qos.EVMObservations.endpoint_observations:type_name -> path.qos.EVMEndpointObservation
 	2, // 2: path.qos.EVMEndpointObservation.chain_id_response:type_name -> path.qos.EVMChainIDResponse
-	3, // 3: path.qos.EVMEndpointObservation.block_height_response:type_name -> path.qos.EVMBlockHeightResponse
+	3, // 3: path.qos.EVMEndpointObservation.block_number_response:type_name -> path.qos.EVMBlockNumberResponse
 	4, // 4: path.qos.EVMEndpointObservation.unrecognized_response:type_name -> path.qos.EVMUnrecognizedResponse
 	6, // 5: path.qos.EVMUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
 	6, // [6:6] is the sub-list for method output_type
@@ -439,7 +439,7 @@ func file_path_qos_evm_proto_init() {
 	file_path_qos_jsonrpc_proto_init()
 	file_path_qos_evm_proto_msgTypes[1].OneofWrappers = []any{
 		(*EVMEndpointObservation_ChainIdResponse)(nil),
-		(*EVMEndpointObservation_BlockHeightResponse)(nil),
+		(*EVMEndpointObservation_BlockNumberResponse)(nil),
 		(*EVMEndpointObservation_UnrecognizedResponse)(nil),
 	}
 	type x struct{}

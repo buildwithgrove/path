@@ -3,98 +3,48 @@
 package evm
 
 import (
-	"errors"
-
-	"github.com/buildwithgrove/path/message"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// observationSet provides all the functionality required
-// by the message package's ObservationSet to handle the sharing
-// of QoS data between PATH instances, and the updating of local
-// PATH instance's QoS data on EVM endpoints.
-var _ message.ObservationSet = observationSet{}
-
-// observation captures the result of processing an endpoint's
-// response to a service request.
-// It provides details needed to establish the validity of
-// an endpoint.
-// e.g. an observation can be the block height reported
-// by an endpoint of an EVM-based blockchain service.
-type observation struct {
-	// TODO_IMPROVE: use a custom type here.
-	ChainID string
-	// This is intentionally a string to allow validation
-	// of an endpoint's response.
-	BlockHeight string
-}
-
-type observationSet struct {
-	// TODO_IMPROVE: use an interface here.
-	EndpointStore *EndpointStore
-
-	Observations map[protocol.EndpointAddr][]observation
-}
-
-// TODO_UPNEXT(@adshmh): implement marshalling to allow the
-// observation set to be processed, e.g. by the corresponding QoS instance.
-func (os observationSet) MarshalJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (os observationSet) Broadcast() error {
-	if os.EndpointStore == nil {
-		return errors.New("broadcast: endpoint store not set")
-	}
-
-	return os.EndpointStore.ProcessObservations(os.Observations)
-}
-
-// TODO_IMPROVE: use a separate function/struct here, instead of splitting
-// the EndpointStore's methods across multiple files.
-func (es *EndpointStore) ProcessObservations(endpointObservations map[protocol.EndpointAddr][]observation) error {
+// UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
+// It returns the set of created/updated endpoints.
+func (es *EndpointStore) UpdateEndpointsFromObservations(
+	evmObservations *qosobservations.EVMObservations,
+) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
 	if es.endpoints == nil {
 		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
 	}
+	endpointObservations := evmObservations.GetEndpointObservations()
 
-	for endpointAddr, observations := range endpointObservations {
+	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
+	for _, observation := range endpointObservations {
+		if observation == nil {
+			continue
+		}
+		endpointAddr := protocol.EndpointAddr(observation.EndpointAddr)
+
 		logger := es.Logger.With(
+			"observations_count", len(endpointObservations),
 			"endpoint", endpointAddr,
-			"observations count", len(observations),
 		)
-		logger.Info().Msg("processing observations for endpoint.")
+		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
 		endpoint := es.endpoints[endpointAddr]
-		endpoint.Process(observations)
+
+		isMutated := endpoint.ApplyObservation(observation)
+		if !isMutated {
+			continue
+		}
+
 		es.endpoints[endpointAddr] = endpoint
-
-		if err := endpoint.Validate(es.Config.ChainID); err != nil {
-			logger.Info().Err(err).Msg("skipping endpoint observation: validation error.")
-			continue
-		}
-
-		endpointBlockHeight, err := endpoint.GetBlockHeight()
-		if err != nil {
-			logger.Info().Err(err).Msg("skipping endpoint observation: blockheight error.")
-			continue
-		}
-
-		// TODO_TECHDEBT: use a more resilient method for updating block height.
-		// e.g. one endpoint returning a very large number as block height should
-		// not result in all other endpoints being marked as invalid.
-		if endpointBlockHeight > es.blockHeight {
-			es.Logger.With(
-				"block height", endpointBlockHeight,
-				"endpoint", endpointAddr,
-			).Info().Msg("Updating latest block height")
-			es.blockHeight = endpointBlockHeight
-		}
+		updatedEndpoints[endpointAddr] = endpoint
 	}
 
-	return nil
+	return updatedEndpoints
 }

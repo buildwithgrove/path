@@ -29,9 +29,9 @@ message EVMEndpointObservation {
     // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
     EVMChainIDResponse chain_id_response = 2;
 
-    // block_height_response stores the response to a `eth_blockNumber` request:
+    // block_number_response stores the response to a `eth_blockNumber` request:
     // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
-    EVMBlockHeightResponse block_height_response = 3;
+    EVMBlockNumberResponse block_number_response = 3;
 
     // unrecognized_response shares responses not used in endpoint validation.
     // e.g. the JSONRPC ID field of a response to an `eth_call` request.
@@ -46,10 +46,10 @@ message EVMChainIDResponse {
   string chain_id_response = 1;
 }
 
-// EVMBlockHeightResponse stores the response to an `eth_getBlockNumber` request.
+// EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request.
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
-message EVMBlockHeightResponse {
-  string block_height_response = 1;
+message EVMBlockNumberResponse {
+  string block_number_response = 1;
 }
 
 // EVMUnrecognizedResponse is utilized if the request's method is ignored by state update and endpoint validation methods.

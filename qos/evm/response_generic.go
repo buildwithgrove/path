@@ -3,7 +3,23 @@ package evm
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
+const (
+	// errCodeUnmarshalling is set as the JSONRPC response's error code if the endpoint returns a malformed response
+	errCodeUnmarshalling = -32600
+	// errMsgUnmarshalling is the generic message returned to the user if the endpoint returns a malformed response.
+	errMsgUnmarshalling = "the response returned by the endpoint is not a valid JSONRPC response"
+
+	// errDataFieldRawBytes is the key of the entry in the JSONRPC error response's "data" map which holds the endpoint's original response.
+	errDataFieldRawBytes = "endpoint_response"
+
+	// errDataFieldUnmarshallingErr is the key of the entry in the JSONRPC error response's "data" map which holds the unmarshalling error.
+	errDataFieldUnmarshallingErr = "unmarshalling_error"
 )
 
 // TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
@@ -13,36 +29,62 @@ import (
 // is applicable to the corresponding request's JSONRPC method.
 // i.e. when there are no unmarshallers/structs matching the method specified by the request.
 type responseGeneric struct {
-	ID      jsonrpc.ID      `json:"id"`
-	JSONRPC jsonrpc.Version `json:"jsonrpc"`
-
-	rawBytes         []byte
-	unmarshallingErr error
+	jsonrpc.Response
+	Logger polylog.Logger
 }
 
-func (r responseGeneric) GetObservation() (observation, bool) {
-	return observation{}, false
+// GetObservation returns an observation that is NOT used in validating endpoints.
+// This allows sharing data with other entities, e.g. a data pipeline.
+// This method implements the response interface.
+func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
+	return qosobservations.EVMEndpointObservation{
+		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
+			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
+				JsonrpcResponse: &qosobservations.JsonRpcResponse{
+					Id: r.Response.ID.String(),
+				},
+			},
+		},
+	}
 }
 
 // TODO_UPNEXT(@adshmh): handle any unmarshalling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
-	return r.rawBytes
+	bz, err := json.Marshal(r.Response)
+	if err != nil {
+		// This should never happen: log an entry but return the response anyway.
+		r.Logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
+	}
+	return bz
 }
 
 // responseUnmarshallerGeneric unmarshal the provided byte slice
 // into a responseGeneric struct and saves any data that may be
 // needed for producing a response payload into the struct.
-func responseUnmarshallerGeneric(data []byte) (response, error) {
-	var response responseGeneric
+func responseUnmarshallerGeneric(jsonrpcReq jsonrpc.Request, data []byte, logger polylog.Logger) (response, error) {
+	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		// TODO_FUTURE: implement a method-specific validator of the response.
-		response.unmarshallingErr = err
+		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), nil
 	}
 
-	response.rawBytes = data
-	return response, nil
+	return responseGeneric{
+		Response: response,
+		Logger:   logger,
+	}, nil
+}
+
+// getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
+func getGenericJSONRPCErrResponse(id jsonrpc.ID, malformedResponsePayload []byte, err error, logger polylog.Logger) responseGeneric {
+	errData := map[string]string{
+		errDataFieldRawBytes:         string(malformedResponsePayload),
+		errDataFieldUnmarshallingErr: err.Error(),
+	}
+
+	return responseGeneric{
+		Response: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
+	}
 }
 
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned

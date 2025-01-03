@@ -18,6 +18,6 @@ message Observations {
     // solana holds all the observations specific to the Solana blockchain service QoS.
     SolanaObservations solana = 1;
     // evm holds all the observations specific to EVM blockchain service QoS.
-    EVMObservations evm = 2;
+    EVMObservations EVM = 2;
   }
 }

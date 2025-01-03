@@ -1,9 +1,9 @@
 package evm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"context"
 	"io"
 	"net/http"
 
@@ -27,7 +27,7 @@ var _ gateway.QoSService = &QoS{}
 type QoS struct {
 	*EndpointStore
 	ServiceState *ServiceState
-	Logger polylog.Logger
+	Logger       polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
@@ -48,9 +48,9 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// TODO_TECHDEBT(@adshmh): validate the resulting JSONRPC request to block invalid requests from being sent to endpoints.
 	// TODO_IMPROVE(@adshmh): method-specific validation of the JSONRPC request.
 	return &requestContext{
-		JSONRPCReq:    jsonrpcReq,
-		EndpointStore: qos.EndpointStore,
-		Logger:        qos.Logger,
+		jsonrpcReq:    jsonrpcReq,
+		endpointStore: qos.EndpointStore,
+		logger:        qos.Logger,
 
 		isValid: true,
 	}, true
@@ -58,9 +58,9 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 // ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
-func (q *QoS) ApplyObservations(observations qosobservations.QoSDetails) error {
-	evmObservations := observations.EvmDetails
-	if emvObservations == nil {
+func (q *QoS) ApplyObservations(observations qosobservations.Observations) error {
+	evmObservations := observations.GetEVM()
+	if evmObservations == nil {
 		return errors.New("ApplyObservations: received nil EVM observation")
 	}
 

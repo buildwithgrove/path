@@ -15,6 +15,9 @@ import (
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &EndpointStore{}
 
+// TODO_MVP(@adshmh): rename the configuration and use it in the `State` struct.
+// The `EndpointStore` will only maintain data on the endpoints.
+//
 // EndpointStoreConfig captures the modifiable settings of the EndpointStore.
 // This will enable `EndpointStore` to be used as part of QoS for other EVM-based
 // blockchains which may have different desired QoS properties.
@@ -39,14 +42,13 @@ type EndpointStoreConfig struct {
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
+	// ServiceState is the current estimated state of the EVM blockchain.
+	*ServiceState
 	Config EndpointStoreConfig
 	Logger polylog.Logger
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
-	// blockHeight is the expected latest block height on the blockchain.
-	// It is calculated as the maximum of block height reported by any of the endpoints.
-	blockHeight uint64
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
@@ -105,8 +107,8 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 			continue
 		}
 
-		if err := isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight); err != nil {
-			logger.Info().Err(err).Msg("invalid endpoint is filtered")
+		if err := es.ServiceState.ValidateEndpoint(endpoint); err != nil {
+			logger.Info().Err(err).Msg("select: invalid endpoint is filtered")
 			continue
 		}
 
@@ -115,23 +117,4 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	}
 
 	return filteredEndpointsAddr, nil
-}
-
-// isEndpointValid returns true if the input endpoint is valid for the passed
-// chain ID and query block height.
-func isEndpointValid(endpoint endpoint, chainID string, queryBlockHeight uint64) error {
-	endpointBlockHeight, err := endpoint.GetBlockHeight()
-	if err != nil {
-		return fmt.Errorf("isEndpointValid: error getting endpoint block height: %w", err)
-	}
-
-	if endpoint.ChainID != chainID {
-		return fmt.Errorf("isEndpointValid: expected chain ID %s, got %s", chainID, endpoint.ChainID)
-	}
-
-	if endpointBlockHeight < queryBlockHeight {
-		return fmt.Errorf("isEndpointValid: expected block height %d or higher, got %d", queryBlockHeight, endpointBlockHeight)
-	}
-
-	return nil
 }
