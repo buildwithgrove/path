@@ -44,14 +44,8 @@ func getServiceQoSInstances(
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmEndpointStore := &evm.EndpointStore{
-				Config: evm.EndpointStoreConfig{
-					// TODO_MVP(@adshmh): Read the chain ID from the configuration.
-					ChainID: "0x1",
-				},
-				Logger: logger,
-			}
-			gatewayQoSService[serviceID] = evm.NewServiceQoS(evmEndpointStore, logger)
+			evmQoS := evm.BuildEVMQoSInstance(logger)
+			gatewayQoSService[serviceID] = evmQoS
 
 			// If the service is configured for the hydrator in the configuration YAML file,
 			// add its authoritative service ID to the hydrator's QoS generators map.

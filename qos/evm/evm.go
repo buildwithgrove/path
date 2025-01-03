@@ -26,8 +26,8 @@ var _ gateway.QoSService = &QoS{}
 // response building, and endpoint validation/selection.
 type QoS struct {
 	*EndpointStore
-	ServiceState *ServiceState
-	Logger       polylog.Logger
+	*ServiceState
+	Logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
