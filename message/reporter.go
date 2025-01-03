@@ -18,5 +18,5 @@ type NATSMetricsReporter struct{}
 // Publish exports the details of the service request and response(s) to NATS messaging system.
 // Any entity interested in this data, e.g. the data pipeline for PATH once it is built, should subscribe to NATS to receive the exported data.
 // This method implements the gateway.RequestResponseReporter interface.
-func (nmr *NATSMetricsReporter) Publish(observation.RequestResponseObservations) {
+func (nmr *NATSMetricsReporter) Publish(_ *observation.RequestResponseObservations) {
 }

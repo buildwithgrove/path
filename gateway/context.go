@@ -203,7 +203,10 @@ func (rc *requestContext) BroadcastAllObservations() {
 	go func() {
 		if rc.protocolCtx != nil {
 			protocolObservations = rc.protocolCtx.GetObservations()
-			rc.protocol.ApplyObservations(protocolObservations)
+			err := rc.protocol.ApplyObservations(protocolObservations)
+			if err != nil {
+				rc.logger.Warn().Err(err).Msg("error publishing protocol observations.")
+			}
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
@@ -211,10 +214,13 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		if rc.qosCtx != nil {
 			qosObservations := rc.qosCtx.GetObservations()
-			rc.serviceQoS.ApplyObservations(qosObservations)
+			err := rc.serviceQoS.ApplyObservations(qosObservations)
+			if err != nil {
+				rc.logger.Warn().Err(err).Msg("error publishing QoS observations.")
+			}
 		}
 
-		observations := observation.RequestResponseObservations{
+		observations := &observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
 			Gateway:     &rc.gatewayObservations,
 			Protocol:    &protocolObservations,

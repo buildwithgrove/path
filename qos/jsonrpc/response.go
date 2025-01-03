@@ -9,8 +9,8 @@ import (
 // See the following link for more details:
 // https://www.jsonrpc.org/specification#response_object
 type Response struct {
-	ID      `json:"id"`
-	Version `json:"jsonrpc"`
+	ID      ID      `json:"id"`
+	Version Version `json:"jsonrpc"`
 	// Result captures the result field of the JSONRPC spec.
 	// It is allowed to be any arbitrary value as permitted by the spec.
 	Result any           `json:"result"`
