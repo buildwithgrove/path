@@ -18,5 +18,5 @@ type GrafanaMetricsReporter struct{}
 //
 // Publish exports the details of the service request and response(s) to Grafana.
 // This method implements the gateway.RequestResponseReporter interface.
-func (gmr *GrafanaMetricsReporter) Publish(observation.RequestResponseDetails) {
+func (gmr *GrafanaMetricsReporter) Publish(observation.RequestResponseObservations) {
 }
