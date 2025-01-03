@@ -65,9 +65,10 @@ type Gateway struct {
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// build a gatewayRequestContext with components necessary to process HTTP requests.
 	gatewayRequestCtx := &requestContext{
-		metricsReporter: g.MetricsReporter,
-		dataReporter:    g.DataReporter,
-		logger:          g.Logger,
+		httpRequestParser: g.HTTPRequestParser,
+		metricsReporter:   g.MetricsReporter,
+		dataReporter:      g.DataReporter,
+		logger:            g.Logger,
 		// TODO_IN_THIS_PR: build the gateway observation data and pass it to the request context.
 		// TODO_IN_THIS_PR: build the HTTP request observation data and pass it to the request context.
 	}
