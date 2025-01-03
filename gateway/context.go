@@ -8,6 +8,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/observation"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -176,6 +178,7 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 	)
 
 	w.WriteHeader(statusCode)
+
 	numWrittenBz, writeErr := w.Write(responsePayload)
 	if writeErr != nil {
 		logger.With("http_response_bytes_writte", numWrittenBz).Warn().Err(writeErr).Msg("Error writing the HTTP response.")
@@ -191,16 +194,25 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 //   - Protocol-level observations, e.g. "maxed-out" endpoints.
 //   - Gateway-level observations, e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
+	var (
+		protocolObservations protocolobservations.Observations
+		qosObservations      qosobservations.Observations
+	)
+
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
-		protocolObservations := rc.protocolCtx.GetObservations()
-		rc.protocol.ApplyObservations(protocolObservations)
+		if rc.protocolCtx != nil {
+			protocolObservations = rc.protocolCtx.GetObservations()
+			rc.protocol.ApplyObservations(protocolObservations)
+		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
 		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
-		qosObservations := rc.qosCtx.GetObservations()
-		rc.serviceQoS.ApplyObservations(qosObservations)
+		if rc.qosCtx != nil {
+			qosObservations := rc.qosCtx.GetObservations()
+			rc.serviceQoS.ApplyObservations(qosObservations)
+		}
 
 		observations := observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
@@ -209,8 +221,13 @@ func (rc *requestContext) BroadcastAllObservations() {
 			Qos:         &qosObservations,
 		}
 
-		rc.metricsReporter.Publish(observations)
-		rc.dataReporter.Publish(observations)
+		if rc.metricsReporter != nil {
+			rc.metricsReporter.Publish(observations)
+		}
+
+		if rc.dataReporter != nil {
+			rc.dataReporter.Publish(observations)
+		}
 	}()
 }
 

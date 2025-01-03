@@ -88,6 +88,11 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	if err != nil {
+		return
+	}
+
 	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
