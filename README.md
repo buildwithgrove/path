@@ -18,20 +18,36 @@
 
 ## Overview
 
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network.
-
-It provides various tools and libraries to streamline the integration and
-interaction with decentralized protocols.
+**PATH** (Path API & Toolkit Harness) is an open source framework to enable
+anyone to run there own API gateway that settles RPC traffic on a decentralized
+supply network starting with [Pocket Network](https://pokt.network).
 
 ## Documentation
 
-Please visit [path.grove.city](https://path.grove.city) for documentation.
+Please visit [path.grove.city](https://path.grove.city) for documentation,
+walkthroughs, guides, and available features.
+
+The docs are maintained under the `docusaurus/docs` directory and
+deployed to [path.grove.city](https://path.grove.city) using [Docusaurus](https://docusaurus.io/).
 
 The source code for the documentation is available in the `docs` directory.
 
----
+## Makefile Quickstart
+
+To see some helper commands to get you up and running, simply run `make`:
+
+```bash
+git clone https://github.com/buildwithgrove/path
+cd path
+make
+```
+
+## Video Demo
+
+[![Running PATH locally](https://github.com/user-attachments/assets/77a80db0-b599-4780-ade2-773e552f9630)](https://github.com/user-attachments/assets/549e0b85-b267-4ae9-b554-79f045ec8a8d)
 
 ## License
 
-This project is licensed under the MIT License; see the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License.
+
+See the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.

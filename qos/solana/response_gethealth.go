@@ -12,7 +12,7 @@ import (
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
 func responseUnmarshallerGetHealth(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	// TODO_UPNEXT(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
+	// TODO_Q1(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
 	// e.g. If the request contains a params field, it is invalid and should not be sent to any endpoints.
 	//
 	// There are 2 possible valid responses to a `getHealth` request:
@@ -65,9 +65,9 @@ func (r responseToGetHealth) GetObservation() (observation, bool) {
 	}, true
 }
 
-// TODO_UPNEXT(@adshmh): handle the following scenarios:
+// TODO_Q1(@adshmh): handle the following scenarios:
 //  1. An endpoint returned a malformed, i.e. Not in JSONRPC format, response.
-//     The user-facing response should include the request's ID.
+//     This should be returned to the user as-is.
 //  2. An endpoint returns a JSONRPC response indicating a user error:
 //     This should be returned to the user as-is.
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:

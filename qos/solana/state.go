@@ -66,7 +66,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 			continue
 		}
 
-		// TODO_TECHDEBT: use a more resilient method for updating block height.
+		// TODO_TECHDEBT(@adshmh): use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
 		s.estimatedEpoch = endpoint.GetEpochInfoResult.Epoch

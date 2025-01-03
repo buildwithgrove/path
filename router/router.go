@@ -84,7 +84,7 @@ func methodCheckMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO_IMPROVE: gather the CORS config from the config YAML
+// TODO_TECHDEBT(@adshmh): gather the CORS config from the config YAML
 func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
