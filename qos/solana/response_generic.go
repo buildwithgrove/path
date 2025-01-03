@@ -37,7 +37,7 @@ func responseUnmarshallerGeneric(jsonrpcReq jsonrpc.Request, data []byte, logger
 	}, nil
 }
 
-// TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
+// TODO_Q1(@adshmh): implement the generic jsonrpc response
 // (with the scope limited to the Solana blockchain)
 // responseGeneric captures the fields expected in response to any request on the Solana blockchain.
 // It is intended to be used when no validation/observation is applicable to the corresponding request's JSONRPC method.

@@ -5,7 +5,7 @@
 </div>
 <br/>
 
-:::warning
+:::warning WIP
 
 🚧 This documentation is still under construction 🚧
 
@@ -13,13 +13,33 @@
 
 ## Overview
 
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network.
+**PATH** (Path API & Toolkit Harness) is an open source framework to enable
+anyone to run there own API gateway that settles RPC traffic on a decentralized
+supply network starting with [Pocket Network](https://pokt.network).
 
-It provides various tools and libraries to streamline the integration and
-interaction with decentralized protocols.
+## Features
+
+_TODO_DOCUMENT(@olshansk): Provide a table/list with a list of features and their descriptions._
+
+## Ultra Quickstart
+
+_TODO_DOCUMENT(@olshansk): Provide a set of instructions to get up and running in under a minute using Docker._
 
 ## Getting Started
+
+### Makefile Quickstart
+
+To see some helper commands to get you up and running, simply run `make`:
+
+```bash
+git clone https://github.com/buildwithgrove/path
+cd path
+make
+```
+
+### Video Demo
+
+[![Running PATH locally](https://github.com/user-attachments/assets/77a80db0-b599-4780-ade2-773e552f9630)](https://github.com/user-attachments/assets/549e0b85-b267-4ae9-b554-79f045ec8a8d)
 
 ### PATH
 

@@ -63,7 +63,7 @@ func (r responseToGetEpochInfo) GetObservation() (observation, bool) {
 	}, true
 }
 
-// TODO_UPNEXT(@adshmh): handle the following scenarios:
+// TODO_Q1(@adshmh): handle the following scenarios:
 //  1. An endpoint returned a malformed, i.e. Not in JSONRPC format, response.
 //     The user-facing response should include the request's ID.
 //  2. An endpoint returns a JSONRPC response indicating a user error:

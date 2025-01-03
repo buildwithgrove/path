@@ -50,7 +50,7 @@ func (os observationSet) Broadcast() error {
 	return os.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }
 
-// TODO_TECHDEBT: factor-out any code that is common between the endpoint stores of diffrent QoS instances.
+// TODO_TECHDEBT(@adshmh): ): factor-out any code that is common between the endpoint stores of different QoS instances.
 // Alternatively, have a ServiceState instance wrapped around an endpoint store: the ServiceState performs all
 // endpoint selection/verification, using a minimal set of load/store operations from an endpoint store.
 func (es *EndpointStore) ProcessObservations(endpointObservations map[protocol.EndpointAddr][]observation) map[protocol.EndpointAddr]*endpoint {

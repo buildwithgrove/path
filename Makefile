@@ -11,7 +11,7 @@ list: ## List all make targets
 help: ## Prints all the targets in all the Makefiles
 	@grep -h -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-60s\033[0m %s\n", $$1, $$2}'
 
-# TODO_IMPROVE: add a make target to generate mocks for all the interfaces in the project
+# TODO_Q1(@commoddity): add a make target to generate mocks for all the interfaces in the project
 
 #############################
 #### PATH Build Targets   ###
@@ -99,7 +99,7 @@ test_e2e_morse_relay: morse_e2e_config_warning ## Run an E2E Morse relay test
 ### Shannon Config Make Targets ###
 ###################################
 
-# TODO_MVP(@commoddity): Consolidate the copy_*_config targets into fewer targets once
+# TODO_Q1(@commoddity): Consolidate the copy_*_config targets into fewer targets once
 # the config files are consolidated as well.
 
 .PHONY: copy_shannon_config
@@ -251,7 +251,7 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
 	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
 
-# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
+# TODO_TECHDEBT(@commoddity): update to use go:generate comments in the interface files and update this target
 
 ########################
 #### Documentation  ####
