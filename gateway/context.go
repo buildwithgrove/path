@@ -235,7 +235,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 }
 
 // getHTTPRequestLogger returns a logger with attributes set using the supplied HTTP request.
-func (rc requestContext) getHTTPRequestLogger(httpReq *http.Request) polylog.Logger {
+func (rc *requestContext) getHTTPRequestLogger(httpReq *http.Request) polylog.Logger {
 	var urlStr string
 	if httpReq.URL != nil {
 		urlStr = httpReq.URL.String()
