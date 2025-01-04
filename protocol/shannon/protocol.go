@@ -134,7 +134,7 @@ func (p *Protocol) BuildRequestContext(
 // ApplyObservations updates the protocol instance's internal state using the supplied observations.
 // e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
 // This method implements the gateway.Protocol interface.
-func (p *Protocol) ApplyObservations(protocolobservations.Observations) error {
+func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
 	return nil
 }
 

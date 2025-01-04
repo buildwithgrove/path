@@ -92,23 +92,25 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	return nil
 }
 
-func (rc *requestContext) SendRelay() error {
-	// Send the service request payload, to a service provider endpoint.
-	endpointResponse, err := SendRelay(
-		rc.protocolCtx,
-		rc.qosCtx.GetServicePayload(),
-		rc.qosCtx.GetEndpointSelector(),
-	)
+// HandleRelayRequest sends a relay from the perspective of a gateway.
+// It performs the following steps:
+//  1. Selects an endpoint using the QoS context.
+//  2. Sends the relay to the selected endpoint, using the protocol context.
+//  3. Processes the endpoint's response using the QoS context.
+//
+// HandleRelayRequest is written as a template method to allow the customization of key steps,
+// e.g. endpoint selection and protocol-specific details of sending a relay.
+// See the following link for more details:
+// https://en.wikipedia.org/wiki/Template_method_pattern
+func (rc *requestContext) HandleRelayRequest() error {
+	// Make an endpoint selection using the QoS context.
+	if err := rc.protocolCtx.SelectEndpoint(rc.qosCtx.GetEndpointSelector()); err != nil {
+		rc.logger.Warn().Err(err).Msg("SendRelay: error selecting an endpoint.")
+		return err
+	}
 
-	// Ignore any errors returned from the SendRelay call above.
-	// These would be protocol-level errors, which are the responsibility
-	// of the specific protocol instance used in serving the request.
-	// e.g. the Protocol instance should drop an endpoint that is
-	// temporarily/permanently unavailable from the set returned by
-	// the AvailableEndpoints() method.
-	//
-	// There is no action required from the QoS perspective, if no
-	// responses were received from an endpoint.
+	// Send the service request payload, through the protocol context, to the selected endpoint.
+	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
 		// TODO_TECHDEBT: the correct reaction to a failure in sending the relay to an endpoint and getting
@@ -121,20 +123,15 @@ func (rc *requestContext) SendRelay() error {
 
 	// TODO_TECHDEBT: implement a service-specific retry mechanism based on the protocol's response/error:
 	// This would need to distinguish between:
-	// a) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
-	// b) endpoint errors, e.g. when an endpoint is (temporarily) unreachable due to some network issue,
-	// c) request errors: these do not result in an error from SendRelay, but the payload from the endpoint indicates
-	// an error, e.g. an insufficinet funds response to a transaction: note that such validation issues on requests
-	// can only be identified onchain, i.e. the requests will pass the validation by the OffchainServicesSpecsEnforcer.
+	// 1) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
+	// 2) QoS errors, e.g.:
+	// 	A. The request is invalid: e.g. a JSONRPC request with no specified method.
+	//	B. An endpoint returns an invalid response.
 	//
-	// TODO_FUTURE: Support multiple concurrent relays to multiple
-	// endpoints for a single user request.
+	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
 	// e.g. for handling JSONRPC batch requests.
 	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 
-	// TODO_TECHDEBT: Enhance the returned qosCtx so it can be optionally queried on both:
-	// a) whether the endpoint failed to provide a valid response, and
-	// b) whether a retry with another endpoint makes sense, if a failure occurred.
 	return nil
 }
 
@@ -203,7 +200,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 	go func() {
 		if rc.protocolCtx != nil {
 			protocolObservations = rc.protocolCtx.GetObservations()
-			err := rc.protocol.ApplyObservations(protocolObservations)
+			err := rc.protocol.ApplyObservations(&protocolObservations)
 			if err != nil {
 				rc.logger.Warn().Err(err).Msg("error publishing protocol observations.")
 			}
@@ -214,7 +211,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		if rc.qosCtx != nil {
 			qosObservations := rc.qosCtx.GetObservations()
-			err := rc.serviceQoS.ApplyObservations(qosObservations)
+			err := rc.serviceQoS.ApplyObservations(&qosObservations)
 			if err != nil {
 				rc.logger.Warn().Err(err).Msg("error publishing QoS observations.")
 			}

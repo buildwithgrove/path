@@ -99,5 +99,5 @@ type QoSService interface {
 	// The observations can be either of:
 	// 	- "local": from requests sent to an endpoint by **THIS** PATH instance
 	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
-	ApplyObservations(qos.Observations) error
+	ApplyObservations(*qos.Observations) error
 }

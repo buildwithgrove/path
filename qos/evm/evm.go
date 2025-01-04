@@ -58,7 +58,11 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 // ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
-func (q *QoS) ApplyObservations(observations qosobservations.Observations) error {
+func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
+	if observations == nil {
+		return errors.New("ApplyObservations: received nil")
+	}
+
 	evmObservations := observations.GetEVM()
 	if evmObservations == nil {
 		return errors.New("ApplyObservations: received nil EVM observation")

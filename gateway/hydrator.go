@@ -161,7 +161,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				logger:      logger,
 			}
 
-			err := gatewayRequestCtx.SendRelay()
+			err := gatewayRequestCtx.HandleRelayRequest()
 			if err != nil {
 				// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 				// e.g. if the endpoint is refusing connections it may be reasonable to skip it

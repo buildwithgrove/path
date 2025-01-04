@@ -38,7 +38,7 @@ func (q NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) 
 
 // ApplyObservations on noop QoS only fulfills the interface requirements and does not perform any actions.
 // This method implements the gateway.QoSService interface.
-func (q NoOpQoS) ApplyObservations(_ qosobservations.Observations) error {
+func (q NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 	return nil
 }
 

@@ -24,7 +24,7 @@ type Protocol interface {
 	// 	- protocol: Morse
 	// 	- observation: "endpoint maxed-out"
 	// 	- result: skip the endpoint for a set time period.
-	ApplyObservations(protocolobservations.Observations) error
+	ApplyObservations(*protocolobservations.Observations) error
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check
