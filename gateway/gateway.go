@@ -70,8 +70,8 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		metricsReporter:   g.MetricsReporter,
 		dataReporter:      g.DataReporter,
 		logger:            g.Logger,
-		// TODO_IN_THIS_PR: build the gateway observation data and pass it to the request context.
-		// TODO_IN_THIS_PR: build the HTTP request observation data and pass it to the request context.
+		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
+		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
 	}
 
 	defer func() {

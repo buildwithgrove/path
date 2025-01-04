@@ -152,7 +152,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		}
 
 		for _, serviceRequestCtx := range requiredChecks {
-			// TODO_IN_THIS_PR: populate the fields of gatewayObservations struct: marking the request as Synthetic.
+			// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct: marking the request as Synthetic.
 			gatewayRequestCtx := requestContext{
 				serviceID:   serviceID,
 				serviceQoS:  serviceQoS,
