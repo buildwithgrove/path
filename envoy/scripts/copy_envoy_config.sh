@@ -11,15 +11,16 @@ ENVOY_TEMPLATE_FILE_NAME="envoy.template.yaml"
 ENVOY_RATELIMIT_TEMPLATE_FILE_NAME="ratelimit.template.yaml"
 ALLOWED_SERVICES_TEMPLATE_FILE_NAME="allowed-services.template.lua"
 
-# Destination file names
+# Destination config file names
 ENVOY_FILE_NAME=".envoy.yaml"
 ENVOY_RATELIMIT_FILE_NAME=".ratelimit.yaml"
 ALLOWED_SERVICES_FILE_NAME=".allowed-services.lua"
 
-# Define the absolute paths
-ENVOY_CONFIG_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ENVOY_FILE_NAME")
-RATELIMIT_CONFIG_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ENVOY_RATELIMIT_FILE_NAME")
-ALLOWED_SERVICES_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy/$ALLOWED_SERVICES_FILE_NAME")
+# Define the absolute paths for the config files
+BASE_ENVOY_PATH=$(realpath "$SCRIPT_DIR/../../local/path/envoy")
+ENVOY_CONFIG_PATH="$BASE_ENVOY_PATH/$ENVOY_FILE_NAME"
+RATELIMIT_CONFIG_PATH="$BASE_ENVOY_PATH/$ENVOY_RATELIMIT_FILE_NAME"
+ALLOWED_SERVICES_PATH="$BASE_ENVOY_PATH/$ALLOWED_SERVICES_FILE_NAME"
 
 # Function to handle envoy.yaml creation
 create_envoy_config() {
@@ -42,7 +43,7 @@ create_envoy_config() {
             # Substitute sensitive variables manually using bash parameter expansion
             sed -e "s|\${AUTH_DOMAIN}|$AUTH_DOMAIN|g" \
                 -e "s|\${AUTH_AUDIENCE}|$AUTH_AUDIENCE|g" \
-                "$SCRIPT_DIR/../$ENVOY_TEMPLATE_FILE_NAME" > "$ENVOY_CONFIG_PATH"
+                "$SCRIPT_DIR/../$ENVOY_TEMPLATE_FILE_NAME" >"$ENVOY_CONFIG_PATH"
 
             echo "🔑 JWT Authorization is enabled"
         else

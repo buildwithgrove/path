@@ -48,7 +48,10 @@ title: Introduction
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> aaebbf9c37f540dfc1ac4b3660670809cdb10b2b
 ## Introduction
 
 **PATH** (Path API & Toolkit Harness) is an open source framework for enabling
@@ -100,6 +103,26 @@ docker pull ghcr.io/buildwithgrove/path
 
 [See the PATH Quickstart Cheat Sheet for instructions on how to get started with a local PATH instance on Shannon.](../path/cheatsheet.md)
 
+1. **Stake Apps and Gateway:** Refer to the [Poktroll Docker Compose Walkthrough](https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough) for instructions on staking your Application and Gateway on Shannon.
+
+2. **Populate Config File:** Run `make config_shannon_localnet` to copy the example configuration file to `local/path/config/.config.yaml`.
+
+   Update the configuration file `local/path/config/.config.yaml` with your Gateway's private key & address and your Application's address.
+
+   \*TIP: If you followed the [Debian Cheat Sheet](https://dev.poktroll.com/operate/quickstart/docker_compose_debian_cheatsheet#start-the-relayminer), you can run `path_prepare_config`
+   to get you most of the way there. Make sure to review the `gateway_private_key` field.\*
+
+3. **Start the PATH Container:** Run `make path_up` to build and start the PATH gateway in the Local development environment using Tilt.
+
+4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
+
+   ```bash
+   curl http://eth.localhost:3000/v1/ \
+       -X POST \
+       -H "Content-Type: application/json" \
+       -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+   ```
+
 ### Morse Quickstart
 
 1. **Retrieve Application Authentication Token & Keys**
@@ -127,7 +150,7 @@ docker pull ghcr.io/buildwithgrove/path
 4. **Run a curl command**: Example `eth_blockNumber` request to a PATH supporting `eth`:
 
    ```bash
-   curl http://localhost:3000/v1 \
+   curl http://localhost:3000/v1/ \
        -X POST \
        -H "Content-Type: application/json" \
        -H "target-service-id: eth" \
@@ -259,9 +282,9 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-   **NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
+**NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
 
-   **⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+**⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
 
 #### Running the E2E tests
 

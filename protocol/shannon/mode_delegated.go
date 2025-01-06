@@ -19,6 +19,7 @@ const (
 	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
 	// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address in delegated mode.
 	// The target app will be used for sending the relay request.
+	// TODO_TECHDEBT(@commoddity): remove deprecated `x-` prefix from the header name.
 	headerAppAddr = "X-App-Address"
 )
 

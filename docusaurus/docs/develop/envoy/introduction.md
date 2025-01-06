@@ -9,7 +9,7 @@ title: Introduction
 </div>
 <br/>
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [Quickstart](#quickstart)
   - [Shannon Quickstart](#shannon-quickstart)
@@ -257,6 +257,7 @@ The service ID (or a configured alias) may be specified in the URL subdomain.
 eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
 
 :::info _Example request:_
+
 ```bash
 curl http://anvil.localhost:3001/v1 \
   -X POST \
@@ -451,6 +452,7 @@ sequenceDiagram
 The external authorization server loads its config from the `auth_server_config` section of PATH's `.config.yaml` file. For the local Tilt stack, this file is located at `local/path/config/.config.yaml`.
 
 _`.config.yaml auth_server_config` example:_
+
 ```yaml
 auth_server_config:
   grpc_host_port: path-auth-data-server:50051
