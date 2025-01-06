@@ -24,10 +24,12 @@ var (
 type requestContext struct {
 	httpRequestParser HTTPRequestParser
 
-	// metricsReporter and dataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
-	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	// metricsReporter is used to export metrics based on observations made in handling service requests.
 	metricsReporter RequestResponseReporter
-	dataReporter    RequestResponseReporter
+	// dataReporter is used to export, to the data pipeline, observations made in handling service requests.
+	// It is declared separately from the `metricsReporter` to be consistent with the gateway package's role
+	// of explicitly defining PATH gateway's components and their interactions.
+	dataReporter RequestResponseReporter
 
 	serviceID  protocol.ServiceID
 	serviceQoS QoSService
@@ -66,6 +68,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
+// BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This poyload will be sent to an endpoint matching the requested service.
@@ -79,6 +82,10 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	return nil
 }
 
+// BuildProtocolContextFromHTTP builds the Protocol context using the supplied service ID and HTTP request.
+// The constructed Protocol instance will be used for:
+//   - Sending relays to endpoint(s)
+//   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, httpReq)
 	if err != nil {

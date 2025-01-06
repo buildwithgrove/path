@@ -38,10 +38,12 @@ type Gateway struct {
 	// sending the service payload to an endpoint.
 	Protocol
 
-	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
-	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
-	DataReporter    RequestResponseReporter
+	// DataReporter is used to export, to the data pipeline, observations made in handling service requests.
+	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
+	// of explicitly defining PATH gateway's components and their interactions.
+	DataReporter RequestResponseReporter
 
 	Logger polylog.Logger
 }
@@ -88,6 +90,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
 	if err != nil {
 		return

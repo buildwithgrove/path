@@ -40,16 +40,18 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 type EndpointHydrator struct {
 	Protocol
 
-	// ActiveQoSService provides the hydrator with the QoS instances
+	// ActiveQoSServices provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
-	// IMPORTANT: ActiveQoSService should not be modified after the hydrator is started.
+	// IMPORTANT: ActiveQoSServices should not be modified after the hydrator is started.
 	ActiveQoSServices map[protocol.ServiceID]QoSService
 	Logger            polylog.Logger
 
-	// MetricsReporter and DataReporter are intentionally declared separately, rather than using a slice of the same interface, to be consistent
-	// with the gateway package's role of explicitly defining PATH gateway's components and their interactions.
+	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
-	DataReporter    RequestResponseReporter
+	// DataReporter is used to export, to the data pipeline, observations made in handling service requests.
+	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
+	// of explicitly defining PATH gateway's components and their interactions.
+	DataReporter RequestResponseReporter
 
 	// TODO_FUTURE: a more sophisticated health status indicator
 	// may eventually be needed, e.g. one that checks whether any

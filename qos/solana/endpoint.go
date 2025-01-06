@@ -24,8 +24,8 @@ var (
 type endpoint struct {
 	// SolanaGetHealthResponse stores the result of processing the endpoint's response to a `getHealth` request.
 	// A pointer is used to distinguish between the following scenarios:
-	// A. There has NOT been an observation of the endpoint's response to a `getHealth` request, and
-	// B. There has been an observation of the endpoint's response to a `getHealth` request.
+	// 	1. There has NOT been an observation of the endpoint's response to a `getHealth` request, and
+	// 	2. There has been an observation of the endpoint's response to a `getHealth` request.
 	*qosobservations.SolanaGetHealthResponse
 
 	// SolanaGetEpochInfoResponse stores the result of processing the endpoint's response to a `getEpochInfo` request.
