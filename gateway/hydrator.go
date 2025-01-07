@@ -159,6 +159,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				serviceID:   serviceID,
 				serviceQoS:  serviceQoS,
 				qosCtx:      serviceRequestCtx,
+				protocol:    eph.Protocol,
 				protocolCtx: protocolRequestCtx,
 				logger:      logger,
 			}
