@@ -23,7 +23,7 @@ path:
       memory: 800Mi
   ports:
     - name: http
-      port: 3000
+      port: 3069
       protocol: TCP
       service:
         type: ClusterIP
@@ -32,14 +32,14 @@ path:
     failureThreshold: 6
     httpGet:
       path: /healthz
-      port: 3000
+      port: 3069
       scheme: HTTP
 
   livenessProbe:
     failureThreshold: 6
     httpGet:
       path: /healthz
-      port: 3000
+      port: 3069
       scheme: HTTP
 
   delve:

@@ -5,7 +5,7 @@ sidebar_position: 2
 
 <div align="center">
   <a href="https://www.envoyproxy.io/docs/envoy/latest/">
-    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="275"/>
+    <img src="https://www.envoyproxy.io/docs/envoy/latest/_static/envoy-logo.png" alt="Envoy logo" width="275"/>
   <p><b>Envoy Proxy Docs</b></p>
   </a>
 </div>
@@ -25,18 +25,34 @@ There are a total of four files used to configure Envoy Proxy in PATH:
 3. `.ratelimit.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml))
 4. `.gateway-endpoints.yaml` ([template example](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml))
 
+:::tip
+
+While four config files may seem like a lot, the default templates for files 1-3 should be sufficient for most use cases.
+
+For most use cases, only the `.gateway-endpoints.yaml` file will need to be modified.
+
+:::
+
+:::info 
+
+The PATH gateway is configured with its own set of configuration files.
+
+[For detailed information on the PATH gateway configuration, please refer to the PATH Configuration Guide](../path/path_config.md).
+
+:::
+
 ## Table of Contents <!-- omit in toc -->
 
 - [Initialization of configuration files](#initialization-of-configuration-files)
-- [Allowed Services - `.allowed-services.lua`](#allowed-services---allowed-serviceslua)
+- [1. Allowed Services - `.allowed-services.lua`](#1-allowed-services---allowed-serviceslua)
   - [Terminology](#terminology)
   - [Allowed Services Functionality](#allowed-services-functionality)
   - [Allowed Services File Format](#allowed-services-file-format)
-- [Envoy Proxy Configuration - `.envoy.yaml`](#envoy-proxy-configuration---envoyyaml)
-- [Ratelimit Configuration - `.ratelimit.yaml`](#ratelimit-configuration---ratelimityaml)
+- [2. Envoy Proxy Configuration - `.envoy.yaml`](#2-envoy-proxy-configuration---envoyyaml)
+- [3. Ratelimit Configuration - `.ratelimit.yaml`](#3-ratelimit-configuration---ratelimityaml)
   - [Ratelimit File Format](#ratelimit-file-format)
   - [Ratelimit Customizations](#ratelimit-customizations)
-- [Gateway Endpoints Data - `.gateway-endpoints.yaml`](#gateway-endpoints-data---gateway-endpointsyaml)
+- [4. Gateway Endpoints Data - `.gateway-endpoints.yaml`](#4-gateway-endpoints-data---gateway-endpointsyaml)
   - [Gateway Endpoint Functionality](#gateway-endpoint-functionality)
   - [Gateway Endpoint File Format](#gateway-endpoint-file-format)
 
@@ -50,10 +66,10 @@ make init_envoy
 
 This will generate the following files in the `local/path/envoy` directory:
 
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
+1. `.allowed-services.lua`
+2. `.envoy.yaml`
+3. `.ratelimit.yaml`
+4. `.gateway-endpoints.yaml`
 
 :::note
 
@@ -62,7 +78,7 @@ each PATH instance and may contain sensitive information.
 
 :::
 
-## Allowed Services - `.allowed-services.lua`
+## 1. Allowed Services - `.allowed-services.lua`
 
 The `.allowed-services.lua` file is used to define the allowed services for the Envoy Proxy.
 
@@ -108,7 +124,7 @@ return {
 }
 ```
 
-## Envoy Proxy Configuration - `.envoy.yaml`
+## 2. Envoy Proxy Configuration - `.envoy.yaml`
 
 The `.envoy.yaml` file is used to configure the Envoy Proxy.
 
@@ -124,7 +140,7 @@ Once configured using the prompts in the `make init_envoy` target, the `.envoy.y
 
 :::
 
-## Ratelimit Configuration - `.ratelimit.yaml`
+## 3. Ratelimit Configuration - `.ratelimit.yaml`
 
 The `.ratelimit.yaml` file is used to configure the Ratelimit service.
 
@@ -160,7 +176,7 @@ To add new throughput limits, add a new descriptor array item under the `descrip
 
 For more information on Rate Limit descriptors, see the [documentation in the Envoy Rate Limit repository](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions).
 
-## Gateway Endpoints Data - `.gateway-endpoints.yaml`
+## 4. Gateway Endpoints Data - `.gateway-endpoints.yaml`
 
 A `GatewayEndpoint` is how PATH defines a single endpoint that is authorized to use the PATH service.
 

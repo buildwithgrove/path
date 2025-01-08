@@ -1,18 +1,17 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 title: PATH Cheat Sheet
 ---
 
 This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
-for setting up and running a local PATH instance in Tilt. If you'd like to understand
-all the underlying details, please refer to the [PATH Introduction](../path/introduction.md).
+for setting up and running a local PATH instance in Tilt. 
+
+If you'd like to understand all the underlying details, please refer to the [PATH Introduction](../path/introduction.md).
 
 :::warning TODOs
 
 1. These instructions are intended to run on a Linux machine.
    - TODO_TECHDEBT(@olshansk): Adapt the instructions to be macOS friendly.
-2. The following instructions are specific to setting up a `PATH` instance on `Shannon`.
-   - TODO_TECHDEBT(@commoddity): Adapt the instructions to include a Morse example.
 
 :::
 
@@ -21,14 +20,21 @@ all the underlying details, please refer to the [PATH Introduction](../path/intr
 - [1. Prerequisites](#1-prerequisites)
   - [1.1 Clone the `PATH` Repository](#11-clone-the-path-repository)
   - [1.2 Install Dependencies](#12-install-dependencies)
-  - [1.3 Setup Shannon Account](#13-setup-shannon-account)
+  - [1.3 Setup Protocol](#13-setup-protocol)
+    - [1.3a Shannon - Setup Account](#13a-shannon---setup-account)
+    - [1.3b Morse - Retrieve AATs](#13b-morse---retrieve-aats)
 - [2. Populate Required Config Files](#2-populate-required-config-files)
   - [2.1 Populate the `PATH` config YAML file](#21-populate-the-path-config-yaml-file)
-  - [2.2 Populate the `Envoy Proxy` config files](#22-populate-the-envoy-proxy-config-files)
+    - [2.1a Populate the Shannon config YAML file](#21a-populate-the-shannon-config-yaml-file)
+    - [2.1b Populate the Morse config YAML file](#21b-populate-the-morse-config-yaml-file)
+  - [2.2 Populate the `Envoy Proxy` config](#22-populate-the-envoy-proxy-config)
 - [3. Run the `PATH` Gateway](#3-run-the-path-gateway)
-- [4. Send a Relay](#4-send-a-relay)
-  - [4.1 **Endpoint with Static Key Authorization**](#41-endpoint-with-static-key-authorization)
-  - [4.2 **Endpoint with No Authorization**](#42-endpoint-with-no-authorization)
+  - [3a. Run `PATH` with Envoy Proxy](#3a-run-path-with-envoy-proxy)
+  - [3b. Run `PATH` standalone](#3b-run-path-standalone)
+- [4. View PATH Resources in Tilt](#4-view-path-resources-in-tilt)
+- [5. Send a Relay](#5-send-a-relay)
+  - [5.1 With Envoy Proxy](#51-with-envoy-proxy)
+  - [5.2 Standalone](#52-standalone)
 
 ## 1. Prerequisites
 
@@ -62,13 +68,41 @@ This will check if the required tools are installed and install them if they are
 
 :::
 
-### 1.3 Setup Shannon Account
+### 1.3 Setup Protocol
+
+#### 1.3a Shannon - Setup Account
 
 Before starting a PATH instance, you will need to set up both a [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways) and [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications) account on Shannon.
 
-For a quick and easy way to set up your Shannon accounts, see [the Account Setup section of the Gateway cheat sheets](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet#account-setup).
+[For a quick and easy way to set up your Shannon accounts, see the Account Setup section of the Gateway cheat sheets](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet#account-setup).
+
+#### 1.3b Morse - Retrieve AATs
+
+`Application Authentication Tokens` (AATs) are auth tokens that allow application clients to access the network without the need to expose their private keys.
+
+This is a relatively manual process in Morse that is not well documented.
+
+You should reach out to the team directly if you are doing this, but can refer to the following resources as references:
+
+- [What are AATs?](https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats)
+- [Host a Gateway on Morse](https://docs.pokt.network/gateways/host-a-gateway)
+- [pocket-core/doc/specs/application-auth-token.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/application-auth-token.md)
+- [pocket-core/doc/specs/cli/apps.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/cli/apps.md)
+- [Gateway Server Kit instructions (as a reference)](https://github.com/pokt-network/gateway-server/blob/main/docs/quick-onboarding-guide.md#5-insert-app-stake-private-keys)
+
+Once you have one or more valid AATs, you can populate the configuration files required to run the full `PATH Gateway` instance.
 
 ## 2. Populate Required Config Files
+
+### 2.1 Populate the `PATH` config YAML file
+
+:::tip
+
+[For detailed information on the PATH configuration file, see the PATH Config Docs](../path/path_config.md).
+
+:::
+
+#### 2.1a Populate the Shannon config YAML file
 
 Assuming you have followed the instructions above, the following should be true:
 
@@ -77,8 +111,6 @@ Assuming you have followed the instructions above, the following should be true:
 3. You have delegated the staked `Application` to the staked `Gateway`.
 
 Now you can populate the configuration files required to run the full `PATH Gateway` instance.
-
-### 2.1 Populate the `PATH` config YAML file
 
 Run the following command to generate a default Shannon config in `local/path/config/.config.yaml` using the values from your `Gateway` and `Application` accounts:
 
@@ -91,6 +123,30 @@ make shannon_populate_config
 You'll be prompted to confirm the `Gateway` account private key export. **Say Yes**.
 
 :::
+
+:::note TODO(@olshansk)
+
+Pre-prepare a handful of apps/gateways to get users started EVEN faster.
+
+:::
+
+#### 2.1b Populate the Morse config YAML file
+
+Run the following command to generate a default Morse config in `local/path/config/.config.yaml` using the values from your `Gateway` and `Application` accounts:
+
+```bash
+make config_morse_localnet
+```
+
+:::warning
+
+You will need to manually update the `url`, `relay_signing_key`, & `signed_aats` values in the `local/path/config/.config.yaml` file for your Morse Gateway configuration.
+
+Pay close attention to the field names and note that this file contains sensitive information.
+
+:::
+
+#### View the config file <!-- omit in toc -->
 
 When you're done, run the following command to view your updated config file:
 
@@ -118,13 +174,18 @@ services:
     alias: "eth"
 ```
 
-:::note TODO(@olshansk)
+### 2.2 Populate the `Envoy Proxy` config
 
-Pre-prepare a handful of apps/gateways to get users started EVEN faster.
+:::note
+
+You may run PATH locally in Tilt without Envoy Proxy, which disables authorization, service aliasing and rate limiting.
+
+**If you wish to run PATH locally in Tilt without Envoy Proxy, you can skip this step.**
+
+[Instead, proceed to Section 3b. Run `PATH` without Envoy Proxy](#3b-run-path-without-envoy-proxy).
 
 :::
 
-### 2.2 Populate the `Envoy Proxy` config files
 
 Run the following command to generate the 4 Envoy config files:
 
@@ -143,7 +204,13 @@ cat local/path/envoy/.gateway-endpoints.yaml
 
 :::tip
 
-If you wish to use an 0Auth provider _(for example [Auth0](https://auth0.com))_ to enable authorizing requests using an issued JWT, you will need to provide the `AUTH_DOMAIN` and `AUTH_AUDIENCE` values to substitute the sensitive variables in the `envoy.yaml` file.
+For detailed information on the Envoy configuration files, see the [Envoy Config Docs](../envoy/envoy_config.md).
+
+:::
+
+:::note
+
+If you wish to use an 0Auth provider _([for example Auth0](https://auth0.com))_ to enable authorizing requests using an issued JWT, you will need to provide the `AUTH_DOMAIN` and `AUTH_AUDIENCE` values to substitute the sensitive variables in the `envoy.yaml` file.
 
 If you do not wish to use an OAuth provider, simply answer `no` when prompted. This will allow authorizing requests with a static API key only.
 
@@ -151,13 +218,43 @@ If you do not wish to use an OAuth provider, simply answer `no` when prompted. T
 
 ## 3. Run the `PATH` Gateway
 
-Start the `PATH` Gateway by running the following command:
+PATH can be run in Tilt in two different modes:
+
+1. **With Envoy Proxy**
+   - **This is the default mode; we recommend running PATH in this mode.**
+   - Requests to PATH require a Gateway Endpoint in order to be authorized.
+   - Requests to PATH are routed through Envoy Proxy, running on `port 3001`.
+2. **Standalone**
+   - Requests to PATH do not require a Gateway Endpoint to be authorized.
+   - Requests to PATH go directly to the `PATH` Service, running on `port 3069`.
+
+### 3a. Run `PATH` with Envoy Proxy
+
+:::warning
+
+In order to run PATH with authorization, you must have completed [Section 2.2 of this guide](#22-populate-the-envoy-proxy-config-files).
+
+Without the configuration files created in this section, Envoy Proxy and all other required resources will not be able to start.
+
+:::
+
+Start the `PATH` Gateway with Envoy Proxy and all other required resources by running the following command:
 
 ```bash
 make path_up
 ```
 
-You should see the following output:
+### 3b. Run `PATH` standalone
+
+To run PATH without Envoy Proxy, you can use the following command:
+
+```bash
+make path_up_standalone
+```
+
+## 4. View PATH Resources in Tilt
+
+Regardless of which mode you choose, you should see the following output:
 
 ```bash
 ❯ make path_up
@@ -204,7 +301,7 @@ You will be able to tell it is ready when you see log output like this in the `p
 {"level":"info","message":"Starting PATH using config file: /app/config/.config.yaml"}
 {"level":"info","message":"Starting PATH gateway with Shannon protocol"}
 {"level":"info","message":"Starting the cache update process."}
-{"level":"info","package":"router","message":"PATH gateway running on port 3000"}
+{"level":"info","package":"router","message":"PATH gateway running on port 3069"}
 {"level":"info","services count":1,"message":"Running Hydrator"}
 ```
 
@@ -212,21 +309,29 @@ You will be able to tell it is ready when you see log output like this in the `p
 
 **Once the `PATH Gateway` container is ready, you can send a relay to test.**
 
-## 4. Send a Relay
+## 5. Send a Relay
 
 Check that the `PATH Gateway` is serving relays by running the following command yourself:
 
-### 4.1 **Endpoint with Static Key Authorization**
+### 5.1 With Envoy Proxy
 
-```bash
-curl http://localhost:3001/v1/endpoint_1_static_key \
-    -X POST \
-    -H "authorization: api_key_1" \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
+When running PATH with authorization, requests are routed through Envoy Proxy, running on `port 3001`.
 
-### 4.2 **Endpoint with No Authorization**
+**1. Endpoint with Static Key Authorization**
+
+    This endpoint requires an API key in the `authorization` header.
+
+    ```bash
+    curl http://localhost:3001/v1/endpoint_1_static_key \
+        -X POST \
+        -H "authorization: api_key_1" \
+        -H "target-service-id: anvil" \
+        -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+    ```
+
+**2. Endpoint with No Auth Required**
+
+This endpoint does not require an API key in the `authorization` header.
 
 ```bash
 curl http://localhost:3001/v1/endpoint_3_no_auth \
@@ -243,9 +348,20 @@ To add or modify the `GatewayEndpoints` that are authorized to use your PATH ins
 
 Saving this file will trigger a hot-reloading of the PATH Auth Data Server (PADS) resource in Tilt.
 
-For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, [see the PATH Auth Data Server section of the PATH Auth README.md](https://github.com/buildwithgrove/path/tree/main/envoy#55-remote-grpc-auth-server).
+[For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the PATH Auth README.md](../).
 
 :::
+
+### 5.2 Standalone
+
+When running PATH without authorization, requests go directly to the `PATH` Service, running on `port 3069`.
+
+```bash
+curl http://localhost:3069/v1/ \
+    -X POST \
+    -H "target-service-id: anvil" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
 
 :::warning
 

@@ -120,5 +120,6 @@ to the [postgres/grove/sqlc](https://github.com/buildwithgrove/path-auth-data-se
 
 Pull requests are welcome to support alternative Postgres data sources, with the requirement that they support [the gRPC spec referenced in the `gateway_endpoint.proto` file](../envoy/introduction.md#gateway_endpointproto-file).
 
-Alternatively, you may fork this repository and implement your own data source.
+Alternatively, you may fork [the PADS repository](https://github.com/buildwithgrove/path-auth-data-server) and implement your own data source.
+
 

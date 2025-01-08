@@ -3,6 +3,6 @@
   "position": 2,
   "link": {
     "type": "generated-index",
-    "description": "Documentation for Envoy developers."
+    "description": "Documentation for PATH's Envoy Proxy configuration, which is used for authorization and rate limiting"
   }
 }

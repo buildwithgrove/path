@@ -126,7 +126,7 @@ graph TD
 
 <div align="center">
   <a href="https://www.envoyproxy.io/docs/envoy/latest/">
-    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="200"/>
+    <img src="https://www.envoyproxy.io/docs/envoy/latest/_static/envoy-logo.png" alt="Envoy logo" width="200"/>
   <p><b>Envoy Proxy Docs</b></p>
   </a>
 </div>
@@ -210,7 +210,7 @@ The `target-service-id` header is used to specify the Service ID in the request.
 There are two methods for specifying this header in the request:
 
 1. [Target Service ID Header](#target-service-id-header) (_e.g. -H "target-service-id: anvil"_)
-2. [URL Subdomain](#url-subdomain) (_e.g. http://anvil.localhost:3001/v1_)
+2. [URL Subdomain](#url-subdomain) (_e.g. http://anvil.localhost:3070/v1_)
 
 ### Allowed Services File
 
@@ -240,7 +240,7 @@ The service ID (or a configured alias) may be specified in the `target-service-i
 :::info _Example request:_
 
 ```bash
-curl http://localhost:3001/v1 \
+curl http://localhost:3070/v1 \
   -X POST \
   -H "Content-Type: application/json" \
   -H "target-service-id: anvil" \
@@ -259,7 +259,7 @@ eg. `host = "anvil.path.grove.city" -> Header: "target-service-id: anvil"`
 :::info _Example request:_
 
 ```bash
-curl http://anvil.localhost:3001/v1 \
+curl http://anvil.localhost:3070/v1 \
   -X POST \
   -H "Content-Type: application/json" \
   -H "endpoint-id: endpoint_3_no_auth" \
@@ -275,7 +275,15 @@ The Auth Server may extract the Gateway Endpoint ID from the request in one of t
 1. [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
 2. [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
 
-This is determined by the **`ENDPOINT_ID_EXTRACTOR`** environment variable in the `auth_server/.env` file. One of:
+This is determined by the **`auth_server.endpoint_id_extractor`** field in the PATH `.config.yaml` file. 
+
+:::tip
+
+[For detailed information on the PATH configuration file, see the PATH Config Docs](../path/path_config.md).
+
+:::
+
+One of:
 
 - `url_path` (default)
 - `header`
@@ -306,7 +314,7 @@ https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 
 ```
-curl http://anvil.localhost:3001/v1/endpoint_3_no_auth \
+curl http://anvil.localhost:3070/v1/endpoint_3_no_auth \
   -X POST \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
@@ -323,7 +331,7 @@ When using the `header` extractor, the Gateway Endpoint ID must be specified in 
 For example, if the `endpoint-id` header is set to `a1b2c3d4`:
 
 ```
-curl http://anvil.localhost:3001/v1 \
+curl http://anvil.localhost:3070/v1 \
   -X POST \
   -H "Content-Type: application/json" \
   -H "endpoint-id: endpoint_3_no_auth" \
@@ -416,10 +424,6 @@ All requests for GatewayEndpoints with the `AuthType` field set to `NO_AUTH` wil
 
 ## External Auth Server
 
-:::info
-See [PATH PADS Repository](https://github.com/buildwithgrove/path-auth-data-server) for more information on authorization service provided by Grove for PATH support.
-:::
-
 The `envoy/auth_server` directory contains the `External Auth Server` called by the Envoy `ext_authz` filter. It evaluates whether incoming requests are authorized to access the PATH service.
 
 This server communicates with a `Remote gRPC Server` to populate its in-memory `Gateway Endpoint Store`, which provides data on which endpoints are authorized to use the PATH service.
@@ -487,11 +491,11 @@ service GatewayEndpoints {
 
 The `Remote gRPC Server` is responsible for providing the `External Auth Server` with data on which endpoints are authorized to use the PATH service.
 
-:::info
-The implementation of the remote gRPC server is up to the Gateway operator but PADS is provided as a functional implementation for most users.
-:::
+**The PATH Auth Data Server (PADS) is a pre-built implementation of the `Remote gRPC Server` that should be sufficient for most users.**
 
 #### PATH Auth Data Server
+
+[The PADS repo provides a pre-built implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
 :::info Repository
 
@@ -499,7 +503,6 @@ The implementation of the remote gRPC server is up to the Gateway operator but P
 
 :::
 
-[The PADS repo provides a functioning implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
 
 This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 

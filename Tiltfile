@@ -68,7 +68,7 @@ docker_build_with_restart(
 
 # Conditionally add port forwarding based on the mode
 if MODE == "path_only":
-    # Run PATH without any dependencies and port 3000 exposed
+    # Run PATH without any dependencies and port 3069 exposed
     helm_resource(
         "path",
         chart_prefix + "path",
@@ -80,7 +80,7 @@ if MODE == "path_only":
         image_deps=["path"],
         image_keys=[("image.repository", "image.tag")],
         labels=["path"],
-        port_forwards=["3000:3000"],
+        port_forwards=["3069:3069"],
     )
 else:
     # Run PATH with all dependencies and no port exposed
@@ -103,7 +103,7 @@ else:
             "ratelimit",
             "redis",
         ],
-        port_forwards=["3000:3000"],
+        port_forwards=["3069:3069"],
     )
 
 if MODE == "path_with_auth":
@@ -160,7 +160,7 @@ if MODE == "path_with_auth":
     k8s_resource(
         "envoy-proxy",
         labels=["envoy_auth"],
-        port_forwards=["3001:3001"],
+        port_forwards=["3070:3070"],
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
@@ -223,10 +223,10 @@ k8s_resource(
     new_name="grafana",
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    port_forwards=["3003:3000"],
+    port_forwards=["3000:3000"],
     labels=["monitoring"],
     links=[
-        link("localhost:3003", "Grafana"),
+        link("localhost:3000", "Grafana"),
     ],
     pod_readiness="wait",
     discovery_strategy="selectors-only",
