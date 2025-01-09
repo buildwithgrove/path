@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -14,7 +18,27 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
+
+	// DEV_HACK: remove this
+	"github.com/joho/godotenv"
 )
+
+// TODO_FIX_IN_THIS_PR(@commoddity): remove the DEV_HACK code and this env variable code
+// DEV_HACK - This is a temporary variable to hold the websocket endpoint URL.
+// It is set in the init() function, which is called when the package is initialized.
+var websocket_endpoint_url string
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+	websocket_endpoint_url = os.Getenv("WEBSOCKET_ENDPOINT_URL")
+	if websocket_endpoint_url == "" {
+		panic("WEBSOCKET_ENDPOINT_URL is not set")
+	}
+}
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
@@ -96,6 +120,42 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 
 	relayResponse.EndpointAddr = selectedEndpointAddr
 	return relayResponse, nil
+}
+
+// HandleWebsocketRequest satisfies the gateway package's ProtocolRequestContext interface.
+func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
+	var selectedEndpointURL string
+	if rc.selectedEndpoint != nil {
+		selectedEndpointURL = rc.selectedEndpoint.PublicURL()
+	}
+
+	// DEV_HACK - Up to this this point the endpoint selection process is the same as for a regular HTTP request.
+	// In theory, if the endpoint selected was for a websocket-enabled Ethereum node, we should be able to use the
+	// selected endpoint's URL to establish a websocket connection with the node.
+	fmt.Println("DEBUG - selected endpoint with URL: ", selectedEndpointURL)
+
+	// DEV_HACK - However currently the nodes used by the Morse protocol are not websocket-enabled so for now
+	// we will override the selected endpoint's URL to a valid direct websocket endpoint, which allows us to test
+	// the websocket connection. For example, a ETH subscription may be established in the open WSS connection:
+	// {"jsonrpc": "2.0", "id": 1, "method": "eth_subscribe", "params": ["newPendingTransactions"]}
+	selectedEndpointURL = websocket_endpoint_url
+	fmt.Println("DEBUG - replaced selected endpoint with URL: ", selectedEndpointURL)
+
+	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	clientConn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		logger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		return err
+	}
+
+	bridge, err := websockets.NewBridge(selectedEndpointURL, clientConn, logger)
+	if err != nil {
+		return err
+	}
+
+	go bridge.Run()
+
+	return nil
 }
 
 // AvailableEndpoints returns the list of endpoints available under the request context, which is populated by the protocol instance

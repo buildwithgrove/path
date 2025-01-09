@@ -65,7 +65,7 @@ type Gateway struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// build a gatewayRequestContext with components necessary to process HTTP requests.
+	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		protocol:          g.Protocol,
 		httpRequestParser: g.HTTPRequestParser,
@@ -77,8 +77,6 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	}
 
 	defer func() {
-		// Write the user-facing HTTP response.
-		gatewayRequestCtx.WriteHTTPUserResponse(w)
 		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
 		gatewayRequestCtx.BroadcastAllObservations()
 	}()
@@ -90,8 +88,24 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebsocketRequest(ctx, httpReq, w, gatewayRequestCtx)
+	case httpServiceRequest:
+		g.handleHTTPRequest(ctx, httpReq, w, gatewayRequestCtx)
+	}
+}
+
+// handleHTTPRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter, gatewayRequestCtx *requestContext) {
+	defer func() {
+		// Write the user-facing HTTP response.
+		gatewayRequestCtx.WriteHTTPUserResponse(w)
+	}()
+
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	err := gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
 	if err != nil {
 		return
 	}
@@ -103,6 +117,27 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	}
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
-	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	_ = gatewayRequestCtx.HandleRelayRequest()
+}
+
+// handleWebsocketRequest handles a WebSocket connection request.
+func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter, gatewayRequestCtx *requestContext) {
+	// Build the QoS context for the target service ID using the WebSocket request.
+	// If the service does not support WebSocket connections, the request will be rejected.
+	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
+	if err != nil {
+		return
+	}
+
+	// Build the protocol context for the HTTP request.
+	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
+	if err != nil {
+		return
+	}
+
+	// If the HTTP request is a websocket request, we need to establish a websocket connection
+	// with the endpoint and run the bridge.
+	if err := gatewayRequestCtx.HandleWebsocketRequest(httpReq, w); err != nil {
+		g.Logger.Warn().Err(err).Msg("failed to establish a websocket connection.")
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/buildwithgrove/path/health"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
@@ -50,6 +51,8 @@ type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
+
+	HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
 	// This is needed by the Endpooint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.

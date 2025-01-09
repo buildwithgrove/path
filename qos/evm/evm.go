@@ -56,6 +56,19 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	}, true
 }
 
+// ParseWebsocketRequest builds a request context from the provided WebSocket request.
+// WebSocket connection requests do not have a body, so we don't need to parse it.
+//
+// This method implements the gateway.QoSService interface.
+func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
+	return &requestContext{
+		endpointStore: qos.EndpointStore,
+		logger:        qos.Logger,
+
+		isValid: true,
+	}, true
+}
+
 // ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
 func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {

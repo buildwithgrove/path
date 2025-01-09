@@ -63,6 +63,8 @@ type RequestQoSContext interface {
 type QoSContextBuilder interface {
 	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
+	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
+	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
 
 // QoSEndpointCheckGenerator returns one or more service request contexts

@@ -36,6 +36,12 @@ func (q NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) 
 	}, true
 }
 
+// ParseWebsocketRequest builds a request context from the provided WebSocket request.
+// NoOpQoS does not support WebSocket connections, so it returns a nil request context and false.
+func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
+	return nil, false
+}
+
 // ApplyObservations on noop QoS only fulfills the interface requirements and does not perform any actions.
 // This method implements the gateway.QoSService interface.
 func (q NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
