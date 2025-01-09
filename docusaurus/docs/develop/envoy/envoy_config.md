@@ -27,13 +27,13 @@ There are a total of four files used to configure Envoy Proxy in PATH:
 
 :::tip
 
-While four config files may seem like a lot, the default templates for files 1-3 should be sufficient for most use cases.
+While **four config** files may seem like a lot, the default templates for **files 1 through 3** should be sufficient for most use cases.
 
 For most use cases, only the `.gateway-endpoints.yaml` file will need to be modified.
 
 :::
 
-:::info 
+:::info
 
 The PATH gateway is configured with its own set of configuration files.
 

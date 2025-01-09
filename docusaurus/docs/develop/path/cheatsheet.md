@@ -1,17 +1,18 @@
 ---
 sidebar_position: 1
-title: PATH Cheat Sheet
+title: Cheat Sheet
 ---
 
 This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
-for setting up and running a local PATH instance in Tilt. 
+for setting up and running a local PATH instance in Tilt.
 
 If you'd like to understand all the underlying details, please refer to the [PATH Introduction](../path/introduction.md).
 
-:::warning TODOs
+:::warning Linux Only
 
-1. These instructions are intended to run on a Linux machine.
-   - TODO_TECHDEBT(@olshansk): Adapt the instructions to be macOS friendly.
+These instructions are intended to run on a Linux machine.
+
+_TODO_TECHDEBT(@olshansk): Adapt the instructions to be macOS friendly._
 
 :::
 
@@ -104,23 +105,20 @@ Once you have one or more valid AATs, you can populate the configuration files r
 
 #### 2.1a Populate the Shannon config YAML file
 
-Assuming you have followed the instructions above, the following should be true:
-
-1. You have created, funded and staked a `Gateway`.
-2. You have created, funded and staked a `Application`.
-3. You have delegated the staked `Application` to the staked `Gateway`.
-
-Now you can populate the configuration files required to run the full `PATH Gateway` instance.
-
 Run the following command to generate a default Shannon config in `local/path/config/.config.yaml` using the values from your `Gateway` and `Application` accounts:
 
 ```bash
 make shannon_populate_config
 ```
 
-:::note Exporting private keys
+:::warning
 
-You'll be prompted to confirm the `Gateway` account private key export. **Say Yes**.
+You will need to manually update the following values in the `local/path/config/.config.yaml` file for your Shannon Gateway configuration:
+- `gateway_address`: Your staked Gateway address
+- `gateway_private_key_hex`: Your Gateway's private key (you'll be prompted to confirm export)
+- `owned_apps_private_keys_hex`: Private key(s) of your staked Application(s)
+
+Pay close attention to the field names and note that this file contains sensitive information.
 
 :::
 
@@ -185,7 +183,6 @@ You may run PATH locally in Tilt without Envoy Proxy, which disables authorizati
 [Instead, proceed to Section 3b. Run `PATH` without Envoy Proxy](#3b-run-path-without-envoy-proxy).
 
 :::
-
 
 Run the following command to generate the 4 Envoy config files:
 
