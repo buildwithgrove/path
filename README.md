@@ -30,6 +30,12 @@ Please visit [path.grove.city](https://path.grove.city) for documentation.
 
 The source code for the documentation is available in the `docs` directory.
 
+## Support
+
+For Bug Reports and Enhancement Requests, please open an [Issue](https://github.com/buildwithgrove/path/issues).
+
+For Technical Support please open a ticket in [Grove's Discord](https://discord.gg/build-with-grove).
+
 ---
 
 ## License
