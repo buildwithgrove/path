@@ -1,0 +1,30 @@
+# All code directories
+qos/
+request/
+gateway/
+envoy/
+protocol/
+local/
+cmd/
+config/
+e2e/
+health/
+message/
+router/
+
+# Build and config files
+go.mod
+go.sum
+Dockerfile
+Tiltfile
+.github/
+.claudeignore*
+LICENSE
+
+# Dependencies
+**/node_modules/
+**/.docusaurus/
+
+# Keep documentation
+!docusaurus/docs/
+!*.md
