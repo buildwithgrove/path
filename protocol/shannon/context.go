@@ -25,8 +25,7 @@ import (
 )
 
 // TODO_FIX_IN_THIS_PR(@commoddity): remove the DEV_HACK code and this env variable code
-// DEV_HACK - This is a temporary variable to hold the websocket endpoint URL.
-// It is set in the init() function, which is called when the package is initialized.
+// DEV_HACK - This is a temporary variable to hold the websocket override endpoint URL.
 var websocket_endpoint_url string
 
 func init() {
@@ -134,9 +133,9 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 	// selected endpoint's URL to establish a websocket connection with the node.
 	fmt.Println("DEBUG - selected endpoint with URL: ", selectedEndpointURL)
 
-	// DEV_HACK - However currently the nodes used by the Morse protocol are not websocket-enabled so for now
-	// we will override the selected endpoint's URL to a valid direct websocket endpoint, which allows us to test
-	// the websocket connection. For example, a ETH subscription may be established in the open WSS connection:
+	// DEV_HACK - However currently Pocket endpoints are not websocket-enabled so for now we will override the
+	// selected endpoint's URL to a valid direct websocket endpoint, which allows us to test the websocket connection.
+	// For example, a ETH subscription may be established in the open websocket connection:
 	// {"jsonrpc": "2.0", "id": 1, "method": "eth_subscribe", "params": ["newPendingTransactions"]}
 	selectedEndpointURL = websocket_endpoint_url
 	fmt.Println("DEBUG - replaced selected endpoint with URL: ", selectedEndpointURL)
