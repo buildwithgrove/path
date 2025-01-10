@@ -19,87 +19,138 @@ title: Introduction
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path-auth-data-server)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path-auth-data-server)
 
-
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [Gateway Endpoints](#gateway-endpoints)
-- [Data Sources](#data-sources)
-- [gRPC Proto File](#grpc-proto-file)
+- [Gateway Endpoint Protobuf Definition](#gateway-endpoint-protobuf-definition)
+  - [Core Fields](#core-fields)
+  - [Auth Types](#auth-types)
+  - [Rate Limiting Configuration](#rate-limiting-configuration)
+  - [Metadata Fields](#metadata-fields)
+- [Auth Data Source Abstraction: Go interface to gRPC service](#auth-data-source-abstraction-go-interface-to-grpc-service)
+  - [PADS go Interface](#pads-go-interface)
+  - [PATH gRPC Interface](#path-grpc-interface)
 
 ## Introduction
 
 <!-- TODO_MVP(@commoddity): Move these documents over to path.grove.city -->
 
-**PADS** (PATH Auth Data Server) is a gRPC server that provides `Gateway Endpoint` data from a data source to the `External Auth Server` in order to enable authorization for [the PATH Gateway](https://github.com/buildwithgrove/path). The nature of the data source is configurable, for example it could be a YAML file or a Postgres database.
+**PADS** (PATH Auth Data Server) is an opinionated implementation of an authorization data server for PATH users. It provides authorization data on a per endpoint basis from an external data source for [the PATH Gateway](https://github.com/buildwithgrove/path).
 
-## Gateway Endpoints
+Gateway Operators who want to enable authorization for their services are encouraged to use it
+as a starting point, but can implement their own as well.
 
-A `GatewayEndpoint` represents a single authorized endpoint of the PATH Gateway service, which may be authorized for use by any number of users.
+The nature of the data source is configurable. For example it could be a **static YAML file** or a **Postgres database**.
 
-:::info
+```mermaid
+graph TD
+    PATH["PATH Gateway"]
+    ENVOY["Envoy Proxy"]
+    GRPCServer["PADS <br> (i.e. Remote gRPC Server)"]
 
-[See the Envoy Section of the PATH documentation for more details.](../envoy/introduction.md#external-auth-server)
+    subgraph AUTH["Envoy Go External Auth Server"]
+        GRPCClient["gRPC Client"]
+        Cache["Gateway Endpoint Data Store"]
+    end
+
+    subgraph DataSource["Endpoint Auth<br>Data Source<br>"]
+        GRPCConfig["YAML Config File"]
+        GRPCDB[("Postgres<br>Database")]
+    end
+
+    GRPCServer <-. "Proxy per endpoint auth data <br> (i.e. Gateway Endpoint Data)" .-> DataSource
+    GRPCServer <-. "Fetch & Stream<br>Gateway Endpoint Data<br> (over gRPC)" .-> AUTH
+
+    AUTH <-. Authorize Requests .-> ENVOY
+    ENVOY <-. Proxy Authorized Requests .-> PATH
+```
+
+## Gateway Endpoint Protobuf Definition
+
+:::tip
+
+See the [Envoy Section](../envoy/introduction.md#external-auth-server) of the PATH documentation for complete details.
 
 :::
 
-[This package also defines the `gateway_endpoint.proto` file](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto), which contains the definitions for the `GatewayEndpoints` that PADS must provides to the `Go External Authorization Server`.
+A `GatewayEndpoint` represents a single endpoint managed by the Gateway. It can be configured to be public or authorized to support one or more user accounts.
 
+The complete protobuf definitions can be found in the [`gateway_endpoint.proto`](https://github.com/buildwithgrove/path/blob/main/envoy/auth_server/proto/gateway_endpoint.proto) file.
+
+### Core Fields
+
+| Field           | Type         | Required | Default | Description                                                               |
+| --------------- | ------------ | -------- | ------- | ------------------------------------------------------------------------- |
+| `endpoint_id`   | string       | Yes      | -       | Unique identifier used in the request URL path (e.g. `/v1/{endpoint_id}`) |
+| `auth`          | Auth         | Yes      | -       | Authorization configuration for the endpoint                              |
+| `rate_limiting` | RateLimiting | No       | -       | Rate limit settings for request throughput and capacity                   |
+| `metadata`      | Metadata     | No       | -       | Optional fields for billing, metrics and observability                    |
+
+### Auth Types
+
+| Field            | Type         | Required | Default | Description                                |
+| ---------------- | ------------ | -------- | ------- | ------------------------------------------ |
+| `no_auth`        | NoAuth       | No       | -       | Endpoint requires no authorization         |
+| `static_api_key` | StaticAPIKey | No       | -       | Uses a `Static API` key for auth           |
+| `jwt`            | JWT          | No       | -       | Uses `JWT` with map of authorized user IDs |
+
+### Rate Limiting Configuration
+
+| Field                   | Type  | Required | Default     | Description                                      |
+| ----------------------- | ----- | -------- | ----------- | ------------------------------------------------ |
+| `throughput_limit`      | int32 | No       | 0           | Requests per second (TPS) limit                  |
+| `capacity_limit`        | int32 | No       | 0           | Total request capacity limit                     |
+| `capacity_limit_period` | enum  | No       | UNSPECIFIED | Period for capacity limit (DAILY/WEEKLY/MONTHLY) |
+
+### Metadata Fields
+
+| Field         | Type   | Required | Default | Description                                                          |
+| ------------- | ------ | -------- | ------- | -------------------------------------------------------------------- |
+| `name`        | string | No       | ""      | Name of the endpoint                                                 |
+| `account_id`  | string | No       | ""      | User account identifier                                              |
+| `user_id`     | string | No       | ""      | Specific user identifier                                             |
+| `plan_type`   | string | No       | ""      | Subscription plan (e.g. `Free`, `Pro`, `Enterprise`)                 |
+| `email`       | string | No       | ""      | Associated email address of `account_id` owner                       |
+| `environment` | string | No       | ""      | Deployment environment (e.g. `development`, `staging`, `production`) |
+
+## Auth Data Source Abstraction: Go interface to gRPC service
+
+[**PADS**](https://github.com/buildwithgrove/path-auth-data-server/) defines an `AuthDataSource` interface in [`grpc/data_source.go`](https://github.com/buildwithgrove/path-auth-data-server/blob/main/grpc/data_source.go).
+
+This interface is abstracted via the `gRPC Service` named `GatewayEndpoints` in [`gateway_endpoints.proto`](https://github.com/buildwithgrove/path-auth-data-server/blob/main/grpc/gateway_endpoints.proto).
+
+Together, this is used to stream data from **Endpoint Auth Data Source** to the **Envoy Go External Auth Server** seen in the diagram above.
+
+### PADS go Interface
 
 ```go
-// Simplified representation of the GatewayEndpoint proto message that
-// PADS must provide to the `Go External Authorization Server`.
-type GatewayEndpoint struct {
-    EndpointId string
-    // AuthType will be one of the following structs:
-    AuthType {
-        // 1. No Authorization Required
-        NoAuth struct{}
-        // 2. Static API Key
-        StaticApiKey struct {
-          ApiKey string
-        }
-        // 3. JSON Web Token
-        Jwt struct {
-            AuthorizedUsers map[string]struct{}
-        }
-    }
-    RateLimiting struct {
-        ThroughputLimit int32
-        CapacityLimit int32
-        CapacityLimitPeriod CapacityLimitPeriod
-    }
-}
-```
-
-## Data Sources
-
-The `server` package contains the `DataSource` interface, which abstracts the data source that provides GatewayEndpoints to the `Go External Authorization Server`.
-
-```go
-// AuthDataSource is an interface that abstracts the data source.
-// It can be implemented by any data provider (e.g., YAML, Postgres).
 type AuthDataSource interface {
    FetchAuthDataSync() (*proto.AuthDataResponse, error)
    AuthDataUpdatesChan() (<-chan *proto.AuthDataUpdate, error)
 }
-
 ```
 
-- `FetchAuthDataSync()` returns the full set of Gateway Endpoints.
-  - This is called when `PADS` starts to populate its Gateway Endpoint Data Store.
-- `AuthDataUpdatesChan()` returns a channel that receives auth data updates to the Gateway Endpoints.
-  - Updates are streamed as changes are made to the data source.
-  
-## gRPC Proto File
+| Function                | Returns                             | Details                                                               |
+| ----------------------- | ----------------------------------- | --------------------------------------------------------------------- |
+| `FetchAuthDataSync()`   | Full set of Gateway Endpoints       | Called when `PADS` starts to populate its Gateway Endpoint Data Store |
+| `AuthDataUpdatesChan()` | Channel receiving auth data updates | Updates are streamed as changes are made to the data source           |
 
-[The PATH `auth_server` package](https://github.com/buildwithgrove/path/tree/main/envoy/auth_server) contains the file `gateway_endpoint.proto`, which contains:
+### PATH gRPC Interface
 
-- The gRPC auto-generated Go struct definitions for the GatewayEndpoints.
-- The `FetchAuthDataSync` and `StreamAuthDataUpdates` methods that the `Go External Authorization Server` uses to populate and update its Gateway Endpoint Data Store.
+:::info gRPC Proto File Documentation
 
-:::info gRPC Proto File
-
-[See the `gateway_endpoint.proto` documentation for more details.](../envoy/introduction.md#gateway_endpointproto-file) 
+See the [`gateway_endpoint.proto` ](../envoy/introduction.md#gateway_endpointproto-file) documentation for complete details.
 
 :::
+
+```protobuf
+service GatewayEndpoints {
+  rpc FetchAuthDataSync(AuthDataRequest) returns (AuthDataResponse);
+  rpc StreamAuthDataUpdates(AuthDataUpdatesRequest) returns (stream AuthDataUpdate);
+}
+```
+
+| Method                  | Request                  | Response                | Description                                                          |
+| ----------------------- | ------------------------ | ----------------------- | -------------------------------------------------------------------- |
+| `FetchAuthDataSync`     | `AuthDataRequest`        | `AuthDataResponse`      | Fetches initial set of GatewayEndpoints from remote gRPC server      |
+| `StreamAuthDataUpdates` | `AuthDataUpdatesRequest` | Stream `AuthDataUpdate` | Streams real-time updates of GatewayEndpoint changes from the server |
