@@ -13,7 +13,7 @@ static_resources:
                   address:
                     socket_address:
                       address: path-http
-                      port_value: 3000 # Port where the PATH API service runs.
+                      port_value: 3069 # Port where the PATH API service runs.
 
     # DEV_NOTE: The following cluster is only necessary if you are using JWT authentication.
     # Cluster to fetch the JSON Web Key Set (JWKS) from the authentication provider.
@@ -79,7 +79,7 @@ static_resources:
       address:
         socket_address:
           address: 0.0.0.0
-          port_value: 3001 # Port for incoming requests to the PATH API.
+          port_value: 3070 # Port for incoming requests to the PATH API.
       filter_chains:
         - filters:
             - name: envoy.filters.network.http_connection_manager
