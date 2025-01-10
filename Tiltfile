@@ -66,45 +66,45 @@ docker_build_with_restart(
     live_update=[sync("bin/path", "/app/path")],
 )
 
-# Conditionally add port forwarding based on the mode
-if MODE == "path_only":
-    # Run PATH without any dependencies and port 3000 exposed
-    helm_resource(
-        "path",
-        chart_prefix + "path",
-        flags=[
-            "--values=./local/kubernetes/path-values.yaml",
-        ],
-        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
-        # This can only be done once the CLI flags feature has been implemented.
-        image_deps=["path"],
-        image_keys=[("image.repository", "image.tag")],
-        labels=["path"],
-        port_forwards=["3000:3000"],
-    )
+# Specify the dependencies if PATH is running with auth.
+# No port exposed as all traffic must be routed through Envoy Proxy.
+if MODE == "path_with_auth":
+    path_resource_deps = [
+        "ext-authz",
+        "envoy-proxy",
+        "path-auth-data-server",
+        "ratelimit",
+        "redis",
+    ]
+    path_port_forwards = []
 else:
-    # Run PATH with all dependencies and no port exposed
-    # as all traffic must be routed through Envoy Proxy.
-    helm_resource(
-        "path",
-        chart_prefix + "path",
-        flags=[
-            "--values=./local/kubernetes/path-values.yaml",
-        ],
-        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
-        # This can only be done once the CLI flags feature has been implemented.
-        image_deps=["path"],
-        image_keys=[("image.repository", "image.tag")],
-        labels=["path"],
-        resource_deps=[
-            "ext-authz",
-            "envoy-proxy",
-            "path-auth-data-server",
-            "ratelimit",
-            "redis",
-        ],
-        port_forwards=["3000:3000"],
-    )
+    path_resource_deps = []
+    # Expose port 3000 if PATH is running without auth.
+    path_port_forwards = ["3000:3000"]
+
+# Run PATH with dependencies and port forwarding settings matching the MODE:
+# 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
+# 	2. Without Auth.: No dependencies, expose port 3000.
+helm_resource(
+    "path",
+    chart_prefix + "path",
+    flags=[
+        "--values=./local/kubernetes/path-values.yaml",
+    ],
+    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+    # This can only be done once the CLI flags feature has been implemented.
+    image_deps=["path"],
+    image_keys=[("image.repository", "image.tag")],
+    labels=["path"],
+    links=[
+        link(
+            "http://localhost:3003/d/gateway/path-path-gateway?orgId=1",
+            "Grafana dashboard",
+        ),
+    ],
+    port_forwards=path_port_forwards,
+    resource_deps=path_resource_deps
+)
 
 if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
@@ -197,14 +197,15 @@ helm_repo("prometheus-community", "https://prometheus-community.github.io/helm-c
 helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
 
 # Increase timeout for building the image
-update_settings(k8s_upsert_timeout_secs=60)
+update_settings(k8s_upsert_timeout_secs=120)
 
 helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
         "--values=./local/kubernetes/observability-prometheus-stack.yaml",
-        "--set=grafana.defaultDashboardsEnabled=true",
+        "--set=grafana.defaultDashboardsEnabled="
+        + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
     ],
     resource_deps=["prometheus-community"],
 )
@@ -232,6 +233,12 @@ k8s_resource(
     discovery_strategy="selectors-only",
 )
 
-# TODO_UPNEXT(@adshmh): Define and import a custom Grafana dashboard.
-# Use the poktroll Tiltfile as a template:
-# https://github.com/pokt-network/poktroll/blob/12342f016f3238ee7840a85d5056b1fe5ada9767/Tiltfile#L157
+# Import custom grafana dashboards into Kubernetes ConfigMap
+configmap_create("path-dashboards", from_file=listdir("local/grafana-dashboards/"))
+
+# Grafana discovers dashboards to "import" via a label
+local_resource(
+    "path-dashboards-label",
+    "kubectl label configmap path-dashboards grafana_dashboard=1 --overwrite",
+    resource_deps=["path-dashboards"],
+)
