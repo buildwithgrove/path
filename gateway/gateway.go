@@ -81,9 +81,15 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		gatewayRequestCtx.BroadcastAllObservations()
 	}()
 
-	// Initialize the GatewayRequestContext struct using the HTTP request.
-	// e.g. extract the target service ID from the HTTP request.
+	// Initialize the GatewayRequestContext struct using the request.
+	// e.g. extract the target service ID from the request.
 	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
+	if err != nil {
+		return
+	}
+
+	// Build the protocol context for the request.
+	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
@@ -110,12 +116,6 @@ func (g Gateway) handleHTTPRequest(ctx context.Context, httpReq *http.Request, w
 		return
 	}
 
-	// Build the protocol context for the HTTP request.
-	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
-	if err != nil {
-		return
-	}
-
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
@@ -125,12 +125,6 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	// Build the QoS context for the target service ID using the WebSocket request.
 	// If the service does not support WebSocket connections, the request will be rejected.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
-	if err != nil {
-		return
-	}
-
-	// Build the protocol context for the HTTP request.
-	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
