@@ -61,7 +61,7 @@ hydrator_config:
     - "solana"
     - "pokt"
 
-# Authentication Server Configuration
+# Authorization Server Configuration
 auth_server_config:
   grpc_host_port: path-auth-data-server:50051
   grpc_use_insecure_credentials: true

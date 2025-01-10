@@ -46,7 +46,7 @@ title: Introduction
 
 ### Shannon Quickstart
 
-[See the PATH Quickstart Cheat Sheet for instructions on how to get started with a local PATH instance on Shannon.](../path/cheatsheet.md)
+See the [PATH Quickstart Cheat Sheet](../path/cheatsheet.md) for instructions on how to get started with a local PATH instance on Shannon.
 
 :::info MAKE SURE TO UPDATE THESE FILES
 
@@ -139,7 +139,7 @@ Envoy acts as a gateway, handling incoming requests, determining allowed service
 
 ### Envoy Configuration
 
-[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../envoy/envoy_config.md)
+See the [Envoy Config docs](../envoy/envoy_config.md) for a simplified explanation of the Envoy Proxy configuration files and how they work together.
 
 ### Envoy HTTP Filters
 
@@ -307,13 +307,13 @@ Regardless of which extractor is used, the Gateway Endpoint ID will always be se
 
 When using the `url_path` extractor, the Gateway Endpoint ID must be specified in the URL path.
 
-```
+```bash
 https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 ```
 
 For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
 
-```
+```bash
 curl http://anvil.localhost:3070/v1/endpoint_3_no_auth \
   -X POST \
   -H "Content-Type: application/json" \
@@ -324,13 +324,13 @@ curl http://anvil.localhost:3070/v1/endpoint_3_no_auth \
 
 When using the `header` extractor, the Gateway Endpoint ID must be specified in the `endpoint-id` header.
 
-```
+```bash
 -H "endpoint-id: <GATEWAY_ENDPOINT_ID>"
 ```
 
 For example, if the `endpoint-id` header is set to `a1b2c3d4`:
 
-```
+```bash
 curl http://anvil.localhost:3070/v1 \
   -X POST \
   -H "Content-Type: application/json" \
@@ -393,7 +393,7 @@ The `External Auth Server` will use the `jwt-user-id` header to make an authoriz
 
 _Example auth provider user ID header:_
 
-```
+```bash
 jwt-user-id: auth0|a12b3c4d5e6f7g8h9
 ```
 
@@ -463,7 +463,7 @@ auth_server_config:
   endpoint_id_extractor_type: url_path
 ```
 
-[See the PATH Configuration section for more information on the `.config.yaml` file.](../path/introduction.md#configuration)
+See the [PATH Configuration](../path/introduction.md#configuration) section for more information on the `.config.yaml` file.
 
 For more information on external authorization using Envoy Proxy, see the Envoy documentation:
 
@@ -494,11 +494,11 @@ The `Remote gRPC Server` is responsible for providing the `External Auth Server`
 
 #### PATH Auth Data Server
 
-[The PADS repo provides a pre-built implementation of the remote gRPC server.](https://github.com/buildwithgrove/path-auth-data-server)
+The [PADS repo](https://github.com/buildwithgrove/path-auth-data-server) provides a pre-built implementation of the remote gRPC server.
 
 :::info Repository
 
-[See the PADS Documentation for more information on the PATH Auth Data Server.](../pads/introduction.md)
+See the [PADS Documentation](../pads/introduction.md) for more information on the PATH Auth Data Server.
 
 :::
 
