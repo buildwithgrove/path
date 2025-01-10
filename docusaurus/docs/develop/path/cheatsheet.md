@@ -360,7 +360,7 @@ You can view the `GatewayEndpoint`s and update `local/path/envoy/.gateway-endpoi
 - `endpoint_1_static_key` requires an API key in the `authorization` header set to `api_key_1` by default.
 - `endpoint_3_no_auth` does not require an API key in the `authorization` header.
 
-For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the [PATH Auth README.md](../).
+For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the [PATH Config Docs](../path/path_config.md).
 
 ### 5.1b `PATH` standalone
 
