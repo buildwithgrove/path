@@ -1,19 +1,12 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 title: YAML Data Source
+description: YAML data source example configuration
 ---
 
 If the `YAML_FILEPATH` environment variable is set, **PADS** will load the data from a YAML file at the specified path.
 
 **Hot reloading is supported**, so changes to the YAML file will be reflected in the `Go External Authorization Server` without the need to restart PADS.
-
-## Table of Contents <!-- omit in toc -->
-
-- [Example YAML Data Source File](#example-yaml-data-source-file)
-  - [1. Static API Key Authorization](#1-static-api-key-authorization)
-  - [2. JWT Authorization](#2-jwt-authorization)
-  - [3. No Authorization](#3-no-authorization)
-- [YAML Schema](#yaml-schema)
 
 ## Example YAML Data Source File
 

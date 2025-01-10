@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Walkthrough
+description: High-level architecture overview and detailed walkthrough
 ---
 
 <div align="center">
@@ -463,7 +464,7 @@ auth_server_config:
   endpoint_id_extractor_type: url_path
 ```
 
-See the [PATH Configuration](../path/introduction.md#configuration) section for more information on the `.config.yaml` file.
+See the [PATH Configuration](../path/walkthrough.md#configuration) section for more information on the `.config.yaml` file.
 
 For more information on external authorization using Envoy Proxy, see the Envoy documentation:
 

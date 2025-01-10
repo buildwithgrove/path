@@ -1,6 +1,7 @@
 ---
-title: Envoy Config
 sidebar_position: 2
+title: Envoy Config
+description: Envoy configuration details
 ---
 
 <div align="center">
@@ -98,7 +99,7 @@ The **value** in the config file must be the **authoritative service ID**.
 
 The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
 
-For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../../develop/envoy/introduction.md#service-id-specification).
+For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../envoy/walkthrough.md#service-id-specification).
 
 :::warning
 
@@ -182,7 +183,7 @@ A `GatewayEndpoint` is how PATH defines a single endpoint that is authorized to 
 
 It is used to define the **authorization method**, **rate limits**, and **metadata** for an endpoint.
 
-For more information, see the [Gateway Endpoint section in the Envoy docs](../../develop/envoy/introduction.md#gateway-endpoint-authorization).
+For more information, see the [Gateway Endpoint section in the Envoy docs](../envoy/walkthrough.md#gateway-endpoint-authorization).
 
 ### Gateway Endpoint Functionality
 
@@ -196,7 +197,7 @@ This YAML file is provided as an easy default way to define Gateway Endpoints to
 
 For more complex use cases, you may wish to use a database as the data source for Gateway Endpoints.
 
-**For more information on how to use a database as the data source for Gateway Endpoints, [see the PATH Auth Data Server (PADS) section of the Envoy docs](../../develop/envoy/introduction.md#path-auth-data-server).**
+**For more information on how to use a database as the data source for Gateway Endpoints, [see the PATH Auth Data Server (PADS) section of the Envoy docs](../envoy/walkthrough.md#path-auth-data-server).**
 
 :::
 

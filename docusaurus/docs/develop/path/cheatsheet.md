@@ -1,17 +1,12 @@
 ---
 sidebar_position: 1
 title: Cheat Sheet
+description: Quick reference guide for setting up and running a local PATH instance in Tilt
 ---
 
 This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
 for setting up and running a local PATH instance in Tilt. If you'd like to understand
-all the underlying details, please refer to the [PATH Introduction](../path/introduction.md).
-
-:::warning Linux Only Instructions
-
-_TODO_TECHDEBT(@olshansk): Adapt the instructions to be macOS friendly._
-
-:::
+all the underlying details, please refer to the [PATH Walkthrough](../path/walkthrough.md).
 
 ## Table of Contents <!-- omit in toc -->
 

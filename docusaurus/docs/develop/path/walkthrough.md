@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 title: Walkthrough
+description: High-level architecture overview and detailed walkthrough
 ---
 
 <div align="center">
@@ -21,7 +22,7 @@ title: Walkthrough
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
 ![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path-gateway&revision=true&showAppName=true)
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
   - [Prerequisites](#prerequisites)
@@ -191,9 +192,13 @@ Then update the `morse_config.full_node_config` and `morse_config.signed_aats` v
 
 You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
 
-**NOTE: If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.**
+:::note Grove Employee Only
 
-**⚠️ IMPORTANT: The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️**
+If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.\*\*
+
+⚠️ The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️
+
+:::
 
 #### Running the E2E tests
 

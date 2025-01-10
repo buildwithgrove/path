@@ -1,6 +1,7 @@
 ---
 sidebar_position: 3
 title: PATH Config
+description: PATH configuration details
 ---
 
 <div align="center">
@@ -304,16 +305,16 @@ Used only by the External Auth Server.
 
 :::info
 
-[For detailed information on the External Auth Server, please refer to the External Auth Server Documentation](../envoy/introduction.md#external-auth-server).
+[For detailed information on the External Auth Server, please refer to the External Auth Server Documentation](../envoy/walkthrough.md#external-auth-server).
 
 :::
 
-| Field                           | Type    | Required | Default | Description                                                                                                                                                       |
-| ------------------------------- | ------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `grpc_host_port`                | string  | Yes      | -       | Host and port for the remote gRPC connection to the `Remote gRPC Server` (eg. PADS). Pattern requires a `host:port` format.                                       |
-| `grpc_use_insecure_credentials` | boolean | No       | false   | Set to true if the `Remote gRPC Server` does not use TLS                                                                                                          |
-| `endpoint_id_extractor_type`    | string  | No       | -       | Either `url_path` or `header`. Specifies how endpoint IDs are extracted. [See here for more details](../envoy/introduction.md#specifying-the-gateway-endpoint-id) |
-| `port`                          | integer | No       | 10003   | The local port for running the Auth Server                                                                                                                        |
+| Field                           | Type    | Required | Default | Description                                                                                                                                                      |
+| ------------------------------- | ------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grpc_host_port`                | string  | Yes      | -       | Host and port for the remote gRPC connection to the `Remote gRPC Server` (eg. PADS). Pattern requires a `host:port` format.                                      |
+| `grpc_use_insecure_credentials` | boolean | No       | false   | Set to true if the `Remote gRPC Server` does not use TLS                                                                                                         |
+| `endpoint_id_extractor_type`    | string  | No       | -       | Either `url_path` or `header`. Specifies how endpoint IDs are extracted. [See here for more details](../envoy/walkthrough.md#specifying-the-gateway-endpoint-id) |
+| `port`                          | integer | No       | 10003   | The local port for running the Auth Server                                                                                                                       |
 
 :::caution
 

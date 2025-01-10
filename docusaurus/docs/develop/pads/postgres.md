@@ -1,18 +1,12 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: Postgres Data Source
+description: Postgres data source example configuration
 ---
 
 If the `POSTGRES_CONNECTION_STRING` environment variable is set, **PADS** will connect to the specified Postgres database.
 
 **Postgres triggers are configured to stream updates** to the `Go External Authorization Server` in real time as changes are made to the connected Postgres database.
-
-## Table of Contents <!-- omit in toc -->
-
-- [Grove Portal DB Driver Background](#grove-portal-db-driver-background)
-  - [Entity Relationship Diagram](#entity-relationship-diagram)
-  - [SQLC Autogeneration](#sqlc-autogeneration)
-- [Additional Postgres Implementations](#additional-postgres-implementations)
 
 ## Grove Portal DB Driver Background
 
