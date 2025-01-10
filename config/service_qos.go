@@ -51,6 +51,9 @@ func init() {
 	}
 }
 
+// TODO_TECHDEBT: figure out what this should be longer term.
+const defaultEVMChainID = "0x1" // ETH Mainnet (1)
+
 // GetEVMChainID returns the hexadecimal EVM chain ID for a given service ID.
 // If the service ID is not found in the ShannonEVMChainIDs or MorseEVMChainIDs
 // maps, the default EVM chain ID of `0x1` is returned.
@@ -61,7 +64,7 @@ func GetEVMChainID(serviceID protocol.ServiceID) string {
 	if chainID, ok := morseEVMChainIDs[serviceID]; ok {
 		return chainID
 	}
-	return "0x1" // If not found in either map, return the default EVM chain ID (ETH Mainnet - 1)
+	return defaultEVMChainID
 }
 
 // IMPORTANT: To run QoS checks against a service, the service ID MUST be registered in one of the below maps.
