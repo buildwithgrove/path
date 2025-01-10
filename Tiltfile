@@ -144,9 +144,8 @@ if MODE == "path_with_auth":
         "envoy-proxy",
         labels=["envoy_auth"],
         # By default the Envoy Proxy container will bind to 127.0.0.1:3001.
-        # If you wish Envoy Proxy to be acessible outside the host machine,
-        # you must specify `port_forwards=["0.0.0.0:3001:3001"]`.
-        port_forwards=["3001:3001"],
+        # Adding 0.0.0.0 allows it to be accessible from any IP address.
+        port_forwards=["0.0.0.0:3001:3001"],
     )
 
     # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
