@@ -16,8 +16,6 @@ The PADS repo contains a template [`gateway-endpoints.yaml`](https://github.com/
 
 :::
 
-A full example gateway endpoints yaml file can be found [gateway-endpoints.example.yaml](./yaml/testdata/gateway-endpoints.example.yaml).
-
 Below are partial sections of that yaml file for explanatory purposes:
 
 ### 1. Static API Key Authorization
@@ -59,7 +57,7 @@ endpoints:
 
 ## YAML Schema
 
-The [YAML Schema](./yaml/gateway-endpoints.schema.yaml) defines the expected structure of the YAML file.
+The [YAML Schema](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/gateway-endpoints.schema.yaml) defines the expected structure of the YAML file.
 
 :::tip
 
