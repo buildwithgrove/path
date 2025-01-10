@@ -52,3 +52,6 @@ tmp/*
 # PATH artifacts
 install.log
 local/path/
+
+# Claudesync
+.claudesync/
