@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Introduction
+title: Walkthrough
 ---
 
 <div align="center">
