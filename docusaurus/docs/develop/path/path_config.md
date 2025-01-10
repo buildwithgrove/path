@@ -8,30 +8,37 @@ title: PATH Config
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 </div>
 
-:::info 
+:::info PATH Configuration
 
-Envoy Proxy is configured with its own set of configuration files.
+These instructions are intended for configuring the **PATH Gateway**.
 
-[For detailed information on the Envoy configuration, please refer to the Envoy Configuration Guide](../envoy/envoy_config.md).
+**Envoy Proxy** has its own set of configuration files. See the details in the [Envoy Configuration Guide](../envoy/envoy_config.md).
 
 :::
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
+
 - [Configuration YAML File](#configuration-yaml-file)
-  - [Configuration File Location](#configuration-file-location)
-  - [Example Configuration Files](#example-configuration-files)
+  - [Config File Location](#config-file-location)
+  - [Example Config Files](#example-config-files)
   - [Config YAML Schema](#config-yaml-schema)
 - [YAML Fields](#yaml-fields)
+  - [Protocol Section](#protocol-section)
   - [`morse_config`](#morse_config)
+    - [Morse Field Descriptions](#morse-field-descriptions)
+    - [AAT Generation](#aat-generation)
   - [`shannon_config`](#shannon_config)
-  - [`router_config`](#router_config)
-  - [`hydrator_config`](#hydrator_config)
-  - [`auth_server_config`](#auth_server_config)
-
+    - [Shannon Field Descriptions](#shannon-field-descriptions)
+  - [`router_config` (optional)](#router_config-optional)
+  - [`hydrator_config` (optional)](#hydrator_config-optional)
+  - [`auth_server_config` (optional)](#auth_server_config-optional)
+  - [`messaging_config` (TODO)](#messaging_config-todo)
 
 ## Configuration YAML File
 
-All configuration for the PATH gateway is defined in a YAML file, which should be named `.config.yaml`.
+All configuration for the PATH gateway is defined in a single YAML file named `.config.yaml`.
+
+The following is quick example of a Gateway configured to support Shannon protocol on Beta TestNet.
 
 ```yaml
 # Protocol Configuration
@@ -47,46 +54,48 @@ shannon_config:
     owned_apps_private_keys_hex:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-# Qos Hydrator Configuration
+# Quality of Service (QoS) Configuration
 hydrator_config:
   service_ids:
     - "eth"
     - "solana"
     - "pokt"
 
-# Auth Server Configuration
+# Authentication Server Configuration
 auth_server_config:
   grpc_host_port: path-auth-data-server:50051
   grpc_use_insecure_credentials: true
   endpoint_id_extractor_type: url_path
 ```
 
-### Configuration File Location
+### Config File Location
 
 The default location of the configuration file is `./config/.config.yaml` relative to the location of the PATH binary.
 
-For example, when running the compiled PATH binary from the `./bin` directory, the configuration file will be located at `./bin/config/.config.yaml`.
+For example, when running the compiled PATH binary from the `./bin` directory, the configuration should be located at `./bin/config/.config.yaml`.
 
 As another example, when running PATH in Tilt, the configuration file is mounted in the container at `/app/config/.config.yaml`.
 
 :::tip
 
-The location of the configuration file may be overriden using the `-config` flag. 
+The location of the configuration file may be overridden using the `-config` flag.
 
 For example, you may run`./path -config ./config/.config.custom.yaml`.
 
 :::
 
-### Example Configuration Files
+### Example Config Files
 
 Example configuration files for both Shannon and Morse gateways are provided below.
 
 - [Example Shannon Config YAML File](https://github.com/buildwithgrove/path/blob/main/config/examples/config.shannon_example.yaml)
 - [Example Morse Config YAML File](https://github.com/buildwithgrove/path/blob/main/config/examples/config.morse_example.yaml)
 
+The example files contain extensive comments and explanations for every field.
+
 ### Config YAML Schema
 
-A YAML schema is provided for the configuration file. 
+A YAML schema is provided for the configuration file.
 
 This schema is used to validate the configuration file and ensure that it is populated with the appropriate values.
 
@@ -105,80 +114,175 @@ For VSCode users, the [YAML Language Support by Red Hat](https://marketplace.vis
 ## YAML Fields
 
 This is a comprehensive outline and explanation of each YAML field in the configuration file.
-By default, the file must contain one (and only one) of the following top-level protocol-specific sections:
 
-• `morse_config`  
-• `shannon_config`  
+### Protocol Section
 
-All other sections are optional.
+The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
 
---------------------------------------------------------------------------------
-### `morse_config` 
-Required if operating the Gateway for the Morse protocol.
+- `morse_config`
+- `shannon_config`
 
-Fields within `morse_config`:
+---
 
-- `full_node_config` 
-  - `url` (string, required): The URL of the `Pocket` node, which provides details about the current state of the network.
-  - `relay_signing_key` (string, required): A 128-character hex-encoded private key used to sign Morse relays.  
-    - Must be exactly 128 hex characters.  
-  - `http_config` (optional): 
-    - `retries` (integer): Number of retry attempts on HTTP requests.  
-      - Defaults to 3 if omitted.
-    - `timeout` (string): Duration of the HTTP request timeout, in Go duration format. 
-      - Defaults to "5000ms" (5s) if omitted.
+### `morse_config`
 
-- `signed_aats` (required): 
-  - This section contains `Application Authentication Token` (AAT) data for Morse. 
-  - Each key in `signed_aats` must be a 40-character hex string representing the application address.  
-  - For each entry (i.e., each appID/address key), the object must contain: 
-    - `client_public_key` (string): 64-hex-character client public key.  
-    - `application_public_key` (string): 64-hex-character application address public key.  
-    - `application_signature` (string): 128-hex-character signature.  
+Configuration for the Morse protocol gateway.
 
---------------------------------------------------------------------------------
-### `shannon_config` 
-Required if operating the Gateway for the Shannon protocol.
+```yaml
+morse_config:
+  full_node_config:
+    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
+    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
+    http_config: # Optional
+      retries: 3 # Default: 3
+      timeout: "5000ms" # Default: "5000ms"
 
-Fields within `shannon_config`:
+  signed_aats: # Required
+    "<40-char-app-address>": # Application address (hex)
+      client_public_key: "<64-char-hex>" # Client public key
+      application_public_key: "<64-char-hex>" # Application public key
+      application_signature: "<128-char-hex>" # Application signature
+```
 
-- `full_node_config` (required): 
-  - `rpc_url` (string, required): The URL of the Shannon node’s RPC endpoint.  
-  - `grpc_config` (required): 
-    - `host_port` (string): Host and port for gRPC connections (e.g. "shannon-grpc.example.com:443")  
-    - (Optional) Additional fields for backoff and keepalive behavior, which may be omitted to use defaults.  
+#### Morse Field Descriptions
 
-- `gateway_config` (required): 
-  - `gateway_mode` (string, required): The mode of the Shannon gateway. 
-    - Must be one of "centralized", "delegated", or "permissionless".  
-  - `gateway_address` (string, required): The gateway address in Bech32 format. 
-    - Must match the pattern "^pokt1[0-9a-zA-Z]{38}$".  
-  - `gateway_private_key_hex` (string, required): 64-hex-character private key.  
-  - `owned_apps_private_keys_hex` (array of strings, required for "centralized" mode): A list of 64-hex-character private keys for Applications delegated to the Gateway.
+**`full_node_config`**
 
---------------------------------------------------------------------------------
-### `router_config`
+| Field               | Type   | Required | Default | Description                                              |
+| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
+| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
+| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
+
+**`full_node_config.http_config`**
+
+| Field     | Type    | Required | Default  | Description                           |
+| --------- | ------- | -------- | -------- | ------------------------------------- |
+| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
+| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
+
+**`signed_aats`**
+
+| Field                    | Type   | Required | Default | Description                                     |
+| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
+| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
+| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
+| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
+
+#### AAT Generation
+
+Assuming you have access to a staked application, you can build your own `pocket-core` binary to generate an AAT following the steps below.
+
+```bash
+git clone git@github.com:pokt-network/pocket-core.git
+cd pocket-core
+go build -o pocket ./app/cmd/pocket_core/main.go
+./pocket-core create-aat <ADDR_APP> <CLIENT_PUB>
+```
+
+Which will output a JSON object similar to the following:
+
+```json
+{
+  "version": "0.0.1",
+  "app_pub_key": <APP_PUB>,
+  "client_pub_key": <CLIENT_PUB>,
+  "signature": <APP_SIG>
+}
+```
+
+```yaml
+morse_config:
+  # ...
+  relay_signing_key: "CLIENT_PRIV"
+  # ...
+signed_aats:
+  <ADDR_APP>:
+    client_pub_key: "<CLIENT_PUB>"
+    application_public_key: "<APP_PUB>"
+    application_signature: "<APP_SIG>"
+```
+
+---
+
+### `shannon_config`
+
+Configuration for the Shannon protocol gateway.
+
+```yaml
+shannon_config:
+  full_node_config:
+    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com" # Required: Shannon node RPC URL
+    grpc_config: # Required
+      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
+      # Optional backoff and keepalive configs...
+      insecure: false # Optional: whether to use insecure connection
+      backoff_base_delay: "1s" # Optional: initial backoff delay duration
+      backoff_max_delay: "120s" # Optional: maximum backoff delay duration
+      min_connect_timeout: "20s" # Optional: minimum timeout for connection attempts
+      keep_alive_time: "20s" # Optional: frequency of keepalive pings
+      keep_alive_timeout: "20s" # Optional: timeout for keepalive pings
+
+  gateway_config: # Required
+    gateway_mode: "centralized" # Required: centralized, delegated, or permissionless
+    gateway_address: "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw" # Required: Bech32 address
+    gateway_private_key_hex: "<64-char-hex>" # Required: Gateway private key
+    owned_apps_private_keys_hex: # Required for centralized mode only
+      - "<64-char-hex>" # Application private key
+      - "<64-char-hex>" # Additional application private keys...
+```
+
+#### Shannon Field Descriptions
+
+**`full_node_config`**
+
+| Field     | Type   | Required | Default | Description                     |
+| --------- | ------ | -------- | ------- | ------------------------------- |
+| `rpc_url` | string | Yes      | -       | URL of the Shannon RPC endpoint |
+
+**`full_node_config.grpc_config`**
+
+| Field                 | Type    | Required | Default | Description                             |
+| --------------------- | ------- | -------- | ------- | --------------------------------------- |
+| `host_port`           | string  | Yes      | -       | Host and port for gRPC connections      |
+| `insecure`            | boolean | No       | false   | Whether to use insecure connection      |
+| `backoff_base_delay`  | string  | No       | "1s"    | Initial backoff delay duration          |
+| `backoff_max_delay`   | string  | No       | "120s"  | Maximum backoff delay duration          |
+| `min_connect_timeout` | string  | No       | "20s"   | Minimum timeout for connection attempts |
+| `keep_alive_time`     | string  | No       | "20s"   | Frequency of keepalive pings            |
+| `keep_alive_timeout`  | string  | No       | "20s"   | Timeout for keepalive pings             |
+
+**`gateway_config`**
+
+| Field                         | Type     | Required                 | Default | Description                                                           |
+| ----------------------------- | -------- | ------------------------ | ------- | --------------------------------------------------------------------- |
+| `gateway_mode`                | string   | Yes                      | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`    |
+| `gateway_address`             | string   | Yes                      | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
+| `gateway_private_key_hex`     | string   | Yes                      | -       | 64-character hex-encoded `secp256k1` gateway private key              |
+| `owned_apps_private_keys_hex` | string[] | Only in centralized mode | -       | List of 64-character hex-encoded `secp256k1` application private keys |
+
+---
+
+### `router_config` (optional)
+
 Allows specifying server parameters for how the gateway handles incoming requests.
 
-**All fields are optional.**
+| Field                   | Type    | Required | Default           | Description                                     |
+| ----------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
+| `port`                  | integer | No       | 3069              | Port number on which the gateway server listens |
+| `max_request_body_size` | integer | No       | 1MB               | Maximum request size in bytes                   |
+| `read_timeout`          | string  | No       | "5000ms" (5s)     | Time limit for reading request data             |
+| `write_timeout`         | string  | No       | "10000ms" (10s)   | Time limit for writing response data            |
+| `idle_timeout`          | string  | No       | "120000ms" (120s) | Time limit for closing idle connections         |
 
-- `port` (integer): Port number on which the gateway server listens.
-  - Defaults to 3069 if omitted.
-- `max_request_body_size` (integer): Maximum request size in bytes.
-  - Defaults to 1MB if omitted.
-- `read_timeout` (string): Time limit for reading request data, in Go duration format.
-  - Defaults to "5000ms" (5s) if omitted.
-- `write_timeout` (string): Time limit for writing response data, in Go duration format.
-  - Defaults to "10000ms" (10s) if omitted.
-- `idle_timeout` (string): Time limit for closing idle connections, in Go duration format.
-  - Defaults to "120000ms" (120s) if omitted.
+---
 
---------------------------------------------------------------------------------
-### `hydrator_config` 
+### `hydrator_config` (optional)
 
 To enable QoS for a service, the service ID must be provided here.
 
-- `service_ids` (array of strings): Each string is a service ID for which hydrator logic may apply.
+| Field         | Type          | Required | Default | Description                                                                 |
+| ------------- | ------------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `service_ids` | array[string] | No       | -       | List of service IDs for which the Quality of Service (QoS) logic will apply |
 
 :::info
 
@@ -192,25 +296,39 @@ If a service ID is not present in [`config/service_qos.go`](https://github.com/b
 
 :::
 
+---
 
-<!-- TODO_MVP: Add messaging_config -->
+### `auth_server_config` (optional)
 
---------------------------------------------------------------------------------
-### `auth_server_config` 
-Used only by the External Auth Server. This is not used by the PATH Gateway logic itself, but is placed here for convenience.
-
-- `grpc_host_port` (string): Host and port for the remote gRPC connection to the `Remote gRPC Server` (eg. PADS). 
-  - Pattern requires a host:port format.
-- `grpc_use_insecure_credentials` (boolean): Set to true if the `Remote gRPC Server` does not use TLS 
-  - Defaults to false if omitted.  
-- `endpoint_id_extractor_type` (string): Either "url_path" or "header". 
-  - Specifies how endpoint IDs are extracted.
-  - [See here for more details](../envoy/introduction.md#specifying-the-gateway-endpoint-id)
-- `port` (integer): The local port for running the Auth Server
-  - Defaults to 10003 if omitted.
+Used only by the External Auth Server.
 
 :::info
 
 [For detailed information on the External Auth Server, please refer to the External Auth Server Documentation](../envoy/introduction.md#external-auth-server).
+
+:::
+
+| Field                           | Type    | Required | Default | Description                                                                                                                                                       |
+| ------------------------------- | ------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grpc_host_port`                | string  | Yes      | -       | Host and port for the remote gRPC connection to the `Remote gRPC Server` (eg. PADS). Pattern requires a `host:port` format.                                       |
+| `grpc_use_insecure_credentials` | boolean | No       | false   | Set to true if the `Remote gRPC Server` does not use TLS                                                                                                          |
+| `endpoint_id_extractor_type`    | string  | No       | -       | Either `url_path` or `header`. Specifies how endpoint IDs are extracted. [See here for more details](../envoy/introduction.md#specifying-the-gateway-endpoint-id) |
+| `port`                          | integer | No       | 10003   | The local port for running the Auth Server                                                                                                                        |
+
+:::caution
+
+This IS NOT used by the PATH Gateway logic itself, but was placed in the PATH
+Gateway's config file for convenience with the goal of avoiding another config file.
+This may change in the future.
+
+:::
+
+---
+
+### `messaging_config` (TODO)
+
+:::note TODO
+
+TODO_MVP(@adshmh): Add messaging_config
 
 :::

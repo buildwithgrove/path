@@ -139,7 +139,7 @@ Envoy acts as a gateway, handling incoming requests, determining allowed service
 
 ### Envoy Configuration
 
-[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../../operate/configs/envoy_config.md)
+[See the Envoy Config docs for a simplified explanation of the Envoy Proxy configuration files and how they work together.](../envoy/envoy_config.md)
 
 ### Envoy HTTP Filters
 
@@ -275,7 +275,7 @@ The Auth Server may extract the Gateway Endpoint ID from the request in one of t
 1. [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
 2. [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
 
-This is determined by the **`auth_server.endpoint_id_extractor`** field in the PATH `.config.yaml` file. 
+This is determined by the **`auth_server.endpoint_id_extractor`** field in the PATH `.config.yaml` file.
 
 :::tip
 
@@ -349,7 +349,6 @@ A variety of example cURL requests to the PATH service can be found in the [`tes
 `endpoint_3_no_auth` is the endpoint from the example `.gateway-endpoints.yaml` file that requires no authorization.
 
 See the [Gateway Endpoint YAML File](#gateway-endpoint-yaml-file) section for more information on the `GatewayEndpoint` data structure.
-
 
 :::
 
@@ -477,7 +476,7 @@ Both the `External Auth Server` and the `Remote gRPC Server` use the gRPC servic
 
 This service defines two main methods for populating the `External Auth Server`'s `Gateway Endpoint Store`:
 
-```proto
+```protobuf
 service GatewayEndpoints {
   // GetInitialData requests the initial set of GatewayEndpoints from the remote gRPC server.
   rpc GetInitialData(InitialDataRequest) returns (InitialDataResponse);
@@ -502,7 +501,6 @@ The `Remote gRPC Server` is responsible for providing the `External Auth Server`
 [See the PADS Documentation for more information on the PATH Auth Data Server.](../pads/introduction.md)
 
 :::
-
 
 This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 
@@ -567,7 +565,7 @@ If you wish to implement your own custom database driver, forking the PADS repo 
 :::info
 
 The default throughput limit is **30 requests per second** for GatewayEndpoints with the `PLAN_FREE` plan type based on the `rl-endpoint-id` and `rl-throughput` descriptors.
-   
+
 _The rate limiting configuration may be configured to suit the needs of the Gateway Operator in the `.ratelimit.yaml` file._
 
 :::
