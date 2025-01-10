@@ -1,0 +1,14 @@
+CNAME
+LICENSE
+
+docusaurus/node_modules
+docusaurus/.docusaurus
+
+*.js
+
+.claudeignore
+.github
+
+go.mod
+
+*.md
