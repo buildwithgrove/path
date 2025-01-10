@@ -3,17 +3,16 @@ sidebar_position: 3
 title: Postgres Data Source
 ---
 
-If the `POSTGRES_CONNECTION_STRING` environment variable is set, PADS will connect to the specified Postgres database.
+If the `POSTGRES_CONNECTION_STRING` environment variable is set, **PADS** will connect to the specified Postgres database.
 
 Postgres triggers are configured to stream updates to the `Go External Authorization Server` in real time as changes are made to the connected Postgres database.
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [Grove Portal DB Driver](#grove-portal-db-driver)
   - [Entity Relationship Diagram](#entity-relationship-diagram)
   - [SQLC Autogeneration](#sqlc-autogeneration)
 - [Additional Postgres Implementations](#additional-postgres-implementations)
-
 
 ## Grove Portal DB Driver
 
@@ -115,11 +114,8 @@ to the [postgres/grove/sqlc](https://github.com/buildwithgrove/path-auth-data-se
 
 `SQLC` configuration is defined in the [postgres/sqlc/sqlc.yaml](https://github.com/buildwithgrove/path-auth-data-server/blob/main/postgres/grove/sqlc/sqlc.yaml) file.
 
-
 ## Additional Postgres Implementations
 
 Pull requests are welcome to support alternative Postgres data sources, with the requirement that they support [the gRPC spec referenced in the `gateway_endpoint.proto` file](../envoy/introduction.md#gateway_endpointproto-file).
 
 Alternatively, you may fork [the PADS repository](https://github.com/buildwithgrove/path-auth-data-server) and implement your own data source.
-
-
