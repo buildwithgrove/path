@@ -51,7 +51,7 @@ func init() {
 	}
 }
 
-// GetEVMChainID returns the hexadecimal EVM chain ID for a given service ID.
+// GetEVMChainID returns the EVM chain ID for a given service ID.
 // If the service ID is not found in the ShannonEVMChainIDs or MorseEVMChainIDs
 // maps, the default EVM chain ID of `0x1` is returned.
 func GetEVMChainID(serviceID protocol.ServiceID) string {
