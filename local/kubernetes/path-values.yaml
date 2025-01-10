@@ -33,7 +33,7 @@ path:
   # 503 (Service Unavailable) or 200 (OK) status code.
   #
   # When using PATH with large numbers of services enabled, the QoS service
-  # may take a long time to return a healthy response. Therefor, it is expected
+  # may take a long time to return a healthy response. Therefore, it is expected
   # that the readinessProbe may take a large number of attempts to succeed.
   readinessProbe:
     failureThreshold: 600 # Set to high value to account for the potential long response time of the QoS service.
