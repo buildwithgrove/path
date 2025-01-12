@@ -74,7 +74,7 @@ proto_gen: ## Generate protobuf artifacts
 		./proto/path/qos/*.proto
 
 .PHONY: proto_clean
-proto_clean: ## Delete existing .pb.go or .pb.gw.go files
+proto_clean: ## Delete existing .pb.go
 	find . \( -name "*.pb.go" \) | xargs --no-run-if-empty rm
 
 .PHONY: proto_regen
