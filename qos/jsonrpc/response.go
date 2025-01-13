@@ -12,9 +12,9 @@ type Response struct {
 	// ID member is required.
 	// It must be the same as the value of the id member in the Request Object.
 	// If there was an error in detecting the id in the Request object (e.g. Parse error/Invalid Request), it MUST be Null.
-	ID `json:"id"`
+	ID ID `json:"id"`
 	// Version must be exactly "2.0"
-	Version `json:"jsonrpc"`
+	Version Version `json:"jsonrpc"`
 	// Result captures the result field of the JSONRPC spec.
 	// It is allowed to be any arbitrary value as permitted by the spec.
 	// It is required on success and must not exist if there was an error invoking the method.
