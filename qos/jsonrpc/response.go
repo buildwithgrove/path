@@ -29,10 +29,10 @@ func (r Response) Validate() error {
 		return fmt.Errorf("invalid JSONRPC response: jsonrpc field is %q, expected %q", r.Version, Version2)
 	}
 	if r.Result == nil && r.Error == nil {
-		return fmt.Errorf("invalid JSONRPC response: either the result member or error member must be included")
+		return fmt.Errorf("invalid JSONRPC response: either the result or error must be included")
 	}
 	if r.Result != nil && r.Error != nil {
-		return fmt.Errorf("invalid JSONRPC response: both result and error must be included")
+		return fmt.Errorf("invalid JSONRPC response: both result and error must not be included")
 	}
 	return nil
 }
