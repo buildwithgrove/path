@@ -104,7 +104,7 @@ test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
 	@echo "go build -o bin/path ./cmd"
 	@echo "# Update ./bin/config/.config.yaml"
 	@echo "./bin/path"
-	@echo "curl http://localhost:3000/v1/abcd1234 -X POST -H \"target-service-id: anvil\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
+	@echo "curl http://localhost:3069/v1/abcd1234 -X POST -H \"target-service-id: anvil\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: shannon_e2e_config_warning ## Run an E2E Shannon relay test
