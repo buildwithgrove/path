@@ -1,18 +1,19 @@
 ---
-title: Envoy Proxy Configuration
-sidebar_position: 1
+sidebar_position: 2
+title: Envoy Config
+description: Envoy configuration details
 ---
 
 <div align="center">
   <a href="https://www.envoyproxy.io/docs/envoy/latest/">
-    <img src="https://www.envoyproxy.io/theme/images/envoy-logo.svg" alt="Envoy logo" width="275"/>
+    <img src="https://www.envoyproxy.io/docs/envoy/latest/_static/envoy-logo.png" alt="Envoy logo" width="275"/>
   <p><b>Envoy Proxy Docs</b></p>
   </a>
 </div>
 
 This document describes the configuration options for PATH's Envoy Proxy which is responsible for:
 
-1. Defining the set of allowed services it can process
+1. Defining the set of allowed services
 2. Authorizing incoming requests
 3. Rate limiting
 
@@ -25,18 +26,34 @@ There are a total of four files used to configure Envoy Proxy in PATH:
 3. `.ratelimit.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml))
 4. `.gateway-endpoints.yaml` ([template example](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml))
 
+:::tip
+
+While **four config** files may seem like a lot, the default templates for **files 1 through 3** should be sufficient for most use cases.
+
+For most use cases, only the `.gateway-endpoints.yaml` file will need to be modified.
+
+:::
+
+:::info
+
+The PATH gateway is configured with its own set of configuration files.
+
+[For detailed information on the PATH gateway configuration, please refer to the PATH Configuration Guide](../path/path_config.md).
+
+:::
+
 ## Table of Contents <!-- omit in toc -->
 
 - [Initialization of configuration files](#initialization-of-configuration-files)
-- [Allowed Services - `.allowed-services.lua`](#allowed-services---allowed-serviceslua)
+- [1. Allowed Services - `.allowed-services.lua`](#1-allowed-services---allowed-serviceslua)
   - [Terminology](#terminology)
   - [Allowed Services Functionality](#allowed-services-functionality)
   - [Allowed Services File Format](#allowed-services-file-format)
-- [Envoy Proxy Configuration - `.envoy.yaml`](#envoy-proxy-configuration---envoyyaml)
-- [Ratelimit Configuration - `.ratelimit.yaml`](#ratelimit-configuration---ratelimityaml)
+- [2. Envoy Proxy Configuration - `.envoy.yaml`](#2-envoy-proxy-configuration---envoyyaml)
+- [3. Ratelimit Configuration - `.ratelimit.yaml`](#3-ratelimit-configuration---ratelimityaml)
   - [Ratelimit File Format](#ratelimit-file-format)
   - [Ratelimit Customizations](#ratelimit-customizations)
-- [Gateway Endpoints Data - `.gateway-endpoints.yaml`](#gateway-endpoints-data---gateway-endpointsyaml)
+- [4. Gateway Endpoints Data - `.gateway-endpoints.yaml`](#4-gateway-endpoints-data---gateway-endpointsyaml)
   - [Gateway Endpoint Functionality](#gateway-endpoint-functionality)
   - [Gateway Endpoint File Format](#gateway-endpoint-file-format)
 
@@ -50,10 +67,10 @@ make init_envoy
 
 This will generate the following files in the `local/path/envoy` directory:
 
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
+1. `.allowed-services.lua`
+2. `.envoy.yaml`
+3. `.ratelimit.yaml`
+4. `.gateway-endpoints.yaml`
 
 :::note
 
@@ -62,7 +79,7 @@ each PATH instance and may contain sensitive information.
 
 :::
 
-## Allowed Services - `.allowed-services.lua`
+## 1. Allowed Services - `.allowed-services.lua`
 
 The `.allowed-services.lua` file is used to define the allowed services for the Envoy Proxy.
 
@@ -82,7 +99,7 @@ The **value** in the config file must be the **authoritative service ID**.
 
 The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
 
-For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../../develop/envoy/introduction.md#service-id-specification).
+For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../envoy/walkthrough.md#service-id-specification).
 
 :::warning
 
@@ -108,7 +125,7 @@ return {
 }
 ```
 
-## Envoy Proxy Configuration - `.envoy.yaml`
+## 2. Envoy Proxy Configuration - `.envoy.yaml`
 
 The `.envoy.yaml` file is used to configure the Envoy Proxy.
 
@@ -124,7 +141,7 @@ Once configured using the prompts in the `make init_envoy` target, the `.envoy.y
 
 :::
 
-## Ratelimit Configuration - `.ratelimit.yaml`
+## 3. Ratelimit Configuration - `.ratelimit.yaml`
 
 The `.ratelimit.yaml` file is used to configure the Ratelimit service.
 
@@ -160,13 +177,13 @@ To add new throughput limits, add a new descriptor array item under the `descrip
 
 For more information on Rate Limit descriptors, see the [documentation in the Envoy Rate Limit repository](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions).
 
-## Gateway Endpoints Data - `.gateway-endpoints.yaml`
+## 4. Gateway Endpoints Data - `.gateway-endpoints.yaml`
 
 A `GatewayEndpoint` is how PATH defines a single endpoint that is authorized to use the PATH service.
 
 It is used to define the **authorization method**, **rate limits**, and **metadata** for an endpoint.
 
-For more information, see the [Gateway Endpoint section in the Envoy docs](../../develop/envoy/introduction.md#gateway-endpoint-authorization).
+For more information, see the [Gateway Endpoint section in the Envoy docs](../envoy/walkthrough.md#gateway-endpoint-authorization).
 
 ### Gateway Endpoint Functionality
 
@@ -180,7 +197,7 @@ This YAML file is provided as an easy default way to define Gateway Endpoints to
 
 For more complex use cases, you may wish to use a database as the data source for Gateway Endpoints.
 
-**For more information on how to use a database as the data source for Gateway Endpoints, [see the PATH Auth Data Server (PADS) section of the Envoy docs](../../develop/envoy/introduction.md#path-auth-data-server).**
+**For more information on how to use a database as the data source for Gateway Endpoints, [see the PATH Auth Data Server (PADS) section of the Envoy docs](../envoy/walkthrough.md#path-auth-data-server).**
 
 :::
 

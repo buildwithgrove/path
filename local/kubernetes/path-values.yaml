@@ -23,7 +23,7 @@ path:
       memory: 800Mi
   ports:
     - name: http
-      port: 3000
+      port: 3069
       protocol: TCP
       service:
         type: ClusterIP
@@ -39,13 +39,13 @@ path:
     failureThreshold: 600 # Set to high value to account for the potential long response time of the QoS service.
     httpGet:
       path: /healthz
-      port: 3000
+      port: 3069
       scheme: HTTP
   livenessProbe:
     failureThreshold: 600 # Set to high value to account for the potential long response time of the QoS service.
     httpGet:
       path: /healthz
-      port: 3000
+      port: 3069
       scheme: HTTP
 
   delve:

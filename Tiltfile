@@ -77,10 +77,25 @@ if MODE == "path_with_auth":
         "redis",
     ]
     path_port_forwards = []
-else:
+
+# Conditionally add port forwarding based on the mode
+if MODE == "path_only":
     path_resource_deps = []
-    # Expose port 3000 if PATH is running without auth.
-    path_port_forwards = ["3000:3000"]
+    # Run PATH without any dependencies and port 3069 exposed
+    helm_resource(
+        "path",
+        chart_prefix + "path",
+        flags=[
+            "--values=./local/kubernetes/path-values.yaml",
+        ],
+        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+        # This can only be done once the CLI flags feature has been implemented.
+        image_deps=["path"],
+        image_keys=[("image.repository", "image.tag")],
+        labels=["path"],
+        # Expose port 3069 if PATH is running without auth.
+        port_forwards=["3069:3069"],
+    )
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 # 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
@@ -144,9 +159,9 @@ if MODE == "path_with_auth":
     k8s_resource(
         "envoy-proxy",
         labels=["envoy_auth"],
-        # By default the Envoy Proxy container will bind to 127.0.0.1:3001.
+        # By default the Envoy Proxy container will bind to 127.0.0.1.
         # Adding 0.0.0.0 allows it to be accessible from any IP address.
-        port_forwards=["0.0.0.0:3001:3001"],
+        port_forwards=["0.0.0.0:3070:3070"],
     )
 
     # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
@@ -226,10 +241,10 @@ k8s_resource(
     new_name="grafana",
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    port_forwards=["3003:3000"],
+    port_forwards=["3000:3000"],
     labels=["monitoring"],
     links=[
-        link("localhost:3003", "Grafana"),
+        link("localhost:3000", "Grafana"),
     ],
     pod_readiness="wait",
     discovery_strategy="selectors-only",
