@@ -21,7 +21,7 @@ import (
 const (
 	imageName            = "path-image"
 	containerName        = "path"
-	internalPathPort     = "3000"
+	internalPathPort     = "3069"
 	buildContextDir      = ".."
 	dockerfileName       = "Dockerfile"
 	configMountPoint     = ":/app/config/.config.yaml"
@@ -40,7 +40,7 @@ var (
 	// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
 	localdevMe = "localdev.me"
 
-	// eg. 3000/tcp
+	// eg. 3069/tcp
 	containerPortAndProtocol = internalPathPort + "/tcp"
 )
 
