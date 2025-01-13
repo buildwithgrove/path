@@ -49,6 +49,8 @@ func (r *router) handleRoutes() {
 	// This depends on the EnvoyProxy behavior in accepting and possibly modifying the request's URL.
 	// * /v1/ - handles service requests
 	r.mux.HandleFunc("/v1/", r.corsMiddleware(r.handleServiceRequest))
+	// * /v1 - handles service requests
+	r.mux.HandleFunc("/v1", r.corsMiddleware(r.handleServiceRequest))
 }
 
 // Start starts the API server on the specified port
