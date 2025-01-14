@@ -183,8 +183,8 @@ properties:
       level:
         description: "Minimum log level. Valid values are: debug, info, warn, error. Defaults to debug if not specified."
         type: string
-        enum: ["debug", "info", "warn", "error"]
-        default: "debug"
+        enum: ["info", "info", "warn", "error"]
+        default: "info"
 
   # Router Configuration (optional)
   router_config:
