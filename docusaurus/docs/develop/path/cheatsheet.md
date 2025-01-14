@@ -93,6 +93,10 @@ Before starting a PATH instance, you will need to create an configure:
 
 This is a manual and poorly documented process in Morse.
 
+:::tip
+
+If you have access to a staked application, the instructions to generate your own AAT [may be found here](../path/path_config.md#aat-generation).
+
 :::
 
 `Application Authentication Tokens` (**AATs**) are auth tokens that allow application

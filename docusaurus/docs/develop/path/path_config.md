@@ -198,7 +198,7 @@ morse_config:
   # ...
 signed_aats:
   <ADDR_APP>:
-    client_pub_key: "<CLIENT_PUB>"
+    client_public_key: "<CLIENT_PUB>"
     application_public_key: "<APP_PUB>"
     application_signature: "<APP_SIG>"
 ```
@@ -301,7 +301,7 @@ If a service ID is not present in [`config/service_qos.go`](https://github.com/b
 
 ### `auth_server_config` (optional)
 
-Used only by the External Auth Server.
+**Required in order to authorize requests with Envoy Proxy.** Configures the External Authorization Server.
 
 :::info
 
