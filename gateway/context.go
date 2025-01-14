@@ -71,7 +71,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
 	// Build the payload for the requested service using the incoming HTTP request.
-	// This poyload will be sent to an endpoint matching the requested service.
+	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(ctx, httpReq)
 	if !isValid {
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
