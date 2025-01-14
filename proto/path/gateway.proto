@@ -1,3 +1,6 @@
+// To generate the Go code from this proto file, run: `make proto_generate`
+// See `proto.mk` for more details.
+
 syntax = "proto3";
 package path;
 
