@@ -120,7 +120,7 @@ func (rc *requestContext) HandleRelayRequest() error {
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
-		// TODO_TECHDEBT: the correct reaction to a failure in sending the relay to an endpoint and getting
+		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
 		// a response could be retrying with another endpoint, depending on the error.
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		//
@@ -128,7 +128,7 @@ func (rc *requestContext) HandleRelayRequest() error {
 		return err
 	}
 
-	// TODO_TECHDEBT: implement a service-specific retry mechanism based on the protocol's response/error:
+	// TODO_TECHDEBT(@commoddity): implement a service-specific retry mechanism based on the protocol's response/error:
 	// This would need to distinguish between:
 	// 1) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
 	// 2) QoS errors, e.g.:
