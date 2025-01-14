@@ -16,7 +16,7 @@ var _ response = responseToChainID{}
 // responseUnmarshallerChainID deserializes the provided byte slice into a responseToChainID struct,
 // adding any encountered errors to the returned struct for constructing a response payload.
 func responseUnmarshallerChainID(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	if jsonrpcResp.Error.Code != 0 { // The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() { // The endpoint returned an error: no need to do further processing of the response.
 		// Note: this assumes the `eth_chainId` request sent to the endpoint was valid.
 		return responseToChainID{
 			Response: jsonrpcResp,

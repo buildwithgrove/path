@@ -37,7 +37,7 @@ func unmarshalResponse(jsonrpcReq jsonrpc.Request, data []byte, logger polylog.L
 		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), err
 	}
 
-	if err := jsonrpcResponse.Validate(); err != nil {
+	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), err
 	}
 
