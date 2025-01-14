@@ -208,7 +208,7 @@ properties:
         description: "Idle timeout duration for the router."
         type: string
 
-  # [OPTIONAL] Hydrator Configuration
+  # Hydrator Configuration (optional)
   hydrator_config:
     description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."
     type: object
@@ -220,7 +220,7 @@ properties:
         items:
           type: string
 
-  # [OPTIONAL] Auth Server Configuration
+  # Auth Server Configuration (optional)
   # This part of the config is only used by the Envoy Auth Server, not in PATH itself.
   auth_server_config:
     description: "Configuration for the Envoy Auth Server, which is used to authorize requests to the gateway."

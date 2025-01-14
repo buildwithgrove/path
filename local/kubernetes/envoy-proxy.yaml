@@ -27,7 +27,7 @@ spec:
               mountPath: /etc/envoy/.allowed-services.lua
               subPath: .allowed-services.lua
           ports:
-            - containerPort: 3001
+            - containerPort: 3070
       volumes:
         - name: envoy-config
           configMap:
@@ -42,8 +42,8 @@ metadata:
   name: envoy-proxy
 spec:
   ports:
-    - port: 3001
-      targetPort: 3001
+    - port: 3070
+      targetPort: 3070
   selector:
     app: envoy-proxy
   type: ClusterIP

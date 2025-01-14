@@ -118,7 +118,7 @@ const config = {
             items: [
               {
                 label: "Discord - Grove",
-                href: "https://discord.gg/uRnKAufk",
+                href: "https://discord.gg/build-with-grove",
               },
               {
                 label: "Twitter",
