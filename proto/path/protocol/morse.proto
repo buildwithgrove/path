@@ -11,6 +11,8 @@ message MorseObservations {
   string gigastake_app_address = 1;
 }
 
+// MorseObservationsList wraps MorseObservations to enable embeddings
+// lists of morse observations in other protobufs.
 message MorseObservationsList {
   repeated MorseObservations observations = 1;
 }
