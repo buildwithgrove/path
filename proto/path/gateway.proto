@@ -1,3 +1,6 @@
+// To generate the Go code from this proto file, run: `make proto_generate`
+// See `proto.mk` for more details.
+
 syntax = "proto3";
 package path;
 
@@ -14,12 +17,15 @@ enum RequestType {
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perespective of a gateway.
-// Examples include:
-// 	- Region: the geographic region where the gateway serving the request was located.
-//	- RequestType: whether the request was sent by a user or synthetically generated, e.g. by the endpoint hydrator.
+// Examples include the geographic region of the request, the request type, etc.
 message GatewayObservations {
-  // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
+
+    // The geographic region where the gateway serving the request was located.
+    // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
   // region captures the name of the region in which the PATH instance that processed the request is deployed.
+  // DEV_NOTE: It aligns with typical cloud regions (e.g. us-east) but kept as a string for simplicity.
   string region = 1;
-  RequestType request_type = 2;  
+
+  // Whether the request was sent by a user or synthetically generated, e.g. by the endpoint hydrator.
+  RequestType request_type = 2; 
 }
