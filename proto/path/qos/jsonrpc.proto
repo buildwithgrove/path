@@ -20,15 +20,20 @@ message JsonRpcRequest {
 
 // JsonRpcResponse contains the fields of a JSONRPC response that need to be captured as an observation:
 // https://www.jsonrpc.org/specification#response_object
-//
-// JsonRpcResponse is NOT intended to capture the full JSONRPC spec.
 message JsonRpcResponse {
-  // id is the ID field of the JSONRPC response.
+  // id is the ID of the JSONRPC request.
+  // The Server MUST reply with the same value in the Response object if included
   string id = 1;
-  // result stores the `result` field of tje JSONRPC response.
+  
+  // result stores the `result` field of the JSONRPC response.
+  // This SHOULD be a JSON deserializable object.
   string result = 2;
+
   // err stores the JSONRPC response's error field, if set.
-  optional JsonRpcResponseError err=3;
+  optional JsonRpcResponseError err = 3;
+  
+  // DEV_NOTE: This structure is NOT intended to capture the full JSONRPC spec.
+  // Add new fields on a at-needed basis here.  
 }
 
 // JsonRpcResponseError contains the fields of a JSONRPC response error object:
