@@ -1,10 +1,15 @@
 package shannon
 
 import (
+	"fmt"
+	"regexp"
+
 	"gopkg.in/yaml.v3"
 
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
+
+var websocketURLRegex = regexp.MustCompile("^(wss|ws)://.*$")
 
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type ShannonGatewayConfig struct {
@@ -15,7 +20,7 @@ type ShannonGatewayConfig struct {
 	// websocket connections to a user-provided websocket-enabled endpoint URL.
 	// It is placed in the ShannonGatewayConfig struct to indicate that websockets will
 	// only be supported by the Shannon protocol, never on Morse.
-	// TODO_TECHDEBT(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
 	WebsocketEndpointURL string `yaml:"websocket_endpoint_url"`
 }
 
@@ -40,5 +45,23 @@ func (c ShannonGatewayConfig) Validate() error {
 		return err
 	}
 
-	return c.GatewayConfig.Validate()
+	if err := c.GatewayConfig.Validate(); err != nil {
+		return err
+	}
+
+	// Validate WebsocketEndpointURL
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this validation once the Shannon protocol supports websocket connections.
+	if err := c.validateWebsocketEndpointURL(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateWebsocketEndpointURL checks if the WebsocketEndpointURL is valid.
+func (c ShannonGatewayConfig) validateWebsocketEndpointURL() error {
+	if !websocketURLRegex.MatchString(c.WebsocketEndpointURL) {
+		return fmt.Errorf("invalid WebsocketEndpointURL: %s", c.WebsocketEndpointURL)
+	}
+	return nil
 }
