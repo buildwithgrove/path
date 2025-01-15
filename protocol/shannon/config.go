@@ -46,11 +46,6 @@ type (
 		GatewayAddress          string               `yaml:"gateway_address"`
 		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
 		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
-		// WebsocketEndpointURL is a TEMPORARY workaround to allow users of PATH to enable
-		// websocket connections to a user-provided websocket-enabled endpoint URL.
-		// IMPORTANT: All websocket connections will be off-chain and will not settle traffic on the Pocket network.
-		// TODO_TECHDEBT(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
-		WebsocketEndpointURL string `yaml:"websocket_endpoint_url"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.

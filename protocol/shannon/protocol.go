@@ -71,7 +71,6 @@ func NewProtocol(
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
 		ownedAppsAddr:        ownedAppsAddrIdx,
-		websocketEndpointURL: config.WebsocketEndpointURL,
 	}, nil
 }
 
@@ -95,11 +94,6 @@ type Protocol struct {
 	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in Centralized mode.
 	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
 	ownedAppsAddr map[string]struct{}
-
-	// websocketEndpointURL is a temporary workaround to allow PATH to enable websocket
-	// connections to a provided websocket-enabled endpoint URL.
-	// TODO_TECHDEBT(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
-	websocketEndpointURL string
 }
 
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
@@ -152,13 +146,6 @@ func (p *Protocol) Name() string {
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
 	return p.FullNode.IsHealthy()
-}
-
-// GetWebsocketEndpointURL returns the URL of the websocket endpoint to use for the current request context.
-// This is needed by the Shannon protocol to enable websocket connections to a provided websocket-enabled endpoint URL.
-// TODO_TECHDEBT(@commoddity): Remove this method once the Shannon protocol supports websocket connections.
-func (p *Protocol) GetWebsocketEndpointURL() string {
-	return p.websocketEndpointURL
 }
 
 // TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints

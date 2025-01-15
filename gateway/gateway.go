@@ -17,6 +17,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/buildwithgrove/path/websockets"
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
@@ -45,6 +47,11 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
+	// WebsocketEndpointURL is a temporary workaround to allow PATH to enable websocket
+	// connections to a provided websocket-enabled endpoint URL.
+	// TODO_TECHDEBT(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
+	WebsocketEndpointURL string
+
 	Logger polylog.Logger
 }
 
@@ -65,7 +72,18 @@ type Gateway struct {
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// build a gatewayRequestContext with components necessary to process requests.
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebsocketRequest(ctx, httpReq, w)
+	case httpServiceRequest:
+		g.handleHTTPServiceRequest(ctx, httpReq, w)
+	}
+}
+
+// handleHTTPRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// build a gatewayRequestContext with components necessary to process HTTP requests.
 	gatewayRequestCtx := &requestContext{
 		protocol:          g.Protocol,
 		httpRequestParser: g.HTTPRequestParser,
@@ -77,61 +95,67 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	}
 
 	defer func() {
+		// Write the user-facing HTTP response.
+		gatewayRequestCtx.WriteHTTPUserResponse(w)
 		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
 		gatewayRequestCtx.BroadcastAllObservations()
 	}()
 
-	// Initialize the GatewayRequestContext struct using the request.
-	// e.g. extract the target service ID from the request.
+	// Initialize the GatewayRequestContext struct using the HTTP request.
+	// e.g. extract the target service ID from the HTTP request.
 	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
 	if err != nil {
 		return
 	}
 
-	// Build the protocol context for the request.
+	// Build the QoS context for the target service ID using the HTTP request's payload.
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	if err != nil {
+		return
+	}
+
+	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
 
-	// Determine the type of service request and handle it accordingly.
-	switch determineServiceRequestType(httpReq) {
-	case websocketServiceRequest:
-		g.handleWebsocketRequest(ctx, httpReq, w, gatewayRequestCtx)
-	case httpServiceRequest:
-		g.handleHTTPRequest(ctx, httpReq, w, gatewayRequestCtx)
-	}
-}
-
-// handleHTTPRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter, gatewayRequestCtx *requestContext) {
-	defer func() {
-		// Write the user-facing HTTP response.
-		gatewayRequestCtx.WriteHTTPUserResponse(w)
-	}()
-
-	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
-	if err != nil {
-		return
-	}
-
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
+	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-// handleWebsocketRequest handles a WebSocket connection request.
-func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter, gatewayRequestCtx *requestContext) {
-	// Build the QoS context for the target service ID using the WebSocket request.
-	// If the service does not support WebSocket connections, the request will be rejected.
-	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
-	if err != nil {
+// handleWebsocketRequest handles a WebSocket connection request direct to the provided websocket endpoint URL.
+// NOTE: As a temporary workaround, websocket connections currently bypass the protocol entirely and utilize the
+// provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
+// the Shannon protocol supports websocket connections, which will enable onchain websocket support.
+// TODO_MVP(@commoddity): Remove this temporary workaround once the Shannon protocol supports websocket connections.
+func (g Gateway) handleWebsocketRequest(_ context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	if g.WebsocketEndpointURL == "" {
+		g.Logger.Error().Msg("Websocket endpoint URL is not set.")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Websocket endpoint URL is not set."))
 		return
 	}
 
-	// If the HTTP request is a websocket request, we need to establish a websocket connection
-	// with the endpoint and run the bridge.
-	if err := gatewayRequestCtx.HandleWebsocketRequest(httpReq, w); err != nil {
-		g.Logger.Warn().Err(err).Msg("failed to establish a websocket connection.")
+	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
+	if err != nil {
+		g.Logger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Error upgrading websocket connection request"))
+		return
 	}
+
+	bridge, err := websockets.NewBridge(g.WebsocketEndpointURL, clientConn, g.Logger)
+	if err != nil {
+		g.Logger.Error().Err(err).Msg("Error creating websocket bridge")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Error creating websocket bridge"))
+		return
+	}
+
+	go bridge.Run()
+
+	return
 }

@@ -27,11 +27,6 @@ type Protocol interface {
 	// 	- result: skip the endpoint for a set time period.
 	ApplyObservations(*protocolobservations.Observations) error
 
-	// GetWebsocketEndpointURL returns the URL of the websocket endpoint to use for the current request context.
-	// This is needed by the Shannon protocol to enable websocket connections to a provided websocket-enabled endpoint URL.
-	// TODO_TECHDEBT(@commoddity): Remove this method once the Shannon protocol supports websocket connections.
-	GetWebsocketEndpointURL() string
-
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check
 }
@@ -57,7 +52,9 @@ type ProtocolRequestContext interface {
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
-	HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, websocketEndpointURL string, logger polylog.Logger) error
+	// HandleWebsocketRequest handles a WebSocket connection request.
+	// TODO_MVP(@commoddity): Utilize this method once the Shannon protocol supports websocket connections.
+	HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
 	// This is needed by the Endpooint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.
