@@ -3,10 +3,11 @@ package gateway
 import (
 	"net/http"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/health"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.

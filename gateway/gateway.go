@@ -17,10 +17,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/websockets"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -48,7 +49,7 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// WebsocketEndpointURLs is a temporary workaround to allow PATH to enable websocket 
+	// WebsocketEndpointURLs is a temporary workaround to allow PATH to enable websocket
 	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
 	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
 	WebsocketEndpointURLs map[protocol.ServiceID]string
