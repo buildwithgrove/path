@@ -9,7 +9,6 @@ import (
 
 // bridge routes data between an Endpoint and a Client. One bridge represents
 // a single WebSocket connection between a Client and a WebSocket Endpoint.
-// One bridge contains two connections: one to the Client and one to the Endpoint.
 //
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
 type bridge struct {
