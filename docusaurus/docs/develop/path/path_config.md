@@ -198,7 +198,7 @@ morse_config:
   # ...
 signed_aats:
   <ADDR_APP>:
-    client_pub_key: "<CLIENT_PUB>"
+    client_public_key: "<CLIENT_PUB>"
     application_public_key: "<APP_PUB>"
     application_signature: "<APP_SIG>"
 ```
@@ -260,6 +260,7 @@ shannon_config:
 | `gateway_address`             | string   | Yes                      | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
 | `gateway_private_key_hex`     | string   | Yes                      | -       | 64-character hex-encoded `secp256k1` gateway private key              |
 | `owned_apps_private_keys_hex` | string[] | Only in centralized mode | -       | List of 64-character hex-encoded `secp256k1` application private keys |
+| `websocket_endpoint_url`      | string   | No                       | -       | URL of the websocket endpoint to use for the Shannon gateway.         |
 
 ---
 

@@ -173,6 +173,10 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
+          websocket_endpoint_url:
+            description: "Websocket endpoint URL for the Shannon gateway."
+            type: string
+            pattern: "^(wss|ws)://.*$"
 
   # Router Configuration (optional)
   router_config:

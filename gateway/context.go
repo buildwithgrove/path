@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser.")
-	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance.")
-	errWebsocketRequestRejectedByQoS = errors.New("Websocket request rejected by service QoS instance.")
-	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance.")
+	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser")
+	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance")
+	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance")
+	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
+	errWebsocketEndpointURLNotSet    = errors.New("websocket endpoint URL is not set")
 )
 
 // requestContext is responsible for performing the steps necessary to complete a service request.
@@ -165,7 +166,13 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 		return err
 	}
 
-	if err := rc.protocolCtx.HandleWebsocketRequest(req, w, rc.logger); err != nil {
+	websocketEndpointURL := rc.protocol.GetWebsocketEndpointURL()
+	if websocketEndpointURL == "" {
+		rc.logger.Warn().Msg("Websocket endpoint URL is not set.")
+		return errWebsocketEndpointURLNotSet
+	}
+
+	if err := rc.protocolCtx.HandleWebsocketRequest(req, w, websocketEndpointURL, rc.logger); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err
 	}

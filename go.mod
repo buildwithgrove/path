@@ -4,7 +4,6 @@ go 1.23.0
 
 require (
 	github.com/cosmos/cosmos-sdk v0.50.9
-	github.com/joho/godotenv v1.4.0
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.0.9
