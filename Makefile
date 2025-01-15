@@ -55,6 +55,10 @@ localnet_up: config_shannon_localnet dev_up config_path_secrets ## Brings up loc
 .PHONY: path_up
 path_up: localnet_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
+.PHONY: path_up_standalone
+path_up_standalone: ## Brings up local Tilt development environment with PATH only
+	MODE=path_only $(MAKE) localnet_up
+
 .PHONY: localnet_down
 localnet_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
@@ -74,7 +78,7 @@ proto_gen: ## Generate protobuf artifacts
 		./proto/path/qos/*.proto
 
 .PHONY: proto_clean
-proto_clean: ## Delete existing .pb.go or .pb.gw.go files
+proto_clean: ## Delete existing .pb.go
 	find . \( -name "*.pb.go" \) | xargs --no-run-if-empty rm
 
 .PHONY: proto_regen
@@ -100,7 +104,7 @@ test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
 	@echo "go build -o bin/path ./cmd"
 	@echo "# Update ./bin/config/.config.yaml"
 	@echo "./bin/path"
-	@echo "curl http://anvil.localhost:3000/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
+	@echo "curl http://anvil.localhost:3069/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: shannon_e2e_config_warning ## Run an E2E Shannon relay test

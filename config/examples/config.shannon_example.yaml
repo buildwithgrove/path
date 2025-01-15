@@ -21,7 +21,7 @@ shannon_config:
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode
-    # Otherwise, replace with the correct gateway mode: centralized|delegated|trusted
+    # Otherwise, replace with the correct gateway mode: centralized|delegated|permissionless
     gateway_mode: "centralized"
 
     # If this config is used for Shannon E2E tests, do not change gateway_address.

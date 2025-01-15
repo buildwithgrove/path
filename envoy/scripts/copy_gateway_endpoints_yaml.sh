@@ -28,4 +28,4 @@ else
 fi
 
 echo "✅ $GATEWAY_CONFIG_FILE has been created"
-echo "📄 README: Please update this file with your own data."
+echo "📄 IMPORTANT: Review & update 👆 with your own data."
