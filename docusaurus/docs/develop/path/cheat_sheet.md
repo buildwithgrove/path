@@ -1,113 +1,8 @@
 ---
-sidebar_position: 1
-title: Cheat Sheet
+sidebar_position: 3
+title: Cheat Sheet 0
 description: Quick reference guide for setting up and running a local PATH instance in Tilt
 ---
-
-This guide provides quick reference (i.e. a cheat sheet leveraging lots of helpers)
-for setting up and running a local PATH instance in Tilt. If you'd like to understand
-all the underlying details, please refer to the [PATH Walkthrough](../path/walkthrough.md).
-
-## Table of Contents <!-- omit in toc -->
-
-- [1. Prerequisites](#1-prerequisites)
-  - [1.1 Clone the `PATH` Repository](#11-clone-the-path-repository)
-  - [1.2 Install Dependencies](#12-install-dependencies)
-  - [1.3 Setup Protocol Accounts, Secrets and Configurations](#13-setup-protocol-accounts-secrets-and-configurations)
-    - [1.3a `Shannon` - Setup Gateway \& Application Accounts](#13a-shannon---setup-gateway--application-accounts)
-    - [1.3b `Morse` - Setup \& Retrieve AATs](#13b-morse---setup--retrieve-aats)
-- [2. Prepare Required Config Files](#2-prepare-required-config-files)
-  - [2.1 Preparing `PATH` config YAML file](#21-preparing-path-config-yaml-file)
-    - [2.1a `Shannon` PATH Configs](#21a-shannon-path-configs)
-    - [2.1b `Morse` PATH Configs](#21b-morse-path-configs)
-    - [2.2 Inspect `local/path/config/.config.yaml`](#22-inspect-localpathconfigconfigyaml)
-  - [2.2 Populate the `Envoy Proxy` config](#22-populate-the-envoy-proxy-config)
-- [3. Run the `PATH` Gateway](#3-run-the-path-gateway)
-  - [3a. Run `PATH` with Envoy Proxy](#3a-run-path-with-envoy-proxy)
-  - [3b. Run `PATH` standalone](#3b-run-path-standalone)
-- [4. View `PATH` Resources in Tilt](#4-view-path-resources-in-tilt)
-  - [4.1 Wait for the `PATH` stack to initialize](#41-wait-for-the-path-stack-to-initialize)
-- [5. Send a Relay](#5-send-a-relay)
-  - [5.1a `PATH` with Envoy Proxy](#51a-path-with-envoy-proxy)
-    - [5.1a.1 Endpoint with Static Key Authorization](#51a1-endpoint-with-static-key-authorization)
-    - [5.1a.2 Endpoint with No Auth Required](#51a2-endpoint-with-no-auth-required)
-    - [5.1a.3 Configuring Relay Authorization](#51a3-configuring-relay-authorization)
-  - [5.1b `PATH` standalone](#51b-path-standalone)
-
-## 1. Prerequisites
-
-### 1.1 Clone the `PATH` Repository
-
-```bash
-git clone https://github.com/buildwithgrove/path.git
-cd ./path
-```
-
-### 1.2 Install Dependencies
-
-The following tools are required to start a local PATH instance in Tilt:
-
-- [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/install): CLI for interacting with Poktroll (Pocket Network Shannon Upgrade)
-- [**Docker**](https://docs.docker.com/get-docker/): Container runtime
-- [**Kind**](https://kind.sigs.k8s.io/#installation-and-usage): Local Kubernetes cluster
-- [**kubectl**](https://kubernetes.io/docs/tasks/tools/#kubectl): CLI for interacting with Kubernetes
-- [**Helm**](https://helm.sh/docs/intro/install/): Package manager for Kubernetes
-- [**Tilt**](https://docs.tilt.dev/install.html): Local Kubernetes development environment
-
-:::tip
-
-A script is provided to install the dependencies to start a PATH instance in Tilt.
-
-It will check if the required tools are installed and install them if they are not.
-
-```bash
-make install_deps
-```
-
-:::
-
-### 1.3 Setup Protocol Accounts, Secrets and Configurations
-
-You can choose to use either one or both of the protocols PATH supports:
-
-1. **Shannon** (v1): The upgrade to Pocket Network protocol; in Beta TestNet as of 01/2025.
-2. **Morse** (v0): The original Pocket Network protocol; in MainNet as of 2020.
-
-#### 1.3a `Shannon` - Setup Gateway & Application Accounts
-
-:::tip
-
-You can reference the [Gateway cheat sheets](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet)
-for a quick and easy way to set up your Shannon accounts.
-
-:::
-
-Before starting a PATH instance, you will need to create an configure:
-
-1. An onchain [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways)
-2. An onchain [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications) account on Shannon.
-
-#### 1.3b `Morse` - Setup & Retrieve AATs
-
-:::caution
-
-This is a manual and poorly documented process in Morse.
-
-:::
-
-`Application Authentication Tokens` (**AATs**) are auth tokens that allow application
-clients to access the network without the need to expose their private keys.
-Once you have one or more valid AATs, you can populate the configuration files required to run the full `PATH Gateway` instance.
-
-The following resources are also good references and starting points:
-
-- [What are AATs?](https://docs.pokt.network/gateways/host-a-gateway/relay-process#what-are-aats)
-- [Host a Gateway on Morse](https://docs.pokt.network/gateways/host-a-gateway)
-- [pocket-core/doc/specs/application-auth-token.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/application-auth-token.md)
-- [pocket-core/doc/specs/cli/apps.md](https://github.com/pokt-network/pocket-core/blob/7f936ff7353249b161854e24435e4bc32d47aa3f/doc/specs/cli/apps.md)
-- [Gateway Server Kit instructions (as a reference)](https://github.com/pokt-network/gateway-server/blob/main/docs/quick-onboarding-guide.md#5-insert-app-stake-private-keys)
-
-_If you are unsure of where to start, you should reach out to the team directly._
 
 ## 2. Prepare Required Config Files
 
@@ -120,21 +15,9 @@ There are two config files that must be prepared for `PATH` operation:
 
 :::tip In Depth Config Docs
 
-A detailed explanation of the `PATH` config YAML file is provided in the [PATH Config Docs](../path/path_config.md).
+A detailed explanation of the `PATH` config YAML file is provided in the [PATH Config Docs](path_config.md).
 
 :::
-
-#### 2.1a `Shannon` PATH Configs
-
-<!-- TODO_IMPROVE(@olshansk): Pre-prepare a handful of apps/gateways to get users started EVEN faster. -->
-
-Assuming you have keys with the names `gateway` and `application` in your keyring
-after following the instructions above, you can run the following command to generate
-a Shannon config at `local/path/config/.config.yaml`:
-
-```bash
-make shannon_populate_config
-```
 
 #### 2.1b `Morse` PATH Configs
 
@@ -142,7 +25,7 @@ Run the following command to generate a default Morse config in `local/path/conf
 using the values from your `Gateway` and `Application` accounts:
 
 ```bash
-make config_morse_localnet
+make copy_morse_e2e_config
 ```
 
 :::warning
@@ -360,7 +243,7 @@ You can view the `GatewayEndpoint`s and update `local/path/envoy/.gateway-endpoi
 - `endpoint_1_static_key` requires an API key in the `authorization` header set to `api_key_1` by default.
 - `endpoint_3_no_auth` does not require an API key in the `authorization` header.
 
-For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the [PATH Config Docs](../path/path_config.md).
+For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the [PATH Config Docs](path_config.md).
 
 ### 5.1b `PATH` standalone
 

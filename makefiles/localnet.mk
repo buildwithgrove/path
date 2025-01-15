@@ -33,7 +33,7 @@ check_path_config:
 		echo "#######################################################################################"; \
 		echo "###              CONFIG DOES NOT EXIST: ./local/path/config/.config.yaml            ###"; \
 		echo "###                          READ the README.md!                                    ###"; \
-		echo "###    You may need to run 'make copy_shannon_config' or 'make copy_morse_config'   ###"; \
+		echo "###    You may need to run 'make copy_shannon_config' or 'make copy_morse_e2e_config'   ###"; \
 		echo "#######################################################################################"; \
 		exit 1; \
 	fi
