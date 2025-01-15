@@ -8,8 +8,9 @@ import "path/protocol/morse.proto";
 
 // Observations holds all the protocol-level observations gathered while processing a service request.
 message Observations {
-  // block_height is the height of the protocol when processing the service request through a relay.
+  // block_height is the height (i.e. the block) of the protocol when processing the service request through a relay.
   uint64 block_height = 1;
+  // Each observation is only ever associated with exactly one blockchain/protocol.
   oneof protocol {
     // morse holds all the observations specific to the Morse protocol.
     MorseObservationsList morse = 2;

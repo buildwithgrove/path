@@ -8,20 +8,27 @@ import "path/qos/jsonrpc.proto";
 // EVMObservations stores data specific to observations of the EVM blockchains service QoS.
 message EVMObservations {
   // jsonrpc_request captures the EVM blockchain service's JSONRPC request.
+  // TODO_TECHDEBT: This has an implicit assumption that all EVM based blockchains only (and always)
+  // support JSON-RPC. This was implemented as a first pass to prioritize the large EVM chains, but may need
+  // to be expanded / refactored in the future.
   JsonRpcRequest jsonrpc_request = 1;
-  // endpoint_observations contains all EVM-specific observations made on endpoint(s) that
+
+    // endpoint_observations contains all EVM-specific observations made on endpoint(s) that
   // responded to the service request.
   // A single request may create multiple observations.
-  // This can happen if:
-  // 	1. The originally selected endpoint fails, AND
-  //	2. The request is sent to additional endpoints.
+  // This can happen if at least one (or more) of the following are true:
+  // 	1. The originally selected endpoint fails (e.g. bad node)
+  //	2. The request is sent to additional endpoints (e.g. collect more data)
   repeated EVMEndpointObservation endpoint_observations = 2;
 }
 
-// EVMEndpointObservation stores a single observation regarding an endpoint.
-// e.g. a specific endpoint's response to an `eth_getBlockNumber` request.
+// EVMEndpointObservation stores a single observation regarding an endpoint
+// that was responsible for servicing the response by the backing protocol.
+// For example, a single Pocket node on Shannon backed by an Ethereum data node
+// that was responsible for servicing an `eth_getBlockNumber` request.
 message EVMEndpointObservation {
   // endpoint_addr is the address of the endpoint that handled the EVM blockchain service request.
+  // E.g. this is the onchain address of a Pocket Morse or Shannon node.
   string endpoint_addr = 1;
   // response_observation contains details on the response received from the endpoint.
   oneof response_observation {
