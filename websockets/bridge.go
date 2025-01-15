@@ -2,23 +2,14 @@ package websockets
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 30 * time.Second
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-)
-
-// Bridge routes data between Client and PATH.
-// One bridge represents exactly one WebSocket connection between the Client and a WebSocket Endpoint.
+// bridge routes data between an Endpoint and a Client. One bridge represents
+// a single WebSocket connection between a Client and a WebSocket Endpoint.
+//
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
 type bridge struct {
 	logger       polylog.Logger

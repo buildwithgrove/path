@@ -10,8 +10,15 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// MessageSource is used to identify the source of a message
+const (
+	writeWait  = 10 * time.Second    // Time allowed to write a message to the peer.
+	pongWait   = 30 * time.Second    // Time allowed to read the next pong message from the peer.
+	pingPeriod = (pongWait * 9) / 10 // Send pings to peer with this period. Must be less than pongWait.
+)
+
+// messageSource is used to identify the source of a message
 // Possible values are `client` and `endpoint`.
+//
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
 type messageSource string
 
@@ -20,12 +27,17 @@ const (
 	messageSourceEndpoint messageSource = "endpoint"
 )
 
+// message is a struct that represents a message received from a websocket connection,
+// either from the client or the endpoint and may be a client request, an endpoint response,
+// or subscription push event from the endpoint (eg. an `eth_subscribe` eventresponse).
 type message struct {
-	data        []byte
-	source      messageSource
-	messageType int
+	data        []byte        // data is the message payload
+	source      messageSource // source may be either `client` or `endpoint`
+	messageType int           // messageType is an int returned by the gorilla/websocket package
 }
 
+// connection is a struct that represents a websocket connection:
+// between PATH and a client or between PATH and an endpoint.
 type connection struct {
 	*websocket.Conn
 	logger   polylog.Logger
@@ -69,7 +81,7 @@ func newConnection(
 	return c
 }
 
-// wssLoop reads messages from the websocket connection and sends them to the bridge's msgChan
+// connLoop reads messages from the websocket connection and sends them to the bridge's msgChan
 func (c *connection) connLoop() {
 	for {
 		select {
