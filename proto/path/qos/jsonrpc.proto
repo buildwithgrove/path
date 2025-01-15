@@ -5,13 +5,17 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 // JsonRpcRequest contains all the fields of a JSONRPC request that are captured as an observation.
 // https://www.jsonrpc.org/specification#request_object
-// 
-// JsonRpcRequest is NOT intended to capture the full JSONRPC spec.
 message JsonRpcRequest {
   // id is the ID of the JSONRPC request.
+  // An identifier established by the Client  MUST contain a String, Number, or NULL value if included.
   string id = 1;
-  // method is the method specified by the JSONRPC request.
+
+   // method is the method specified by the JSON-RPC request.
+   // E.g. eth_chainId in the context of EVM based chains
   string method = 2;
+
+  // DEV_NOTE: This structure is NOT intended to capture the full JSONRPC spec.
+  // Add new fields on a at-needed basis here.
 }
 
 // JsonRpcResponse contains the fields of a JSONRPC response that need to be captured as an observation:
