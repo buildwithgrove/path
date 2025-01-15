@@ -33,6 +33,7 @@ These instructions are intended for configuring the **PATH Gateway**.
   - [`router_config` (optional)](#router_config-optional)
   - [`hydrator_config` (optional)](#hydrator_config-optional)
   - [`auth_server_config` (optional)](#auth_server_config-optional)
+  - [`logger_config` (optional)](#logger_config-optional)
   - [`messaging_config` (TODO)](#messaging_config-todo)
 
 ## Configuration YAML File
@@ -67,6 +68,10 @@ auth_server_config:
   grpc_host_port: path-auth-data-server:50051
   grpc_use_insecure_credentials: true
   endpoint_id_extractor_type: url_path
+
+# Logger Configuration
+logger_config:
+  level: "info"  # Valid values: debug, info, warn, error
 ```
 
 ### Config File Location
@@ -323,6 +328,25 @@ Gateway's config file for convenience with the goal of avoiding another config f
 This may change in the future.
 
 :::
+
+---
+
+### `logger_config` (optional)
+
+Controls the logging behavior of the PATH gateway.
+
+| Field   | Type   | Required | Default | Description                                                           |
+| ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
+| `level` | string | No       | "info"  | Minimum log level. Valid values are: "debug", "info", "warn", "error" |
+
+Example configuration:
+
+```yaml
+logger_config:
+  # Valid values are: debug, info, warn, error
+  # Defaults to info if not specified
+  level: "warn"
+```
 
 ---
 
