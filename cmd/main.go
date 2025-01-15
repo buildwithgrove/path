@@ -32,6 +32,8 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	log.Printf("Initializing PATH logger with level: %s", config.Logger.Level)
+
 	loggerOpts := []polylog.LoggerOption{
 		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
 	}
