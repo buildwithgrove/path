@@ -75,7 +75,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 	switch determineServiceRequestType(httpReq) {
 	case websocketServiceRequest:
 		g.handleWebsocketRequest(ctx, httpReq, w)
-	case httpServiceRequest:
+	default:
 		g.handleHTTPServiceRequest(ctx, httpReq, w)
 	}
 }
