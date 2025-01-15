@@ -22,7 +22,7 @@ type Protocol interface {
 	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
 	// Example:
 	// 	- protocol: Morse
-	// 	- observation: "endpoint maxed-out"
+	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
 	// 	- result: skip the endpoint for a set time period.
 	ApplyObservations(*protocolobservations.Observations) error
 
