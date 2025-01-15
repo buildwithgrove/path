@@ -173,15 +173,15 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-        websocket_endpoint_urls:
-          description: "Websocket endpoint URLs for the Shannon gateway, one per service ID. Keys must be valid service IDs."
-          type: object
-          additionalProperties: false
-          patternProperties:
-            "^[a-zA-Z0-9_-]+$":
-              type: string
-              description: "Websocket endpoint URL for the Shannon gateway."
-              pattern: "^(wss|ws)://.*$"
+      websocket_endpoint_urls:
+        description: "Websocket endpoint URLs for the Shannon gateway, one per service ID. Keys must be valid service IDs."
+        type: object
+        additionalProperties: false
+        patternProperties:
+          "^[a-zA-Z0-9_-]+$":
+            type: string
+            description: "Websocket endpoint URL for the Shannon gateway."
+            pattern: "^(wss|ws)://.*$"
 
   # Logger Configuration (optional)
   logger_config:
