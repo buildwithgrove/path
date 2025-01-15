@@ -54,6 +54,7 @@ localnet_up: config_shannon_localnet dev_up config_path_secrets ## Brings up loc
 # NOTE: This is an intentional copy of localnet_up to enforce that the two are the same.
 .PHONY: path_up
 path_up: localnet_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+	MODE=path_with_auth $(MAKE) localnet_up
 
 .PHONY: path_up_standalone
 path_up_standalone: ## Brings up local Tilt development environment with PATH only
