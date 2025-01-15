@@ -21,8 +21,7 @@ A detailed explanation of the `PATH` config YAML file is provided in the [PATH C
 
 #### 2.1b `Morse` PATH Configs
 
-Run the following command to generate a default Morse config in `local/path/config/.config.yaml`
-using the values from your `Gateway` and `Application` accounts:
+Run the following command to generate a default Morse config in `local/path/config/.config.yaml`.
 
 ```bash
 make copy_morse_e2e_config
@@ -120,7 +119,7 @@ PATH can be run in Tilt in two different modes:
 1. **With Envoy Proxy**
    - **This is the default mode; we recommend running PATH in this mode.**
    - Requests to PATH require a Gateway Endpoint in order to be authorized.
-   - Requests to PATH are routed through Envoy Proxy, running on `port 3001`.
+   - Requests to PATH are routed through Envoy Proxy, running on `port 3070`.
 2. **Standalone**
    - Requests to PATH do not require a Gateway Endpoint to be authorized.
    - Requests to PATH go directly to the `PATH` Service, running on `port 3069`.
@@ -205,14 +204,14 @@ Once `PATH`s QoS module is mature, this will be handled automatically.
 
 ### 5.1a `PATH` with Envoy Proxy
 
-Authorized relays are routed through Envoy Proxy running on port `3001`.
+Authorized relays are routed through Envoy Proxy running on port `3070`.
 
 #### 5.1a.1 Endpoint with Static Key Authorization
 
 This endpoint requires an API key in the `authorization` header.
 
 ```bash
-curl http://localhost:3001/v1/endpoint_1_static_key \
+curl http://localhost:3070/v1/endpoint_1_static_key \
     -X POST \
     -H "authorization: api_key_1" \
     -H "target-service-id: anvil" \
@@ -224,7 +223,7 @@ curl http://localhost:3001/v1/endpoint_1_static_key \
 This endpoint does not require an API key in the `authorization` header.
 
 ```bash
-curl http://localhost:3001/v1/endpoint_3_no_auth \
+curl http://localhost:3070/v1/endpoint_3_no_auth \
     -X POST \
     -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'

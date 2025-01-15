@@ -59,3 +59,9 @@ auth_server_config:
   # Options are "url_path" or "header".
   # Default is "url_path" if not set.
   endpoint_id_extractor_type: url_path
+
+# Optional logger configuration
+logger_config:
+  # Valid values are: debug, info, warn, error
+  # Defaults to info if not specified
+  level: "info"
