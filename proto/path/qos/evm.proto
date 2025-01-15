@@ -18,8 +18,10 @@ message EVMObservations {
   repeated EVMEndpointObservation endpoint_observations = 2;
 }
 
-// EVMEndpointObservation stores a single observation regarding an endpoint.
-// e.g. a specific endpoint's response to an `eth_getBlockNumber` request.
+// EVMEndpointObservation stores a single observation regarding an endpoint
+// that was responsible for servicing the response by the backing protocol.
+// For example, a single Pocket node on Shannon backed by an Ethereum data node
+// that was responsible for servicing an `eth_getBlockNumber` request.
 message EVMEndpointObservation {
   // endpoint_addr is the address of the endpoint that handled the EVM blockchain service request.
   string endpoint_addr = 1;
