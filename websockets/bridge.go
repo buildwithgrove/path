@@ -81,6 +81,11 @@ func (b *bridge) Run() {
 	<-b.stopChan
 }
 
+// Close stops the bridge and closes both connections
+func (b *bridge) Close() {
+	close(b.stopChan)
+}
+
 /* ---------- Private methods - Message loop ---------- */
 
 // messageLoop reads from the message channel and handles messages from the endpoint and Client

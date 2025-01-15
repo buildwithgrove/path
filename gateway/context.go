@@ -18,7 +18,6 @@ var (
 	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance")
 	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance")
 	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
-	errWebsocketEndpointURLNotSet    = errors.New("websocket endpoint URL is not set")
 )
 
 // requestContext is responsible for performing the steps necessary to complete a service request.
