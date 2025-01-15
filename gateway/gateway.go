@@ -17,6 +17,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -47,9 +48,10 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// WebsocketEndpointURL is a temporary workaround to allow PATH to enable websocket connections to a user-provided websocket-enabled endpoint URL.
+	// WebsocketEndpointURLs is a temporary workaround to allow PATH to enable websocket 
+	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
 	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpointURL string
+	WebsocketEndpointURLs map[protocol.ServiceID]string
 
 	Logger polylog.Logger
 }
@@ -133,12 +135,27 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
 // from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
 // A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
-func (g Gateway) handleWebsocketRequest(_ context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	if g.WebsocketEndpointURL == "" {
-		g.Logger.Error().Msg("websocket endpoint URL is not set.")
+func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	if len(g.WebsocketEndpointURLs) == 0 {
+		g.Logger.Error().Msg("no websocket endpoint URLs are set")
 		return
 	}
 
+	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
+	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
+	if err != nil {
+		g.Logger.Error().Msg("error getting QoS service")
+		return
+	}
+
+	// Get the websocket endpoint URL for the service ID.
+	endpointURL := g.WebsocketEndpointURLs[serviceID]
+	if endpointURL == "" {
+		g.Logger.Error().Msgf("websocket endpoint URL is not set for service ID %s", serviceID)
+		return
+	}
+
+	// Upgrade the HTTP request to a websocket connection.
 	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
 	if err != nil {
@@ -146,13 +163,16 @@ func (g Gateway) handleWebsocketRequest(_ context.Context, httpReq *http.Request
 		return
 	}
 
-	bridge, err := websockets.NewBridge(g.Logger, g.WebsocketEndpointURL, clientConn)
+	// Create a websocket bridge to handle the websocket connection
+	// between the Client and the websocket Endpoint.
+	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
 	if err != nil {
 		g.Logger.Error().Msg("error creating websocket bridge")
 		return
 	}
 
+	// Run the websocket bridge in a separate goroutine.
 	go bridge.Run()
 
-	g.Logger.Info().Str("websocket_endpoint_url", g.WebsocketEndpointURL).Msg("websocket connection established")
+	g.Logger.Info().Str("websocket_endpoint_url", endpointURL).Msg("websocket connection established")
 }

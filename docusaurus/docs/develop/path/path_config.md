@@ -259,13 +259,13 @@ shannon_config:
 
 **`gateway_config`**
 
-| Field                         | Type     | Required                 | Default | Description                                                           |
-| ----------------------------- | -------- | ------------------------ | ------- | --------------------------------------------------------------------- |
-| `gateway_mode`                | string   | Yes                      | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`    |
-| `gateway_address`             | string   | Yes                      | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
-| `gateway_private_key_hex`     | string   | Yes                      | -       | 64-character hex-encoded `secp256k1` gateway private key              |
-| `owned_apps_private_keys_hex` | string[] | Only in centralized mode | -       | List of 64-character hex-encoded `secp256k1` application private keys |
-| `websocket_endpoint_url`      | string   | No                       | -       | URL of the websocket endpoint to use for the Shannon gateway.         |
+| Field                         | Type     | Required                          | Default | Description                                                           |
+| ----------------------------- | -------- | --------------------------------- | ------- | --------------------------------------------------------------------- |
+| `gateway_mode`                | string   | Yes                               | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`    |
+| `gateway_address`             | string   | Yes                               | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
+| `gateway_private_key_hex`     | string   | Yes                               | -       | 64-character hex-encoded `secp256k1` gateway private key              |
+| `owned_apps_private_keys_hex` | string[] | Only in centralized mode          | -       | List of 64-character hex-encoded `secp256k1` application private keys |
+| `websocket_endpoint_urls`     | object   | Only if wanting to use WebSockets | -       | List of websocket endpoint URLs, one per service ID.                  |
 
 ---
 

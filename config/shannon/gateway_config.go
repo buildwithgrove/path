@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/buildwithgrove/path/protocol"
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
@@ -21,7 +22,7 @@ type ShannonGatewayConfig struct {
 	// It is placed in the ShannonGatewayConfig struct to indicate that websockets will
 	// only be supported by the Shannon protocol, never on Morse.
 	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpointURL string `yaml:"websocket_endpoint_url"`
+	WebsocketEndpointURLs map[protocol.ServiceID]string `yaml:"websocket_endpoint_urls"`
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.
@@ -49,19 +50,21 @@ func (c ShannonGatewayConfig) Validate() error {
 		return err
 	}
 
-	// Validate WebsocketEndpointURL
+	// Validate WebsocketEndpointURLs
 	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this validation once the Shannon protocol supports websocket connections.
-	if err := c.validateWebsocketEndpointURL(); err != nil {
+	if err := c.validateWebsocketEndpointURLs(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateWebsocketEndpointURL checks if the WebsocketEndpointURL is valid.
-func (c ShannonGatewayConfig) validateWebsocketEndpointURL() error {
-	if !websocketURLRegex.MatchString(c.WebsocketEndpointURL) {
-		return fmt.Errorf("invalid WebsocketEndpointURL: %s", c.WebsocketEndpointURL)
+// validateWebsocketEndpointURLs checks if the WebsocketEndpointURLs are valid.
+func (c ShannonGatewayConfig) validateWebsocketEndpointURLs() error {
+	for _, url := range c.WebsocketEndpointURLs {
+		if !websocketURLRegex.MatchString(url) {
+			return fmt.Errorf("invalid websocket endpoint URL: %s", url)
+		}
 	}
 	return nil
 }
