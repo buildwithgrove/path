@@ -12,9 +12,9 @@ message EVMObservations {
   // endpoint_observations contains all EVM-specific observations made on endpoint(s) that
   // responded to the service request.
   // A single request may create multiple observations.
-  // This can happen if:
-  // 	1. The originally selected endpoint fails, AND
-  //	2. The request is sent to additional endpoints.
+  // This can happen if at least one (or more) of the following are true:
+  // 	1. The originally selected endpoint fails (e.g. bad node)
+  //	2. The request is sent to additional endpoints (e.g. collect more data)
   repeated EVMEndpointObservation endpoint_observations = 2;
 }
 
