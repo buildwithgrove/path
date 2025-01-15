@@ -127,13 +127,6 @@ func (p *Protocol) IsAlive() bool {
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
-// GetWebsocketEndpointURL returns the URL of the websocket endpoint to use for the current request context.
-// It is implemented to satisfy the gateway.Protocol interface.
-// Morse does not support websocket connections so this method will always return an empty string.
-func (p *Protocol) GetWebsocketEndpointURL() string {
-	return ""
-}
-
 func (p *Protocol) getServiceApps(serviceID protocol.ServiceID) ([]app, bool) {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()

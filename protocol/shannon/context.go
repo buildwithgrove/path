@@ -103,6 +103,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 }
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
+// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
 	var selectedEndpointURL string
 	if rc.selectedEndpoint != nil {
@@ -122,6 +123,8 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 	}
 
 	go bridge.Run()
+
+	logger.Info().Msg("websocket connection established")
 
 	return nil
 }
