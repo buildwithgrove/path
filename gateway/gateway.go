@@ -47,9 +47,8 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// WebsocketEndpointURL is a temporary workaround to allow PATH to enable websocket
-	// connections to a provided websocket-enabled endpoint URL.
-	// TODO_TECHDEBT(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
+	// WebsocketEndpointURL is a temporary workaround to allow PATH to enable websocket connections to a user-provided websocket-enabled endpoint URL.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
 	WebsocketEndpointURL string
 
 	Logger polylog.Logger
@@ -130,7 +129,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
 // the Shannon protocol supports websocket connections, which will enable onchain websocket support.
 //
-// TODO_MVP(@commoddity): Remove this temporary workaround once the Shannon protocol supports websocket connections.
+// TODO_FUTURE(@commoddity)[WebSockets]: Remove this temporary workaround once the Shannon protocol supports websocket connections.
 // This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
 // from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
 // A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.

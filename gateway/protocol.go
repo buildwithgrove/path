@@ -53,7 +53,7 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	// TODO_MVP(@commoddity): Utilize this method once the Shannon protocol supports websocket connections.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
 	HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.

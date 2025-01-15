@@ -77,7 +77,7 @@ func main() {
 	// set the gateway's WebsocketEndpointURL to the Shannon protocol's WebsocketEndpointURL.
 	// NOTE: This is a temporary workaround to allow users of PATH to enable
 	// websocket connections to a user-provided websocket-enabled endpoint URL.
-	// TODO_MVP(@commoddity): Remove this once the Shannon protocol supports websocket connections.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this once the Shannon protocol supports websocket connections.
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil && shannonConfig.WebsocketEndpointURL != "" {
 		gateway.WebsocketEndpointURL = shannonConfig.WebsocketEndpointURL
 	}

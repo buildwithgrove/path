@@ -57,9 +57,17 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
-// Solana does not support WebSocket connections, so it returns a nil request context and false.
-func (q *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
-	return nil, false
+// WebSocket connection requests do not have a body, so we don't need to parse it.
+//
+// This method implements the gateway.QoSService interface.
+// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
+	return &requestContext{
+		EndpointStore: qos.EndpointStore,
+		Logger:        qos.Logger,
+
+		isValid: true,
+	}, true
 }
 
 // ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.

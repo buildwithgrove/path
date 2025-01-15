@@ -37,11 +37,10 @@ shannon_config:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-  # [OPTIONAL] If wishing to enable websocket connections, set the websocket_endpoint_url
-  # This is a TEMPORARY workaround to allow users of PATH to enable 
-  # websocket connections to a user-provided websocket-enabled endpoint URL.
+  # [OPTIONAL] If wishing to enable websockets, set the websocket_endpoint_url. This is a TEMPORARY workaround 
+  # to allow users of PATH to enable websocket connections to a user-provided websocket-enabled endpoint URL.
   # IMPORTANT: All websocket connections will be off-chain and will not settle traffic on the Pocket network.
-  # TODO_MVP(@commoddity): Remove this field once the Shannon protocol supports websocket connections.
+  # TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
   websocket_endpoint_url: wss://shannon-testnet-grove-websocket.beta.poktroll.com
 
 # To enable endpoint hydrator to run QoS checks against

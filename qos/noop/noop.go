@@ -37,9 +37,8 @@ func (q NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) 
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
-//
 // This method implements the gateway.QoSService interface.
-// TODO_MVP(@commoddity): Utilize this method once the Shannon protocol supports websocket connections.
+// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
 func (q NoOpQoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		endpointResponseTimeoutMillisec: defaultEndpointResponseTimeoutMillisec,
