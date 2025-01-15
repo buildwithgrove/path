@@ -93,6 +93,10 @@ Before starting a PATH instance, you will need to create an configure:
 
 This is a manual and poorly documented process in Morse.
 
+:::tip
+
+If you have access to a staked application, the instructions to generate your own AAT [may be found here](../path/path_config.md#aat-generation).
+
 :::
 
 `Application Authentication Tokens` (**AATs**) are auth tokens that allow application
@@ -138,8 +142,7 @@ make shannon_populate_config
 
 #### 2.1b `Morse` PATH Configs
 
-Run the following command to generate a default Morse config in `local/path/config/.config.yaml`
-using the values from your `Gateway` and `Application` accounts:
+Run the following command to generate a default Morse config in `local/path/config/.config.yaml`.
 
 ```bash
 make config_morse_localnet
@@ -237,7 +240,7 @@ PATH can be run in Tilt in two different modes:
 1. **With Envoy Proxy**
    - **This is the default mode; we recommend running PATH in this mode.**
    - Requests to PATH require a Gateway Endpoint in order to be authorized.
-   - Requests to PATH are routed through Envoy Proxy, running on `port 3001`.
+   - Requests to PATH are routed through Envoy Proxy, running on `port 3070`.
 2. **Standalone**
    - Requests to PATH do not require a Gateway Endpoint to be authorized.
    - Requests to PATH go directly to the `PATH` Service, running on `port 3069`.
@@ -322,14 +325,14 @@ Once `PATH`s QoS module is mature, this will be handled automatically.
 
 ### 5.1a `PATH` with Envoy Proxy
 
-Authorized relays are routed through Envoy Proxy running on port `3001`.
+Authorized relays are routed through Envoy Proxy running on port `3070`.
 
 #### 5.1a.1 Endpoint with Static Key Authorization
 
 This endpoint requires an API key in the `authorization` header.
 
 ```bash
-curl http://localhost:3001/v1/endpoint_1_static_key \
+curl http://localhost:3070/v1/endpoint_1_static_key \
     -X POST \
     -H "authorization: api_key_1" \
     -H "target-service-id: anvil" \
@@ -341,7 +344,7 @@ curl http://localhost:3001/v1/endpoint_1_static_key \
 This endpoint does not require an API key in the `authorization` header.
 
 ```bash
-curl http://localhost:3001/v1/endpoint_3_no_auth \
+curl http://localhost:3070/v1/endpoint_3_no_auth \
     -X POST \
     -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
