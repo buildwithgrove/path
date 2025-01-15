@@ -98,10 +98,10 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 	return nil
 }
 
-// TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
-// GetObservations returns the set of Shannon protocol-level observations for the current request context.
+// TODO_MVP(@adshmh): implement the following method to return the MVP set of Morse protocol-level observation.
+// GetObservations returns the set of Morse protocol-level observations for the current request context.
 // The returned observations are used to:
-// 1. Update the Shannon's endpoint store.
+// 1. Update the Morse's endpoint store.
 // 2. Report metrics on the operation of PATH (in the metrics package)
 // 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
 //

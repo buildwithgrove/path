@@ -101,7 +101,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.jsonrpcReq, responseBz, rc.logger)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -112,8 +112,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// TODO_UPNEXT(@adshmh): add `Content-Type: application/json` header.
-//
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
 // single JSONRPC requests and tracking endpoints' response(s) to each.
 // This would also require combining the responses into a single, valid

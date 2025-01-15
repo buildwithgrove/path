@@ -9,6 +9,8 @@ message ShannonObservations {
   string supplier_address = 1;
 }
 
+// ShannonObservationsList wraps ShannonObservations to enable embedding
+// lists of Shannon observations in other protobufs.
 message ShannonObservationsList {
   repeated ShannonObservations observations = 1;
 }

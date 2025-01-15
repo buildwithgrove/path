@@ -62,24 +62,6 @@ localnet_down: dev_down ## Tears down local Tilt development environment which i
 .PHONY: path_down
 path_down: localnet_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
-#######################
-### Proto  Helpers ####
-#######################
-
-.PHONY: proto_gen
-proto_gen: ## Generate protobuf artifacts
-	protoc -I=./proto --go_out=./observation --go_opt=module='github.com/buildwithgrove/path/observation' \
-		./proto/path/*.proto \
-		./proto/path/protocol/*.proto \
-		./proto/path/qos/*.proto
-
-.PHONY: proto_clean
-proto_clean: ## Delete existing .pb.go or .pb.gw.go files
-	find . \( -name "*.pb.go" \) | xargs --no-run-if-empty rm
-
-.PHONY: proto_regen
-proto_regen: proto_clean proto_gen ## Regenerate protobuf artifacts
-
 #########################
 ### Test Make Targets ###
 #########################
@@ -261,16 +243,6 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 	@mkdir -p local/path/envoy;
 	@./envoy/scripts/copy_gateway_endpoints_yaml.sh;
 
-###############################
-### Generation Make Targets ###
-###############################
-
-.PHONY: gen_proto
-gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
-	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
-
-# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-
 ########################
 #### Documentation  ####
 ########################
@@ -291,3 +263,4 @@ docusaurus_start: ## Start docusaurus server
 include ./makefiles/localnet.mk
 include ./makefiles/quickstart.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/proto.mk
