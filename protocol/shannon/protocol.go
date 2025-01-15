@@ -148,11 +148,15 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilte
 
 	logger := p.Logger.With("service", serviceID)
 	var filteredApps []apptypes.Application
+	// TODO_UPNEXT(@commoddity): each request loops through all apps, making it inefficient. 15k apps slows down each request by 3s.
 	for _, app := range apps {
 		logger = logger.With("app_address", app.Address)
 
 		if errSelectingApp := appFilter(&app); errSelectingApp != nil {
-			logger.Warn().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
+			// TODO_UPNEXT(@commoddity): As a result of the above TODO, that log statement grows in size as we iterate over all apps.
+			// We should find a way to log this message once per app, instead of once per app per request.
+			// Example: https://gist.github.com/okdas/265de658a1f283c33914daba44733640
+			logger.Debug().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
 			continue
 		}
 
