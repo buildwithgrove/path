@@ -47,7 +47,7 @@ description: High-level architecture overview and detailed walkthrough
 
 ### Shannon Quickstart
 
-See the [PATH Quickstart Cheat Sheet](../path/cheatsheet.md) for instructions on how to get started with a local PATH instance on Shannon.
+See the [PATH Quickstart Cheat Sheet](../path/cheat_sheet.md) for instructions on how to get started with a local PATH instance on Shannon.
 
 :::info MAKE SURE TO UPDATE THESE FILES
 

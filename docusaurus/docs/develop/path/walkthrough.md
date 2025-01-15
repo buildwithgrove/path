@@ -94,7 +94,7 @@ docker pull ghcr.io/buildwithgrove/path
 
 :::tip
 
-See the [PATH Cheat Sheet](../path/cheatsheet.md) for instructions on how to get started with a local PATH instance on Shannon or Morse.
+See the [PATH Cheat Sheet](cheat_sheet.md) for instructions on how to get started with a local PATH instance on Shannon or Morse.
 
 :::
 
@@ -114,7 +114,7 @@ There are two ways to run PATH locally for development purposes.
 To enable the full suite of PATH functionality - including authorization, rate limiting, service aliasing and more - a `Tiltfile` is provided to easily run the PATH gateway with all its dependencies in a local Kubernetes cluster.
 
 :::tip
-You can follow the instructions [in the PATH cheat sheet](../path/cheatsheet.md) to get started with PATH in Tilt.
+You can follow the instructions [in the PATH cheat sheet](cheat_sheet.md) to get started with PATH in Tilt.
 :::
 
 ### Run the PATH binary
@@ -130,12 +130,12 @@ To run the PATH binary, first run one of the following commands to copy an examp
 make copy_shannon_config
 
 # To copy an example Morse config file
-make copy_morse_config
+make copy_morse_e2e_config
 ```
 
 :::tip
 
-[For a guide on how to get your config file ready, see the PATH Cheat Sheet's "Setup Protocol" section](../path/cheatsheet.md#13-setup-protocol).
+[For a guide on how to get your config file ready, see the PATH Cheat Sheet's "Setup Protocol" section](cheat_sheet.md#13-setup-protocol).
 
 [For detailed information on the PATH configuration file, see the PATH Config Docs](../path/path_config.md).
 
