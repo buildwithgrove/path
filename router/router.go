@@ -22,7 +22,7 @@ type (
 		logger polylog.Logger
 	}
 	gateway interface {
-		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
+		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
 )
 
@@ -107,5 +107,5 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // * - /v1 - handleServiceRequest sets the request ID and HTTP details in the request context
 // from the HTTP request and passes it to the gateway handler, which processes the request.
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
-	r.gateway.HandleHTTPServiceRequest(req.Context(), req, w)
+	r.gateway.HandleServiceRequest(req.Context(), req, w)
 }

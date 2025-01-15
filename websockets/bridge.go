@@ -21,16 +21,15 @@ const (
 // One bridge represents exactly one WebSocket connection between the Client and a WebSocket Endpoint.
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
 type bridge struct {
+	logger       polylog.Logger
 	endpointConn *connection
 	clientConn   *connection
 	msgChan      <-chan message
 	stopChan     chan error
-
-	log polylog.Logger
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
-func NewBridge(endpointURL string, clientWSSConn *websocket.Conn, log polylog.Logger) (*bridge, error) {
+func NewBridge(logger polylog.Logger, endpointURL string, clientWSSConn *websocket.Conn) (*bridge, error) {
 	endpointWSSConn, err := connectEndpoint(endpointURL)
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection to endpoint URL %s: %s", endpointURL, err.Error())
@@ -39,21 +38,21 @@ func NewBridge(endpointURL string, clientWSSConn *websocket.Conn, log polylog.Lo
 	msgChan := make(chan message)
 	stopChan := make(chan error)
 
-	log = log.With("component", "bridge")
+	logger = logger.With("component", "bridge")
 
 	endpointConnection := newConnection(
+		logger.With("conn", "endpoint"),
 		endpointWSSConn,
 		messageSourceEndpoint,
 		msgChan,
 		stopChan,
-		log.With("conn", "endpoint"),
 	)
 	clientConnection := newConnection(
+		logger.With("conn", "client"),
 		clientWSSConn,
 		messageSourceClient,
 		msgChan,
 		stopChan,
-		log.With("conn", "client"),
 	)
 
 	return &bridge{
@@ -62,18 +61,21 @@ func NewBridge(endpointURL string, clientWSSConn *websocket.Conn, log polylog.Lo
 		msgChan:      msgChan,
 		stopChan:     stopChan,
 
-		log: log,
+		logger: logger,
 	}, nil
 }
 
 /* ---------- Public method - Run Bridge ---------- */
 
-// Run starts the bridge and establishes a bidirectional communication between the wss manager and server
+// Run starts the bridge and establishes a bidirectional communication
+// through PATH between the Client and the selected websocket endpoint.
+//
+// Full data flow: Client <------> PATH <------> WebSocket Endpoint
 func (b *bridge) Run() {
 	// Start goroutine to read messages from message channel
 	go b.messageLoop()
 
-	b.log.Info().Msg("bridge operation started successfully")
+	b.logger.Info().Msg("bridge operation started successfully")
 
 	// If close signal is received, stop the bridge and close both connections
 	<-b.stopChan
@@ -104,8 +106,7 @@ func (b *bridge) messageLoop() {
 // handleClientMessage processes a message from the Client and sends it to the Endpoint
 func (b *bridge) handleClientMessage(msg message) {
 	if err := b.endpointConn.WriteMessage(msg.messageType, msg.data); err != nil {
-		b.log.Error().Err(err).Msg("error writing to endpoint websocket")
-		b.stopChan <- fmt.Errorf("error writing to endpoint websocket: %w", err)
+		b.endpointConn.handleError(err, messageSourceEndpoint)
 		return
 	}
 }
@@ -113,8 +114,7 @@ func (b *bridge) handleClientMessage(msg message) {
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client
 func (b *bridge) handleEndpointMessage(msg message) {
 	if err := b.clientConn.WriteMessage(msg.messageType, msg.data); err != nil {
-		b.log.Error().Err(err).Msg("error writing to client websocket")
-		b.stopChan <- fmt.Errorf("error writing to client websocket: %w", err)
+		b.clientConn.handleError(err, messageSourceClient)
 		return
 	}
 }

@@ -116,7 +116,7 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 		return err
 	}
 
-	bridge, err := websockets.NewBridge(selectedEndpointURL, clientConn, logger)
+	bridge, err := websockets.NewBridge(logger, selectedEndpointURL, clientConn)
 	if err != nil {
 		return err
 	}

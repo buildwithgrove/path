@@ -64,14 +64,14 @@ type Gateway struct {
 // refactored to keep HTTP-specific details and move the generic service
 // request processing steps into a common method.
 //
-// HandleHTTPServiceRequest is written as a template method to allow the customization of steps
+// HandleServiceRequest is written as a template method to allow the customization of steps
 // invovled in serving a service request, e.g.:
 //   - establishing a QoS context for the HTTP request.
 //   - sending the service payload through a relaying protocol, etc.
 //
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
-func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
 	case websocketServiceRequest:
@@ -129,33 +129,31 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // NOTE: As a temporary workaround, websocket connections currently bypass the protocol entirely and utilize the
 // provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
 // the Shannon protocol supports websocket connections, which will enable onchain websocket support.
+//
 // TODO_MVP(@commoddity): Remove this temporary workaround once the Shannon protocol supports websocket connections.
+// This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
+// from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
+// A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
 func (g Gateway) handleWebsocketRequest(_ context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	if g.WebsocketEndpointURL == "" {
-		g.Logger.Error().Msg("Websocket endpoint URL is not set.")
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Websocket endpoint URL is not set."))
+		g.Logger.Error().Msg("websocket endpoint URL is not set.")
 		return
 	}
 
 	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
 	if err != nil {
-		g.Logger.Error().Err(err).Msg("Error upgrading websocket connection request")
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Error upgrading websocket connection request"))
+		g.Logger.Error().Msg("error upgrading websocket connection request")
 		return
 	}
 
-	bridge, err := websockets.NewBridge(g.WebsocketEndpointURL, clientConn, g.Logger)
+	bridge, err := websockets.NewBridge(g.Logger, g.WebsocketEndpointURL, clientConn)
 	if err != nil {
-		g.Logger.Error().Err(err).Msg("Error creating websocket bridge")
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Error creating websocket bridge"))
+		g.Logger.Error().Msg("error creating websocket bridge")
 		return
 	}
 
 	go bridge.Run()
 
-	return
+	g.Logger.Info().Str("websocket_endpoint_url", g.WebsocketEndpointURL).Msg("websocket connection established")
 }

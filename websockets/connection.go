@@ -28,10 +28,10 @@ type message struct {
 
 type connection struct {
 	*websocket.Conn
+	logger   polylog.Logger
 	source   messageSource
 	msgChan  chan<- message
 	stopChan chan error
-	log      polylog.Logger
 }
 
 // connectEndpoint makes a websocket connection to the websocket Endpoint.
@@ -49,18 +49,18 @@ func connectEndpoint(endpointURL string) (*websocket.Conn, error) {
 }
 
 func newConnection(
+	logger polylog.Logger,
 	conn *websocket.Conn,
 	source messageSource,
 	msgChan chan message,
 	stopChan chan error,
-	log polylog.Logger,
 ) *connection {
 	c := &connection{
+		logger:   logger,
 		Conn:     conn,
 		source:   source,
 		msgChan:  msgChan,
 		stopChan: stopChan,
-		log:      log,
 	}
 
 	go c.connLoop()
@@ -75,14 +75,14 @@ func (c *connection) connLoop() {
 		select {
 		case err := <-c.stopChan:
 			if err := c.cleanup(err); err != nil {
-				c.log.Error().Err(err).Msg("error cleaning up connection")
+				c.logger.Error().Err(err).Msg("error cleaning up connection")
 			}
 			return
 
 		default:
 			messageType, msg, err := c.ReadMessage()
 			if err != nil {
-				c.handleError(err)
+				c.handleError(err, c.source)
 				return
 			}
 
@@ -101,11 +101,11 @@ func (c *connection) cleanup(err error) error {
 
 	// Close the connection and send a reason for the closure
 	if err := c.WriteMessage(websocket.CloseMessage, closeMsg); err != nil {
-		c.log.Error().Err(err).Msg("error writing close message to connection")
+		c.logger.Error().Err(err).Msg("error writing close message to connection")
 		return err
 	}
 	if err := c.Close(); err != nil {
-		c.log.Error().Err(err).Msg("error closing connection")
+		c.logger.Error().Err(err).Msg("error closing connection")
 		return err
 	}
 
@@ -113,14 +113,14 @@ func (c *connection) cleanup(err error) error {
 }
 
 // handleError handles errors from the websocket connection and sends them to the stopChan if applicable
-func (c *connection) handleError(err error) {
+func (c *connection) handleError(err error, source messageSource) {
 	if websocket.IsCloseError(err, websocket.CloseNoStatusReceived) {
-		c.log.Info().Msg("connection closed by peer")
+		c.logger.Info().Msgf("%s connection closed by peer", source)
 	} else {
-		c.log.Error().Err(err).Msg("error reading from connection")
+		c.logger.Error().Err(err).Msgf(" %s error reading from connection", source)
 	}
 
-	c.stopChan <- fmt.Errorf("error reading from connection: %w", err)
+	c.stopChan <- fmt.Errorf("error reading from %s connection: %w", source, err)
 }
 
 // pingLoop sends keep-alive ping messages to the connection and handles pong messages
@@ -133,12 +133,12 @@ func (c *connection) pingLoop() {
 	initPingLoop := func() {
 		// Set initial read deadline
 		if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-			c.log.Error().Err(err).Msg("failed to set initial read deadline")
+			c.logger.Error().Err(err).Msg("failed to set initial read deadline")
 		}
 		// Extend read deadline on pong response
 		c.SetPongHandler(func(string) error {
 			if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-				c.log.Error().Err(err).Msg("failed to set pong handler read deadline")
+				c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
 			}
 
 			return nil
@@ -154,7 +154,7 @@ func (c *connection) pingLoop() {
 
 		case <-ticker.C:
 			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
-				c.log.Error().Err(err).Msg("failed to send ping to connection")
+				c.logger.Error().Err(err).Msg("failed to send ping to connection")
 				c.stopChan <- fmt.Errorf("failed to send ping to connection: %w", err)
 				return
 			}
