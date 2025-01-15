@@ -24,6 +24,7 @@ message EVMObservations {
 // that was responsible for servicing an `eth_getBlockNumber` request.
 message EVMEndpointObservation {
   // endpoint_addr is the address of the endpoint that handled the EVM blockchain service request.
+  // E.g. this is the onchain address of a Pocket Morse or Shannon node.
   string endpoint_addr = 1;
   // response_observation contains details on the response received from the endpoint.
   oneof response_observation {
