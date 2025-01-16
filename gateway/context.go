@@ -155,12 +155,15 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request, e.g. a non-JSONRPC payload for an EVM service:
+	// 	1. The QoS instance rejected the request:
 	//		QoS returns a properly formatted error response.
+	//               e.g. a non-JSONRPC payload for an EVM service.
 	// 	2. Protocol relay failed for any reason:
-	//		QoS returns a generic, properly formatted response: e.g. a JSONRPC error response.
+	//		QoS returns a generic, properly formatted response.
+	//.              e.g. a JSONRPC error response.
 	//	3. Protocol relay was sent successfully:
-	//		QoS returns the endpoint's response: e.g. the chain ID for a `eth_chainId` request.
+	//		QoS returns the endpoint's response.
+	//               e.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 
