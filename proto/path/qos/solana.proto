@@ -6,10 +6,13 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 
 // SolanaObservations stores all the observations made by the Solana QoS on a single request.
-// A single request can result in multiple observations if:
-// 	- The originally selected endpoint returns an invalid response, AND
+// A single request can result in multiple observations if any (at least one) of the following is true:
+// 	- The originally selected endpoint returns an invalid response
 //	- A retry mechanism sends the request to additional endpoint(s).
 message SolanaObservations {
+  // TODO_TECHDEBT: This has an implicit assumption that all SolanaVM based blockchains only (and always)
+  // support JSON-RPC. This was implemented as a first pass to prioritize the large EVM chains, but may need
+  // to be expanded / refactored in the future.
   JsonRpcRequest jsonrpc_request = 1;
   repeated SolanaEndpointObservation endpoint_observations = 2;
 }

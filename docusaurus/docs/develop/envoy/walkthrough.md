@@ -312,7 +312,7 @@ When using the `url_path` extractor, the Gateway Endpoint ID must be specified i
 https://<SERVICE_NAME>.<PATH_DOMAIN>/v1/<GATEWAY_ENDPOINT_ID>
 ```
 
-For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `a1b2c3d4`:
+For example, if the `SERVICE_NAME` is `eth` and the `GATEWAY_ENDPOINT_ID` is `endpoint_3_no_auth`:
 
 ```bash
 curl http://anvil.localhost:3070/v1/endpoint_3_no_auth \
@@ -329,7 +329,7 @@ When using the `header` extractor, the Gateway Endpoint ID must be specified in 
 -H "endpoint-id: <GATEWAY_ENDPOINT_ID>"
 ```
 
-For example, if the `endpoint-id` header is set to `a1b2c3d4`:
+For example, if the `endpoint-id` header is set to `endpoint_3_no_auth`:
 
 ```bash
 curl http://anvil.localhost:3070/v1 \

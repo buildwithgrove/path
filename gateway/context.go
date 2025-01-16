@@ -26,6 +26,7 @@ type requestContext struct {
 
 	// metricsReporter is used to export metrics based on observations made in handling service requests.
 	metricsReporter RequestResponseReporter
+
 	// dataReporter is used to export, to the data pipeline, observations made in handling service requests.
 	// It is declared separately from the `metricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
