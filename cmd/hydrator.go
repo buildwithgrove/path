@@ -5,6 +5,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -17,6 +18,7 @@ func setupEndpointHydrator(
 	protocol gateway.Protocol,
 	qosPublisher gateway.QoSPublisher,
 	qosGenerators map[protocol.ServiceID]gateway.QoSEndpointCheckGenerator,
+	hydratorConfig config.EndpointHydratorConfig,
 	logger polylog.Logger,
 ) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
@@ -37,10 +39,12 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-		Protocol:             protocol,
-		QoSPublisher:         qosPublisher,
-		ServiceQoSGenerators: qosGenerators,
-		Logger:               logger,
+		Protocol:                protocol,
+		QoSPublisher:            qosPublisher,
+		ServiceQoSGenerators:    qosGenerators,
+		RunInterval:             hydratorConfig.RunInterval,
+		MaxEndpointCheckWorkers: hydratorConfig.MaxEndpointCheckWorkers,
+		Logger:                  logger,
 	}
 
 	err := endpointHydrator.Start()
