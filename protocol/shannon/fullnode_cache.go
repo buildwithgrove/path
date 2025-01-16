@@ -127,10 +127,12 @@ func (cfn *CachingFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, re
 	return endpoints, nil
 }
 
+// getPermittedApps returns the set of endpoints which delegate to the gateway for a given service ID.
 func (cfn *CachingFullNode) getPermittedApps(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	switch cfn.gatewayMode {
+	// In `centralized` mode, the endpoints for the apps delegated to the gateway are cached so we can return them directly.
 	case protocol.GatewayModeCentralized:
 		cachedEndpoints, found := cfn.endpointCache[serviceID]
 		if !found {
@@ -139,6 +141,8 @@ func (cfn *CachingFullNode) getPermittedApps(serviceID protocol.ServiceID, req *
 
 		endpoints = cachedEndpoints
 
+	// In `delegated` mode, the apps can not be cached because the app address is only known at request time.
+	// Therefore, we need to get the apps from the full node and then filter them using the permittedAppFilter.
 	case protocol.GatewayModeDelegated:
 		cfn.appsCacheMu.RLock()
 		apps := cfn.appsCache[serviceID]
@@ -259,13 +263,11 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 	}
 
 	sessions := make(map[sessionCacheKey]sessiontypes.Session)
-	var sessionsMu sync.Mutex // Mutex to protect the sessions map
+	var sessionsMu sync.Mutex
 
+	// Use a worker pool to fetch the sessions concurrently.
 	jobs := make(chan sessionCacheKey, len(appsData))
-
 	var wg sync.WaitGroup
-
-	// Start worker pool
 	for i := 0; i < maxSessionFetchWorkers; i++ {
 		wg.Add(1)
 		go func() {
