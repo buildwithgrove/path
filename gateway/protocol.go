@@ -20,10 +20,10 @@ type Protocol interface {
 	SupportedGatewayModes() []protocol.GatewayMode
 
 	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
-	// Example:
+	// Hypothetical example (for illustrative purposes only):
 	// 	- protocol: Morse
-	// 	- observation: "endpoint maxed-out"
-	// 	- result: skip the endpoint for a set time period.
+	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
+	// 	- result: skip the endpoint for a set time period until a new session begins.
 	ApplyObservations(*protocolobservations.Observations) error
 
 	// health.Check interface is used to verify protocol instance's health status.

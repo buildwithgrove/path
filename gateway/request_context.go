@@ -31,6 +31,7 @@ type requestContext struct {
 
 	// metricsReporter is used to export metrics based on observations made in handling service requests.
 	metricsReporter RequestResponseReporter
+
 	// dataReporter is used to export, to the data pipeline, observations made in handling service requests.
 	// It is declared separately from the `metricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
@@ -79,7 +80,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
 	// Build the payload for the requested service using the incoming HTTP request.
-	// This poyload will be sent to an endpoint matching the requested service.
+	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(ctx, httpReq)
 	if !isValid {
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
@@ -162,12 +163,15 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request, e.g. a non-JSONRPC payload for an EVM service:
+	// 	1. The QoS instance rejected the request:
 	//		QoS returns a properly formatted error response.
+	//               e.g. a non-JSONRPC payload for an EVM service.
 	// 	2. Protocol relay failed for any reason:
-	//		QoS returns a generic, properly formatted response: e.g. a JSONRPC error response.
+	//		QoS returns a generic, properly formatted response.
+	//.              e.g. a JSONRPC error response.
 	//	3. Protocol relay was sent successfully:
-	//		QoS returns the endpoint's response: e.g. the chain ID for a `eth_chainId` request.
+	//		QoS returns the endpoint's response.
+	//               e.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 

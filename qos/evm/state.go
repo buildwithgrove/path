@@ -18,6 +18,7 @@ type ServiceState struct {
 	ChainID string
 
 	stateLock sync.RWMutex
+
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
 	//
@@ -44,8 +45,8 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	return nil
 }
 
-// UpdateFromObservations updates the service state using estimation(s) deriven from the set of updated endpoints, i.e. the set of endpoints for which
-// an observation was received.
+// UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
+// This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()

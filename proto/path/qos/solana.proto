@@ -9,6 +9,9 @@ import "path/qos/jsonrpc.proto";
 // It captures all the observations made when serving a SINGLE request.
 message SolanaRequestObservations {
   // jsonrpc_request captures the Solana blockchain service's JSONRPC request.
+  // TODO_TECHDEBT: This has an implicit assumption that all SolanaVM based blockchains only (and always)
+  // support JSON-RPC. This was implemented as a first pass to prioritize the large EVM chains, but may need
+  // to be expanded / refactored in the future.
   JsonRpcRequest jsonrpc_request = 1;
 
   // SolanaRequestObservations stores all the observations made by the Solana QoS on a SINGLE request.

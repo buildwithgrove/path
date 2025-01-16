@@ -16,7 +16,8 @@ var _ response = responseToBlockNumber{}
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
 func responseUnmarshallerBlockNumber(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	if jsonrpcResp.Error.Code != 0 { // The endpoint returned an error: no need to do further processing of the response.
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.Error.Code != 0 {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
 		return responseToBlockNumber{
 			logger:   logger,

@@ -68,7 +68,7 @@ docker_build_with_restart(
 
 # Conditionally add port forwarding based on the mode
 if MODE == "path_only":
-    # Run PATH without any dependencies and port 3000 exposed
+    # Run PATH without any dependencies and port 3069 exposed
     helm_resource(
         "path",
         chart_prefix + "path",
@@ -80,7 +80,7 @@ if MODE == "path_only":
         image_deps=["path"],
         image_keys=[("image.repository", "image.tag")],
         labels=["path"],
-        port_forwards=["3000:3000"],
+        port_forwards=["3069:3069"],
     )
 else:
     # Run PATH with all dependencies and no port exposed
@@ -103,15 +103,14 @@ else:
             "ratelimit",
             "redis",
         ],
-        port_forwards=["3000:3000"],
     )
 
 if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
-    # 1. External Auth Server                                                      #
-    # 2. Envoy Proxy                                                               #
+    # 1. Envoy Proxy                                                               #
+    # 2. External Auth Server                                                      #
     # 3. Path Auth Data Server (PADS)                                              #
     # 4. Rate Limiter                                                              #
     # 5. Redis                                                                     #
@@ -139,7 +138,17 @@ if MODE == "path_with_auth":
         watch=True,
     )
 
-    # 1. Build the External Auth Server image from envoy/auth_server/Dockerfile
+    # 1. Load the Kubernetes YAML for the envoy-proxy service
+    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
+    k8s_resource(
+        "envoy-proxy",
+        labels=["envoy_auth"],
+        # By default the Envoy Proxy container will bind to 127.0.0.1.
+        # Adding 0.0.0.0 allows it to be accessible from any IP address.
+        port_forwards=["0.0.0.0:3070:3070"],
+    )
+
+    # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
     docker_build(
         "ext-authz",
         context="./envoy/auth_server",
@@ -153,14 +162,6 @@ if MODE == "path_with_auth":
         labels=["envoy_auth"],
         port_forwards=["10003:10003"],
         resource_deps=["path-auth-data-server"],
-    )
-
-    # 2. Load the Kubernetes YAML for the envoy-proxy service
-    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
-    k8s_resource(
-        "envoy-proxy",
-        labels=["envoy_auth"],
-        port_forwards=["3001:3001"],
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service
@@ -223,10 +224,10 @@ k8s_resource(
     new_name="grafana",
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    port_forwards=["3003:3000"],
+    port_forwards=["3000:3000"],
     labels=["monitoring"],
     links=[
-        link("localhost:3003", "Grafana"),
+        link("localhost:3000", "Grafana"),
     ],
     pod_readiness="wait",
     discovery_strategy="selectors-only",
