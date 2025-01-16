@@ -96,11 +96,12 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
-// TODO_TECHDEBT(@dashmh): validate the provided request's service ID is supported by the Shannon protocol.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
+	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
+
 	permittedAppFilter, err := p.getGatewayModePermittedAppFilter(p.gatewayMode, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", p.gatewayMode, err)
@@ -140,7 +141,10 @@ func (p *Protocol) IsAlive() bool {
 // getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.
 // If an endpoint matches a service ID through multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter permittedAppFilter) (map[protocol.EndpointAddr]endpoint, error) {
+func (p *Protocol) getAppsUniqueEndpoints(
+	serviceID protocol.ServiceID,
+	appFilter permittedAppFilter,
+) (map[protocol.EndpointAddr]endpoint, error) {
 	apps, err := p.FullNode.GetServiceApps(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
@@ -151,6 +155,9 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilte
 	for _, app := range apps {
 		logger = logger.With("app_address", app.Address)
 
+		// Delegated GatewayMode: app with address pokt104m7z77tzze6vgjl8tvuure6vxm78jm9kq0xzp
+		// does not match the selected app address: pokt19u63v6k8tppyk5ys9zwv4wr7hx3j2wmj9ndm75",
+		// "message":"App filter rejected the app: skipping the app.
 		if errSelectingApp := appFilter(&app); errSelectingApp != nil {
 			logger.Warn().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
 			continue
