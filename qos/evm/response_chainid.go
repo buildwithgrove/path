@@ -21,7 +21,7 @@ func responseUnmarshallerChainID(
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
-	if jsonrpcResp.Error.Code != 0 {
+	if jsonrpcResp.IsError() {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
 		return responseToChainID{
 			logger:          logger,

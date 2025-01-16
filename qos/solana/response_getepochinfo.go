@@ -12,7 +12,8 @@ import (
 // responseUnmarshallerGetEpochInfo deserializes the provided payload into a responseToGetEpochInfo struct,
 // adding any encountered errors to the returned struct.
 func responseUnmarshallerGetEpochInfo(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	if jsonrpcResp.IsError() { // The endpoint returned an error: no need to do further processing of the response.
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() {
 		// Note: this assumes the `getEpochInfo` request sent to the endpoint was valid.
 		return responseToGetEpochInfo{
 			Response: jsonrpcResp,
