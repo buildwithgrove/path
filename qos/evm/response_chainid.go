@@ -72,7 +72,7 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 //     This should be returned to the user as-is.
 //
 // GetResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
-// It implementes the response interface.
+// It implements the response interface.
 func (r responseToChainID) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.Response)
 	if err != nil {
