@@ -53,8 +53,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 	for endpointAddr, endpoint := range updatedEndpoints {
 		logger := s.Logger.With(
-			"endpoint", endpointAddr,
-			"endpoint_url", endpoint.PublicURL(),
+			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
 		)
 

@@ -15,7 +15,7 @@ var _ response = responseToBlockNumber{}
 // responseUnmarshallerBlockNumber deserializes the provided payload
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerBlockNumber(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
+func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.Error.Code != 0 {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
@@ -73,7 +73,7 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }

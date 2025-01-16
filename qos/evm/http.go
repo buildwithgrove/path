@@ -27,7 +27,7 @@ func (hr httpResponse) GetHTTPStatusCode() int {
 	// EVM always returns a 200 HTTP status code.
 	return http.StatusOK
 }
-i
+
 // GetHTTPHeaders returns the set of headers for the HTTP response.
 // As of PR #72, the only header returned for EVM is `Content-Type`.
 func (r httpResponse) GetHTTPHeaders() map[string]string {

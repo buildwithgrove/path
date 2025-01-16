@@ -15,7 +15,11 @@ var _ response = responseToChainID{}
 // TODO_TECHDEBT(@adshmh): consider refactoring all unmarshallers to remove any duplicated logic.
 // responseUnmarshallerChainID deserializes the provided byte slice into a responseToChainID struct,
 // adding any encountered errors to the returned struct for constructing a response payload.
-func responseUnmarshallerChainID(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
+func responseUnmarshallerChainID(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.Error.Code != 0 {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
@@ -80,7 +84,7 @@ func (r responseToChainID) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToChainID: Marshalling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToChainID: Marshalling JSONRPC response failed.")
 	}
 	return bz
 }

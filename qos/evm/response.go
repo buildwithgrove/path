@@ -13,7 +13,7 @@ import (
 // E.g. to handle "eth_getBalance" requests, the following need to be defined:
 //  1. A new custom responseUnmarshaller
 //  2. A new custom struct  to handle the details of the particular response.
-type responseUnmarshaller func(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error)
+type responseUnmarshaller func(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error)
 
 var (
 	// All response types needs to implement the response interface.
@@ -33,7 +33,7 @@ var (
 //   - eth_chainId
 //   - eth_blockNumber
 func unmarshalResponse(
-	logger polylog.Logger
+	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
 ) (
@@ -44,19 +44,19 @@ func unmarshalResponse(
 	if err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
-		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
 	if err := jsonrpcResponse.Validate(); err != nil {
-		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
 	// Note: we intentionally skip checking whether the JSONRPC response indicates an error. This allows the method-specific handler
 	// to determine how to respond to the user.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {
-		return unmarshaller(jsonrpcReq, jsonrpcResponse, logger)
+		return unmarshaller(logger, jsonrpcReq, jsonrpcResponse)
 	}
 
-	return responseUnmarshallerGeneric(jsonrpcReq, data, logger)
+	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
 }

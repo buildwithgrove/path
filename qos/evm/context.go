@@ -126,7 +126,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// have been reported to the request context.
 	// intentionally ignoring the error here, since unmarshallResponse
 	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.jsonrpcReq, []byte(""), rc.logger)
+	response, _ := unmarshalResponse(rc.logger, rc.jsonrpcReq, []byte(""))
 
 	if len(rc.endpointResponses) >= 1 {
 		// return the last endpoint response reported to the context.

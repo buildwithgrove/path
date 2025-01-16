@@ -35,7 +35,7 @@ func getServiceQoSInstances(
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.BuildEVMQoSInstance(logger)
+			evmQoS := evm.NewQoSInstance(logger)
 			qosServices[serviceID] = evmQoS
 
 		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.

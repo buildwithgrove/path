@@ -56,7 +56,7 @@ func (r responseGeneric) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
 	}
 	return bz
 }
@@ -64,11 +64,11 @@ func (r responseGeneric) GetResponsePayload() []byte {
 // responseUnmarshallerGeneric unmarshal the provided byte slice
 // into a responseGeneric struct and saves any data that may be
 // needed for producing a response payload into the struct.
-func responseUnmarshallerGeneric(jsonrpcReq jsonrpc.Request, data []byte, logger polylog.Logger) (response, error) {
+func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
 	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), nil
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), nil
 	}
 
 	return responseGeneric{

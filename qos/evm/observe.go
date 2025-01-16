@@ -23,8 +23,8 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
 		logger := es.Logger.With(
-			"qos_instance": "evm",
-			"method": "UpdateEndpointsFromObservations",
+			"qos_instance", "evm",
+			"method", "UpdateEndpointsFromObservations",
 		)
 		if observation == nil {
 			logger.Info().Msg("received nil observation. Skipping.")
