@@ -18,6 +18,7 @@ type ServiceState struct {
 	Logger polylog.Logger
 
 	stateLock sync.RWMutex
+
 	// estimatedBlockNumber is the estimated current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
 	//
