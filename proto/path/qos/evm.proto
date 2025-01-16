@@ -30,7 +30,8 @@ message EVMEndpointObservation {
   // endpoint_addr is the address of the endpoint that handled the EVM blockchain service request.
   // E.g. this is the onchain address of a Pocket Morse or Shannon node.
   string endpoint_addr = 1;
-  // response_observation contains details on the response received from the endpoint.
+
+    // response_observation contains details on the response received from the endpoint.
   oneof response_observation {
     // chain_id_response stores the response to a `eth_chainId` request:
     // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
