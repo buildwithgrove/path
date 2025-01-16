@@ -12,23 +12,24 @@ import (
 // responseToChainID provides the functionality required from a response by a requestContext instance.
 var _ response = responseToChainID{}
 
-// TODO_IMPROVE(@adshmh): consider refactoring all unmarshallers to remove any duplicated logic.
+// TODO_TECHDEBT(@adshmh): consider refactoring all unmarshallers to remove any duplicated logic.
 // responseUnmarshallerChainID deserializes the provided byte slice into a responseToChainID struct,
 // adding any encountered errors to the returned struct for constructing a response payload.
 func responseUnmarshallerChainID(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	if jsonrpcResp.Error.Code != 0 { // The endpoint returned an error: no need to do further processing of the response.
-		// Note: this assumes the `eth_chainId` request sent to the endpoint was valid.
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.Error.Code != 0 {
+		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
 		return responseToChainID{
-			Response: jsonrpcResp,
-			Logger:   logger,
+			logger: logger,
+			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToChainID{
-			Response: jsonrpcResp,
-			Logger:   logger,
+			logger: logger,
+			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
 
@@ -36,19 +37,21 @@ func responseUnmarshallerChainID(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc
 	err = json.Unmarshal(resultBz, &result)
 
 	return &responseToChainID{
-		Response: jsonrpcResp,
-		Result:   result,
+		logger: logger,
+		jsonRPCResponse: jsonrpcResp,
+		result:   result,
 	}, err
 }
 
 // responseToChainID captures the fields expected in a
 // response to an `eth_chainId` request.
 type responseToChainID struct {
-	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
-	Response jsonrpc.Response
-	// Result captures the `result` field of a JSONRPC resonse to an `eth_chainId` request.
-	Result string
-	Logger polylog.Logger
+	logger polylog.Logger
+
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
+	// result captures the `result` field of a JSONRPC resonse to an `eth_chainId` request.
+	result string
 }
 
 // GetObservation returns an observation using an `eth_chainId` request's response.
@@ -57,7 +60,7 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
-				ChainIdResponse: r.Result,
+				ChainIdResponse: r.result,
 			},
 		},
 	}
@@ -74,7 +77,7 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 // GetResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
 // It implementes the response interface.
 func (r responseToChainID) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
+	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.Logger.Warn().Err(err).Msg("responseToChainID: Marshalling JSONRPC response failed.")

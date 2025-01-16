@@ -15,17 +15,17 @@ type ServiceState struct {
 	Logger polylog.Logger
 
 	stateLock sync.RWMutex
-	// estimatedEpoch is the estimated current epoch based on endpoints' responses to `getEpochInfo` requests.
+	// perceivedEpoch is the perceived current epoch based on endpoints' responses to `getEpochInfo` requests.
 	// See the following link for more details:
 	// https://solana.com/docs/rpc/http/getepochinfo
-	estimatedEpoch uint64
-	// estimatedBlockHeight is the estimated blockheight based on endpoints' responses to `getEpochInfo` requests.
-	estimatedBlockHeight uint64
+	perceivedEpoch uint64
+	// perceivedBlockHeight is the perceived blockheight based on endpoints' responses to `getEpochInfo` requests.
+	perceivedBlockHeight uint64
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
 //
-// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the estimated state of Solana blockchain.
+// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of Solana blockchain.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	s.stateLock.RLock()
 	defer s.stateLock.RUnlock()
@@ -34,12 +34,12 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 		return err
 	}
 
-	if endpoint.SolanaGetEpochInfoResponse.Epoch < s.estimatedEpoch {
-		return fmt.Errorf("endpoint has epoch %d, estimated current epoch is %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.estimatedEpoch)
+	if endpoint.SolanaGetEpochInfoResponse.Epoch < s.perceivedEpoch {
+		return fmt.Errorf("endpoint has epoch %d, perceived current epoch is %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.perceivedEpoch)
 	}
 
-	if endpoint.SolanaGetEpochInfoResponse.BlockHeight < s.estimatedBlockHeight {
-		return fmt.Errorf("endpoint has block height %d, estimated block height is %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.estimatedBlockHeight)
+	if endpoint.SolanaGetEpochInfoResponse.BlockHeight < s.perceivedBlockHeight {
+		return fmt.Errorf("endpoint has block height %d, perceived block height is %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.perceivedBlockHeight)
 	}
 
 	return nil
@@ -56,26 +56,26 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 			continue
 		}
 
-		// The endpoint's Epoch should be at-least equal to the estimated epoch before being used to update the estimated state of Solana blockchain.
-		if endpoint.SolanaGetEpochInfoResponse.Epoch < s.estimatedEpoch {
+		// The endpoint's Epoch should be at-least equal to the perceived epoch before being used to update the perceived state of Solana blockchain.
+		if endpoint.SolanaGetEpochInfoResponse.Epoch < s.perceivedEpoch {
 			continue
 		}
 
-		// The endpoint's BlockHeight should be greater than the estimated block height before being used to update the estimated state of Solana blockchain.
-		if endpoint.SolanaGetEpochInfoResponse.BlockHeight <= s.estimatedBlockHeight {
+		// The endpoint's BlockHeight should be greater than the perceived block height before being used to update the perceived state of Solana blockchain.
+		if endpoint.SolanaGetEpochInfoResponse.BlockHeight <= s.perceivedBlockHeight {
 			continue
 		}
 
 		// TODO_IMPROVE: use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
-		s.estimatedEpoch = endpoint.SolanaGetEpochInfoResponse.Epoch
-		s.estimatedBlockHeight = endpoint.SolanaGetEpochInfoResponse.BlockHeight
+		s.perceivedEpoch = endpoint.SolanaGetEpochInfoResponse.Epoch
+		s.perceivedBlockHeight = endpoint.SolanaGetEpochInfoResponse.BlockHeight
 
 		s.Logger.With(
 			"endpoint", endpointAddr,
-			"block height", s.estimatedBlockHeight,
-			"epoch", s.estimatedEpoch,
+			"block height", s.perceivedBlockHeight,
+			"epoch", s.perceivedEpoch,
 		).Info().Msg("Updating latest block height")
 	}
 

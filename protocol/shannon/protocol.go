@@ -131,6 +131,9 @@ func (p *Protocol) BuildRequestContext(
 //  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
 //     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
 //
+// DEV_NOTE: Claude could make the above much easier to implement, use the following as a guide:
+// https://olshansky.substack.com/p/no-rss-feed-no-problem-using-claude
+//
 // ApplyObservations updates the protocol instance's internal state using the supplied observations.
 // e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
 // This method implements the gateway.Protocol interface.

@@ -16,10 +16,10 @@ import (
 // The EndpointHydrator will not be started if no
 // service QoS generators are specified.
 func setupEndpointHydrator(
-	hydratorConfig config.EndpointHydratorConfig,
+	logger polylog.Logger,
 	protocolInstance gateway.Protocol,
 	qosServices map[protocol.ServiceID]gateway.QoSService,
-	logger polylog.Logger,
+	hydratorConfig config.EndpointHydratorConfig,
 ) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
 		return nil, errors.New("no logger provided")

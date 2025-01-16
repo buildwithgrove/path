@@ -8,8 +8,8 @@ option go_package = "github.com/buildwithgrove/path/observation";
 
 import "path/http.proto";
 import "path/gateway.proto";
-import "path/protocol/protocol.proto";
-import "path/qos/qos.proto";
+import "path/protocol/observations.proto";
+import "path/qos/observations.proto";
 
 // RequestResponseObservations captures the observations made on every aspect of a service
 // request and its response.

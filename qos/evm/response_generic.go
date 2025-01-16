@@ -29,8 +29,10 @@ const (
 // is applicable to the corresponding request's JSONRPC method.
 // i.e. when there are no unmarshallers/structs matching the method specified by the request.
 type responseGeneric struct {
-	jsonrpc.Response
-	Logger polylog.Logger
+	logger polylog.Logger
+
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
 }
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
@@ -41,7 +43,7 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.Response.ID.String(),
+					Id: r.jsonRPCResponse.ID.String(),
 				},
 			},
 		},
@@ -51,7 +53,7 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 // TODO_UPNEXT(@adshmh): handle any unmarshalling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
+	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.Logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
@@ -70,20 +72,20 @@ func responseUnmarshallerGeneric(jsonrpcReq jsonrpc.Request, data []byte, logger
 	}
 
 	return responseGeneric{
-		Response: response,
-		Logger:   logger,
+		logger: logger,
+		jsonRPCResponse: response,
 	}, nil
 }
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
-func getGenericJSONRPCErrResponse(id jsonrpc.ID, malformedResponsePayload []byte, err error, logger polylog.Logger) responseGeneric {
+func getGenericJSONRPCErrResponse(logger polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
 	errData := map[string]string{
 		errDataFieldRawBytes:         string(malformedResponsePayload),
 		errDataFieldUnmarshallingErr: err.Error(),
 	}
 
 	return responseGeneric{
-		Response: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
+		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
 	}
 }
 

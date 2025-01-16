@@ -5,22 +5,35 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
-// SolanaObservations stores all the observations made by the Solana QoS on a single request.
-// A single request can result in multiple observations if:
-// 	- The originally selected endpoint returns an invalid response, AND
-//	- A retry mechanism sends the request to additional endpoint(s).
-message SolanaObservations {
+// SolanaRequestObservations stores data specific to observations of the Solana blockchain service QoS.
+// It captures all the observations made when serving a SINGLE request.
+message SolanaRequestObservations {
+  // jsonrpc_request captures the Solana blockchain service's JSONRPC request.
   JsonRpcRequest jsonrpc_request = 1;
+
+  // SolanaRequestObservations stores all the observations made by the Solana QoS on a SINGLE request.
+  // A single request can result in multiple observations if:
+  // 	- The originally selected endpoint returns an invalid response, AND
+  //	- A retry mechanism sends the request to additional endpoint(s).
   repeated SolanaEndpointObservation endpoint_observations = 2;
 }
 
 // SolanaEndpointObservation captures a single observation regarding a single endpoint.
 // e.g.: an `ok` response to a `getHealth` request from an endpoint.
 message SolanaEndpointObservation {
+  // endpoint_addr is the address of the endpoint that handled the Solana blockchain service request.
   string endpoint_addr = 1;
   oneof response_observation {
+    // get_epoch_info_response stores the response to a `getEpochInfo` request:
+    // https://solana.com/docs/rpc/http/getepochinfo
     SolanaGetEpochInfoResponse get_epoch_info_response = 2;
+
+    // get_health_response stores the response to a `getHealth` request:
+    //https://solana.com/docs/rpc/http/gethealth
     SolanaGetHealthResponse get_health_response = 3;
+
+    // unrecognized_response shares responses not used in endpoint validation.
+    // e.g. the response to a `getAccountInfo` request.
     SolanaUnrecognizedResponse unrecognized_response = 4;
   }
 }

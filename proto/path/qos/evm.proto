@@ -5,8 +5,9 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
-// EVMObservations stores data specific to observations of the EVM blockchains service QoS.
-message EVMObservations {
+// EVMRequestObservations stores data specific to observations of the EVM blockchains service QoS.
+// It captures all the observations made when serving a SINGLE request.
+message EVMRequestObservations {
   // jsonrpc_request captures the EVM blockchain service's JSONRPC request.
   JsonRpcRequest jsonrpc_request = 1;
   // endpoint_observations contains all EVM-specific observations made on endpoint(s) that
@@ -31,6 +32,8 @@ message EVMEndpointObservation {
 
     // block_number_response stores the response to a `eth_blockNumber` request:
     // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+    // One source (non-exhaustive) of chain IDs can be found in the link below:
+    // https://chainlist.org
     EVMBlockNumberResponse block_number_response = 3;
 
     // unrecognized_response shares responses not used in endpoint validation.

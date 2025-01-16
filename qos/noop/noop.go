@@ -24,7 +24,7 @@ type NoOpQoS struct{}
 // ParseHTTPRequest reads the supplied HTTP request's body and passes it on to a new requestContext instance.
 // It intentionally avoids performing any validation on the request, as is the designed behavior of the noop QoS.
 // This method implements the gateway.QoSService interface.
-func (q NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (gateway.RequestQoSContext, bool) {
+func (_ NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (gateway.RequestQoSContext, bool) {
 	bz, err := io.ReadAll(httpRequest.Body)
 	if err != nil {
 		return requestContextFromError(fmt.Errorf("Error reading the HTTP request body: %w", err)), false
@@ -38,13 +38,13 @@ func (q NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) 
 
 // ApplyObservations on noop QoS only fulfills the interface requirements and does not perform any actions.
 // This method implements the gateway.QoSService interface.
-func (q NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
+func (_ NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 	return nil
 }
 
 // GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
 // This method implements the gateway.QoSService interface.
-func (q NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
+func (_ NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	return nil
 }
 

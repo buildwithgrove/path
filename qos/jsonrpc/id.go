@@ -8,6 +8,14 @@ import (
 // TODO_TECHDEBT: handle all possible ID values based on JSONRPC spec.
 // See the following link for more details:
 // https://www.jsonrpc.org/specification
+//
+// From the spec definition above:
+// An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
+// If it is not included it is assumed to be a notification.
+// The value SHOULD normally not be Null: https://www.jsonrpc.org/specification#id1
+// Numbers SHOULD NOT contain fractional parts: https://www.jsonrpc.org/specification#id2
+// The Server MUST reply with the same value in the Response object if included.
+// This member is used to correlate the context between the two objects.
 type ID struct {
 	intID int
 	strID string

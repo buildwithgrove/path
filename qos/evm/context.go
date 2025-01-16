@@ -152,6 +152,9 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		ServiceObservations: &qosobservations.Observations_EVM{
 			EVM: &qosobservations.EVMObservations{
 				// TODO_TECHDEBT(@adshmh): set the JSONRPCRequest field.
+				// This likely requires adding a utility function to convert
+				// from `qos.jsonrpc.Request` to `observation.qos.JsonRpcRequest`
+				// to enable setting JSONRPC request fields in any QoS service's observations.
 				EndpointObservations: observations,
 			},
 		},

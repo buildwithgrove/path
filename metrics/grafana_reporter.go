@@ -1,5 +1,5 @@
 // package metrics provides and encapsulates all the functionality related to exporting metrics.
-// As of now, it uses Grafana as the metrics exporting system.
+// As of PR #72, it uses Grafana as the metrics exporting system.
 package metrics
 
 import (

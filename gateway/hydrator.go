@@ -38,13 +38,15 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
+	Logger            polylog.Logger
+
+	// Protocol instance to be used by the hydrator when listing endpoints and sending relays.
 	Protocol
 
 	// ActiveQoSServices provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
 	// IMPORTANT: ActiveQoSServices should not be modified after the hydrator is started.
 	ActiveQoSServices map[protocol.ServiceID]QoSService
-	Logger            polylog.Logger
 
 	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
@@ -73,7 +75,7 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
-		return errors.New("at-least one covered service must be specified")
+		return errors.New("at least one covered service must be specified")
 	}
 
 	go func() {
@@ -154,7 +156,11 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		}
 
 		for _, serviceRequestCtx := range requiredChecks {
-			// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct: marking the request as Synthetic.
+			// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct: marking the request as Synthetic,
+			// using the following steps:
+			// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
+			//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
+			//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
 			gatewayRequestCtx := requestContext{
 				serviceID:   serviceID,
 				serviceQoS:  serviceQoS,

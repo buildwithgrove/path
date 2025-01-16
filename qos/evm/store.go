@@ -15,8 +15,9 @@ import (
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &EndpointStore{}
 
-// TODO_MVP(@adshmh): rename the configuration and use it in the `State` struct.
-// The `EndpointStore` will only maintain data on the endpoints.
+// TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
+// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used 
+// to validate endpoints.
 //
 // EndpointStoreConfig captures the modifiable settings of the EndpointStore.
 // This will enable `EndpointStore` to be used as part of QoS for other EVM-based
@@ -26,7 +27,7 @@ var _ protocol.EndpointSelector = &EndpointStore{}
 type EndpointStoreConfig struct {
 	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
 	// SyncAllowance specifies the maximum number of blocks an endpoint
-	// can be behind, compared to the blockchain's estimated block height,
+	// can be behind, compared to the blockchain's perceived block height,
 	// before being filtered out.
 	SyncAllowance uint64
 
@@ -42,7 +43,7 @@ type EndpointStoreConfig struct {
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
-	// ServiceState is the current estimated state of the EVM blockchain.
+	// ServiceState is the current perceived state of the EVM blockchain.
 	*ServiceState
 	Config EndpointStoreConfig
 	Logger polylog.Logger

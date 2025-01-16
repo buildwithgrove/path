@@ -49,10 +49,12 @@ type responseGeneric struct {
 }
 
 // GetObservation on a generic response returns an observation not utilized for any endpoint validations.
+// As of PR 372, this is a default catchall for any response to any requests other than `getHealth` and `getEpochInfo`.
 // GetObservation implements the response interface used by the requestContext struct.
 func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
-		// TODO_TECHDEBT(@adshmh): set additional JSONRPC response fields on the observation.
+		// TODO_TECHDEBT(@adshmh): set additional JSONRPC response fields, specifically the `error` object, on the observation.
+		// This needs a utility function to convert a `qos.jsonrpc.Response` to an `observation.qos.JsonRpcResponse.
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{

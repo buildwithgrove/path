@@ -22,6 +22,11 @@ var (
 // requestContext is responsible for performing the steps necessary to complete a service request.
 // As of PR #72, it is limited in scope to HTTP service requests.
 type requestContext struct {
+	logger polylog.Logger
+
+	// httpRequestParser is used by the request context to interpret an HTTP request as a pair of:
+	// 	1. service ID
+	// 	2. The service ID's corresponding QoS instance.
 	httpRequestParser HTTPRequestParser
 
 	// metricsReporter is used to export metrics based on observations made in handling service requests.
@@ -31,19 +36,22 @@ type requestContext struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	dataReporter RequestResponseReporter
 
+	// QoS related request context
 	serviceID  protocol.ServiceID
 	serviceQoS QoSService
 	qosCtx     RequestQoSContext
 
+	// Protocol related request context
 	protocol    Protocol
 	protocolCtx ProtocolRequestContext
 
-	logger polylog.Logger
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
 	presetFailureHTTPResponse HTTPResponse
 
+	// httpObservations stores the observations related to the HTTP request.
 	httpObservations    observation.HTTPRequestObservations
+	// gatewayObservations stores gateway related observations.
 	gatewayObservations observation.GatewayObservations
 }
 
@@ -82,7 +90,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	return nil
 }
 
-// BuildProtocolContextFromHTTP builds the Protocol context using the supplied service ID and HTTP request.
+// BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
 // The constructed Protocol instance will be used for:
 //   - Sending relays to endpoint(s)
 //   - Getting the list of protocol-level observations.
@@ -207,20 +215,19 @@ func (rc *requestContext) BroadcastAllObservations() {
 	go func() {
 		if rc.protocolCtx != nil {
 			protocolObservations = rc.protocolCtx.GetObservations()
-			err := rc.protocol.ApplyObservations(&protocolObservations)
-			if err != nil {
-				rc.logger.Warn().Err(err).Msg("error publishing protocol observations.")
+			if err := rc.protocol.ApplyObservations(&protocolObservations); err != nil {
+				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
 			}
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
 		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
+		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		if rc.qosCtx != nil {
 			qosObservations := rc.qosCtx.GetObservations()
-			err := rc.serviceQoS.ApplyObservations(&qosObservations)
-			if err != nil {
-				rc.logger.Warn().Err(err).Msg("error publishing QoS observations.")
+			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
+				rc.logger.Warn().Err(err).Msg("error applying QoS observations.")
 			}
 		}
 
