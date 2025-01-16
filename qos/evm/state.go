@@ -49,8 +49,8 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	return nil
 }
 
-// UpdateFromObservations updates the service state using estimation(s) deriven from the set of updated endpoints, i.e. the set of endpoints for which
-// an observation was received.
+// UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
+// This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()
