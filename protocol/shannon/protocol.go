@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
@@ -22,8 +21,8 @@ var _ gateway.Protocol = &Protocol{}
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
 type FullNode interface {
-	// GetServiceApps returns all the onchain applications staked for the supplied Service ID.
-	GetServiceApps(protocol.ServiceID) ([]apptypes.Application, error)
+	// GetServiceEndpoints returns all the onchain applications staked for the supplied Service ID.
+	GetServiceEndpoints(protocol.ServiceID, *http.Request) (map[protocol.EndpointAddr]endpoint, error)
 
 	// GetSession returns the latest session matching the supplied service+app combination.
 	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
@@ -40,6 +39,9 @@ type FullNode interface {
 
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
+
+	// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
+	SetPermittedAppFilter(permittedAppFilter permittedAppFilter, gatewayMode protocol.GatewayMode)
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -60,7 +62,7 @@ func NewProtocol(
 		ownedAppsAddrIdx[appAddr] = struct{}{}
 	}
 
-	return &Protocol{
+	protocol := &Protocol{
 		FullNode: fullNode,
 		Logger:   logger,
 
@@ -71,7 +73,17 @@ func NewProtocol(
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
 		ownedAppsAddr:        ownedAppsAddrIdx,
-	}, nil
+	}
+
+	// TODO_IMPROVE(@commoddity): move permittedAppFilter initialization to the FullNode initialization.
+	permittedAppFilter, err := protocol.getGatewayModePermittedAppFilter(protocol.gatewayMode)
+	if err != nil {
+		return nil, fmt.Errorf("NewProtocol: error building the permitted apps filter for gateway mode %s: %w", protocol.gatewayMode, err)
+	}
+
+	fullNode.SetPermittedAppFilter(permittedAppFilter, protocol.gatewayMode)
+
+	return protocol, nil
 }
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
@@ -102,12 +114,7 @@ func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-	permittedAppFilter, err := p.getGatewayModePermittedAppFilter(p.gatewayMode, httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", p.gatewayMode, err)
-	}
-
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppFilter)
+	endpoints, err := p.FullNode.GetServiceEndpoints(serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
@@ -131,10 +138,7 @@ func (p *Protocol) BuildRequestContext(
 //  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
 //     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
 //
-// DEV_NOTE: Claude could make the above much easier to implement, use the following as a guide:
-// https://olshansky.substack.com/p/no-rss-feed-no-problem-using-claude
-//
-// ApplyObservations updates the protocol instance's internal state using the supplied observations.
+// ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.
 // e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
 // This method implements the gateway.Protocol interface.
 func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
@@ -149,53 +153,4 @@ func (p *Protocol) Name() string {
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
 	return p.FullNode.IsHealthy()
-}
-
-// TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints
-// matching multiple sessions of apps delegating to the gateway.
-//
-// getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.
-// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
-// matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, appFilter permittedAppFilter) (map[protocol.EndpointAddr]endpoint, error) {
-	apps, err := p.FullNode.GetServiceApps(serviceID)
-	if err != nil {
-		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
-	}
-
-	logger := p.Logger.With("service", serviceID)
-	var filteredApps []apptypes.Application
-	for _, app := range apps {
-		logger = logger.With("app_address", app.Address)
-
-		if errSelectingApp := appFilter(&app); errSelectingApp != nil {
-			logger.Warn().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
-			continue
-		}
-
-		filteredApps = append(filteredApps, app)
-	}
-
-	endpoints := make(map[protocol.EndpointAddr]endpoint)
-	for _, app := range filteredApps {
-		session, err := p.FullNode.GetSession(serviceID, app.Address)
-		if err != nil {
-			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
-		}
-
-		appEndpoints, err := endpointsFromSession(session)
-		if err != nil {
-			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
-		}
-
-		for endpointAddr, endpoint := range appEndpoints {
-			endpoints[endpointAddr] = endpoint
-		}
-	}
-
-	if len(endpoints) == 0 {
-		return nil, fmt.Errorf("getAppsUniqueEndpoints: no endpoints found for service %s", serviceID)
-	}
-
-	return endpoints, nil
 }

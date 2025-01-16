@@ -2,6 +2,7 @@ package shannon
 
 import (
 	"fmt"
+	"net/http"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 
@@ -41,7 +42,7 @@ func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string
 
 // getCentralizedGatewayModeAppFilter returns a permittedAppsFilter for the Centralized gateway mode.
 func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[string]struct{}) permittedAppFilter {
-	return func(app *apptypes.Application) error {
+	return func(app *apptypes.Application, _ *http.Request) error {
 		if _, found := ownedAppsAddr[app.Address]; !found {
 			return fmt.Errorf("Centralized GatewayMode: app with address %s is not owned by the gateway", app.Address)
 		}

@@ -77,13 +77,20 @@ type LazyFullNode struct {
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 
+	permittedAppFilter permittedAppFilter
+
 	logger polylog.Logger
 }
 
-// GetServiceApps returns the set of onchain applications matching the supplied service ID.
+// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
+func (lfn *LazyFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter, _ protocol.GatewayMode) {
+	lfn.permittedAppFilter = permittedAppFilter
+}
+
+// GetServiceEndpoints returns the set of endpoints matching the supplied service ID.
 // It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
-	allApps, err := lfn.getAllApps(context.TODO())
+func (lfn *LazyFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
+	allApps, err := lfn.getAllApps(context.TODO(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -95,14 +102,16 @@ func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptype
 	}
 
 	// convert the map of service ID to application which is returned from the previous method call, into a slice for easier processing.
-	var apps []apptypes.Application
-	apps = append(apps, appsServiceMap[serviceID]...)
+	apps, err := lfn.getAppsUniqueEndpoints(serviceID, appsServiceMap[serviceID])
+	if err != nil {
+		return nil, err
+	}
 
 	return apps, nil
 }
 
 func (lfn *LazyFullNode) GetAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
-	allApps, err := lfn.getAllApps(context.TODO())
+	allApps, err := lfn.getAllApps(context.TODO(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -158,6 +167,38 @@ func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
 }
 
+// TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints
+// matching multiple sessions of apps delegating to the gateway.
+//
+// getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.
+// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
+// matching one of the apps/sessions is returned.
+func (lfn *LazyFullNode) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []apptypes.Application) (map[protocol.EndpointAddr]endpoint, error) {
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
+
+	for _, app := range apps {
+		session, err := lfn.GetSession(serviceID, app.Address)
+		if err != nil {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
+		}
+
+		appEndpoints, err := endpointsFromSession(session)
+		if err != nil {
+			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
+		}
+
+		for endpointAddr, endpoint := range appEndpoints {
+			endpoints[endpointAddr] = endpoint
+		}
+	}
+
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("getAppsUniqueEndpoints: no endpoints found for service %s", serviceID)
+	}
+
+	return endpoints, nil
+}
+
 // buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
 func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[protocol.ServiceID][]apptypes.Application, error) {
 	appData := make(map[protocol.ServiceID][]apptypes.Application)
@@ -185,21 +226,41 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 	}
 
 	if len(appData) == 0 {
-		return nil, fmt.Errorf("buildAppsServiceMap: no apps found.")
+		return nil, fmt.Errorf("buildAppsServiceMap: no apps found")
 	}
 
 	return appData, nil
 }
 
 // getAllApps returns all the onchain apps.
-func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
+func (lfn *LazyFullNode) getAllApps(ctx context.Context, req *http.Request) ([]apptypes.Application, error) {
 	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
 	//
 	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
 	// More specifically, support for the following criteria is required as of now:
 	// 1. Apps matching a specific service ID
 	// 2. Apps delegating to a gateway address.
-	return lfn.appClient.GetAllApplications(ctx)
+	appsData, err := lfn.appClient.GetAllApplications(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getAllApps: error getting all applications: %w", err)
+	}
+
+	if req != nil {
+		var filteredApps []apptypes.Application
+
+		for _, app := range appsData {
+			if errSelectingApp := lfn.permittedAppFilter(&app, req); errSelectingApp != nil {
+				lfn.logger.With("app_address", app.Address).Info().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
+				continue
+			}
+
+			filteredApps = append(filteredApps, app)
+		}
+
+		appsData = filteredApps
+	}
+
+	return appsData, nil
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.

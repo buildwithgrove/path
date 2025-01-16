@@ -19,13 +19,12 @@ const (
 	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
 	// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address in delegated mode.
 	// The target app will be used for sending the relay request.
-	// TODO_TECHDEBT(@commoddity): remove deprecated `x-` prefix from the header name.
-	headerAppAddr = "X-App-Address"
+	headerAppAddr = "app-address"
 )
 
 // getDelegatedGatewayModeAppFilter returns a permittedAppsFilter for the Delegated gateway mode.
-func getDelegatedGatewayModeAppFilter(gatewayAddr string, req *http.Request) permittedAppFilter {
-	return func(app *apptypes.Application) error {
+func getDelegatedGatewayModeAppFilter(gatewayAddr string) permittedAppFilter {
+	return func(app *apptypes.Application, req *http.Request) error {
 		selectedAppAddr, err := getAppAddrFromHTTPReq(req)
 		if err != nil {
 			return fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)

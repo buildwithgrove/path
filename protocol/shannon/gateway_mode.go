@@ -27,19 +27,17 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 //
 // permittedAppFilter represents any function that can be used to filter an onchain app based on its attributes.
 // It is used by different gateway modes to select app(s) that are permitted for use by the gateway for sending relay requests.
-type permittedAppFilter func(*apptypes.Application) error
+type permittedAppFilter func(*apptypes.Application, *http.Request) error
 
 // getGatewayModePermittedAppFilter returns the app filter matching the supplied gateway mode.
 // As of now, the HTTP request that initiates a relay request can also be used to adjust the app filter, e.g. in the Delegated gateway mode.
-func (p *Protocol) getGatewayModePermittedAppFilter(
-	gatewayMode protocol.GatewayMode,
-	req *http.Request,
+func (p *Protocol) getGatewayModePermittedAppFilter(gatewayMode protocol.GatewayMode,
 ) (permittedAppFilter, error) {
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
 		return getCentralizedGatewayModeAppFilter(p.gatewayAddr, p.ownedAppsAddr), nil
 	case protocol.GatewayModeDelegated:
-		return getDelegatedGatewayModeAppFilter(p.gatewayAddr, req), nil
+		return getDelegatedGatewayModeAppFilter(p.gatewayAddr), nil
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:
 	//	return getPermissionlessGatewayModeAppFilter(p.ownedAppsAddr), nil
