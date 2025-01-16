@@ -32,7 +32,13 @@ var (
 // As of PR #72, responses to the following JSONRPC methods are processed into endpoint observations:
 //   - eth_chainId
 //   - eth_blockNumber
-func unmarshalResponse(jsonrpcReq jsonrpc.Request, data []byte, logger polylog.Logger) (response, error) {
+func unmarshalResponse(
+	logger polylog.Logger
+	jsonrpcReq jsonrpc.Request,
+	data []byte,
+) (
+	response, error,
+) {
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
 	if err != nil {
