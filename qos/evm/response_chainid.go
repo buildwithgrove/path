@@ -24,7 +24,7 @@ func responseUnmarshallerChainID(
 	if jsonrpcResp.Error.Code != 0 {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
 		return responseToChainID{
-			logger: logger,
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
@@ -32,7 +32,7 @@ func responseUnmarshallerChainID(
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToChainID{
-			logger: logger,
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
@@ -41,9 +41,9 @@ func responseUnmarshallerChainID(
 	err = json.Unmarshal(resultBz, &result)
 
 	return &responseToChainID{
-		logger: logger,
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
-		result:   result,
+		result:          result,
 	}, err
 }
 

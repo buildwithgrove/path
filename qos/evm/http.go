@@ -32,5 +32,5 @@ func (hr httpResponse) GetHTTPStatusCode() int {
 // As of PR #72, the only header returned for EVM is `Content-Type`.
 func (r httpResponse) GetHTTPHeaders() map[string]string {
 	// EVM only uses the `Content-Type` HTTP header.
-	return httpHeadersApplicationJSON 
+	return httpHeadersApplicationJSON
 }

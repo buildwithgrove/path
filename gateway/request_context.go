@@ -51,7 +51,7 @@ type requestContext struct {
 	presetFailureHTTPResponse HTTPResponse
 
 	// httpObservations stores the observations related to the HTTP request.
-	httpObservations    observation.HTTPRequestObservations
+	httpObservations observation.HTTPRequestObservations
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations observation.GatewayObservations
 }

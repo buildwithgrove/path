@@ -38,7 +38,7 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
-	Logger            polylog.Logger
+	Logger polylog.Logger
 
 	// Protocol instance to be used by the hydrator when listing endpoints and sending relays.
 	Protocol

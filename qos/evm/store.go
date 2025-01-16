@@ -16,7 +16,7 @@ import (
 var _ protocol.EndpointSelector = &EndpointStore{}
 
 // TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
-// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used 
+// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used
 // to validate endpoints.
 //
 // EndpointStoreConfig captures the modifiable settings of the EndpointStore.

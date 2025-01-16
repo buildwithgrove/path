@@ -72,7 +72,7 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	}
 
 	return responseGeneric{
-		logger: logger,
+		logger:          logger,
 		jsonRPCResponse: response,
 	}, nil
 }

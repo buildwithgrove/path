@@ -20,7 +20,7 @@ func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.R
 	if jsonrpcResp.Error.Code != 0 {
 		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
 		return responseToBlockNumber{
-			logger:   logger,
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
@@ -28,7 +28,7 @@ func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.R
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToBlockNumber{
-			logger:   logger,
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
@@ -37,9 +37,9 @@ func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.R
 	err = json.Unmarshal(resultBz, &result)
 
 	return responseToBlockNumber{
-		logger:   logger,
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
-		result:   result,
+		result:          result,
 	}, err
 }
 
