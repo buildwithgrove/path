@@ -45,7 +45,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromUserError(err), false
 	}
 
-	// TODO_TECHDEBT: validate the resulting JSONRPC request to block invalid requests from being sent to endpoints.
+	// TODO_TECHDEBT(@adshmh): validate the unmarshaled JSONRPC request to block invalid requests from being sent to endpoints.
 	// TODO_IMPROVE: method-specific validation of the JSONRPC request.
 	return &requestContext{
 		JSONRPCReq:    jsonrpcReq,
