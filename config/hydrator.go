@@ -26,7 +26,7 @@ type EndpointHydratorConfig struct {
 	// ServiceIDs is the list of IDs of services to be handled by the Endpoint Hydrator.
 	ServiceIDs []protocol.ServiceID `yaml:"service_ids"`
 	// RunInterval is the interval at which the Endpoint Hydrator will run.
-	RunInterval time.Duration `yaml:"run_interval"`
+	RunInterval time.Duration `yaml:"run_interval_ms"`
 	// MaxEndpointCheckWorkers is the maximum number of
 	// workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int `yaml:"max_endpoint_check_workers"`
