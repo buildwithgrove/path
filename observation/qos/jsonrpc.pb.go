@@ -22,13 +22,13 @@ const (
 
 // JsonRpcRequest contains all the fields of a JSONRPC request that are captured as an observation.
 // https://www.jsonrpc.org/specification#request_object
-//
-// JsonRpcRequest is NOT intended to capture the full JSONRPC spec.
 type JsonRpcRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// id is the ID of the JSONRPC request.
+	// An identifier established by the Client  MUST contain a String, Number, or NULL value if included.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// method is the method specified by the JSONRPC request.
+	// method is the method specified by the JSON-RPC request.
+	// E.g. eth_chainId in the context of EVM based chains
 	Method        string `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -80,13 +80,13 @@ func (x *JsonRpcRequest) GetMethod() string {
 
 // JsonRpcResponse contains the fields of a JSONRPC response that need to be captured as an observation:
 // https://www.jsonrpc.org/specification#response_object
-//
-// JsonRpcResponse is NOT intended to capture the full JSONRPC spec.
 type JsonRpcResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// id is the ID field of the JSONRPC response.
+	// id is the ID of the JSONRPC request.
+	// The Server MUST reply with the same value in the Response object if included
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// result stores the `result` field of tje JSONRPC response.
+	// result stores the `result` field of the JSONRPC response.
+	// This SHOULD be a JSON deserializable object.
 	Result string `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
 	// err stores the JSONRPC response's error field, if set.
 	Err           *JsonRpcResponseError `protobuf:"bytes,3,opt,name=err,proto3,oneof" json:"err,omitempty"`

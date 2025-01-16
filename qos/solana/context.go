@@ -149,7 +149,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Solana{
-			Solana: &qosobservations.SolanaObservations{
+			Solana: &qosobservations.SolanaRequestObservations{
 				// TODO_TECHDEBT(@adshmh): set the JSONRPCRequest field.
 				EndpointObservations: observations,
 			},
