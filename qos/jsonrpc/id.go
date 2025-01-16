@@ -13,7 +13,7 @@ type ID struct {
 	strID string
 }
 
-// String returns the string form of ID.
+// String returns ID as a string.
 // strID field, if set, takes precedence as the returned value.
 func (id ID) String() string {
 	if id.strID != "" {

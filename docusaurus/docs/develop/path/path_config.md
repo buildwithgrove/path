@@ -307,7 +307,7 @@ If a service ID is not present in [`config/service_qos.go`](https://github.com/b
 
 ### `auth_server_config` (optional)
 
-Used only by the External Auth Server.
+**Required in order to authorize requests with Envoy Proxy.** Configures the External Authorization Server.
 
 :::info
 
