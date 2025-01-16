@@ -7,7 +7,7 @@ import "path/qos/jsonrpc.proto";
 
 // SolanaObservations stores all the observations made by the Solana QoS on a single request.
 // A single request can result in multiple observations if any (at least one) of the following is true:
-// 	- The originally selected endpoint returns an invalid response, AND
+// 	- The originally selected endpoint returns an invalid response
 //	- A retry mechanism sends the request to additional endpoint(s).
 message SolanaObservations {
   JsonRpcRequest jsonrpc_request = 1;
