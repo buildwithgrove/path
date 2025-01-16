@@ -55,7 +55,7 @@ func main() {
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(config.HydratorConfig, protocol, qosInstances, logger)
+	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}

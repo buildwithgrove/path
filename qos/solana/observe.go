@@ -14,7 +14,7 @@ import (
 // UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
 func (es *EndpointStore) UpdateEndpointsFromObservations(
-	solanaObservations *qosobservations.SolanaObservations,
+	solanaObservations *qosobservations.SolanaRequestObservations,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()

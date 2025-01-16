@@ -45,22 +45,27 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromUserError(err), false
 	}
 
-	// TODO_TECHDEBT: validate the resulting JSONRPC request to block invalid requests from being sent to endpoints.
-	// TODO_IMPROVE: method-specific validation of the JSONRPC request.
+	// TODO_TECHDEBT(@adshmh): validate the JSONRPC request to block invalid requests from being sent to endpoints.
+	// TODO_IMPROVE(@adshmh): perform method-specific validation of the JSONRPC request.
+	// e.g. for a `getTokenAccountBalance` request, ensure there is a single account public key is specified as the `params` object.
+	// https://solana.com/docs/rpc/http/gettokenaccountbalance
 	return &requestContext{
 		JSONRPCReq:    jsonrpcReq,
 		EndpointStore: qos.EndpointStore,
 		Logger:        qos.Logger,
 
+		// set isValid to true to signal to the requestContext that the request is considered valid.
+		// The requestContext can be enhanced (see the above TODOs) to e.g. skip sending an invalid request to any endpoints,
+		// and directly return an error response to the user instead.
 		isValid: true,
 	}, true
 }
 
-// ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
+// ApplyObservations updates the stored endpoints and the perceived blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
 func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
-		return errors.New("ApplyObservations: received nil")
+		return errors.New("ApplyObservations: received nil observations")
 	}
 
 	solanaObservations := observations.GetSolana()
@@ -70,6 +75,6 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 
 	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(solanaObservations)
 
-	// update the (estimated) current state of the blockchain.
+	// update the perceived current state of the blockchain.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }

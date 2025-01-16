@@ -29,7 +29,7 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.BuildEVMQoSInstance(logger, config.GetEVMChainID(serviceID))
+			evmQoS := evm.NewQoSInstance(logger, config.GetEVMChainID(serviceID))
 			qosServices[serviceID] = evmQoS
 
 		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.

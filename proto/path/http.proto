@@ -9,6 +9,6 @@ import "google/protobuf/timestamp.proto";
 message HTTPRequestObservations {
   // host stores the Host part of the HTTP request's URL.
   string host = 1;
-  // request_time stores the time the HTTP request was received.
-  google.protobuf.Timestamp request_time = 2;
+  // recevied_time the time the HTTP request was received.
+  google.protobuf.Timestamp received_time = 2;
 }

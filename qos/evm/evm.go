@@ -56,7 +56,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	}, true
 }
 
-// ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
+// ApplyObservations updates the stored endpoints and the perceived blockchain state using the supplied observations.
 // This method implements the gateway.QoSService interface.
 func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
@@ -70,6 +70,6 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 
 	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(evmObservations)
 
-	// update the (estimated) current state of the blockchain.
+	// update the perceived state of the blockchain.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }

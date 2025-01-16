@@ -149,7 +149,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Solana{
-			Solana: &qosobservations.SolanaObservations{
+			Solana: &qosobservations.SolanaRequestObservations{
 				// TODO_TECHDEBT(@adshmh): set the JSONRPCRequest field.
 				EndpointObservations: observations,
 			},
@@ -165,7 +165,7 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// Select chooses an endpoint from the list of supplied endpoints, using the estimated (using endpoints' responses) state of the Solana chain.
+// Select chooses an endpoint from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {

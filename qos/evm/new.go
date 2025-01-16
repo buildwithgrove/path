@@ -4,8 +4,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// BuildEVMQoSInstance builds and returns an instance of the EVM QoS service.
-func BuildEVMQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
+// NewQoSInstance builds and returns an instance of the EVM QoS service.
+func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 	serviceState := &ServiceState{
 		ChainID: evmChainID,
 		Logger:  logger,

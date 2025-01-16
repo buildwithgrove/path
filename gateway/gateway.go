@@ -104,5 +104,6 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
+	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
