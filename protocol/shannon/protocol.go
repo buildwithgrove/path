@@ -150,6 +150,9 @@ func (p *Protocol) getAppsUniqueEndpoints(
 
 	var endpoints = make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range permittedApps {
+		logger = logger.With("permitted_app_address", app.Address)
+		logger.Debug().Msg("getAppsUniqueEndpoints: processing app.")
+
 		session, err := p.FullNode.GetSession(serviceID, app.Address)
 		if err != nil {
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
@@ -164,10 +167,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 			endpoints[endpointAddr] = endpoint
 		}
 
-		logger.With(
-			"permitted_app_address", app.Address,
-			"num_endpoints", len(appEndpoints),
-		).Info().Msg("Successfully fetched session for application.")
+		logger.With("num_endpoints", len(appEndpoints)).Info().Msg("Successfully fetched session for application.")
 	}
 
 	if len(endpoints) == 0 {

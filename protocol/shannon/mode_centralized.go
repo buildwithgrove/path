@@ -54,6 +54,13 @@ func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Applicati
 
 // getCentralizedGatewayModeApps returns the set of permitted apps under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID protocol.ServiceID) ([]*apptypes.Application, error) {
+	logger := p.Logger.With(
+		"service_id", string(serviceID),
+		"gateway_addr", p.gatewayAddr,
+		"gateway_mode", protocol.GatewayModeCentralized,
+		"num_owned_apps", len(p.ownedAppsAddr),
+	)
+
 	var permittedApps []*apptypes.Application
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
@@ -65,8 +72,7 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 		// Skip the app if it is not staked for the requested service.
 		if !appIsStakedForService(serviceID, onchainApp) {
-			// Logging is intentionally skipped here: this case is expected to occur frequently since
-			// some of the owned apps might not be staked for the requested service.
+			logger.With("app_addr", ownedAppAddr).Debug().Msg("owned app is not staked for the service. Skipping.")
 			continue
 		}
 
@@ -79,12 +85,7 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 	}
 
 	if len(permittedApps) == 0 {
-		p.Logger.With(
-			"service_id", string(serviceID),
-			"gateway_addr", p.gatewayAddr,
-			"num_owned_apps", len(p.ownedAppsAddr),
-		).Info().Msg("Centralized GatewayMode: no owned apps matched the request.")
-
+		logger.Info().Msg("No owned apps matched the request.")
 		return nil, fmt.Errorf("Centralized GatewayMode: no owned apps matched the request.")
 	}
 
