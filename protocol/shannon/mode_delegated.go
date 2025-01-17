@@ -27,15 +27,15 @@ func getDelegatedGatewayModeAppFilter(gatewayAddr string) permittedAppFilter {
 	return func(app *apptypes.Application, req *http.Request) error {
 		selectedAppAddr, err := getAppAddrFromHTTPReq(req)
 		if err != nil {
-			return fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
+			return fmt.Errorf("delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
 		}
 
 		if app.Address != selectedAppAddr {
-			return fmt.Errorf("Delegated GatewayMode: app with address %s does not match the selected app address: %s", app.Address, selectedAppAddr)
+			return fmt.Errorf("delegated GatewayMode: app with address %s does not match the selected app address: %s", app.Address, selectedAppAddr)
 		}
 
 		if !gatewayHasDelegationForApp(gatewayAddr, app) {
-			return fmt.Errorf("Delegated GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
+			return fmt.Errorf("delegated GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
 		}
 
 		return nil
@@ -45,7 +45,7 @@ func getDelegatedGatewayModeAppFilter(gatewayAddr string) permittedAppFilter {
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.
 func getAppAddrFromHTTPReq(httpReq *http.Request) (string, error) {
 	if httpReq == nil || len(httpReq.Header) == 0 {
-		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied.")
+		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied")
 	}
 
 	selectedAppAddr := httpReq.Header.Get(headerAppAddr)

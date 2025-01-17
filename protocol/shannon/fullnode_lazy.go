@@ -82,15 +82,15 @@ type LazyFullNode struct {
 	logger polylog.Logger
 }
 
-// SetGatewayMode sets the permitted app filter for the protocol instance.
-func (lfn *LazyFullNode) SetGatewayMode(_ protocol.GatewayMode, permittedAppFilter permittedAppFilter) {
+// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
+func (lfn *LazyFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter) {
 	lfn.permittedAppFilter = permittedAppFilter
 }
 
 // GetServiceEndpoints returns the set of endpoints matching the supplied service ID.
 // It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
-	allApps, err := lfn.getAllApps(context.TODO(), req)
+	allApps, err := lfn.getAllAppsForRequest(context.TODO(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -108,15 +108,6 @@ func (lfn *LazyFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, req *
 	}
 
 	return apps, nil
-}
-
-func (lfn *LazyFullNode) GetAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
-	// A nil request is passed to getAllApps to fetch all apps, which prevents them from being filtered by the permittedAppFilter.
-	allApps, err := lfn.getAllApps(context.TODO(), nil)
-	if err != nil {
-		return nil, err
-	}
-	return lfn.buildAppsServiceMap(allApps, nil)
 }
 
 // GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
@@ -203,6 +194,7 @@ func (lfn *LazyFullNode) getAppsUniqueEndpoints(serviceID protocol.ServiceID, ap
 // buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
 func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[protocol.ServiceID][]apptypes.Application, error) {
 	appData := make(map[protocol.ServiceID][]apptypes.Application)
+
 	for _, onchainApp := range onchainApps {
 		logger := lfn.logger.With("address", onchainApp.Address)
 
@@ -233,10 +225,9 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 	return appData, nil
 }
 
-// getAllApps returns all the onchain apps.
-func (lfn *LazyFullNode) getAllApps(ctx context.Context, req *http.Request) ([]apptypes.Application, error) {
-	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
-	//
+// getAllAppsForRequest returns all the onchain apps; it is used by the lazy full node to fetch apps for a request.
+// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
+func (lfn *LazyFullNode) getAllAppsForRequest(ctx context.Context, req *http.Request) ([]apptypes.Application, error) {
 	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
 	// More specifically, support for the following criteria is required as of now:
 	// 1. Apps matching a specific service ID
@@ -246,22 +237,28 @@ func (lfn *LazyFullNode) getAllApps(ctx context.Context, req *http.Request) ([]a
 		return nil, fmt.Errorf("getAllApps: error getting all applications: %w", err)
 	}
 
-	if req != nil {
-		var filteredApps []apptypes.Application
+	// The request is passed to filterPermittedApps to filter apps based on the gateway mode.
+	// - In `centralized` mode the apps are filtering based on the gateway's owned apps.
+	// - In `delegated` mode the apps are filtering based on the app address specified in the HTTP request's headers.
+	return lfn.filterPermittedApps(appsData, req), nil
+}
 
-		for _, app := range appsData {
-			if errSelectingApp := lfn.permittedAppFilter(&app, req); errSelectingApp != nil {
-				lfn.logger.With("app_address", app.Address).Info().Err(errSelectingApp).Msg("App filter rejected the app: skipping the app.")
-				continue
-			}
+// filterPermittedApps filters the apps based on the permittedAppFilter, which is determined by the gateway mode.
+// TODO_MVP(@adshmh): once poktroll support querying the onchain apps, this function should be removed.
+func (lfn *LazyFullNode) filterPermittedApps(apps []apptypes.Application, req *http.Request) []apptypes.Application {
+	var filteredApps []apptypes.Application
 
-			filteredApps = append(filteredApps, app)
+	for _, app := range apps {
+		if errSelectingApp := lfn.permittedAppFilter(&app, req); errSelectingApp != nil {
+			lfn.logger.Info().Err(errSelectingApp).Str("app_address", app.Address).
+				Msg("fetchApps: app filter rejected the app: skipping the app")
+			continue
 		}
 
-		appsData = filteredApps
+		filteredApps = append(filteredApps, app)
 	}
 
-	return appsData, nil
+	return filteredApps
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.

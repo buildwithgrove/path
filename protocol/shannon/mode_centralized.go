@@ -44,11 +44,11 @@ func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string
 func getCentralizedGatewayModeAppFilter(gatewayAddr string, ownedAppsAddr map[string]struct{}) permittedAppFilter {
 	return func(app *apptypes.Application, _ *http.Request) error {
 		if _, found := ownedAppsAddr[app.Address]; !found {
-			return fmt.Errorf("Centralized GatewayMode: app with address %s is not owned by the gateway", app.Address)
+			return fmt.Errorf("centralized GatewayMode: app with address %s is not owned by the gateway", app.Address)
 		}
 
 		if !gatewayHasDelegationForApp(gatewayAddr, app) {
-			return fmt.Errorf("Centralized GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
+			return fmt.Errorf("centralized GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
 		}
 
 		return nil

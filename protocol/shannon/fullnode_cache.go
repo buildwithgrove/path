@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -44,8 +45,6 @@ type CachingFullNode struct {
 	*LazyFullNode
 	Logger polylog.Logger
 
-	gatewayMode protocol.GatewayMode
-
 	appsCache   map[protocol.ServiceID][]apptypes.Application
 	appsCacheMu sync.RWMutex
 
@@ -79,11 +78,11 @@ func newSessionCacheKey(serviceID protocol.ServiceID, appAddr string) sessionCac
 // start launches a goroutine, only once per instance of CachingFullNode in order to update the cached items at a fixed interval.
 func (cfn *CachingFullNode) start() error {
 	if cfn.LazyFullNode == nil {
-		return errors.New("CachingFullNode needs a LazyFullNode to operate.")
+		return errors.New("start: CachingFullNode needs a LazyFullNode to operate")
 	}
 
 	if cfn.Logger == nil {
-		return errors.New("CachingFullNode needs a Logger to operate.")
+		return errors.New("start: CachingFullNode needs a Logger to operate")
 	}
 
 	cfn.once.Do(func() {
@@ -93,11 +92,9 @@ func (cfn *CachingFullNode) start() error {
 			for {
 				cfn.Logger.Info().Msg("Starting the cache update process.")
 
-				cfn.fetchApps()
+				cfn.fetchAndFilterApps()
 				cfn.updateSessionCache()
-				if cfn.gatewayMode == protocol.GatewayModeCentralized {
-					cfn.updateEndpointCache()
-				}
+				cfn.updateEndpointCache()
 
 				<-ticker.C
 			}
@@ -107,10 +104,9 @@ func (cfn *CachingFullNode) start() error {
 	return nil
 }
 
-// SetGatewayMode sets the gateway mode and the permitted app filter for the protocol instance.
-func (cfn *CachingFullNode) SetGatewayMode(gatewayMode protocol.GatewayMode, permittedAppFilter permittedAppFilter) {
-	cfn.gatewayMode = gatewayMode
-	cfn.LazyFullNode.SetGatewayMode(gatewayMode, permittedAppFilter)
+// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
+func (cfn *CachingFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter) {
+	cfn.LazyFullNode.SetPermittedAppFilter(permittedAppFilter)
 }
 
 // GetServiceEndpoints returns (from the cache) the set of endpoints which delegate to the gateway, matching the supplied service ID.
@@ -119,12 +115,12 @@ func (cfn *CachingFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, re
 	cfn.endpointCacheMu.RLock()
 	defer cfn.endpointCacheMu.RUnlock()
 
-	endpoints, err := cfn.getPermittedApps(serviceID, req)
-	if err != nil {
-		return nil, err
+	cachedEndpoints, found := cfn.endpointCache[serviceID]
+	if !found {
+		return nil, fmt.Errorf("getServiceEndpoints: no endpoints found for service %s", serviceID)
 	}
 
-	return endpoints, nil
+	return cachedEndpoints, nil
 }
 
 // GetSession returns the cached session matching (serviceID, appAddr) combination.
@@ -162,82 +158,28 @@ func (cfn *CachingFullNode) IsHealthy() bool {
 /* ------------------------------- 1. Fetch and Cache Onchain Apps Data ------------------------------- */
 
 // fetchApps fetches the all apps for all services and filters them using the gateway mode's permittedAppFilter.
-func (cfn *CachingFullNode) fetchApps() {
-	appData, err := cfn.LazyFullNode.GetAllServicesApps()
+func (cfn *CachingFullNode) fetchAndFilterApps() {
+	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
+	// More specifically, once we can filter by apps delegating to a gateway address.
+	appsData, err := cfn.appClient.GetAllApplications(context.TODO())
 	if err != nil {
 		cfn.Logger.Warn().Err(err).Msg("updateAppCache: error getting the list of apps; skipping update.")
 		return
 	}
 
-	// In centralized mode, we know the delegated apps for the gateway operator,
-	// so we can filter out all apps that are not delegated to the gateway at
-	// and cache only those apps.
-	if cfn.gatewayMode == protocol.GatewayModeCentralized {
-		filteredAppsData := make(map[protocol.ServiceID][]apptypes.Application)
+	// A nil request is passed to filterPermittedApps as the caching full node does not
+	// need to filter based on the app address specified in the HTTP request's headers.
+	filteredAppsData := cfn.filterPermittedApps(appsData, nil)
 
-		for serviceID, apps := range appData {
-			filteredAppsData[serviceID] = cfn.filterPermittedApps(apps, nil)
-		}
-
-		appData = filteredAppsData
+	appsDataByService, err := cfn.buildAppsServiceMap(filteredAppsData, nil)
+	if err != nil {
+		cfn.Logger.Warn().Err(err).Msg("updateAppCache: error building apps service map; skipping update.")
+		return
 	}
 
 	cfn.appsCacheMu.Lock()
 	defer cfn.appsCacheMu.Unlock()
-	cfn.appsCache = appData
-}
-
-func (cfn *CachingFullNode) filterPermittedApps(apps []apptypes.Application, req *http.Request) []apptypes.Application {
-	var filteredApps []apptypes.Application
-
-	// The permittedAppFilter is used to filter only apps that are allowed by the gateway mode.
-	// - In Centralized mode, the permittedAppFilter is used at cache time to cache only apps that are delegated to the gateway.
-	// - In Delegated mode, the permittedAppFilter is used at request time to filter the apps that are delegated to the gateway.
-	for _, app := range apps {
-		if errSelectingApp := cfn.LazyFullNode.permittedAppFilter(&app, req); errSelectingApp != nil {
-			cfn.logger.Info().Err(errSelectingApp).Str("app_address", app.Address).
-				Msg("fetchApps: app filter rejected the app: skipping the app")
-			continue
-		}
-
-		filteredApps = append(filteredApps, app)
-	}
-
-	return filteredApps
-}
-
-// getPermittedApps returns the set of endpoints which delegate to the gateway for a given service ID.
-func (cfn *CachingFullNode) getPermittedApps(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
-	endpoints := make(map[protocol.EndpointAddr]endpoint)
-
-	switch cfn.gatewayMode {
-	// In `centralized` mode, the endpoints for the apps delegated to the gateway are cached so we can return them directly.
-	case protocol.GatewayModeCentralized:
-		cachedEndpoints, found := cfn.endpointCache[serviceID]
-		if !found {
-			return nil, fmt.Errorf("getServiceEndpoints: no endpoints found for service %s", serviceID)
-		}
-
-		endpoints = cachedEndpoints
-
-	// In `delegated` mode, the endpoints can not be cached because the app address is only known at request time.
-	// Therefore, we need to get the apps from the full node and then filter them using the permittedAppFilter.
-	case protocol.GatewayModeDelegated:
-		cfn.appsCacheMu.RLock()
-		apps := cfn.appsCache[serviceID]
-		cfn.appsCacheMu.RUnlock()
-
-		permittedApps := cfn.filterPermittedApps(apps, req)
-
-		filteredEndpoints, err := cfn.getAppsUniqueEndpoints(serviceID, permittedApps)
-		if err != nil {
-			return nil, fmt.Errorf("getServiceEndpoints: error getting the unique endpoints for service %s: %w", serviceID, err)
-		}
-
-		endpoints = filteredEndpoints
-	}
-
-	return endpoints, nil
+	cfn.appsCache = appsDataByService
 }
 
 /* ------------------------------- 2. Fetch and Cache Sessions ------------------------------- */
@@ -273,20 +215,20 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for job := range jobs {
+			for sessionCacheKey := range jobs {
 				logger := cfn.Logger.With(
-					"service", string(job.serviceID),
-					"address", job.appAddr,
+					"service", string(sessionCacheKey.serviceID),
+					"address", sessionCacheKey.appAddr,
 				)
 
-				session, err := cfn.LazyFullNode.GetSession(job.serviceID, job.appAddr)
+				session, err := cfn.LazyFullNode.GetSession(sessionCacheKey.serviceID, sessionCacheKey.appAddr)
 				if err != nil {
 					logger.Warn().Err(err).Msg("could not get a session")
 					continue
 				}
 
 				sessionsMu.Lock()
-				sessions[newSessionCacheKey(job.serviceID, job.appAddr)] = session
+				sessions[sessionCacheKey] = session
 				sessionsMu.Unlock()
 
 				logger.Info().Msg("fetchSessions: successfully fetched the session for service and app combination.")
@@ -297,10 +239,7 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 	// Send jobs to the workers
 	for serviceID, serviceApps := range appsData {
 		for _, app := range serviceApps {
-			jobs <- sessionCacheKey{
-				serviceID: serviceID,
-				appAddr:   app.Address,
-			}
+			jobs <- newSessionCacheKey(serviceID, app.Address)
 		}
 	}
 	close(jobs)
