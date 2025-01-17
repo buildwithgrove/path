@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol/shannon"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
@@ -39,7 +40,7 @@ func getShannonProtocol(config *shannonconfig.ShannonGatewayConfig, logger polyl
 		return nil, fmt.Errorf("failed to create a Shannon full node instance: %v", err)
 	}
 
-	protocol, err := shannon.NewProtocol(fullNode, logger, config.GatewayConfig)
+	protocol, err := shannon.NewProtocol(logger, fullNode, config.GatewayConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a Shannon protocol instance: %v", err)
 	}

@@ -98,7 +98,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, httpReq)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
+		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
@@ -204,11 +204,13 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 	logger.Info().Msg("Completed processing the HTTP request and returned an HTTP response.")
 }
 
-// BroadcastAllObservations delivers the collected details regarding all aspects of the service request to all the interested parties.
+// BroadcastAllObservations delivers the collected details regarding all aspects
+// of the service request to all the interested parties.
+//
 // For example:
-//   - QoS-level observations, e.g. endpoint validation results
-//   - Protocol-level observations, e.g. "maxed-out" endpoints.
-//   - Gateway-level observations, e.g. the request ID.
+//   - QoS-level observations; e.g. endpoint validation results
+//   - Protocol-level observations; e.g. "maxed-out" endpoints.
+//   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
 	var (
 		protocolObservations protocolobservations.Observations

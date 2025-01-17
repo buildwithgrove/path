@@ -43,10 +43,12 @@ type EndpointStoreConfig struct {
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
+	Logger polylog.Logger
+
 	// ServiceState is the current perceived state of the EVM blockchain.
 	*ServiceState
+
 	Config EndpointStoreConfig
-	Logger polylog.Logger
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
@@ -86,35 +88,36 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
+	logger := es.Logger.With("method", "filterEndpoints").With("qos_instance", "evm")
+
 	if len(availableEndpoints) == 0 {
-		return nil, errors.New("select: received empty list of endpoints to select from")
+		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger := es.Logger.With(
-		"number_of_available_endpoints", fmt.Sprintf("%d", len(availableEndpoints)),
-		"method", "filterEndpoints",
-	)
-	logger.Info().Msg("select: processing available endpoints")
+	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
 
+	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
+	// For example: latency rather than making a single selection.
 	var filteredEndpointsAddr []protocol.EndpointAddr
-	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for _, availableEndpoint := range availableEndpoints {
-		logger := logger.With("endpoint", availableEndpoint.Addr())
+		endpointAddr := availableEndpoint.Addr()
+
+		logger := logger.With("endpoint", endpointAddr)
 		logger.Info().Msg("processing endpoint")
 
-		endpoint, found := es.endpoints[availableEndpoint.Addr()]
+		endpoint, found := es.endpoints[endpointAddr]
 		if !found {
-			logger.Info().Msg("skipping endpoint with no entry in the store.")
+			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", endpointAddr))
 			continue
 		}
 
 		if err := es.ServiceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Info().Err(err).Msg("select: invalid endpoint is filtered")
+			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
-		logger.Info().Msg("adding endpoint to the list of valid endpoints.")
+		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", endpointAddr))
 	}
 
 	return filteredEndpointsAddr, nil

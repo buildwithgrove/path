@@ -32,8 +32,8 @@ type (
 	// health.Checker struct is used to store all PATH components whose
 	// health needs to be checked to consider PATH ready to serve traffic.
 	Checker struct {
-		Components []Check
 		Logger     polylog.Logger
+		Components []Check
 	}
 
 	// health.Check is an interface that must be implemented

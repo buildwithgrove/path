@@ -9,7 +9,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// SerciceState keeps the expected current state of the solana blockchain based on the endpoints' responses to
+// ServiceState keeps the expected current state of the solana blockchain based on the endpoints' responses to
 // different requests.
 type ServiceState struct {
 	Logger polylog.Logger

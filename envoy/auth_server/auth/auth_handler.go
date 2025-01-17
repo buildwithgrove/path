@@ -42,6 +42,8 @@ type EndpointStore interface {
 // The AuthHandler struct contains the methods for processing requests from Envoy,
 // primarily the Check method that is called by Envoy for each request.
 type AuthHandler struct {
+	Logger polylog.Logger
+
 	// The EndpointStore contains an in-memory store of GatewayEndpoints
 	// and their associated data from the PADS (PATH Auth Data Server).
 	EndpointStore EndpointStore
@@ -52,8 +54,6 @@ type AuthHandler struct {
 
 	// The endpoint ID extractor to be used for the request
 	EndpointIDExtractor EndpointIDExtractor
-
-	Logger polylog.Logger
 }
 
 // Check satisfies the implementation of the Envoy External Authorization gRPC service.

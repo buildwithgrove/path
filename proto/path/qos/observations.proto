@@ -6,17 +6,17 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/evm.proto";
 import "path/qos/solana.proto";
 
-// Observations defines the top-level QoS observations regarding a service request.
-// As of PR #72, an entry should be added under `service_observations` for any new Service QoS implementation:
+// Observations contains QoS measurements for a single service request.
+// Currently supports:
+// * Solana blockchain service
+// * EVM blockchains service
 message Observations {
-  // service_observations holds the observations of the QoS instance matching the service request.
-  // As of PR #72, the two QoS implementations with observations are:
-  //   1. Solana blockchain service QoS
-  //   2. EVM blockchains service QoS
+  // service_observations contains QoS measurements specific to the service type
   oneof service_observations {
-    // solana holds all the observations, made when serving a SINGLE request, specific to the Solana blockchain service QoS.
+    // solana contains QoS measurements for a single Solana blockchain request
     SolanaRequestObservations solana = 1;
-    // evm holds all the observations, made when serving a SINGLE request, specific to EVM blockchain service QoS.
-    EVMRequestObservations EVM = 2;
+
+    // evm contains QoS measurements for a single EVM blockchain request
+    EVMRequestObservations evm = 2;
   }
 }

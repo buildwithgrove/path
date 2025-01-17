@@ -72,12 +72,12 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 //   - This allows supporting short block times (e.g. LocalNet)
 //   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
+	logger polylog.Logger
+
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
-
-	logger polylog.Logger
 }
 
 // GetServiceApps returns the set of onchain applications matching the supplied service ID.

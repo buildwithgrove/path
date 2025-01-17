@@ -406,17 +406,18 @@ func Test_Check(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockStore := NewMockendpointStore(ctrl)
+			mockStore := NewMockEndpointStore(ctrl)
 			if test.endpointID != "" {
 				mockStore.EXPECT().GetGatewayEndpoint(test.endpointID).Return(test.mockEndpointReturn, test.mockEndpointReturn.EndpointId != "")
 			}
 
 			authHandler := &AuthHandler{
+				Logger: polyzero.NewLogger(),
+
 				EndpointStore:       mockStore,
 				APIKeyAuthorizer:    &APIKeyAuthorizer{},
 				JWTAuthorizer:       &JWTAuthorizer{},
 				EndpointIDExtractor: test.endpointIDExtractor,
-				Logger:              polyzero.NewLogger(),
 			}
 
 			resp, err := authHandler.Check(context.Background(), test.checkReq)

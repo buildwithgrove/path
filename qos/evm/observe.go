@@ -3,6 +3,8 @@
 package evm
 
 import (
+	"fmt"
+
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -18,25 +20,25 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 	if es.endpoints == nil {
 		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
 	}
+
 	endpointObservations := evmObservations.GetEndpointObservations()
+
+	logger := es.Logger.With(
+		"qos_instance", "evm",
+		"method", "UpdateEndpointsFromObservations",
+	)
+	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
 
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
-		logger := es.Logger.With(
-			"qos_instance", "evm",
-			"method", "UpdateEndpointsFromObservations",
-		)
 		if observation == nil {
-			logger.Info().Msg("received nil observation. Skipping.")
+			logger.Info().Msg("EVM EndpointStore received a nil observation. Skipping...")
 			continue
 		}
 
 		endpointAddr := protocol.EndpointAddr(observation.EndpointAddr)
 
-		logger = logger.With(
-			"observations_count", len(endpointObservations),
-			"endpoint", endpointAddr,
-		)
+		logger := logger.With("endpoint", endpointAddr)
 		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.

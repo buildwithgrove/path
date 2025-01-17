@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	// TODO_UPNEXT(@adshmh): add more examples of methods here.
+	// TODO_MVP(@adshmh): add more examples of methods here.
 	methodChainID     = jsonrpc.Method("eth_chainId")
 	methodBlockNumber = jsonrpc.Method("eth_blockNumber")
 )

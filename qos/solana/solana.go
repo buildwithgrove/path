@@ -25,15 +25,16 @@ var _ gateway.QoSService = &QoS{}
 // It contains logic specific to Solana, including request parsing,
 // response building, and endpoint validation/selection.
 type QoS struct {
+	Logger polylog.Logger
+
 	*EndpointStore
 	ServiceState ServiceState
-	Logger       polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
 // It returns an error if the HTTP request cannot be parsed as a JSONRPC request.
 //
-// This method implements the gateway.QoSService interface.
+// Implements the gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -50,9 +51,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// e.g. for a `getTokenAccountBalance` request, ensure there is a single account public key is specified as the `params` object.
 	// https://solana.com/docs/rpc/http/gettokenaccountbalance
 	return &requestContext{
+		Logger: qos.Logger,
+
 		JSONRPCReq:    jsonrpcReq,
 		EndpointStore: qos.EndpointStore,
-		Logger:        qos.Logger,
 
 		// set isValid to true to signal to the requestContext that the request is considered valid.
 		// The requestContext can be enhanced (see the above TODOs) to e.g. skip sending an invalid request to any endpoints,
@@ -62,7 +64,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 }
 
 // ApplyObservations updates the stored endpoints and the perceived blockchain state using the supplied observations.
-// This method implements the gateway.QoSService interface.
+// Implements the gateway.QoSService interface.
 func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
 		return errors.New("ApplyObservations: received nil observations")

@@ -58,13 +58,15 @@ type ProtocolRequestContext interface {
 	AvailableEndpoints() ([]protocol.Endpoint, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
-	// For example:
+	//
+	// Hypothetical illustrative example.
+	//
 	// If the context is:
 	// 	- Protocol: Morse
 	//	- SelectedEndpoint: `endpoint_101`
 	//	- Event: HandleServiceRequest returned a "maxed-out endpoint" error
 	//
 	// Then the observation can be:
-	//      - `maxed-out endpoint` on `endpoint_101`.
+	//  - `maxed-out endpoint` on `endpoint_101`.
 	GetObservations() protocolobservations.Observations
 }

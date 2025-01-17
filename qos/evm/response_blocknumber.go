@@ -15,12 +15,18 @@ var _ response = responseToBlockNumber{}
 // responseUnmarshallerBlockNumber deserializes the provided payload
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
+func responseUnmarshallerBlockNumber(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
+
 		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
 		return responseToBlockNumber{
-			logger:          logger,
+			logger: logger,
+
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
@@ -28,7 +34,8 @@ func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.R
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToBlockNumber{
-			logger:          logger,
+			logger: logger,
+
 			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
@@ -37,7 +44,8 @@ func responseUnmarshallerBlockNumber(logger polylog.Logger, jsonrpcReq jsonrpc.R
 	err = json.Unmarshal(resultBz, &result)
 
 	return responseToBlockNumber{
-		logger:          logger,
+		logger: logger,
+
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 	}, err
@@ -56,7 +64,7 @@ type responseToBlockNumber struct {
 }
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
-// This method implements the response interface.
+// Implements the response interface.
 func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
@@ -68,8 +76,7 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 }
 
 func (r responseToBlockNumber) GetResponsePayload() []byte {
-	// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
-	// if the unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.

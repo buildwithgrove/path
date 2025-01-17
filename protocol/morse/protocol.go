@@ -40,9 +40,10 @@ type FullNode interface {
 
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
 	protocol := &Protocol{
+		logger: polylog.Ctx(ctx),
+
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
-		logger:          polylog.Ctx(ctx),
 	}
 
 	go func() {
@@ -75,7 +76,7 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
-// This method implements the gateway.Protocol interface.
+// Implements the gateway.Protocol interface.
 // The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
 // TODO_TECHDEBT(@dashmh): validate the provided request's service ID is supported by the Morse protocol.
 func (p *Protocol) BuildRequestContext(
@@ -107,7 +108,7 @@ func (p *Protocol) BuildRequestContext(
 //
 // ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.
 // e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
-// This method implements the gateway.Protocol interface.
+// Implements the gateway.Protocol interface.
 func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
 	return nil
 }
@@ -249,7 +250,7 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 	return sessions
 }
 
-// TODO_UPNEXT(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
+// TODO_MVP(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
 // Then add 2 implementations of the FullNode interface:
 // - CachingFullNode
 // - LazyFullNode

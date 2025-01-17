@@ -6,23 +6,21 @@ import (
 )
 
 // TODO_TECHDEBT: handle all possible ID values based on JSONRPC spec.
-// See the following link for more details:
 // https://www.jsonrpc.org/specification
 //
-// From the spec definition above:
-// An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
-// If it is not included it is assumed to be a notification.
-// The value SHOULD normally not be Null: https://www.jsonrpc.org/specification#id1
-// Numbers SHOULD NOT contain fractional parts: https://www.jsonrpc.org/specification#id2
-// The Server MUST reply with the same value in the Response object if included.
-// This member is used to correlate the context between the two objects.
+// JSON-RPC ID requirements:
+// - Must be a String, Number, or NULL if included
+// - Should not be NULL in normal operation
+// - Numbers should not contain fractional parts
+// - Server must reply with the same value in the Response object
+// - Used to correlate context between request/response
 type ID struct {
 	intID int
 	strID string
 }
 
 // String returns ID as a string.
-// strID field, if set, takes precedence as the returned value.
+// strID takes precedence if both fields are set.
 func (id ID) String() string {
 	if id.strID != "" {
 		return id.strID
@@ -30,7 +28,6 @@ func (id ID) String() string {
 
 	return fmt.Sprintf("%d", id.intID)
 }
-
 func (id ID) MarshalJSON() ([]byte, error) {
 	if id.intID > 0 {
 		return []byte(fmt.Sprintf("%d", id.intID)), nil

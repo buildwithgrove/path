@@ -24,8 +24,9 @@ var _ FullNode = &CachingFullNode{}
 
 func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*CachingFullNode, error) {
 	cachingFullNode := CachingFullNode{
+		Logger: logger,
+
 		LazyFullNode: lazyFullNode,
-		Logger:       logger,
 	}
 
 	if err := cachingFullNode.start(); err != nil {
@@ -37,8 +38,9 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*Cac
 
 // CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
-	*LazyFullNode
 	Logger polylog.Logger
+
+	*LazyFullNode
 
 	appCache   map[protocol.ServiceID][]apptypes.Application
 	appCacheMu sync.RWMutex

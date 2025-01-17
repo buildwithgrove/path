@@ -33,7 +33,7 @@ type requestContext struct {
 }
 
 // GetServicePayload returns the payload to be sent to a service endpoint.
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetServicePayload() protocol.Payload {
 	return protocol.Payload{
 		Method:          http.MethodPost,
@@ -44,7 +44,7 @@ func (rc *requestContext) GetServicePayload() protocol.Payload {
 
 // UpdateWithResponse is used to inform the requestContext of the response to its underlying service request, returned from an endpoint.
 // UpdateWithResponse is NOT safe for concurrent use
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
@@ -52,7 +52,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // GetHTTPResponse returns a user-facing response that fulfills the gateway.HTTPResponse interface.
 // Any preset failure responses, e.g. set during the construction of the requestContext instance, take priority.
 // After that, this method simply returns an HTTP response based on the most recently reported endpoint response.
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	if rc.presetFailureResponse != nil {
 		return rc.presetFailureResponse
@@ -73,13 +73,13 @@ func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 
 // GetObservations returns an empty struct that fulfill the required interface, since the noop QoS does not make or use
 // any endpoint observations to improve endpoint selection.
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{}
 }
 
 // GetEndpointSelector returns an endpoint selector which simply makes a random selection among available endpoints.
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return RandomEndpointSelector{}
 }
