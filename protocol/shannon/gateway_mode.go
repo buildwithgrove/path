@@ -23,13 +23,6 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// TODO_TECHDEBT(@adshmh): once Shannon supports querying the applications based on one more criteria, this function's name and signature should be updated to
-// build and return the query criteria.
-//
-// permittedAppFilter represents any function that can be used to filter an onchain app based on its attributes.
-// It is used by different gateway modes to select app(s) that are permitted for use by the gateway for sending relay requests.
-type permittedAppFilter func(*apptypes.Application) error
-
 // getGatewayModePermittedApps returns the apps permitted under the supplied gateway mode.
 // The permitted apps are determined as follows:
 //   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
@@ -49,7 +42,7 @@ func (p *Protocol) getGatewayModePermittedApps(
 
 		// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 		//case protocol.GatewayModePermissionless:
-		//	return getPermissionlessGatewayModeAppFilter(p.ownedAppsAddr), nil
+		//	return getPermissionlessGatewayModeApps(p.ownedAppsAddr), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", p.gatewayMode)
