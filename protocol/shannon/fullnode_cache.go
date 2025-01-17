@@ -107,10 +107,10 @@ func (cfn *CachingFullNode) start() error {
 	return nil
 }
 
-// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
-func (cfn *CachingFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter, gatewayMode protocol.GatewayMode) {
+// SetGatewayMode sets the gateway mode and the permitted app filter for the protocol instance.
+func (cfn *CachingFullNode) SetGatewayMode(gatewayMode protocol.GatewayMode, permittedAppFilter permittedAppFilter) {
 	cfn.gatewayMode = gatewayMode
-	cfn.LazyFullNode.SetPermittedAppFilter(permittedAppFilter, gatewayMode)
+	cfn.LazyFullNode.SetGatewayMode(gatewayMode, permittedAppFilter)
 }
 
 // GetServiceEndpoints returns (from the cache) the set of endpoints which delegate to the gateway, matching the supplied service ID.
@@ -122,40 +122,6 @@ func (cfn *CachingFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, re
 	endpoints, err := cfn.getPermittedApps(serviceID, req)
 	if err != nil {
 		return nil, err
-	}
-
-	return endpoints, nil
-}
-
-// getPermittedApps returns the set of endpoints which delegate to the gateway for a given service ID.
-func (cfn *CachingFullNode) getPermittedApps(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
-	endpoints := make(map[protocol.EndpointAddr]endpoint)
-
-	switch cfn.gatewayMode {
-	// In `centralized` mode, the endpoints for the apps delegated to the gateway are cached so we can return them directly.
-	case protocol.GatewayModeCentralized:
-		cachedEndpoints, found := cfn.endpointCache[serviceID]
-		if !found {
-			return nil, fmt.Errorf("getServiceEndpoints: no endpoints found for service %s", serviceID)
-		}
-
-		endpoints = cachedEndpoints
-
-	// In `delegated` mode, the apps can not be cached because the app address is only known at request time.
-	// Therefore, we need to get the apps from the full node and then filter them using the permittedAppFilter.
-	case protocol.GatewayModeDelegated:
-		cfn.appsCacheMu.RLock()
-		apps := cfn.appsCache[serviceID]
-		cfn.appsCacheMu.RUnlock()
-
-		permittedApps := cfn.filterPermittedApps(apps, req)
-
-		filteredEndpoints, err := cfn.getAppsUniqueEndpoints(serviceID, permittedApps)
-		if err != nil {
-			return nil, fmt.Errorf("getServiceEndpoints: error getting the unique endpoints for service %s: %w", serviceID, err)
-		}
-
-		endpoints = filteredEndpoints
 	}
 
 	return endpoints, nil
@@ -204,7 +170,8 @@ func (cfn *CachingFullNode) fetchApps() {
 	}
 
 	// In centralized mode, we know the delegated apps for the gateway operator,
-	// so we can filter out all apps that are not delegated to the gateway.
+	// so we can filter out all apps that are not delegated to the gateway at
+	// and cache only those apps.
 	if cfn.gatewayMode == protocol.GatewayModeCentralized {
 		filteredAppsData := make(map[protocol.ServiceID][]apptypes.Application)
 
@@ -224,8 +191,8 @@ func (cfn *CachingFullNode) filterPermittedApps(apps []apptypes.Application, req
 	var filteredApps []apptypes.Application
 
 	// The permittedAppFilter is used to filter only apps that are allowed by the gateway mode.
-	// - In Centralized mode, the permittedAppFilter is used to filter only apps that are owned by the gateway operator.
-	// -
+	// - In Centralized mode, the permittedAppFilter is used at cache time to cache only apps that are delegated to the gateway.
+	// - In Delegated mode, the permittedAppFilter is used at request time to filter the apps that are delegated to the gateway.
 	for _, app := range apps {
 		if errSelectingApp := cfn.LazyFullNode.permittedAppFilter(&app, req); errSelectingApp != nil {
 			cfn.logger.Info().Err(errSelectingApp).Str("app_address", app.Address).
@@ -237,6 +204,40 @@ func (cfn *CachingFullNode) filterPermittedApps(apps []apptypes.Application, req
 	}
 
 	return filteredApps
+}
+
+// getPermittedApps returns the set of endpoints which delegate to the gateway for a given service ID.
+func (cfn *CachingFullNode) getPermittedApps(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
+
+	switch cfn.gatewayMode {
+	// In `centralized` mode, the endpoints for the apps delegated to the gateway are cached so we can return them directly.
+	case protocol.GatewayModeCentralized:
+		cachedEndpoints, found := cfn.endpointCache[serviceID]
+		if !found {
+			return nil, fmt.Errorf("getServiceEndpoints: no endpoints found for service %s", serviceID)
+		}
+
+		endpoints = cachedEndpoints
+
+	// In `delegated` mode, the endpoints can not be cached because the app address is only known at request time.
+	// Therefore, we need to get the apps from the full node and then filter them using the permittedAppFilter.
+	case protocol.GatewayModeDelegated:
+		cfn.appsCacheMu.RLock()
+		apps := cfn.appsCache[serviceID]
+		cfn.appsCacheMu.RUnlock()
+
+		permittedApps := cfn.filterPermittedApps(apps, req)
+
+		filteredEndpoints, err := cfn.getAppsUniqueEndpoints(serviceID, permittedApps)
+		if err != nil {
+			return nil, fmt.Errorf("getServiceEndpoints: error getting the unique endpoints for service %s: %w", serviceID, err)
+		}
+
+		endpoints = filteredEndpoints
+	}
+
+	return endpoints, nil
 }
 
 /* ------------------------------- 2. Fetch and Cache Sessions ------------------------------- */

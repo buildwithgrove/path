@@ -82,8 +82,8 @@ type LazyFullNode struct {
 	logger polylog.Logger
 }
 
-// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
-func (lfn *LazyFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter, _ protocol.GatewayMode) {
+// SetGatewayMode sets the permitted app filter for the protocol instance.
+func (lfn *LazyFullNode) SetGatewayMode(_ protocol.GatewayMode, permittedAppFilter permittedAppFilter) {
 	lfn.permittedAppFilter = permittedAppFilter
 }
 
@@ -111,6 +111,7 @@ func (lfn *LazyFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, req *
 }
 
 func (lfn *LazyFullNode) GetAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
+	// A nil request is passed to getAllApps to fetch all apps, which prevents them from being filtered by the permittedAppFilter.
 	allApps, err := lfn.getAllApps(context.TODO(), nil)
 	if err != nil {
 		return nil, err

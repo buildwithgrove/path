@@ -40,8 +40,8 @@ type FullNode interface {
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
 
-	// SetPermittedAppFilter sets the permitted app filter for the protocol instance.
-	SetPermittedAppFilter(permittedAppFilter permittedAppFilter, gatewayMode protocol.GatewayMode)
+	// SetGatewayMode sets the permitted app filter for the protocol instance.
+	SetGatewayMode(gatewayMode protocol.GatewayMode, permittedAppFilter permittedAppFilter)
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -81,7 +81,7 @@ func NewProtocol(
 		return nil, fmt.Errorf("NewProtocol: error building the permitted apps filter for gateway mode %s: %w", protocol.gatewayMode, err)
 	}
 
-	fullNode.SetPermittedAppFilter(permittedAppFilter, protocol.gatewayMode)
+	fullNode.SetGatewayMode(protocol.gatewayMode, permittedAppFilter)
 
 	return protocol, nil
 }
