@@ -66,39 +66,27 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 	return lazyFullNode, nil
 }
 
+// TODO_MVP(@adshmh): Rename `LazyFullNode`: this struct does not perform any caching and should be named accordingly.
+//
 // LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
 // The key differences between a lazy and full node are:
 // 1. Lazy node intentionally avoids caching.
 //   - This allows supporting short block times (e.g. LocalNet)
 //   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
+	logger polylog.Logger
+
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
-
-	logger polylog.Logger
 }
 
-// GetServiceApps returns the set of onchain applications staked for ServiceID.
+// GetApp returns the onchain application matching the supplied application address
 // It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
-	allApps, err := lfn.getAllApps(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-
-	// use a filter to drop any apps that are not staked for the service matching the supplied service ID.
-	appsServiceMap, err := lfn.buildAppsServiceMap(allApps, serviceAppFilter(serviceID))
-	if err != nil {
-		return nil, err
-	}
-
-	// convert the map of service ID to application which is returned from the previous method call, into a slice for easier processing.
-	var apps []apptypes.Application
-	apps = append(apps, appsServiceMap[serviceID]...)
-
-	return apps, nil
+func (lfn *LazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+	app, err := lfn.appClient.GetApplication(ctx, appAddr)
+	return &app, err
 }
 
 // GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
@@ -148,39 +136,6 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 // It is used to create relay request signers.
 func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
-}
-
-// buildAppsServiceIdx builds a map of serviceIDs to the corresponding onchain apps.
-func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application, filterFn appFilterFn) (map[protocol.ServiceID][]apptypes.Application, error) {
-	appData := make(map[protocol.ServiceID][]apptypes.Application)
-	for _, onchainApp := range onchainApps {
-		logger := lfn.logger.With("address", onchainApp.Address)
-
-		if len(onchainApp.ServiceConfigs) == 0 {
-			logger.Warn().Msg("buildAppsServiceMap: app has no services specified onchain. Skipping the app.")
-			continue
-		}
-
-		for _, svcCfg := range onchainApp.ServiceConfigs {
-			if svcCfg.ServiceId == "" {
-				logger.Warn().Msg("buildAppsServiceMap: app has empty serviceId item in service config.")
-				continue
-			}
-
-			if filterFn != nil && !filterFn(onchainApp, protocol.ServiceID(svcCfg.ServiceId)) {
-				continue
-			}
-
-			serviceID := protocol.ServiceID(svcCfg.ServiceId)
-			appData[serviceID] = append(appData[serviceID], onchainApp)
-		}
-	}
-
-	if len(appData) == 0 {
-		return nil, fmt.Errorf("buildAppsServiceMap: no apps found.")
-	}
-
-	return appData, nil
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.
@@ -271,15 +226,4 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 	}
 
 	return &sdk.AccountClient{PoktNodeAccountFetcher: sdk.NewPoktNodeAccountFetcher(conn)}, nil
-}
-
-// appFilterFn represents a filter that determines whether an app should be included.
-// it is mainly used to return the apps matching a specific service ID.
-type appFilterFn func(apptypes.Application, protocol.ServiceID) bool
-
-// serviceAppFilter is an app filtering function that drops any applications which does not match the supplied service ID.
-func serviceAppFilter(selectedServiceID protocol.ServiceID) appFilterFn {
-	return func(_ apptypes.Application, serviceID protocol.ServiceID) bool {
-		return serviceID == selectedServiceID
-	}
 }

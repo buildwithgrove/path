@@ -3,8 +3,8 @@ module github.com/buildwithgrove/path
 go 1.23.0
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
-replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
-replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
+// replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
+// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 
 require (
 	github.com/cosmos/cosmos-sdk v0.50.9

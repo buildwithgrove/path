@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
@@ -29,28 +30,29 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 // It is used by different gateway modes to select app(s) that are permitted for use by the gateway for sending relay requests.
 type permittedAppFilter func(*apptypes.Application) error
 
-// getGatewayModePermittedAppFilter returns the app filter matching the supplied gateway mode.
-// Depending on the gateway mode, different criteria are used to filter the permitted apps:
-//   - Centralized mode: - the gateway address and owned apps addresses are used to filter the permitted apps (specified in configs).
-//   - Delegated mode: - the gateway address and app address in the HTTP headers are used to filter the permitted apps.
-func (p *Protocol) getGatewayModePermittedAppFilter(
-	gatewayMode protocol.GatewayMode,
+// getGatewayModePermittedApps returns the apps permitted under the supplied gateway mode.
+// The permitted apps are determined as follows:
+//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
+//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted apps.
+func (p *Protocol) getGatewayModePermittedApps(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
 	req *http.Request,
-) (permittedAppFilter, error) {
-	switch gatewayMode {
+) ([]*apptypes.Application, error) {
+	switch p.gatewayMode {
 
 	case protocol.GatewayModeCentralized:
-		return getCentralizedGatewayModeAppFilter(p.gatewayAddr, p.ownedAppsAddr), nil
+		return p.getCentralizedGatewayModeApps(ctx, serviceID)
 
 	case protocol.GatewayModeDelegated:
-		return getDelegatedGatewayModeAppFilter(p.gatewayAddr, req), nil
+		return p.getDelegatedGatewayModeApps(ctx, req)
 
 		// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 		//case protocol.GatewayModePermissionless:
 		//	return getPermissionlessGatewayModeAppFilter(p.ownedAppsAddr), nil
 
 	default:
-		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
+		return nil, fmt.Errorf("unsupported gateway mode: %s", p.gatewayMode)
 	}
 }
 
