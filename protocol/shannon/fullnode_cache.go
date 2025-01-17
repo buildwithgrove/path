@@ -121,8 +121,8 @@ func (cfn *CachingFullNode) SetPermittedAppFilter(permittedAppFilter permittedAp
 }
 
 // GetServiceEndpoints returns (from the cache) the set of endpoints which delegate to the gateway, matching the supplied service ID.
-// It is required to fulfill the FullNode interface.
-func (cfn *CachingFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, req *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
+// As the caching full node is only used in Centralized gateway mode, the request is ignored.
+func (cfn *CachingFullNode) GetServiceEndpoints(serviceID protocol.ServiceID, _ *http.Request) (map[protocol.EndpointAddr]endpoint, error) {
 	cfn.endpointCacheMu.RLock()
 	defer cfn.endpointCacheMu.RUnlock()
 
