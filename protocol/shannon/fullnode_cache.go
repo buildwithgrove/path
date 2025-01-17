@@ -42,20 +42,18 @@ func NewCachingFullNode(lazyFullNode *LazyFullNode, logger polylog.Logger) (*Cac
 
 // CachingFullNode single responsibility is to add a caching layer around a LazyFullNode.
 type CachingFullNode struct {
-	*LazyFullNode
 	Logger polylog.Logger
 
-	appsCache   map[protocol.ServiceID][]apptypes.Application
-	appsCacheMu sync.RWMutex
+	*LazyFullNode
 
-	endpointCache   map[protocol.ServiceID]map[protocol.EndpointAddr]endpoint
-	endpointCacheMu sync.RWMutex
-
-	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
-	// sessionCache caches sessions for use by the Relay function.
-	// map keys are of the format "serviceID-appID"
+	// sessionCache caches sessions to be used to build the `endpointCache`.
+	// Map keys are of the format "{serviceID}-{appID}"
 	sessionCache   map[sessionCacheKey]sessiontypes.Session
 	sessionCacheMu sync.RWMutex
+
+	// endpointCache caches endpoints to be used by the `protocol.BuildRequestContext` method.
+	endpointCache   map[protocol.ServiceID]map[protocol.EndpointAddr]endpoint
+	endpointCacheMu sync.RWMutex
 
 	// once is used to ensure the cache update go routine of the `start` method is only run once.
 	once sync.Once
@@ -85,16 +83,27 @@ func (cfn *CachingFullNode) start() error {
 		return errors.New("start: CachingFullNode needs a Logger to operate")
 	}
 
+	// Start the cache update process, using a sync.Once to ensure it is only run once.
 	cfn.once.Do(func() {
 		go func() {
 			// TODO_IMPROVE: make the refresh interval configurable.
 			ticker := time.NewTicker(cacheRefreshIntervalSeconds * time.Second)
+
 			for {
 				cfn.Logger.Info().Msg("Starting the cache update process.")
 
-				cfn.fetchAndFilterApps()
-				cfn.updateSessionCache()
-				cfn.updateEndpointCache()
+				// 1. Fetch and filter the onchain apps.
+				appsDataByService, err := cfn.fetchAndFilterApps()
+				if err != nil {
+					cfn.Logger.Warn().Err(err).Msg("cache update: error fetching and filtering apps; skipping update.")
+					continue
+				}
+
+				// 2. Fetch and cache the sessions for the filtered apps.
+				cfn.updateSessionCache(appsDataByService)
+
+				// 3. Update the endpoint cache using the cached sessions.
+				cfn.updateEndpointCache(appsDataByService)
 
 				<-ticker.C
 			}
@@ -103,6 +112,8 @@ func (cfn *CachingFullNode) start() error {
 
 	return nil
 }
+
+/* ------------------------------- FullNode Interface Methods ------------------------------- */
 
 // SetPermittedAppFilter sets the permitted app filter for the protocol instance.
 func (cfn *CachingFullNode) SetPermittedAppFilter(permittedAppFilter permittedAppFilter) {
@@ -155,16 +166,15 @@ func (cfn *CachingFullNode) IsHealthy() bool {
 	return len(cfn.endpointCache) > 0 && len(cfn.sessionCache) > 0
 }
 
-/* ------------------------------- 1. Fetch and Cache Onchain Apps Data ------------------------------- */
+/* ------------------------------- 1. Fetch Permitted Onchain Apps Data ------------------------------- */
 
-// fetchApps fetches the all apps for all services and filters them using the gateway mode's permittedAppFilter.
-func (cfn *CachingFullNode) fetchAndFilterApps() {
+// fetchAndFilterApps fetches the all apps for all services and filters them using the gateway mode's permittedAppFilter.
+func (cfn *CachingFullNode) fetchAndFilterApps() (map[protocol.ServiceID][]apptypes.Application, error) {
 	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
 	// More specifically, once we can filter by apps delegating to a gateway address.
 	appsData, err := cfn.appClient.GetAllApplications(context.TODO())
 	if err != nil {
-		cfn.Logger.Warn().Err(err).Msg("updateAppCache: error getting the list of apps; skipping update.")
-		return
+		return nil, fmt.Errorf("fetchAndFilterApps: error getting the list of apps: %w", err)
 	}
 
 	// A nil request is passed to filterPermittedApps as the caching full node does not
@@ -173,19 +183,17 @@ func (cfn *CachingFullNode) fetchAndFilterApps() {
 
 	appsDataByService, err := cfn.buildAppsServiceMap(filteredAppsData, nil)
 	if err != nil {
-		cfn.Logger.Warn().Err(err).Msg("updateAppCache: error building apps service map; skipping update.")
-		return
+		return nil, fmt.Errorf("fetchAndFilterApps: %w", err)
 	}
 
-	cfn.appsCacheMu.Lock()
-	defer cfn.appsCacheMu.Unlock()
-	cfn.appsCache = appsDataByService
+	return appsDataByService, nil
 }
 
 /* ------------------------------- 2. Fetch and Cache Sessions ------------------------------- */
 
-func (cfn *CachingFullNode) updateSessionCache() {
-	sessions := cfn.fetchSessions()
+// updateSessionCache fetches the sessions for the supplied apps and caches them.
+func (cfn *CachingFullNode) updateSessionCache(appsDataByService map[protocol.ServiceID][]apptypes.Application) {
+	sessions := cfn.fetchSessions(appsDataByService)
 	if len(sessions) == 0 {
 		cfn.Logger.Warn().Msg("updateSessionCache: received empty session list; skipping update.")
 		return
@@ -196,12 +204,11 @@ func (cfn *CachingFullNode) updateSessionCache() {
 	cfn.sessionCache = sessions
 }
 
-func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Session {
-	cfn.appsCacheMu.RLock()
-	appsData := cfn.appsCache
-	cfn.appsCacheMu.RUnlock()
-
-	if len(appsData) == 0 {
+// fetchSessions fetches the sessions for the supplied apps and returns them,
+// using a worker pool pattern to fetch the sessions concurrently.
+func (cfn *CachingFullNode) fetchSessions(appsDataByService map[protocol.ServiceID][]apptypes.Application) map[sessionCacheKey]sessiontypes.Session {
+	if len(appsDataByService) == 0 {
+		cfn.Logger.Warn().Msg("fetchSessions: received empty app list; skipping update.")
 		return nil
 	}
 
@@ -209,7 +216,7 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 	var sessionsMu sync.Mutex
 
 	// Use a worker pool to fetch the sessions concurrently.
-	jobs := make(chan sessionCacheKey, len(appsData))
+	jobs := make(chan sessionCacheKey, len(appsDataByService))
 	var wg sync.WaitGroup
 	for i := 0; i < maxSessionFetchWorkers; i++ {
 		wg.Add(1)
@@ -237,7 +244,7 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 	}
 
 	// Send jobs to the workers
-	for serviceID, serviceApps := range appsData {
+	for serviceID, serviceApps := range appsDataByService {
 		for _, app := range serviceApps {
 			jobs <- newSessionCacheKey(serviceID, app.Address)
 		}
@@ -253,19 +260,15 @@ func (cfn *CachingFullNode) fetchSessions() map[sessionCacheKey]sessiontypes.Ses
 
 // updateEndpointCache updates the endpoint cache by fetching the sessions for all apps and then
 // using the getAppsUniqueEndpoints method to get the unique endpoints for each service ID.
-func (cfn *CachingFullNode) updateEndpointCache() {
-	cfn.appsCacheMu.RLock()
-	appsData := cfn.appsCache
-	cfn.appsCacheMu.RUnlock()
-
-	if len(appsData) == 0 {
+func (cfn *CachingFullNode) updateEndpointCache(appsDataByService map[protocol.ServiceID][]apptypes.Application) {
+	if len(appsDataByService) == 0 {
 		cfn.Logger.Warn().Msg("updateEndpointCache: received empty app list; skipping update.")
 		return
 	}
 
 	endpointData := make(map[protocol.ServiceID]map[protocol.EndpointAddr]endpoint)
 
-	for serviceID, apps := range appsData {
+	for serviceID, apps := range appsDataByService {
 		endpointsForService, err := cfn.getAppsUniqueEndpoints(serviceID, apps)
 		if err != nil {
 			continue

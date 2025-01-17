@@ -72,14 +72,15 @@ func NewLazyFullNode(config FullNodeConfig, logger polylog.Logger) (*LazyFullNod
 //   - This allows supporting short block times (e.g. LocalNet)
 //   - CachingFullNode struct can be used instead if caching is desired for performance reasons
 type LazyFullNode struct {
+	logger polylog.Logger
+
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 
+	// permittedAppFilter is used to filter the apps that are permitted to send relays.
 	permittedAppFilter permittedAppFilter
-
-	logger polylog.Logger
 }
 
 // SetPermittedAppFilter sets the permitted app filter for the protocol instance.

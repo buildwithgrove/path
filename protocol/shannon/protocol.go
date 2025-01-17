@@ -88,8 +88,9 @@ func NewProtocol(
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
-	FullNode
 	Logger polylog.Logger
+
+	FullNode
 
 	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
 	// See protocol/shannon/gateway_mode.go for more details.
