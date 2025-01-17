@@ -80,7 +80,7 @@ type LazyFullNode struct {
 	logger polylog.Logger
 }
 
-// GetServiceApps returns the set of onchain applications matching the supplied service ID.
+// GetServiceApps returns the set of onchain applications staked for ServiceID.
 // It is required to fulfill the FullNode interface.
 func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptypes.Application, error) {
 	allApps, err := lfn.getAllApps(context.TODO())
@@ -99,14 +99,6 @@ func (lfn *LazyFullNode) GetServiceApps(serviceID protocol.ServiceID) ([]apptype
 	apps = append(apps, appsServiceMap[serviceID]...)
 
 	return apps, nil
-}
-
-func (lfn *LazyFullNode) GetAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
-	allApps, err := lfn.getAllApps(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	return lfn.buildAppsServiceMap(allApps, nil)
 }
 
 // GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
@@ -189,17 +181,6 @@ func (lfn *LazyFullNode) buildAppsServiceMap(onchainApps []apptypes.Application,
 	}
 
 	return appData, nil
-}
-
-// getAllApps returns all the onchain apps.
-func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
-	// TODO_MVP(@adshmh): query the onchain data for the gateway address to confirm it is valid and return an error if not.
-	//
-	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
-	// More specifically, support for the following criteria is required as of now:
-	// 1. Apps matching a specific service ID
-	// 2. Apps delegating to a gateway address.
-	return lfn.appClient.GetAllApplications(ctx)
 }
 
 // serviceRequestPayload is the contents of the request received by the underlying service's API server.

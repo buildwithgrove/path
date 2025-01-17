@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -128,7 +129,7 @@ func (cfn *CachingFullNode) IsHealthy() bool {
 }
 
 func (cfn *CachingFullNode) updateAppCache() {
-	appData, err := cfn.LazyFullNode.GetAllServicesApps()
+	appData, err := cfn.getAllServicesApps()
 	if err != nil {
 		cfn.Logger.Warn().Err(err).Msg("updateAppCache: error getting the list of apps; skipping update.")
 		return
@@ -154,7 +155,7 @@ func (cfn *CachingFullNode) updateSessionCache() {
 func (cfn *CachingFullNode) fetchSessions() map[string]sessiontypes.Session {
 	logger := cfn.Logger.With("method", "fetchSessions")
 
-	apps, err := cfn.LazyFullNode.GetAllServicesApps()
+	apps, err := cfn.getAllServicesApps()
 	if err != nil {
 		logger.Warn().Err(err).Msg("fetchSession: error listing applications")
 	}
@@ -180,6 +181,24 @@ func (cfn *CachingFullNode) fetchSessions() map[string]sessiontypes.Session {
 	}
 
 	return sessions
+}
+
+// getAllServicesApps returns a map of all services and the corresponding applications staked for it.
+func (cfn *CachingFullNode) getAllServicesApps() (map[protocol.ServiceID][]apptypes.Application, error) {
+	allApps, err := cfn.getAllApps(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	return cfn.buildAppsServiceMap(allApps, nil)
+}
+
+// getAllApps returns all the onchain apps.
+func (lfn *LazyFullNode) getAllApps(ctx context.Context) ([]apptypes.Application, error) {
+	// TODO_MVP(@adshmh): remove this once poktroll supports querying the onchain apps.
+	// More specifically, support for the following criteria is required as of now:
+	// 1. Apps matching a specific service ID
+	// 2. Apps delegating to a gateway address.
+	return lfn.appClient.GetAllApplications(ctx)
 }
 
 // sessionCacheKey returns a string to be used as the key for storing the session matching the supplied service ID and application address.

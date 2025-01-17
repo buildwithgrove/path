@@ -21,6 +21,10 @@ var _ gateway.Protocol = &Protocol{}
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
 type FullNode interface {
+	// TODO_IN_THIS_PR: Implement this.
+	// GetApp returns the onchain application matching the application address
+	GetApp(string) (apptypes.Application, error)
+
 	// GetServiceApps returns all the onchain applications staked for the supplied Service ID.
 	GetServiceApps(protocol.ServiceID) ([]apptypes.Application, error)
 
@@ -107,6 +111,9 @@ func (p *Protocol) BuildRequestContext(
 		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps filter for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
+	// TODO_IN_THIS_PR: Refactor `getAppsUniqueEndpoints` and this function so the downstream
+	// calls result in `FullNode.GetApp` instead of `FullNode.GetServiceApps(serviceID)`
+
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedAppFilter)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
@@ -135,22 +142,23 @@ func (p *Protocol) IsAlive() bool {
 	return p.FullNode.IsHealthy()
 }
 
-// TODO_FUTURE(@adshmh): Find a more optimized way of handling an overlap among endpoints
-// matching multiple sessions of apps delegating to the gateway.
+// TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating
+// to this gateway, optimize how the endpoints are managed/organized/cached.
 //
-// getAppsUniqueEndpoints returns a map of all endpoints which match the provided service ID and pass the supplied app filter.
-// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
+// getAppsUniqueEndpoints returns a map of all endpoints matching serviceID and passing appFilter.
+// If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
 func (p *Protocol) getAppsUniqueEndpoints(
 	serviceID protocol.ServiceID,
 	appFilter permittedAppFilter,
 ) (map[protocol.EndpointAddr]endpoint, error) {
+	logger := p.Logger.With("service", serviceID)
+
 	apps, err := p.FullNode.GetServiceApps(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no apps found for service %s: %w", serviceID, err)
 	}
 
-	logger := p.Logger.With("service", serviceID)
 	var filteredApps []apptypes.Application
 	for _, app := range apps {
 		logger = logger.With("app_address", app.Address)
@@ -166,7 +174,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		filteredApps = append(filteredApps, app)
 	}
 
-	endpoints := make(map[protocol.EndpointAddr]endpoint)
+	var endpoints = make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range filteredApps {
 		session, err := p.FullNode.GetSession(serviceID, app.Address)
 		if err != nil {
