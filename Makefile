@@ -247,16 +247,6 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 	@mkdir -p local/path/envoy;
 	@./envoy/scripts/copy_gateway_endpoints_yaml.sh;
 
-###############################
-### Generation Make Targets ###
-###############################
-
-.PHONY: gen_proto
-gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
-	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
-
-# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-
 ########################
 #### Documentation  ####
 ########################
@@ -277,3 +267,4 @@ docusaurus_start: ## Start docusaurus server
 include ./makefiles/localnet.mk
 include ./makefiles/quickstart.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/proto.mk

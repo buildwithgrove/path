@@ -2,64 +2,95 @@ package evm
 
 import (
 	"encoding/json"
-	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseUnmarshallerChainID deserializes the provided byte slice
-// into a responseToChainID struct, adding any encountered errors
-// to the returned struct for constructing a response payload.
-func responseUnmarshallerChainID(data []byte) (response, error) {
-	var response responseToChainID
-	err := json.Unmarshal(data, &response)
-	if err != nil {
-		response.unmarshallingErr = err
+// responseToChainID provides the functionality required from a response by a requestContext instance.
+var _ response = responseToChainID{}
+
+// TODO_TECHDEBT(@adshmh): consider refactoring all unmarshallers to remove any duplicated logic.
+
+// responseUnmarshallerChainID deserializes the provided byte slice into a responseToChainID struct,
+// adding any encountered errors to the returned struct for constructing a response payload.
+func responseUnmarshallerChainID(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error) {
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() {
+
+		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
+		return responseToChainID{
+			logger: logger,
+
+			jsonRPCResponse: jsonrpcResp,
+		}, nil
 	}
 
-	return response, nil
+	resultBz, err := jsonrpcResp.GetResultAsBytes()
+	if err != nil {
+		return responseToChainID{
+			logger: logger,
+
+			jsonRPCResponse: jsonrpcResp,
+		}, err
+	}
+
+	var result string
+	err = json.Unmarshal(resultBz, &result)
+
+	return &responseToChainID{
+		logger: logger,
+
+		jsonRPCResponse: jsonrpcResp,
+		result:          result,
+	}, err
 }
 
 // responseToChainID captures the fields expected in a
 // response to an `eth_chainId` request.
 type responseToChainID struct {
-	ID      jsonrpc.ID      `json:"id"`
-	JSONRPC jsonrpc.Version `json:"jsonrpc"`
-	Result  string          `json:"result"`
+	logger polylog.Logger
 
-	// unmarshallingErr captures any unmarshalling errors
-	// that may have occurred when constructing this instance.
-	unmarshallingErr error
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
+
+	// result captures the `result` field of a JSONRPC response to an `eth_chainId` request.
+	result string
 }
 
-func (r responseToChainID) GetObservation() (observation, bool) {
-	return observation{
-		ChainID: r.Result,
-	}, true
+// GetObservation returns an observation using an `eth_chainId` request's response.
+// Implements the response interface.
+func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservation {
+	return qosobservations.EVMEndpointObservation{
+		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
+			ChainIdResponse: &qosobservations.EVMChainIDResponse{
+				ChainIdResponse: r.result,
+			},
+		},
+	}
 }
 
+// TODO_MVP(@adshmh): handle the following scenarios:
+//  1. An endpoint returned a malformed, i.e. Not in JSONRPC format, response.
+//     The user-facing response should include the request's ID.
+//  2. An endpoint returns a JSONRPC response indicating a user error:
+//     This should be returned to the user as-is.
+//  3. An endpoint returns a valid JSONRPC response to a valid user request:
+//     This should be returned to the user as-is.
+//
+// GetResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
+// It implements the response interface.
 func (r responseToChainID) GetResponsePayload() []byte {
-	if r.unmarshallingErr != nil {
-		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
-		// if unmarshalling failed.
-		return []byte("{}")
-
-	}
-
-	bz, err := json.Marshal(r)
+	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
-		// if marshalling failed.
-		return []byte("{}")
+		// This should never happen: log an entry but return the response anyway.
+		r.logger.Warn().Err(err).Msg("responseToChainID: Marshalling JSONRPC response failed.")
 	}
-
 	return bz
-}
-
-func (r responseToChainID) Validate(id jsonrpc.ID) error {
-	if r.ID != id {
-		return fmt.Errorf("validate chainID response: invalid ID; expected %v, got %v", id, r.ID)
-	}
-
-	return nil
 }

@@ -1,9 +1,17 @@
 package evm
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // QoS struct performs the functionality defined by gateway package's ServiceQoS,
@@ -17,13 +25,50 @@ var _ gateway.QoSService = &QoS{}
 // It contains logic specific to EVM-based chains, including request parsing,
 // response building, and endpoint validation/selection.
 type QoS struct {
-	endpointStore *EndpointStore
-	logger        polylog.Logger
+	*EndpointStore
+	*ServiceState
+	Logger polylog.Logger
 }
 
-func NewServiceQoS(endpointStore *EndpointStore, logger polylog.Logger) *QoS {
-	return &QoS{
-		endpointStore: endpointStore,
-		logger:        logger,
+// ParseHTTPRequest builds a request context from an HTTP request.
+// Returns (context, false) if request cannot be parsed as JSONRPC.
+// Implements gateway.QoSService interface.
+func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return requestContextFromInternalError(err), false
 	}
+
+	var jsonrpcReq jsonrpc.Request
+	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+		return requestContextFromUserError(err), false
+	}
+
+	// TODO_TECHDEBT(@adshmh): Add JSONRPC request validation to block invalid requests
+	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
+	return &requestContext{
+		logger: qos.Logger,
+
+		jsonrpcReq:    jsonrpcReq,
+		endpointStore: qos.EndpointStore,
+
+		isValid: true,
+	}, true
+}
+
+// ApplyObservations updates endpoint storage and blockchain state from observations.
+// Implements gateway.QoSService interface.
+func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
+	if observations == nil {
+		return errors.New("ApplyObservations: received nil")
+	}
+
+	evmObservations := observations.GetEvm()
+	if evmObservations == nil {
+		return errors.New("ApplyObservations: received nil EVM observation")
+	}
+
+	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(evmObservations)
+
+	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }

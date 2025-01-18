@@ -17,20 +17,20 @@ type HTTPResponse struct {
 }
 
 // GetPayload returns the payload of the user-facing HTTP response.
-// This method implements the gateway.HTTPResponse interface.
+// Implements the gateway.HTTPResponse interface.
 func (h *HTTPResponse) GetPayload() []byte {
 	return h.payload
 }
 
 // GetHTTPStatusCode returns the HTTP status code of the user-facing HTTP response.
-// This method implements the gateway.HTTPResponse interface.
+// Implements the gateway.HTTPResponse interface.
 func (h *HTTPResponse) GetHTTPStatusCode() int {
 	return h.httpStatusCode
 }
 
 // GetHTTPHeaders always returns nil, as HTTP headers are not used by noop QoS as of PR #106.
 // See: https://github.com/buildwithgrove/path/pull/106
-// This method implements the gateway.HTTPResponse interface.
+// Implements the gateway.HTTPResponse interface.
 func (h *HTTPResponse) GetHTTPHeaders() map[string]string {
 	return nil
 }

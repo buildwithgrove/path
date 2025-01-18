@@ -15,6 +15,10 @@ import (
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &EndpointStore{}
 
+// TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
+// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used
+// to validate endpoints.
+//
 // EndpointStoreConfig captures the modifiable settings of the EndpointStore.
 // This will enable `EndpointStore` to be used as part of QoS for other EVM-based
 // blockchains which may have different desired QoS properties.
@@ -23,7 +27,7 @@ var _ protocol.EndpointSelector = &EndpointStore{}
 type EndpointStoreConfig struct {
 	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
 	// SyncAllowance specifies the maximum number of blocks an endpoint
-	// can be behind, compared to the blockchain's estimated block height,
+	// can be behind, compared to the blockchain's perceived block height,
 	// before being filtered out.
 	SyncAllowance uint64
 
@@ -39,14 +43,15 @@ type EndpointStoreConfig struct {
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
-	Config EndpointStoreConfig
 	Logger polylog.Logger
+
+	// ServiceState is the current perceived state of the EVM blockchain.
+	*ServiceState
+
+	Config EndpointStoreConfig
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
-	// blockHeight is the expected latest block height on the blockchain.
-	// It is calculated as the maximum of block height reported by any of the endpoints.
-	blockHeight uint64
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
@@ -83,55 +88,37 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
+	logger := es.Logger.With("method", "filterEndpoints").With("qos_instance", "evm")
+
 	if len(availableEndpoints) == 0 {
-		return nil, errors.New("select: received empty list of endpoints to select from")
+		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger := es.Logger.With(
-		"number_of_available_endpoints", fmt.Sprintf("%d", len(availableEndpoints)),
-		"method", "filterEndpoints",
-	)
-	logger.Info().Msg("select: processing available endpoints")
+	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
 
+	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
+	// For example: latency rather than making a single selection.
 	var filteredEndpointsAddr []protocol.EndpointAddr
-	// TODO_FUTURE: rank the endpoints based on some service-specific metric, e.g. latency, rather than making a single selection.
 	for _, availableEndpoint := range availableEndpoints {
-		logger := logger.With("endpoint", availableEndpoint.Addr())
+		endpointAddr := availableEndpoint.Addr()
+
+		logger := logger.With("endpoint", endpointAddr)
 		logger.Info().Msg("processing endpoint")
 
-		endpoint, found := es.endpoints[availableEndpoint.Addr()]
+		endpoint, found := es.endpoints[endpointAddr]
 		if !found {
-			logger.Info().Msg("skipping endpoint with no entry in the store.")
+			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", endpointAddr))
 			continue
 		}
 
-		if err := isEndpointValid(endpoint, es.Config.ChainID, es.blockHeight); err != nil {
-			logger.Info().Err(err).Msg("invalid endpoint is filtered")
+		if err := es.ServiceState.ValidateEndpoint(endpoint); err != nil {
+			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
-		logger.Info().Msg("adding endpoint to the list of valid endpoints.")
+		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", endpointAddr))
 	}
 
 	return filteredEndpointsAddr, nil
-}
-
-// isEndpointValid returns true if the input endpoint is valid for the passed
-// chain ID and query block height.
-func isEndpointValid(endpoint endpoint, chainID string, queryBlockHeight uint64) error {
-	endpointBlockHeight, err := endpoint.GetBlockHeight()
-	if err != nil {
-		return fmt.Errorf("isEndpointValid: error getting endpoint block height: %w", err)
-	}
-
-	if endpoint.ChainID != chainID {
-		return fmt.Errorf("isEndpointValid: expected chain ID %s, got %s", chainID, endpoint.ChainID)
-	}
-
-	if endpointBlockHeight < queryBlockHeight {
-		return fmt.Errorf("isEndpointValid: expected block height %d or higher, got %d", queryBlockHeight, endpointBlockHeight)
-	}
-
-	return nil
 }

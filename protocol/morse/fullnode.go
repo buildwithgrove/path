@@ -70,5 +70,4 @@ func (c FullNodeConfig) Validate() error {
 	return nil
 }
 
-// TODO_UPNEXT: add output, status code, and Morse-specific errors
-// Evidence Sealed error, etc.
+// TODO_MVP(@adshmh): add output, status code, and Morse-specific errors (e.g. Evidence Sealed error, etc.)

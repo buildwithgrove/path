@@ -3,51 +3,84 @@ package evm
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+// responseToBlockNumber provides the functionality required from a response by a requestContext instance.
+var _ response = responseToBlockNumber{}
 
 // responseUnmarshallerBlockNumber deserializes the provided payload
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerBlockNumber(data []byte) (response, error) {
-	var response responseToBlockNumber
-	err := json.Unmarshal(data, &response)
-	if err != nil {
-		response.unmarshallingErr = err
+func responseUnmarshallerBlockNumber(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error) {
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() {
+
+		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
+		return responseToBlockNumber{
+			logger: logger,
+
+			jsonRPCResponse: jsonrpcResp,
+		}, nil
 	}
 
-	return response, err
+	resultBz, err := jsonrpcResp.GetResultAsBytes()
+	if err != nil {
+		return responseToBlockNumber{
+			logger: logger,
+
+			jsonRPCResponse: jsonrpcResp,
+		}, err
+	}
+
+	var result string
+	err = json.Unmarshal(resultBz, &result)
+
+	return responseToBlockNumber{
+		logger: logger,
+
+		jsonRPCResponse: jsonrpcResp,
+		result:          result,
+	}, err
 }
 
 // responseToBlockNumber captures the fields expected in a
 // response to an `eth_blockNumber` request.
 type responseToBlockNumber struct {
-	ID      jsonrpc.ID      `json:"id"`
-	JSONRPC jsonrpc.Version `json:"jsonrpc"`
-	Result  string          `json:"result"`
+	logger polylog.Logger
 
-	unmarshallingErr error
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
+
+	// result stores the result field of a response to a `eth_blockNumber` request.
+	result string
 }
 
-func (r responseToBlockNumber) GetObservation() (observation, bool) {
-	return observation{
-		BlockHeight: r.Result,
-	}, true
+// GetObservation returns an observation using an `eth_blockNumber` request's response.
+// Implements the response interface.
+func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObservation {
+	return qosobservations.EVMEndpointObservation{
+		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
+			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
+				BlockNumberResponse: r.result,
+			},
+		},
+	}
 }
 
 func (r responseToBlockNumber) GetResponsePayload() []byte {
-	if r.unmarshallingErr != nil {
-		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
-		// if the unmarshalling failed.
-		return []byte("{}")
-	}
-
-	bz, err := json.Marshal(r)
+	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
+	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): return a JSONRPC response indicating the error,
-		// if marshalling failed.
-		return []byte("{}")
+		// This should never happen: log an entry but return the response anyway.
+		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
 	}
-
 	return bz
 }
