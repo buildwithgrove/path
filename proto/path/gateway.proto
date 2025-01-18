@@ -16,16 +16,16 @@ enum RequestType {
   REQUEST_TYPE_SYNTHETIC = 2; // Service request sent by the endpoint hydrator: see gateway/hydrator.go.
 }
 
-// GatewayObservations is the set of observations on a service request, made from the perespective of a gateway.
+// GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
 // Examples include the geographic region of the request, the request type, etc.
 message GatewayObservations {
 
-    // The geographic region where the gateway serving the request was located.
-    // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
-  // region captures the name of the region in which the PATH instance that processed the request is deployed.
+  // The geographic region where the gateway serving the request was located.
   // DEV_NOTE: It aligns with typical cloud regions (e.g. us-east) but kept as a string for simplicity.
+    // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
   string region = 1;
 
-  // Whether the request was sent by a user or synthetically generated, e.g. by the endpoint hydrator.
-  RequestType request_type = 2; 
+  // Specifies the request type.
+  // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
+  RequestType request_type = 2;
 }

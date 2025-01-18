@@ -30,10 +30,9 @@ type QoS struct {
 	Logger polylog.Logger
 }
 
-// ParseHTTPRequest builds a request context from the provided HTTP request.
-// It returns an error if the HTTP request cannot be parsed as a JSONRPC request.
-//
-// This method implements the gateway.QoSService interface.
+// ParseHTTPRequest builds a request context from an HTTP request.
+// Returns (context, false) if request cannot be parsed as JSONRPC.
+// Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -45,12 +44,13 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromUserError(err), false
 	}
 
-	// TODO_TECHDEBT(@adshmh): validate the resulting JSONRPC request to block invalid requests from being sent to endpoints.
-	// TODO_IMPROVE(@adshmh): method-specific validation of the JSONRPC request.
+	// TODO_TECHDEBT(@adshmh): Add JSONRPC request validation to block invalid requests
+	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
+		logger: qos.Logger,
+
 		jsonrpcReq:    jsonrpcReq,
 		endpointStore: qos.EndpointStore,
-		logger:        qos.Logger,
 
 		isValid: true,
 	}, true
@@ -70,20 +70,19 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 	}, true
 }
 
-// ApplyObservations updates the stored endpoints and the "estimated" blockchain state using the supplied observations.
-// This method implements the gateway.QoSService interface.
+// ApplyObservations updates endpoint storage and blockchain state from observations.
+// Implements gateway.QoSService interface.
 func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
 		return errors.New("ApplyObservations: received nil")
 	}
 
-	evmObservations := observations.GetEVM()
+	evmObservations := observations.GetEvm()
 	if evmObservations == nil {
 		return errors.New("ApplyObservations: received nil EVM observation")
 	}
 
 	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(evmObservations)
 
-	// update the (estimated) current state of the blockchain.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }

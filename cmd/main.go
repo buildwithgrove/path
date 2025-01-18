@@ -42,7 +42,7 @@ func main() {
 
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
-	protocol, err := getProtocol(config, logger)
+	protocol, err := getProtocol(logger, config)
 	if err != nil {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
@@ -55,22 +55,24 @@ func main() {
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(config.HydratorConfig, protocol, qosInstances, logger)
+	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	// setup the request parser which maps requests to the correst QoS instance.
+	// setup the request parser which maps requests to the correct QoS instance.
 	requestParser := &request.Parser{
+		Logger: logger,
+
 		QoSServices: qosInstances,
-		Logger:      logger,
 	}
 
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
+		Logger: logger,
+
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
-		Logger:            logger,
 	}
 
 	// If the Shannon protocol is used and the websocket endpoint URL is set,
@@ -92,11 +94,12 @@ func main() {
 	}
 
 	healthChecker := &health.Checker{
+		Logger: logger,
+
 		Components: components,
-		Logger:     logger,
 	}
 
-	apiRouter := router.NewRouter(gateway, healthChecker, config.GetRouterConfig(), logger)
+	apiRouter := router.NewRouter(logger, gateway, healthChecker, config.GetRouterConfig())
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}
@@ -140,9 +143,9 @@ func getConfigPath() (string, error) {
 // - If `shannon_config` is set it returns a Shannon protocol instance.
 // - If `morse_config` is set it returns a Morse protocol instance.
 // - If neither is set, it returns an error.
-func getProtocol(config config.GatewayConfig, logger polylog.Logger) (gateway.Protocol, error) {
+func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
-		return getShannonProtocol(shannonConfig, logger)
+		return getShannonProtocol(logger, shannonConfig)
 	}
 
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {

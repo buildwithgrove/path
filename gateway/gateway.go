@@ -32,6 +32,8 @@ import (
 // request and the response is HTTP as it is sufficient for JSONRPC,
 // REST, Websockets and gRPC but may expand in the future.
 type Gateway struct {
+	Logger polylog.Logger
+
 	// HTTPRequestParser is used by the gateway instance to
 	// interpret an HTTP request as a pair of service ID and
 	// its corresponding QoS instance.
@@ -44,6 +46,7 @@ type Gateway struct {
 
 	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
+
 	// DataReporter is used to export, to the data pipeline, observations made in handling service requests.
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
@@ -53,8 +56,6 @@ type Gateway struct {
 	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
 	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
 	WebsocketEndpointURLs map[protocol.ServiceID]string
-
-	Logger polylog.Logger
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -87,11 +88,12 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// build a gatewayRequestContext with components necessary to process HTTP requests.
 	gatewayRequestCtx := &requestContext{
+		logger: g.Logger,
+
 		protocol:          g.Protocol,
 		httpRequestParser: g.HTTPRequestParser,
 		metricsReporter:   g.MetricsReporter,
 		dataReporter:      g.DataReporter,
-		logger:            g.Logger,
 		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
 		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
 	}
@@ -124,6 +126,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
+	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 

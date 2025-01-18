@@ -111,7 +111,7 @@ properties:
           rpc_url:
             description: "HTTP URL for the Shannon full node."
             type: string
-            pattern: "^(http|https)://.*$"
+            pattern: "^(tcp|http|https)://.*$"
           grpc_config:
             description: "gRPC configuration for the Shannon full node."
             type: object

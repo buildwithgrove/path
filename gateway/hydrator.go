@@ -1,4 +1,4 @@
-// TODO_UPNEXT(@adshmh): Add a mermaid diagram of the different structural
+// TODO_MVP(@adshmh): Add a mermaid diagram of the different structural
 // (i.e. packages, types) components to help clarify the role of each.
 package gateway
 
@@ -38,16 +38,19 @@ var endpointHydratorRunInterval = 10_000 * time.Millisecond
 // 2. Performing the required checks on the endpoint, in the form of a (synthetic) service request.
 // 3. Reporting the results back to the service's QoS instance.
 type EndpointHydrator struct {
+	Logger polylog.Logger
+
+	// Protocol instance to be used by the hydrator when listing endpoints and sending relays.
 	Protocol
 
 	// ActiveQoSServices provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
 	// IMPORTANT: ActiveQoSServices should not be modified after the hydrator is started.
 	ActiveQoSServices map[protocol.ServiceID]QoSService
-	Logger            polylog.Logger
 
 	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
+
 	// DataReporter is used to export, to the data pipeline, observations made in handling service requests.
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
@@ -66,14 +69,14 @@ type EndpointHydrator struct {
 }
 
 // Start should be called to signal this instance of the hydrator
-// to start generating and sending out the endpoint check requests.
+// to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be proivded.")
+		return errors.New("an instance of Protocol must be provided.")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
-		return errors.New("at-least one covered service must be specified")
+		return errors.New("at least one QoS instance must be provided to the endpoint hydrator to start sending check requests")
 	}
 
 	go func() {
@@ -89,7 +92,8 @@ func (eph *EndpointHydrator) Start() error {
 }
 
 func (eph *EndpointHydrator) run() {
-	eph.Logger.With("services_count", len(eph.ActiveQoSServices)).Info().Msg("Running Hydrator")
+	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
+	logger.Info().Msg("Running Endpoint Hydrator")
 
 	// TODO_TECHDEBT: ensure every outgoing request (or the goroutine checking a service ID)
 	// has a timeout set.
@@ -107,18 +111,19 @@ func (eph *EndpointHydrator) run() {
 
 			err := eph.performChecks(serviceID, serviceQoS)
 			if err != nil {
-				logger.Warn().Err(err).Msg("failed to run checks for service")
+				logger.Warn().Err(err).Msg("failed to run QoS checks for service")
 				return
 			}
 
 			successfulServiceChecks.Store(svcID, true)
-			logger.Info().Msg("successfully completed checks for service")
+			logger.Info().Msg("successfully completed QoS checks for service")
 		}(svcID, svcQoS)
 	}
 	wg.Wait()
 
 	eph.healthStatusMutex.Lock()
 	defer eph.healthStatusMutex.Unlock()
+
 	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
 }
 
@@ -154,14 +159,19 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		}
 
 		for _, serviceRequestCtx := range requiredChecks {
-			// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct: marking the request as Synthetic.
+			// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
+			// Mark the request as Synthetic using the following steps:
+			// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
+			//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
+			//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
 			gatewayRequestCtx := requestContext{
+				logger: logger,
+
 				serviceID:   serviceID,
 				serviceQoS:  serviceQoS,
 				qosCtx:      serviceRequestCtx,
 				protocol:    eph.Protocol,
 				protocolCtx: protocolRequestCtx,
-				logger:      logger,
 			}
 
 			err := gatewayRequestCtx.HandleRelayRequest()

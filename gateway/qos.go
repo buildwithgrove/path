@@ -41,12 +41,15 @@ type RequestQoSContext interface {
 	GetHTTPResponse() HTTPResponse
 
 	// GetObservations returns the set of QoS-level observations contained in the context.
-	// For example:
+	//
+	// Hypothetical illustrative example.
+	//
 	// If the context is:
 	// 	- Service: Solana
 	// 	- SelectedEndpoint: `endpoint_101`
 	// 	- Request: `getHealth`
 	// 	- Endpoint response: an error
+	//
 	// Then the observation can be:
 	// 	- `endpoint_101` is unhealthy.
 	GetObservations() qos.Observations

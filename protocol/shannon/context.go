@@ -149,7 +149,7 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 // 2. Report metrics on the operation of PATH (in the metrics package)
 // 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
 //
-// This method implements the gateway.ProtocolRequestContext interface.
+// Implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
 	return protocolobservations.Observations{}
 }
