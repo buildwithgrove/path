@@ -30,7 +30,7 @@ type ObservationSetMessage struct {
 	Payload            []byte `json:"payload"`
 }
 
-// TODO_UPNEXT(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
+// TODO_MVP(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
 // MessagePlatform is used to:
 // A) Publish QoS observation sets for sharing
 // with other PATH instances, and

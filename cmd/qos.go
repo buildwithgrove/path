@@ -11,7 +11,7 @@ import (
 	"github.com/buildwithgrove/path/qos/evm"
 )
 
-// TODO_UPNEXT(@adshmh): enable Solana QoS instance through the following steps:
+// TODO_MVP(@adshmh): enable Solana QoS instance through the following steps:
 // 1. Add Solana alias + config to the configuration
 // 2. Build a Solana QoS instance using any required configuration options.
 // 3. Pass the Solana QoS instance to the endpoint hydrator, if enabled.
@@ -29,7 +29,7 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.BuildEVMQoSInstance(logger, config.GetEVMChainID(serviceID))
+			evmQoS := evm.NewQoSInstance(logger, config.GetEVMChainID(serviceID))
 			qosServices[serviceID] = evmQoS
 
 		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.

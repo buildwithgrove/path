@@ -5,46 +5,55 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 
-// SolanaObservations stores all the observations made by the Solana QoS on a single request.
-// A single request can result in multiple observations if:
-// 	- The originally selected endpoint returns an invalid response, AND
-//	- A retry mechanism sends the request to additional endpoint(s).
-message SolanaObservations {
+// SolanaRequestObservations captures QoS data for a single Solana blockchain service request,
+// including all observations made during potential retries.
+message SolanaRequestObservations {
+  // JSON-RPC request to the Solana blockchain service
+  // TODO_TECHDEBT: This assumes all SolanaVM blockchains only (and always) support JSON-RPC.
+  // May need expansion/refactoring for future blockchain support.
   JsonRpcRequest jsonrpc_request = 1;
+
+  // Multiple observations possible if:
+  // - Original endpoint returns invalid response
+  // - Retry mechanism activates
   repeated SolanaEndpointObservation endpoint_observations = 2;
 }
 
-// SolanaEndpointObservation captures a single observation regarding a single endpoint.
-// e.g.: an `ok` response to a `getHealth` request from an endpoint.
+// SolanaEndpointObservation captures a single endpoint's response to a request
 message SolanaEndpointObservation {
+  // Address of the endpoint handling the request
   string endpoint_addr = 1;
+
   oneof response_observation {
+    // Response from getEpochInfo
+    // Docs: https://solana.com/docs/rpc/http/getepochinfo
     SolanaGetEpochInfoResponse get_epoch_info_response = 2;
+
+    // Response from getHealth
+    // Docs: https://solana.com/docs/rpc/http/gethealth
     SolanaGetHealthResponse get_health_response = 3;
+
+    // Responses not used in endpoint validation (e.g., getAccountInfo)
     SolanaUnrecognizedResponse unrecognized_response = 4;
   }
 }
 
-// SolanaEpochInfoResponse stores an endpoint's response to a `getEpochInfo` request.
-// See the following link for more details:
-// https://solana.com/docs/rpc/http/getepochinfo
+// SolanaEpochInfoResponse stores getEpochInfo response data
+// Docs: https://solana.com/docs/rpc/http/getepochinfo
 message SolanaGetEpochInfoResponse {
-  // block_height is stored as a string to allow validation by any observing PATH instance.
+  // Stored as uint64 for cross-instance validation
   uint64 block_height = 1;
-  // epoch is stored as a string to allow validation by any observing PATH instance.
   uint64 epoch = 2;
 }
 
-// SolanaGetHealthResponse stores an endpoint's response to a `getHealth` request.
-// See the following link for more details:
-// https://solana.com/docs/rpc/http/gethealth
+// SolanaGetHealthResponse stores getHealth response data
+// Docs: https://solana.com/docs/rpc/http/gethealth
 message SolanaGetHealthResponse {
   string result = 1;
 }
 
-// SolanaUnrecognizedResponse is utilized if the request's method is ignored by state update and endpoint validation methods.
-// For example, as of PR #72, neither of `getTokenSupply` or `getTransaction` requests are used for endpoint validation.
-// Therefore only generic fields of the JSONRPC response (like `id`) are stored.
+// SolanaUnrecognizedResponse stores responses from methods not used in validation
+// Examples: getTokenSupply, getTransaction
 message SolanaUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
 }

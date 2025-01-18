@@ -3,38 +3,43 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
-// JsonRpcRequest contains all the fields of a JSONRPC request that are captured as an observation.
-// https://www.jsonrpc.org/specification#request_object
-// 
-// JsonRpcRequest is NOT intended to capture the full JSONRPC spec.
+// JsonRpcRequest represents essential fields of a JSON-RPC request for observation purposes.
+// Reference: https://www.jsonrpc.org/specification#request_object
 message JsonRpcRequest {
-  // id is the ID of the JSONRPC request.
+  // Client-established identifier. Must be a String, Number, or NULL if present.
   string id = 1;
-  // method is the method specified by the JSONRPC request.
+
+  // Name of the JSON-RPC method being called (e.g., eth_chainId for EVM chains)
   string method = 2;
+
+  // Note: This message captures only essential JSON-RPC fields.
+  // Add fields as needed.
 }
 
-// JsonRpcResponse contains the fields of a JSONRPC response that need to be captured as an observation:
-// https://www.jsonrpc.org/specification#response_object
-//
-// JsonRpcResponse is NOT intended to capture the full JSONRPC spec.
+// JsonRpcResponse represents essential fields of a JSON-RPC response for observation purposes.
+// Reference: https://www.jsonrpc.org/specification#response_object
 message JsonRpcResponse {
-  // id is the ID field of the JSONRPC response.
+  // Must match the id value from the corresponding request
   string id = 1;
-  // result stores the `result` field of tje JSONRPC response.
+
+  // JSON-serializable response data
   string result = 2;
-  // err stores the JSONRPC response's error field, if set.
-  optional JsonRpcResponseError err=3;
+
+  // Error details, if the request failed
+  optional JsonRpcResponseError err = 3;
+
+  // Note: This message captures only essential JSON-RPC fields.
+  // Add fields as needed.
 }
 
-// JsonRpcResponseError contains the fields of a JSONRPC response error object:
-// https://www.jsonrpc.org/specification#error_object
+// JsonRpcResponseError represents core error fields from a JSON-RPC response.
+// Reference: https://www.jsonrpc.org/specification#error_object
 //
-// JsonRpcResponseError is NOT intended to capture the full JSONRPC spec:
-// it only maintains the data that is required for QoS observations.
+// Only includes fields required for QoS observations.
 message JsonRpcResponseError {
-  // code stores the `code` field of a JSONRPC response's error object.
+  // Error code indicating the type of failure
   int64 code = 1;
-  // message stores the `message` field of a JSONRPC response's error object.
+
+  // Human-readable error description
   string message = 2;
 }

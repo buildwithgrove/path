@@ -31,7 +31,7 @@ type requestContext struct {
 
 // AvailableEndpoints returns the list of available endpoints for the current request context.
 // This list is populated by the Morse protocol instance when building the request context.
-// This method implements the gateway.ProtocolRequestContext interface.
+// Implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	var availableEndpoints []protocol.Endpoint
 
@@ -98,15 +98,15 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 	return nil
 }
 
-// TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
-// GetObservations returns the set of Shannon protocol-level observations for the current request context.
-// The returned observations are used to:
-// 1. Update the Shannon's endpoint store.
-// 2. Report metrics on the operation of PATH (in the metrics package)
-// 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
+// GetObservations returns Morse protocol-level observations from the current request context.
+// Used for:
+// - Updating Morse's endpoint store
+// - Reporting PATH operation metrics
+// - Sharing observations via messaging (NATS, REDIS) for data pipeline consumption
 //
-// This method implements the gateway.ProtocolRequestContext interface.
+// Implements gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
+	// TODO_MVP(@adshmh): implement MVP set of Morse protocol-level observations
 	return protocolobservations.Observations{}
 }
 

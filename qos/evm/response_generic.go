@@ -12,6 +12,7 @@ import (
 const (
 	// errCodeUnmarshalling is set as the JSONRPC response's error code if the endpoint returns a malformed response
 	errCodeUnmarshalling = -32600
+
 	// errMsgUnmarshalling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshalling = "the response returned by the endpoint is not a valid JSONRPC response"
 
@@ -22,39 +23,41 @@ const (
 	errDataFieldUnmarshallingErr = "unmarshalling_error"
 )
 
-// TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
+// TODO_MVP(@adshmh): implement the generic jsonrpc response
 // (with the scope limited to an EVM-based blockchain)
 // responseGeneric captures the fields expected in response to any request on an
 // EVM-based blockchain. It is intended to be used when no validation/observation
 // is applicable to the corresponding request's JSONRPC method.
 // i.e. when there are no unmarshallers/structs matching the method specified by the request.
 type responseGeneric struct {
-	jsonrpc.Response
-	Logger polylog.Logger
+	logger polylog.Logger
+
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
 }
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
 // This allows sharing data with other entities, e.g. a data pipeline.
-// This method implements the response interface.
+// Implements the response interface.
 func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.Response.ID.String(),
+					Id: r.jsonRPCResponse.ID.String(),
 				},
 			},
 		},
 	}
 }
 
-// TODO_UPNEXT(@adshmh): handle any unmarshalling errors
+// TODO_MVP(@adshmh): handle any unmarshalling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
+	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
 	}
 	return bz
 }
@@ -62,28 +65,29 @@ func (r responseGeneric) GetResponsePayload() []byte {
 // responseUnmarshallerGeneric unmarshal the provided byte slice
 // into a responseGeneric struct and saves any data that may be
 // needed for producing a response payload into the struct.
-func responseUnmarshallerGeneric(jsonrpcReq jsonrpc.Request, data []byte, logger polylog.Logger) (response, error) {
+func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
 	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		return getGenericJSONRPCErrResponse(jsonrpcReq.ID, data, err, logger), nil
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), nil
 	}
 
 	return responseGeneric{
-		Response: response,
-		Logger:   logger,
+		logger: logger,
+
+		jsonRPCResponse: response,
 	}, nil
 }
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
-func getGenericJSONRPCErrResponse(id jsonrpc.ID, malformedResponsePayload []byte, err error, logger polylog.Logger) responseGeneric {
+func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
 	errData := map[string]string{
 		errDataFieldRawBytes:         string(malformedResponsePayload),
 		errDataFieldUnmarshallingErr: err.Error(),
 	}
 
 	return responseGeneric{
-		Response: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
+		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
 	}
 }
 

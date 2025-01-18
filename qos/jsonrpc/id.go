@@ -9,13 +9,20 @@ import (
 // Specifically, the ability to handle the "null" value as defined in the spec.
 // See the following link for more details:
 // https://www.jsonrpc.org/specification
+//
+// JSON-RPC ID requirements:
+// - Must be a String, Number, or NULL if included
+// - Should not be NULL in normal operation
+// - Numbers should not contain fractional parts
+// - Server must reply with the same value in the Response object
+// - Used to correlate context between request/response
 type ID struct {
 	intID int
 	strID string
 }
 
-// String returns the string form of ID.
-// strID field, if set, takes precedence as the returned value.
+// String returns ID as a string.
+// strID takes precedence if both fields are set.
 func (id ID) String() string {
 	if id.strID != "" {
 		return id.strID
@@ -23,7 +30,6 @@ func (id ID) String() string {
 
 	return fmt.Sprintf("%d", id.intID)
 }
-
 func (id ID) MarshalJSON() ([]byte, error) {
 	if id.intID > 0 {
 		return []byte(fmt.Sprintf("%d", id.intID)), nil

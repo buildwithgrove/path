@@ -22,28 +22,37 @@ var (
 // requestContext is responsible for performing the steps necessary to complete a service request.
 // As of PR #72, it is limited in scope to HTTP service requests.
 type requestContext struct {
+	logger polylog.Logger
+
+	// httpRequestParser is used by the request context to interpret an HTTP request as a pair of:
+	// 	1. service ID
+	// 	2. The service ID's corresponding QoS instance.
 	httpRequestParser HTTPRequestParser
 
 	// metricsReporter is used to export metrics based on observations made in handling service requests.
 	metricsReporter RequestResponseReporter
+
 	// dataReporter is used to export, to the data pipeline, observations made in handling service requests.
 	// It is declared separately from the `metricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	dataReporter RequestResponseReporter
 
+	// QoS related request context
 	serviceID  protocol.ServiceID
 	serviceQoS QoSService
 	qosCtx     RequestQoSContext
 
+	// Protocol related request context
 	protocol    Protocol
 	protocolCtx ProtocolRequestContext
 
-	logger polylog.Logger
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
 	presetFailureHTTPResponse HTTPResponse
 
-	httpObservations    observation.HTTPRequestObservations
+	// httpObservations stores the observations related to the HTTP request.
+	httpObservations observation.HTTPRequestObservations
+	// gatewayObservations stores gateway related observations.
 	gatewayObservations observation.GatewayObservations
 }
 
@@ -82,14 +91,14 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	return nil
 }
 
-// BuildProtocolContextFromHTTP builds the Protocol context using the supplied service ID and HTTP request.
+// BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
 // The constructed Protocol instance will be used for:
 //   - Sending relays to endpoint(s)
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, httpReq)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
+		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
@@ -154,12 +163,15 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request, e.g. a non-JSONRPC payload for an EVM service:
+	// 	1. The QoS instance rejected the request:
 	//		QoS returns a properly formatted error response.
+	//               e.g. a non-JSONRPC payload for an EVM service.
 	// 	2. Protocol relay failed for any reason:
-	//		QoS returns a generic, properly formatted response: e.g. a JSONRPC error response.
+	//		QoS returns a generic, properly formatted response.
+	//.              e.g. a JSONRPC error response.
 	//	3. Protocol relay was sent successfully:
-	//		QoS returns the endpoint's response: e.g. the chain ID for a `eth_chainId` request.
+	//		QoS returns the endpoint's response.
+	//               e.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 
@@ -192,11 +204,13 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 	logger.Info().Msg("Completed processing the HTTP request and returned an HTTP response.")
 }
 
-// BroadcastAllObservations delivers the collected details regarding all aspects of the service request to all the interested parties.
+// BroadcastAllObservations delivers the collected details regarding all aspects
+// of the service request to all the interested parties.
+//
 // For example:
-//   - QoS-level observations, e.g. endpoint validation results
-//   - Protocol-level observations, e.g. "maxed-out" endpoints.
-//   - Gateway-level observations, e.g. the request ID.
+//   - QoS-level observations; e.g. endpoint validation results
+//   - Protocol-level observations; e.g. "maxed-out" endpoints.
+//   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
 	var (
 		protocolObservations protocolobservations.Observations
@@ -207,20 +221,19 @@ func (rc *requestContext) BroadcastAllObservations() {
 	go func() {
 		if rc.protocolCtx != nil {
 			protocolObservations = rc.protocolCtx.GetObservations()
-			err := rc.protocol.ApplyObservations(&protocolObservations)
-			if err != nil {
-				rc.logger.Warn().Err(err).Msg("error publishing protocol observations.")
+			if err := rc.protocol.ApplyObservations(&protocolObservations); err != nil {
+				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
 			}
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
 		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
+		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		if rc.qosCtx != nil {
 			qosObservations := rc.qosCtx.GetObservations()
-			err := rc.serviceQoS.ApplyObservations(&qosObservations)
-			if err != nil {
-				rc.logger.Warn().Err(err).Msg("error publishing QoS observations.")
+			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
+				rc.logger.Warn().Err(err).Msg("error applying QoS observations.")
 			}
 		}
 

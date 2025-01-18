@@ -26,9 +26,10 @@ const HTTPHeaderTargetServiceID = "target-service-id"
 // The Parser struct is responsible for parsing the authoritative service ID from the request's
 // 'target-service-id' header and returning the corresponding QoS service implementation.
 type Parser struct {
+	Logger polylog.Logger
+
 	// QoSServices is the set of QoS services to which the request parser should map requests based on the extracted service ID.
 	QoSServices map[protocol.ServiceID]gateway.QoSService
-	Logger      polylog.Logger
 }
 
 /* --------------------------------- HTTP Request Parsing -------------------------------- */

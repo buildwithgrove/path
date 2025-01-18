@@ -11,20 +11,23 @@ import (
 
 // responseUnmarshallerGetEpochInfo deserializes the provided payload into a responseToGetEpochInfo struct,
 // adding any encountered errors to the returned struct.
-func responseUnmarshallerGetEpochInfo(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	if jsonrpcResp.IsError() { // The endpoint returned an error: no need to do further processing of the response.
+func responseUnmarshallerGetEpochInfo(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() {
 		// Note: this assumes the `getEpochInfo` request sent to the endpoint was valid.
 		return responseToGetEpochInfo{
+			Logger: logger,
+
 			Response: jsonrpcResp,
-			Logger:   logger,
 		}, nil
 	}
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToGetEpochInfo{
+			Logger: logger,
+
 			Response: jsonrpcResp,
-			Logger:   logger,
 		}, err
 	}
 
@@ -59,7 +62,7 @@ type responseToGetEpochInfo struct {
 }
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getEpochInfo` request.
-// This method implements the response interface used by the requestContext struct.
+// Implements the response interface used by the requestContext struct.
 func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointObservation {
 	return qosobservations.SolanaEndpointObservation{
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetEpochInfoResponse{
@@ -71,7 +74,7 @@ func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointO
 	}
 }
 
-// TODO_UPNEXT(@adshmh): handle the following scenarios:
+// TODO_MVP(@adshmh): handle the following scenarios:
 //  1. An endpoint returned a malformed, i.e. Not in JSONRPC format, response.
 //     The user-facing response should include the request's ID.
 //  2. An endpoint returns a JSONRPC response indicating a user error:

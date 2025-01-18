@@ -1,13 +1,13 @@
 package evm
 
-// TODO_UPNEXT(@adshmh): return a request context to handle internal errors.
+// TODO_MVP(@adshmh): return a request context to handle internal errors.
 // requestContextFromInternalError returns a request context
 // for an internal error, e.g. error on reading the HTTP request body.
 func requestContextFromInternalError(err error) *requestContext {
 	return nil
 }
 
-// TODO_UPNEXT(@adshmh): return a request context to handle user errors.
+// TODO_MVP(@adshmh): return a request context to handle user errors.
 // requestContextFromUserError returns a request context
 // for a user error, e.g. an unmarshalling error is a
 // user error because the request body, provided by the user,

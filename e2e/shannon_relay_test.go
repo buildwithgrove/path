@@ -51,7 +51,7 @@ func Test_ShannonRelay(t *testing.T) {
 			relayID:   "1002",
 			body:      `{"jsonrpc": "2.0", "id": "1002", "method": "eth_chainId"}`,
 		},
-		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
+		// TODO_MVP(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
 	}
 
 	// Request path is arbitrary, as it is not current used by PATH.

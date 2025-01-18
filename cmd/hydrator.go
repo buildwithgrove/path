@@ -16,10 +16,10 @@ import (
 // The EndpointHydrator will not be started if no
 // service QoS generators are specified.
 func setupEndpointHydrator(
-	hydratorConfig config.EndpointHydratorConfig,
+	logger polylog.Logger,
 	protocolInstance gateway.Protocol,
 	qosServices map[protocol.ServiceID]gateway.QoSService,
-	logger polylog.Logger,
+	hydratorConfig config.EndpointHydratorConfig,
 ) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
 		return nil, errors.New("no logger provided")
@@ -32,25 +32,26 @@ func setupEndpointHydrator(
 	for _, serviceID := range hydratorConfig.ServiceIDs {
 		serviceQoS, found := qosServices[serviceID]
 		if !found {
-			return nil, fmt.Errorf("invalid service ID: %s", serviceID)
+			return nil, fmt.Errorf("QoS service not found for service ID: %s", serviceID)
 		}
 
 		hydratorQoSServices[serviceID] = serviceQoS
 	}
 
 	if len(hydratorQoSServices) == 0 {
-		logger.Warn().Msg("endpoint hydrator is disabled: no active service QoS instances are specified")
+		logger.Warn().Msg("endpoint hydrator is fully disabled: no (zero) active service QoS instances are specified")
 		return nil, nil
 	}
 
 	if protocolInstance == nil {
-		return nil, errors.New("endpoint hydrator enabled but no protocol provided")
+		return nil, errors.New("Endpoint hydrator enabled but no protocol provided. This should never happen.")
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
+		Logger: logger,
+
 		Protocol:          protocolInstance,
 		ActiveQoSServices: hydratorQoSServices,
-		Logger:            logger,
 	}
 
 	err := endpointHydrator.Start()

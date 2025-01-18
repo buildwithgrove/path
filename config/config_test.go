@@ -54,6 +54,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				HydratorConfig: EndpointHydratorConfig{
 					ServiceIDs: []protocol.ServiceID{"F00C"},
 				},
+				Logger: LoggerConfig{
+					Level: defaultLogLevel,
+				},
 			},
 			wantErr: false,
 		},
@@ -83,6 +86,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					ReadTimeout:        defaultReadTimeout,
 					WriteTimeout:       defaultWriteTimeout,
 					IdleTimeout:        defaultIdleTimeout,
+				},
+				Logger: LoggerConfig{
+					Level: defaultLogLevel,
 				},
 			},
 			wantErr: false,
@@ -183,6 +189,55 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			yamlData: "invalid_yaml: [",
 			wantErr:  true,
 		},
+		{
+			name:     "should load config with valid logger level",
+			filePath: "valid_logger.yaml",
+			yamlData: `morse_config:
+  full_node_config:
+    url: "https://pocket-rpc.liquify.com"
+    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+    http_config:
+      retries: 3
+      timeout: "5000ms"
+logger_config:
+  level: "debug"`,
+			want: GatewayConfig{
+				MorseConfig: &morse.MorseGatewayConfig{
+					FullNodeConfig: morseprotocol.FullNodeConfig{
+						URL:             "https://pocket-rpc.liquify.com",
+						RelaySigningKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
+						HttpConfig: morseprotocol.HttpConfig{
+							Retries: 3,
+							Timeout: 5000 * time.Millisecond,
+						},
+					},
+				},
+				Router: RouterConfig{
+					Port:               defaultPort,
+					MaxRequestBodySize: defaultMaxRequestBodySize,
+					ReadTimeout:        defaultReadTimeout,
+					WriteTimeout:       defaultWriteTimeout,
+					IdleTimeout:        defaultIdleTimeout,
+				},
+				Logger: LoggerConfig{
+					Level: "debug",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "should return error for invalid logger level",
+			filePath: "invalid_logger_level.yaml",
+			yamlData: `
+			morse_config:
+			  full_node_config:
+			    url: "https://pocket-rpc.liquify.com"
+			    relay_signing_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
+			logger_config:
+			  level: "invalid_level"
+			`,
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -208,6 +263,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 
 func compareConfigs(c *require.Assertions, want, got GatewayConfig) {
 	c.Equal(want.Router, got.Router)
+	c.Equal(want.Logger, got.Logger)
 	if want.MorseConfig != nil {
 		compareMorseFullNodeConfig(c, want.MorseConfig.FullNodeConfig, got.MorseConfig.FullNodeConfig)
 		c.Equal(want.MorseConfig.SignedAATs, got.MorseConfig.SignedAATs)

@@ -3,14 +3,16 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
-// MorseObservations holds Morse-specific observations gathered through sending 
-// relay(s) to handle a service request.
-message MorseObservations {
-  // gigastake_app_address is the address of the application on behalf of which the 
-  // relay(s) associated with the service request was signed.
-  string gigastake_app_address = 1;
+// MorseRequestObservations contains Morse-specific observations collected from relays
+// handling a single service request.
+message MorseRequestObservations {
+  // Application address that signed the associated relay(s).
+  // Note: In Grove terminology, "Gigastake" refers to Morse apps staked across multiple blockchains.
+  string app_address = 1;
 }
 
+// MorseObservationsList is a wrapper message that enables embedding lists of
+// Morse observations in other protocol buffers.
 message MorseObservationsList {
-  repeated MorseObservations observations = 1;
+  repeated MorseRequestObservations observations = 1;
 }

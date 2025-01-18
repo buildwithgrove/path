@@ -44,10 +44,11 @@ type endpointResponse struct {
 // requestContext provides the functionality required
 // to support QoS for an EVM blockchain service.
 type requestContext struct {
+	logger polylog.Logger
+
 	// TODO_TECHDEBT: support batch JSONRPC requests
 	jsonrpcReq    jsonrpc.Request
 	endpointStore *EndpointStore
-	logger        polylog.Logger
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
@@ -70,12 +71,12 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
-// TODO_UPNEXT(@adshmh): Ensure the JSONRPC request struct
+// TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
 func (rc requestContext) GetServicePayload() protocol.Payload {
 	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): find a way to guarantee this never happens,
+		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
 		return protocol.Payload{}
@@ -101,7 +102,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.jsonrpcReq, responseBz, rc.logger)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -112,8 +113,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// TODO_UPNEXT(@adshmh): add `Content-Type: application/json` header.
-//
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
 // single JSONRPC requests and tracking endpoints' response(s) to each.
 // This would also require combining the responses into a single, valid
@@ -128,7 +127,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// have been reported to the request context.
 	// intentionally ignoring the error here, since unmarshallResponse
 	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.jsonrpcReq, []byte(""), rc.logger)
+	response, _ := unmarshalResponse(rc.logger, rc.jsonrpcReq, []byte(""))
 
 	if len(rc.endpointResponses) >= 1 {
 		// return the last endpoint response reported to the context.
@@ -140,8 +139,8 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
-// GetObservations returns all the observations contained in the request context.
-// This method implements the gateway.RequestQoSContext interface.
+// GetObservations returns all endpoint observations from the request context.
+// Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
@@ -151,9 +150,13 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	}
 
 	return qosobservations.Observations{
-		ServiceObservations: &qosobservations.Observations_EVM{
-			EVM: &qosobservations.EVMObservations{
-				// TODO_TECHDEBT(@adshmh): set the JSONRPCRequest field.
+		ServiceObservations: &qosobservations.Observations_Evm{
+			Evm: &qosobservations.EVMRequestObservations{
+				// TODO_TECHDEBT(@adshmh): Set JSONRPCRequest field.
+				// Requires utility function to convert between:
+				// - qos.jsonrpc.Request
+				// - observation.qos.JsonRpcRequest
+				// Needed for setting JSONRPC fields in any QoS service's observations.
 				EndpointObservations: observations,
 			},
 		},
@@ -165,7 +168,7 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 }
 
 // Select returns the address of an endpoint using the request context's endpoint store.
-// This method implements the protocol.EndpointSelector interface.
+// Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
