@@ -9,7 +9,6 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/message"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -18,10 +17,7 @@ import (
 // for individual service request contexts.
 const observationSetTopic = "qos.raw_data_set"
 
-// Messenger provides the functionality required by
-// the gateway package for publishing QoS data,
-// to be shared among multiple PATH instances.
-var _ gateway.QoSPublisher = &Messenger{}
+// TODO_MVP(@adshmh): Add the functionality required for fetching and applying QoS observations shared by other PATH instances.
 
 type ServiceQoS interface {
 	message.Unmarshaller
@@ -34,7 +30,7 @@ type ObservationSetMessage struct {
 	Payload            []byte `json:"payload"`
 }
 
-// TODO_UPNEXT(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
+// TODO_MVP(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
 // MessagePlatform is used to:
 // A) Publish QoS observation sets for sharing
 // with other PATH instances, and

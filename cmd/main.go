@@ -47,12 +47,7 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosPublisher, err := getQoSPublisher(config.MessagingConfig)
-	if err != nil {
-		log.Fatalf("failed to setup the QoS publisher: %v", err)
-	}
-
-	gatewayQoSInstances, hydratorQoSGenerators, err := getServiceQoSInstances(config, logger)
+	qosInstances, err := getServiceQoSInstances(config, logger)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
@@ -60,18 +55,24 @@ func main() {
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(protocol, qosPublisher, hydratorQoSGenerators, logger)
+	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	requestParser := request.NewParser(gatewayQoSInstances, logger)
+	// setup the request parser which maps requests to the correct QoS instance.
+	requestParser := &request.Parser{
+		Logger: logger,
 
+		QoSServices: qosInstances,
+	}
+
+	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
+		Logger: logger,
+
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
-		QoSPublisher:      qosPublisher,
-		Logger:            logger,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
@@ -84,11 +85,12 @@ func main() {
 	}
 
 	healthChecker := &health.Checker{
+		Logger: logger,
+
 		Components: components,
-		Logger:     logger,
 	}
 
-	apiRouter := router.NewRouter(gateway, healthChecker, config.GetRouterConfig(), logger)
+	apiRouter := router.NewRouter(logger, gateway, healthChecker, config.GetRouterConfig())
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}

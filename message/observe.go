@@ -19,7 +19,7 @@ type ObservationSet interface {
 	Broadcast() error
 }
 
-// TODO_UPNEXT(@adshmh): consider using protobuf.
+// TODO_MVP(@adshmh): consider using protobuf.
 // Unmarshaller builds an instance of the ObservationSet,
 // matching a specific implementation, e.g. one provided by a service QoS.
 // Each service's QoS instance provides its own unique unmarshaller.

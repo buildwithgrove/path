@@ -12,6 +12,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -61,8 +62,9 @@ func NewProtocol(
 	}
 
 	return &Protocol{
+		Logger: logger,
+
 		FullNode: fullNode,
-		Logger:   logger,
 
 		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
 		// 1. Query onchain data for a gateway with the supplied address.
@@ -124,6 +126,21 @@ func (p *Protocol) BuildRequestContext(
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 	}, nil
+}
+
+// ApplyObservations updates protocol instance state based on endpoint observations.
+// Examples:
+// - Mark endpoints as invalid based on response quality
+// - Disqualify endpoints for a time period
+//
+// Implements gateway.Protocol interface.
+func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
+	// TODO_MVP(@adshmh):
+	//  1. Implement endpoint store for status tracking
+	//  2. Add validation logic to update store based on observations
+	//  3. Filter invalid endpoints before setting on requestContexts
+	//     (e.g., drop maxed-out endpoints for current session)
+	return nil
 }
 
 // Name satisfies the HealthCheck#Name interface function

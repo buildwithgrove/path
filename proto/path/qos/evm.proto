@@ -1,0 +1,61 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+// EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
+message EVMRequestObservations {
+  // The EVM blockchain service's JSON-RPC request.
+  // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
+  JsonRpcRequest jsonrpc_request = 1;
+
+  // EVM-specific observations from endpoint(s) that responded to the service request.
+  // Multiple observations may occur when:
+  // * Original endpoint fails
+  // * Request is sent to additional endpoints for data collection
+  repeated EVMEndpointObservation endpoint_observations = 2;
+}
+
+// EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
+// Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
+message EVMEndpointObservation {
+  // Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
+  string endpoint_addr = 1;
+
+  // Details of the response received from the endpoint
+  oneof response_observation {
+    // Response to `eth_chainId` request
+    // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+    EVMChainIDResponse chain_id_response = 2;
+
+    // Response to `eth_blockNumber` request
+    // References:
+    // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+    // * Chain IDs: https://chainlist.org
+    EVMBlockNumberResponse block_number_response = 3;
+
+    // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
+    EVMUnrecognizedResponse unrecognized_response = 4;
+  }
+  // TODO_MVP(@adshmh): add observations for archival checks.
+}
+
+// EVMChainIDResponse stores the response to an `eth_chainId` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+message EVMChainIDResponse {
+  string chain_id_response = 1;
+}
+
+// EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+message EVMBlockNumberResponse {
+  string block_number_response = 1;
+}
+
+// EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
+// Example: As of PR #72, `eth_call` requests are not used for endpoint validation
+message EVMUnrecognizedResponse {
+  JsonRpcResponse jsonrpc_response = 1;
+}
