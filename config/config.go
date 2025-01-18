@@ -39,7 +39,7 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 		return GatewayConfig{}, err
 	}
 
-	config.hydrateRouterConfig()
+	config.hydrateDefaults()
 
 	return config, config.validate()
 }
@@ -60,9 +60,10 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 
 /* --------------------------------- Gateway Config Hydration Helpers -------------------------------- */
 
-func (c *GatewayConfig) hydrateRouterConfig() {
+func (c *GatewayConfig) hydrateDefaults() {
 	c.Router.hydrateRouterDefaults()
 	c.Logger.hydrateLoggerDefaults()
+	c.HydratorConfig.hydrateHydratorDefaults()
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */
