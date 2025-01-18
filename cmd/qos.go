@@ -18,13 +18,7 @@ import (
 // 4. Pass the Solana QoS instance to the gateway.
 
 // getServiceQoSInstances returns all QoS instances to be used by the Gateway and the EndpointHydrator.
-func getServiceQoSInstances(
-	_ config.GatewayConfig,
-	logger polylog.Logger,
-) (
-	map[protocol.ServiceID]gateway.QoSService,
-	error,
-) {
+func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gateway.QoSService, error) {
 	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
@@ -35,7 +29,7 @@ func getServiceQoSInstances(
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.NewQoSInstance(logger)
+			evmQoS := evm.NewQoSInstance(logger, config.GetEVMChainID(serviceID))
 			qosServices[serviceID] = evmQoS
 
 		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.
