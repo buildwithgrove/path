@@ -88,9 +88,11 @@ type AuthDataRequest struct {
 
 func (x *AuthDataRequest) Reset() {
 	*x = AuthDataRequest{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *AuthDataRequest) String() string {
@@ -101,7 +103,7 @@ func (*AuthDataRequest) ProtoMessage() {}
 
 func (x *AuthDataRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[0]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -128,9 +130,11 @@ type AuthDataResponse struct {
 
 func (x *AuthDataResponse) Reset() {
 	*x = AuthDataResponse{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *AuthDataResponse) String() string {
@@ -141,7 +145,7 @@ func (*AuthDataResponse) ProtoMessage() {}
 
 func (x *AuthDataResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[1]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -171,9 +175,11 @@ type AuthDataUpdatesRequest struct {
 
 func (x *AuthDataUpdatesRequest) Reset() {
 	*x = AuthDataUpdatesRequest{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *AuthDataUpdatesRequest) String() string {
@@ -184,7 +190,7 @@ func (*AuthDataUpdatesRequest) ProtoMessage() {}
 
 func (x *AuthDataUpdatesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[2]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -219,9 +225,11 @@ type AuthDataUpdate struct {
 
 func (x *AuthDataUpdate) Reset() {
 	*x = AuthDataUpdate{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *AuthDataUpdate) String() string {
@@ -232,7 +240,7 @@ func (*AuthDataUpdate) ProtoMessage() {}
 
 func (x *AuthDataUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[3]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -295,9 +303,11 @@ type GatewayEndpoint struct {
 
 func (x *GatewayEndpoint) Reset() {
 	*x = GatewayEndpoint{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *GatewayEndpoint) String() string {
@@ -308,7 +318,7 @@ func (*GatewayEndpoint) ProtoMessage() {}
 
 func (x *GatewayEndpoint) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[4]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -367,9 +377,11 @@ type Auth struct {
 
 func (x *Auth) Reset() {
 	*x = Auth{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *Auth) String() string {
@@ -380,7 +392,7 @@ func (*Auth) ProtoMessage() {}
 
 func (x *Auth) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[5]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -458,9 +470,11 @@ type NoAuth struct {
 
 func (x *NoAuth) Reset() {
 	*x = NoAuth{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *NoAuth) String() string {
@@ -471,7 +485,7 @@ func (*NoAuth) ProtoMessage() {}
 
 func (x *NoAuth) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[6]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -497,9 +511,11 @@ type StaticAPIKey struct {
 
 func (x *StaticAPIKey) Reset() {
 	*x = StaticAPIKey{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *StaticAPIKey) String() string {
@@ -510,7 +526,7 @@ func (*StaticAPIKey) ProtoMessage() {}
 
 func (x *StaticAPIKey) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[7]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -545,9 +561,11 @@ type JWT struct {
 
 func (x *JWT) Reset() {
 	*x = JWT{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *JWT) String() string {
@@ -558,7 +576,7 @@ func (*JWT) ProtoMessage() {}
 
 func (x *JWT) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[8]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -598,9 +616,11 @@ type RateLimiting struct {
 
 func (x *RateLimiting) Reset() {
 	*x = RateLimiting{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *RateLimiting) String() string {
@@ -611,7 +631,7 @@ func (*RateLimiting) ProtoMessage() {}
 
 func (x *RateLimiting) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[9]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -667,9 +687,11 @@ type Metadata struct {
 
 func (x *Metadata) Reset() {
 	*x = Metadata{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *Metadata) String() string {
@@ -680,7 +702,7 @@ func (*Metadata) ProtoMessage() {}
 
 func (x *Metadata) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[10]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -746,9 +768,11 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+	if protoimpl.UnsafeEnabled {
+		mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
 }
 
 func (x *Empty) String() string {
@@ -759,7 +783,7 @@ func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
 	mi := &file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[11]
-	if x != nil {
+	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -945,6 +969,152 @@ func init() { file_envoy_auth_server_proto_gateway_endpoint_proto_init() }
 func file_envoy_auth_server_proto_gateway_endpoint_proto_init() {
 	if File_envoy_auth_server_proto_gateway_endpoint_proto != nil {
 		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*AuthDataRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*AuthDataResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*AuthDataUpdatesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*AuthDataUpdate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GatewayEndpoint); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[5].Exporter = func(v any, i int) any {
+			switch v := v.(*Auth); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[6].Exporter = func(v any, i int) any {
+			switch v := v.(*NoAuth); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[7].Exporter = func(v any, i int) any {
+			switch v := v.(*StaticAPIKey); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[8].Exporter = func(v any, i int) any {
+			switch v := v.(*JWT); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[9].Exporter = func(v any, i int) any {
+			switch v := v.(*RateLimiting); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*Metadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[11].Exporter = func(v any, i int) any {
+			switch v := v.(*Empty); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_envoy_auth_server_proto_gateway_endpoint_proto_msgTypes[5].OneofWrappers = []any{
 		(*Auth_NoAuth)(nil),

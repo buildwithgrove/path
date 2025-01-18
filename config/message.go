@@ -1,6 +1,6 @@
 package config
 
-// TODO_UPNEXT(@adshmh): add messaging system(s) configuration
+// TODO_MVP(@adshmh): add messaging system(s) configuration
 // settings to the MessagingConfig placeholder struct.
 //
 // MessagingConfig holds the configuration settings for

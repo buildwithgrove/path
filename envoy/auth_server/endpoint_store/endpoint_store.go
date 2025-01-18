@@ -23,12 +23,12 @@ const reconnectDelay = time.Second * 2
 
 // endpointStore is an in-memory store that stores gateway endpoints and their associated data.
 type endpointStore struct {
+	logger polylog.Logger
+
 	grpcClient proto.GatewayEndpointsClient
 
 	gatewayEndpoints   map[string]*proto.GatewayEndpoint
 	gatewayEndpointsMu sync.RWMutex
-
-	logger polylog.Logger
 }
 
 // Enforce that the EndpointStore implements the endpointStore interface.
@@ -36,14 +36,14 @@ var _ auth.EndpointStore = &endpointStore{}
 
 // NewEndpointStore creates a new endpoint store, which stores GatewayEndpoints in memory for fast access.
 // It initializes the store by requesting data from a remote gRPC server and listens for updates from the remote server to update the store.
-func NewEndpointStore(ctx context.Context, grpcClient proto.GatewayEndpointsClient, logger polylog.Logger) (*endpointStore, error) {
+func NewEndpointStore(ctx context.Context, logger polylog.Logger, grpcClient proto.GatewayEndpointsClient) (*endpointStore, error) {
 	store := &endpointStore{
+		logger: logger.With("component", "endpoint_data_store"),
+
 		grpcClient: grpcClient,
 
 		gatewayEndpoints:   make(map[string]*proto.GatewayEndpoint),
 		gatewayEndpointsMu: sync.RWMutex{},
-
-		logger: logger.With("component", "endpoint_data_store"),
 	}
 
 	// Initialize the endpoint store with the GatewayEndpoints from the remote gRPC server.

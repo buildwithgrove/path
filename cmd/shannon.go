@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol/shannon"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.

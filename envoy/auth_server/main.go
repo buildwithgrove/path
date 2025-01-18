@@ -57,7 +57,7 @@ func main() {
 	// Create a new endpoint store
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	endpointStore, err := store.NewEndpointStore(ctx, grpcClient, logger)
+	endpointStore, err := store.NewEndpointStore(ctx, logger, grpcClient)
 	if err != nil {
 		panic(err)
 	}
@@ -74,11 +74,12 @@ func main() {
 
 	// Create a new AuthHandler to handle the request auth
 	authHandler := &auth.AuthHandler{
+		Logger: logger,
+
 		EndpointStore:       endpointStore,
 		APIKeyAuthorizer:    &auth.APIKeyAuthorizer{},
 		JWTAuthorizer:       &auth.JWTAuthorizer{},
 		EndpointIDExtractor: endpointIDExtractor,
-		Logger:              logger,
 	}
 
 	// Create a new gRPC server for handling auth requests from Envoy

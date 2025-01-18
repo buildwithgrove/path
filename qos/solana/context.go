@@ -69,12 +69,12 @@ type requestContext struct {
 	endpointResponses []endpointResponse
 }
 
-// TODO_UPNEXT(@adshmh): Ensure the JSONRPC request struct
+// TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
 func (rc requestContext) GetServicePayload() protocol.Payload {
 	reqBz, err := json.Marshal(rc.JSONRPCReq)
 	if err != nil {
-		// TODO_UPNEXT(@adshmh): find a way to guarantee this never happens,
+		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
 		return protocol.Payload{}
@@ -100,9 +100,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.JSONRPCReq, responseBz, rc.Logger)
+	response, err := unmarshalResponse(rc.Logger, rc.JSONRPCReq, responseBz)
 
-	// TODO_UPNEXT(@adshmh): Drop the unmarshalling error: the returned response interface should provide methods to allow the caller to:
+	// TODO_MVP(@adshmh): Drop the unmarshalling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
 	// the originally selected one fails to return a valid response to the user's request.
 	// 2. Return a generic but valid JSONRPC response to the user.
@@ -115,7 +115,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// TODO_UPNEXT(@adshmh): add `Content-Type: application/json` header.
+// TODO_MVP(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
@@ -129,7 +129,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		// have been reported to the request context.
 		// intentionally ignoring the error here, since unmarshallResponse
 		// is being called with an empty endpoint response payload.
-		response, _ = unmarshalResponse(rc.JSONRPCReq, []byte(""), rc.Logger)
+		response, _ = unmarshalResponse(rc.Logger, rc.JSONRPCReq, []byte(""))
 	}
 
 	return httpResponse{
@@ -138,7 +138,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 }
 
 // GetObservations returns all the observations contained in the request context.
-// This method implements the gateway.RequestQoSContext interface.
+// Implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	observations := make([]*qosobservations.SolanaEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {

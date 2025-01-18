@@ -12,6 +12,7 @@ import (
 const (
 	// errCodeUnmarshalling is set as the JSONRPC response's error code if the endpoint returns a malformed response
 	errCodeUnmarshalling = -32600
+
 	// errMsgUnmarshalling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshalling = "the response returned by the endpoint is not a valid JSONRPC response"
 
@@ -22,7 +23,7 @@ const (
 	errDataFieldUnmarshallingErr = "unmarshalling_error"
 )
 
-// TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
+// TODO_MVP(@adshmh): implement the generic jsonrpc response
 // (with the scope limited to an EVM-based blockchain)
 // responseGeneric captures the fields expected in response to any request on an
 // EVM-based blockchain. It is intended to be used when no validation/observation
@@ -37,7 +38,7 @@ type responseGeneric struct {
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
 // This allows sharing data with other entities, e.g. a data pipeline.
-// This method implements the response interface.
+// Implements the response interface.
 func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
@@ -50,7 +51,7 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 	}
 }
 
-// TODO_UPNEXT(@adshmh): handle any unmarshalling errors
+// TODO_MVP(@adshmh): handle any unmarshalling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
@@ -72,13 +73,14 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	}
 
 	return responseGeneric{
-		logger:          logger,
+		logger: logger,
+
 		jsonRPCResponse: response,
 	}, nil
 }
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
-func getGenericJSONRPCErrResponse(logger polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
+func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
 	errData := map[string]string{
 		errDataFieldRawBytes:         string(malformedResponsePayload),
 		errDataFieldUnmarshallingErr: err.Error(),

@@ -12,13 +12,15 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 	}
 
 	evmEndpointStore := &EndpointStore{
+		Logger: logger,
+
 		ServiceState: serviceState,
-		Logger:       logger,
 	}
 
 	return &QoS{
+		Logger: logger,
+
 		ServiceState:  serviceState,
 		EndpointStore: evmEndpointStore,
-		Logger:        logger,
 	}
 }

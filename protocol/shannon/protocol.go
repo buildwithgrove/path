@@ -62,8 +62,9 @@ func NewProtocol(
 	}
 
 	return &Protocol{
+		Logger: logger,
+
 		FullNode: fullNode,
-		Logger:   logger,
 
 		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
 		// 1. Query onchain data for a gateway with the supplied address.
@@ -127,19 +128,18 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
-// TODO_MVP(@adshmh): complete the ApplyObservations method by implementing:
-//  1. An endpoint store to maintain a status for each endpoint.
-//  2. Validation logic that updates the endpoint store based on the supplied observations.
-//  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
-//     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
+// ApplyObservations updates protocol instance state based on endpoint observations.
+// Examples:
+// - Mark endpoints as invalid based on response quality
+// - Disqualify endpoints for a time period
 //
-// DEV_NOTE: Claude could make the above much easier to implement, use the following as a guide:
-// https://olshansky.substack.com/p/no-rss-feed-no-problem-using-claude
-//
-// ApplyObservations updates the protocol instance's internal state using the supplied observations.
-// e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
-// This method implements the gateway.Protocol interface.
+// Implements gateway.Protocol interface.
 func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
+	// TODO_MVP(@adshmh):
+	//  1. Implement endpoint store for status tracking
+	//  2. Add validation logic to update store based on observations
+	//  3. Filter invalid endpoints before setting on requestContexts
+	//     (e.g., drop maxed-out endpoints for current session)
 	return nil
 }
 

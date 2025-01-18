@@ -14,7 +14,7 @@ var _ gateway.RequestResponseReporter = &GrafanaMetricsReporter{}
 type GrafanaMetricsReporter struct{}
 
 // Publish exports the details of the service request and response(s) to Grafana.
-// This method implements the gateway.RequestResponseReporter interface.
+// Implements the gateway.RequestResponseReporter interface.
 func (gmr *GrafanaMetricsReporter) Publish(_ *observation.RequestResponseObservations) {
 	// TODO_MVP(@adshmh): implement the Publish method below by building and exporting the metrics as specified in the notion doc below:
 	// https://www.notion.so/buildwithgrove/PATH-Metrics-130a36edfff680febab5d31ee871af87

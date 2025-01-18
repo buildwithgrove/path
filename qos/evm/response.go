@@ -13,7 +13,11 @@ import (
 // E.g. to handle "eth_getBalance" requests, the following need to be defined:
 //  1. A new custom responseUnmarshaller
 //  2. A new custom struct  to handle the details of the particular response.
-type responseUnmarshaller func(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error)
+type responseUnmarshaller func(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error)
 
 var (
 	// All response types needs to implement the response interface.
@@ -39,6 +43,7 @@ func unmarshalResponse(
 ) (
 	response, error,
 ) {
+	// Unmarshal the raw response payload into a JSONRPC response.
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
 	if err != nil {
@@ -47,16 +52,20 @@ func unmarshalResponse(
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
+	// Validate the JSONRPC response.
 	if err := jsonrpcResponse.Validate(); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
-	// Note: we intentionally skip checking whether the JSONRPC response indicates an error. This allows the method-specific handler
-	// to determine how to respond to the user.
+	// We intentionally skip checking whether the JSONRPC response indicates an error.
+	// This allows the method-specific handler to determine how to respond to the user.
+
+	// Unmarshal the JSONRPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {
 		return unmarshaller(logger, jsonrpcReq, jsonrpcResponse)
 	}
 
+	// Default to a generic response if no method-specific response is found.
 	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
 }
