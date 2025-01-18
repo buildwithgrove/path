@@ -42,7 +42,7 @@ func main() {
 
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
-	protocol, err := getProtocol(config, logger)
+	protocol, err := getProtocol(logger, config)
 	if err != nil {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
@@ -131,9 +131,9 @@ func getConfigPath() (string, error) {
 // - If `shannon_config` is set it returns a Shannon protocol instance.
 // - If `morse_config` is set it returns a Morse protocol instance.
 // - If neither is set, it returns an error.
-func getProtocol(config config.GatewayConfig, logger polylog.Logger) (gateway.Protocol, error) {
+func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
-		return getShannonProtocol(shannonConfig, logger)
+		return getShannonProtocol(logger, shannonConfig)
 	}
 
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {
