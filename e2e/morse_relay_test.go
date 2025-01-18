@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -93,8 +95,13 @@ func Test_MorseRelay(t *testing.T) {
 					continue
 				}
 
-				err = validateJsonRpcResponse(test.relayID, bodyBytes)
-				if err != nil {
+				var parsedResponse jsonrpc.Response
+				if err := json.Unmarshal(bodyBytes, &parsedResponse); err != nil {
+					allErrors = append(allErrors, fmt.Errorf("response unmarshal error: %v --- %s", err, string(bodyBytes)))
+					continue
+				}
+
+				if err := parsedResponse.Validate(jsonrpc.IDFromStr(test.relayID)); err != nil {
 					allErrors = append(allErrors, fmt.Errorf("validation error: %v --- %s", err, string(bodyBytes)))
 					continue
 				}

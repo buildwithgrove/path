@@ -7,11 +7,13 @@ import (
 func TestResponse_Validate(t *testing.T) {
 	tests := []struct {
 		name     string
+		reqID    ID
 		response Response
 		wantErr  bool
 	}{
 		{
-			name: "should validate successfully with correct version and result",
+			name:  "should validate successfully with correct version and result",
+			reqID: IDFromStr("1"),
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
@@ -20,7 +22,8 @@ func TestResponse_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should fail validation with incorrect version",
+			name:  "should fail validation with incorrect version",
+			reqID: IDFromStr("1"),
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: "1.0",
@@ -29,7 +32,8 @@ func TestResponse_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should fail validation with both result and error",
+			name:  "should fail validation with both result and error",
+			reqID: IDFromStr("1"),
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
@@ -39,10 +43,21 @@ func TestResponse_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should fail validation with neither result nor error",
+			name:  "should fail validation with neither result nor error",
+			reqID: IDFromStr("1"),
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
+			},
+			wantErr: true,
+		},
+		{
+			name:  "should fail validation with incorrect id",
+			reqID: IDFromStr("2"),
+			response: Response{
+				ID:      IDFromStr("1"),
+				Version: Version2,
+				Result:  "success",
 			},
 			wantErr: true,
 		},
@@ -50,7 +65,7 @@ func TestResponse_Validate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.response.Validate()
+			err := test.response.Validate(test.reqID)
 			if (err != nil) != test.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
