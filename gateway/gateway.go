@@ -140,22 +140,24 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
 // A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
 func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	wsLogger := g.Logger.With("handler", "websocket")
+
 	if len(g.WebsocketEndpointURLs) == 0 {
-		g.Logger.Error().Msg("no websocket endpoint URLs are set")
+		wsLogger.Error().Msg("no websocket endpoint URLs are set")
 		return
 	}
 
 	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
 	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
 	if err != nil {
-		g.Logger.Error().Msg("error getting QoS service")
+		wsLogger.Error().Msg("error getting QoS service")
 		return
 	}
 
 	// Get the websocket endpoint URL for the service ID.
 	endpointURL := g.WebsocketEndpointURLs[serviceID]
 	if endpointURL == "" {
-		g.Logger.Error().Msgf("websocket endpoint URL is not set for service ID %s", serviceID)
+		wsLogger.Error().Msgf("websocket endpoint URL is not set for service ID %s", serviceID)
 		return
 	}
 
@@ -163,7 +165,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
 	if err != nil {
-		g.Logger.Error().Msg("error upgrading websocket connection request")
+		wsLogger.Error().Msg("error upgrading websocket connection request")
 		return
 	}
 
@@ -171,12 +173,12 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	// between the Client and the websocket Endpoint.
 	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
 	if err != nil {
-		g.Logger.Error().Msg("error creating websocket bridge")
+		wsLogger.Error().Msg("error creating websocket bridge")
 		return
 	}
 
 	// Run the websocket bridge in a separate goroutine.
 	go bridge.Run()
 
-	g.Logger.Info().Str("websocket_endpoint_url", endpointURL).Msg("websocket connection established")
+	wsLogger.Info().Str("websocket_endpoint_url", endpointURL).Msg("websocket connection established")
 }
