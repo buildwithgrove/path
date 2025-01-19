@@ -141,36 +141,34 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
 // A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
 func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	wsLogger := g.Logger.With("handler", "websocket")
-
 	// Upgrade the HTTP request to a websocket connection.
 	// Do this first so that any errors that occur in the upgrade process can be sent
 	// to the websocket client as a close message, allowing easier debugging.
 	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
 	if err != nil {
-		wsLogger.Error().Msg("error upgrading websocket connection request")
+		g.Logger.Error().Msg("handleWebsocketRequest: error upgrading websocket connection request")
 		return
 	}
 
 	// Check if there are any websocket endpoint URLs set for the service ID in the config.
 	if len(g.WebsocketEndpointURLs) == 0 {
-		handleWebsocketError(wsLogger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
 		return
 	}
 
 	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
 	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
 	if err != nil {
-		handleWebsocketError(wsLogger, clientConn, "handleWebsocketRequest: error getting QoS service")
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error getting QoS service")
 		return
 	}
 
 	// Get the websocket endpoint URL for the service ID.
 	endpointURL := g.WebsocketEndpointURLs[serviceID]
 	if endpointURL == "" {
-		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set for service ID %s", serviceID)
-		handleWebsocketError(wsLogger, clientConn, errMsg)
+		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
+		handleWebsocketError(g.Logger, clientConn, errMsg)
 		return
 	}
 
@@ -178,22 +176,26 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	// between the Client and the websocket Endpoint.
 	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
 	if err != nil {
-		handleWebsocketError(wsLogger, clientConn, "handleWebsocketRequest: error creating websocket bridge")
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error creating websocket bridge")
 		return
 	}
 
 	// Run the websocket bridge in a separate goroutine.
 	go bridge.Run()
 
-	wsLogger.Info().Str("websocket_endpoint_url", endpointURL).Msg("websocket connection established")
+	g.Logger.Info().Str("websocket_endpoint_url", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
 }
 
 // handleWebsocketError handles an error encountered in the websocket connection.
 // It logs the error and sends a close message to the websocket client.
-func handleWebsocketError(wsLogger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
-	wsLogger.Error().Msg(errorMsg)
-	if err := clientConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)); err != nil {
-		wsLogger.Error().Msg("error writing websocket close message")
+func handleWebsocketError(logger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
+	logger.Error().Msg(errorMsg)
+
+	closeMessage := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)
+
+	if err := clientConn.WriteMessage(websocket.CloseMessage, closeMessage); err != nil {
+		logger.Error().Msg("handleWebsocketError: error writing websocket close message")
 	}
+
 	clientConn.Close()
 }
