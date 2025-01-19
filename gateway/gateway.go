@@ -142,25 +142,6 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	wsLogger := g.Logger.With("handler", "websocket")
 
-	if len(g.WebsocketEndpointURLs) == 0 {
-		wsLogger.Error().Msg("no websocket endpoint URLs are set")
-		return
-	}
-
-	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
-	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
-	if err != nil {
-		wsLogger.Error().Msg("error getting QoS service")
-		return
-	}
-
-	// Get the websocket endpoint URL for the service ID.
-	endpointURL := g.WebsocketEndpointURLs[serviceID]
-	if endpointURL == "" {
-		wsLogger.Error().Msgf("websocket endpoint URL is not set for service ID %s", serviceID)
-		return
-	}
-
 	// Upgrade the HTTP request to a websocket connection.
 	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
@@ -169,11 +150,30 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 		return
 	}
 
+	if len(g.WebsocketEndpointURLs) == 0 {
+		handleWebsocketError(wsLogger, clientConn, "no websocket endpoint URLs are set")
+		return
+	}
+
+	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
+	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
+	if err != nil {
+		handleWebsocketError(wsLogger, clientConn, "error getting QoS service")
+		return
+	}
+
+	// Get the websocket endpoint URL for the service ID.
+	endpointURL := g.WebsocketEndpointURLs[serviceID]
+	if endpointURL == "" {
+		handleWebsocketError(wsLogger, clientConn, "websocket endpoint URL is not set for service ID")
+		return
+	}
+
 	// Create a websocket bridge to handle the websocket connection
 	// between the Client and the websocket Endpoint.
 	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
 	if err != nil {
-		wsLogger.Error().Msg("error creating websocket bridge")
+		handleWebsocketError(wsLogger, clientConn, "error creating websocket bridge")
 		return
 	}
 
@@ -181,4 +181,13 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	go bridge.Run()
 
 	wsLogger.Info().Str("websocket_endpoint_url", endpointURL).Msg("websocket connection established")
+}
+
+// handleWebsocketError handles an error encountered in the websocket connection.
+func handleWebsocketError(wsLogger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
+	wsLogger.Error().Msg(errorMsg)
+	if err := clientConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)); err != nil {
+		wsLogger.Error().Msg("error writing websocket close message")
+	}
+	clientConn.Close()
 }
