@@ -90,6 +90,9 @@ static_resources:
                   - name: envoy.access_loggers.stdout
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                # To enable websocket connections this line must be present.
+                upgrade_configs:
+                  - upgrade_type: websocket
                 http_filters:
                   # Extracts the Service ID from one of:
                   # 1. The subdomain of the request's host field
@@ -239,6 +242,9 @@ static_resources:
                             path: "/healthz"
                           route:
                             cluster: path_gateway_service
+                            # To enable websocket connections this line must be present.
+                            upgrade_configs:
+                              - upgrade_type: websocket
                           typed_per_filter_config:
                             # Disable Lua filter for health check requests.
                             envoy.filters.http.lua:

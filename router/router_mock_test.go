@@ -41,14 +41,14 @@ func (m *Mockgateway) EXPECT() *MockgatewayMockRecorder {
 	return m.recorder
 }
 
-// HandleHTTPServiceRequest mocks base method.
-func (m *Mockgateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+// HandleServiceRequest mocks base method.
+func (m *Mockgateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleHTTPServiceRequest", ctx, httpReq, w)
+	m.ctrl.Call(m, "HandleServiceRequest", ctx, httpReq, w)
 }
 
-// HandleHTTPServiceRequest indicates an expected call of HandleHTTPServiceRequest.
-func (mr *MockgatewayMockRecorder) HandleHTTPServiceRequest(ctx, httpReq, w any) *gomock.Call {
+// HandleServiceRequest indicates an expected call of HandleServiceRequest.
+func (mr *MockgatewayMockRecorder) HandleServiceRequest(ctx, httpReq, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleHTTPServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleHTTPServiceRequest), ctx, httpReq, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), ctx, httpReq, w)
 }

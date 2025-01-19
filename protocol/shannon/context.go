@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -14,6 +17,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // requestContext provides all the functionality required by the gateway package
@@ -96,6 +100,33 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 
 	relayResponse.EndpointAddr = selectedEndpointAddr
 	return relayResponse, nil
+}
+
+// HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
+// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
+	var selectedEndpointURL string
+	if rc.selectedEndpoint != nil {
+		selectedEndpointURL = rc.selectedEndpoint.PublicURL()
+	}
+
+	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	clientConn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		logger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		return err
+	}
+
+	bridge, err := websockets.NewBridge(logger, selectedEndpointURL, clientConn)
+	if err != nil {
+		return err
+	}
+
+	go bridge.Run()
+
+	logger.Info().Msg("websocket connection established")
+
+	return nil
 }
 
 // AvailableEndpoints returns the list of endpoints available under the request context, which is populated by the protocol instance

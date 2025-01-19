@@ -75,6 +75,15 @@ func main() {
 		Protocol:          protocol,
 	}
 
+	// If the Shannon protocol is used and the websocket endpoint URL is set,
+	// set the gateway's WebsocketEndpointURL to the Shannon protocol's WebsocketEndpointURL.
+	// NOTE: This is a temporary workaround to allow users of PATH to enable
+	// websocket connections to a user-provided websocket-enabled endpoint URL.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this once the Shannon protocol supports websocket connections.
+	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil && shannonConfig.WebsocketEndpointURLs != nil {
+		gateway.WebsocketEndpointURLs = shannonConfig.WebsocketEndpointURLs
+	}
+
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
 	// Unavailable status; once all components are ready, it will return a 200 OK status.
 	// health check components must implement the health.Check interface

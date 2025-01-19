@@ -15,9 +15,14 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -47,6 +52,11 @@ type Gateway struct {
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
+
+	// WebsocketEndpointURLs is a temporary workaround to allow PATH to enable websocket
+	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
+	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
+	WebsocketEndpointURLs map[protocol.ServiceID]string
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -58,14 +68,25 @@ type Gateway struct {
 // refactored to keep HTTP-specific details and move the generic service
 // request processing steps into a common method.
 //
-// HandleHTTPServiceRequest is written as a template method to allow the customization of steps
-// involved in serving a service request, e.g.:
+// HandleServiceRequest is written as a template method to allow the customization of steps
+// invovled in serving a service request, e.g.:
 //   - establishing a QoS context for the HTTP request.
 //   - sending the service payload through a relaying protocol, etc.
 //
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
-func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebsocketRequest(ctx, httpReq, w)
+	default:
+		g.handleHTTPServiceRequest(ctx, httpReq, w)
+	}
+}
+
+// handleHTTPRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// build a gatewayRequestContext with components necessary to process HTTP requests.
 	gatewayRequestCtx := &requestContext{
 		logger: g.Logger,
@@ -108,4 +129,73 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
+}
+
+// handleWebsocketRequest handles a WebSocket connection request direct to the provided websocket endpoint URL.
+// NOTE: As a temporary workaround, websocket connections currently bypass the protocol entirely and utilize the
+// provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
+// the Shannon protocol supports websocket connections, which will enable onchain websocket support.
+//
+// TODO_FUTURE(@commoddity)[WebSockets]: Remove this temporary workaround once the Shannon protocol supports websocket connections.
+// This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
+// from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
+// A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
+func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// Upgrade the HTTP request to a websocket connection.
+	// Do this first so that any errors that occur in the upgrade process can be sent
+	// to the websocket client as a close message, allowing easier debugging.
+	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
+	if err != nil {
+		g.Logger.Error().Msg("handleWebsocketRequest: error upgrading websocket connection request")
+		return
+	}
+
+	// Check if there are any websocket endpoint URLs set for the service ID in the config.
+	if len(g.WebsocketEndpointURLs) == 0 {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
+		return
+	}
+
+	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
+	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
+	if err != nil {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error getting QoS service")
+		return
+	}
+
+	// Get the websocket endpoint URL for the service ID.
+	endpointURL := g.WebsocketEndpointURLs[serviceID]
+	if endpointURL == "" {
+		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
+		handleWebsocketError(g.Logger, clientConn, errMsg)
+		return
+	}
+
+	// Create a websocket bridge to handle the websocket connection
+	// between the Client and the websocket Endpoint.
+	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
+	if err != nil {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error creating websocket bridge")
+		return
+	}
+
+	// Run the websocket bridge in a separate goroutine.
+	go bridge.Run()
+
+	g.Logger.Info().Str("websocket_endpoint_url", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
+}
+
+// handleWebsocketError handles an error encountered in the websocket connection.
+// It logs the error and sends a close message to the websocket client.
+func handleWebsocketError(logger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
+	logger.Error().Msg(errorMsg)
+
+	closeMessage := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)
+
+	if err := clientConn.WriteMessage(websocket.CloseMessage, closeMessage); err != nil {
+		logger.Error().Msg("handleWebsocketError: error writing websocket close message")
+	}
+
+	clientConn.Close()
 }

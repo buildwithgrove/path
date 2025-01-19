@@ -3,10 +3,12 @@ package morse
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pokt-foundation/pocket-go/provider"
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -70,6 +72,12 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		Bytes:          []byte(output.Response),
 		HTTPStatusCode: output.StatusCode,
 	}, err
+}
+
+// HandleWebsocketRequest satisfies the gateway package's ProtocolRequestContext interface.
+// Morse does not support WebSocket connections so this method will always return an error for the Morse protocol.
+func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
+	return fmt.Errorf("HandleWebsocketRequest: Morse does not support WebSocket connections")
 }
 
 // SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
