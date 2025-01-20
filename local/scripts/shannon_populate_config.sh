@@ -7,11 +7,20 @@ CONFIG_FILE="./local/path/config/.config.yaml"
 # Make a copy of the default config file
 make config_shannon_localnet
 
-# Replace endpoints as needed
-sed -i "s|rpc_url: \".*\"|rpc_url: $NODE|" "$CONFIG_FILE"
-sed -i "s|host_port: \".*\"|host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443|" "$CONFIG_FILE"
+# Check if gsed is installed on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if ! command -v gsed &>/dev/null; then
+        echo "Error: gsed is not installed. Please run 'brew install gnu-sed' first."
+        exit 1
+    fi
+    SED_CMD="gsed"
+else
+    SED_CMD="sed"
+fi
 
-# Update gateway and application addresses
-sed -i "s|gateway_address: .*|gateway_address: $GATEWAY_ADDR|" "$CONFIG_FILE"
-sed -i "s|gateway_private_key_hex: .*|gateway_private_key_hex: $(poktrolld keys export gateway --unsafe --unarmored-hex)|" "$CONFIG_FILE"
-sed -i '/owned_apps_private_keys_hex:/!b;n;c\      - '"$(poktrolld keys export application --unsafe --unarmored-hex)" "$CONFIG_FILE"
+# Replace endpoints as needed
+$SED_CMD -i "s|rpc_url: \".*\"|rpc_url: $NODE|" "$CONFIG_FILE"
+$SED_CMD -i "s|host_port: \".*\"|host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443|" "$CONFIG_FILE"
+$SED_CMD -i "s|gateway_address: .*|gateway_address: $(poktrolld keys show -a gateway)|" "$CONFIG_FILE"
+$SED_CMD -i "s|gateway_private_key_hex: .*|gateway_private_key_hex: $(poktrolld keys export gateway --unsafe --unarmored-hex)|" "$CONFIG_FILE"
+$SED_CMD -i '/owned_apps_private_keys_hex:/!b;n;c\      - '"$(poktrolld keys export application --unsafe --unarmored-hex)" "$CONFIG_FILE"

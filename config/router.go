@@ -7,7 +7,7 @@ import (
 /* --------------------------------- Router Config Defaults -------------------------------- */
 
 const (
-	defaultPort               = 3000
+	defaultPort               = 3069
 	defaultMaxRequestBodySize = 1 << 20 // 1 MB
 	defaultReadTimeout        = 5_000 * time.Millisecond
 	defaultWriteTimeout       = 10_000 * time.Millisecond

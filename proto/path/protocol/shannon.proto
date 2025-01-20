@@ -1,0 +1,17 @@
+syntax = "proto3";
+package path.protocol;
+
+option go_package = "github.com/buildwithgrove/path/observation/protocol";
+
+// ShannonRequestObservations represents observations collected during the processing
+// of a single Shannon protocol relay request.
+message ShannonRequestObservations {
+  // Address of the supplier serving this request
+  string supplier_address = 1;
+}
+
+// ShannonObservationsList provides a container for multiple ShannonRequestObservations,
+// allowing them to be embedded in other protocol buffers.
+message ShannonObservationsList {
+  repeated ShannonRequestObservations observations = 1;
+}

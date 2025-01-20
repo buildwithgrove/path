@@ -48,8 +48,8 @@ func Test_MorseRelay(t *testing.T) {
 			body:      `{"jsonrpc": "2.0", "id": "1202", "method": "eth_blockNumber"}`,
 		},
 
-		// TODO_UPNEXT(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
-		// TODO_UPNEXT(@adshmh): add the following test cases for Solana:
+		// TODO_MVP(@adshmh): add more test cases with valid and invalid jsonrpc request payloads.
+		// TODO_MVP(@adshmh): add the following test cases for Solana:
 		//	1. Valid GetEpochInfo request
 		//	2. Invalid GetEpochInfo request
 		//      3. Valid generic request

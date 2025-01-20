@@ -55,6 +55,10 @@ localnet_up: config_shannon_localnet dev_up config_path_secrets ## Brings up loc
 .PHONY: path_up
 path_up: localnet_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
+.PHONY: path_up_standalone
+path_up_standalone: ## Brings up local Tilt development environment with PATH only
+	MODE=path_only $(MAKE) localnet_up
+
 .PHONY: localnet_down
 localnet_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
@@ -82,7 +86,7 @@ test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
 	@echo "go build -o bin/path ./cmd"
 	@echo "# Update ./bin/config/.config.yaml"
 	@echo "./bin/path"
-	@echo "curl http://anvil.localhost:3000/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
+	@echo "curl http://anvil.localhost:3069/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
 
 .PHONY: test_e2e_shannon_relay
 test_e2e_shannon_relay: shannon_e2e_config_warning ## Run an E2E Shannon relay test
@@ -243,16 +247,6 @@ copy_gateway_endpoints: ## Copies the example gateway endpoints YAML file from t
 	@mkdir -p local/path/envoy;
 	@./envoy/scripts/copy_gateway_endpoints_yaml.sh;
 
-###############################
-### Generation Make Targets ###
-###############################
-
-.PHONY: gen_proto
-gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
-	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
-
-# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-
 ########################
 #### Documentation  ####
 ########################
@@ -274,3 +268,4 @@ include ./makefiles/localnet.mk
 include ./makefiles/quickstart.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/claude.mk
+include ./makefiles/proto.mk

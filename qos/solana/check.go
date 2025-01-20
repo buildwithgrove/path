@@ -27,21 +27,19 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	// a valid (e.g. not expired) quality data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(endpointAddr, es, es.ServiceState, es.Logger, withGetHealth),
-		getEndpointCheck(endpointAddr, es, es.ServiceState, es.Logger, withGetEpochInfo),
-		// TODO_UPNEXT(@adshmh): Add a check for a `getBlock` request
+		getEndpointCheck(es.Logger, endpointAddr, es, withGetHealth),
+		getEndpointCheck(es.Logger, endpointAddr, es, withGetEpochInfo),
+		// TODO_MVP(@adshmh): Add a check for a `getBlock` request
 	}
 }
 
 func getEndpointCheck(
+	logger polylog.Logger,
 	endpointAddr protocol.EndpointAddr,
 	endpointStore *EndpointStore,
-	serviceState *ServiceState,
-	logger polylog.Logger,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		ServiceState:            serviceState,
 		EndpointStore:           endpointStore,
 		Logger:                  logger,
 		isValid:                 true,

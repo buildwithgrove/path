@@ -12,10 +12,11 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// relayer package's Protocol interface is fulfilled by the Protocol struct
+// gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ gateway.Protocol = &Protocol{}
 
@@ -39,9 +40,10 @@ type FullNode interface {
 
 func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
 	protocol := &Protocol{
+		logger: polylog.Ctx(ctx),
+
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
-		logger:          polylog.Ctx(ctx),
 	}
 
 	go func() {
@@ -74,7 +76,7 @@ type Protocol struct {
 }
 
 // BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
-// This method implements the gateway.Protocol interface.
+// Implements the gateway.Protocol interface.
 // The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
 // TODO_TECHDEBT(@dashmh): validate the provided request's service ID is supported by the Morse protocol.
 func (p *Protocol) BuildRequestContext(
@@ -98,27 +100,17 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
-func (p *Protocol) Endpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
-	apps, found := p.getServiceApps(serviceID)
-	if !found {
-		return nil, fmt.Errorf("endpoints: no apps found for service %s", serviceID)
-	}
-
-	endpointsIdx, err := p.getAppsUniqueEndpoints(serviceID, apps)
-	if err != nil {
-		return nil, fmt.Errorf("endpoints: error getting endpoints for service %s: %w", serviceID, err)
-	}
-
-	var endpoints []protocol.Endpoint
-	for _, endpoint := range endpointsIdx {
-		endpoints = append(endpoints, endpoint)
-	}
-
-	if len(endpoints) == 0 {
-		return nil, fmt.Errorf("endpoints: no endpoints found for service %s", serviceID)
-	}
-
-	return endpoints, nil
+// TODO_MVP(@adshmh): complete the ApplyObservations method by implementing:
+//  1. An endpoint store to maintain a status for each endpoint.
+//  2. Validation logic that updates the endpoint store based on the supplied observations.
+//  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
+//     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
+//
+// ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.
+// e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
+// Implements the gateway.Protocol interface.
+func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
+	return nil
 }
 
 // Name satisfies the HealthCheck#Name interface function
@@ -258,7 +250,7 @@ func (p *Protocol) fetchSessions() map[string]provider.Session {
 	return sessions
 }
 
-// TODO_UPNEXT(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
+// TODO_MVP(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
 // Then add 2 implementations of the FullNode interface:
 // - CachingFullNode
 // - LazyFullNode

@@ -16,7 +16,7 @@ type Request struct {
 	ID      ID      `json:"id,omitempty"`
 	JSONRPC Version `json:"jsonrpc"`
 	Method  Method  `json:"method"`
-	// TODO_UPNEXT(@adshmh): support other forms of params field, based on the JSONRPC spec.
+	// TODO_MVP(@adshmh): support other forms of params field, based on the JSONRPC spec.
 	// See the link below for more details:
 	// https://www.jsonrpc.org/specification
 	//

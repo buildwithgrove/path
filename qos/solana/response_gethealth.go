@@ -5,14 +5,15 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // responseUnmarshallerGetHealth deserializes the provided payload
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerGetHealth(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response, logger polylog.Logger) (response, error) {
-	// TODO_UPNEXT(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
+func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
+	// TODO_MVP(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
 	// e.g. If the request contains a params field, it is invalid and should not be sent to any endpoints.
 	//
 	// There are 2 possible valid responses to a `getHealth` request:
@@ -21,19 +22,21 @@ func responseUnmarshallerGetHealth(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonr
 	//
 	// See the following link for more details:
 	// https://solana.com/docs/rpc/http/gethealth
-	if jsonrpcResp.Error.Code != 0 { // The endpoint returned an error: no need to do further processing of the response.
-		// Note: this assumes the `getHealth` request sent to the endpoint was valid.
+	// The endpoint returned an error: no need to do further processing of the response.
+	if jsonrpcResp.IsError() {
 		return responseToGetHealth{
+			Logger: logger,
+
 			Response: jsonrpcResp,
-			Logger:   logger,
 		}, nil
 	}
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToGetHealth{
+			Logger: logger,
+
 			Response: jsonrpcResp,
-			Logger:   logger,
 		}, err
 	}
 
@@ -41,9 +44,10 @@ func responseUnmarshallerGetHealth(jsonrpcReq jsonrpc.Request, jsonrpcResp jsonr
 	err = json.Unmarshal(resultBz, &getHealthResult)
 
 	return responseToGetHealth{
+		Logger: logger,
+
 		Response:     jsonrpcResp,
 		HealthResult: getHealthResult,
-		Logger:       logger,
 	}, err
 }
 
@@ -59,13 +63,19 @@ type responseToGetHealth struct {
 	Logger polylog.Logger
 }
 
-func (r responseToGetHealth) GetObservation() (observation, bool) {
-	return getHealthResponseObservation{
-		HealthResult: r.HealthResult,
-	}, true
+// GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getHealth` request.
+// Implements the response interface used by the requestContext struct.
+func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObservation {
+	return qosobservations.SolanaEndpointObservation{
+		ResponseObservation: &qosobservations.SolanaEndpointObservation_GetHealthResponse{
+			GetHealthResponse: &qosobservations.SolanaGetHealthResponse{
+				Result: r.HealthResult,
+			},
+		},
+	}
 }
 
-// TODO_UPNEXT(@adshmh): handle the following scenarios:
+// TODO_MVP(@adshmh): handle the following scenarios:
 //  1. An endpoint returned a malformed, i.e. Not in JSONRPC format, response.
 //     The user-facing response should include the request's ID.
 //  2. An endpoint returns a JSONRPC response indicating a user error:
@@ -79,17 +89,4 @@ func (r responseToGetHealth) GetResponsePayload() []byte {
 		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshalling JSONRPC response failed.")
 	}
 	return bz
-}
-
-// getHealthResponseObservation provides the functionality defined by the response interface, specific to a response matching
-// a `getHealth` request.
-var _ observation = getHealthResponseObservation{}
-
-// epochInfoResponseObservation holds the epochInfo struct built from a response, and applies it to the (supplied) corresponding endpoint's struct.
-type getHealthResponseObservation struct {
-	HealthResult string
-}
-
-func (o getHealthResponseObservation) Apply(ep *endpoint) {
-	ep.GetHealthResult = &o.HealthResult
 }

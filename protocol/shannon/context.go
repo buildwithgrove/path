@@ -12,6 +12,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -108,6 +109,18 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	}
 
 	return availableEndpoints, nil
+}
+
+// TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
+// GetObservations returns the set of Shannon protocol-level observations for the current request context.
+// The returned observations are used to:
+// 1. Update the Shannon's endpoint store.
+// 2. Report metrics on the operation of PATH (in the metrics package)
+// 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
+//
+// Implements the gateway.ProtocolRequestContext interface.
+func (rc *requestContext) GetObservations() protocolobservations.Observations {
+	return protocolobservations.Observations{}
 }
 
 // sendRelay sends a the supplied payload as a relay request to the endpoint selected for the request context through the SelectEndpoint method.

@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -13,7 +14,7 @@ import (
 // TODO(@Olshansk): Revisit the security specification & requirements for how the paying app is selected.
 //
 // TODO_DOCUMENT(@Olshansk): Convert the notion doc into a proper README.
-// See the following link for more details on PATH's Trusted operation mode.
+// See the following link for more details on PATH's centralized (i.e. trusted) operation mode.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 const (
 	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
@@ -23,24 +24,23 @@ const (
 	headerAppAddr = "X-App-Address"
 )
 
-// getDelegatedGatewayModeAppFilter returns a permittedAppsFilter for the Delegated gateway mode.
-func getDelegatedGatewayModeAppFilter(gatewayAddr string, req *http.Request) permittedAppFilter {
-	return func(app *apptypes.Application) error {
-		selectedAppAddr, err := getAppAddrFromHTTPReq(req)
-		if err != nil {
-			return fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
-		}
-
-		if app.Address != selectedAppAddr {
-			return fmt.Errorf("Delegated GatewayMode: app with address %s does not match the selected app address: %s", app.Address, selectedAppAddr)
-		}
-
-		if !gatewayHasDelegationForApp(gatewayAddr, app) {
-			return fmt.Errorf("Delegated GatewayMode: app with address %s does not delegate to gateway address: %s", app.Address, gatewayAddr)
-		}
-
-		return nil
+// getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
+func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, req *http.Request) ([]*apptypes.Application, error) {
+	selectedAppAddr, err := getAppAddrFromHTTPReq(req)
+	if err != nil {
+		return nil, fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
 	}
+
+	selectedApp, err := p.FullNode.GetApp(context.TODO(), selectedAppAddr)
+	if err != nil {
+		return nil, fmt.Errorf("Delegated GatewayMode: error getting the selected app %s data from the SDK: %w", selectedAppAddr, err)
+	}
+
+	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
+		return nil, fmt.Errorf("Delegated GatewayMode: app with address %s does not delegate to gateway address: %s", selectedApp.Address, p.gatewayAddr)
+	}
+
+	return []*apptypes.Application{selectedApp}, nil
 }
 
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.
