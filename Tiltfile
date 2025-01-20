@@ -233,6 +233,6 @@ k8s_resource(
     discovery_strategy="selectors-only",
 )
 
-# TODO_UPNEXT(@adshmh): Define and import a custom Grafana dashboard.
+# TODO_MVP(@adshmh): Define and import a custom Grafana dashboard.
 # Use the poktroll Tiltfile as a template:
 # https://github.com/pokt-network/poktroll/blob/12342f016f3238ee7840a85d5056b1fe5ada9767/Tiltfile#L157

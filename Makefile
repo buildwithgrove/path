@@ -66,17 +66,6 @@ localnet_down: dev_down ## Tears down local Tilt development environment which i
 .PHONY: path_down
 path_down: localnet_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 
-
-###############################
-### Generation Make Targets ###
-###############################
-
-# TODO_IMPROVE(@commoddity): update to use go:generate comments in the interface files and update this target
-
-.PHONY: gen_proto
-gen_proto: ## Generate the Go code from the gateway_endpoint.proto file
-	protoc --go_out=./envoy/auth_server/proto --go-grpc_out=./envoy/auth_server/proto envoy/auth_server/proto/gateway_endpoint.proto
-
 ###############################
 ###    Makefile imports     ###
 ###############################
@@ -90,3 +79,4 @@ include ./makefiles/morse_configs.mk
 include ./makefiles/shannon_configs.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/proto.mk

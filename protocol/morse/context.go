@@ -9,6 +9,7 @@ import (
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 
 	"github.com/buildwithgrove/path/gateway"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -30,7 +31,7 @@ type requestContext struct {
 
 // AvailableEndpoints returns the list of available endpoints for the current request context.
 // This list is populated by the Morse protocol instance when building the request context.
-// This method implements the gateway.ProtocolRequestContext interface.
+// Implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	var availableEndpoints []protocol.Endpoint
 
@@ -41,7 +42,7 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	return availableEndpoints, nil
 }
 
-// HandleServiceRequest satisfies the relayer package's ProtocolRequestContext interface.
+// HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	if rc.selectedEndpoint == nil {
@@ -71,7 +72,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	}, err
 }
 
-// SelectEndpoint satisfies the relayer package's ProtocolRequestContext interface.
+// SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
 // for handling a service request.
 func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
@@ -95,6 +96,18 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 
 	rc.selectedEndpoint = &selectedEndpoint
 	return nil
+}
+
+// GetObservations returns Morse protocol-level observations from the current request context.
+// Used for:
+// - Updating Morse's endpoint store
+// - Reporting PATH operation metrics
+// - Sharing observations via messaging (NATS, REDIS) for data pipeline consumption
+//
+// Implements gateway.ProtocolRequestContext interface.
+func (rc *requestContext) GetObservations() protocolobservations.Observations {
+	// TODO_MVP(@adshmh): implement MVP set of Morse protocol-level observations
+	return protocolobservations.Observations{}
 }
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.

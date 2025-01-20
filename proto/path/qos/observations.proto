@@ -1,0 +1,22 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/evm.proto";
+import "path/qos/solana.proto";
+
+// Observations contains QoS measurements for a single service request.
+// Currently supports:
+// * Solana blockchain service
+// * EVM blockchains service
+message Observations {
+  // service_observations contains QoS measurements specific to the service type
+  oneof service_observations {
+    // solana contains QoS measurements for a single Solana blockchain request
+    SolanaRequestObservations solana = 1;
+
+    // evm contains QoS measurements for a single EVM blockchain request
+    EVMRequestObservations evm = 2;
+  }
+}

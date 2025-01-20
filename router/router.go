@@ -13,13 +13,13 @@ import (
 
 type (
 	router struct {
-		mux           *http.ServeMux
-		gateway       gateway
-		healthChecker *health.Checker
+		logger polylog.Logger
 
 		config config.RouterConfig
 
-		logger polylog.Logger
+		mux           *http.ServeMux
+		gateway       gateway
+		healthChecker *health.Checker
 	}
 	gateway interface {
 		HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
@@ -29,13 +29,15 @@ type (
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(gateway gateway, healthChecker *health.Checker, config config.RouterConfig, logger polylog.Logger) *router {
+func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Checker, config config.RouterConfig) *router {
 	r := &router{
+		logger: logger.With("package", "router"),
+
+		config: config,
+
 		mux:           http.NewServeMux(),
 		gateway:       gateway,
 		healthChecker: healthChecker,
-		config:        config,
-		logger:        logger.With("package", "router"),
 	}
 	r.handleRoutes()
 	return r
