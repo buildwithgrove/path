@@ -126,7 +126,7 @@ This will allow authorizing requests with a static API key only.
 
 :::tip
 
-Saving `.gateway-endpoints.yaml` triggers a hot-reload of PADS (PATH Auth Data Server) in Tilt.
+Saving `.gateway-endpoints.yaml` will automatically stream the updated file contents to PADS (PATH Auth Data Server) in Tilt; there is no need to restart PADS.
 
 :::
 
