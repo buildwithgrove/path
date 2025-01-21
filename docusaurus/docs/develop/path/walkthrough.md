@@ -45,7 +45,6 @@ Review these configurations:
 
 - [**Tiltfile**](https://github.com/buildwithgrove/path/tree/main/Tiltfile): Tiltfile config file in the PATH repository
 - [**Values file**](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml): Values file for the local cluster in the PATH repository
-- [**Tilt Documentation**](https://docs.tilt.dev/): Tilt documentation
 
 ### 2. Standalone Binary Mode
 
