@@ -58,7 +58,7 @@ func (p *URLPathExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeCon
 		}
 	}
 
-	return "", fmt.Errorf("endpoint ID not provided")
+	return "", fmt.Errorf("endpoint-id not provided in the URL path")
 }
 
 // HeaderExtractor satisfies the EndpointIDExtractor interface.
@@ -77,10 +77,10 @@ func (h *HeaderExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeCont
 
 	endpointID, ok := headers[reqHeaderEndpointID]
 	if !ok {
-		return "", fmt.Errorf("endpoint ID header not found in headers: %v", headers)
+		return "", fmt.Errorf("endpoint-id header (key) not found in headers")
 	}
 	if endpointID == "" {
-		return "", fmt.Errorf("endpoint ID not provided in header: %v", headers)
+		return "", fmt.Errorf("endpoint-id value in headers is provided is empty")
 	}
 
 	return endpointID, nil
