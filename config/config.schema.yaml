@@ -145,7 +145,7 @@ properties:
           lazy_mode:
             description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
-            default: false
+            default: true
       gateway_config:
         description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
         type: object
