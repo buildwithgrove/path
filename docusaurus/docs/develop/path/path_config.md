@@ -111,6 +111,8 @@ shannon_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
     grpc_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+    lazy_mode: true
+
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
@@ -214,6 +216,7 @@ shannon_config:
       min_connect_timeout: "20s" # Optional: minimum timeout for connection attempts
       keep_alive_time: "20s" # Optional: frequency of keepalive pings
       keep_alive_timeout: "20s" # Optional: timeout for keepalive pings
+    lazy_mode: true
 
   gateway_config: # Required
     gateway_mode: "centralized" # Required: centralized, delegated, or permissionless
@@ -228,9 +231,11 @@ shannon_config:
 
 **`full_node_config`**
 
-| Field     | Type   | Required | Default | Description                     |
-| --------- | ------ | -------- | ------- | ------------------------------- |
-| `rpc_url` | string | Yes      | -       | URL of the Shannon RPC endpoint |
+| Field         | Type    | Required | Default | Description                                                     |
+| ------------- | ------- | -------- | ------- | --------------------------------------------------------------- |
+| `rpc_url`     | string  | Yes      | -       | URL of the Shannon RPC endpoint                                 |
+| `grpc_config` | object  | Yes      | -       | gRPC connection configuration                                   |
+| `lazy_mode`   | boolean | No       | true    | If true, disables caching of onchain data (e.g. apps, sessions) |
 
 **`full_node_config.grpc_config`**
 

@@ -61,7 +61,7 @@ gateway_private_key_hex=$(pkd keys export ${GATEWAY_NAME} --unsafe --unarmored-h
 application_private_key_hex=$(pkd keys export ${APPLICATION_NAME} --unsafe --unarmored-hex)
 
 # Update the configuration file
-make prepare_shannon_e2e_config
+make copy_shannon_config_to_local
 
 # Replace configuration values
 $SED_CMD -i "s|rpc_url: \".*\"|rpc_url: $NODE|" "$CONFIG_FILE"

@@ -156,6 +156,8 @@ shannon_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
     grpc_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+    lazy_mode: true
+
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: pokt1... # Your gateway address

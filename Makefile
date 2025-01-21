@@ -27,14 +27,14 @@ path_build: ## Build the path binary locally (does not run anything)
 check_path_config: ## Verify that path configuration file exists
 	@if [ ! -f ./local/path/config/.config.yaml ]; then \
 		echo "################################################################"; \
-		echo "### Missing configuration file: ./local/path/config/.config.yaml        ###"; \
-		echo "                                                                    "; \
-		echo "    Initialize using ONE of:                                        "; \
-		echo "      make copy_shannon_config                                     "; \
-		echo "      make prepare_morse_e2e_config                                   "; \
-		echo "################################################################"; \
-		exit 1; \
-	fi
+   		echo "Error: Missing config file at ./local/path/config/.config.yaml"; \
+   		echo ""; \
+   		echo "Initialize using either:"; \
+   		echo "  make prepare_shannon_e2e_config"; \
+   		echo "  make prepare_morse_e2e_config"; \
+   		echo "################################################################"; \
+   		exit 1; \
+   fi
 
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
