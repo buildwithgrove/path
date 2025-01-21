@@ -229,7 +229,7 @@ The makefile helpers in `makefiles/test_requests.mk` can make iterating on these
 
 :::
 
-Send a relay using **static key authorization** (`make test_request_static_key_auth_service_id_header`):
+Send a relay using **static key authorization** (`make test_request__endpoint_url_path_mode__static_key_service_id_header`):
 
 ```bash
 curl http://localhost:3070/v1/endpoint_1_static_key \
@@ -239,7 +239,7 @@ curl http://localhost:3070/v1/endpoint_1_static_key \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-Send a relay **without authorization** (`make test_request_no_auth_service_id_header`):
+Send a relay **without authorization** (`make test_request__endpoint_url_path_mode__no_auth__service_id_header`):
 
 ```bash
 curl http://localhost:3070/v1/endpoint_3_no_auth \

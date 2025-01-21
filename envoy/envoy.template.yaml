@@ -91,29 +91,28 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
-                  # Extracts the Service ID from one of:
-                  # 1. The subdomain of the request's host field
-                  # 2. The `target-service-id` header
+                  # Service ID Extraction Filter
                   #
-                  # In both of the above cases, the filter attaches the extracted
-                  # service ID to the request as the `target-service-id` header.
+                  # Extracts Service ID from either:
+                  # - Subdomain of request's host field
+                  # - `target-service-id` header
                   #
-                  # If a valid service ID is not found, the request will be rejected.
+                  # In both cases, extracted Service ID is attached as `target-service-id` header.
+                  # Request is rejected if valid Service ID not found.
                   #
-                  # Three concrete examples:
-                  # 1. subdomain = "anvil.path.grove.city" will be transformed to Header: "target-service-id: anvil"
-                  # 2. header = "target-service-id: anvil" will be transformed to Header: "target-service-id: anvil"
-                  # 3. header (aliased) = "target-service-id: eth" will be transformed to Header: "target-service-id: F00C"
+                  # Examples:
+                  # - Host "anvil.path.grove.city" → Header "target-service-id: anvil"
+                  # - Header "target-service-id: anvil" → Header "target-service-id: anvil"
+                  # - Header "target-service-id: eth" → Header "target-service-id: F00C" (alias)
                   #
-                  # IMPORTANT: The `.allowed-services.lua` file must contain all service IDs allowed by the PATH instance.
-                  # Only requests for services defined in `.allowed-services.lua` will be forwarded to PATH;
-                  # otherwise, the request will be rejected.
+                  # IMPORTANT: `.allowed-services.lua` must define all valid PATH Service IDs.
+                  # Requests only forwarded for services in `.allowed-services.lua`, else rejected.
                   #
                   # See: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter
                   - name: envoy.filters.http.lua
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-                      default_source_code: 
+                      default_source_code:
                         inline_string: |
                           function envoy_on_request(handle)
                             -- Check if the subdomain_to_service_id is already loaded
@@ -121,24 +120,24 @@ static_resources:
                               -- Load the mapping of subdomains to service IDs from an external file
                               _G.subdomain_to_service_id = dofile("/etc/envoy/.allowed-services.lua")
                             end
-                          
+
                             local host = handle:headers():get(":authority")
                             local subdomain = string.match(host, "^([^.]+)")
                             local target_service_id_header = handle:headers():get("target-service-id")
-                          
+
                             -- Function to resolve service ID from a given key
                             local function resolve_service_id(key)
                               return _G.subdomain_to_service_id[key]
                             end
-                          
+
                             -- Attempt to resolve service ID from subdomain
                             local service_id = resolve_service_id(subdomain)
-                          
+
                             -- If not found, attempt to resolve from "target-service-id" header
                             if not service_id and target_service_id_header then
                               service_id = resolve_service_id(target_service_id_header)
                             end
-                          
+
                             if service_id then
                               -- Update the "target-service-id" header with the resolved service ID
                               handle:headers():replace("target-service-id", service_id)
