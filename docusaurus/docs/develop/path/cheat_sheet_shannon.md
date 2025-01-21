@@ -16,6 +16,7 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
   - [2.2 Verify Configuration](#22-verify-configuration)
 - [3. Start PATH](#3-start-path)
+- [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
 
@@ -186,23 +187,23 @@ Ensure that `gateway_config` is filled out correctly before continuing.
 
 ## 3. Start PATH
 
+Make sure to have followed the entire [**environment setup**](./env_setup.md) guide before proceeding.
+
+## 3.1 Start PATH
+
 Run the entire stack (PATH, Envoy, Auth Server) by running:
 
 ```bash
 make path_up
 ```
 
-:::note Standalone Mode (no Envoy Proxy)
-
-If you're familiar with the stack and need to run PATH without Envoy, you can use the following command:
+Run Standalone Mode (no Envoy Proxy) by running:
 
 ```bash
 make path_up_standalone
 ```
 
-:::
-
-You can run the following command to stop the PATH stack:
+You can stop the PATH stack by running:
 
 ```bash
 make path_down
@@ -222,7 +223,13 @@ Wait for initialization logs:
 
 ## 4. Test Relays
 
-Send a relay using **static key authorization**:
+:::tip
+
+The makefile helpers in `makefiles/test_requests.mk` can make iterating on these requests easier.
+
+:::
+
+Send a relay using **static key authorization** (`make test_request_static_key_auth_service_id_header`):
 
 ```bash
 curl http://localhost:3070/v1/endpoint_1_static_key \
@@ -232,7 +239,7 @@ curl http://localhost:3070/v1/endpoint_1_static_key \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-Send a relay **without authorization**:
+Send a relay **without authorization** (`make test_request_no_auth_service_id_header`):
 
 ```bash
 curl http://localhost:3070/v1/endpoint_3_no_auth \
@@ -241,11 +248,7 @@ curl http://localhost:3070/v1/endpoint_3_no_auth \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-_⚠️ If a requests fail, retry a few times as you may hit unresponsive nodes ⚠️_
-
-:::note Standalone Mode (no Envoy Proxy)
-
-If you launched PATH in standalone mode, you can test a relay like so:
+If you launched **PATH in standalone mode (no Envoy Proxy)**, you can test a relay like so (`make test_request_path_only`):
 
 ```bash
 curl http://localhost:3069/v1/ \
@@ -253,5 +256,9 @@ curl http://localhost:3069/v1/ \
     -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
+
+:::warning Retries
+
+If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::

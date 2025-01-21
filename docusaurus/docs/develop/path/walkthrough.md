@@ -83,10 +83,7 @@ make prepare_shannon_e2e_config
 # Update it manually
 
 # Copy it to ./local/path/config/.config.yaml
-make copy_shannon_config_to_local
-
-# Copy it to ./bin/config/.config.yaml
-make copy_shannon_config_to_bin
+make copy_shannon_e2e_config_to_local
 ```
 
 ### 2.2 Morse Protocol Configs
@@ -103,9 +100,6 @@ make prepare_morse_e2e_config
 
 # Copy it to ./local/path/config/.config.yaml
 make copy_morse_config_to_local
-
-# Copy it to ./bin/config/.config.yaml
-make copy_morse_config_to_bin
 ```
 
 ## 3. Envoy Proxy Configuration

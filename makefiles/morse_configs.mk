@@ -48,15 +48,3 @@ copy_morse_e2e_config_to_local: ## Copy Morse E2E config to local/path/config di
 	@echo "  From: ./e2e/.morse.config.yaml"
 	@echo "  To:   ./local/path/config/.config.yaml"
 	@echo "################################################################"
-
-.PHONY: copy_morse_e2e_config_to_bin
-copy_morse_e2e_config_to_bin: ## Copy Morse E2E config to bin/config directory for binary usage
-	$(call check_config_exists,./e2e/.morse.config.yaml,prepare_morse_e2e_config)
-	@mkdir -p ./bin/config
-	$(call warn_file_exists,./bin/config/.config.yaml)
-	@cp ./e2e/.morse.config.yaml ./bin/config/.config.yaml
-	@echo "################################################################"
-	@echo "Successfully copied configuration:"
-	@echo "  From: ./e2e/.morse.config.yaml"
-	@echo "  To:   ./bin/config/.config.yaml"
-	@echo "################################################################"

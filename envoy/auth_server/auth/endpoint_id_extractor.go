@@ -77,10 +77,10 @@ func (h *HeaderExtractor) extractGatewayEndpointID(req *envoy_auth.AttributeCont
 
 	endpointID, ok := headers[reqHeaderEndpointID]
 	if !ok {
-		return "", fmt.Errorf("endpoint ID header not found")
+		return "", fmt.Errorf("endpoint ID header not found in headers: %v", headers)
 	}
 	if endpointID == "" {
-		return "", fmt.Errorf("endpoint ID not provided")
+		return "", fmt.Errorf("endpoint ID not provided in header: %v", headers)
 	}
 
 	return endpointID, nil
