@@ -35,6 +35,13 @@ PATH offers two deployment modes for local development:
 
 ### 1. Tilt Mode (Recommended)
 
+<div align="center">
+  <a href="https://docs.tilt.dev/">
+    <img src="https://blog.tilt.dev/assets/img/blog-default-preview.png" alt="Tilt logo" width="200"/>
+  <p><b>Tilt Documentation</b></p>
+  </a>
+</div>
+
 Runs PATH with full functionality in a local Kubernetes cluster:
 
 - Routes through Envoy Proxy (port `3070`)
