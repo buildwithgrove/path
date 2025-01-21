@@ -13,7 +13,6 @@ test_unit: ## Run all unit tests
 test_auth_server: ## Run the auth server tests
 	(cd envoy/auth_server && go test ./... -count=1)
 
-
 .PHONY: test_e2e_morse_relay
 test_e2e_morse_relay: morse_e2e_config_warning ## Run an E2E Morse relay test
 	go test -v ./e2e/... -tags=e2e -count=1 -run Test_MorseRelay

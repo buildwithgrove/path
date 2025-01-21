@@ -54,7 +54,7 @@ path_up: check_path_config dev_up config_path_secrets ## Brings up local Tilt de
 
 .PHONY: path_up_standalone
 path_up_standalone: ## Brings up local Tilt development environment with PATH only
-	MODE=path_only $(MAKE) path_up
+	MODE=path_only $(MAKE) path_up -config ./local/path/config/.config.yaml
 
 .PHONY: path_down
 path_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
