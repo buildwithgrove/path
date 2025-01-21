@@ -26,18 +26,6 @@ check_docker:
 		exit 1; \
 	fi;
 
-.PHONY: check_path_config_file
-# Internal helper: Check if .config.yaml exists
-check_path_config:
-	@if ! test -f ./local/path/config/.config.yaml; then \
-		echo "#######################################################################################"; \
-		echo "###              CONFIG DOES NOT EXIST: ./local/path/config/.config.yaml            ###"; \
-		echo "###                          READ the README.md!                                    ###"; \
-		echo "###    You may need to run 'make copy_shannon_config' or 'make copy_morse_e2e_config'   ###"; \
-		echo "#######################################################################################"; \
-		exit 1; \
-	fi
-
 ###############################
 ### Localnet config targets ###
 ###############################

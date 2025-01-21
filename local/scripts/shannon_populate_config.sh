@@ -38,28 +38,30 @@ else
     SED_CMD="sed"
 fi
 
-# Overrideable names for gateway and application
+# Overridable names for gateway and application
 GATEWAY_NAME="${POKTROLL_GATEWAY_NAME:-gateway}"
 APPLICATION_NAME="${POKTROLL_APPLICATION_NAME:-application}"
 
-# Check if the 'gateway' address exists
-if ! gateway_address=$(address_exists "$GATEWAY_NAME"); then
-    echo "Error: Address '$GATEWAY_NAME' does not exist."
+# Check if the 'gateway_address' variable is empty (address does not exist)
+gateway_address=$(address_exists "$GATEWAY_NAME")
+if [[ -z "$gateway_address" ]]; then
+    echo "Error: Gateway address '$GATEWAY_NAME' does not exist."
     exit 1
 fi
 
-# Check if the 'application' address exists
-if ! application_address=$(address_exists "$APPLICATION_NAME"); then
-    echo "Error: Address '$APPLICATION_NAME' does not exist."
+# Check if the 'application_address' variable is empty (address does not exist)
+application_address=$(address_exists "$APPLICATION_NAME")
+if [[ -z "$application_address" ]]; then
+    echo "Error: Application address '$APPLICATION_NAME' does not exist."
     exit 1
 fi
 
 # Export private keys for 'gateway' and 'application'
-gateway_private_key_hex=$(pkd keys export "$GATEWAY_NAME" --unsafe --unarmored-hex)
-application_private_key_hex=$(pkd keys export "$APPLICATION_NAME" --unsafe --unarmored-hex)
+gateway_private_key_hex=$(pkd keys export ${GATEWAY_NAME} --unsafe --unarmored-hex)
+application_private_key_hex=$(pkd keys export ${APPLICATION_NAME} --unsafe --unarmored-hex)
 
 # Update the configuration file
-make copy_shannon_e2e_config
+make prepare_shannon_e2e_config
 
 # Replace configuration values
 $SED_CMD -i "s|rpc_url: \".*\"|rpc_url: $NODE|" "$CONFIG_FILE"

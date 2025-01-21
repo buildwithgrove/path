@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 title: PATH Config
 description: PATH configuration details
 ---
@@ -13,21 +13,23 @@ description: PATH configuration details
 
 These instructions are intended for configuring the **PATH Gateway**.
 
-**Envoy Proxy** has its own set of configuration files. See the details in the [Envoy Configuration Guide](../envoy/envoy_config.md).
+**Envoy Proxy** has its own set of configuration files.
+
+For details, see the the [**Envoy Configuration Guide**](../envoy/envoy_config.md).
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Configuration YAML File](#configuration-yaml-file)
+- [Configuration YAML File: `.config.yaml`](#configuration-yaml-file-configyaml)
   - [Config File Location](#config-file-location)
   - [Example Config Files](#example-config-files)
-  - [Config YAML Schema](#config-yaml-schema)
-- [YAML Fields](#yaml-fields)
+  - [Config YAML Schema Validation](#config-yaml-schema-validation)
+  - [Full Config Example](#full-config-example)
+- [YAML Field Explanations](#yaml-field-explanations)
   - [Protocol Section](#protocol-section)
   - [`morse_config`](#morse_config)
     - [Morse Field Descriptions](#morse-field-descriptions)
-    - [AAT Generation](#aat-generation)
   - [`shannon_config`](#shannon_config)
     - [Shannon Field Descriptions](#shannon-field-descriptions)
   - [`router_config` (optional)](#router_config-optional)
@@ -36,14 +38,74 @@ These instructions are intended for configuring the **PATH Gateway**.
   - [`logger_config` (optional)](#logger_config-optional)
   - [`messaging_config` (TODO)](#messaging_config-todo)
 
-## Configuration YAML File
+## Configuration YAML File: `.config.yaml`
 
 All configuration for the PATH gateway is defined in a single YAML file named `.config.yaml`.
 
-The following is quick example of a Gateway configured to support Shannon protocol on Beta TestNet.
+### Config File Location
+
+The config file `.config.yaml` is located in:
+
+- **Default**: `./config/.config.yaml` (relative to PATH binary)
+- **Tilt**: `/app/config/.config.yaml` (mounted in container)
+
+:::tip Override Config Location
+Use `-config` flag to specify a custom location:
+
+```bash
+./path -config ./config/.config.custom.yaml
+```
+
+:::
+
+### Example Config Files
+
+We provide example configuration files with detailed comments for each protocol type:
+
+- [Shannon Gateway](https://github.com/buildwithgrove/path/blob/main/config/examples/config.shannon_example.yaml)
+- [Morse Gateway](https://github.com/buildwithgrove/path/blob/main/config/examples/config.morse_example.yaml)
+
+### Config YAML Schema Validation
+
+The configuration is validated against our [YAML schema](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml).
+
+:::tip VSCode Validation
+
+Use the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension for real-time validation by adding:
 
 ```yaml
-# Protocol Configuration
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+```
+
+:::
+
+### Full Config Example
+
+The following is quick example of a full config file.
+
+Note **exactly one of** `morse_config` or `shannon_config` is acceptable and required.
+
+<details>
+
+<summary>Click to expand full config</summary>
+
+```yaml
+# (Required) Morse Protocol Configuration
+morse_config:
+  full_node_config:
+    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
+    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
+    http_config: # Optional
+      retries: 3 # Default: 3
+      timeout: "5000ms" # Default: "5000ms"
+
+  signed_aats: # Required
+    "<40-char-app-address>": # Application address (hex)
+      client_public_key: "<64-char-hex>" # Client public key
+      application_public_key: "<64-char-hex>" # Application public key
+      application_signature: "<128-char-hex>" # Application signature
+
+# (Required) Morse Protocol Configuration
 shannon_config:
   full_node_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
@@ -56,68 +118,27 @@ shannon_config:
     owned_apps_private_keys_hex:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-# Quality of Service (QoS) Configuration
+# (Optional) Quality of Service (QoS) Configuration
 hydrator_config:
   service_ids:
     - "eth"
     - "solana"
     - "pokt"
 
-# Authorization Server Configuration
+# (Optional) Authorization Server Configuration
 auth_server_config:
   grpc_host_port: path-auth-data-server:50051
   grpc_use_insecure_credentials: true
   endpoint_id_extractor_type: url_path
 
-# Logger Configuration
+# (Optional) Logger Configuration
 logger_config:
-  level: "info"  # Valid values: debug, info, warn, error
+  level: "info" # Valid values: debug, info, warn, error
 ```
 
-### Config File Location
+</details>
 
-The default location of the configuration file is `./config/.config.yaml` relative to the location of the PATH binary.
-
-For example, when running the compiled PATH binary from the `./bin` directory, the configuration should be located at `./bin/config/.config.yaml`.
-
-As another example, when running PATH in Tilt, the configuration file is mounted in the container at `/app/config/.config.yaml`.
-
-:::tip
-
-The location of the configuration file may be overridden using the `-config` flag.
-
-For example, you may run`./path -config ./config/.config.custom.yaml`.
-
-:::
-
-### Example Config Files
-
-Example configuration files for both Shannon and Morse gateways are provided below.
-
-- [Example Shannon Config YAML File](https://github.com/buildwithgrove/path/blob/main/config/examples/config.shannon_example.yaml)
-- [Example Morse Config YAML File](https://github.com/buildwithgrove/path/blob/main/config/examples/config.morse_example.yaml)
-
-The example files contain extensive comments and explanations for every field.
-
-### Config YAML Schema
-
-A YAML schema is provided for the configuration file.
-
-This schema is used to validate the configuration file and ensure that it is populated with the appropriate values.
-
-- [Config YAML Schema File](https://github.com/buildwithgrove/path/tree/main/config/config.schema.yaml)
-
-:::tip
-
-For VSCode users, the [YAML Language Support by Red Hat](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) plugin may be used to provide in-editor syntax highlighting and validation by installing the plugin and placing the following comment annotation at the top of your `.config.yaml` file:
-
-```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
-```
-
-:::
-
-## YAML Fields
+## YAML Field Explanations
 
 This is a comprehensive outline and explanation of each YAML field in the configuration file.
 
@@ -173,40 +194,6 @@ morse_config:
 | `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
 | `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
 | `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
-
-#### AAT Generation
-
-Assuming you have access to a staked application, you can build your own `pocket-core` binary to generate an AAT following the steps below.
-
-```bash
-git clone git@github.com:pokt-network/pocket-core.git
-cd pocket-core
-go build -o pocket ./app/cmd/pocket_core/main.go
-./pocket-core create-aat <ADDR_APP> <CLIENT_PUB>
-```
-
-Which will output a JSON object similar to the following:
-
-```json
-{
-  "version": "0.0.1",
-  "app_pub_key": <APP_PUB>,
-  "client_pub_key": <CLIENT_PUB>,
-  "signature": <APP_SIG>
-}
-```
-
-```yaml
-morse_config:
-  # ...
-  relay_signing_key: "CLIENT_PRIV"
-  # ...
-signed_aats:
-  <ADDR_APP>:
-    client_public_key: "<CLIENT_PUB>"
-    application_public_key: "<APP_PUB>"
-    application_signature: "<APP_SIG>"
-```
 
 ---
 
@@ -270,7 +257,9 @@ shannon_config:
 
 ### `router_config` (optional)
 
-Allows specifying server parameters for how the gateway handles incoming requests.
+**Enables configuring how incoming requests are handled.**
+
+In particular, allows specifying server parameters for how the gateway handles incoming requests.
 
 | Field                   | Type    | Required | Default           | Description                                     |
 | ----------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
@@ -284,7 +273,9 @@ Allows specifying server parameters for how the gateway handles incoming request
 
 ### `hydrator_config` (optional)
 
-To enable QoS for a service, the service ID must be provided here.
+**Required To enable QoS for a service**.
+
+The service ID must be provided here.
 
 | Field         | Type          | Required | Default | Description                                                                 |
 | ------------- | ------------- | -------- | ------- | --------------------------------------------------------------------------- |
@@ -306,13 +297,9 @@ If a service ID is not present in [`config/service_qos.go`](https://github.com/b
 
 ### `auth_server_config` (optional)
 
-**Required in order to authorize requests with Envoy Proxy.** Configures the External Authorization Server.
+**Required in order to authorize requests with Envoy Proxy.**
 
-:::info
-
-[For detailed information on the External Auth Server, please refer to the External Auth Server Documentation](../envoy/walkthrough.md#external-auth-server).
-
-:::
+Configures the External Authorization Server.
 
 | Field                           | Type    | Required | Default | Description                                                                                                                                                      |
 | ------------------------------- | ------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -320,6 +307,10 @@ If a service ID is not present in [`config/service_qos.go`](https://github.com/b
 | `grpc_use_insecure_credentials` | boolean | No       | false   | Set to true if the `Remote gRPC Server` does not use TLS                                                                                                         |
 | `endpoint_id_extractor_type`    | string  | No       | -       | Either `url_path` or `header`. Specifies how endpoint IDs are extracted. [See here for more details](../envoy/walkthrough.md#specifying-the-gateway-endpoint-id) |
 | `port`                          | integer | No       | 10003   | The local port for running the Auth Server                                                                                                                       |
+
+:::info
+
+For detailed information on the External Auth Server, please refer to the [External Auth Server Documentation](../envoy/walkthrough.md#external-auth-server).
 
 :::caution
 
@@ -329,11 +320,13 @@ This may change in the future.
 
 :::
 
+:::
+
 ---
 
 ### `logger_config` (optional)
 
-Controls the logging behavior of the PATH gateway.
+**Controls the logging behavior** of the PATH gateway.
 
 | Field   | Type   | Required | Default | Description                                                           |
 | ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |

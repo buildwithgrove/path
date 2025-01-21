@@ -10,23 +10,18 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 
 - [0. Prerequisites](#0-prerequisites)
 - [1. Setup Morse Protocol Accounts](#1-setup-morse-protocol-accounts)
+  - [1.1 AAT Generation](#11-aat-generation)
 - [2. Configure PATH](#2-configure-path)
-  - [Generate Morse Config](#generate-morse-config)
-  - [Update Configuration](#update-configuration)
-  - [Verify Configuration](#verify-configuration)
-- [3. Setup Envoy Proxy (Optional)](#3-setup-envoy-proxy-optional)
-- [4. Start PATH](#4-start-path)
-  - [With Envoy Proxy (Recommended)](#with-envoy-proxy-recommended)
-  - [Without Envoy Proxy](#without-envoy-proxy)
-- [5. Monitor PATH](#5-monitor-path)
-- [6. Test Relays](#6-test-relays)
-  - [With Envoy Proxy](#with-envoy-proxy)
-  - [Without Envoy Proxy](#without-envoy-proxy-1)
+  - [2.1 Generate Morse Config](#21-generate-morse-config)
+  - [Update \& Verify the Configuration](#update--verify-the-configuration)
+- [3. Start PATH](#3-start-path)
+  - [3.1 Monitor PATH](#31-monitor-path)
+- [4. Test Relays](#4-test-relays)
 - [Additional Notes](#additional-notes)
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [main cheat sheet](cheat_sheet.md).
+1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
 2. Install the [**Pocket CLI**](https://github.com/pokt-network/homebrew-pocket-core): CLI for interacting with Pocket's Morse Network
 
 ## 1. Setup Morse Protocol Accounts
@@ -51,19 +46,73 @@ The following resources are also good references and starting points:
 
 _If you are unsure of where to start, you should reach out to the team directly._
 
-## 2. Configure PATH
+### 1.1 AAT Generation
 
-### Generate Morse Config
+We strongly recommend following the resources above.
 
-Generate a default Morse configuration:
+However, assuming you have access to a **staked application**, you can follow the instructions below.
+
+<details>
+
+<summary>tl;dr Use at your own risk copy-pasta commands</summary>
+
+**Get the source code:**
 
 ```bash
-make copy_morse_e2e_config
+git clone git@github.com:pokt-network/pocket-core.git
+cd pocket-core
 ```
 
-This creates a config file at `local/path/config/.config.yaml`.
+**Build your own `pocket-core` binary:**
 
-### Update Configuration
+```bash
+go build -o pocket ./app/cmd/pocket_core/main.go
+```
+
+**Generate an AAT:**
+
+```bash
+./pocket-core create-aat <ADDR_APP> <CLIENT_PUB>
+```
+
+**Take note of the output:**
+
+```json
+{
+  "version": "0.0.1",
+  "app_pub_key": <APP_PUB>,
+  "client_pub_key": <CLIENT_PUB>,
+  "signature": <APP_SIG>
+}
+```
+
+**So you can prepare a configuration like so:**
+
+```yaml
+morse_config:
+  # ...
+  relay_signing_key: "CLIENT_PRIV"
+  # ...
+signed_aats:
+  <ADDR_APP>:
+    client_public_key: "<CLIENT_PUB>"
+    application_public_key: "<APP_PUB>"
+    application_signature: "<APP_SIG>"
+```
+
+</details>
+
+## 2. Configure PATH
+
+### 2.1 Generate Morse Config
+
+Run the following command to generate a Morse config at `local/path/config/.config.yaml`:
+
+```bash
+make prepare_morse_e2e_config
+```
+
+### Update & Verify the Configuration
 
 You'll need to manually update these fields in the config file:
 
@@ -71,63 +120,51 @@ You'll need to manually update these fields in the config file:
 - `relay_signing_key`
 - `signed_aats`
 
-### Verify Configuration
-
-Check your updated config:
+And then check the updated config:
 
 ```bash
 cat local/path/config/.config.yaml
 ```
 
-## 3. Setup Envoy Proxy (Optional)
+## 3. Start PATH
 
-If you want to use authorization, service aliasing, and rate limiting:
-
-```bash
-make init_envoy
-```
-
-This generates four configuration files:
-
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
-
-For initial setup, choose Option 2 (no authorization) when prompted.
-
-## 4. Start PATH
-
-### With Envoy Proxy (Recommended)
+Run the entire stack (PATH, Envoy, Auth Server) by running:
 
 ```bash
 make path_up
 ```
 
-### Without Envoy Proxy
+:::note Standalone Mode (no Envoy Proxy)
+
+If you're familiar with the stack and need to run PATH without Envoy, you can use the following command:
 
 ```bash
 make path_up_standalone
 ```
 
-## 5. Monitor PATH
+:::
+
+You can run the following command to stop the PATH stack:
+
+```bash
+make path_down
+```
+
+### 3.1 Monitor PATH
 
 Visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
 
 Wait for initialization logs:
 
 ```json
-{"level":"info","message":"Starting PATH using config file: /app/config/.config.yaml"}
-{"level":"info","message":"Starting PATH gateway with Morse protocol"}
+{"level":"info","message":"Starting PATH gateway with Shannon protocol"}
 {"level":"info","message":"Starting the cache update process."}
 {"level":"info","package":"router","message":"PATH gateway running on port 3069"}
 ```
 
-## 6. Test Relays
+## 4. Test Relays
 
-### With Envoy Proxy
-
-Using static key authorization:
+Send a relay using **static key authorization**:
 
 ```bash
 curl http://localhost:3001/v1/endpoint_1_static_key \
@@ -137,7 +174,7 @@ curl http://localhost:3001/v1/endpoint_1_static_key \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-No authorization required:
+Send a relay **without authorization**:
 
 ```bash
 curl http://localhost:3001/v1/endpoint_3_no_auth \
@@ -146,7 +183,11 @@ curl http://localhost:3001/v1/endpoint_3_no_auth \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-### Without Envoy Proxy
+_⚠️ If a requests fail, retry a few times as you may hit unresponsive nodes ⚠️_
+
+:::note Standalone Mode (no Envoy Proxy)
+
+If you launched PATH in standalone mode, you can test a relay like so:
 
 ```bash
 curl http://localhost:3069/v1/ \
@@ -155,7 +196,7 @@ curl http://localhost:3069/v1/ \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-If requests fail, retry a few times as you may hit unresponsive nodes.
+:::
 
 ## Additional Notes
 

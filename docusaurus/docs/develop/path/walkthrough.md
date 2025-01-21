@@ -1,253 +1,258 @@
 ---
-sidebar_position: 2
-title: Walkthrough
-description: High-level architecture overview and detailed walkthrough
+sidebar_position: 6
+title: Local PATH Walkthrough
+description: Details on running PATH locally with various configurations
 ---
 
-<div align="center">
-<h1>PATH<br/>Path API & Toolkit Harness</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
+## Introduction <!-- omit in toc -->
 
-</div>
-<br/>
+This walkthrough assumes you have gone through [environment setup](./env_setup.md)
+and have gotten either a [Shannon](./cheat_sheet_shannon.md) or [Morse](./cheat_sheet_morse.md)
+gateway running.
 
-![Static Badge](https://img.shields.io/badge/Maintained_by-Grove-green)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/main-build.yml)
-![GitHub last commit](https://img.shields.io/github/last-commit/buildwithgrove/path)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/buildwithgrove/path)
-![GitHub Release](https://img.shields.io/github/v/release/buildwithgrove/path)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/buildwithgrove/path/total)
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/buildwithgrove/path)
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
-![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path-gateway&revision=true&showAppName=true)
+It dives deeper into how to develop on PATH, run E2E tests, etc...
 
-## Table of Contents <!-- omit in toc -->
-
-- [Introduction](#introduction)
-  - [Prerequisites](#prerequisites)
-- [Path Releases](#path-releases)
-- [Quickstart](#quickstart)
 - [Running PATH](#running-path)
-  - [Run PATH in Tilt](#run-path-in-tilt)
-  - [Run the PATH binary](#run-the-path-binary)
+  - [1. Tilt Mode (Recommended)](#1-tilt-mode-recommended)
+  - [2. Standalone Binary Mode](#2-standalone-binary-mode)
+- [2. Protocol Configuration](#2-protocol-configuration)
+  - [2.1 Shannon Protocol Configs](#21-shannon-protocol-configs)
+  - [2.2 Morse Protocol Configs](#22-morse-protocol-configs)
+- [3. Envoy Proxy Configuration](#3-envoy-proxy-configuration)
+  - [3.1 Configuring Relay Authorization](#31-configuring-relay-authorization)
+- [4. Run the `PATH` Gateway](#4-run-the-path-gateway)
+  - [4.1 View `PATH` Resources in Tilt](#41-view-path-resources-in-tilt)
+  - [4.2 Wait for the `PATH` stack to initialize](#42-wait-for-the-path-stack-to-initialize)
+- [5. Send a Relay](#5-send-a-relay)
+  - [5.1 Envoy Proxy Mode with Static Key Authorization](#51-envoy-proxy-mode-with-static-key-authorization)
+  - [5.2 Envoy Proxy without any Authorization](#52-envoy-proxy-without-any-authorization)
+  - [5.3 Standalone mode without any Authorization](#53-standalone-mode-without-any-authorization)
 - [E2E Tests](#e2e-tests)
-  - [Running the E2E tests against Shannon Testnet](#running-the-e2e-tests-against-shannon-testnet)
-    - [Preparing the configuration](#preparing-the-configuration)
-    - [Running the E2E tests](#running-the-e2e-tests)
-  - [Running the E2E tests against Morse](#running-the-e2e-tests-against-morse)
-    - [Preparing the configuration](#preparing-the-configuration-1)
-    - [Running the E2E tests](#running-the-e2e-tests-1)
-- [Running Localnet](#running-localnet)
-  - [Spinning up / Tearing down Localnet](#spinning-up--tearing-down-localnet)
-- [Troubleshooting](#troubleshooting)
-  - [Docker Permissions Issues - Need to run sudo?](#docker-permissions-issues---need-to-run-sudo)
-- [Special Thanks](#special-thanks)
-- [License](#license)
-
-## Introduction
-
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network.
-
-It provides various tools and libraries to streamline the integration and
-interaction with decentralized protocols.
-
-We use Tilt + Kind to spin up local environment for development and local testing purposes.
-
-Kind is intentionally used instead of Docker Kubernetes cluster since we have observed that images created through Tilt are not accesible when using Docker K8s cluster.
-
-### Prerequisites
-
-**Local Deployment:**
-
-- [Docker](https://docs.docker.com/get-docker/)
-- [Kind](https://kind.sigs.k8s.io/#installation-and-usage)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-- [Helm](https://helm.sh/docs/intro/install/)
-- [Tilt](https://docs.tilt.dev/install.html)
-
-**Development only:**
-
-- [Uber Mockgen](https://github.com/uber-go/mock)
-
-## Path Releases
-
-Path releases provide a Docker image you can start using right away to bootstrap
-your Path gateway without the need of building your own image.
-
-You can find:
-
-- All the releases [here](https://github.com/buildwithgrove/path/releases)
-- All the package versions [here](https://github.com/buildwithgrove/path/pkgs/container/path/versions)
-- The containers page [here](https://github.com/buildwithgrove/path/pkgs/container/path)
-
-You can pull them directly using the following command:
-
-```sh
-docker pull ghcr.io/buildwithgrove/path
-```
-
-## Quickstart
-
-:::tip
-
-See the [PATH Cheat Sheet](cheat_sheet.md) for instructions on how to get started with a local PATH instance on Shannon or Morse.
-
-:::
 
 ## Running PATH
 
-There are two ways to run PATH locally for development purposes.
+PATH offers two deployment modes for local development:
 
-### Run PATH in Tilt
+### 1. Tilt Mode (Recommended)
 
-<div align="center">
-  <a href="https://docs.tilt.dev/">
-    <img src="https://blog.tilt.dev/assets/img/blog-default-preview.png" alt="Tilt logo" width="200"/>
-  <p><b>Tilt Docs</b></p>
-  </a>
-</div>
+Runs PATH with full functionality in a local Kubernetes cluster:
 
-To enable the full suite of PATH functionality - including authorization, rate limiting, service aliasing and more - a `Tiltfile` is provided to easily run the PATH gateway with all its dependencies in a local Kubernetes cluster.
+- Routes through Envoy Proxy (port `3070`)
+- Enables authorization, rate limiting, and service aliasing
+- Uses configs from `/local` directory with Kind + Tilt
 
-:::tip
-You can follow the instructions [in the PATH cheat sheet](cheat_sheet.md) to get started with PATH in Tilt.
+Review these configurations:
+
+- [**Tiltfile**](https://github.com/buildwithgrove/path/tree/main/Tiltfile): Tiltfile config file in the PATH repository
+- [**Values file**](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml): Values file for the local cluster in the PATH repository
+- [**Tilt Documentation**](https://docs.tilt.dev/): Tilt documentation
+
+### 2. Standalone Binary Mode
+
+Runs PATH without Envoy Proxy for simpler setup:
+
+- Connects directly to PATH Service (port `3069`)
+- Disables authorization, rate limiting, and service aliasing
+- Launches the binary directly without additional services, tools or kubernetes cluster
+
+## 2. Protocol Configuration
+
+:::warning Grove Employee Only (Sensitive Information)
+
+Search for `PATH` in **1Password** for a ready to use copy-pasta config file for
+both Morse and Shannon.
+
 :::
 
-### Run the PATH binary
+### 2.1 Shannon Protocol Configs
 
-For an even simpler way to get started with PATH, you can run the PATH binary standalone.
+See the [Shannon Cheat Sheet](./cheat_sheet_shannon.md) and [PATH Config Docs](./path_config.md)
+for details on configuring a Shannon gateway.
 
-In this mode, PATH will not use Envoy Proxy, which disables authorization, rate limiting & service aliasing.
-
-To run the PATH binary, first run one of the following commands to copy an example config file to `./bin/config/.config.yaml`.
+If you are comfortable updating the config file manually, then:
 
 ```sh
-# To copy an example Shannon config file
-make copy_shannon_config
+# Create ./e2e/.shannon.config.yaml
+make prepare_shannon_e2e_config
+# Update it manually
 
-# To copy an example Morse config file
-make copy_morse_e2e_config
+# Copy it to ./local/path/config/.config.yaml
+make copy_shannon_config_to_local
+
+# Copy it to ./bin/config/.config.yaml
+make copy_shannon_config_to_bin
 ```
 
+### 2.2 Morse Protocol Configs
+
+See the [Morse Cheat Sheet](./cheat_sheet_morse.md) and [PATH Config Docs](./path_config.md)
+for details on configuring a Morse gateway.
+
+If you are comfortable updating the config file manually, then:
+
+```sh
+# Create ./e2e/.morse.config.yaml
+make prepare_morse_e2e_config
+# Update it manually
+
+# Copy it to ./local/path/config/.config.yaml
+make copy_morse_config_to_local
+
+# Copy it to ./bin/config/.config.yaml
+make copy_morse_config_to_bin
+```
+
+## 3. Envoy Proxy Configuration
+
+See the [Envoy Walkthrough](./../envoy/walkthrough.md) for all the details
+on running and configuring Envoy.
+
+To get up and running quickly, run:
+
+```sh
+make init_envoy
+```
+
+**We recommend choosing Option 2 (no authorization) for now as a simpler starting point.**
+
+If you wish to use an `0Auth` provider _([for example Auth0](https://auth0.com))_ to enable
+authorizing requests using an issued JWT, you will need to provide the `AUTH_DOMAIN` and
+`AUTH_AUDIENCE` values to substitute the sensitive variables in the `envoy.yaml` file.
+
+If you do not wish to use an OAuth provider, simply answer `no` when prompted.
+This will allow authorizing requests with a static API key only.
+
+### 3.1 Configuring Relay Authorization
+
 :::tip
 
-[For a guide on how to get your config file ready, see the PATH Cheat Sheet's "Setup Protocol" section](cheat_sheet.md#13-setup-protocol).
-
-[For detailed information on the PATH configuration file, see the PATH Config Docs](../path/path_config.md).
+Saving `.gateway-endpoints.yaml` triggers a hot-reload of PADS (PATH Auth Data Server) in Tilt.
 
 :::
 
-Once you have your config file ready, run the following command to build the PATH binary and run it in standalone mode:
+You can view the `GatewayEndpoint`s and update `local/path/envoy/.gateway-endpoints.yaml` to configure authorization for your relays.
+
+- `endpoint_1_static_key` requires an API key in the `authorization` header set to `api_key_1` by default.
+- `endpoint_3_no_auth` does not require an API key in the `authorization` header.
+
+For detailed information on the `GatewayEndpoint` data structure, including how to use a Postgres database for storing `GatewayEndpoints`, see the PATH Auth Data Server section of the [PATH Config Docs](path_config.md).
+
+## 4. Run the `PATH` Gateway
+
+Once your configs are in place, simply run one of the following commands:
 
 ```sh
-make run_path
+# Tilt Mode
+make path_up
+
+# Standalone Binary Mode
+make path_up_standalone
+```
+
+### 4.1 View `PATH` Resources in Tilt
+
+Regardless of which mode you choose, you should see the output below and can
+visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) in your browser
+to view the Tilt dashboard.
+
+```bash
+❯ make path_up
+#########################################################################
+### ./local/path/config/.config.yaml already exists, not overwriting. ###
+#########################################################################
+No kind clusters found.
+Cluster 'path-localnet' not found. Creating it...
+Creating cluster "path-localnet" ...
+# ...
+Set kubectl context to "kind-path-localnet"
+You can now use your cluster with:
+# ...
+kubectl cluster-info --context kind-path-localnet
+# ...
+(space) to open the browser
+(s) to stream logs (--stream=true)
+(t) to open legacy terminal mode (--legacy=true)
+(ctrl-c) to exit
+```
+
+### 4.2 Wait for the `PATH` stack to initialize
+
+The `PATH Gateway` stack may take a minute or more to initialize the first time
+you run it as it must download all required Docker images.
+
+You will be able to tell it is ready when you see log output like this in the
+[`path`](http://localhost:10350/r/path/overview) resource in the Tilt dashboard:
+
+```json
+{"level":"info","message":"Starting PATH using config file: /app/config/.config.yaml"}
+{"level":"info","message":"Starting PATH gateway with Shannon protocol"}
+{"level":"info","message":"Starting the cache update process."}
+{"level":"info","package":"router","message":"PATH gateway running on port 3069"}
+{"level":"info","services count":1,"message":"Running Hydrator"}
+```
+
+## 5. Send a Relay
+
+You can verify that servicing relays works by sending one yourself!
+
+:::warning
+
+Requests MAY hit unresponsive nodes. If that happens, keep retrying the request a few times.
+
+Once `PATH`s QoS module is mature, this will be handled automatically.
+
+:::
+
+### 5.1 Envoy Proxy Mode with Static Key Authorization
+
+Authorized relays are routed through Envoy Proxy running on port `3070`.
+
+This endpoint requires an API key in the `authorization` header.
+
+```bash
+curl http://localhost:3070/v1/endpoint_1_static_key \
+    -X POST \
+    -H "authorization: api_key_1" \
+    -H "target-service-id: anvil" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### 5.2 Envoy Proxy without any Authorization
+
+Authorized relays are routed through Envoy Proxy running on port `3070`.
+
+This endpoint does not require an API key in the `authorization` header.
+
+```bash
+curl http://localhost:3070/v1/endpoint_3_no_auth \
+    -X POST \
+    -H "target-service-id: anvil" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+### 5.3 Standalone mode without any Authorization
+
+Unauthorized relays are routed directly to the `PATH` Service, running on `port 3069`.
+
+```bash
+curl http://localhost:3069/v1/ \
+    -X POST \
+    -H "target-service-id: anvil" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 ## E2E Tests
 
-This repository contains end-to-end (E2E) tests for the Shannon relay protocol. The tests ensure that the protocol behaves as expected under various conditions.
-
-### Running the E2E tests against Shannon Testnet
-
-#### Preparing the configuration
-
-A `make` target is provided to copy the example Shannon configuration file to the `e2e/.shannon.config.yaml` needed by the E2E tests on Shannon.
+Assuming you prepared `./e2e/.morse.config.yaml` and `./e2e/.shannon.config.yaml`
+following the instructions above, you can run the E2E tests like so:
 
 ```sh
-make copy_shannon_e2e_config
-```
-
-Then update the `shannon_config.gateway_config` values with the appropriate values.
-
-You can find the example Shannon configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/shannon.example.yaml).
-
-#### Running the E2E tests
-
-To run the tests, use the following `make` targets:
-
-```sh
-# Run E2E tests against Shannon Testnet
+# Run E2E tests against Shannon Beta Testnet
 make test_e2e_shannon_relay
+
+# Run E2E tests against Morse MainNet
+make test_e2e_morse_relay
 
 # Run all tests
 make test_all
 ```
-
-### Running the E2E tests against Morse
-
-#### Preparing the configuration
-
-A `make` target is provided to copy the example Morse configuration file to the `e2e/.morse.config.yaml` needed by the E2E tests on Morse.
-To run the tests, use the following `make` targets:
-
-```sh
-make copy_morse_e2e_config
-```
-
-Then update the `morse_config.full_node_config` and `morse_config.signed_aats` values with the appropriate values.
-
-You can find the example Morse configuration file [here](https://github.com/buildwithgrove/path/tree/main/e2e/morse.example.yaml).
-
-:::note Grove Employee Only
-
-If you are a Grove employee, download [Grove's Morse configuration file for PATH E2E tests](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=2qk5qlmrduh7irgjzih3hejfxu&h=buildwithgrove.1password.com) and COPY IT OVER the `e2e/.morse.config.yaml` file.\*\*
-
-⚠️ The above configuration file is sensitive and the contents of this file must never be shared outside of your organization. ⚠️
-
-:::
-
-#### Running the E2E tests
-
-To run the tests, use the following `make` targets:
-
-```sh
-# Run E2E tests against Morse
-make test_e2e_morse_relay
-```
-
-## Running Localnet
-
-You can use path configuration under `/local` to spin up a local development environment using `Kind` + `Tilt`.
-
-Make sure to review [Tiltfile](https://github.com/buildwithgrove/path/tree/main/Tiltfile) and [values file](https://github.com/buildwithgrove/path/tree/main/local/path/config/path-values.yaml) to make sure they have your desired configuration.
-
-### Spinning up / Tearing down Localnet
-
-Localnet can be spun up/torn down using the following targets:
-
-- `path_up` -> Spins up localnet environment using Kind + Tilt
-- `path_down` -> Tears down localnet.
-
-## Troubleshooting
-
-### Docker Permissions Issues - Need to run sudo?
-
-If you're hitting docker permission issues (e.g. you need to use sudo),
-see the solution [here](https://github.com/jgsqware/clairctl/issues/60#issuecomment-358698788)
-or just copy-paste the following command:
-
-```bash
-sudo chmod 666 /var/run/docker.sock
-```
-
-## Special Thanks
-
-The origins of this repository were inspired by the work kicked off in [gateway-server](https://github.com/pokt-network/gateway-server) by the
-[Nodies](https://nodies.app/) team. We were inspired and heavily considering forking and building off of that effort.
-
-However, after a week-long sprint, the team deemed that starting from scratch was the better path forward for multiple reasons. These include but are not limited to:
-
-- Enabling multi-protocol support; Morse, Shanon and beyond
-- Set a foundation to migrate Grove's quality of service and data pipelineta
-- Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
-- Etc...
-
-<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->
-
----
-
-## License
-
-This project is licensed under the MIT License; see the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.

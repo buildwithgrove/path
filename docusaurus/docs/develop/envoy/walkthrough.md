@@ -47,7 +47,7 @@ description: High-level architecture overview and detailed walkthrough
 
 ### Shannon Quickstart
 
-See the [PATH Quickstart Cheat Sheet](../path/cheat_sheet.md) for instructions on how to get started with a local PATH instance on Shannon.
+See the [PATH Quickstart Cheat Sheet](../path/walkthrough.md) for instructions on how to get started with a local PATH instance on Shannon.
 
 :::info MAKE SURE TO UPDATE THESE FILES
 
@@ -464,7 +464,7 @@ auth_server_config:
   endpoint_id_extractor_type: url_path
 ```
 
-See the [PATH Configuration](../path/walkthrough.md#configuration) section for more information on the `.config.yaml` file.
+See the [PATH Configuration](../path/introduction.md#configuration) section for more information on the `.config.yaml` file.
 
 For more information on external authorization using Envoy Proxy, see the Envoy documentation:
 
