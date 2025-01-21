@@ -31,7 +31,7 @@ check_path_config: ## Verify that path configuration file exists
    		echo ""; \
    		echo "Initialize using either:"; \
    		echo "  make prepare_shannon_e2e_config"; \
-   		echo "  make prepare_morse_e2e_config"; \
+   		echo "  make prepare_morse_e2e_config "; \
    		echo "################################################################"; \
    		exit 1; \
    fi

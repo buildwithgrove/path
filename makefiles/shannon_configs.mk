@@ -27,6 +27,14 @@ prepare_shannon_e2e_config: ## Setup Shannon E2E test configuration file from ex
 		echo "For Grove employees:"; \
 		echo "  1. Search for 'PATH' in 1Password"; \
 		echo "  2. Copy and paste the appropriate config into ./e2e/.shannon.config.yaml"; \
+		echo ""; \
+		echo "Then, for E2E tests:"; \
+		echo "  make test_e2e_shannon_relay"; \
+		echo ""; \
+		echo "Alternatively, for local development"; \
+		echo "  make copy_shannon_e2e_config_to_local"; \
+		echo "  make path_up"; \
+		echo "################################################################"; \
 		echo "################################################################"; \
 	else \
 		echo "################################################################"; \

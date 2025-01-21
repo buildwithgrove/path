@@ -133,6 +133,13 @@ Run the following command to generate a Shannon config at `local/path/config/.co
 make shannon_populate_config
 ```
 
+Note that running `make shannon_populate_config` is equivalent to running the following commands:
+
+```bash
+make prepare_morse_e2e_config # Generate ./e2e/.shannon.config.yaml
+make copy_morse_e2e_config_to_local # Copy to ./local/path/config/.config.yaml
+```
+
 :::warning Private Key Export
 
 1. **Ignore instructions** that prompt you to update the file manually.
@@ -218,7 +225,7 @@ Wait for initialization logs:
 Send a relay using **static key authorization**:
 
 ```bash
-curl http://localhost:3001/v1/endpoint_1_static_key \
+curl http://localhost:3070/v1/endpoint_1_static_key \
     -X POST \
     -H "authorization: api_key_1" \
     -H "target-service-id: anvil" \
@@ -228,7 +235,7 @@ curl http://localhost:3001/v1/endpoint_1_static_key \
 Send a relay **without authorization**:
 
 ```bash
-curl http://localhost:3001/v1/endpoint_3_no_auth \
+curl http://localhost:3070/v1/endpoint_3_no_auth \
     -X POST \
     -H "target-service-id: anvil" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'

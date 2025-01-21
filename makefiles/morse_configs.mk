@@ -21,6 +21,12 @@ prepare_morse_e2e_config: ## Setup Morse E2E test configuration file from exampl
 		echo "  1. Search for 'PATH' in 1Password"; \
 		echo "  2. Replace the contents of ./e2e/.morse.config.yaml with the config"; \
 		echo ""; \
+		echo "Then, for E2E tests:"; \
+		echo "  make test_e2e_morse_relay"; \
+		echo ""; \
+		echo "Alternatively, for local development"; \
+		echo "  make copy_morse_e2e_config_to_local"; \
+		echo "  make path_up"; \
 		echo "################################################################"; \
 	else \
 		echo "################################################################"; \
@@ -30,18 +36,6 @@ prepare_morse_e2e_config: ## Setup Morse E2E test configuration file from exampl
 		echo "	make prepare_morse_e2e_config"; \
 		echo "################################################################"; \
 	fi
-
-.PHONY: copy_morse_e2e_config_to_bin
-copy_morse_e2e_config_to_bin: ## Copy Morse E2E config to bin/config directory for binary usage
-	$(call check_config_exists,./e2e/.morse.config.yaml,prepare_morse_e2e_config)
-	@mkdir -p ./bin/config
-	$(call warn_file_exists,./bin/config/.config.yaml)
-	@cp ./e2e/.morse.config.yaml ./bin/config/.config.yaml
-	@echo "################################################################"
-	@echo "Successfully copied configuration:"
-	@echo "  From: ./e2e/.morse.config.yaml"
-	@echo "  To:   ./bin/config/.config.yaml"
-	@echo "################################################################"
 
 .PHONY: copy_morse_e2e_config_to_local
 copy_morse_e2e_config_to_local: ## Copy Morse E2E config to local/path/config directory
@@ -53,4 +47,16 @@ copy_morse_e2e_config_to_local: ## Copy Morse E2E config to local/path/config di
 	@echo "Successfully copied configuration:"
 	@echo "  From: ./e2e/.morse.config.yaml"
 	@echo "  To:   ./local/path/config/.config.yaml"
+	@echo "################################################################"
+
+.PHONY: copy_morse_e2e_config_to_bin
+copy_morse_e2e_config_to_bin: ## Copy Morse E2E config to bin/config directory for binary usage
+	$(call check_config_exists,./e2e/.morse.config.yaml,prepare_morse_e2e_config)
+	@mkdir -p ./bin/config
+	$(call warn_file_exists,./bin/config/.config.yaml)
+	@cp ./e2e/.morse.config.yaml ./bin/config/.config.yaml
+	@echo "################################################################"
+	@echo "Successfully copied configuration:"
+	@echo "  From: ./e2e/.morse.config.yaml"
+	@echo "  To:   ./bin/config/.config.yaml"
 	@echo "################################################################"

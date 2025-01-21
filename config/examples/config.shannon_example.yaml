@@ -20,7 +20,8 @@ shannon_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
 
     # Disable caching of onchain data.
-    # As of #140, lazy_mode=false became unsupported.
+    # TODO_MVP(@adshmh, #140): As of #140, lazy_mode=false became unsupported
+    # and needs to be added back.
     lazy_mode: true
 
   gateway_config:
