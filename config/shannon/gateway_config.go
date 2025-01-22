@@ -17,12 +17,14 @@ type ShannonGatewayConfig struct {
 	FullNodeConfig shannonprotocol.FullNodeConfig `yaml:"full_node_config"`
 	GatewayConfig  shannonprotocol.GatewayConfig  `yaml:"gateway_config"`
 
-	// WebsocketEndpointURL is a TEMPORARY workaround to allow users of PATH to enable
-	// websocket connections to a user-provided websocket-enabled endpoint URL.
+	// TODO_HACK(@commoddity): WebsocketEndpoints is a TEMPORARY workaround to
+	// allow users of PATH to enable websocket connections to a user-provided websocket-enabled endpoint URL.
+	//
 	// It is placed in the ShannonGatewayConfig struct to indicate that websockets will
 	// only be supported by the Shannon protocol, never on Morse.
-	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpointURLs map[protocol.ServiceID]string `yaml:"websocket_endpoint_urls"`
+	//
+	// Remove this field once the Shannon protocol supports websocket connections.
+	WebsocketEndpoints map[protocol.ServiceID]string `yaml:"ws_endpoints"`
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.
@@ -50,18 +52,18 @@ func (c ShannonGatewayConfig) Validate() error {
 		return err
 	}
 
-	// Validate WebsocketEndpointURLs
-	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this validation once the Shannon protocol supports websocket connections.
-	if err := c.validateWebsocketEndpointURLs(); err != nil {
+	// Validate WebsocketEndpointss
+	// TODO_HACK(@commoddity, WebSockets): Remove this validation once the Shannon protocol supports websocket connections.
+	if err := c.validateWebsocketEndpointss(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateWebsocketEndpointURLs checks if the WebsocketEndpointURLs are valid.
-func (c ShannonGatewayConfig) validateWebsocketEndpointURLs() error {
-	for _, url := range c.WebsocketEndpointURLs {
+// validateWebsocketEndpointss checks if the WebsocketEndpointss are valid.
+func (c ShannonGatewayConfig) validateWebsocketEndpointss() error {
+	for _, url := range c.WebsocketEndpoints {
 		if !websocketURLRegex.MatchString(url) {
 			return fmt.Errorf("invalid websocket endpoint URL: %s", url)
 		}

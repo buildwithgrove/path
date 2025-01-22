@@ -103,7 +103,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 }
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
-// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+// Satisfies the gateway.ProtocolRequestContext interface.
+// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
 	var selectedEndpointURL string
 	if rc.selectedEndpoint != nil {

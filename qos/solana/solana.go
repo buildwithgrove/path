@@ -67,7 +67,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // WebSocket connection requests do not have a body, so we don't need to parse it.
 //
 // This method implements the gateway.QoSService interface.
-// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		EndpointStore: qos.EndpointStore,

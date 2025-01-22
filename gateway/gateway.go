@@ -53,10 +53,10 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// WebsocketEndpointURLs is a temporary workaround to allow PATH to enable websocket
+	// WebsocketEndpointss is a temporary workaround to allow PATH to enable websocket
 	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
-	// TODO_FUTURE(@commoddity)[WebSockets]: Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpointURLs map[protocol.ServiceID]string
+	// TODO_HACK(@commoddity, WebSockets): Remove this field once the Shannon protocol supports websocket connections.
+	WebsocketEndpointss map[protocol.ServiceID]string
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -136,7 +136,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
 // the Shannon protocol supports websocket connections, which will enable onchain websocket support.
 //
-// TODO_FUTURE(@commoddity)[WebSockets]: Remove this temporary workaround once the Shannon protocol supports websocket connections.
+// TODO_HACK(@commoddity, WebSockets): Remove this temporary workaround once the Shannon protocol supports websocket connections.
 // This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
 // from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
 // A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
@@ -152,7 +152,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	}
 
 	// Check if there are any websocket endpoint URLs set for the service ID in the config.
-	if len(g.WebsocketEndpointURLs) == 0 {
+	if len(g.WebsocketEndpointss) == 0 {
 		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
 		return
 	}
@@ -165,7 +165,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	}
 
 	// Get the websocket endpoint URL for the service ID.
-	endpointURL := g.WebsocketEndpointURLs[serviceID]
+	endpointURL := g.WebsocketEndpointss[serviceID]
 	if endpointURL == "" {
 		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
 		handleWebsocketError(g.Logger, clientConn, errMsg)
@@ -183,7 +183,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	// Run the websocket bridge in a separate goroutine.
 	go bridge.Run()
 
-	g.Logger.Info().Str("websocket_endpoint_url", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
+	g.Logger.Info().Str("ws_endpoints", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
 }
 
 // handleWebsocketError handles an error encountered in the websocket connection.

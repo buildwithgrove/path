@@ -93,7 +93,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 }
 
 // BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
-// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
 func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsReq *http.Request) error {
 	// Create the QoS request context using the WebSocket request.
 	// This method will reject the request if it is for a service that does not support WebSocket connections.
@@ -168,14 +168,16 @@ func (rc *requestContext) HandleRelayRequest() error {
 }
 
 // HandleWebsocketRequest handles a websocket request.
-// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
 	// Make an endpoint selection using the QoS context.
+	// This modifies the internal state of protocolCtx for subsequent calls.
 	if err := rc.protocolCtx.SelectEndpoint(rc.qosCtx.GetEndpointSelector()); err != nil {
 		rc.logger.Warn().Err(err).Msg("SendRelay: error selecting an endpoint.")
 		return err
 	}
 
+	// Establish a websocket connection with the selected endpoint and handle the request.
 	if err := rc.protocolCtx.HandleWebsocketRequest(req, w, rc.logger); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err

@@ -2,15 +2,15 @@ package gateway
 
 import "net/http"
 
-// serviceRequestType represents the type of service request.
+// serviceRequestType represents the type of network request.
 type serviceRequestType int
 
 const (
-	// httpServiceRequest represents a standard HTTP service request.
+	// httpServiceRequest represents a standard HTTP request.
 	httpServiceRequest serviceRequestType = iota
+
 	// websocketServiceRequest represents a WebSocket connection request.
 	websocketServiceRequest
-	// Future request types can be added here.
 )
 
 // determineServiceRequestType checks the incoming HTTP request and returns the appropriate serviceRequestType.

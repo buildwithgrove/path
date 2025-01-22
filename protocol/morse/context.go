@@ -74,8 +74,9 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	}, err
 }
 
-// HandleWebsocketRequest satisfies the gateway package's ProtocolRequestContext interface.
-// Morse does not support WebSocket connections so this method will always return an error for the Morse protocol.
+// HandleWebsocketRequest handles incoming WebSocket network request.
+// Morse does not support WebSocket connections so this method will always return an error every time.
+// Satisfies the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
 	return fmt.Errorf("HandleWebsocketRequest: Morse does not support WebSocket connections")
 }

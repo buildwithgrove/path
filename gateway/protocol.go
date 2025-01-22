@@ -54,11 +54,11 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	// TODO_FUTURE(@commoddity)[WebSockets]: Utilize this method once the Shannon protocol supports websocket connections.
+	// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
 	HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
-	// This is needed by the Endpooint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.
+	// This is needed by the Endpoint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.
 	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
 	// See the Shannon package's operation_mode.go file for more details.
 	AvailableEndpoints() ([]protocol.Endpoint, error)
