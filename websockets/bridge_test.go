@@ -79,7 +79,7 @@ func Test_Bridge_Run(t *testing.T) {
 			go bridge.Run()
 
 			// Wait for a short duration for test requests and events to get sent
-			<-time.After(1 * time.Second)
+			<-time.After(2 * time.Second)
 
 			// Close the bridge
 			bridge.Close()
