@@ -53,7 +53,7 @@ func unmarshalResponse(
 	}
 
 	// Validate the JSONRPC response.
-	if err := jsonrpcResponse.Validate(); err != nil {
+	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
