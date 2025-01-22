@@ -26,10 +26,19 @@ local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
 # PATH operation modes determine which services are loaded:
-# 1. path_only - PATH Service Only
-# 2. path_with_auth - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
+#   1. 'path_only' - PATH Service Only
+#   2. 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
 # The observability stack is loaded in both modes.
 MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
+
+# Define the valid modes
+VALID_MODES = ("path_only", "path_with_auth")
+
+# Check if the MODE is valid
+if MODE not in VALID_MODES:
+    raise ValueError(
+        f"Invalid MODE: '{MODE}'. Allowed values are {VALID_MODES}. Please set a valid MODE."
+    )
 
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
@@ -66,8 +75,7 @@ docker_build_with_restart(
     live_update=[sync("bin/path", "/app/path")],
 )
 
-# Specify the dependencies if PATH is running with auth.
-# No port exposed as all traffic must be routed through Envoy Proxy.
+# Specify the dependencies and port forwards if PATH is running WITH auth.
 if MODE == "path_with_auth":
     path_resource_deps = [
         "ext-authz",
@@ -76,11 +84,15 @@ if MODE == "path_with_auth":
         "ratelimit",
         "redis",
     ]
+    # No port exposed as all traffic must be routed through Envoy Proxy.
     path_port_forwards = []
-else:
+
+# Specify the dependencies and port forwards if PATH is running WITHOUT auth.
+if MODE == "path_only":
+    # Run PATH without any dependencies and port 3069 exposed
     path_resource_deps = []
     # Expose port 3069 if PATH is running without auth.
-    path_port_forwards = ["3069:3069"]
+    port_forwards=["3069:3069"]
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 # 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
