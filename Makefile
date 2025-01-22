@@ -38,7 +38,7 @@ check_path_config: ## Verify that path configuration file exists
 
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ./local/path/config/.config.yaml)
+	(cd bin; ./path -config ../local/path/config/.config.yaml)
 
 #################################
 ###  Local PATH make targets  ###
