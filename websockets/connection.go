@@ -132,7 +132,13 @@ func (c *connection) handleError(err error, source messageSource) {
 		c.logger.Error().Err(err).Msgf(" %s error reading from connection", source)
 	}
 
-	c.stopChan <- fmt.Errorf("error reading from %s connection: %w", source, err)
+	select {
+	case <-c.stopChan:
+		// stopChan is already closed, do nothing
+	default:
+		// stopChan is still open, send the error
+		c.stopChan <- fmt.Errorf("error reading from %s connection: %w", source, err)
+	}
 }
 
 // pingLoop sends keep-alive ping messages to the connection and handles pong messages

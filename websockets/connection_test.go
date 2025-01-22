@@ -110,7 +110,8 @@ func Test_connection(t *testing.T) {
 				}
 			}()
 
-			<-time.After(1 * time.Second)
+			<-time.After(2 * time.Second)
+
 			close(stopChan)
 			close(msgChan)
 
