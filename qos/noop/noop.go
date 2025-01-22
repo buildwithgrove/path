@@ -9,6 +9,8 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/gateway"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_TECHDEBT(@adshmh): support customization of the endpoint response's timeout.
@@ -21,8 +23,8 @@ type NoOpQoS struct{}
 
 // ParseHTTPRequest reads the supplied HTTP request's body and passes it on to a new requestContext instance.
 // It intentionally avoids performing any validation on the request, as is the designed behavior of the noop QoS.
-// This method implements the gateway.QoSService interface.
-func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (gateway.RequestQoSContext, bool) {
+// Implements the gateway.QoSService interface.
+func (_ NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (gateway.RequestQoSContext, bool) {
 	bz, err := io.ReadAll(httpRequest.Body)
 	if err != nil {
 		return requestContextFromError(fmt.Errorf("Error reading the HTTP request body: %w", err)), false
@@ -32,6 +34,18 @@ func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (g
 		httpRequestBody:                 bz,
 		endpointResponseTimeoutMillisec: defaultEndpointResponseTimeoutMillisec,
 	}, true
+}
+
+// ApplyObservations on noop QoS only fulfills the interface requirements and does not perform any actions.
+// Implements the gateway.QoSService interface.
+func (_ NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
+	return nil
+}
+
+// GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
+// Implements the gateway.QoSService interface.
+func (_ NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
+	return nil
 }
 
 // requestContextFromError constructs and returns a requestContext instance using the supplied error.

@@ -3,46 +3,92 @@ package evm
 import (
 	"encoding/json"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_UPNEXT(@adshmh): implement the generic jsonrpc response
+const (
+	// errCodeUnmarshalling is set as the JSONRPC response's error code if the endpoint returns a malformed response
+	errCodeUnmarshalling = -32600
+
+	// errMsgUnmarshalling is the generic message returned to the user if the endpoint returns a malformed response.
+	errMsgUnmarshalling = "the response returned by the endpoint is not a valid JSONRPC response"
+
+	// errDataFieldRawBytes is the key of the entry in the JSONRPC error response's "data" map which holds the endpoint's original response.
+	errDataFieldRawBytes = "endpoint_response"
+
+	// errDataFieldUnmarshallingErr is the key of the entry in the JSONRPC error response's "data" map which holds the unmarshalling error.
+	errDataFieldUnmarshallingErr = "unmarshalling_error"
+)
+
+// TODO_MVP(@adshmh): implement the generic jsonrpc response
 // (with the scope limited to an EVM-based blockchain)
 // responseGeneric captures the fields expected in response to any request on an
 // EVM-based blockchain. It is intended to be used when no validation/observation
 // is applicable to the corresponding request's JSONRPC method.
 // i.e. when there are no unmarshallers/structs matching the method specified by the request.
 type responseGeneric struct {
-	ID      jsonrpc.ID      `json:"id"`
-	JSONRPC jsonrpc.Version `json:"jsonrpc"`
+	logger polylog.Logger
 
-	rawBytes         []byte
-	unmarshallingErr error
+	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	jsonRPCResponse jsonrpc.Response
 }
 
-func (r responseGeneric) GetObservation() (observation, bool) {
-	return observation{}, false
+// GetObservation returns an observation that is NOT used in validating endpoints.
+// This allows sharing data with other entities, e.g. a data pipeline.
+// Implements the response interface.
+func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
+	return qosobservations.EVMEndpointObservation{
+		ResponseObservation: &qosobservations.EVMEndpointObservation_UnrecognizedResponse{
+			UnrecognizedResponse: &qosobservations.EVMUnrecognizedResponse{
+				JsonrpcResponse: &qosobservations.JsonRpcResponse{
+					Id: r.jsonRPCResponse.ID.String(),
+				},
+			},
+		},
+	}
 }
 
-// TODO_UPNEXT(@adshmh): handle any unmarshalling errors
+// TODO_MVP(@adshmh): handle any unmarshalling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
-	return r.rawBytes
+	bz, err := json.Marshal(r.jsonRPCResponse)
+	if err != nil {
+		// This should never happen: log an entry but return the response anyway.
+		r.logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSONRPC response failed.")
+	}
+	return bz
 }
 
 // responseUnmarshallerGeneric unmarshal the provided byte slice
 // into a responseGeneric struct and saves any data that may be
 // needed for producing a response payload into the struct.
-func responseUnmarshallerGeneric(data []byte) (response, error) {
-	var response responseGeneric
+func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
+	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		// TODO_FUTURE: implement a method-specific validator of the response.
-		response.unmarshallingErr = err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), nil
 	}
 
-	response.rawBytes = data
-	return response, nil
+	return responseGeneric{
+		logger: logger,
+
+		jsonRPCResponse: response,
+	}, nil
+}
+
+// getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
+func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
+	errData := map[string]string{
+		errDataFieldRawBytes:         string(malformedResponsePayload),
+		errDataFieldUnmarshallingErr: err.Error(),
+	}
+
+	return responseGeneric{
+		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshalling, errMsgUnmarshalling, errData),
+	}
 }
 
 // TODO_INCOMPLETE: Handle the string `null`, as it could be returned

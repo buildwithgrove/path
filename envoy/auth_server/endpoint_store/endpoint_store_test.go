@@ -38,7 +38,7 @@ func newTestStore(t *testing.T, ctx context.Context, updates chan *proto.AuthDat
 	mockStream := &MockStream{updates: updates}
 	mockClient.EXPECT().StreamAuthDataUpdates(gomock.Any(), gomock.Any()).Return(mockStream, nil).AnyTimes()
 
-	store, err := NewEndpointStore(ctx, mockClient, polyzero.NewLogger())
+	store, err := NewEndpointStore(ctx, polyzero.NewLogger(), mockClient)
 	require.NoError(t, err)
 
 	return store

@@ -1,0 +1,45 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+// JsonRpcRequest represents essential fields of a JSON-RPC request for observation purposes.
+// Reference: https://www.jsonrpc.org/specification#request_object
+message JsonRpcRequest {
+  // Client-established identifier. Must be a String, Number, or NULL if present.
+  string id = 1;
+
+  // Name of the JSON-RPC method being called (e.g., eth_chainId for EVM chains)
+  string method = 2;
+
+  // Note: This message captures only essential JSON-RPC fields.
+  // Add fields as needed.
+}
+
+// JsonRpcResponse represents essential fields of a JSON-RPC response for observation purposes.
+// Reference: https://www.jsonrpc.org/specification#response_object
+message JsonRpcResponse {
+  // Must match the id value from the corresponding request
+  string id = 1;
+
+  // JSON-serializable response data
+  string result = 2;
+
+  // Error details, if the request failed
+  optional JsonRpcResponseError err = 3;
+
+  // Note: This message captures only essential JSON-RPC fields.
+  // Add fields as needed.
+}
+
+// JsonRpcResponseError represents core error fields from a JSON-RPC response.
+// Reference: https://www.jsonrpc.org/specification#error_object
+//
+// Only includes fields required for QoS observations.
+message JsonRpcResponseError {
+  // Error code indicating the type of failure
+  int64 code = 1;
+
+  // Human-readable error description
+  string message = 2;
+}

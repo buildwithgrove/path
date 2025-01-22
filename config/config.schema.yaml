@@ -111,7 +111,7 @@ properties:
           rpc_url:
             description: "HTTP URL for the Shannon full node."
             type: string
-            pattern: "^(http|https)://.*$"
+            pattern: "^(tcp|http|https)://.*$"
           grpc_config:
             description: "gRPC configuration for the Shannon full node."
             type: object
@@ -145,7 +145,7 @@ properties:
           lazy_mode:
             description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
-            default: false
+            default: true
       gateway_config:
         description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
         type: object
@@ -174,6 +174,18 @@ properties:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
 
+  # Logger Configuration (optional)
+  logger_config:
+    description: "Optional configuration for the logger. If not specified, info level will be used."
+    type: object
+    additionalProperties: false
+    properties:
+      level:
+        description: "Minimum log level. Valid values are: debug, info, warn, error. Defaults to info if not specified."
+        type: string
+        enum: ["debug", "info", "warn", "error"]
+        default: "info"
+
   # Router Configuration (optional)
   router_config:
     description: "Optional configuration for the router, which is used to route requests to the correct service."
@@ -196,7 +208,7 @@ properties:
         description: "Idle timeout duration for the router."
         type: string
 
-  # [OPTIONAL] Hydrator Configuration
+  # Hydrator Configuration (optional)
   hydrator_config:
     description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."
     type: object
@@ -208,7 +220,7 @@ properties:
         items:
           type: string
 
-  # [OPTIONAL] Auth Server Configuration
+  # Auth Server Configuration (optional)
   # This part of the config is only used by the Envoy Auth Server, not in PATH itself.
   auth_server_config:
     description: "Configuration for the Envoy Auth Server, which is used to authorize requests to the gateway."

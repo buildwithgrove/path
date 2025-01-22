@@ -13,22 +13,22 @@ command_exists() {
 # This function checks if poktrolld is installed. If not, it downloads the correct binary, extracts it, makes it executable, and verifies with 'poktrolld version'.
 install_poktrolld() {
     if command_exists poktrolld; then
-        echo "$(date) - poktrolld already installed." >> install.log
+        echo "poktrolld already installed." | tee -a install.log
     else
-        echo "$(date) - Installing poktrolld..." >> install.log
+        echo "Installing poktrolld..." | tee -a install.log
         OS=$(uname | tr '[:upper:]' '[:lower:]')
         ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
         TARBALL="poktroll_${OS}_${ARCH}.tar.gz"
         curl -LO "https://github.com/pokt-network/poktroll/releases/latest/download/${TARBALL}"
         sudo tar -zxf "${TARBALL}" -C /usr/local/bin
         sudo chmod +x /usr/local/bin/poktrolld
-        echo "$(date) - poktrolld installation complete. Checking version..." >> install.log
+        echo "poktrolld installation complete. Checking version..." | tee -a install.log
         poktrolld version
-        echo "$(date) - poktrolld version check complete." >> install.log
+        echo "poktrolld version check complete." | tee -a install.log
     fi
 }
 
 # Main execution starts here
-echo "$(date) - Starting poktrolld installation script..." >> install.log
+echo "Starting poktrolld installation script..." | tee -a install.log
 install_poktrolld
-echo "$(date) - poktrolld installation script completed." >> install.log
+echo "poktrolld installation script completed." | tee -a install.log

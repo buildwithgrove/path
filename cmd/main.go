@@ -22,30 +22,32 @@ import (
 const defaultConfigPath = "config/.config.yaml"
 
 func main() {
-	logger := polyzero.NewLogger()
-
-	configPath, err := getConfigPath()
+	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)
 	}
-	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	config, err := config.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	protocol, err := getProtocol(config, logger)
+	log.Printf("Initializing PATH logger with level: %s", config.Logger.Level)
+
+	loggerOpts := []polylog.LoggerOption{
+		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
+	}
+
+	logger := polyzero.NewLogger(loggerOpts...)
+
+	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
+
+	protocol, err := getProtocol(logger, config)
 	if err != nil {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosPublisher, err := getQoSPublisher(config.MessagingConfig)
-	if err != nil {
-		log.Fatalf("failed to setup the QoS publisher: %v", err)
-	}
-
-	gatewayQoSInstances, hydratorQoSGenerators, err := getServiceQoSInstances(config, logger)
+	qosInstances, err := getServiceQoSInstances(config, logger)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
@@ -53,18 +55,24 @@ func main() {
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(protocol, qosPublisher, hydratorQoSGenerators, logger)
+	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	requestParser := request.NewParser(gatewayQoSInstances, logger)
+	// setup the request parser which maps requests to the correct QoS instance.
+	requestParser := &request.Parser{
+		Logger: logger,
 
+		QoSServices: qosInstances,
+	}
+
+	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
+		Logger: logger,
+
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
-		QoSPublisher:      qosPublisher,
-		Logger:            logger,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
@@ -77,11 +85,12 @@ func main() {
 	}
 
 	healthChecker := &health.Checker{
+		Logger: logger,
+
 		Components: components,
-		Logger:     logger,
 	}
 
-	apiRouter := router.NewRouter(gateway, healthChecker, config.GetRouterConfig(), logger)
+	apiRouter := router.NewRouter(logger, gateway, healthChecker, config.GetRouterConfig())
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}
@@ -93,23 +102,27 @@ func main() {
 
 /* -------------------- Gateway Init Helpers -------------------- */
 
-// getConfigPath returns the full path to the config file
-// based on the current working directory of the executable.
+// getConfigPath returns the full path to the config file relative to the executable.
 //
-// For example if the binary is in:
-// - `/app` the full config path will be `/app/config/.config.yaml`
-// - `./bin` the full config path will be `./bin/config/.config.yaml`
-func getConfigPath() (string, error) {
+// Priority for determining config path:
+// - If `-config` flag is set, use its value
+// - Otherwise, use defaultConfigPath relative to executable directory
+//
+// Examples:
+// - Executable in `/app` → config at `/app/config/.config.yaml`
+// - Executable in `./bin` → config at `./bin/config/.config.yaml`
+// - Executable in `./local/path` → config at `./local/path/config/.config.yaml`
+func getConfigPath(defaultConfigPath string) (string, error) {
 	var configPath string
 
-	// The config path can be overridden using the `-config` flag.
+	// Check for -config flag override
 	flag.StringVar(&configPath, "config", "", "override the default config path")
 	flag.Parse()
 	if configPath != "" {
 		return configPath, nil
 	}
 
-	// Otherwise, use the default config path based on the executable path
+	// Get executable directory for default path
 	exeDir, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get executable path: %v", err)
@@ -125,9 +138,9 @@ func getConfigPath() (string, error) {
 // - If `shannon_config` is set it returns a Shannon protocol instance.
 // - If `morse_config` is set it returns a Morse protocol instance.
 // - If neither is set, it returns an error.
-func getProtocol(config config.GatewayConfig, logger polylog.Logger) (gateway.Protocol, error) {
+func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
-		return getShannonProtocol(shannonConfig, logger)
+		return getShannonProtocol(logger, shannonConfig)
 	}
 
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {

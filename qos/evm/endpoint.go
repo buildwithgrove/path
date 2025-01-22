@@ -3,47 +3,83 @@ package evm
 import (
 	"fmt"
 	"strconv"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
+)
+
+var (
+	// The errors below list all the possible validation errors on an endpoint.
+	errNoChainIDObs          = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
+	errInvalidChainIDObs     = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
+	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
+	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
 type endpoint struct {
-	ChainID string
-	// blockHeight is the response to `eth_BlockNumber`
-	// received from the endpoint.
-	// blockHeight is stored as a string
-	// to allow validation of the endpoint's response.
-	blockHeight string
+	// chainIDResponse stores the result of processing the endpoint's response to an `eth_chainId` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_chainId` request.
+	chainIDResponse *string
+
+	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
+	parsedBlockNumberResponse *uint64
+
 	// TODO_FUTURE: support archival endpoints.
 }
 
-func (e *endpoint) Process(observations []observation) {
-	// TODO_MVP(@adshmh): add debug logs to allow tracking issues related to individual endpoints.
-	for _, observation := range observations {
-		if observation.ChainID != "" {
-			e.ChainID = observation.ChainID
-		}
-
-		if observation.BlockHeight != "" {
-			e.blockHeight = observation.BlockHeight
-		}
+// Validate returns an error if the endpoint is invalid.
+// e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
+func (e endpoint) Validate(chainID string) error {
+	switch {
+	case e.chainIDResponse == nil:
+		return errNoChainIDObs
+	case *e.chainIDResponse != chainID:
+		return fmt.Errorf("invalid response: %s expected %s :%w", *e.chainIDResponse, chainID, errInvalidChainIDObs)
+	case e.parsedBlockNumberResponse == nil:
+		return errNoBlockNumberObs
+	case *e.parsedBlockNumberResponse == 0:
+		return errInvalidBlockNumberObs
+	default:
+		return nil
 	}
 }
 
-func (e endpoint) Validate(expectedChainID string) error {
-	if e.ChainID != expectedChainID {
-		return fmt.Errorf("invalid chain ID: %s, expected: %s", e.ChainID, expectedChainID)
+// ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
+// It Returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+// TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
+//   - an endpoint that returned in invalid response.
+//   - an endpoint with no/incomplete observations.
+func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
+	if chainIDResponse := obs.GetChainIdResponse(); chainIDResponse != nil {
+		observedChainID := chainIDResponse.GetChainIdResponse()
+		e.chainIDResponse = &observedChainID
+		return true
 	}
 
-	_, err := e.GetBlockHeight()
-	return err
+	if blockNumberResponse := obs.GetBlockNumberResponse(); blockNumberResponse != nil {
+		// base 0: use the string's prefix to determine its base.
+		parsedBlockNumber, err := strconv.ParseUint(blockNumberResponse.GetBlockNumberResponse(), 0, 64)
+		// The endpoint returned an invalid response to an `eth_blockNumber` request.
+		// Explicitly set the parsedBlockNumberResponse to a zero value as the ParseUInt does not guarantee returning a 0 on all error cases.
+		if err != nil {
+			zero := uint64(0)
+			e.parsedBlockNumberResponse = &zero
+			return true
+		}
+
+		e.parsedBlockNumberResponse = &parsedBlockNumber
+		return true
+	}
+
+	return false
 }
 
-func (e endpoint) GetBlockHeight() (uint64, error) {
-	// base 0: use the string's prefix to determine its base.
-	height, err := strconv.ParseUint(e.blockHeight, 0, 64)
-	if err != nil {
-		return 0, fmt.Errorf("getBlockHeight: invalid block height value %q: %v", e.blockHeight, err)
+// GetBlockNumber returns the parsed block number value for the endpoint.
+func (e endpoint) GetBlockNumber() (uint64, error) {
+	if e.parsedBlockNumberResponse == nil {
+		return 0, errNoBlockNumberObs
 	}
 
-	return height, nil
+	return *e.parsedBlockNumberResponse, nil
 }
