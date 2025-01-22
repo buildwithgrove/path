@@ -11,20 +11,8 @@ import (
 	"github.com/buildwithgrove/path/qos/evm"
 )
 
-// TODO_MVP(@adshmh): enable Solana QoS instance through the following steps:
-// 1. Add Solana alias + config to the configuration
-// 2. Build a Solana QoS instance using any required configuration options.
-// 3. Pass the Solana QoS instance to the endpoint hydrator, if enabled.
-// 4. Pass the Solana QoS instance to the gateway.
-
 // getServiceQoSInstances returns all QoS instances to be used by the Gateway and the EndpointHydrator.
-func getServiceQoSInstances(
-	_ config.GatewayConfig,
-	logger polylog.Logger,
-) (
-	map[protocol.ServiceID]gateway.QoSService,
-	error,
-) {
+func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gateway.QoSService, error) {
 	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
@@ -35,14 +23,18 @@ func getServiceQoSInstances(
 		switch serviceQoSType {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.NewQoSInstance(logger)
+			evmQoS := evm.NewQoSInstance(logger, config.GetEVMChainID(serviceID))
 			qosServices[serviceID] = evmQoS
 
 		// TODO_FUTURE(@adshmh): The logic here is complex enough to justify using a builder/factory function pattern.
 		// At-least having something like func buildSolanaQoSInstance(...) in a solana.go file either here or under
 		// config package will make the initialization/configuration code easier to read and maintain.
 		case config.ServiceIDSolana:
-			// TODO_TECHDEBT: add solana qos service here
+			// TODO_MVP(@adshmh): enable Solana QoS instance through the following steps:
+			// 1. Add Solana alias + config to the configuration
+			// 2. Build a Solana QoS instance using any required configuration options.
+			// 3. Pass the Solana QoS instance to the endpoint hydrator, if enabled.
+			// 4. Pass the Solana QoS instance to the gateway.
 
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
