@@ -75,12 +75,16 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 		expectedBytes  []byte
 		expectedStatus int
 		expectedError  error
+		path           string
+		expectedPath   string
 	}{
 		{
 			name:           "should perform a service request successfully",
 			payload:        `{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}`,
 			expectedBytes:  []byte(`{"jsonrpc": "2.0", "id": 1, "result": "0x10d4f"}`),
 			expectedStatus: http.StatusOK,
+			path:           "/v1",
+			expectedPath:   "",
 		},
 		{
 			name:           "should fail if service request handler returns an error",
@@ -88,6 +92,16 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 			expectedBytes:  []byte("failed to send service request: some error\n"),
 			expectedStatus: http.StatusInternalServerError,
 			expectedError:  errors.New("some error"),
+			path:           "/v1/",
+			expectedPath:   "/",
+		},
+		{
+			name:           "should handle /v1/whatever",
+			payload:        `{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber"}`,
+			expectedBytes:  []byte(`{"jsonrpc": "2.0", "id": 1, "result": "0x10d4f"}`),
+			expectedStatus: http.StatusOK,
+			path:           "/v1/whatever",
+			expectedPath:   "/whatever",
 		},
 	}
 
@@ -99,6 +113,9 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 
 			mockGateway.EXPECT().HandleHTTPServiceRequest(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, req *http.Request, w http.ResponseWriter) error {
+					if req.URL.Path != test.expectedPath {
+						t.Errorf("expected path %s, got %s", test.expectedPath, req.URL.Path)
+					}
 					if test.expectedStatus == http.StatusOK {
 						w.WriteHeader(http.StatusOK)
 						_, _ = w.Write(test.expectedBytes)
@@ -110,7 +127,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 				},
 			)
 
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v1", ts.URL), strings.NewReader(test.payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s", ts.URL, test.path), strings.NewReader(test.payload))
 			c.NoError(err)
 
 			client := &http.Client{}

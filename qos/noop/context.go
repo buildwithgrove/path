@@ -19,6 +19,10 @@ type requestContext struct {
 	// requestContext was constructed.
 	httpRequestBody []byte
 
+	// httpRequestPath contains the path of the HTTP request for which this instance of
+	// requestContext was constructed.
+	httpRequestPath string
+
 	// endpointResponseTimeoutMillisec specifies the timeout for receiving a response from an endpoint serving
 	// the request represented by this requestContext instance.
 	endpointResponseTimeoutMillisec int
@@ -35,11 +39,15 @@ type requestContext struct {
 // GetServicePayload returns the payload to be sent to a service endpoint.
 // Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetServicePayload() protocol.Payload {
-	return protocol.Payload{
+	payload := protocol.Payload{
 		Method:          http.MethodPost,
 		Data:            string(rc.httpRequestBody),
 		TimeoutMillisec: rc.endpointResponseTimeoutMillisec,
 	}
+	if rc.httpRequestPath != "" {
+		payload.Path = rc.httpRequestPath
+	}
+	return payload
 }
 
 // UpdateWithResponse is used to inform the requestContext of the response to its underlying service request, returned from an endpoint.
