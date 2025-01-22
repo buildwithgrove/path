@@ -24,7 +24,7 @@ type Response struct {
 	Error *ResponseError `json:"error,omitempty"`
 }
 
-func (r Response) Validate() error {
+func (r Response) Validate(reqID ID) error {
 	if r.Version != Version2 {
 		return fmt.Errorf("invalid JSONRPC response: jsonrpc field is %q, expected %q", r.Version, Version2)
 	}
@@ -33,6 +33,9 @@ func (r Response) Validate() error {
 	}
 	if r.Result != nil && r.Error != nil {
 		return fmt.Errorf("invalid JSONRPC response: both result and error must not be included")
+	}
+	if r.ID.String() != reqID.String() {
+		return fmt.Errorf("invalid JSONRPC response: id field is %q, expected %q", r.ID, reqID)
 	}
 	return nil
 }

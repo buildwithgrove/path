@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosInstances, err := getServiceQoSInstances(config, logger)
+	qosInstances, err := getServiceQoSInstances(logger)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}

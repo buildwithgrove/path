@@ -5,7 +5,9 @@ import (
 	"fmt"
 )
 
-// TODO_TECHDEBT: handle all possible ID values based on JSONRPC spec.
+// TODO_TECHDEBT(@commoddity): handle all possible ID values based on JSONRPC spec.
+// Specifically, the ability to handle the "null" value as defined in the spec.
+// See the following link for more details:
 // https://www.jsonrpc.org/specification
 //
 // JSON-RPC ID requirements:
