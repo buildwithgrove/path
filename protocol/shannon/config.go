@@ -38,7 +38,9 @@ type (
 
 		// LazyMode, if set, will disable all caching of onchain data, specifically apps and sessions.
 		// This enables supporting short block times, e.g. when running E2E tests on LocalNet.
-		LazyMode bool `yaml:"lazy_mode"`
+		// TODO_MVP(@adshmh, #140): As of #140, lazy_mode=false became unsupported
+		// and needs to be added back.
+		LazyMode bool `yaml:"lazy_mode" default:"true"`
 	}
 
 	GatewayConfig struct {

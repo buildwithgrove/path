@@ -1,20 +1,17 @@
 package config
 
+// NOTE: Service ID list last updated 2025/01/22
+//
+// TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
+// Consider a similar automated approach to "docs_update_gov_params_page"
+
 import "github.com/buildwithgrove/path/protocol"
 
-// NOTE: The service ID list in this file was last updated on 2025/01/08
+// IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
+// Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
-/* IMPORTANT: In order for PATH to run Quality of Service (QoS) checks against the endpoints for a service,
-the authoritative service ID MUST be registered in this file, which is used to build the ServiceQoSTypes map.
-
-Services that are not registered in this file will be supported but will use the NoOp service QoS type,
-which selects a random endpoint for the given service and does not perform any observations or QoS checks. */
-
-// TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
-
-// The ServiceQoSType type corresponds to a specific implementation of the
-// gateway.QoSService interface, which is used to build the request QoS context
-// and select the endpoint for a request for a given service ID.
+// ServiceQoSType maps to a gateway.QoSService implementation that builds request QoS context
+// and selects endpoints for a given service ID.
 type ServiceQoSType string
 
 const (
@@ -22,6 +19,9 @@ const (
 	ServiceIDSolana ServiceQoSType = "solana" // ServiceIDSolana represents the Solana blockchain service type.
 	ServiceIDPOKT   ServiceQoSType = "pokt"   // ServiceIDPOKT represents the POKT blockchain service type.
 )
+
+// TODO_MVP(@commoddity): figure out what this should be longer term.
+const defaultEVMChainID = "0x1" // ETH Mainnet (1)
 
 // The ServiceQoSTypes map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
@@ -50,9 +50,6 @@ func init() {
 		ServiceQoSTypes[k] = ServiceIDEVM
 	}
 }
-
-// TODO_TECHDEBT: figure out what this should be longer term.
-const defaultEVMChainID = "0x1" // ETH Mainnet (1)
 
 // GetEVMChainID returns the hexadecimal EVM chain ID for a given service ID.
 // If the service ID is not found in the ShannonEVMChainIDs or MorseEVMChainIDs
