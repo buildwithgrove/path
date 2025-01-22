@@ -17,14 +17,14 @@ type ShannonGatewayConfig struct {
 	FullNodeConfig shannonprotocol.FullNodeConfig `yaml:"full_node_config"`
 	GatewayConfig  shannonprotocol.GatewayConfig  `yaml:"gateway_config"`
 
-	// TODO_HACK(@commoddity): WebsocketEndpoints is a TEMPORARY workaround to
+	// TODO_HACK(@commoddity): WebsocketEndpointsURLs is a TEMPORARY workaround to
 	// allow users of PATH to enable websocket connections to a user-provided websocket-enabled endpoint URL.
 	//
 	// It is placed in the ShannonGatewayConfig struct to indicate that websockets will
 	// only be supported by the Shannon protocol, never on Morse.
 	//
 	// Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpoints map[protocol.ServiceID]string `yaml:"ws_endpoints"`
+	WebsocketEndpointsURLs map[protocol.ServiceID]string `yaml:"ws_endpoints_urls"`
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.
@@ -52,18 +52,18 @@ func (c ShannonGatewayConfig) Validate() error {
 		return err
 	}
 
-	// Validate WebsocketEndpointss
+	// Validate WebsocketEndpoints
 	// TODO_HACK(@commoddity, WebSockets): Remove this validation once the Shannon protocol supports websocket connections.
-	if err := c.validateWebsocketEndpointss(); err != nil {
+	if err := c.validateWebsocketEndpoints(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateWebsocketEndpointss checks if the WebsocketEndpointss are valid.
-func (c ShannonGatewayConfig) validateWebsocketEndpointss() error {
-	for _, url := range c.WebsocketEndpoints {
+// validateWebsocketEndpoints checks if the WebsocketEndpoints are valid.
+func (c ShannonGatewayConfig) validateWebsocketEndpoints() error {
+	for _, url := range c.WebsocketEndpointsURLs {
 		if !websocketURLRegex.MatchString(url) {
 			return fmt.Errorf("invalid websocket endpoint URL: %s", url)
 		}

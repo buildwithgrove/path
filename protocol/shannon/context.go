@@ -111,7 +111,7 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 		selectedEndpointURL = rc.selectedEndpoint.PublicURL()
 	}
 
-	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		logger.Error().Err(err).Msg("Error upgrading websocket connection request")

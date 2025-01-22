@@ -251,13 +251,13 @@ shannon_config:
 
 **`gateway_config`**
 
-| Field                         | Type     | Required                          | Default | Description                                                           |
-| ----------------------------- | -------- | --------------------------------- | ------- | --------------------------------------------------------------------- |
-| `gateway_mode`                | string   | Yes                               | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`    |
-| `gateway_address`             | string   | Yes                               | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
-| `gateway_private_key_hex`     | string   | Yes                               | -       | 64-character hex-encoded `secp256k1` gateway private key              |
-| `owned_apps_private_keys_hex` | string[] | Only in centralized mode          | -       | List of 64-character hex-encoded `secp256k1` application private keys |
-| `ws_endpoints`                | object   | Only if wanting to use WebSockets | -       | List of websocket endpoint URLs, one per service ID.                  |
+| Field                         | Type     | Required                          | Default | Description                                                                         |
+| ----------------------------- | -------- | --------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `gateway_mode`                | string   | Yes                               | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`                  |
+| `gateway_address`             | string   | Yes                               | -       | Bech32-formatted gateway address (starts with `pokt1`)                              |
+| `gateway_private_key_hex`     | string   | Yes                               | -       | 64-character hex-encoded `secp256k1` gateway private key                            |
+| `owned_apps_private_keys_hex` | string[] | Only in centralized mode          | -       | List of 64-character hex-encoded `secp256k1` application private keys               |
+| `ws_endpoints_urls`           | object   | Only if wanting to use WebSockets | -       | Map of unique service IDs to their websocket endpoint URLs for the Shannon gateway. |
 
 ---
 

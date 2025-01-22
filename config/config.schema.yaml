@@ -173,7 +173,7 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-      ws_endpoints:
+      ws_endpoints_urls:
         description: "Map of service IDs to their websocket endpoint URLs for the Shannon gateway. Keys must be valid service IDs and unique."
         type: object
         additionalProperties: false

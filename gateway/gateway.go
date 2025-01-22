@@ -53,10 +53,10 @@ type Gateway struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	// WebsocketEndpointss is a temporary workaround to allow PATH to enable websocket
+	// WebsocketEndpoints is a temporary workaround to allow PATH to enable websocket
 	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
 	// TODO_HACK(@commoddity, WebSockets): Remove this field once the Shannon protocol supports websocket connections.
-	WebsocketEndpointss map[protocol.ServiceID]string
+	WebsocketEndpoints map[protocol.ServiceID]string
 }
 
 // HandleHTTPServiceRequest defines the steps the PATH gateway takes to
@@ -69,7 +69,7 @@ type Gateway struct {
 // request processing steps into a common method.
 //
 // HandleServiceRequest is written as a template method to allow the customization of steps
-// invovled in serving a service request, e.g.:
+// involved in serving a service request, e.g.:
 //   - establishing a QoS context for the HTTP request.
 //   - sending the service payload through a relaying protocol, etc.
 //
@@ -79,7 +79,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
 	case websocketServiceRequest:
-		g.handleWebsocketRequest(ctx, httpReq, w)
+		g.handleWebSocketRequest(ctx, httpReq, w)
 	default:
 		g.handleHTTPServiceRequest(ctx, httpReq, w)
 	}
@@ -127,20 +127,25 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
-	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
+	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-// handleWebsocketRequest handles a WebSocket connection request direct to the provided websocket endpoint URL.
-// NOTE: As a temporary workaround, websocket connections currently bypass the protocol entirely and utilize the
-// provided websocket endpoint URL to send and receive messages. This allows PATH to pass websocket messages until
-// the Shannon protocol supports websocket connections, which will enable onchain websocket support.
+// handleWebsocketRequest handles WebSocket connection requests by directly connecting
+// to the provided websocket endpoint URL.
 //
-// TODO_HACK(@commoddity, WebSockets): Remove this temporary workaround once the Shannon protocol supports websocket connections.
-// This will entail utilizing the existing system of contexts to select an endpoint to serve the websocket connection
-// from among the available service endpoints on the Shannon protocol in the same way that HTTP requests are handled.
-// A method `HandleWebsocketRequest` is defined on the `gateway.Protocol` interface for this purpose.
-func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+// Current Implementation:
+// - Bypasses protocol layer entirely as a temporary workaround
+// - Directly uses provided WebSocket endpoint URL
+// - Allows PATH to pass WebSocket messages without protocol support
+//
+// TODO_HACK(@commoddity, WebSockets): Remove temporary workaround when Shannon protocol
+// supports WebSocket connections. Changes will:
+// - Utilize existing context system for endpoint selection
+// - Select from available Shannon protocol service endpoints
+// - Match HTTP request handling pattern
+// - Use HandleWebsocketRequest method defined on gateway.Protocol
+func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// Upgrade the HTTP request to a websocket connection.
 	// Do this first so that any errors that occur in the upgrade process can be sent
 	// to the websocket client as a close message, allowing easier debugging.
@@ -152,7 +157,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	}
 
 	// Check if there are any websocket endpoint URLs set for the service ID in the config.
-	if len(g.WebsocketEndpointss) == 0 {
+	if len(g.WebsocketEndpoints) == 0 {
 		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
 		return
 	}
@@ -165,7 +170,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	}
 
 	// Get the websocket endpoint URL for the service ID.
-	endpointURL := g.WebsocketEndpointss[serviceID]
+	endpointURL := g.WebsocketEndpoints[serviceID]
 	if endpointURL == "" {
 		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
 		handleWebsocketError(g.Logger, clientConn, errMsg)
@@ -183,7 +188,7 @@ func (g Gateway) handleWebsocketRequest(ctx context.Context, httpReq *http.Reque
 	// Run the websocket bridge in a separate goroutine.
 	go bridge.Run()
 
-	g.Logger.Info().Str("ws_endpoints", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
+	g.Logger.Info().Str("ws_endpoints_urls", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
 }
 
 // handleWebsocketError handles an error encountered in the websocket connection.
