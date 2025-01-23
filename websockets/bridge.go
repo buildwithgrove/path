@@ -75,7 +75,7 @@ func (b *bridge) Run() {
 
 	b.logger.Info().Msg("bridge operation started successfully")
 
-	// If close signal is received, stop the bridge and close both connections
+	// Keep the bridge open until a stop signal is received (i.e. block until told otherwise)
 	<-b.stopChan
 }
 
