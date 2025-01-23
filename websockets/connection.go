@@ -161,30 +161,31 @@ func (c *connection) handleError(err error, source messageSource) {
 }
 
 // pingLoop sends keep-alive ping messages to the connection and handles pong messages
+// This loop is used to keep the connection alive and functions by sending a ping message
+// to the connection and waiting for a pong response. If a pong response is not received,
+// the connection is considered dead and the stopChan is closed.
+// See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
 func (c *connection) pingLoop() {
 	ticker := time.NewTicker(pingPeriodSec)
 	defer func() {
 		ticker.Stop()
 	}()
 
-	// Initialize the ping loop
-	initPingLoop := func() {
-		// Set initial read deadline
-		if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
-			c.logger.Error().Err(err).Msg("failed to set initial read deadline")
-		}
-
-		// Extend read deadline on pong response
-		c.SetPongHandler(func(string) error {
-			if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
-				c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
-			}
-
-			return nil
-		})
+	// Initialize the ping loop by setting the read deadline
+	if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
+		c.logger.Error().Err(err).Msg("failed to set initial read deadline")
 	}
 
-	initPingLoop()
+	// Extend read deadline on pong response, ie. when a ping response is received,
+	// the loop extends the read deadline for the ping/pong interval to keep
+	// the websocket connection alive.
+	c.SetPongHandler(func(string) error {
+		if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
+			c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
+		}
+
+		return nil
+	})
 
 	for {
 		select {

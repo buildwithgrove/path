@@ -11,15 +11,27 @@ import (
 // One bridge represents a single WebSocket connection between a
 // Client and a WebSocket Endpoint.
 //
-// Full data flow: Client <------> PATH <------> WebSocket Endpoint
+// Full data flow: Client <------> PATH Bridge <------> WebSocket Endpoint
 type bridge struct {
 	logger polylog.Logger
 
+	// endpointConn is the connection to the WebSocket Endpoint
 	endpointConn *connection
-	clientConn   *connection
+	// clientConn is the connection to the Client
+	clientConn *connection
 
-	msgChan  <-chan message
+	// msgChan and stopChan are shared between the Client and Endpoint
+	// which allows a reuse of the connection struct for both connections.
+
+	// msgChan receives messages from the Client and Endpoint
+	// and passes them to the other side of the bridge.
+	msgChan <-chan message
+	// stopChan is a channel that signals the bridge to stop
 	stopChan chan error
+
+	// endpointURL is the URL of the WebSocket Endpoint
+	// selected by PATH to be used for the WebSocket connection.
+	endpointURL string
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
@@ -54,12 +66,12 @@ func NewBridge(
 	)
 
 	return &bridge{
+		logger:       logger,
 		endpointConn: endpointConnection,
 		clientConn:   clientConnection,
 		msgChan:      msgChan,
 		stopChan:     stopChan,
-
-		logger: logger,
+		endpointURL:  endpointURL,
 	}, nil
 }
 
@@ -68,12 +80,12 @@ func NewBridge(
 // Run starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
-// Full data flow: Client <------> PATH <------> WebSocket Endpoint
+// Full data flow: Client <------> PATH Bridge <------> WebSocket Endpoint
 func (b *bridge) Run() {
 	// Start goroutine to read messages from message channel
 	go b.messageLoop()
 
-	b.logger.Info().Msg("bridge operation started successfully")
+	b.logger.Info().Str("endpoint_url", b.endpointURL).Msg("bridge operation started successfully")
 
 	// If close signal is received, stop the bridge and close both connections
 	<-b.stopChan
@@ -108,6 +120,8 @@ func (b *bridge) messageLoop() {
 
 // handleClientMessage processes a message from the Client and sends it to the Endpoint
 func (b *bridge) handleClientMessage(msg message) {
+	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
+
 	if err := b.endpointConn.WriteMessage(msg.messageType, msg.data); err != nil {
 		b.endpointConn.handleError(err, messageSourceEndpoint)
 		return
@@ -116,6 +130,8 @@ func (b *bridge) handleClientMessage(msg message) {
 
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client
 func (b *bridge) handleEndpointMessage(msg message) {
+	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
+
 	if err := b.clientConn.WriteMessage(msg.messageType, msg.data); err != nil {
 		b.clientConn.handleError(err, messageSourceClient)
 		return
