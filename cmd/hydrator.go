@@ -44,14 +44,16 @@ func setupEndpointHydrator(
 	}
 
 	if protocolInstance == nil {
-		return nil, errors.New("Endpoint hydrator enabled but no protocol provided. This should never happen.")
+		return nil, errors.New("endpoint hydrator enabled but no protocol provided. this should never happen")
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
 		Logger: logger,
 
-		Protocol:          protocolInstance,
-		ActiveQoSServices: hydratorQoSServices,
+		Protocol:                protocolInstance,
+		ActiveQoSServices:       hydratorQoSServices,
+		RunInterval:             hydratorConfig.RunInterval,
+		MaxEndpointCheckWorkers: hydratorConfig.MaxEndpointCheckWorkers,
 	}
 
 	err := endpointHydrator.Start()

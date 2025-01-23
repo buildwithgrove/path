@@ -283,9 +283,11 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 The service ID must be provided here.
 
-| Field         | Type          | Required | Default | Description                                                                 |
-| ------------- | ------------- | -------- | ------- | --------------------------------------------------------------------------- |
-| `service_ids` | array[string] | No       | -       | List of service IDs for which the Quality of Service (QoS) logic will apply |
+| Field                        | Type          | Required | Default   | Description                                                                          |
+| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
+| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
 
 :::info
 
