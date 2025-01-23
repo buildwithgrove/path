@@ -36,7 +36,7 @@ jobs:
             type=ref,event=branch,pattern=latest
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
