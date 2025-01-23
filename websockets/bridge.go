@@ -28,10 +28,6 @@ type bridge struct {
 	msgChan <-chan message
 	// stopChan is a channel that signals the bridge to stop
 	stopChan chan error
-
-	// endpointURL is the URL of the WebSocket Endpoint
-	// selected by PATH to be used for the WebSocket connection.
-	endpointURL string
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
@@ -48,7 +44,10 @@ func NewBridge(
 	msgChan := make(chan message)
 	stopChan := make(chan error)
 
-	logger = logger.With("component", "bridge")
+	logger = logger.With(
+		"component", "bridge",
+		"endpoint_url", endpointURL,
+	)
 
 	endpointConnection := newConnection(
 		logger.With("conn", "endpoint"),
@@ -71,7 +70,6 @@ func NewBridge(
 		clientConn:   clientConnection,
 		msgChan:      msgChan,
 		stopChan:     stopChan,
-		endpointURL:  endpointURL,
 	}, nil
 }
 
@@ -83,7 +81,7 @@ func (b *bridge) Run() {
 	// Start goroutine to read messages from message channel
 	go b.messageLoop()
 
-	b.logger.Info().Str("endpoint_url", b.endpointURL).Msg("bridge operation started successfully")
+	b.logger.Info().Msg("bridge operation started successfully")
 
 	// Keep the bridge open until a stop signal is received (i.e. block until told otherwise)
 	<-b.stopChan
