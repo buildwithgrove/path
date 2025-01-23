@@ -236,7 +236,6 @@ k8s_resource(
     new_name="grafana",
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    # DEV_NOTE: We're 3071 instead of Grafana's default 3000 to avoid conflicts with other Grafana instances
     port_forwards=["3000:3000"],
     labels=["monitoring"],
     links=[
