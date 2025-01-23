@@ -75,8 +75,6 @@ func NewBridge(
 	}, nil
 }
 
-/* ---------- Public method - Run Bridge ---------- */
-
 // Run starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
@@ -95,8 +93,6 @@ func (b *bridge) Run() {
 func (b *bridge) Close() {
 	close(b.stopChan)
 }
-
-/* ---------- Private methods - Message loop ---------- */
 
 // messageLoop reads from the message channel and handles messages from the endpoint and Client
 func (b *bridge) messageLoop() {
