@@ -104,28 +104,35 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
 // Satisfies the gateway.ProtocolRequestContext interface.
-// TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
-func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter, logger polylog.Logger) error {
+// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
+func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) error {
 	var selectedEndpointURL string
 	if rc.selectedEndpoint != nil {
 		selectedEndpointURL = rc.selectedEndpoint.PublicURL()
 	}
 
+	wsLogger := logger.With(
+		"endpoint_url", selectedEndpointURL,
+		"endpoint_addr", rc.selectedEndpoint.Addr(),
+		"service_id", rc.serviceID,
+	)
+
 	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		logger.Error().Err(err).Msg("Error upgrading websocket connection request")
+		wsLogger.Error().Err(err).Msg("Error upgrading websocket connection request")
 		return err
 	}
 
-	bridge, err := websockets.NewBridge(logger, selectedEndpointURL, clientConn)
+	bridge, err := websockets.NewBridge(wsLogger, selectedEndpointURL, clientConn)
 	if err != nil {
+		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
 		return err
 	}
 
 	go bridge.Run()
 
-	logger.Info().Msg("websocket connection established")
+	wsLogger.Info().Msg("websocket connection established")
 
 	return nil
 }

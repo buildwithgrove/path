@@ -53,7 +53,7 @@ func (c ShannonGatewayConfig) Validate() error {
 	}
 
 	// Validate WebsocketEndpoints
-	// TODO_HACK(@commoddity, WebSockets): Remove this validation once the Shannon protocol supports websocket connections.
+	// TODO_HACK(@commoddity, #143): Remove this validation once the Shannon protocol supports websocket connections.
 	if err := c.validateWebsocketEndpoints(); err != nil {
 		return err
 	}

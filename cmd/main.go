@@ -76,7 +76,7 @@ func main() {
 	}
 
 	// If Shannon configurations and WebsocketEndpointsURLs are set, configure the gateway's WebsocketEndpoints.
-	// TODO_HACK(@commoddity, WebSockets): Remove this once Shannon protocol supports websocket connections.
+	// TODO_HACK(@commoddity, #143): Remove this once Shannon protocol supports websocket connections.
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil && shannonConfig.WebsocketEndpointsURLs != nil {
 		gateway.WebsocketEndpoints = shannonConfig.WebsocketEndpointsURLs
 	}

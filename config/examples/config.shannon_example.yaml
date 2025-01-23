@@ -47,7 +47,7 @@ shannon_config:
   #
   # IMPORTANT: WebSocket connections are off-chain and do not settle on Pocket network
   #
-  # TODO_HACK(@commoddity, WebSockets): Remove field once Shannon protocol supports native WebSocket connections
+  # TODO_HACK(@commoddity, #143): Remove field once Shannon protocol supports native WebSocket connections
   ws_endpoints_urls:
     "anvil": wss://shannon-testnet-grove-websocket.beta.poktroll.com
 

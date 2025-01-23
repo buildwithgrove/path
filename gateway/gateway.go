@@ -55,7 +55,7 @@ type Gateway struct {
 
 	// WebsocketEndpoints is a temporary workaround to allow PATH to enable websocket
 	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
-	// TODO_HACK(@commoddity, WebSockets): Remove this field once the Shannon protocol supports websocket connections.
+	// TODO_HACK(@commoddity, #143): Remove this field once the Shannon protocol supports websocket connections.
 	WebsocketEndpoints map[protocol.ServiceID]string
 }
 
@@ -139,7 +139,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // - Directly uses provided WebSocket endpoint URL
 // - Allows PATH to pass WebSocket messages without protocol support
 //
-// TODO_HACK(@commoddity, WebSockets): Remove temporary workaround when Shannon protocol
+// TODO_HACK(@commoddity, #143): Remove temporary workaround when Shannon protocol
 // supports WebSocket connections. Changes will:
 // - Utilize existing context system for endpoint selection
 // - Select from available Shannon protocol service endpoints
