@@ -87,7 +87,7 @@ func (b *bridge) Run() {
 
 	b.logger.Info().Str("endpoint_url", b.endpointURL).Msg("bridge operation started successfully")
 
-	// If close signal is received, stop the bridge and close both connections
+	// Keep the bridge open until a stop signal is received (i.e. block until told otherwise)
 	<-b.stopChan
 }
 
@@ -107,9 +107,11 @@ func (b *bridge) messageLoop() {
 
 		case msg := <-b.msgChan:
 			switch msg.source {
+
 			// If the message is from the Client connection, send it to the Endpoint
 			case messageSourceClient:
 				b.handleClientMessage(msg)
+
 			// If the message is from the Endpoint, send it to the Client
 			case messageSourceEndpoint:
 				b.handleEndpointMessage(msg)
