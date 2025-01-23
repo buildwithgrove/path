@@ -8,11 +8,11 @@ import (
 
 /* --------------------------------- Hydrator Config Defaults -------------------------------- */
 
-// endpointHydratorRunInterval specifies the running
-// interval of an endpoint hydrator.
 var (
+	// endpointHydratorRunInterval specifies the run interval of an endpoint hydrator in milliseconds.
 	defaultEndpointHydratorRunInterval = 10_000 * time.Millisecond
-	defaultMaxEndpointCheckWorkers     = 100
+	// defaultMaxEndpointCheckWorkers specifies the maximum number of workers that will be used to concurrently check endpoints.
+	defaultMaxEndpointCheckWorkers = 100
 )
 
 /* --------------------------------- Hydrator Config Struct -------------------------------- */

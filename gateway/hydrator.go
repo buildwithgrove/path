@@ -52,7 +52,9 @@ type EndpointHydrator struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	RunInterval             time.Duration
+	// RunInterval is the interval at which the Endpoint Hydrator will run in milliseconds.
+	RunInterval time.Duration
+	// MaxEndpointCheckWorkers is the maximum number of workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int
 
 	// TODO_FUTURE: a more sophisticated health status indicator
