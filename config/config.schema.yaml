@@ -214,6 +214,15 @@ properties:
     type: object
     additionalProperties: false
     properties:
+      run_interval_ms:
+        description: "Interval (in milliseconds) at which the hydrator will run."
+        type: string
+        pattern: "^[0-9]+ms$"
+        default: "10000ms"
+      max_concurrent_endpoint_check_workers:
+        description: "Maximum number of workers that will concurrently check endpoints."
+        type: integer
+        default: 100
       service_ids:
         description: "List of service IDs for the hydrator."
         type: array
