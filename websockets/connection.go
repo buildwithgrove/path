@@ -11,12 +11,18 @@ import (
 )
 
 const (
-	writeWait  = 10 * time.Second    // Time allowed to write a message to the peer.
-	pongWait   = 30 * time.Second    // Time allowed to read the next pong message from the peer.
-	pingPeriod = (pongWait * 9) / 10 // Send pings to peer with this period. Must be less than pongWait.
+	// Time allowed (in seconds) to write a message to the peer.
+	writeWaitSec = 10 * time.Second
+
+	// Time allowed (in seconds) to read the next pong message from the peer.
+	pongWaitSec = 30 * time.Second
+
+	// Send pings to peer with this period.
+	// Must be less than pongWaitSec.
+	pingPeriodSec = (pongWaitSec * 9) / 10
 )
 
-// messageSource is used to identify the source of a message
+// messageSource is used to identify the source of a message in a bidrectional websocket connection.
 // Possible values are `client` and `endpoint`.
 //
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
@@ -27,20 +33,29 @@ const (
 	messageSourceEndpoint messageSource = "endpoint"
 )
 
-// message is a struct that represents a message received from a websocket connection,
-// either from the client or the endpoint and may be a client request, an endpoint response,
-// or subscription push event from the endpoint (eg. an `eth_subscribe` eventresponse).
+// message represents a websocket message that can be:
+// - Client request
+// - Endpoint response
+// - Subscription push event (e.g. eth_subscribe)
 type message struct {
-	data        []byte        // data is the message payload
-	source      messageSource // source may be either `client` or `endpoint`
-	messageType int           // messageType is an int returned by the gorilla/websocket package
+	// data is the message payload
+	data []byte
+
+	// source may be either `client` or `endpoint`
+	source messageSource
+
+	// messageType is an int returned by the gorilla/websocket package
+	messageType int
 }
 
-// connection is a struct that represents a websocket connection:
-// between PATH and a client or between PATH and an endpoint.
+// connection represents a websocket connection between PATH and:
+// - A client
+// - An endpoint
 type connection struct {
 	*websocket.Conn
-	logger   polylog.Logger
+
+	logger polylog.Logger
+
 	source   messageSource
 	msgChan  chan<- message
 	stopChan chan error
@@ -57,9 +72,11 @@ func connectEndpoint(endpointURL string) (*websocket.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }
 
+// connectClient initiates a websocket connection to the client.
 func newConnection(
 	logger polylog.Logger,
 	conn *websocket.Conn,
@@ -68,8 +85,10 @@ func newConnection(
 	stopChan chan error,
 ) *connection {
 	c := &connection{
-		logger:   logger,
-		Conn:     conn,
+		Conn: conn,
+
+		logger: logger,
+
 		source:   source,
 		msgChan:  msgChan,
 		stopChan: stopChan,
@@ -143,19 +162,21 @@ func (c *connection) handleError(err error, source messageSource) {
 
 // pingLoop sends keep-alive ping messages to the connection and handles pong messages
 func (c *connection) pingLoop() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(pingPeriodSec)
 	defer func() {
 		ticker.Stop()
 	}()
 
+	// Initialize the ping loop
 	initPingLoop := func() {
 		// Set initial read deadline
-		if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
 			c.logger.Error().Err(err).Msg("failed to set initial read deadline")
 		}
+
 		// Extend read deadline on pong response
 		c.SetPongHandler(func(string) error {
-			if err := c.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+			if err := c.SetReadDeadline(time.Now().Add(pongWaitSec)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to set pong handler read deadline")
 			}
 
@@ -171,7 +192,7 @@ func (c *connection) pingLoop() {
 			return
 
 		case <-ticker.C:
-			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
+			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWaitSec)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to send ping to connection")
 				c.stopChan <- fmt.Errorf("failed to send ping to connection: %w", err)
 				return

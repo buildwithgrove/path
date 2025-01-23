@@ -1,13 +1,15 @@
-// gateway package defines the components and their interactions necessary for operating a gateway.
-// It defines the requirements and steps of sending relays from the perspective of:
-// a) protocols, i.e. Morse and Shannon protocols, which provide:
-// - a list of endpoints available for a service.
-// - a function for sending a relay to a specific endpoint.
-// b) gateways, which are required to provide a function for
-// selecting an endpoint to which the relay is to be sent.
-// c) Quality-of-Service (QoS) services: which provide:
-// - interpretation of the user's request as the payload to be sent to an endpoint.
-// - selection of the best endpoint for handling a user's request.
+// Package gateway implements components for operating a gateway service.
+//
+// Protocols (Morse, Shannon):
+// - Provide available endpoints for a service
+// - Send relays to specific endpoints
+//
+// Gateways:
+// - Select endpoints for relay transmission
+//
+// QoS Services:
+// - Interpret user requests into endpoint payloads
+// - Select optimal endpoints for request handling
 //
 // TODO_MVP(@adshmh): add a README with a diagram of all the above.
 // TODO_MVP(@adshmh): add a section for the following packages once they are added: Metrics, Message.
@@ -25,13 +27,13 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
-// Gateway performs end-to-end handling of all service requests
-// through a single function, i.e. HandleHTTPServiceRequest,
-// which starts from the point of receiving a user request,
-// and ends once a response has been returned to the user.
-// TODO_FUTURE: Currently, the only supported format for both the
-// request and the response is HTTP as it is sufficient for JSONRPC,
-// REST, Websockets and gRPC but may expand in the future.
+// Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
+// - Receives user request
+// - Processes request
+// - Returns response
+//
+// TODO_FUTURE: Current HTTP-only format supports JSONRPC, REST, Websockets
+// and gRPC. May expand to other formats in future.
 type Gateway struct {
 	Logger polylog.Logger
 
@@ -59,22 +61,17 @@ type Gateway struct {
 	WebsocketEndpoints map[protocol.ServiceID]string
 }
 
-// HandleHTTPServiceRequest defines the steps the PATH gateway takes to
-// handle a service request. It is currently limited in scope to
-// service requests received over HTTP, to avoid adding any abstraction
-// layers that are not necessary yet.
-// TODO_FUTURE: Once other service request protocols, e.g. GRPC, are
-// within scope, the HandleHTTPServiceRequest needs to be
-// refactored to keep HTTP-specific details and move the generic service
-// request processing steps into a common method.
+// HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
 //
-// HandleServiceRequest is written as a template method to allow the customization of steps
-// involved in serving a service request, e.g.:
-//   - establishing a QoS context for the HTTP request.
-//   - sending the service payload through a relaying protocol, etc.
+// This is written as a template method to allow customization of steps.
+// Template pattern allows customization of service steps:
+// - Establishing QoS context
+// - Sending payload via relay protocols
+// Reference: https://en.wikipedia.org/wiki/Template_method_pattern
 //
-// See the following link for more details:
-// https://en.wikipedia.org/wiki/Template_method_pattern
+// TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
+// - Extract generic processing into common method
+// - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
@@ -146,10 +143,12 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // - Match HTTP request handling pattern
 // - Use HandleWebsocketRequest method defined on gateway.Protocol
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// Upgrade the HTTP request to a websocket connection.
-	// Do this first so that any errors that occur in the upgrade process can be sent
-	// to the websocket client as a close message, allowing easier debugging.
-	var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	// Upgrade HTTP to websocket connection first to enable error reporting
+	// via websocket close messages for easier debugging
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
 	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
 	if err != nil {
 		g.Logger.Error().Msg("handleWebsocketRequest: error upgrading websocket connection request")
@@ -191,8 +190,7 @@ func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Reque
 	g.Logger.Info().Str("ws_endpoints_urls", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
 }
 
-// handleWebsocketError handles an error encountered in the websocket connection.
-// It logs the error and sends a close message to the websocket client.
+// handleWebsocketError logs errors and sends close message to the websocket client.
 func handleWebsocketError(logger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
 	logger.Error().Msg(errorMsg)
 
