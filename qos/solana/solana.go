@@ -70,9 +70,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // TODO_HACK(@commoddity, WebSockets): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		EndpointStore: qos.EndpointStore,
 		Logger:        qos.Logger,
-
+		
+		EndpointStore: qos.EndpointStore,
+		
 		isValid: true,
 	}, true
 }
