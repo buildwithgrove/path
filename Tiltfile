@@ -26,20 +26,18 @@ local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
 # PATH operation modes determine which services are loaded:
-#   1. 'path_only' - PATH Service Only
-#   2. 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
-# The observability stack is loaded in both modes.
-MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
+#   1. (Default) 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
+#   2. 'path_only' - PATH Service Only.
+#   - The observability stack is loaded in both modes.
+
+MODE = os.getenv("MODE", "path_with_auth")   # Default to 'path_with_auth' if MODE is not set
 
 # Define the valid modes
-VALID_MODES = ("path_only", "path_with_auth")
+VALID_MODES = ["path_only", "path_with_auth"]
 
 # Check if the MODE is valid
 if MODE not in VALID_MODES:
-    raise ValueError(
-        f"Invalid MODE: '{MODE}'. Allowed values are {VALID_MODES}. Please set a valid MODE."
-    )
-
+    fail("Invalid MODE: '{}'. Allowed values are {}. Please set a valid MODE.".format(MODE, VALID_MODES))
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
 # --------------------------------------------------------------------------- #
@@ -95,8 +93,8 @@ if MODE == "path_only":
     port_forwards=["3069:3069"]
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
-# 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
-# 	2. Without Auth.: No dependencies, expose port 3000.
+#   1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
+#   2. Without Auth.: No dependencies, expose port 3000.
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -238,10 +236,11 @@ k8s_resource(
     new_name="grafana",
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    port_forwards=["3000:3000"],
+    # DEV_NOTE: We're 3071 instead of Grafana's default 3000 to avoid conflicts with other Grafana instances
+    port_forwards=["3071:3071"],
     labels=["monitoring"],
     links=[
-        link("localhost:3000", "Grafana"),
+        link("localhost:3071", "Grafana"),
     ],
     pod_readiness="wait",
     discovery_strategy="selectors-only",
