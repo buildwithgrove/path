@@ -93,8 +93,8 @@ if MODE == "path_only":
     port_forwards=["3069:3069"]
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
-#   1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
-#   2. Without Auth.: No dependencies, expose port 3000.
+#   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
+#   2. Without Auth: no dependencies but exposing dedicated por
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -237,10 +237,10 @@ k8s_resource(
     workload="observability",
     extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
     # DEV_NOTE: We're 3071 instead of Grafana's default 3000 to avoid conflicts with other Grafana instances
-    port_forwards=["3071:3071"],
+    port_forwards=["3000:3000"],
     labels=["monitoring"],
     links=[
-        link("localhost:3071", "Grafana"),
+        link("localhost:3000", "Grafana"),
     ],
     pod_readiness="wait",
     discovery_strategy="selectors-only",
