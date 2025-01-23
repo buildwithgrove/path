@@ -52,7 +52,9 @@ type EndpointHydrator struct {
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
 
-	RunInterval             time.Duration
+	// RunInterval is the interval at which the Endpoint Hydrator will run in milliseconds.
+	RunInterval time.Duration
+	// MaxEndpointCheckWorkers is the maximum number of workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int
 
 	// TODO_FUTURE: a more sophisticated health status indicator
@@ -126,9 +128,7 @@ func (eph *EndpointHydrator) run() {
 }
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
-	logger := eph.Logger.With(
-		"service_id", string(serviceID),
-	)
+	logger := eph.Logger.With("service_id", string(serviceID))
 
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
@@ -148,8 +148,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	logger = logger.With("number_of_endpoints", len(uniqueEndpoints))
 
 	jobs := make(chan protocol.Endpoint, len(uniqueEndpoints))
-	var wgEndpoints sync.WaitGroup
 
+	var wgEndpoints sync.WaitGroup
 	for i := 0; i < eph.MaxEndpointCheckWorkers; i++ {
 		wgEndpoints.Add(1)
 
@@ -157,17 +157,18 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 			defer wgEndpoints.Done()
 
 			for endpoint := range jobs {
-				// Existing logger usage
+				// Creating a new locally scoped logger
 				endpointLogger := logger.With("endpoint", string(endpoint.Addr()))
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
-				requiredChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
-				if len(requiredChecks) == 0 {
+				// Retrieve all the required QoS checks for the endpoint.
+				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
+				if len(requiredQoSChecks) == 0 {
 					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
 					continue
 				}
 
-				for _, serviceRequestCtx := range requiredChecks {
+				for _, serviceRequestCtx := range requiredQoSChecks {
 					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 					// Mark the request as Synthetic using the following steps:
 					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -202,10 +203,14 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		}()
 	}
 
+	// Kick off the workers above for every unique endpoint.
 	for _, endpoint := range uniqueEndpoints {
 		jobs <- endpoint
 	}
+
 	close(jobs)
+
+	// Wait for all workers to finish processing the endpoints.
 	wgEndpoints.Wait()
 
 	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)

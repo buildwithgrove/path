@@ -8,27 +8,27 @@ import (
 
 /* --------------------------------- Hydrator Config Defaults -------------------------------- */
 
-// endpointHydratorRunInterval specifies the running
-// interval of an endpoint hydrator.
 var (
+	// endpointHydratorRunInterval specifies the run interval of an endpoint hydrator in milliseconds.
 	defaultEndpointHydratorRunInterval = 10_000 * time.Millisecond
-	defaultMaxEndpointCheckWorkers     = 100
+
+	// defaultMaxEndpointCheckWorkers specifies the maximum number of workers that will be used to concurrently check endpoints.
+	defaultMaxEndpointCheckWorkers = 100
 )
 
 /* --------------------------------- Hydrator Config Struct -------------------------------- */
 
-// EndpointHydratorConfig stores all the configuration
-// settings required to run an instance of the
-// Endpoint Hydrator.
-// The EndpointHydrator will not be started if no
-// service IDs are specified.
+// EndpointHydratorConfig stores configuration settings for running an
+// Endpoint Hydrator instance to collect observations about service endpoints.
+// The hydrator will not start without specified service IDs.
 type EndpointHydratorConfig struct {
-	// ServiceIDs is the list of IDs of services to be handled by the Endpoint Hydrator.
+	// List of service IDs to be handled for observation collection
 	ServiceIDs []protocol.ServiceID `yaml:"service_ids"`
-	// RunInterval is the interval at which the Endpoint Hydrator will run.
+
+	// Interval between hydrator runs during which endpoint checks are performed
 	RunInterval time.Duration `yaml:"run_interval_ms"`
-	// MaxEndpointCheckWorkers is the maximum number of
-	// workers that will be used to concurrently check endpoints.
+
+	// Maximum number of concurrent endpoint check workers for performance tuning
 	MaxEndpointCheckWorkers int `yaml:"max_endpoint_check_workers"`
 }
 
