@@ -7,20 +7,27 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// bridge routes data between an Endpoint and a Client. One bridge represents
-// a single WebSocket connection between a Client and a WebSocket Endpoint.
+// bridge routes data between an Endpoint and a Client.
+// One bridge represents a single WebSocket connection between a
+// Client and a WebSocket Endpoint.
 //
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
 type bridge struct {
-	logger       polylog.Logger
+	logger polylog.Logger
+
 	endpointConn *connection
 	clientConn   *connection
-	msgChan      <-chan message
-	stopChan     chan error
+
+	msgChan  <-chan message
+	stopChan chan error
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
-func NewBridge(logger polylog.Logger, endpointURL string, clientWSSConn *websocket.Conn) (*bridge, error) {
+func NewBridge(
+	logger polylog.Logger,
+	endpointURL string,
+	clientWSSConn *websocket.Conn,
+) (*bridge, error) {
 	endpointWSSConn, err := connectEndpoint(endpointURL)
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection to endpoint URL %s: %s", endpointURL, err.Error())
