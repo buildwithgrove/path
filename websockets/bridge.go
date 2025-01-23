@@ -95,9 +95,11 @@ func (b *bridge) messageLoop() {
 
 		case msg := <-b.msgChan:
 			switch msg.source {
+
 			// If the message is from the Client connection, send it to the Endpoint
 			case messageSourceClient:
 				b.handleClientMessage(msg)
+
 			// If the message is from the Endpoint, send it to the Client
 			case messageSourceEndpoint:
 				b.handleEndpointMessage(msg)
