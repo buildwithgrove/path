@@ -18,6 +18,8 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/observation"
 )
 
 // Gateway performs end-to-end handling of all service requests
@@ -70,6 +72,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	gatewayRequestCtx := &requestContext{
 		logger: g.Logger,
 
+		gatewayObservations: getUserRequestGatewayObservations(),
 		protocol:          g.Protocol,
 		httpRequestParser: g.HTTPRequestParser,
 		metricsReporter:   g.MetricsReporter,
@@ -108,4 +111,12 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
+}
+
+
+// getUserRequestGatewayObservations returns the set of gateway-level observations for an organic, i.e. sent by a user, service request.
+func getUserRequestGatewayObservations() observation.GatewayObservations {
+	return observation.GatewayObservations{
+		RequestType: observation.RequestType_REQUEST_TYPE_ORGANIC,
+	}
 }

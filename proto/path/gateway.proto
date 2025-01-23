@@ -28,4 +28,8 @@ message GatewayObservations {
   // Specifies the request type.
   // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
   RequestType request_type = 2;
+
+  // service_id stores the service ID specified by the request.
+  // As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
+  string service_id = 3;
 }

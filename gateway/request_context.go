@@ -73,6 +73,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	}
 
 	rc.serviceID = serviceID
+	rc.gatewayObservations.ServiceId = string(serviceID)
 	rc.serviceQoS = serviceQoS
 	return nil
 }
