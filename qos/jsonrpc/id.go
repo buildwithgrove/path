@@ -30,11 +30,15 @@ func (id ID) String() string {
 
 	return fmt.Sprintf("%d", id.intID)
 }
+
+func (id ID) IsEmpty() bool {
+	return id.intID == 0 && id.strID == ""
+}
+
 func (id ID) MarshalJSON() ([]byte, error) {
-	if id.intID > 0 {
+	if id.intID != 0 {
 		return []byte(fmt.Sprintf("%d", id.intID)), nil
 	}
-
 	return []byte(fmt.Sprintf("%q", id.strID)), nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
 )
 
@@ -38,6 +39,10 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 
 		case config.ServiceIDPOKT:
 			// TODO_TECHDEBT: add pokt qos service here
+
+		case config.ServiceIDCometBFT:
+			cometbftQoS := cometbft.NewQoSInstance(logger)
+			qosServices[serviceID] = cometbftQoS
 
 		default: // this should never happen
 			return nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)

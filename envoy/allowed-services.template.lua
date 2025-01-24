@@ -11,7 +11,8 @@
 -- map in `config/service_qos.go`. See here for further details: https://github.com/buildwithgrove/path/blob/main/config/service_qos.go#L34
 return {
   -- 1. Shannon Service IDs
-  ["anvil"] = "anvil", -- Anvil (Authoritative ID)
+  ["anvil"] = "anvil",       -- Anvil
+  ["cometbft"] = "cometbft", -- CometBFT
 
   -- 2. Morse Service IDs
   ["F000"] = "F000",                     -- Pocket (Authoritative ID)

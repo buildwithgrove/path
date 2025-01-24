@@ -1,0 +1,57 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+// CometBFTRequestObservations captures all observations made while serving a single CometBFT blockchain service request.
+message CometBFTRequestObservations {
+  // The CometBFT blockchain service's route request, including all params.
+  string route_request = 1;
+
+  // CometBFT-specific observations from endpoint(s) that responded to the service request.
+  // Multiple observations may occur when:
+  // * Original endpoint fails
+  // * Request is sent to additional endpoints for data collection
+  repeated CometBFTEndpointObservation endpoint_observations = 2;
+}
+
+// CometBFTEndpointObservation stores a single observation from an endpoint servicing the protocol response.
+// Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
+message CometBFTEndpointObservation {
+  // Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
+  string endpoint_addr = 1;
+
+  // Details of the response received from the endpoint
+  oneof response_observation {
+    // Response to `health` request
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
+    CometBFTHealthResponse health_response = 2;
+
+    // Response to `status` request
+    // References:https://docs.cometbft.com/v1.0/spec/rpc/#status
+    CometBFTLatestBlockHeightResponse latest_block_height_response = 3;
+
+    // Responses not used in endpoint validation
+    CometBFTUnrecognizedResponse unrecognized_response = 4;
+  }
+  // TODO_MVP(@adshmh): add observations for archival checks.
+}
+
+// CometBFTHealthResponse stores the response to a `health` request
+// https://docs.cometbft.com/v1.0/spec/rpc/#health
+message CometBFTHealthResponse {
+  bool health_status_response = 1;
+}
+
+// CometBFTBlockNumberResponse stores the latest block number from a `status` request
+// https://docs.cometbft.com/v1.0/spec/rpc/#status
+message CometBFTLatestBlockHeightResponse {
+  string latest_block_height_response = 1;
+}
+
+// CometBFTUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
+message CometBFTUnrecognizedResponse {
+  JsonRpcResponse jsonrpc_response = 1;
+}

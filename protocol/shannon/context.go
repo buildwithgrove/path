@@ -136,7 +136,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 	app := *session.Application
 
-	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, []byte(payload.Data))
+	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, []byte(payload.Data), payload.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -183,11 +183,17 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 
 // buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, and payload.
 // The returned RelayRequest can be signed and sent to the endpoint to receive the endpoint's response.
-func buildUnsignedRelayRequest(endpoint endpoint, session sessiontypes.Session, payload []byte) (*servicetypes.RelayRequest, error) {
+func buildUnsignedRelayRequest(endpoint endpoint, session sessiontypes.Session, payload []byte, path string) (*servicetypes.RelayRequest, error) {
+	// If the path is not empty (ie. for a REST service request), append it to the endpoint's URL
+	url := endpoint.url
+	if path != "" {
+		url = fmt.Sprintf("%s%s", url, path)
+	}
+
 	// TODO_TECHDEBT: need to select the correct underlying request (HTTP, etc.) based on the selected service.
-	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest(payload, endpoint.url)
+	jsonRpcHttpReq, err := shannonJsonRpcHttpRequest(payload, url)
 	if err != nil {
-		return nil, fmt.Errorf("error building a JSONRPC HTTP request for url %s: %w", endpoint.url, err)
+		return nil, fmt.Errorf("error building a JSONRPC HTTP request for url %s: %w", url, err)
 	}
 
 	relayRequest, err := embedHttpRequest(jsonRpcHttpReq)
