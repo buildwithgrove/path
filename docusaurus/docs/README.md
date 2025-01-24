@@ -23,7 +23,7 @@ interaction with decentralized protocols.
 
 ### PATH
 
-Start by going through the [PATH Walkthrough](./develop/path/walkthrough.md).
+Start by going through the [PATH Walkthrough](develop/path/introduction.md).
 to learn how PATH works, how to configure it and how to run it locally.
 
 ### Envoy

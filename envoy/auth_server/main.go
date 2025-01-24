@@ -96,26 +96,27 @@ func main() {
 
 /* -------------------- Gateway Init Helpers -------------------- */
 
-// getConfigPath returns the full path to the config file.
-// If the `-config` flag is set, it takes precedence and its value is used.
+// getConfigPath returns the full path to the config file relative to the executable.
 //
-// Otherwise, the default path is constructed using the executable's directory
-// and the provided defaultConfigPath.
+// Priority for determining config path:
+// - If `-config` flag is set, use its value
+// - Otherwise, use defaultConfigPath relative to executable directory
 //
-// For example if the binary is in:
-// - `/app` the full config path will be `/app/config/.config.yaml`
-// - `./bin` the full config path will be `./bin/config/.config.yaml`
+// Examples:
+// - Executable in `/app` → config at `/app/config/.config.yaml`
+// - Executable in `./bin` → config at `./bin/config/.config.yaml`
+// - Executable in `./local/path` → config at `./local/path/config/.config.yaml`
 func getConfigPath(defaultConfigPath string) (string, error) {
 	var configPath string
 
-	// The config path can be overridden using the `-config` flag.
+	// Check for -config flag override
 	flag.StringVar(&configPath, "config", "", "override the default config path")
 	flag.Parse()
 	if configPath != "" {
 		return configPath, nil
 	}
 
-	// Otherwise, use the default config path based on the executable path
+	// Get executable directory for default path
 	exeDir, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get executable path: %v", err)

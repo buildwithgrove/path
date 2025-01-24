@@ -5,7 +5,6 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -91,8 +91,13 @@ func Test_ShannonRelay(t *testing.T) {
 					continue
 				}
 
-				err = validateJsonRpcResponse(test.relayID, bodyBytes)
-				if err != nil {
+				var parsedResponse jsonrpc.Response
+				if err := json.Unmarshal(bodyBytes, &parsedResponse); err != nil {
+					allErrors = append(allErrors, fmt.Errorf("response unmarshal error: %v --- %s", err, string(bodyBytes)))
+					continue
+				}
+
+				if err := parsedResponse.Validate(jsonrpc.IDFromStr(test.relayID)); err != nil {
 					allErrors = append(allErrors, fmt.Errorf("validation error: %v --- %s", err, string(bodyBytes)))
 					continue
 				}
@@ -111,41 +116,4 @@ func Test_ShannonRelay(t *testing.T) {
 			c.True(success)
 		})
 	}
-}
-
-// TODO_TECHDEBT: delete (NOT MOVE) this function and implement a proper JSONRPC validator in the service package.
-//
-// DO NOT use this function either directly or as a base/guide for general JSONRPC validation.
-// The sole purpose of this function is to check whether the relay response received from an endpoint
-// looks like a valid JSONRPC response.
-// This is a very rudimentary validatior that can only be used when the outgoing
-// JSONRPC request is limited to a few special cases, e.g. in the E2E tests.
-func validateJsonRpcResponse(expectedID string, response []byte) error {
-	type jsonRpcResponse struct {
-		JsonRpc string `json:"jsonrpc"`
-		// TODO_TECHDEBT: ID field can contain other values. We are using a string here because
-		// the E2E tests use a string ID for relays that are sent.
-		// Proper JSONRPC validation requires referencing the ID field against the relay request on both type and value.
-		ID     string `json:"id"`
-		Result string `json:"result"`
-	}
-
-	var parsedResponse jsonRpcResponse
-	if err := json.Unmarshal(response, &parsedResponse); err != nil {
-		return err
-	}
-
-	if parsedResponse.JsonRpc != "2.0" {
-		return fmt.Errorf("invalid JSONRPC field, expected %q, got %q", "2.0", parsedResponse.JsonRpc)
-	}
-
-	if parsedResponse.ID != expectedID {
-		return fmt.Errorf("expected ID %q, got %q", expectedID, parsedResponse.ID)
-	}
-
-	if len(parsedResponse.Result) == 0 {
-		return errors.New("empty Result field")
-	}
-
-	return nil
 }
