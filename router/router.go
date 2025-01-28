@@ -13,9 +13,15 @@ import (
 )
 
 const (
+	// apiVersionPrefix is the prefix for the API version and is used by
+	// the `removePrefixMiddleware` to remove the API version from the
+	// request path that is forwarded to the service endpoint.
+	// eg. /v1/path/segment -> /path/segment
 	apiVersionPrefix = "/v1"
 	// reqHeaderEndpointID is the header key for the endpoint ID, and is
-	// used to ensure the endpoint ID is not present in the request PATH.
+	// used by the `removePrefixMiddleware` to ensure the endpoint ID is
+	// not present in the request path that is forwarded to the endpoint.
+	// eg. s/1a2b3c4d/path/segment -> /path/segment
 	reqHeaderEndpointID = "endpoint-id"
 )
 
@@ -111,7 +117,7 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // removePrefixMiddleware removes the API version prefix and endpoint ID from the URL path
-// This is to allow REST-based services to pass the URL path to the selected endpoint.
+// This is to allow REST-based services to forward the correct URL path to the selected endpoint.
 func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Remove the API version prefix from the URL path
