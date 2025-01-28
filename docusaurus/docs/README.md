@@ -35,13 +35,13 @@ to learn how our Envoy integration works, how to configure it and how to run it 
 
 If you're a Web2 Gateway Provider, you have four modes of operation to choose from:
 
-1. **Step aside (N/A)**: Let clients use [Grove's Portal](https://portal.grove.city/) directly. For example, if you do not provide the services the client is looking for.
+1. **Dependent (Step Aside)**: Let clients use [Grove's Portal](https://portal.grove.city/) directly. For example, if you do not provide the services the customer is looking for.
 
-2. **Hybrid (Frontline)**: Provide a front-end using your custom stack but leverage [Grove's Portal API](https://docs.grove.city/) behind the scenes. For example, if you want to provide a custom front-end but leverage Grove's infrastructure.
+2. **Grove Hybrid (Frontend)**: Provide a custom front-end experience and build your own gateway infrastructure but leverage [Grove's Portal API](https://docs.grove.city/) behind the **scenes**. For example, if you want want to build your own business logic around quality-of-service, load balancing, authentication as well as building your own front-end.
 
-3. **Full Stack (Direct):** Use `PATH` so you can provide the client with a custom experience but also settle traffic on `Pocket Network` yourself without relying on Grove's infrastructure.
+3. **PATH Hybrid (Full Stack):** Use `PATH` so you can provide the client with a customized end-to-end experience but also settle traffic on `Pocket Network` yourself without relying on `Grove`'s infrastructure at all.
 
-4. **Independent (N/A):** Use your own stack to settle traffic on your own infrastructure, independent of `Grove`, `PATH` or `Pocket Network`.
+4. **Independent (On Your Own):** Use your own stack to settle traffic on your own infrastructure, independent of `Grove`, `PATH` or `Pocket Network`.
 
 Here's the information reorganized into a table and nodes section:
 
@@ -71,10 +71,10 @@ flowchart LR
     PubLabel["Pocket Network <br> - Shared <br> - Permissionless <br> - Incentivized <br> - Open Source Providers"]
     PrivLabel["Web2 Gateway Servers <br> -Private <br> - Dedicated <br> - Solely owned"]
 
-    Mobile ---> | 1 | Grove1
-    Mobile ---> | 2 | Grove2
-    Mobile ---> | 3 | Grove3
-    Mobile ---> | 4 | Gateway
+    Mobile ---> | 1\. Dependent | Grove1
+    Mobile ---> | 2\. Grove Hybrid| Grove2
+    Mobile ---> | 3\. PATH Hybrid | Grove3
+    Mobile ---> | 4\. Independent | Gateway
 
     Grove1 --> Server1
     Grove1 --> Server2
@@ -105,11 +105,13 @@ flowchart LR
     class PubLabel,PrivLabel labelStyle
 ```
 
-### Implementation Modes
+### Implementation Mode Comparison
 
-| Mode                   | Your Infrastructure | Your Gateway | Your Frontend | PATH | Grove | Pocket Network | Description                                                     |
-| ---------------------- | ------------------- | ------------ | ------------- | ---- | ----- | -------------- | --------------------------------------------------------------- |
-| 1. Step Aside (N/A)    | ❌                  | ❌           | ❌            | ❌   | ✅    | ✅             | Provider directs clients to Grove's Portal for direct access    |
-| 2. Hybrid (Frontline)  | ❌                  | ❌           | ✅            | ❌   | ✅    | ✅             | Provider uses custom frontend with Grove's Portal API backend   |
-| 3. Full Stack (Direct) | ✅                  | ✅           | ✅            | ✅   | ❌    | ✅             | Provider uses PATH to settle traffic directly on Pocket Network |
-| 4. Independent (N/A)   | ✅                  | ✅           | ✅            | ❌   | ❌    | ❌             | Provider uses entirely their own infrastructure and stack       |
+If you're a Web2 Gateway Provider, you can use this table to understand you preferable mode of operation:
+
+| Mode                         | Your Backend Infrastructure | Your Gateway Frontend | Your Gateway uses PATH | Customer uses Grove's Portal | Traffic Settled on Pocket Network | Description / Example                                                                                                         |
+| ---------------------------- | --------------------------- | --------------------- | ---------------------- | ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1. Dependent (Step Aside)    | ❌                          | ❌                    | ❌                     | ✅                           | ✅                                | Customers go to Grove's Portal for direct access                                                                              |
+| 2. Grove Hybrid (Frontend)   | ❌                          | ✅                    | ❌                     | ❌                           | ✅                                | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
+| 3. PATH Hybrid (Full Stack)  | ❌                          | ✅                    | ✅                     | ❌                           | ✅                                | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
+| 4. Independent (On Your Own) | ✅                          | ✅                    | ✅                     | ❌                           | ❌                                | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |
