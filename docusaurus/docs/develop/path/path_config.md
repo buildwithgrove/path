@@ -77,6 +77,12 @@ Use the [YAML Language Support](https://marketplace.visualstudio.com/items?itemN
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
 ```
 
+Or the following to point to the local schema file:
+
+```yaml
+# yaml-language-server: $schema=../../../config/config.schema.yaml
+```
+
 :::
 
 ### Full Config Example

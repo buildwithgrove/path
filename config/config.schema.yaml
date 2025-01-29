@@ -3,6 +3,9 @@
 
 # To validate the config file, the following comment must be placed at the top of the .config.yaml file:
 # <REMOVE THIS TAG> yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+#
+# Use the following if you need it to point to the local schema file:
+# <REMOVE THIS TAG> yaml-language-server: $schema=../../../config/config.schema.yaml
 
 description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for either Morse or Shannon."
 type: object

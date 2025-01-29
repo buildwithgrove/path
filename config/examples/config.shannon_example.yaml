@@ -1,6 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+#
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+#
+# Use the following if you need it to point to the local schema file:
+# yaml-language-server: $schema=../../../config/config.schema.yaml
 
 #################################################
 ### Example Shannon Configuration YAML Format ###
