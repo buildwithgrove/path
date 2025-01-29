@@ -32,7 +32,7 @@ type requestContext struct {
 	receivedResponses []endpointResponse
 
 	// presetFailureResponse, if set, is used to return a preconstructed response to the user.
-	// This is used by the consutrctor of the requestContext instance, e.g. if reading the HTTP request's body fails.
+	// This is used by the conductor of the requestContext instance, e.g. if reading the HTTP request's body fails.
 	presetFailureResponse *HTTPResponse
 }
 

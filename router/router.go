@@ -14,6 +14,7 @@ import (
 
 const (
 	apiVersionPrefix = "/v1"
+
 	// reqHeaderEndpointID is the header key for the endpoint ID, and is
 	// used to ensure the endpoint ID is not present in the request PATH.
 	reqHeaderEndpointID = "endpoint-id"
@@ -55,10 +56,13 @@ func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
-	// * /v1/ - handles service requests with trailing slash, including REST services with additional path segments
-	r.mux.HandleFunc(fmt.Sprintf("%s/", apiVersionPrefix), r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest)))
-	// * /v1 - handles service requests without trailing slash
-	r.mux.HandleFunc(apiVersionPrefix, r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest)))
+	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
+
+	// */v1/ - handles service requests with trailing slash, including REST services with additional path segments
+	r.mux.HandleFunc(fmt.Sprintf("%s/", apiVersionPrefix), requestHandlerFn)
+
+	// */v1 - handles service requests without trailing slash
+	r.mux.HandleFunc(apiVersionPrefix, requestHandlerFn)
 }
 
 // Start starts the API server on the specified port
@@ -110,20 +114,21 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// removePrefixMiddleware removes the API version prefix and endpoint ID from the URL path
-// This is to allow REST-based services to pass the URL path to the selected endpoint.
+// removePrefixMiddleware removes the API version and endpoint ID prefixes from the URL path
+// to allow REST-based services to pass the cleaned path to the selected endpoint.
+//
+// Example:
+//
+//	Input:  /v1/endpoint/path/123
+//	Output: /path/123
 func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		// Remove the API version prefix from the URL path
-		// eg. /v1/path/segment -> /path/segment
+		// Remove API version prefix (e.g. /v1/path -> /path)
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, apiVersionPrefix)
 
-		// Remove the endpoint ID segment from the URL path, if present
-		// eg. /1a2b3c4d/path/segment -> /path/segment
+		// Remove endpoint ID prefix if present (e.g. /1a2b3c4d/path -> /path)
 		if endpointID := req.Header.Get(reqHeaderEndpointID); endpointID != "" {
-			req.URL.Path = strings.TrimPrefix(req.URL.Path, fmt.Sprintf("/%s", endpointID))
-
-			// Remove the endpoint ID from the request headers.
+			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+endpointID)
 			delete(req.Header, reqHeaderEndpointID)
 		}
 
