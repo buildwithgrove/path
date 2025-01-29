@@ -77,6 +77,12 @@ Use the [YAML Language Support](https://marketplace.visualstudio.com/items?itemN
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
 ```
 
+Or the following to point to the local schema file:
+
+```yaml
+# yaml-language-server: $schema=../../../config/config.schema.yaml
+```
+
 :::
 
 ### Full Config Example
@@ -105,7 +111,7 @@ morse_config:
       application_public_key: "<64-char-hex>" # Application public key
       application_signature: "<128-char-hex>" # Application signature
 
-# (Required) Morse Protocol Configuration
+# (Required) Shannon Protocol Configuration
 shannon_config:
   full_node_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
@@ -251,12 +257,13 @@ shannon_config:
 
 **`gateway_config`**
 
-| Field                         | Type     | Required                 | Default | Description                                                           |
-| ----------------------------- | -------- | ------------------------ | ------- | --------------------------------------------------------------------- |
-| `gateway_mode`                | string   | Yes                      | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`    |
-| `gateway_address`             | string   | Yes                      | -       | Bech32-formatted gateway address (starts with `pokt1`)                |
-| `gateway_private_key_hex`     | string   | Yes                      | -       | 64-character hex-encoded `secp256k1` gateway private key              |
-| `owned_apps_private_keys_hex` | string[] | Only in centralized mode | -       | List of 64-character hex-encoded `secp256k1` application private keys |
+| Field                         | Type     | Required                          | Default | Description                                                                         |
+| ----------------------------- | -------- | --------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `gateway_mode`                | string   | Yes                               | -       | Mode of operation: `centralized`, `delegated`, or `permissionless`                  |
+| `gateway_address`             | string   | Yes                               | -       | Bech32-formatted gateway address (starts with `pokt1`)                              |
+| `gateway_private_key_hex`     | string   | Yes                               | -       | 64-character hex-encoded `secp256k1` gateway private key                            |
+| `owned_apps_private_keys_hex` | string[] | Only in centralized mode          | -       | List of 64-character hex-encoded `secp256k1` application private keys               |
+| `ws_endpoints_urls`           | object   | Only if wanting to use WebSockets | -       | Map of unique service IDs to their websocket endpoint URLs for the Shannon gateway. |
 
 ---
 
@@ -282,9 +289,11 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 The service ID must be provided here.
 
-| Field         | Type          | Required | Default | Description                                                                 |
-| ------------- | ------------- | -------- | ------- | --------------------------------------------------------------------------- |
-| `service_ids` | array[string] | No       | -       | List of service IDs for which the Quality of Service (QoS) logic will apply |
+| Field                        | Type          | Required | Default   | Description                                                                          |
+| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
+| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
 
 :::info
 

@@ -3,6 +3,9 @@
 
 # To validate the config file, the following comment must be placed at the top of the .config.yaml file:
 # <REMOVE THIS TAG> yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+#
+# Use the following if you need it to point to the local schema file:
+# <REMOVE THIS TAG> yaml-language-server: $schema=../../../config/config.schema.yaml
 
 description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for either Morse or Shannon."
 type: object
@@ -173,6 +176,15 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
+      ws_endpoints_urls:
+        description: "Map of service IDs to their websocket endpoint URLs for the Shannon gateway. Keys must be valid service IDs and unique."
+        type: object
+        additionalProperties: false
+        patternProperties:
+          "^[a-zA-Z0-9_-]+$":
+            type: string
+            description: "Websocket endpoint URL for service"
+            pattern: "^(wss|ws)://.*$"
 
   # Logger Configuration (optional)
   logger_config:
@@ -214,6 +226,15 @@ properties:
     type: object
     additionalProperties: false
     properties:
+      run_interval_ms:
+        description: "Interval (in milliseconds) at which the hydrator will run."
+        type: string
+        pattern: "^[0-9]+ms$"
+        default: "10000ms"
+      max_concurrent_endpoint_check_workers:
+        description: "Maximum number of workers that will concurrently check endpoints."
+        type: integer
+        default: 100
       service_ids:
         description: "List of service IDs for the hydrator."
         type: array

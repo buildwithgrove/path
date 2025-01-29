@@ -80,6 +80,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							"40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
 						},
 					},
+					WebsocketEndpointsURLs: map[protocol.ServiceID]string{
+						"anvil": "wss://shannon-testnet-grove-websocket.beta.poktroll.com",
+					},
 				},
 				Router: RouterConfig{
 					Port:               defaultPort,
