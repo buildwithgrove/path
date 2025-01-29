@@ -1,6 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+#
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+#
+# Use the following if you need it to point to the local schema file:
+# yaml-language-server: $schema=../../../config/config.schema.yaml
 
 #################################################
 ### Example Shannon Configuration YAML Format ###
@@ -41,6 +45,15 @@ shannon_config:
     owned_apps_private_keys_hex:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+
+  # [OPTIONAL] WebSocket Configuration
+  # Set ws_endpoints_urls to enable WebSocket connections to custom endpoints.
+  #
+  # IMPORTANT: WebSocket connections are off-chain and do not settle on Pocket network as of #135
+  #
+  # TODO_HACK(@commoddity, #143): Remove field once Shannon protocol supports native WebSocket connections
+  ws_endpoints_urls:
+    "anvil": wss://shannon-testnet-grove-websocket.beta.poktroll.com
 
 # To enable endpoint hydrator to run QoS checks against
 # service endpoints, add the following to the config:

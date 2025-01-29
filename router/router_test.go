@@ -111,7 +111,7 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 
 			_, mockGateway, ts := newTestRouter(t)
 
-			mockGateway.EXPECT().HandleHTTPServiceRequest(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+			mockGateway.EXPECT().HandleServiceRequest(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, req *http.Request, w http.ResponseWriter) error {
 					if req.URL.Path != test.expectedPath {
 						t.Errorf("expected path %s, got %s", test.expectedPath, req.URL.Path)

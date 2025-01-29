@@ -19,6 +19,11 @@ type requestContext struct {
 	// requestContext was constructed.
 	httpRequestBody []byte
 
+	// httpRequestMethod contains the HTTP method (GET, POST, PUT, etc.) of the request for
+	// which this instance of requestContext was constructed.
+	// For more details, see https://pkg.go.dev/net/http#Request
+	httpRequestMethod string
+
 	// httpRequestPath contains the path of the HTTP request for which this instance of
 	// requestContext was constructed.
 	httpRequestPath string
@@ -32,7 +37,7 @@ type requestContext struct {
 	receivedResponses []endpointResponse
 
 	// presetFailureResponse, if set, is used to return a preconstructed response to the user.
-	// This is used by the consutrctor of the requestContext instance, e.g. if reading the HTTP request's body fails.
+	// This is used by the conductor of the requestContext instance, e.g. if reading the HTTP request's body fails.
 	presetFailureResponse *HTTPResponse
 }
 
@@ -40,8 +45,8 @@ type requestContext struct {
 // Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
-		Method:          http.MethodPost,
 		Data:            string(rc.httpRequestBody),
+		Method:          rc.httpRequestMethod,
 		TimeoutMillisec: rc.endpointResponseTimeoutMillisec,
 	}
 	if rc.httpRequestPath != "" {

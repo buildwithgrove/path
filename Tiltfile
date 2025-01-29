@@ -26,11 +26,18 @@ local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
 # PATH operation modes determine which services are loaded:
-# 1. path_only - PATH Service Only
-# 2. path_with_auth - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
-# The observability stack is loaded in both modes.
-MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
+#   1. (Default) 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
+#   2. 'path_only' - PATH Service Only.
+#   - The observability stack is loaded in both modes.
 
+MODE = os.getenv("MODE", "path_with_auth")   # Default to 'path_with_auth' if MODE is not set
+
+# Define the valid modes
+VALID_MODES = ["path_only", "path_with_auth"]
+
+# Check if the MODE is valid
+if MODE not in VALID_MODES:
+    fail("Invalid MODE: '{}'. Allowed values are {}. Please set a valid MODE.".format(MODE, VALID_MODES))
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
 # --------------------------------------------------------------------------- #
@@ -66,44 +73,48 @@ docker_build_with_restart(
     live_update=[sync("bin/path", "/app/path")],
 )
 
-# Conditionally add port forwarding based on the mode
+# Specify the dependencies and port forwards if PATH is running WITH auth.
+if MODE == "path_with_auth":
+    path_resource_deps = [
+        "ext-authz",
+        "envoy-proxy",
+        "path-auth-data-server",
+        "ratelimit",
+        "redis",
+    ]
+    # No port exposed as all traffic must be routed through Envoy Proxy.
+    path_port_forwards = []
+
+# Specify the dependencies and port forwards if PATH is running WITHOUT auth.
 if MODE == "path_only":
     # Run PATH without any dependencies and port 3069 exposed
-    helm_resource(
-        "path",
-        chart_prefix + "path",
-        flags=[
-            "--values=./local/kubernetes/path-values.yaml",
-        ],
-        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
-        # This can only be done once the CLI flags feature has been implemented.
-        image_deps=["path"],
-        image_keys=[("image.repository", "image.tag")],
-        labels=["path"],
-        port_forwards=["3069:3069"],
-    )
-else:
-    # Run PATH with all dependencies and no port exposed
-    # as all traffic must be routed through Envoy Proxy.
-    helm_resource(
-        "path",
-        chart_prefix + "path",
-        flags=[
-            "--values=./local/kubernetes/path-values.yaml",
-        ],
-        # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
-        # This can only be done once the CLI flags feature has been implemented.
-        image_deps=["path"],
-        image_keys=[("image.repository", "image.tag")],
-        labels=["path"],
-        resource_deps=[
-            "ext-authz",
-            "envoy-proxy",
-            "path-auth-data-server",
-            "ratelimit",
-            "redis",
-        ],
-    )
+    path_resource_deps = []
+    # Expose port 3069 if PATH is running without auth.
+    port_forwards=["3069:3069"]
+
+# Run PATH with dependencies and port forwarding settings matching the MODE:
+#   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
+#   2. Without Auth: no dependencies but exposing dedicated por
+helm_resource(
+    "path",
+    chart_prefix + "path",
+    flags=[
+        "--values=./local/kubernetes/path-values.yaml",
+    ],
+    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
+    # This can only be done once the CLI flags feature has been implemented.
+    image_deps=["path"],
+    image_keys=[("image.repository", "image.tag")],
+    labels=["path"],
+    links=[
+        link(
+            "http://localhost:3003/d/gateway/path-path-gateway?orgId=1",
+            "Grafana dashboard",
+        ),
+    ],
+    port_forwards=path_port_forwards,
+    resource_deps=path_resource_deps
+)
 
 if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
@@ -198,14 +209,15 @@ helm_repo("prometheus-community", "https://prometheus-community.github.io/helm-c
 helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
 
 # Increase timeout for building the image
-update_settings(k8s_upsert_timeout_secs=60)
+update_settings(k8s_upsert_timeout_secs=120)
 
 helm_resource(
     "observability",
     "prometheus-community/kube-prometheus-stack",
     flags=[
         "--values=./local/kubernetes/observability-prometheus-stack.yaml",
-        "--set=grafana.defaultDashboardsEnabled=true",
+        "--set=grafana.defaultDashboardsEnabled="
+        + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
     ],
     resource_deps=["prometheus-community"],
 )
@@ -233,6 +245,12 @@ k8s_resource(
     discovery_strategy="selectors-only",
 )
 
-# TODO_MVP(@adshmh): Define and import a custom Grafana dashboard.
-# Use the poktroll Tiltfile as a template:
-# https://github.com/pokt-network/poktroll/blob/12342f016f3238ee7840a85d5056b1fe5ada9767/Tiltfile#L157
+# Import custom grafana dashboards into Kubernetes ConfigMap
+configmap_create("path-dashboards", from_file=listdir("local/grafana-dashboards/"))
+
+# Grafana discovers dashboards to "import" via a label
+local_resource(
+    "path-dashboards-label",
+    "kubectl label configmap path-dashboards grafana_dashboard=1 --overwrite",
+    resource_deps=["path-dashboards"],
+)
