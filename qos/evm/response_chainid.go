@@ -29,6 +29,8 @@ func responseUnmarshallerChainID(
 			logger: logger,
 
 			jsonRPCResponse: jsonrpcResp,
+			// A valid error JSONRPC response is considered a valid response.
+			valid: true,
 		}, nil
 	}
 
@@ -49,6 +51,8 @@ func responseUnmarshallerChainID(
 
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
+		// if unmarhsaling succeeded, the response is considered valid.
+		valid: err == nil,
 	}, err
 }
 
@@ -62,6 +66,9 @@ type responseToChainID struct {
 
 	// result captures the `result` field of a JSONRPC response to an `eth_chainId` request.
 	result string
+
+	// valid is set to true if the parsed response is deemed valid.
+	valid bool
 }
 
 // GetObservation returns an observation using an `eth_chainId` request's response.
@@ -71,6 +78,7 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
 				ChainIdResponse: r.result,
+				Valid:           r.valid,
 			},
 		},
 	}

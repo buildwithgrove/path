@@ -16,6 +16,10 @@ message EVMRequestObservations {
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
   repeated EVMEndpointObservation endpoint_observations = 2;
+
+  // ID of the blockchain using `qos/evm` package as its QoS.
+  // It is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+  string chain_id = 3;
 }
 
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
@@ -46,16 +50,25 @@ message EVMEndpointObservation {
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 message EVMChainIDResponse {
   string chain_id_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2;
 }
 
 // EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 message EVMBlockNumberResponse {
   string block_number_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2;
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
 // Example: As of PR #72, `eth_call` requests are not used for endpoint validation
 message EVMUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2;
 }

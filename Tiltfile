@@ -76,11 +76,17 @@ if MODE == "path_with_auth":
         "ratelimit",
         "redis",
     ]
-    path_port_forwards = []
+    # When running with auth, the following ports are exposed on PATH:
+    # 	- Port 6060: serves pprof data
+    # 	  Use with pprof like this: `go tool pprof -http=:3333 http://localhost:6060/debug/pprof/goroutine`
+    path_port_forwards = ["6060:6060"]
 else:
     path_resource_deps = []
-    # Expose port 3000 if PATH is running without auth.
-    path_port_forwards = ["3000:3000"]
+    # When running without auth, the following ports are exposed on PATH:
+    # 	- Port 3069: serves relay requests.
+    # 	- Port 6060: serves pprof data
+    # 	  Use with pprof like this: `go tool pprof -http=:3333 http://localhost:6060/debug/pprof/goroutine`
+    path_port_forwards = ["3069:3069", "6060:6060"]
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 # 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
@@ -98,7 +104,7 @@ helm_resource(
     labels=["path"],
     links=[
         link(
-            "http://localhost:3003/d/gateway/path-path-gateway?orgId=1",
+            "http://localhost:3000/d/gateway/path-path-gateway?orgId=1",
             "Grafana dashboard",
         ),
     ],

@@ -6,6 +6,8 @@ package path;
 
 option go_package = "github.com/buildwithgrove/path/observation";
 
+import "google/protobuf/timestamp.proto";
+
 // RequestType captures the origin of the request.
 // As of PR #72, it is one of:
 // 	1. Organic: a real user sent a service request to a PATH instance
@@ -32,4 +34,13 @@ message GatewayObservations {
   // service_id stores the service ID specified by the request.
   // As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
   string service_id = 3;
+
+  // received_time specifies the time the request was received.
+  google.protobuf.Timestamp received_time = 4;
+
+  // completed_time specifies the time the request processing was completed, i.e. once a response was returned to the user.
+  google.protobuf.Timestamp completed_time = 5;
+
+  // response_size captures the size of the response payload returned to the user.
+  uint64 response_size = 6;
 }

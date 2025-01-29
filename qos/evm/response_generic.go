@@ -34,6 +34,9 @@ type responseGeneric struct {
 
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
+
+	// valid is set to true if the parsed response is deemed valid.
+	valid bool
 }
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
@@ -46,6 +49,7 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
+				Valid: r.valid,
 			},
 		},
 	}
@@ -76,6 +80,8 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 		logger: logger,
 
 		jsonRPCResponse: response,
+		// The response is assumed valid if it can be successfully unmarshaled into a JSONRPC response struct.
+		valid: true,
 	}, nil
 }
 

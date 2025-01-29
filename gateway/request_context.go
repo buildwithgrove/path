@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -80,6 +81,12 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
+	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http level.
+	// This needs the following steps:
+	// 	1. Udate the QoSService interface to Parse a custom struct including a payload of type []byte.
+	//	2. Read the HTTP request's body in the `request` package and return the struct required by the updated QoS Service interface.
+	//	3. Export HTTP-related observations from the `request` package at the time of reading the HTTP request's body.
+	//
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(ctx, httpReq)
@@ -194,6 +201,14 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 		"http_response_status", statusCode,
 	)
 
+	// TODO_TECHDEBT(@adshmh): Refactor to consolidate all gateway observation updates in one function.
+	// This will require the following:
+	// 	1. Update the WriteHTTPUserResponse method of `requestContext` struct to return the length of the response.
+	//	2. Update the `HandleHTTPServiceRequest` method of `Gateway` struct to use the above for updating Gateway observations.
+	//
+	// Update response size observation
+	rc.gatewayObservations.ResponseSize = uint64(len(responsePayload))
+
 	w.WriteHeader(statusCode)
 
 	numWrittenBz, writeErr := w.Write(responsePayload)
@@ -213,6 +228,9 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 //   - Protocol-level observations; e.g. "maxed-out" endpoints.
 //   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
+	// Update the request completion time on the gateway observation
+	rc.gatewayObservations.CompletedTime = timestamppb.Now()
+
 	var (
 		protocolObservations protocolobservations.Observations
 		qosObservations      qosobservations.Observations
@@ -232,7 +250,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		// The QoS context will be nil if the target service ID is not specified correctly by the request.
 		if rc.qosCtx != nil {
-			qosObservations := rc.qosCtx.GetObservations()
+			qosObservations = rc.qosCtx.GetObservations()
 			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
 				rc.logger.Warn().Err(err).Msg("error applying QoS observations.")
 			}

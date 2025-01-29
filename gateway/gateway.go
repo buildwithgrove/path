@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/observation"
 )
@@ -73,10 +74,10 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		logger: g.Logger,
 
 		gatewayObservations: getUserRequestGatewayObservations(),
-		protocol:          g.Protocol,
-		httpRequestParser: g.HTTPRequestParser,
-		metricsReporter:   g.MetricsReporter,
-		dataReporter:      g.DataReporter,
+		protocol:            g.Protocol,
+		httpRequestParser:   g.HTTPRequestParser,
+		metricsReporter:     g.MetricsReporter,
+		dataReporter:        g.DataReporter,
 		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
 		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
 	}
@@ -113,10 +114,10 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-
 // getUserRequestGatewayObservations returns the set of gateway-level observations for an organic, i.e. sent by a user, service request.
 func getUserRequestGatewayObservations() observation.GatewayObservations {
 	return observation.GatewayObservations{
-		RequestType: observation.RequestType_REQUEST_TYPE_ORGANIC,
+		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
+		ReceivedTime: timestamppb.Now(),
 	}
 }
