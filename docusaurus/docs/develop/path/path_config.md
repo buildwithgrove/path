@@ -105,7 +105,7 @@ morse_config:
       application_public_key: "<64-char-hex>" # Application public key
       application_signature: "<128-char-hex>" # Application signature
 
-# (Required) Morse Protocol Configuration
+# (Required) Shannon Protocol Configuration
 shannon_config:
   full_node_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
