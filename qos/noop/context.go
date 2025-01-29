@@ -19,6 +19,10 @@ type requestContext struct {
 	// requestContext was constructed.
 	httpRequestBody []byte
 
+	// httpRequestMethod contains the HTTP method of the HTTP request for which this instance of
+	// requestContext was constructed.
+	httpRequestMethod string
+
 	// httpRequestPath contains the path of the HTTP request for which this instance of
 	// requestContext was constructed.
 	httpRequestPath string
@@ -40,8 +44,8 @@ type requestContext struct {
 // Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
-		Method:          http.MethodPost,
 		Data:            string(rc.httpRequestBody),
+		Method:          rc.httpRequestMethod,
 		TimeoutMillisec: rc.endpointResponseTimeoutMillisec,
 	}
 	if rc.httpRequestPath != "" {

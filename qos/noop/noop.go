@@ -32,6 +32,7 @@ func (NoOpQoS) ParseHTTPRequest(_ context.Context, httpRequest *http.Request) (g
 
 	return &requestContext{
 		httpRequestBody:                 bz,
+		httpRequestMethod:               httpRequest.Method,
 		httpRequestPath:                 httpRequest.URL.Path,
 		endpointResponseTimeoutMillisec: defaultEndpointResponseTimeoutMillisec,
 	}, true
