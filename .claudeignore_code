@@ -1,0 +1,26 @@
+# Documentation
+docusaurus/
+*.md
+CNAME
+
+# Dependencies and build artifacts
+**/node_modules/
+**/.docusaurus/
+go.mod
+go.sum
+
+# Config and meta
+.github/
+.claudeignore*
+LICENSE
+
+# Documentation JavaScript
+docusaurus/**/*.js
+
+# Keep code JavaScript
+!qos/**/*.js
+!request/**/*.js
+!gateway/**/*.js
+!envoy/**/*.js
+!protocol/**/*.js
+!local/**/*.js

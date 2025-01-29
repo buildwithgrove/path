@@ -72,4 +72,5 @@ include ./makefiles/morse_configs.mk
 include ./makefiles/shannon_configs.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/claude.mk
 include ./makefiles/proto.mk
