@@ -1,13 +1,15 @@
-// gateway package defines the components and their interactions necessary for operating a gateway.
-// It defines the requirements and steps of sending relays from the perspective of:
-// a) protocols, i.e. Morse and Shannon protocols, which provide:
-// - a list of endpoints available for a service.
-// - a function for sending a relay to a specific endpoint.
-// b) gateways, which are required to provide a function for
-// selecting an endpoint to which the relay is to be sent.
-// c) Quality-of-Service (QoS) services: which provide:
-// - interpretation of the user's request as the payload to be sent to an endpoint.
-// - selection of the best endpoint for handling a user's request.
+// Package gateway implements components for operating a gateway service.
+//
+// Protocols (Morse, Shannon):
+// - Provide available endpoints for a service
+// - Send relays to specific endpoints
+//
+// Gateways:
+// - Select endpoints for relay transmission
+//
+// QoS Services:
+// - Interpret user requests into endpoint payloads
+// - Select optimal endpoints for request handling
 //
 // TODO_MVP(@adshmh): add a README with a diagram of all the above.
 // TODO_MVP(@adshmh): add a section for the following packages once they are added: Metrics, Message.
@@ -15,21 +17,25 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/observation"
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/websockets"
 )
 
-// Gateway performs end-to-end handling of all service requests
-// through a single function, i.e. HandleHTTPServiceRequest,
-// which starts from the point of receiving a user request,
-// and ends once a response has been returned to the user.
-// TODO_FUTURE: Currently, the only supported format for both the
-// request and the response is HTTP as it is sufficient for JSONRPC,
-// REST, Websockets and gRPC but may expand in the future.
+// Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
+// - Receives user request
+// - Processes request
+// - Returns response
+//
+// TODO_FUTURE: Current HTTP-only format supports JSONRPC, REST, Websockets
+// and gRPC. May expand to other formats in future.
 type Gateway struct {
 	Logger polylog.Logger
 
@@ -50,25 +56,36 @@ type Gateway struct {
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
+
+	// WebsocketEndpoints is a temporary workaround to allow PATH to enable websocket
+	// connections to a single user-provided websocket-enabled endpoint URL per service ID.
+	// TODO_HACK(@commoddity, #143): Remove this field once the Shannon protocol supports websocket connections.
+	WebsocketEndpoints map[protocol.ServiceID]string
 }
 
-// HandleHTTPServiceRequest defines the steps the PATH gateway takes to
-// handle a service request. It is currently limited in scope to
-// service requests received over HTTP, to avoid adding any abstraction
-// layers that are not necessary yet.
-// TODO_FUTURE: Once other service request protocols, e.g. GRPC, are
-// within scope, the HandleHTTPServiceRequest needs to be
-// refactored to keep HTTP-specific details and move the generic service
-// request processing steps into a common method.
+// HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
 //
-// HandleHTTPServiceRequest is written as a template method to allow the customization of steps
-// involved in serving a service request, e.g.:
-//   - establishing a QoS context for the HTTP request.
-//   - sending the service payload through a relaying protocol, etc.
+// This is written as a template method to allow customization of steps.
+// Template pattern allows customization of service steps:
+// - Establishing QoS context
+// - Sending payload via relay protocols
+// Reference: https://en.wikipedia.org/wiki/Template_method_pattern
 //
-// See the following link for more details:
-// https://en.wikipedia.org/wiki/Template_method_pattern
-func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+// TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
+// - Extract generic processing into common method
+// - Keep HTTP-specific details separate
+func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebSocketRequest(ctx, httpReq, w)
+	default:
+		g.handleHTTPServiceRequest(ctx, httpReq, w)
+	}
+}
+
+// handleHTTPRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
 	// build a gatewayRequestContext with components necessary to process HTTP requests.
 	gatewayRequestCtx := &requestContext{
 		logger: g.Logger,
@@ -110,7 +127,7 @@ func (g Gateway) HandleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
-	// See the `BrodcastAllObservations` method of `gateway.requestContext` struct for details.
+	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
@@ -120,4 +137,79 @@ func getUserRequestGatewayObservations() observation.GatewayObservations {
 		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
 		ReceivedTime: timestamppb.Now(),
 	}
+}
+
+// handleWebsocketRequest handles WebSocket connection requests by directly connecting
+// to the provided websocket endpoint URL.
+//
+// Current Implementation:
+// - Bypasses protocol layer entirely as a temporary workaround
+// - Directly uses provided WebSocket endpoint URL
+// - Allows PATH to pass WebSocket messages without protocol support
+//
+// TODO_HACK(@commoddity, #143): Remove temporary workaround when Shannon protocol
+// supports WebSocket connections. Changes will:
+// - Utilize existing context system for endpoint selection
+// - Select from available Shannon protocol service endpoints
+// - Match HTTP request handling pattern
+// - Use HandleWebsocketRequest method defined on gateway.Protocol
+func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// Upgrade HTTP to websocket connection first to enable error reporting
+	// via websocket close messages for easier debugging
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
+	if err != nil {
+		g.Logger.Error().Msg("handleWebsocketRequest: error upgrading websocket connection request")
+		return
+	}
+
+	// Check if there are any websocket endpoint URLs set for the service ID in the config.
+	if len(g.WebsocketEndpoints) == 0 {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
+		return
+	}
+
+	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
+	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
+	if err != nil {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error getting QoS service")
+		return
+	}
+
+	// Get the websocket endpoint URL for the service ID.
+	endpointURL := g.WebsocketEndpoints[serviceID]
+	if endpointURL == "" {
+		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
+		handleWebsocketError(g.Logger, clientConn, errMsg)
+		return
+	}
+
+	// Create a websocket bridge to handle the websocket connection
+	// between the Client and the websocket Endpoint.
+	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
+	if err != nil {
+		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error creating websocket bridge")
+		return
+	}
+
+	// Run the websocket bridge in a separate goroutine.
+	go bridge.Run()
+
+	g.Logger.Info().Str("ws_endpoints_urls", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
+}
+
+// handleWebsocketError logs errors and sends close message to the websocket client.
+func handleWebsocketError(logger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
+	logger.Error().Msg(errorMsg)
+
+	closeMessage := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)
+
+	if err := clientConn.WriteMessage(websocket.CloseMessage, closeMessage); err != nil {
+		logger.Error().Msg("handleWebsocketError: error writing websocket close message")
+	}
+
+	clientConn.Close()
 }
