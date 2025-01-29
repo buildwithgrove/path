@@ -19,8 +19,9 @@ type requestContext struct {
 	// requestContext was constructed.
 	httpRequestBody []byte
 
-	// httpRequestMethod contains the HTTP method of the HTTP request for which this instance of
-	// requestContext was constructed.
+	// httpRequestMethod contains the HTTP method (GET, POST, PUT, etc.) of the request for
+	// which this instance of requestContext was constructed.
+	// For more details, see https://pkg.go.dev/net/http#Request
 	httpRequestMethod string
 
 	// httpRequestPath contains the path of the HTTP request for which this instance of
