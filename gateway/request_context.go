@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser.")
-	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance.")
-	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance.")
+	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser")
+	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance")
+	errHTTPRequestRejectedByProtocol = errors.New("HTTP request rejected by protocol instance")
+	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
 )
 
 // requestContext is responsible for performing the steps necessary to complete a service request.
@@ -91,6 +92,21 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	return nil
 }
 
+// BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
+// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
+func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsReq *http.Request) error {
+	// Create the QoS request context using the WebSocket request.
+	// This method will reject the request if it is for a service that does not support WebSocket connections.
+	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(ctx)
+	if !isValid {
+		rc.logger.Info().Msg(errWebsocketRequestRejectedByQoS.Error())
+		return errWebsocketRequestRejectedByQoS
+	}
+
+	rc.qosCtx = qosCtx
+	return nil
+}
+
 // BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
 // The constructed Protocol instance will be used for:
 //   - Sending relays to endpoint(s)
@@ -147,6 +163,25 @@ func (rc *requestContext) HandleRelayRequest() error {
 	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
 	// e.g. for handling JSONRPC batch requests.
 	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+
+	return nil
+}
+
+// HandleWebsocketRequest handles a websocket request.
+// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections
+func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
+	// Make an endpoint selection using the QoS context.
+	// This modifies the internal state of protocolCtx for subsequent calls.
+	if err := rc.protocolCtx.SelectEndpoint(rc.qosCtx.GetEndpointSelector()); err != nil {
+		rc.logger.Warn().Err(err).Msg("SendRelay: error selecting an endpoint.")
+		return err
+	}
+
+	// Establish a websocket connection with the selected endpoint and handle the request.
+	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {
+		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
+		return err
+	}
 
 	return nil
 }
