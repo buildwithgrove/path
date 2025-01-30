@@ -43,16 +43,16 @@ var (
 	_ response = &responseToHealth{}
 	_ response = &responseGeneric{}
 
-	routeResponseMappings = map[string]responseUnmarshaller{
-		routeHealthCheck: responseUnmarshallerHealth,
-		routeBlockHeight: responseUnmarshallerBlockHeight,
+	apiPathResponseMappings = map[string]responseUnmarshaller{
+		apiPathHealthCheck: responseUnmarshallerHealth,
+		apiPathBlockHeight: responseUnmarshallerBlockHeight,
 	}
 )
 
 // unmarshalResponse parses the supplied raw byte slice, received from an endpoint, into a JSONRPC response.
 // Responses to the following JSONRPC methods are processed into endpoint observations:
 //   - eth_blockNumber
-func unmarshalResponse(logger polylog.Logger, route string, data []byte, jsonRPC bool) (response, error) {
+func unmarshalResponse(logger polylog.Logger, apiPath string, data []byte, jsonRPC bool) (response, error) {
 	// Unmarshal the raw response payload into a JSONRPC response.
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
@@ -71,7 +71,7 @@ func unmarshalResponse(logger polylog.Logger, route string, data []byte, jsonRPC
 	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Unmarshal the JSONRPC response into a method-specific response.
-	unmarshaller, found := routeResponseMappings[route]
+	unmarshaller, found := apiPathResponseMappings[apiPath]
 	if found {
 		return unmarshaller(logger, jsonrpcResponse)
 	}

@@ -37,11 +37,11 @@ func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.Endpoi
 }
 
 func withHealthCheck(requestCtx *requestContext) {
-	request, _ := http.NewRequest(http.MethodGet, routeHealthCheck, nil)
+	request, _ := http.NewRequest(http.MethodGet, apiPathHealthCheck, nil)
 	requestCtx.httpReq = request
 }
 
 func withBlockHeightCheck(requestCtx *requestContext) {
-	request, _ := http.NewRequest(http.MethodGet, routeBlockHeight, nil)
+	request, _ := http.NewRequest(http.MethodGet, apiPathBlockHeight, nil)
 	requestCtx.httpReq = request
 }
