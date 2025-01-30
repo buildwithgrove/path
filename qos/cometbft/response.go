@@ -9,17 +9,22 @@ import (
 )
 
 var (
-	// CometBFT always returns a `-1` ID for successful responses.
-	cometBFTSuccessResponseID = jsonrpc.IDFromInt(-1)
-	// CometBFT always returns a `1` ID for error responses.
+	// CometBFT always returns a `1` ID for any responses to JSONRPC requests.
+	cometBFTJSONRPCSuccessResponseID = jsonrpc.IDFromInt(1)
+	// CometBFT always returns a `-1` ID for successful responses to REST-like requests.
+	cometBFTRESTSuccessResponseID = jsonrpc.IDFromInt(-1)
+	// CometBFT always returns a `1` ID for any error responses, either for JSONRPC or REST-like requests.
 	cometBFTErrResponseID = jsonrpc.IDFromInt(1)
 )
 
-func getExpectedResponseID(response jsonrpc.Response) jsonrpc.ID {
+func getExpectedResponseID(response jsonrpc.Response, jsonRPC bool) jsonrpc.ID {
+	if jsonRPC {
+		return cometBFTJSONRPCSuccessResponseID
+	}
 	if response.IsError() {
 		return cometBFTErrResponseID
 	}
-	return cometBFTSuccessResponseID
+	return cometBFTRESTSuccessResponseID
 }
 
 // responseUnmarshaller is the entrypoint function for any
@@ -47,7 +52,7 @@ var (
 // unmarshalResponse parses the supplied raw byte slice, received from an endpoint, into a JSONRPC response.
 // Responses to the following JSONRPC methods are processed into endpoint observations:
 //   - eth_blockNumber
-func unmarshalResponse(logger polylog.Logger, route string, data []byte) (response, error) {
+func unmarshalResponse(logger polylog.Logger, route string, data []byte, jsonRPC bool) (response, error) {
 	// Unmarshal the raw response payload into a JSONRPC response.
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
@@ -58,7 +63,7 @@ func unmarshalResponse(logger polylog.Logger, route string, data []byte) (respon
 	}
 
 	// Validate the JSONRPC response.
-	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse)); err != nil {
+	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, jsonRPC)); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
 	}
 

@@ -34,7 +34,14 @@ type endpointResponse struct {
 type requestContext struct {
 	logger polylog.Logger
 
-	httpReq       *http.Request
+	httpReq *http.Request
+
+	// CometBFT supports both REST-like and JSON-RPC requests.
+	// This field stores the serialized JSON-RPC request as a byte slice,
+	// if it is present in a JSON-RPC POST request.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
+	jsonrpcReq []byte
+
 	endpointStore *EndpointStore
 
 	// isValid indicates whether the underlying user request
@@ -59,21 +66,19 @@ type requestContext struct {
 }
 
 func (rc requestContext) GetServicePayload() protocol.Payload {
-	return protocol.Payload{
-		//CometBFT uses only GET HTTP requests with empty body
-		Data: "",
-
-		// Method is alway GET for CometBFT-based blockchains.
-		Method: http.MethodGet,
-
-		// CometBFT uses REST-like routes, e.g. `/status`.
-		Path: rc.httpReq.URL.Path,
-
-		// TODO_IMPROVE: adjust the timeout based on the request method:
-		// An endpoint may need more time to process certain requests,
-		// as indicated by the request's method and/or parameters.
+	payload := protocol.Payload{
+		Method:          rc.httpReq.Method,
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 	}
+	// IF the request is REST-like, set the path.
+	if rc.httpReq.URL.Path != "" {
+		payload.Path = rc.httpReq.URL.Path
+	}
+	// If the request is JSON-RPC, set the data.
+	if rc.isJSONRPCRequest() {
+		payload.Data = string(rc.jsonrpcReq)
+	}
+	return payload
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
@@ -82,7 +87,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz, rc.isJSONRPCRequest())
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -100,7 +105,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// have been reported to the request context.
 	// intentionally ignoring the error here, since unmarshallResponse
 	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""))
+	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())
 
 	if len(rc.endpointResponses) >= 1 {
 		// return the last endpoint response reported to the context.
@@ -148,6 +153,13 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 	}
 
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// isJSONRPCRequest returns true if the request context contains a JSON-RPC request.
+// This is determined by checking whether the request context contains a serialized JSON-RPC request.
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
+func (rc *requestContext) isJSONRPCRequest() bool {
+	return len(rc.jsonrpcReq) > 0
 }
 
 func preSelectedEndpoint(

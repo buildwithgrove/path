@@ -2,14 +2,16 @@ package cometbft
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // QoS struct performs the functionality defined by gateway package's ServiceQoS,
@@ -29,20 +31,36 @@ type QoS struct {
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
-// Returns (context, false) if request cannot be parsed as JSONRPC.
+// Returns (context, false) if POST request cannot be parsed as JSONRPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	if req.Method != http.MethodGet {
-		err := fmt.Errorf("ParseHTTPRequest: received non-GET request")
-		return requestContextFromInternalError(err), false
-	}
-
-	return &requestContext{
+	requestContext := &requestContext{
 		logger:        qos.Logger,
 		httpReq:       req,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
-	}, true
+	}
+
+	// CometBFT supports both REST-like and JSON-RPC requests.
+	// If the request is a JSON-RPC POST request,
+	// read the request body and unmarshal it into a JSONRPC request.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
+	if req.Method == http.MethodPost {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			return requestContextFromInternalError(err), false
+		}
+
+		var jsonrpcReq jsonrpc.Request
+		if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+			return requestContextFromUserError(err), false
+		}
+
+		// Store the serialized JSONRPC request as a byte slice
+		requestContext.jsonrpcReq = body
+	}
+
+	return requestContext, true
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
