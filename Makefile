@@ -50,7 +50,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 
 .PHONY: path_up
 path_up: check_path_config dev_up config_path_secrets ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	@tilt up
+	MODE=path_with_auth && tilt up
 
 .PHONY: path_up_standalone
 path_up_standalone: ## Brings up local Tilt development environment with PATH only
@@ -58,6 +58,15 @@ path_up_standalone: ## Brings up local Tilt development environment with PATH on
 
 .PHONY: path_down
 path_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+
+.PHONY: path_help
+path_help: ## Prints help commands if you cannot start path
+	@echo "################################################################";
+	@echo "If you're hitting issues running PATH, try running following commands:";
+	@echo "	make path_down";
+	@echo "	make path_up";
+	@echo "################################################################";
+
 
 ###############################
 ###    Makefile imports     ###

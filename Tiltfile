@@ -26,11 +26,18 @@ local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
 # PATH operation modes determine which services are loaded:
-# 1. path_only - PATH Service Only
-# 2. path_with_auth - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
-# The observability stack is loaded in both modes.
-MODE = os.getenv("MODE", "path_with_auth")  # Default mode is "path_with_auth"
+#   1. (Default) 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
+#   2. 'path_only' - PATH Service Only.
+#   - The observability stack is loaded in both modes.
 
+MODE = os.getenv("MODE", "path_with_auth")   # Default to 'path_with_auth' if MODE is not set
+
+# Define the valid modes
+VALID_MODES = ["path_only", "path_with_auth"]
+
+# Check if the MODE is valid
+if MODE not in VALID_MODES:
+    fail("Invalid MODE: '{}'. Allowed values are {}. Please set a valid MODE.".format(MODE, VALID_MODES))
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
 # --------------------------------------------------------------------------- #
@@ -76,11 +83,15 @@ if MODE == "path_with_auth":
         "ratelimit",
         "redis",
     ]
+
     # When running with auth, the following ports are exposed on PATH:
     # 	- Port 6060: serves pprof data
     # 	  Use with pprof like this: `go tool pprof -http=:3333 http://localhost:6060/debug/pprof/goroutine`
     path_port_forwards = ["6060:6060"]
-else:
+
+# Specify the dependencies and port forwards if PATH is running WITHOUT auth.
+if MODE == "path_only":
+    # Run PATH without any dependencies and port 3069 exposed
     path_resource_deps = []
     # When running without auth, the following ports are exposed on PATH:
     # 	- Port 3069: serves relay requests.
@@ -89,8 +100,8 @@ else:
     path_port_forwards = ["3069:3069", "6060:6060"]
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
-# 	1. With Auth.: dependencies on envoy-proxy components, and NO exposed ports
-# 	2. Without Auth.: No dependencies, expose port 3000.
+#   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
+#   2. Without Auth: no dependencies but exposing dedicated por
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -241,9 +252,6 @@ k8s_resource(
     discovery_strategy="selectors-only",
 )
 
-# TODO_MVP(@adshmh): Define and import a custom Grafana dashboard.
-# Use the poktroll Tiltfile as a template:
-# https://github.com/pokt-network/poktroll/blob/12342f016f3238ee7840a85d5056b1fe5ada9767/Tiltfile#L157
 # Import custom grafana dashboards into Kubernetes ConfigMap
 configmap_create("path-dashboards", from_file=listdir("local/grafana-dashboards/"))
 
