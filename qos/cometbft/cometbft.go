@@ -2,7 +2,6 @@ package cometbft
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // QoS struct performs the functionality defined by gateway package's ServiceQoS,
@@ -46,14 +44,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// request body and store it on the request context as a []byte.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 	if req.Method == http.MethodPost {
+		// TODO_IMPROVE(@commoddity): implement JSON-RPC request validation.
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			return requestContextFromInternalError(err), false
-		}
-
-		// Validate the JSON-RPC request body.
-		if err := json.Unmarshal(body, &jsonrpc.Request{}); err != nil {
-			return requestContextFromUserError(err), false
 		}
 
 		// Store the serialized JSONRPC request as a byte slice
