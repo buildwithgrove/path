@@ -34,13 +34,14 @@ type endpointResponse struct {
 type requestContext struct {
 	logger polylog.Logger
 
+	// httpReq is the HTTP request received from the user.
 	httpReq *http.Request
 
 	// CometBFT supports both REST-like and JSON-RPC requests.
-	// This field stores the serialized JSON-RPC request as a byte slice,
-	// if it is present in a JSON-RPC POST request.
+	// This field stores the serialized JSON-RPC request as a
+	// byte slice, if it is present in a JSON-RPC POST request.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
-	jsonrpcReq []byte
+	jsonrpcRequestBz []byte
 
 	endpointStore *EndpointStore
 
@@ -74,9 +75,9 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	if rc.httpReq.URL.Path != "" {
 		payload.Path = rc.httpReq.URL.Path
 	}
-	// If the request is JSON-RPC, set the data.
+	// If the request is JSON-RPC, set the data from the stored []byte.
 	if rc.isJSONRPCRequest() {
-		payload.Data = string(rc.jsonrpcReq)
+		payload.Data = string(rc.jsonrpcRequestBz)
 	}
 	return payload
 }
@@ -161,7 +162,7 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 // This is determined by checking whether the request context contains a serialized JSON-RPC request.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 func (rc *requestContext) isJSONRPCRequest() bool {
-	return len(rc.jsonrpcReq) > 0
+	return len(rc.jsonrpcRequestBz) > 0
 }
 
 func preSelectedEndpoint(

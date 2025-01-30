@@ -42,8 +42,8 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	}
 
 	// CometBFT supports both REST-like and JSON-RPC requests.
-	// If the request is a JSON-RPC POST request,
-	// read the request body and unmarshal it into a JSONRPC request.
+	// If the request is a JSON-RPC POST request, read the JSON-RPC
+	// request body and store it on the request context as a []byte.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 	if req.Method == http.MethodPost {
 		body, err := io.ReadAll(req.Body)
@@ -51,13 +51,13 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 			return requestContextFromInternalError(err), false
 		}
 
-		var jsonrpcReq jsonrpc.Request
-		if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+		// Validate the JSON-RPC request body.
+		if err := json.Unmarshal(body, &jsonrpc.Request{}); err != nil {
 			return requestContextFromUserError(err), false
 		}
 
 		// Store the serialized JSONRPC request as a byte slice
-		requestContext.jsonrpcReq = body
+		requestContext.jsonrpcRequestBz = body
 	}
 
 	return requestContext, true
