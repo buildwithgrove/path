@@ -14,24 +14,18 @@ assignees: ""
 [ ] Configs
 [ ] Documentation
 
+## Summary (Required)
 
-## Overall Feedback (Required)
-
-< 2-5 bullet-points or sentences describing your overall feedback > 
-
-## Sugestions (Optional)
-
-< 2-5 bullet-points or sentences describing any suggestions you have > 
+< 2-5 bullet-points or sentences summarizing why you're opening this issue >
 
 ## What I tried (Optional)
 
-< 2-5 bullet-points, sentences, images or commands describing what you tried  > 
+< 2-5 bullet-points, sentences, images or commands describing what you tried >
 
-## Next steps (Optional)
+## Suggestions & Requests (Optional)
 
-< 2-5 bullet-points, sentences, images or commands describing what you tried  > 
+< 2-5 bullet-points or sentences describing any suggestions or requests you have for our team >
 
 ## n00b questions (Optional)
 
-< 2-5 n00b questions you have but were too afraid to ask > 
-
+< 2-5 n00b questions you have but were too afraid to ask >
