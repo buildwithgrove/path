@@ -43,12 +43,12 @@ type EndpointStoreConfig struct {
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
 	// ServiceState is the current perceived state of the EVM blockchain.
 	*ServiceState
 
-	Config EndpointStoreConfig
+	config EndpointStoreConfig
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
@@ -58,7 +58,7 @@ type EndpointStore struct {
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	logger := es.Logger.With("method", "Select")
+	logger := es.logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
@@ -88,7 +88,7 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	logger := es.Logger.With("method", "filterEndpoints").With("qos_instance", "evm")
+	logger := es.logger.With("method", "filterEndpoints").With("qos_instance", "evm")
 
 	if len(availableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")

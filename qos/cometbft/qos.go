@@ -6,18 +6,20 @@ import (
 
 // NewQoSInstance builds and returns an instance of the CometBFT QoS service.
 func NewQoSInstance(logger polylog.Logger) *QoS {
+	logger = logger.With("qos_instance", "cometbft")
+
 	serviceState := &ServiceState{
-		Logger: logger,
+		logger: logger,
 	}
 
-	cometbftEndpointStore := &EndpointStore{
-		Logger:       logger,
+	cometBFTEndpointStore := &EndpointStore{
+		logger:       logger,
 		ServiceState: serviceState,
 	}
 
 	return &QoS{
-		Logger:        logger,
+		logger:        logger,
 		ServiceState:  serviceState,
-		EndpointStore: cometbftEndpointStore,
+		EndpointStore: cometBFTEndpointStore,
 	}
 }

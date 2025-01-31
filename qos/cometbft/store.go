@@ -16,15 +16,14 @@ import (
 var _ protocol.EndpointSelector = &EndpointStore{}
 
 // EndpointStore maintains QoS data on the set of available endpoints
-// for an CometBFT-based blockchain service.å
-// It performs several tasks, most notable:
-//
-//	1- Endpoint selection based on the quality data available
-//	2- Application of endpoints' observations to update the data on endpoints.
+// for a CometBFT-based blockchain service.
+// It performs several tasks:
+// - Endpoint selection based on the quality data available
+// - Application of endpoints' observations to update the data on endpoints
 type EndpointStore struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
-	// ServiceState is the current perceived state of the CometBFT blockchain.
+	// ServiceState is the current perceived state of the CometBFT blockchain
 	*ServiceState
 
 	endpointsMu sync.RWMutex
@@ -32,13 +31,14 @@ type EndpointStore struct {
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
-// available endpoints are filtered based on their validity first.
+// Available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
+//
 // TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
 // that play identical roles across QoS packages in order to reduce code duplication.
 // For example, the EndpointStore is a great candidate for refactoring.
 func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	logger := es.Logger.With("method", "Select")
+	logger := es.logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
 	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
@@ -49,7 +49,6 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msg("all endpoints failed validation; selecting a random endpoint.")
-
 		randomAvailableEndpoint := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpoint.Addr(), nil
 	}
@@ -63,12 +62,13 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 }
 
-// filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
+// filterEndpoints returns the subset of available endpoints that are valid
+// according to previously processed observations.
 func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	logger := es.Logger.With("method", "filterEndpoints").With("qos_instance", "cometbft")
+	logger := es.logger.With("method", "filterEndpoints", "qos_instance", "cometbft")
 
 	if len(availableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")
@@ -77,11 +77,9 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
 
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
-	// For example: latency rather than making a single selection.
 	var filteredEndpointsAddr []protocol.EndpointAddr
 	for _, availableEndpoint := range availableEndpoints {
 		endpointAddr := availableEndpoint.Addr()
-
 		logger := logger.With("endpoint", endpointAddr)
 		logger.Info().Msg("processing endpoint")
 

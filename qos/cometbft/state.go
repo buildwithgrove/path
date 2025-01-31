@@ -9,12 +9,13 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the CometBFT blockchain based on the endpoints' responses to
+// ServiceState keeps the expected current state of the CometBFT blockchain
+// based on the endpoints' responses to
 // different requests.
 type ServiceState struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
-	stateLock sync.RWMutex
+	serviceStateLock sync.RWMutex
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `/status` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -28,8 +29,8 @@ type ServiceState struct {
 //
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the CometBFT blockchain.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.stateLock.RLock()
-	defer s.stateLock.RUnlock()
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
 
 	// CometBFT does not use a chain ID.
 	if err := endpoint.Validate(""); err != nil {
@@ -46,11 +47,11 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 // UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.stateLock.Lock()
-	defer s.stateLock.Unlock()
+	s.serviceStateLock.Lock()
+	defer s.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		logger := s.Logger.With(
+		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
 		)
@@ -79,7 +80,8 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	return nil
 }
 
-// validateEndpointBlockNumber validates the supplied endpoint against the supplied perceived block number for the CometBFT blockchain.
+// validateEndpointBlockNumber validates the supplied endpoint against the supplied
+// perceived block number for the CometBFT blockchain.
 func validateEndpointBlockNumber(endpoint endpoint, perceivedBlockNumber uint64) error {
 	blockNumber, err := endpoint.GetBlockNumber()
 	if err != nil {

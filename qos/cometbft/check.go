@@ -3,6 +3,8 @@ package cometbft
 import (
 	"net/http"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -13,17 +15,24 @@ import (
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE: skip any checks for which the endpoint already has
-	// a valid (e.g. not expired) quality data point.
+	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
+	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es, endpointAddr, withHealthCheck),
-		getEndpointCheck(es, endpointAddr, withBlockHeightCheck),
+		getEndpointCheck(es.logger, es, endpointAddr, withHealthCheck),
+		getEndpointCheck(es.logger, es, endpointAddr, withStatusCheck),
 	}
 }
 
-func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.EndpointAddr, options ...func(*requestContext)) *requestContext {
+// getEndpointCheck prepares a request context for a specific endpoint check.
+func getEndpointCheck(
+	logger polylog.Logger,
+	endpointStore *EndpointStore,
+	endpointAddr protocol.EndpointAddr,
+	options ...func(*requestContext),
+) *requestContext {
 	requestCtx := requestContext{
+		logger:                  logger,
 		endpointStore:           endpointStore,
 		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
@@ -36,12 +45,14 @@ func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.Endpoi
 	return &requestCtx
 }
 
+// withHealthCheck updates the request context to make a CometBFT GET /health-check request.
 func withHealthCheck(requestCtx *requestContext) {
 	request, _ := http.NewRequest(http.MethodGet, apiPathHealthCheck, nil)
 	requestCtx.httpReq = request
 }
 
-func withBlockHeightCheck(requestCtx *requestContext) {
-	request, _ := http.NewRequest(http.MethodGet, apiPathBlockHeight, nil)
+// withStatusCheck updates the request context to make a CometBFT GET /status request.
+func withStatusCheck(requestCtx *requestContext) {
+	request, _ := http.NewRequest(http.MethodGet, apiPathStatus, nil)
 	requestCtx.httpReq = request
 }

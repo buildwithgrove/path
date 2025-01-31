@@ -175,7 +175,8 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 	app := *session.Application
 
-	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, []byte(payload.Data), payload.Path)
+	payloadBz := []byte(payload.Data)
+	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payload.Path, payloadBz)
 	if err != nil {
 		return nil, err
 	}
@@ -220,9 +221,14 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 	return rc.relayRequestSigner.SignRelayRequest(unsignedRelayReq, app)
 }
 
-// buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, and payload.
-// The returned RelayRequest can be signed and sent to the endpoint to receive the endpoint's response.
-func buildUnsignedRelayRequest(endpoint endpoint, session sessiontypes.Session, payload []byte, path string) (*servicetypes.RelayRequest, error) {
+// buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, path and payload.
+// The returned RelayRequest is intended to be signed and sent to the endpoint to receive the endpoint's response.
+func buildUnsignedRelayRequest(
+	endpoint endpoint,
+	session sessiontypes.Session,
+	path string,
+	payload []byte,
+) (*servicetypes.RelayRequest, error) {
 	// If the path is not empty (ie. for a REST service request), append it to the endpoint's URL
 	url := endpoint.url
 	if path != "" {

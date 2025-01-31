@@ -23,8 +23,8 @@ const (
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE: skip any checks for which the endpoint already has
-	// a valid (e.g. not expired) quality data point.
+	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
+	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
 		getEndpointCheck(es.Logger, endpointAddr, es, withGetHealth),
@@ -33,6 +33,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	}
 }
 
+// getEndpointCheck prepares a request context for a specific endpoint check.
 func getEndpointCheck(
 	logger polylog.Logger,
 	endpointAddr protocol.EndpointAddr,
@@ -40,8 +41,8 @@ func getEndpointCheck(
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		EndpointStore:           endpointStore,
-		Logger:                  logger,
+		logger:                  logger,
+		endpointStore:           endpointStore,
 		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
 	}
@@ -53,10 +54,12 @@ func getEndpointCheck(
 	return &requestCtx
 }
 
+// withGetHealth updates the request context to make a Solana JSON-RPC getHealth request.
 func withGetHealth(requestCtx *requestContext) {
 	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetHealth, methodGetHealth)
 }
 
+// withGetEpochInfo updates the request context to make a Solana JSON-RPC getEpochInfo request.
 func withGetEpochInfo(requestCtx *requestContext) {
 	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetEpochInfo, methodGetEpochInfo)
 }

@@ -12,12 +12,12 @@ import (
 // ServiceState keeps the expected current state of the EVM blockchain based on the endpoints' responses to
 // different requests.
 type ServiceState struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
-	// ChainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
-	ChainID string
+	// chainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+	chainID string
 
-	stateLock sync.RWMutex
+	serviceStateLock sync.RWMutex
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -31,10 +31,10 @@ type ServiceState struct {
 //
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.stateLock.RLock()
-	defer s.stateLock.RUnlock()
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
 
-	if err := endpoint.Validate(s.ChainID); err != nil {
+	if err := endpoint.Validate(s.chainID); err != nil {
 		return err
 	}
 
@@ -48,18 +48,18 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 // UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.stateLock.Lock()
-	defer s.stateLock.Unlock()
+	s.serviceStateLock.Lock()
+	defer s.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		logger := s.Logger.With(
+		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
 		)
 
 		// Do NOT use the endpoint for updating the perceived state of the EVM blockchain if the endpoint is not considered valid.
 		// e.g. an endpoint with an invalid response to `eth_chainId` will not be used to update the perceived block number.
-		if err := endpoint.Validate(s.ChainID); err != nil {
+		if err := endpoint.Validate(s.chainID); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}

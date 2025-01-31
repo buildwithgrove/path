@@ -25,10 +25,9 @@ var _ gateway.QoSService = &QoS{}
 // It contains logic specific to Solana, including request parsing,
 // response building, and endpoint validation/selection.
 type QoS struct {
-	Logger polylog.Logger
-
 	*EndpointStore
-	ServiceState ServiceState
+	*ServiceState
+	logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
@@ -51,10 +50,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// e.g. for a `getTokenAccountBalance` request, ensure there is a single account public key is specified as the `params` object.
 	// https://solana.com/docs/rpc/http/gettokenaccountbalance
 	return &requestContext{
-		Logger: qos.Logger,
+		logger: qos.logger,
 
 		JSONRPCReq:    jsonrpcReq,
-		EndpointStore: qos.EndpointStore,
+		endpointStore: qos.EndpointStore,
 
 		// set isValid to true to signal to the requestContext that the request is considered valid.
 		// The requestContext can be enhanced (see the above TODOs) to e.g. skip sending an invalid request to any endpoints,
@@ -70,10 +69,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		Logger:        qos.Logger,
-		
-		EndpointStore: qos.EndpointStore,
-		
+		logger: qos.logger,
+
+		endpointStore: qos.EndpointStore,
+
 		isValid: true,
 	}, true
 }

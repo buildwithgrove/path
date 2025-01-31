@@ -23,7 +23,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 	endpointObservations := evmObservations.GetEndpointObservations()
 
-	logger := es.Logger.With(
+	logger := es.logger.With(
 		"qos_instance", "evm",
 		"method", "UpdateEndpointsFromObservations",
 	)

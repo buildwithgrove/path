@@ -36,19 +36,19 @@ func responseUnmarshallerHealth(
 	}, nil
 }
 
-// responseToHealth captures the fields expected in a
-// response to an `eth_blockNumber` request.
+// responseToHealth captures a CometBFT-based blockchain's /health endpoint response.
+// Reference: https://docs.cometbft.com/v0.38/rpc/#/Info/health
 type responseToHealth struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
 	// statusCode stores the status code of a response to a `/health` request.
 	healthy bool
 }
 
-// GetObservation returns an observation using an `eth_blockNumber` request's response.
+// GetObservation returns a CometBFT-based /health observation
 // Implements the response interface.
 func (r responseToHealth) GetObservation() qosobservations.CometBFTEndpointObservation {
 	return qosobservations.CometBFTEndpointObservation{
@@ -60,17 +60,21 @@ func (r responseToHealth) GetObservation() qosobservations.CometBFTEndpointObser
 	}
 }
 
+// GetResponsePayload returns the payload for the response to a `/health` request.
+// Implements the response interface.
 func (r responseToHealth) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshalling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
 	}
 	return bz
 }
 
-// CometBFT always returns either a 500 (on error) or 200 (on success).
+// CometBFT response codes:
+// - 200: Success
+// - 500: Error
 // Reference: https://docs.cometbft.com/v0.38/rpc/
 func (r responseToHealth) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {

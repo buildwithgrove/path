@@ -27,7 +27,7 @@ var _ gateway.QoSService = &QoS{}
 type QoS struct {
 	*EndpointStore
 	*ServiceState
-	Logger polylog.Logger
+	logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
@@ -47,7 +47,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// TODO_TECHDEBT(@adshmh): Add JSONRPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
-		logger: qos.Logger,
+		logger: qos.logger,
 
 		jsonrpcReq:    jsonrpcReq,
 		endpointStore: qos.EndpointStore,
@@ -63,7 +63,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		logger:        qos.Logger,
+		logger:        qos.logger,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
 	}, true

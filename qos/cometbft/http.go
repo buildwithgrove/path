@@ -18,17 +18,19 @@ type httpResponse struct {
 	responseStatus  int
 }
 
+// GetPayload returns the payload for the HTTP response.
 func (hr httpResponse) GetPayload() []byte {
 	return hr.responsePayload
 }
 
+// GetHTTPStatusCode returns the HTTP status code for the response.
 func (hr httpResponse) GetHTTPStatusCode() int {
 	return hr.responseStatus
 }
 
-// TODO_IMPROVE: Do we want to support returning the response headers to the caller?
 // GetHTTPHeaders returns the set of headers for the HTTP response.
 func (r httpResponse) GetHTTPHeaders() map[string]string {
+	// TODO_TECHDEBT: Consider adding support for returning the response headers to the caller?
 	// CometBFT only uses the `Content-Type` HTTP header.
 	return httpHeadersApplicationJSON
 }

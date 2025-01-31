@@ -23,7 +23,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 	endpointObservations := cometbftObservations.GetEndpointObservations()
 
-	logger := es.Logger.With(
+	logger := es.logger.With(
 		"qos_instance", "cometbft",
 		"method", "UpdateEndpointsFromObservations",
 	)
