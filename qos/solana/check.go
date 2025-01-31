@@ -1,10 +1,7 @@
 package solana
 
 import (
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -17,33 +14,11 @@ const (
 	idGetBlock
 )
 
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
-
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE: skip any checks for which the endpoint already has
-	// a valid (e.g. not expired) quality data point.
-
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.Logger, endpointAddr, es, withGetHealth),
-		getEndpointCheck(es.Logger, endpointAddr, es, withGetEpochInfo),
-		// TODO_MVP(@adshmh): Add a check for a `getBlock` request
-	}
-}
-
-func getEndpointCheck(
-	logger polylog.Logger,
-	endpointAddr protocol.EndpointAddr,
-	endpointStore *EndpointStore,
-	options ...func(*requestContext),
+func getEndpointCheck(endpointStore *qos.EndpointStore, options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		EndpointStore:           endpointStore,
-		Logger:                  logger,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {
@@ -54,11 +29,11 @@ func getEndpointCheck(
 }
 
 func withGetHealth(requestCtx *requestContext) {
-	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetHealth, methodGetHealth)
+	requestCtx.jsonrpcReq = buildJSONRPCReq(idGetHealth, methodGetHealth)
 }
 
 func withGetEpochInfo(requestCtx *requestContext) {
-	requestCtx.JSONRPCReq = buildJSONRPCReq(idGetEpochInfo, methodGetEpochInfo)
+	requestCtx.jsonrpcReq = buildJSONRPCReq(idGetEpochInfo, methodGetEpochInfo)
 }
 
 func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {

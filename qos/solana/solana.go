@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,6 +12,8 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -26,9 +29,8 @@ var _ gateway.QoSService = &QoS{}
 // response building, and endpoint validation/selection.
 type QoS struct {
 	Logger polylog.Logger
-
-	*EndpointStore
-	ServiceState ServiceState
+	*qos.EndpointStore
+	*ServiceState
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
@@ -51,10 +53,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	// e.g. for a `getTokenAccountBalance` request, ensure there is a single account public key is specified as the `params` object.
 	// https://solana.com/docs/rpc/http/gettokenaccountbalance
 	return &requestContext{
-		Logger: qos.Logger,
+		logger: qos.Logger,
 
-		JSONRPCReq:    jsonrpcReq,
-		EndpointStore: qos.EndpointStore,
+		jsonrpcReq:    jsonrpcReq,
+		endpointStore: qos.EndpointStore,
 
 		// set isValid to true to signal to the requestContext that the request is considered valid.
 		// The requestContext can be enhanced (see the above TODOs) to e.g. skip sending an invalid request to any endpoints,
@@ -70,11 +72,9 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		Logger:        qos.Logger,
-		
-		EndpointStore: qos.EndpointStore,
-		
-		isValid: true,
+		logger:        qos.Logger,
+		endpointStore: qos.EndpointStore,
+		isValid:       true,
 	}, true
 }
 
@@ -85,13 +85,70 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return errors.New("ApplyObservations: received nil observations")
 	}
 
+	// Get the Solana observations from the observations object.
 	solanaObservations := observations.GetSolana()
 	if solanaObservations == nil {
 		return errors.New("ApplyObservations: received nil Solana observation")
 	}
 
-	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(solanaObservations)
+	// Apply the Solana observations to the endpoints.
+	updatedEndpoints := q.applySolanaObservations(solanaObservations.GetEndpointObservations())
 
-	// update the perceived current state of the blockchain.
+	// Update the endpoint store with the new endpoints.
+	q.EndpointStore.UpdateEndpointsFromObservations(updatedEndpoints)
+
+	// Update the service state with the new endpoints.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+}
+
+// applySolanaObservations applies observations to the endpoints and returns the updated endpoints.
+// This method is used to initialize the endpoint store and service state when first starting the PATH hydrator.
+func (q *QoS) applySolanaObservations(solanaObservations []*qosobservations.SolanaEndpointObservation) map[protocol.EndpointAddr]qos.Endpoint {
+	logger := q.Logger.With(
+		"qos_instance", "solana",
+		"method", "applySolanaObservations",
+	)
+	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(solanaObservations)))
+
+	storedEndpoints := q.EndpointStore.GetEndpoints()
+	updatedEndpoints := make(map[protocol.EndpointAddr]qos.Endpoint)
+
+	for _, observation := range solanaObservations {
+		if observation == nil {
+			logger.Info().Msg("Solana EndpointStore received a nil observation. Skipping...")
+			continue
+		}
+
+		endpointAddr := protocol.EndpointAddr(observation.EndpointAddr)
+
+		logger := logger.With("endpoint", endpointAddr)
+		logger.Info().Msg("processing observation for endpoint.")
+
+		// Initialize the Solana endpoint as zero-value.
+		var solanaEndpoint endpoint
+
+		// If the endpoint is already stored, use it to initialize the endpoint.
+		if storedEndpoint, found := storedEndpoints[endpointAddr]; found {
+			storedEndpointCast, ok := storedEndpoint.(endpoint)
+			if !ok {
+				logger.Warn().Msg("endpoint was not of type solana.endpoint. Skipping...")
+				continue
+			}
+
+			solanaEndpoint = storedEndpointCast
+		}
+
+		// Apply the observation to the endpoint, whether it is already stored or not.
+		if isMutated := solanaEndpoint.ApplyObservation(observation); !isMutated {
+			// If the observation did not mutate the endpoint, don't update the stored endpoint entry.
+			logger.Warn().Msg("endpoint was not mutated by observations. Skipping...")
+			continue
+		}
+
+		// If the observation mutated the endpoint, update the stored endpoint entry.
+		// A zero-value endpoint will always be mutated by an observation and so will be stored.
+		updatedEndpoints[endpointAddr] = solanaEndpoint
+	}
+
+	return updatedEndpoints
 }

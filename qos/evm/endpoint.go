@@ -75,8 +75,8 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 	return false
 }
 
-// GetBlockNumber returns the parsed block number value for the endpoint.
-func (e endpoint) GetBlockNumber() (uint64, error) {
+// getBlockNumber returns the parsed block number value for the endpoint.
+func (e endpoint) getBlockNumber() (uint64, error) {
 	if e.parsedBlockNumberResponse == nil {
 		return 0, errNoBlockNumberObs
 	}

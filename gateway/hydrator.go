@@ -162,13 +162,17 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
 				// Retrieve all the required QoS checks for the endpoint.
-				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
+				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks()
 				if len(requiredQoSChecks) == 0 {
 					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
 					continue
 				}
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
+					// Set the pre-selected endpoint for the service request context.
+					// This is used to ensure the hydrator checks the correct endpoint.
+					serviceRequestCtx.SetPreSelectedEndpoint(endpoint.Addr())
+
 					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 					// Mark the request as Synthetic using the following steps:
 					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.

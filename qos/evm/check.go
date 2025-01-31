@@ -1,8 +1,7 @@
 package evm
 
 import (
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -14,27 +13,10 @@ const (
 	idBlockNumberCheck
 )
 
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
-
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE: skip any checks for which the endpoint already has
-	// a valid (e.g. not expired) quality data point.
-
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es, endpointAddr, withBlockHeightCheck),
-		// TODO_FUTURE: add an archival endpoint check.
-	}
-}
-
-func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.EndpointAddr, options ...func(*requestContext)) *requestContext {
+func getEndpointCheck(endpointStore *qos.EndpointStore, options ...func(*requestContext)) *requestContext {
 	requestCtx := requestContext{
-		endpointStore:           endpointStore,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {

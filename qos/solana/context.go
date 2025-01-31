@@ -10,6 +10,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -44,9 +45,10 @@ type endpointResponse struct {
 // requestContext provides the functionality required
 // to support QoS for a Solana blockchain service.
 type requestContext struct {
-	JSONRPCReq    jsonrpc.Request
-	EndpointStore *EndpointStore
-	Logger        polylog.Logger
+	logger polylog.Logger
+
+	jsonrpcReq    jsonrpc.Request
+	endpointStore *qos.EndpointStore
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
@@ -72,7 +74,7 @@ type requestContext struct {
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
 // can handle all valid service requests.
 func (rc requestContext) GetServicePayload() protocol.Payload {
-	reqBz, err := json.Marshal(rc.JSONRPCReq)
+	reqBz, err := json.Marshal(rc.jsonrpcReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
@@ -100,7 +102,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.Logger, rc.JSONRPCReq, responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
 
 	// TODO_MVP(@adshmh): Drop the unmarshalling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
@@ -129,7 +131,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		// have been reported to the request context.
 		// intentionally ignoring the error here, since unmarshallResponse
 		// is being called with an empty endpoint response payload.
-		response, _ = unmarshalResponse(rc.Logger, rc.JSONRPCReq, []byte(""))
+		response, _ = unmarshalResponse(rc.logger, rc.jsonrpcReq, []byte(""))
 	}
 
 	return httpResponse{
@@ -172,7 +174,14 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
 
-	return rc.EndpointStore.Select(allEndpoints)
+	return rc.endpointStore.Select(allEndpoints)
+}
+
+// SetPreSelectedEndpoint sets the pre-selected endpoint for the request context.
+// This is to allow the hydrator to enforce sending requests to a specific endpoint
+// when performing Quality of Service checks against all endpoints for a service.
+func (rc *requestContext) SetPreSelectedEndpoint(endpointAddr protocol.EndpointAddr) {
+	rc.preSelectedEndpointAddr = endpointAddr
 }
 
 func preSelectedEndpoint(

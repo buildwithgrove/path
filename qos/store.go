@@ -1,4 +1,4 @@
-package cometbft
+package qos
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -15,8 +16,12 @@ import (
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &EndpointStore{}
 
-// EndpointStore maintains QoS data on the set of available endpoints
-// for an CometBFT-based blockchain service.å
+// EndpointStore provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+
+// EndpointStore maintains QoS data on the set of available endpoints for any service
 // It performs several tasks, most notable:
 //
 //	1- Endpoint selection based on the quality data available
@@ -24,19 +29,33 @@ var _ protocol.EndpointSelector = &EndpointStore{}
 type EndpointStore struct {
 	Logger polylog.Logger
 
-	// ServiceState is the current perceived state of the CometBFT blockchain.
-	*ServiceState
+	// ServiceState is the current perceived state of the
+	// service and varies between service QoS implementations.
+	ServiceState ServiceState
 
+	// RequiredQualityChecks is the set of quality checks performed by the Hydrator
+	// that must be satisfied for an endpoint to be considered valid.
+	// This slice is initialized by the service-specific implementation of NewQoSInstance.
+	RequiredQualityChecks []gateway.RequestQoSContext
+
+	// endpoints is the set of currently stored endpoints for a given service and
+	// is set by applying Hydrator observations to the to a service's available
+	// endpoints in each service QoS implementation's ApplyObservations method.
+	endpoints   map[protocol.EndpointAddr]Endpoint
 	endpointsMu sync.RWMutex
-	endpoints   map[protocol.EndpointAddr]endpoint
 }
+
+// ServiceState is the current perceived state of the service and
+type ServiceState interface {
+	ValidateEndpoint(endpoint Endpoint) error
+}
+
+// Endpoint is the interface that must be satisfied by any endpoint for a given service.
+type Endpoint interface{}
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
-// For example, the EndpointStore is a great candidate for refactoring.
 func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	logger := es.Logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
@@ -61,6 +80,24 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
+}
+
+// GetEndpoints returns all currently stored endpoints.
+func (es *EndpointStore) GetEndpoints() map[protocol.EndpointAddr]Endpoint {
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
+
+	return es.endpoints
+}
+
+// UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
+// The process of applying observations to the endpoints is handled by the service-specific implementation of ApplyObservations as structs provided by the `observation` package are service-specific.
+func (es *EndpointStore) UpdateEndpointsFromObservations(updatedEndpoints map[protocol.EndpointAddr]Endpoint,
+) {
+	es.endpointsMu.Lock()
+	defer es.endpointsMu.Unlock()
+
+	es.endpoints = updatedEndpoints
 }
 
 // filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
@@ -101,4 +138,8 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 	}
 
 	return filteredEndpointsAddr, nil
+}
+
+func (es *EndpointStore) GetRequiredQualityChecks() []gateway.RequestQoSContext {
+	return es.RequiredQualityChecks
 }

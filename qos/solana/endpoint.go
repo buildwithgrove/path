@@ -39,7 +39,7 @@ type endpoint struct {
 
 // ValidateBasic returns an error if the endpoint is invalid regardless of the state of the service.
 // e.g. an endpoint without an observation of its response to a `GetHealth` request is not considered valid.
-func (e endpoint) ValidateBasic() error {
+func (e endpoint) Validate(_ string) error {
 	switch {
 	case e.SolanaGetHealthResponse == nil:
 		return errNoGetHealthObs

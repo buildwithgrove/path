@@ -57,6 +57,9 @@ type RequestQoSContext interface {
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
 	GetEndpointSelector() protocol.EndpointSelector
+
+	// SetPreSelectedEndpoint sets the pre-selected endpoint for the context.
+	SetPreSelectedEndpoint(protocol.EndpointAddr)
 }
 
 // QoSContextBuilder builds the QoS context required for handling
@@ -87,7 +90,7 @@ type QoSEndpointCheckGenerator interface {
 	// make a decision based on the specific endpoint.
 	// e.g. An EVM-based blockchain service QoS may decide to skip quering an endpoint on
 	// its current block height if it has already failed the chain ID check.
-	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
+	GetRequiredQualityChecks() []RequestQoSContext
 }
 
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.

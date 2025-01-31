@@ -10,6 +10,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -48,7 +49,7 @@ type requestContext struct {
 
 	// TODO_TECHDEBT: support batch JSONRPC requests
 	jsonrpcReq    jsonrpc.Request
-	endpointStore *EndpointStore
+	endpointStore *qos.EndpointStore
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
@@ -175,6 +176,13 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 	}
 
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// SetPreSelectedEndpoint sets the pre-selected endpoint for the request context.
+// This is to allow the hydrator to enforce sending requests to a specific endpoint
+// when performing Quality of Service checks against all endpoints for a service.
+func (rc *requestContext) SetPreSelectedEndpoint(endpointAddr protocol.EndpointAddr) {
+	rc.preSelectedEndpointAddr = endpointAddr
 }
 
 func preSelectedEndpoint(

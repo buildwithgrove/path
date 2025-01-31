@@ -96,3 +96,8 @@ func (rc *requestContext) GetObservations() qosobservations.Observations {
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return RandomEndpointSelector{}
 }
+
+// SetPreSelectedEndpoint is a no-op for the NoOp QoS service.
+func (rc *requestContext) SetPreSelectedEndpoint(_ protocol.EndpointAddr) {
+	// NoOp QoS by definition does not use the hydrator so this method is a no-op.
+}
