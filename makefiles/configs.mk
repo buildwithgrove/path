@@ -26,3 +26,15 @@ define warn_file_exists
 		exit 1; \
 	fi
 endef
+
+
+.PHONY: clear_all_local_configs
+clear_all_local_configs: ## Clear all local configs
+	rm -f ./bin/config/.config.yaml
+	rm -f ./config/.config.yaml
+	rm -f ./e2e/.shannon.config.yaml
+	rm -f ./e2e/.morse.config.yaml
+	rm -f ./local/path/config/.config.yaml
+	@echo "################################################################"
+	@echo "Cleared all local configs"
+	@echo "################################################################"

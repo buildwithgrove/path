@@ -23,6 +23,8 @@ func getShannonFullNode(logger polylog.Logger, config shannon.FullNodeConfig) (s
 		return lazyFullNode, nil
 	}
 
+	logger.Warn().Msgf("Invalid Shannon full node config: %v", config)
+
 	// TODO_MVP(@adshmh): add the required logic to initialize a caching full node once it is implemented.
 	return nil, fmt.Errorf("LazyMode is the only supported mode.")
 }
