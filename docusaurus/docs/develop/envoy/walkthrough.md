@@ -22,9 +22,9 @@ description: High-level architecture overview and detailed walkthrough
   - [Envoy HTTP Filters](#envoy-http-filters)
   - [Request Lifecycle](#request-lifecycle)
 - [Service ID Specification](#service-id-specification)
-  - [Allowed Services File](#allowed-services-file)
   - [Target Service ID Header](#target-service-id-header)
   - [URL Subdomain](#url-subdomain)
+  - [Service ID Aliases](#service-id-aliases)
 - [Specifying the Gateway Endpoint ID](#specifying-the-gateway-endpoint-id)
   - [URL Path Endpoint ID Extractor](#url-path-endpoint-id-extractor)
   - [Header Endpoint ID Extractor](#header-endpoint-id-extractor)
@@ -213,27 +213,6 @@ There are two methods for specifying this header in the request:
 1. [Target Service ID Header](#target-service-id-header) (_e.g. -H "target-service-id: anvil"_)
 2. [URL Subdomain](#url-subdomain) (_e.g. http://anvil.localhost:3070/v1_)
 
-### Allowed Services File
-
-The file `local/path/envoy/.allowed-services.lua` defines the mapping of service IDs to the service IDs used by the PATH service.
-
-All service IDs (and optional service aliases) used by the PATH service must be defined in this file.
-
-:::info `.allowed-services.lua` format
-
-```lua
-return {
-  -- 1. Shannon Service IDs
-  ["anvil"] = "anvil", -- Anvil (Authoritative ID)
-
-  -- 2. Morse Service IDs
-  ["F000"] = "F000",   -- Pocket (Authoritative ID)
-  ["pocket"] = "F000", -- Pocket (Alias)
-}
-```
-
-:::
-
 ### Target Service ID Header
 
 The service ID (or a configured alias) may be specified in the `target-service-id` header.
@@ -266,6 +245,14 @@ curl http://anvil.localhost:3070/v1 \
   -H "endpoint-id: endpoint_3_no_auth" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
+
+### Service ID Aliases
+
+The Auth Server config allows optional aliasing of service IDs to make for human-friendly specification of the target service.
+
+For example, allowing the user to pass in `eth` instead of `F00C` in either the `target-service-id` header or the URL subdomain:
+
+- `eth` -> `F00C`
 
 :::
 

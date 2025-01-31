@@ -134,11 +134,6 @@ if MODE == "path_with_auth":
         watch=True,
     )
     configmap_create(
-        "allowed-services",
-        from_file="./local/path/envoy/.allowed-services.lua",
-        watch=True,
-    )
-    configmap_create(
         "gateway-endpoints",
         from_file="./local/path/envoy/.gateway-endpoints.yaml",
         watch=True,

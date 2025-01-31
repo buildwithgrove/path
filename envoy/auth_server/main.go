@@ -80,6 +80,9 @@ func main() {
 		APIKeyAuthorizer:    &auth.APIKeyAuthorizer{},
 		JWTAuthorizer:       &auth.JWTAuthorizer{},
 		EndpointIDExtractor: endpointIDExtractor,
+		ServiceIDExtractor: &auth.ServiceIDExtractor{
+			ServiceAliases: config.ServiceAliases,
+		},
 	}
 
 	// Create a new gRPC server for handling auth requests from Envoy

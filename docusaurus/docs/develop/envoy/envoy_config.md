@@ -13,22 +13,21 @@ description: Envoy configuration details
 
 This document describes the configuration options for PATH's Envoy Proxy which is responsible for:
 
-1. Defining the set of allowed services
-2. Authorizing incoming requests
-3. Rate limiting
+1. Authorizing incoming requests
+2. Rate limiting
+3. [Optional] Aliases for service IDs
 
 ### tl;dr Just show me the config files <!-- omit in toc -->
 
-There are a total of four files used to configure Envoy Proxy in PATH:
+There are a total of three files used to configure Envoy Proxy in PATH:
 
-1. `.allowed-services.lua` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/allowed-services.template.lua))
-2. `.envoy.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/envoy.template.yaml))
-3. `.ratelimit.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml))
-4. `.gateway-endpoints.yaml` ([template example](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml))
+1. `.envoy.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/envoy.template.yaml))
+2. `.ratelimit.yaml` ([template example](https://github.com/buildwithgrove/path/blob/main/envoy/ratelimit.yaml))
+3. `.gateway-endpoints.yaml` ([template example](https://github.com/buildwithgrove/path-auth-data-server/blob/main/yaml/testdata/gateway-endpoints.example.yaml))
 
 :::tip
 
-While **four config** files may seem like a lot, the default templates for **files 1 through 3** should be sufficient for most use cases.
+While **three config** files may seem like a lot, the default templates for **files 1 through 3** should be sufficient for most use cases.
 
 For most use cases, only the `.gateway-endpoints.yaml` file will need to be modified.
 
@@ -45,15 +44,11 @@ The PATH gateway is configured with its own set of configuration files.
 ## Table of Contents <!-- omit in toc -->
 
 - [Initialization of configuration files](#initialization-of-configuration-files)
-- [1. Allowed Services - `.allowed-services.lua`](#1-allowed-services---allowed-serviceslua)
-  - [Terminology](#terminology)
-  - [Allowed Services Functionality](#allowed-services-functionality)
-  - [Allowed Services File Format](#allowed-services-file-format)
-- [2. Envoy Proxy Configuration - `.envoy.yaml`](#2-envoy-proxy-configuration---envoyyaml)
-- [3. Ratelimit Configuration - `.ratelimit.yaml`](#3-ratelimit-configuration---ratelimityaml)
+- [1. Envoy Proxy Configuration - `.envoy.yaml`](#1-envoy-proxy-configuration---envoyyaml)
+- [2. Ratelimit Configuration - `.ratelimit.yaml`](#2-ratelimit-configuration---ratelimityaml)
   - [Ratelimit File Format](#ratelimit-file-format)
   - [Ratelimit Customizations](#ratelimit-customizations)
-- [4. Gateway Endpoints Data - `.gateway-endpoints.yaml`](#4-gateway-endpoints-data---gateway-endpointsyaml)
+- [3. Gateway Endpoints Data - `.gateway-endpoints.yaml`](#3-gateway-endpoints-data---gateway-endpointsyaml)
   - [Gateway Endpoint Functionality](#gateway-endpoint-functionality)
   - [Gateway Endpoint File Format](#gateway-endpoint-file-format)
 
@@ -67,10 +62,9 @@ make init_envoy
 
 This will generate the following files in the `local/path/envoy` directory:
 
-1. `.allowed-services.lua`
-2. `.envoy.yaml`
-3. `.ratelimit.yaml`
-4. `.gateway-endpoints.yaml`
+1. `.envoy.yaml`
+2. `.ratelimit.yaml`
+3. `.gateway-endpoints.yaml`
 
 :::note
 
@@ -79,53 +73,7 @@ each PATH instance and may contain sensitive information.
 
 :::
 
-## 1. Allowed Services - `.allowed-services.lua`
-
-The `.allowed-services.lua` file is used to define the allowed services for the Envoy Proxy.
-
-Once created in `local/path/envoy`, the `.allowed-services.lua` file is mounted as a
-file in the Envoy Proxy container at `/etc/envoy/.allowed-services.lua`.
-
-### Terminology
-
-- **Authoritative ID**: The service ID that that PATH uses to identify a service.
-- **Alias**: A string that resolves to a service ID, useful for creating human-readable subdomains for services.
-
-The **key** in the config file may either be the **authoritative service ID** or an **alias**.
-
-The **value** in the config file must be the **authoritative service ID**.
-
-### Allowed Services Functionality
-
-The Envoy Proxy's Lua filter will forward requests to PATH with the `authoritative ID` set in the `target-service-id` header.
-
-For more information, see the [Service ID Specification section of the Envoy Proxy documentation](../envoy/walkthrough.md#service-id-specification).
-
-:::warning
-
-All service IDs allowed by the PATH instance must be defined in the `.allowed-services.lua` file.
-
-**Requests for services not defined in this file will be rejected.**
-
-:::
-
-### Allowed Services File Format
-
-Below is the expect file format for `.allowed-services.lua`.
-You can find a template file [here](https://github.com/buildwithgrove/path/tree/main/envoy/allowed-services.template.lua).
-
-```lua
-return {
-  -- 1. Shannon Service IDs
-  ["anvil"] = "anvil", -- Anvil (Authoritative ID)
-
-  -- 2. Morse Service IDs
-  ["F000"] = "F000",   -- Pocket (Authoritative ID)
-  ["pocket"] = "F000", -- Pocket (Alias)
-}
-```
-
-## 2. Envoy Proxy Configuration - `.envoy.yaml`
+## 1. Envoy Proxy Configuration - `.envoy.yaml`
 
 The `.envoy.yaml` file is used to configure the Envoy Proxy.
 
@@ -141,7 +89,7 @@ Once configured using the prompts in the `make init_envoy` target, the `.envoy.y
 
 :::
 
-## 3. Ratelimit Configuration - `.ratelimit.yaml`
+## 2. Ratelimit Configuration - `.ratelimit.yaml`
 
 The `.ratelimit.yaml` file is used to configure the Ratelimit service.
 
@@ -177,7 +125,7 @@ To add new throughput limits, add a new descriptor array item under the `descrip
 
 For more information on Rate Limit descriptors, see the [documentation in the Envoy Rate Limit repository](https://github.com/envoyproxy/ratelimit?tab=readme-ov-file#definitions).
 
-## 4. Gateway Endpoints Data - `.gateway-endpoints.yaml`
+## 3. Gateway Endpoints Data - `.gateway-endpoints.yaml`
 
 A `GatewayEndpoint` is how PATH defines a single endpoint that is authorized to use the PATH service.
 

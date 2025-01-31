@@ -54,6 +54,9 @@ type AuthHandler struct {
 
 	// The endpoint ID extractor to be used for the request
 	EndpointIDExtractor EndpointIDExtractor
+
+	// The service ID extractor to be used for the request
+	ServiceIDExtractor *ServiceIDExtractor
 }
 
 // Check satisfies the implementation of the Envoy External Authorization gRPC service.
@@ -85,6 +88,16 @@ func (a *AuthHandler) Check(
 		return getDeniedCheckResponse("headers not found", envoy_type.StatusCode_BadRequest), nil
 	}
 
+	// Get the request host
+	host := req.GetHost()
+
+	// Extract the service ID from the request
+	serviceID, err := a.ServiceIDExtractor.extractServiceID(headers, host)
+	if err != nil {
+		a.Logger.Info().Err(err).Msg("unable to extract service ID from request")
+		return getDeniedCheckResponse(err.Error(), envoy_type.StatusCode_BadRequest), nil
+	}
+
 	// Extract the endpoint ID from the request
 	// It may be extracted from the URL path or the headers
 	endpointID, err := a.EndpointIDExtractor.extractGatewayEndpointID(req)
@@ -108,7 +121,7 @@ func (a *AuthHandler) Check(
 
 	// Add endpoint ID and rate limiting values to the headers
 	// to be passed upstream along the filter chain to the rate limiter.
-	httpHeaders := a.getHTTPHeaders(gatewayEndpoint)
+	httpHeaders := a.getHTTPHeaders(gatewayEndpoint, serviceID)
 
 	// Return a valid response with the HTTP headers set
 	return getOKCheckResponse(httpHeaders), nil
@@ -142,10 +155,17 @@ func (a *AuthHandler) authGatewayEndpoint(headers map[string]string, gatewayEndp
 }
 
 // getHTTPHeaders sets all HTTP headers required by the PATH services on the request being forwarded
-func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint) []*envoy_core.HeaderValueOption {
+func (a *AuthHandler) getHTTPHeaders(gatewayEndpoint *proto.GatewayEndpoint, serviceID string) []*envoy_core.HeaderValueOption {
 	// Set endpoint ID header on all requests
 	headers := []*envoy_core.HeaderValueOption{
-		{
+		{ // Set the service ID header
+			Header: &envoy_core.HeaderValue{
+				Key:   reqHeaderServiceID,
+				Value: serviceID,
+			},
+			AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+		},
+		{ // Set the endpoint ID header
 			Header: &envoy_core.HeaderValue{
 				Key:   reqHeaderEndpointID,
 				Value: gatewayEndpoint.GetEndpointId(),

@@ -45,6 +45,8 @@ type (
 		// - URLPath: Extracts the endpoint ID from the URL path.
 		// - Header: Extracts the endpoint ID from the request header.
 		EndpointIDExtractorType auth.EndpointIDExtractorType `yaml:"endpoint_id_extractor_type"`
+		// ServiceAliases is a map of service IDs to their aliases.
+		ServiceAliases map[string]string `yaml:"service_aliases"`
 		// Port is the port that the auth server will listen on.
 		Port int `yaml:"port"`
 	}

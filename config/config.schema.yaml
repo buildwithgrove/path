@@ -260,6 +260,13 @@ properties:
         description: "Type of endpoint ID extractor."
         type: string
         enum: ["url_path", "header"]
+      service_aliases:
+        description: "Map of service IDs to their aliases."
+        type: object
+        additionalProperties: false
+        patternProperties:
+          "^[a-zA-Z0-9_-]+$":
+            type: string
       port:
         description: "Port number for the auth server."
         type: integer

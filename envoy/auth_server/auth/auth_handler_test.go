@@ -18,6 +18,12 @@ import (
 )
 
 func Test_Check(t *testing.T) {
+	serviceIDExtractor := &ServiceIDExtractor{
+		ServiceAliases: map[string]string{
+			"eth": "F00C",
+		},
+	}
+
 	tests := []struct {
 		name                string
 		checkReq            *envoy_auth.CheckRequest
@@ -36,6 +42,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -48,6 +55,10 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_free"}},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitEndpointID, Value: "endpoint_free"}},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderRateLimitThroughput, Value: "30"}},
@@ -87,6 +98,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|frodo_baggins",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -99,6 +111,10 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_unlimited"}},
 						},
 					},
@@ -133,6 +149,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderAPIKey: "api_key_good",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -145,6 +162,10 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "api_key_endpoint"}},
 						},
 					},
@@ -173,6 +194,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|yennefer_of_vengerberg",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -185,6 +207,10 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "jwt_endpoint"}},
 						},
 					},
@@ -215,6 +241,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -227,6 +254,10 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "public_endpoint"}},
 						},
 					},
@@ -253,6 +284,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderEndpointID: "endpoint_id_from_header",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -265,6 +297,54 @@ func Test_Check(t *testing.T) {
 				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
 					OkResponse: &envoy_auth.OkHttpResponse{
 						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
+							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_id_from_header"}},
+						},
+					},
+				},
+			},
+			endpointIDExtractor: &HeaderExtractor{},
+			endpointID:          "endpoint_id_from_header",
+			mockEndpointReturn: &proto.GatewayEndpoint{
+				EndpointId: "endpoint_id_from_header",
+				Auth: &proto.Auth{
+					AuthType: &proto.Auth_NoAuth{
+						NoAuth: &proto.NoAuth{},
+					},
+				},
+			},
+		},
+		{
+			name: "should return ok check response if service ID is passed via header",
+			checkReq: &envoy_auth.CheckRequest{
+				Attributes: &envoy_auth.AttributeContext{
+					Request: &envoy_auth.AttributeContext_Request{
+						Http: &envoy_auth.AttributeContext_HttpRequest{
+							Path: "/v1",
+							Headers: map[string]string{
+								reqHeaderServiceID:  "eth",
+								reqHeaderEndpointID: "endpoint_id_from_header",
+							},
+							Host: "example.com",
+						},
+					},
+				},
+			},
+			expectedResp: &envoy_auth.CheckResponse{
+				Status: &status.Status{
+					Code:    int32(codes.OK),
+					Message: "ok",
+				},
+				HttpResponse: &envoy_auth.CheckResponse_OkResponse{
+					OkResponse: &envoy_auth.OkHttpResponse{
+						Headers: []*envoy_core.HeaderValueOption{
+							{
+								Header:       &envoy_core.HeaderValue{Key: reqHeaderServiceID, Value: "F00C"},
+								AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+							},
 							{Header: &envoy_core.HeaderValue{Key: reqHeaderEndpointID, Value: "endpoint_id_from_header"}},
 						},
 					},
@@ -291,6 +371,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|ellen_ripley",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -323,6 +404,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderAPIKey: "api_key_123",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -364,6 +446,7 @@ func Test_Check(t *testing.T) {
 							Headers: map[string]string{
 								reqHeaderJWTUserID: "auth0|ulfric_stormcloak",
 							},
+							Host: "eth.example.com",
 						},
 					},
 				},
@@ -418,6 +501,7 @@ func Test_Check(t *testing.T) {
 				APIKeyAuthorizer:    &APIKeyAuthorizer{},
 				JWTAuthorizer:       &JWTAuthorizer{},
 				EndpointIDExtractor: test.endpointIDExtractor,
+				ServiceIDExtractor:  serviceIDExtractor,
 			}
 
 			resp, err := authHandler.Check(context.Background(), test.checkReq)

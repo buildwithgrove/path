@@ -23,18 +23,12 @@ spec:
             - name: envoy-config
               mountPath: /etc/envoy/.envoy.yaml
               subPath: .envoy.yaml
-            - name: allowed-services
-              mountPath: /etc/envoy/.allowed-services.lua
-              subPath: .allowed-services.lua
           ports:
             - containerPort: 3070
       volumes:
         - name: envoy-config
           configMap:
             name: envoy-config
-        - name: allowed-services
-          configMap:
-            name: allowed-services
 ---
 apiVersion: v1
 kind: Service

@@ -22,7 +22,10 @@ func Test_LoadAuthServerConfigFromYAML(t *testing.T) {
 				GRPCHostPort:               "path-auth-data-server:50051",
 				GRPCUseInsecureCredentials: true,
 				EndpointIDExtractorType:    defaultEndpointIDExtractorType,
-				Port:                       defaultPort,
+				ServiceAliases: map[string]string{
+					"eth": "F00C",
+				},
+				Port: defaultPort,
 			},
 			wantErr: false,
 		},

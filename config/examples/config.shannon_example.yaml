@@ -78,6 +78,12 @@ auth_server_config:
   # Default is "url_path" if not set.
   endpoint_id_extractor_type: url_path
 
+  # [OPTIONAL] A map of service aliases to their corresponding service IDs.
+  # This is used to map aliases to their corresponding service IDs.
+  # Example: "eth": "F00C"
+  service_aliases:
+    eth: F00C
+
 # Optional logger configuration
 logger_config:
   # Valid values are: debug, info, warn, error
