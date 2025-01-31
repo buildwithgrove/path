@@ -15,10 +15,17 @@ import "github.com/buildwithgrove/path/protocol"
 type ServiceQoSType string
 
 const (
-	ServiceIDEVM      ServiceQoSType = "evm"      // ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
-	ServiceIDSolana   ServiceQoSType = "solana"   // ServiceIDSolana represents the Solana blockchain service type.
-	ServiceIDPOKT     ServiceQoSType = "pokt"     // ServiceIDPOKT represents the POKT blockchain service type.
-	ServiceIDCometBFT ServiceQoSType = "cometbft" // ServiceIDCometBFT represents the CometBFT blockchain service type.
+	// ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
+	ServiceIDEVM ServiceQoSType = "evm"
+
+	// ServiceIDSolana represents the Solana blockchain service type.
+	ServiceIDSolana ServiceQoSType = "solana"
+
+	// ServiceIDPOKT represents the POKT blockchain service type.
+	ServiceIDPOKT ServiceQoSType = "pokt"
+
+	// ServiceIDCometBFT represents the CometBFT blockchain service type.
+	ServiceIDCometBFT ServiceQoSType = "cometbft"
 )
 
 // TODO_MVP(@commoddity): figure out what this should be longer term.
