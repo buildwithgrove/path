@@ -6,6 +6,7 @@ import (
 	"github.com/buildwithgrove/path/observation"
 )
 
+// See the metrics initialization below for details. 
 const (
 	pathProcess = "path"
 
@@ -21,9 +22,10 @@ func init() {
 }
 
 var (
-	// relaysTotal is a Counter metric for requests processed by a PATH instance.
-	// It increments to track service requests and is labeled by 'service_id' and 'request_type' (organic or synthetic),
-	// essential for monitoring load and traffic on different PATH instances and services.
+	// relaysTotal is a counter tracking processed requests per PATH instance.
+	// It increments on each service request with labels:
+	//   - service_id: Identifies the service
+	//   - request_type: "organic" or "synthetic"
 	//
 	// Usage:
 	// - Monitor total request load.
@@ -37,31 +39,29 @@ var (
 		[]string{"service_id", "request_type"},
 	)
 
-	// relaysDurationSeconds observes request durations in the gateway.
-	// This histogram, labeled by 'service_id', measures response times,
-	// vital for performance analysis under different loads.
-	//
-	// Buckets:
-	// - 0.1s to 15s range, capturing response times from very fast to upper limit.
+	// relaysDurationSeconds measures request processing duration with the service_id label.
+	// Histogram buckets from 0.1s to 15s capture performance from fast responses to timeouts.
 	//
 	// Usage:
 	// - Analyze typical response times and long-tail latency issues.
 	// - Compare performance across services.
+	// - Compare performance under different loads.
 	relaysDurationSeconds = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
 			Name:      relayDurationSeconds,
-			Help:      "Histogram of request durations for performance analysis.",
+			Help:      "Histogram of request processing time (duration) in seconds,
 			Buckets:   []float64{0.1, 0.5, 1, 2, 5, 15},
 		},
 		[]string{"service_id"},
 	)
 
-	// relayResponseSizeBytes is a histogram metric for observing response size distribution.
-	// It counts responses in bytes, with buckets:
-	// - 100 bytes to 50,000 bytes, capturing a range from small to large responses.
-	// This data helps in accurately representing response size distribution and is vital
-	// for performance tuning.
+	// relayResponseSizeBytes tracks response payload sizes in bytes.
+	// Histogram buckets from 100B to 50KB capture size distribution.
+	//
+	// Usage:
+	// 	- Performance tuning to understand skew of data distribution
+	//	- Visibility into small & large response size distribution
 	//
 	// TODO_TECHDEBT: Consider configuring bucket sizes externally for flexible adjustments
 	// in response to different data patterns or deployment scenarios.
@@ -87,7 +87,10 @@ var (
 // publishGatewayMetrics publishes all metrics related to gateway-level observations.
 func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations) {
 	serviceID := gatewayObservations.GetServiceId()
-	// Update request counters with request_type and service ID labels.
+
+	// Increment request counter with the following labels:
+	// 	- request_type
+	// 	- service_id
 	relaysTotal.With(
 		prometheus.Labels{
 			"service_id":   serviceID,
@@ -95,7 +98,8 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 		},
 	).Inc()
 
-	// Publish duration of the request
+	// Publish request duration in seconds with the following labels
+	// 	- service_id
 	duration := gatewayObservations.GetCompletedTime().AsTime().Sub(gatewayObservations.GetReceivedTime().AsTime()).Seconds()
 	relaysDurationSeconds.With(
 		prometheus.Labels{
@@ -103,7 +107,8 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 		},
 	).Observe(duration)
 
-	// Publish response size
+	// Publish response_size in bytes with the following labels
+	// 	- service_id
 	relayResponseSizeBytes.With(
 		prometheus.Labels{
 			"service_id": serviceID,
