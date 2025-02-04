@@ -83,10 +83,10 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http level.
-	// This needs the following steps:
-	// 	1. Udate the QoSService interface to Parse a custom struct including a payload of type []byte.
-	//	2. Read the HTTP request's body in the `request` package and return the struct required by the updated QoS Service interface.
-	//	3. Export HTTP-related observations from the `request` package at the time of reading the HTTP request's body.
+	// Required steps:
+	//  	1. Update QoSService interface to parse custom struct with []byte payload
+	//  	2. Read HTTP request body in `request` package and return struct for QoS Service
+	//  	3. Export HTTP observations from `request` package when reading body
 	//
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
@@ -237,9 +237,9 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 	)
 
 	// TODO_TECHDEBT(@adshmh): Refactor to consolidate all gateway observation updates in one function.
-	// This will require the following:
-	// 	1. Update the WriteHTTPUserResponse method of `requestContext` struct to return the length of the response.
-	//	2. Update the `HandleHTTPServiceRequest` method of `Gateway` struct to use the above for updating Gateway observations.
+	// Required steps:
+	// 	1. Update requestContext.WriteHTTPUserResponse to return response length
+	// 	2. Update Gateway.HandleHTTPServiceRequest to use length for gateway observations
 	//
 	// Update response size observation
 	rc.gatewayObservations.ResponseSize = uint64(len(responsePayload))

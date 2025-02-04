@@ -131,7 +131,8 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-// getUserRequestGatewayObservations returns the set of gateway-level observations for an organic, i.e. sent by a user, service request.
+// getUserRequestGatewayObservations returns gateway-level observations for an organic request.
+// Example: request originated from a user.
 func getUserRequestGatewayObservations() observation.GatewayObservations {
 	return observation.GatewayObservations{
 		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,

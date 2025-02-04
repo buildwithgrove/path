@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	// TODO_MVP(@adshmh): Support custom pprof server address/port.
+	// TODO_TECHDEBT(@adshmh): Support configurable pprof server address/port.
 	//
 	// pprofAddr is the address at which pprof server will be listening.
 	// This address is selected based on the following link's examples:
 	// https://pkg.go.dev/net/http/pprof
 	pprofAddr = ":6060"
 
-	// TODO_MVP(@adshmh): Support custom metrics server address/port.
+	// TODO_TECHDEBT(@adshmh): Support configurable metrics server address/port.
 	//
 	// prometheusMetricsServerAddr is the address at which the prometheus metrics server will be listening.
 	prometheusMetricsServerAddr = ":9090"
