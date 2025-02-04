@@ -29,6 +29,7 @@ func responseUnmarshallerChainID(
 			logger: logger,
 
 			jsonRPCResponse: jsonrpcResp,
+
 			// A valid error JSONRPC response is considered a valid response.
 			valid: true,
 		}, nil
@@ -51,6 +52,7 @@ func responseUnmarshallerChainID(
 
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
+
 		// if unmarhsaling succeeded, the response is considered valid.
 		valid: err == nil,
 	}, err

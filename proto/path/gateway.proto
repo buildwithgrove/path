@@ -31,16 +31,16 @@ message GatewayObservations {
   // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
   RequestType request_type = 2;
 
-  // service_id stores the service ID specified by the request.
-  // As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
-  string service_id = 3;
-
-  // received_time specifies the time the request was received.
-  google.protobuf.Timestamp received_time = 4;
-
-  // completed_time specifies the time the request processing was completed, i.e. once a response was returned to the user.
-  google.protobuf.Timestamp completed_time = 5;
-
-  // response_size captures the size of the response payload returned to the user.
-  uint64 response_size = 6;
+	// service_id is the identifier specified via custom HTTP header.
+	// As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.	
+	string service_id = 3;
+	
+	// received_time is when the request was initially received
+	google.protobuf.Timestamp received_time = 4;
+	
+	// completed_time is when request processing finished and response was returned
+	google.protobuf.Timestamp completed_time = 5;
+	
+	// response_size is the size in bytes of the response payload
+	uint64 response_size = 6;
 }

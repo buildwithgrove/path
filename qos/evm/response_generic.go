@@ -80,6 +80,7 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 		logger: logger,
 
 		jsonRPCResponse: response,
+
 		// The response is assumed valid if it can be successfully unmarshaled into a JSONRPC response struct.
 		valid: true,
 	}, nil

@@ -15,7 +15,7 @@ func (pmr *PrometheusMetricsReporter) ServeMetrics(addr string) error {
 		pmr.Logger.Info().Str("endpoint", addr).Msg("serving metrics")
 		http.Handle(endpointMetrics, promhttp.Handler())
 		if err := http.ListenAndServe(addr, nil); err != nil {
-			pmr.Logger.Error().Err(err).Msg("metrics server failed")
+			pmr.Logger.Error().Err(err).Msg("prometheus metrics repoter failed starting server")
 			return
 		}
 	}()

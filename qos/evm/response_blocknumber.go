@@ -50,7 +50,8 @@ func responseUnmarshallerBlockNumber(
 
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
-		// TODO_TECHDEBT(@adshmh): use the contents of the result field to determine the validity of the response.
+
+		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
 		// e.g. a response that fails parsing as a number is not valid.
 		valid: true,
 	}, err

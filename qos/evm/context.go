@@ -46,8 +46,8 @@ type endpointResponse struct {
 type requestContext struct {
 	logger polylog.Logger
 
-	// chainID is the ID of the chain using EVM as its QoS implementation.
-	// It is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+	// chainID is the chain identifier for EVM QoS implementation.
+	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
 	// TODO_TECHDEBT: support batch JSONRPC requests

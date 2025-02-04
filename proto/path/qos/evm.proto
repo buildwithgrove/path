@@ -17,8 +17,8 @@ message EVMRequestObservations {
   // * Request is sent to additional endpoints for data collection
   repeated EVMEndpointObservation endpoint_observations = 2;
 
-  // ID of the blockchain using `qos/evm` package as its QoS.
-  // It is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+	// chainID is the blockchain identifier for the evm QoS implementation.
+	// Expected as the `Result` field in eth_chainId responses.
   string chain_id = 3;
 }
 
