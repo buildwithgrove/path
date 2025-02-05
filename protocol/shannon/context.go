@@ -221,13 +221,15 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 	return rc.relayRequestSigner.SignRelayRequest(unsignedRelayReq, app)
 }
 
-// buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the supplied endpoint, session, path and payload.
-// The returned RelayRequest is intended to be signed and sent to the endpoint to receive the endpoint's response.
+// buildUnsignedRelayRequest builds a ready-to-sign RelayRequest struct using the
+// supplied endpoint, session, and payload.
+// The returned RelayRequest is intended to be signed and sent to the endpoint to
+// receive the endpoint's response.
 func buildUnsignedRelayRequest(
 	endpoint endpoint,
 	session sessiontypes.Session,
-	path string,
 	payload []byte,
+	path string,
 ) (*servicetypes.RelayRequest, error) {
 	// If the path is not empty (ie. for a REST service request), append it to the endpoint's URL
 	url := endpoint.url
