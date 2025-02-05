@@ -24,6 +24,7 @@ func withHealthCheck(requestCtx *requestContext) {
 	requestCtx.httpReq = request
 }
 
+// withBlockHeightCheck
 func withBlockHeightCheck(requestCtx *requestContext) {
 	request, _ := http.NewRequest(http.MethodGet, apiPathBlockHeight, nil)
 	requestCtx.httpReq = request
