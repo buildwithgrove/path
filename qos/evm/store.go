@@ -48,8 +48,6 @@ type EndpointStore struct {
 	// ServiceState is the current perceived state of the EVM blockchain.
 	*ServiceState
 
-	config EndpointStoreConfig
-
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
