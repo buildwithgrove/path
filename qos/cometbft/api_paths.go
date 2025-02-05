@@ -7,5 +7,5 @@ const (
 
 	// Get CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
 	// Reference: https://docs.cometbft.com/v0.38/rpc/#/Info/status
-	apiPathBlockHeight = "/status"
+	apiPathStatus = "/status"
 )

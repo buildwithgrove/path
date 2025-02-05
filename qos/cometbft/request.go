@@ -1,17 +1,15 @@
 package cometbft
 
-// TODO_MVP(@adshmh): return a request context to handle internal errors.
-// requestContextFromInternalError returns a request context
-// for an internal error, e.g. error on reading the HTTP request body.
+// requestContextFromInternalError creates a request context for internal errors.
+// Example: errors reading HTTP request body.
 func requestContextFromInternalError(_ error) *requestContext {
+	// TODO_MVP(@adshmh): return a request context to handle internal errors.
 	return nil
 }
 
-// TODO_MVP(@adshmh): return a request context to handle user errors.
-// requestContextFromUserError returns a request context
-// for a user error, e.g. an unmarshalling error is a
-// user error because the request body, provided by the user,
-// cannot be parsed as a valid JSONRPC request.
+// requestContextFromUserError creates a request context for user errors.
+// // Example: invalid JSON-RPC request body that cannot be unmarshalled).
 func requestContextFromUserError(_ error) *requestContext {
+	// TODO_MVP(@adshmh): return a request context to handle user errors.
 	return nil
 }

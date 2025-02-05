@@ -1,5 +1,8 @@
 package cometbft
 
+// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
+// that play identical roles across QoS packages in order to reduce code duplication.
+
 import (
 	"fmt"
 	"net/http"
@@ -17,79 +20,82 @@ const defaultServiceRequestTimeoutMillisec = 10_000
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
+// response is an interface that represents the response received from an endpoint.
 type response interface {
 	GetObservation() qosobservations.CometBFTEndpointObservation
 	GetResponsePayload() []byte
 	GetResponseStatusCode() int
 }
 
+// endpointResponse stores the response received from an endpoint.
 type endpointResponse struct {
 	protocol.EndpointAddr
 	response
 	unmarshalErr error
 }
 
-// requestContext provides the functionality required
-// to support QoS for a CometBFT blockchain service.
+// requestContext implements QoS functionality for CometBFT blockchain services.
 type requestContext struct {
-	logger polylog.Logger
-
-	// httpReq is the HTTP request received from the user.
-	httpReq *http.Request
-
-	// CometBFT supports both REST-like and JSON-RPC requests.
-	// This field stores the serialized JSON-RPC request as a
-	// byte slice, if it is present in a JSON-RPC POST request.
-	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
-	jsonrpcRequestBz []byte
-
+	logger        polylog.Logger
 	endpointStore *EndpointStore
 
-	// isValid indicates whether the underlying user request
-	// for this request context was found to be valid.
-	// This field is set by the corresponding QoS instance
-	// when creating this request context during the parsing
-	// of the user request.
+	// httpReq is the original HTTP request from the user
+	httpReq *http.Request
+
+	// CometBFT supports both REST and JSON-RPC formats.
+	// For JSON-RPC POST requests, jsonrpcRequestBz stores the serialized request body.
+	// See: https://docs.cometbft.com/v1.0/spec/rpc/
+	jsonrpcRequestBz []byte
+
+	// isValid indicates if the user request was valid when parsed.
+	// Set by QoS instance during request context creation.
 	isValid bool
 
-	// preSelectedEndpointAddr allows overriding the default
-	// endpoint selector with a specific endpoint's addresss.
-	// This is used when building a request context as a check
-	// for a specific endpoint.
+	// preSelectedEndpointAddr overrides default endpoint selection with specific address.
+	// Used when building request context to check specific endpoint.
 	preSelectedEndpointAddr protocol.EndpointAddr
 
-	// endpointResponses is the set of responses received from one or
-	// more endpoints as part of handling this service request.
-	// NOTE: these are all related to a single JSONRPC request,
-	// enhancing to support batch JSONRPC requests will involve the
-	// modification of this field's type.
+	// endpointResponses contains responses from endpoints handling this service request
+	// NOTE: Currently only supports responses associated with a single JSON-RPC request.
+	// TODO_FUTURE: Batch support will require modifying the field type.
 	endpointResponses []endpointResponse
 }
 
+// GetServicePayload returns the payload for the service request.
+// It accounts for both REST-like and JSON-RPC requests.
+// Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
 		Method:          rc.httpReq.Method,
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 	}
-	// IF the request is REST-like, set the path.
+
+	// If the request is REST-like, set the path.
 	if rc.httpReq.URL.Path != "" {
 		payload.Path = rc.httpReq.URL.Path
 	}
+
 	// If the request is JSON-RPC, set the data from the stored []byte.
 	if rc.isJSONRPCRequest() {
 		payload.Data = string(rc.jsonrpcRequestBz)
 	}
+
 	return payload
 }
 
-// UpdateWithResponse is NOT safe for concurrent use
+// UpdateWithResponse stores (appends) the response from an endpoint in the request context.
+// CRITICAL: NOT safe for concurrent use.
+// Implements gateway.RequestQoSContext interface.
 func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-
 	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz, rc.isJSONRPCRequest())
 
+	// Multiple responses can be associated with a single request for multiple reasons, such as:
+	// - Retries from single/multiple endpoints
+	// - Collecting a quorum of from different endpoints
+	// - Organic vs synthetic responses
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
 			EndpointAddr: endpointAddr,
@@ -99,22 +105,23 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// GetHTTPResponse builds the HTTP response that should be returned for
-// a CometBFT blockchain service request.
+// GetHTTPResponse builds the HTTP response for a CometBFT blockchain service request.
+// Returns the last endpoint response if available, otherwise returns generic response.
 // TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
 // that play identical roles across QoS packages in order to reduce code duplication.
+// Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
+	// Ignore unmarshalling errors since the payload is empty for REST-like requests.
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
-	// intentionally ignoring the error here, since unmarshallResponse
-	// is being called with an empty endpoint response payload.
 	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())
 
+	// If at least one endpoint response exists, return the last one
 	if len(rc.endpointResponses) >= 1 {
-		// return the last endpoint response reported to the context.
 		response = rc.endpointResponses[len(rc.endpointResponses)-1]
 	}
 
+	// Default to generic response if no endpoint responses exist
 	return httpResponse{
 		responsePayload: response.GetResponsePayload(),
 	}
@@ -133,17 +140,19 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Cometbft{
 			Cometbft: &qosobservations.CometBFTRequestObservations{
-				// TODO_TECHDEBT(@adshmh): Set JSONRPCRequest field.
+				// TODO_TECHDEBT(@adshmh): Set JSON-RPCRequest field.
 				// Requires utility function to convert between:
 				// - qos.jsonrpc.Request
 				// - observation.qos.JsonRpcRequest
-				// Needed for setting JSONRPC fields in any QoS service's observations.
+				// Needed for setting JSON-RPC fields in any QoS service's observations.
 				EndpointObservations: observations,
 			},
 		},
 	}
 }
 
+// GetEndpointSelector returns the endpoint selector for the request context.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
@@ -151,20 +160,23 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
+	// If set, override the selection with the pre-selected endpoint address.
 	if rc.preSelectedEndpointAddr != "" {
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
 
+	// Select an endpoint from the available endpoints using the endpoint store.
 	return rc.endpointStore.Select(allEndpoints)
 }
 
-// isJSONRPCRequest returns true if the request context contains a JSON-RPC request.
-// This is determined by checking whether the request context contains a serialized JSON-RPC request.
+// isJSONRPCRequest checks if the request context contains a serialized JSON-RPC request.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 func (rc *requestContext) isJSONRPCRequest() bool {
 	return len(rc.jsonrpcRequestBz) > 0
 }
 
+// preSelectedEndpoint returns the pre-selected endpoint address if it exists in the list of available endpoints.
+// It is used to override the default endpoint selection with a specific address.
 func preSelectedEndpoint(
 	preSelectedEndpointAddr protocol.EndpointAddr,
 	allEndpoints []protocol.Endpoint,

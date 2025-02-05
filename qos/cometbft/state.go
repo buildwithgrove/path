@@ -9,12 +9,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the CometBFT blockchain based on the endpoints' responses to
-// different requests.
+// ServiceState keeps the expected current state of the CometBFT blockchain
+// based on the endpoints' responses to different requests.
 type ServiceState struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
-	stateLock sync.RWMutex
+	serviceStateLock sync.RWMutex
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `/status` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -24,18 +24,17 @@ type ServiceState struct {
 	perceivedBlockNumber uint64
 }
 
-// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-//
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the CometBFT blockchain.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.stateLock.RLock()
-	defer s.stateLock.RUnlock()
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
 
-	// CometBFT does not use a chain ID.
-	if err := endpoint.Validate(""); err != nil {
+	// Basic validation of the endpoint based on prior observations.
+	if err := endpoint.Validate(); err != nil {
 		return err
 	}
 
+	// Validate the endpoint based on the perceived block number.
 	if err := validateEndpointBlockNumber(endpoint, s.perceivedBlockNumber); err != nil {
 		return err
 	}
@@ -44,26 +43,26 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 }
 
 // UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
-// This only includes the set of endpoints for which an observation was received.
+// NOTE: This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.stateLock.Lock()
-	defer s.stateLock.Unlock()
+	s.serviceStateLock.Lock()
+	defer s.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		logger := s.Logger.With(
+		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
 		)
 
-		// Do NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.
-		// e.g. an endpoint with an invalid response to `/status` will not be used to update the perceived block number.
-		if err := endpoint.Validate(""); err != nil {
+		// DO NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.
+		// E.g. an endpoint with an invalid response to `/status` will not be used to update the perceived block number.
+		if err := endpoint.Validate(); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
 
 		// TODO_TECHDEBT: use a more resilient method for updating block height.
-		// e.g. one endpoint returning a very large number as block height should
+		// E.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
 		blockNumber, err := endpoint.GetBlockNumber()
 		if err != nil {
@@ -79,15 +78,17 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	return nil
 }
 
-// validateEndpointBlockNumber validates the supplied endpoint against the supplied perceived block number for the CometBFT blockchain.
+// validateEndpointBlockNumber validates the supplied endpoint against the supplied
+// perceived block number for the CometBFT blockchain.
 func validateEndpointBlockNumber(endpoint endpoint, perceivedBlockNumber uint64) error {
 	blockNumber, err := endpoint.GetBlockNumber()
 	if err != nil {
 		return err
 	}
 
+	// The endpoint is behind (out of sync) with the network (i.e. the perceived block number).
 	if blockNumber < perceivedBlockNumber {
-		return fmt.Errorf("endpoint has block height %d, perceived block height is %d", blockNumber, perceivedBlockNumber)
+		return fmt.Errorf("endpoint has block height %d, which is SMALLER THAN the perceived block height is %d", blockNumber, perceivedBlockNumber)
 	}
 
 	return nil

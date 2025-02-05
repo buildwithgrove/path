@@ -12,37 +12,36 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
-// QoS struct performs the functionality defined by gateway package's ServiceQoS,
-// which consists of:
-// A) a QoSRequestParser which builds CometBFT-specific RequestQoSContext objects,
-// by parsing user HTTP requests.
-// B) an EndpointSelector, which selects an endpoint for performing a service request.
+// QoS implements gateway.QoSService by providing:
+//  1. QoSRequestParser - Builds CometBFT-specific RequestQoSContext objects from HTTP requests
+//  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
-// QoS is the ServiceQoS implementations for CometBFT-based chains.
-// It contains logic specific to CometBFT-based chains, including request parsing,
-// response building, and endpoint validation/selection.
+// QoS implements ServiceQoS for CometBFT-based chains.
+// It handles chain-specific:
+//   - Request parsing
+//   - Response building
+//   - Endpoint validation and selection
 type QoS struct {
 	*EndpointStore
 	*ServiceState
-	Logger polylog.Logger
+	logger polylog.Logger
 }
 
-// ParseHTTPRequest builds a request context from an HTTP request.
-// Returns (context, false) if POST request cannot be parsed as JSONRPC.
+// ParseHTTPRequest build a request context from an HTTP request.
+// Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	requestContext := &requestContext{
-		logger:        qos.Logger,
+		logger:        qos.logger,
 		httpReq:       req,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
 	}
 
-	// CometBFT supports both REST-like and JSON-RPC requests.
-	// If the request is a JSON-RPC POST request, read the JSON-RPC
-	// request body and store it on the request context as a []byte.
-	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
+	// Parse both REST and JSON-RPC requests (CometBFT supports both).
+	// For JSON-RPC POST requests, read and store the request body as []byte.
+	// See: https://docs.cometbft.com/v1.0/spec/rpc/
 	if req.Method == http.MethodPost {
 		// TODO_IMPROVE(@commoddity): implement JSON-RPC request validation.
 		body, err := io.ReadAll(req.Body)
@@ -50,7 +49,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 			return requestContextFromInternalError(err), false
 		}
 
-		// Store the serialized JSONRPC request as a byte slice
+		// Store the serialized JSON-RPC request as a byte slice
 		requestContext.jsonrpcRequestBz = body
 	}
 
@@ -64,7 +63,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		logger:        qos.Logger,
+		logger:        qos.logger,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
 	}, true

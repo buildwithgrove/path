@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -20,18 +22,25 @@ const (
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE: skip any checks for which the endpoint already has
-	// a valid (e.g. not expired) quality data point.
+	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
+	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es, endpointAddr, withBlockHeightCheck),
+		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
+		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
 		// TODO_FUTURE: add an archival endpoint check.
 	}
 }
 
-func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.EndpointAddr, options ...func(*requestContext)) *requestContext {
+// getEndpointCheck prepares a request context for a specific endpoint check.
+func getEndpointCheck(
+	logger polylog.Logger,
+	endpointStore *EndpointStore,
+	endpointAddr protocol.EndpointAddr,
+	options ...func(*requestContext),
+) *requestContext {
 	requestCtx := requestContext{
+		logger:                  logger,
 		endpointStore:           endpointStore,
 		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
@@ -44,18 +53,20 @@ func getEndpointCheck(endpointStore *EndpointStore, endpointAddr protocol.Endpoi
 	return &requestCtx
 }
 
+// withChainIDCheck updates the request context to make a EVM JSON-RPC eth_chainId request.
 func withChainIDCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = jsonrpc.Request{
-		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idChainIDCheck),
-		Method:  methodChainID,
-	}
+	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
 }
 
+// withBlockHeightCheck updates the request context to make a EVM JSON-RPC eth_blockNumber request.
 func withBlockHeightCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = jsonrpc.Request{
+	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
+}
+
+func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {
+	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
-		Method:  methodBlockNumber,
+		ID:      jsonrpc.IDFromInt(id),
+		Method:  method,
 	}
 }

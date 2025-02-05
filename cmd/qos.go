@@ -18,6 +18,7 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
 
+	logger = logger.With("module", "qos")
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.
 	for serviceID, serviceQoSType := range config.ServiceQoSTypes {
@@ -41,8 +42,8 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 			// TODO_TECHDEBT: add pokt qos service here
 
 		case config.ServiceIDCometBFT:
-			cometbftQoS := cometbft.NewQoSInstance(logger)
-			qosServices[serviceID] = cometbftQoS
+			cometBFTQoS := cometbft.NewQoSInstance(logger)
+			qosServices[serviceID] = cometBFTQoS
 
 		default: // this should never happen
 			return nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)

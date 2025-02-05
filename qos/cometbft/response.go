@@ -9,68 +9,74 @@ import (
 )
 
 var (
-	// CometBFT always returns a `1` ID for any responses to JSONRPC requests.
-	cometBFTJSONRPCSuccessResponseID = jsonrpc.IDFromInt(1)
-	// CometBFT always returns a `-1` ID for successful responses to REST-like requests.
-	cometBFTRESTSuccessResponseID = jsonrpc.IDFromInt(-1)
-	// CometBFT always returns a `1` ID for any error responses, either for JSONRPC or REST-like requests.
-	cometBFTErrResponseID = jsonrpc.IDFromInt(1)
+	// CometBFT response IDs for different request types:
+	// - JSON-RPC success: 1
+	// - REST success: -1
+	// - Any error: 1
+	jsonrpcSuccessID = jsonrpc.IDFromInt(1)
+	restSuccessID    = jsonrpc.IDFromInt(-1)
+	errorID          = jsonrpc.IDFromInt(1)
 )
 
-func getExpectedResponseID(response jsonrpc.Response, jsonRPC bool) jsonrpc.ID {
-	if jsonRPC {
-		return cometBFTJSONRPCSuccessResponseID
-	}
+// getExpectedResponseID returns the expected ID for a CometBFT response depending
+// on the request type (REST/JSON-RPC) and the response result (error/success).
+func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
 	if response.IsError() {
-		return cometBFTErrResponseID
+		return errorID
 	}
-	return cometBFTRESTSuccessResponseID
+	if isJSONRPC {
+		return jsonrpcSuccessID
+	}
+	return restSuccessID
 }
 
-// responseUnmarshaller is the entrypoint function for any
-// new supported response types.
-// E.g. to handle "/block" requests, the following need to be defined:
-//  1. A new custom responseUnmarshaller
-//  2. A new custom struct  to handle the details of the particular response.
+// responseUnmarshaller is the entrypoint for processing new supported response types.
+//
+// To add support for a new endpoint (e.g. "/block"):
+// 1. Define a new custom responseUnmarshaller
+// 2. Create a corresponding struct to handle the response details
 type responseUnmarshaller func(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error)
 
 var (
-	// All response types needs to implement the response interface.
-	// Any new response struct needs to be added to the following list.
+	// All response types must implement the response interface.
 	_ response = &responseToHealth{}
+	_ response = &responseToStatus{}
 	_ response = &responseGeneric{}
 
+	// Maps API paths to their corresponding response unmarshallers
 	apiPathResponseMappings = map[string]responseUnmarshaller{
 		apiPathHealthCheck: responseUnmarshallerHealth,
-		apiPathBlockHeight: responseUnmarshallerBlockHeight,
+		apiPathStatus:      responseUnmarshallerStatus,
 	}
 )
 
-// unmarshalResponse parses the supplied raw byte slice, received from an endpoint, into a JSONRPC response.
-// Responses to the following JSONRPC methods are processed into endpoint observations:
-//   - eth_blockNumber
-func unmarshalResponse(logger polylog.Logger, apiPath string, data []byte, jsonRPC bool) (response, error) {
-	// Unmarshal the raw response payload into a JSONRPC response.
+// unmarshalResponse parses the supplied raw byte slice from an endpoint into a JSON-RPC response.
+func unmarshalResponse(
+	logger polylog.Logger,
+	apiPath string,
+	data []byte,
+	isJSONRPC bool,
+) (response, error) {
+	// Unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
-	err := json.Unmarshal(data, &jsonrpcResponse)
-	if err != nil {
+	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
 		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
 	}
 
-	// Validate the JSONRPC response.
-	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, jsonRPC)); err != nil {
+	// Validate the JSON-RPC response.
+	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, isJSONRPC)); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
 	}
 
-	// We intentionally skip checking whether the JSONRPC response indicates an error.
+	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
 
-	// Unmarshal the JSONRPC response into a method-specific response.
+	// Unmarshal the JSON-RPC response into a method-specific response.
 	unmarshaller, found := apiPathResponseMappings[apiPath]
 	if found {
 		return unmarshaller(logger, jsonrpcResponse)

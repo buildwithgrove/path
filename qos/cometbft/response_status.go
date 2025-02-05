@@ -11,13 +11,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// The Result struct is the expected response from the `/status` endpoint.
-// We are only interested in the `latest_block_height` field.
-// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#response-1
 type (
+	// Result struct is the expected response from the `/status` endpoint.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#response-1
 	Result struct {
 		SyncInfo SyncInfo `json:"sync_info"`
 	}
+	// TODO_FUTURE: Extract more than just the `latest_block_height` field.
 	SyncInfo struct {
 		LatestBlockHeight string `json:"latest_block_height"`
 	}
@@ -26,10 +26,10 @@ type (
 // responseToStatus provides the functionality required from a response by a requestContext instance.
 var _ response = responseToStatus{}
 
-// responseUnmarshallerBlockHeight deserializes the provided payloadxz
+// responseUnmarshallerStatus deserializes the provided payloadxz
 // into a responseToStatus struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerBlockHeight(
+func responseUnmarshallerStatus(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
@@ -42,7 +42,7 @@ func responseUnmarshallerBlockHeight(
 	}
 
 	// We only care about the SyncInfo.LatestBlockHeight field of
-	// the JSONRPC response, so first convert it from any to bytes.
+	// the JSON-RPC response, so first convert it from any to bytes.
 	resultBytes, err := json.Marshal(jsonrpcResp.Result)
 	if err != nil {
 		return responseToStatus{
@@ -73,7 +73,7 @@ func responseUnmarshallerBlockHeight(
 type responseToStatus struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
+	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
 	// latestBlockHeight stores the latest block height of a
@@ -93,18 +93,23 @@ func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObser
 	}
 }
 
+// GetResponsePayload returns the payload for the response to a `/status` request.
+// Implements the response interface.
 func (r responseToStatus) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshalling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
 	}
 	return bz
 }
 
-// CometBFT always returns either a 500 (on error) or 200 (on success).
+// CometBFT response codes:
+// - 200: Success
+// - 500: Error
 // Reference: https://docs.cometbft.com/v0.38/rpc/
+// Implements the response interface.
 func (r responseToStatus) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
 		return http.StatusInternalServerError

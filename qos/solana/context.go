@@ -44,9 +44,11 @@ type endpointResponse struct {
 // requestContext provides the functionality required
 // to support QoS for a Solana blockchain service.
 type requestContext struct {
-	JSONRPCReq    jsonrpc.Request
-	EndpointStore *EndpointStore
-	Logger        polylog.Logger
+	logger polylog.Logger
+
+	endpointStore *EndpointStore
+
+	JSONRPCReq jsonrpc.Request
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
@@ -100,7 +102,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.Logger, rc.JSONRPCReq, responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz)
 
 	// TODO_MVP(@adshmh): Drop the unmarshalling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
@@ -129,7 +131,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		// have been reported to the request context.
 		// intentionally ignoring the error here, since unmarshallResponse
 		// is being called with an empty endpoint response payload.
-		response, _ = unmarshalResponse(rc.Logger, rc.JSONRPCReq, []byte(""))
+		response, _ = unmarshalResponse(rc.logger, rc.JSONRPCReq, []byte(""))
 	}
 
 	return httpResponse{
@@ -172,7 +174,7 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
 	}
 
-	return rc.EndpointStore.Select(allEndpoints)
+	return rc.endpointStore.Select(allEndpoints)
 }
 
 func preSelectedEndpoint(
