@@ -5,11 +5,12 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/evm.proto";
 import "path/qos/solana.proto";
+import "path/qos/cometbft.proto";
 
 // Observations contains QoS measurements for a single service request.
 // Currently supports:
-// * Solana blockchain service
-// * EVM blockchains service
+// - Solana blockchain service
+// - EVM blockchains service
 message Observations {
   // service_observations contains QoS measurements specific to the service type
   oneof service_observations {
@@ -18,5 +19,8 @@ message Observations {
 
     // evm contains QoS measurements for a single EVM blockchain request
     EVMRequestObservations evm = 2;
+
+    // cometbft contains QoS measurements for a single CometBFT blockchain request
+    CometBFTRequestObservations cometbft = 3;
   }
 }

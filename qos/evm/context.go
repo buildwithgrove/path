@@ -46,9 +46,10 @@ type endpointResponse struct {
 type requestContext struct {
 	logger polylog.Logger
 
-	// TODO_TECHDEBT: support batch JSONRPC requests
-	jsonrpcReq    jsonrpc.Request
 	endpointStore *EndpointStore
+
+	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
+	jsonrpcReq jsonrpc.Request
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.
