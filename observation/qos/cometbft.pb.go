@@ -20,8 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// CometBFTRequestObservations captures all observations made while serving a single
-// CometBFT blockchain service request.
+// CometBFTRequestObservations captures all observations made while serving a single CometBFT blockchain service request.
 type CometBFTRequestObservations struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -82,17 +81,14 @@ func (x *CometBFTRequestObservations) GetEndpointObservations() []*CometBFTEndpo
 	return nil
 }
 
-// CometBFTEndpointObservation stores a single observation from an endpoint servicing
-// the protocol response.
-// Example: A Pocket node on Shannon backed by an Ethereum data node servicing an
-// `eth_getBlockNumber` request.
+// CometBFTEndpointObservation stores a single observation from an endpoint servicing the protocol response.
+// Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
 type CometBFTEndpointObservation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Address of the endpoint handling the request (e.g., onchain address of a
-	// Pocket Morse/Shannon node)
+	// Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
 	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
 	// Details of the response received from the endpoint
 	//
@@ -177,13 +173,11 @@ type isCometBFTEndpointObservation_ResponseObservation interface {
 
 type CometBFTEndpointObservation_HealthResponse struct {
 	// Response to `health` request
-	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 	HealthResponse *CometBFTHealthResponse `protobuf:"bytes,2,opt,name=health_response,json=healthResponse,proto3,oneof"`
 }
 
 type CometBFTEndpointObservation_LatestBlockHeightResponse struct {
 	// Response to `status` request
-	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	LatestBlockHeightResponse *CometBFTLatestBlockHeightResponse `protobuf:"bytes,3,opt,name=latest_block_height_response,json=latestBlockHeightResponse,proto3,oneof"`
 }
 
