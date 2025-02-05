@@ -176,7 +176,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	app := *session.Application
 
 	payloadBz := []byte(payload.Data)
-	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payload.Path, payloadBz)
+	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payloadBz, payload.Path)
 	if err != nil {
 		return nil, err
 	}
