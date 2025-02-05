@@ -76,6 +76,7 @@ func (r responseToHealth) GetResponsePayload() []byte {
 // - 200: Success
 // - 500: Error
 // Reference: https://docs.cometbft.com/v0.38/rpc/
+// Implements the response interface.
 func (r responseToHealth) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
 		return http.StatusInternalServerError

@@ -52,6 +52,7 @@ func (r responseGeneric) GetObservation() qosobservations.CometBFTEndpointObserv
 
 // GetResponsePayload returns the payload for the response to a `/health` request.
 // Implements the response interface.
+//
 // TODO_MVP(@adshmh): handle any unmarshalling errors and build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
@@ -66,6 +67,7 @@ func (r responseGeneric) GetResponsePayload() []byte {
 // - 200: Success
 // - 500: Error
 // Reference: https://docs.cometbft.com/v0.38/rpc/
+// Implements the response interface.
 func (r responseGeneric) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
 		return http.StatusInternalServerError

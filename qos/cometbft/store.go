@@ -30,9 +30,9 @@ type EndpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
-// Select returns an endpoint address matching an entry from the list of available endpoints.
-// Available endpoints are filtered based on their validity first.
-// A random endpoint is then returned from the filtered list of valid endpoints.
+// Select returns a random endpoint address from the list of valid endpoints.
+// Valid endpoints are determined by filtering the available endpoints based on their
+// validity criteria.
 //
 // TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
 // that play identical roles across QoS packages in order to reduce code duplication.
@@ -41,7 +41,7 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 	logger := es.logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
-	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
+	filteredEndpointsAddr, err := es.filterValidEndpoints(availableEndpoints)
 	if err != nil {
 		logger.Warn().Err(err).Msg("error filtering endpoints")
 		return protocol.EndpointAddr(""), err
@@ -58,27 +58,28 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 		"endpoints_after_filtering", len(filteredEndpointsAddr),
 	).Info().Msg("filtered endpoints")
 
-	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
+	// TODO_FUTURE: consider ranking filtered endpoints (e.g. latency rather than randomization).
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 }
 
-// filterEndpoints returns the subset of available endpoints that are valid
+// filterValidEndpoints returns the subset of available endpoints that are valid
 // according to previously processed observations.
-func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
+func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
 	logger := es.logger.With("method", "filterEndpoints", "qos_instance", "cometbft")
 
-	if len(availableEndpoints) == 0 {
+	if len(allAvailableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
+	logger.Info().Msg(fmt.Sprintf("About to filter for valid endpoints through %d available endpoints", len(allAvailableEndpoints)))
 
-	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
-	var filteredEndpointsAddr []protocol.EndpointAddr
-	for _, availableEndpoint := range availableEndpoints {
+	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
+	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
+	var filteredValidEndpointsAddr []protocol.EndpointAddr
+	for _, availableEndpoint := range allAvailableEndpoints {
 		endpointAddr := availableEndpoint.Addr()
 		logger := logger.With("endpoint", endpointAddr)
 		logger.Info().Msg("processing endpoint")
@@ -94,9 +95,9 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 			continue
 		}
 
-		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpoint.Addr())
+		filteredValidEndpointsAddr = append(filteredValidEndpointsAddr, availableEndpoint.Addr())
 		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", endpointAddr))
 	}
 
-	return filteredEndpointsAddr, nil
+	return filteredValidEndpointsAddr, nil
 }

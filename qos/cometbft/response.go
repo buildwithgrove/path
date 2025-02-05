@@ -53,9 +53,7 @@ var (
 	}
 )
 
-// unmarshalResponse parses the supplied raw byte slice, received from an endpoint, into a JSON-RPC response.
-// Responses to the following JSON-RPC methods are processed into endpoint observations:
-//   - eth_blockNumber
+// unmarshalResponse parses the supplied raw byte slice from an endpoint into a JSON-RPC response.
 func unmarshalResponse(
 	logger polylog.Logger,
 	apiPath string,
@@ -75,7 +73,7 @@ func unmarshalResponse(
 		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
 	}
 
-	// We intentionally skip checking whether the JSON-RPC response indicates an error.
+	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Unmarshal the JSON-RPC response into a method-specific response.

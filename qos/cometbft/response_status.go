@@ -93,6 +93,8 @@ func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObser
 	}
 }
 
+// GetResponsePayload returns the payload for the response to a `/status` request.
+// Implements the response interface.
 func (r responseToStatus) GetResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshalling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
@@ -103,8 +105,11 @@ func (r responseToStatus) GetResponsePayload() []byte {
 	return bz
 }
 
-// CometBFT always returns either a 500 (on error) or 200 (on success).
+// CometBFT response codes:
+// - 200: Success
+// - 500: Error
 // Reference: https://docs.cometbft.com/v0.38/rpc/
+// Implements the response interface.
 func (r responseToStatus) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
 		return http.StatusInternalServerError

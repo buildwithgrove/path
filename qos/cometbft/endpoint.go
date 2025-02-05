@@ -28,7 +28,7 @@ type endpoint struct {
 
 // Validate checks if endpoint has the required observations to be considered valid.
 // Returns error if the necessary responses are either lacking or invalid.
-func (e endpoint) Validate(_ string) error {
+func (e endpoint) Validate() error {
 	switch {
 
 	// No health check has been performed yet.
