@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package metadata;
+package path.metadata;
 
 option go_package = "github.com/buildwithgrove/path/observation/metadata";
 

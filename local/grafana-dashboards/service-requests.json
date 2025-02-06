@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 7,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -113,7 +113,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.4.1",
       "targets": [
         {
           "datasource": {
@@ -135,6 +135,32 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -142,11 +168,47 @@
         "y": 1
       },
       "id": 6,
-      "libraryPanel": {
-        "name": "HTTP Response Size Histogram",
-        "uid": "eebh7cmgw5csgc"
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
       },
-      "title": "HTTP Response Size Histogram"
+      "pluginVersion": "11.4.1",
+      "targets": [
+        {
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "path_response_size_bytes_bucket{container=\"path\"}",
+          "format": "heatmap",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "{{le}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Histogram of Response Size in Bytes",
+      "type": "bargauge"
     },
     {
       "collapsed": false,
@@ -240,7 +302,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.4.1",
       "targets": [
         {
           "disableTextWrap": false,
@@ -336,7 +398,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.4.1",
       "targets": [
         {
           "disableTextWrap": false,
@@ -371,6 +433,6 @@
   "timezone": "browser",
   "title": "Service Requests",
   "uid": "debgsw9rva4g0e",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

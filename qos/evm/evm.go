@@ -49,7 +49,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	return &requestContext{
 		logger: qos.logger,
 
-		chainID:       qos.ServiceState.ChainID,
+		chainID:       qos.ServiceState.chainID,
 		jsonrpcReq:    jsonrpcReq,
 		endpointStore: qos.EndpointStore,
 
