@@ -7,8 +7,8 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
+// The errors below list all the possible QoS validation errors of an endpoint.
 var (
-	// The errors below list all the possible QoS validation errors of an endpoint.
 	errNoHealthObs           = fmt.Errorf("endpoint has not had an observation of its response to a health check request")
 	errInvalidHealthObs      = fmt.Errorf("endpoint not healthy and returned an invalid response to a health check request")
 	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a block height request")

@@ -41,11 +41,9 @@ type endpointResponse struct {
 	unmarshalErr error
 }
 
-// requestContext provides the functionality required
-// to support QoS for an EVM blockchain service.
+// requestContext implements the functionality for EVM-based blockchain services.
 type requestContext struct {
-	logger polylog.Logger
-
+	logger        polylog.Logger
 	endpointStore *EndpointStore
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests

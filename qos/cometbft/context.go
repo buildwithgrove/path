@@ -1,8 +1,5 @@
 package cometbft
 
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
-
 import (
 	"fmt"
 	"net/http"
@@ -107,8 +104,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 
 // GetHTTPResponse builds the HTTP response for a CometBFT blockchain service request.
 // Returns the last endpoint response if available, otherwise returns generic response.
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Ignore unmarshalling errors since the payload is empty for REST-like requests.

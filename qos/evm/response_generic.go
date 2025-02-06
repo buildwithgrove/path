@@ -23,8 +23,10 @@ const (
 	errDataFieldUnmarshallingErr = "unmarshalling_error"
 )
 
-// TODO_MVP(@adshmh): implement the generic jsonrpc response
-// (with the scope limited to an EVM-based blockchain)
+// responseGeneric represents the standard response structure for EVM-based blockchain requests.
+// Used as a fallback when:
+// - No validation/observation is needed for the JSON-RPC method
+// - No specific unmarshallers/structs exist for the request method
 // responseGeneric captures the fields expected in response to any request on an
 // EVM-based blockchain. It is intended to be used when no validation/observation
 // is applicable to the corresponding request's JSONRPC method.
@@ -62,9 +64,8 @@ func (r responseGeneric) GetResponsePayload() []byte {
 	return bz
 }
 
-// responseUnmarshallerGeneric unmarshal the provided byte slice
-// into a responseGeneric struct and saves any data that may be
-// needed for producing a response payload into the struct.
+// responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
+// It extracts and stores any data needed for generating a response payload.
 func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
 	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
@@ -79,7 +80,10 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	}, nil
 }
 
-// getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
+// getGenericJSONRPCErrResponse creates a generic response containing:
+// - JSON-RPC error with supplied ID
+// - Error details
+// - Invalid payload in the "data" field
 func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
 	errData := map[string]string{
 		errDataFieldRawBytes:         string(malformedResponsePayload),

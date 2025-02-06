@@ -23,11 +23,8 @@ func responseUnmarshallerChainID(
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-
-		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
 		return responseToChainID{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
@@ -35,8 +32,7 @@ func responseUnmarshallerChainID(
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToChainID{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
@@ -45,8 +41,7 @@ func responseUnmarshallerChainID(
 	err = json.Unmarshal(resultBz, &result)
 
 	return &responseToChainID{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 	}, err
@@ -64,8 +59,9 @@ type responseToChainID struct {
 	result string
 }
 
-// GetObservation returns an observation using an `eth_chainId` request's response.
+// GetObservation returns an observation of the endpoint's response to an `eth_chainId` request.
 // Implements the response interface.
+// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{

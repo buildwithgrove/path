@@ -6,22 +6,23 @@ import (
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
 func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
-	logger = logger.With("qos_instance", "evm").With("evm_chain_id", evmChainID)
+	logger = logger.With(
+		"qos_instance", "evm",
+		"evm_chain_id", evmChainID,
+	)
 
 	serviceState := &ServiceState{
-		chainID: evmChainID,
 		logger:  logger,
+		chainID: evmChainID,
 	}
 
 	evmEndpointStore := &EndpointStore{
-		logger: logger,
-
-		ServiceState: serviceState,
+		logger:       logger,
+		serviceState: serviceState,
 	}
 
 	return &QoS{
-		logger: logger,
-
+		logger:        logger,
 		ServiceState:  serviceState,
 		EndpointStore: evmEndpointStore,
 	}

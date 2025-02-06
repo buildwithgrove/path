@@ -1,18 +1,18 @@
-package cometbft
+package solana
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// NewQoSInstance builds and returns an instance of the CometBFT QoS service.
+// NewQoSInstance builds and returns an instance of the Solana QoS service.
 func NewQoSInstance(logger polylog.Logger) *QoS {
-	logger = logger.With("qos_instance", "cometbft")
+	logger = logger.With("qos_instance", "solana")
 
 	serviceState := &ServiceState{
 		logger: logger,
 	}
 
-	cometBFTEndpointStore := &EndpointStore{
+	solanaEndpointStore := &EndpointStore{
 		logger:       logger,
 		serviceState: serviceState,
 	}
@@ -20,6 +20,6 @@ func NewQoSInstance(logger polylog.Logger) *QoS {
 	return &QoS{
 		logger:        logger,
 		ServiceState:  serviceState,
-		EndpointStore: cometBFTEndpointStore,
+		EndpointStore: solanaEndpointStore,
 	}
 }

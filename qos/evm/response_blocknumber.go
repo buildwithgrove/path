@@ -22,11 +22,10 @@ func responseUnmarshallerBlockNumber(
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-
-		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
+		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber`
+		// request that was sent to the endpoint.
 		return responseToBlockNumber{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
 	}
@@ -34,8 +33,7 @@ func responseUnmarshallerBlockNumber(
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		return responseToBlockNumber{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, err
 	}
@@ -44,8 +42,7 @@ func responseUnmarshallerBlockNumber(
 	err = json.Unmarshal(resultBz, &result)
 
 	return responseToBlockNumber{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 	}, err
@@ -65,6 +62,7 @@ type responseToBlockNumber struct {
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
 // Implements the response interface.
+// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
@@ -80,7 +78,7 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
 	}
 	return bz
 }
