@@ -18,6 +18,7 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 - [3. Start PATH](#3-start-path)
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
+  - [3.2 View PATH go runtime debugging info](#32-view-path-go-runtime-debugging-info)
 - [4. Test Relays](#4-test-relays)
 
 ## 0. Prerequisites
@@ -220,6 +221,16 @@ Wait for initialization logs:
 {"level":"info","message":"Starting the cache update process."}
 {"level":"info","package":"router","message":"PATH gateway running on port 3069"}
 ```
+
+### 3.2. View PATH go runtime debugging info
+
+Use the `debug_goroutines` make target to view go runtime's info on PATH:
+
+```bash
+make debug_goroutines
+```
+
+This opens the brower to port 8081 on localhost to show goruntime's debug info on PATH.
 
 ## 4. Test Relays
 
