@@ -28,7 +28,7 @@ type QoS struct {
 	*ServiceState
 }
 
-// ParseHTTPRequest build a request context from an HTTP request.
+// ParseHTTPRequest builds a request context from an HTTP request.
 // Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {

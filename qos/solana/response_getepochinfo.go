@@ -85,7 +85,7 @@ func (r responseToGetEpochInfo) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.Response)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToGetEpochInfo: Marshalling JSONRPC response failed.")
+		r.Logger.Warn().Err(err).Msg("responseToGetEpochInfo: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }

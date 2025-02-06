@@ -106,7 +106,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // Returns the last endpoint response if available, otherwise returns generic response.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// Ignore unmarshalling errors since the payload is empty for REST-like requests.
+	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
 	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())

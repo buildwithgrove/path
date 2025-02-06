@@ -74,7 +74,7 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 }
 
 func (r responseToBlockNumber) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
