@@ -75,10 +75,17 @@ test_request__endpoint_header_mode__static_key_service_id_header: debug_anvil_su
 #### PATH Test Requests ####
 ############################
 
-.PHONY: test_request_path_only
-test_request_path_only: debug_anvil_supplier_info_msg ## Test request against the PATH Gateway running on port 3069 without Envoy Proxy
+.PHONY: test_request__evm_endpoint
+test_request__evm_endpoint: debug_anvil_supplier_info_msg ## Test EVM endpoint request against the PATH Gateway running on port 3069 without Envoy Proxy
 	curl http://localhost:3069/v1/ \
 		-X POST \
 		-H "Content-Type: application/json" \
 		-H "target-service-id: anvil" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+.PHONY: test_request__cometbft_endpoint
+test_request__cometbft_endpoint: ## Test CometBFT endpoint request against the PATH Gateway running on port 3069 without Envoy Proxy
+	curl 'http://localhost:3069/v1/status' \
+		-X GET \
+		-H 'Content-Type: application/json' \
+		-H 'target-service-id: cometbft'

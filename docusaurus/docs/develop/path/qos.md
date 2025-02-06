@@ -24,34 +24,28 @@ classDiagram
     class gateway.QoSService {
         <<interface>>
     }
-
     class EVM {
         <<struct>>
         evm.QoS
     }
-
     class SolanaVM {
         <<struct>>
         solana.QoS
     }
-
     class Cosmos {
         <<struct>>
         cosmos.QoS
     }
-
     class MoveVM {
         <<struct>>
         move.QoS
     }
-
     class DefaultEVM {
         +implementation
         JSON-RPC
         ---
         eth_blockNumber
     }
-
     class DefaultCosmos {
         +implementation
         **REST**
@@ -59,13 +53,11 @@ classDiagram
         /v1/query/height
 
     }
-
     class ETH {
         +chainId: 0x1
         --
         eth_chainId
     }
-
     class FUSE {
         +chainId: 0x7a
         --

@@ -1,6 +1,6 @@
-// evm package provides the support required for interacting
-// with an EVM blockchain through the gateway.
-package evm
+// cometbft package provides the support required for interacting
+// with a CometBFT blockchain through the gateway.
+package cometbft
 
 import (
 	"fmt"
@@ -9,10 +9,10 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
+// UpdateEndpointsFromObservations CRUDs endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
 func (es *EndpointStore) UpdateEndpointsFromObservations(
-	evmObservations *qosobservations.EVMRequestObservations,
+	cometbftObservations *qosobservations.CometBFTRequestObservations,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
@@ -21,10 +21,10 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
 	}
 
-	endpointObservations := evmObservations.GetEndpointObservations()
+	endpointObservations := cometbftObservations.GetEndpointObservations()
 
 	logger := es.logger.With(
-		"qos_instance", "evm",
+		"qos_instance", "cometbft",
 		"method", "UpdateEndpointsFromObservations",
 	)
 	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
@@ -32,7 +32,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
 		if observation == nil {
-			logger.Info().Msg("EVM EndpointStore received a nil observation. Skipping...")
+			logger.Info().Msg("CometBFT EndpointStore received a nil observation. Skipping...")
 			continue
 		}
 
@@ -42,11 +42,11 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.
-		// e.g. when the first observation(s) are received for an endpoint.
+		// E.g. when the first observation(s) are received for an endpoint.
 		endpoint := es.endpoints[endpointAddr]
 
-		isMutated := endpoint.ApplyObservation(observation)
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
+		isMutated := endpoint.ApplyObservation(observation)
 		if !isMutated {
 			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
 			continue

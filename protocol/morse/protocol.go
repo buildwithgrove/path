@@ -203,7 +203,7 @@ func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 		for _, chainID := range onchainApp.Chains {
 			serviceID := protocol.ServiceID(chainID)
 			appData[serviceID] = append(appData[serviceID], app)
-			logger.With("serviceID", serviceID).Info().Msg("Found matching AAT, adding the app/service combination to the cache.")
+			logger.With("service_iD", serviceID).Info().Msg("Found matching AAT, adding the app/service combination to the cache.")
 		}
 
 	}

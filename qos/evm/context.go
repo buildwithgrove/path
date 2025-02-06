@@ -50,9 +50,10 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	// TODO_TECHDEBT: support batch JSONRPC requests
-	jsonrpcReq    jsonrpc.Request
 	endpointStore *EndpointStore
+
+	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
+	jsonrpcReq jsonrpc.Request
 
 	// isValid indicates whether the underlying user request
 	// for this request context was found to be valid.

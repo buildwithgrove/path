@@ -16,13 +16,21 @@ const (
 	// apiVersionPrefix is the prefix for the API version and is used by
 	// the `removePrefixMiddleware` to remove the API version from the
 	// request path that is forwarded to the service endpoint.
-	// eg. /v1/path/segment -> /path/segment
+	//
+	// Example:
+	//
+	//  /v1/path/segment -> /path/segment
+	//  /v1/path -> /path
 	apiVersionPrefix = "/v1"
 
 	// reqHeaderEndpointID is the header key for the endpoint ID, and is
 	// used by the `removePrefixMiddleware` to ensure the endpoint ID is
 	// not present in the request path that is forwarded to the endpoint.
-	// eg. s/1a2b3c4d/path/segment -> /path/segment
+	//
+	// Example:
+	//
+	//  /1a2b3c4d/path/segment -> /path/segment
+	//  /1a2b3c4d/path -> /path
 	reqHeaderEndpointID = "endpoint-id"
 )
 
@@ -62,10 +70,11 @@ func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
+	// requestHandlerFn defines the middleware chain for all service requests
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
 
 	// */v1/ - handles service requests with trailing slash, including REST services with additional path segments
-	r.mux.HandleFunc(fmt.Sprintf("%s/", apiVersionPrefix), requestHandlerFn)
+	r.mux.HandleFunc(apiVersionPrefix+"/", requestHandlerFn)
 
 	// */v1 - handles service requests without trailing slash
 	r.mux.HandleFunc(apiVersionPrefix, requestHandlerFn)

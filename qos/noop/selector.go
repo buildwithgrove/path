@@ -22,5 +22,6 @@ func (RandomEndpointSelector) Select(endpoints []protocol.Endpoint) (protocol.En
 		return protocol.EndpointAddr(""), errors.New("RandomEndpointSelector: an empty endpoint list was supplied to the selector")
 	}
 
-	return endpoints[rand.Intn(len(endpoints))].Addr(), nil
+	selectedEndpoint := endpoints[rand.Intn(len(endpoints))]
+	return selectedEndpoint.Addr(), nil
 }
