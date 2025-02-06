@@ -11,7 +11,7 @@ const (
 
 	// methodGetBlock is the JSON-RPC method for getting a block.
 	// Reference: https://docs.solana.com/developing/clients/jsonrpc-api#getblock
-	methodGetBlock = jsonrpc.Method("getBlock") // nolint:unused TODO_TECHDEBT(@adshmh): remove this once the `getBlock` method is used.
+	methodGetBlock = jsonrpc.Method("getBlock") // nolint:unused
 
 	// methodGetHealth is the JSON-RPC method for checking the health of the node.
 	// Reference: https://docs.solana.com/developing/clients/jsonrpc-api#gethealth
