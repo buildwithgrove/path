@@ -263,16 +263,17 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 //   - Protocol-level observations; e.g. "maxed-out" endpoints.
 //   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
-	// Update the request completion time on the gateway observation
-	rc.gatewayObservations.CompletedTime = timestamppb.Now()
-
-	var (
-		protocolObservations protocolobservations.Observations
-		qosObservations      qosobservations.Observations
-	)
 
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
+		var (
+			protocolObservations protocolobservations.Observations
+			qosObservations      qosobservations.Observations
+		)
+
+		// Update the request completion time on the gateway observation
+		rc.gatewayObservations.CompletedTime = timestamppb.Now()
+
 		if rc.protocolCtx != nil {
 			protocolObservations = rc.protocolCtx.GetObservations()
 			if err := rc.protocol.ApplyObservations(&protocolObservations); err != nil {

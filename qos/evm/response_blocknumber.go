@@ -53,7 +53,7 @@ func responseUnmarshallerBlockNumber(
 
 		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
 		// e.g. a response that fails parsing as a number is not valid.
-		valid: true,
+		valid: err == nil,
 	}, err
 }
 
@@ -67,7 +67,10 @@ type responseToBlockNumber struct {
 
 	// result stores the result field of a response to a `eth_blockNumber` request.
 	result string
-	// valid is set to true if the parsed response is deemed valid.
+	// valid is set to true if the endpoint response is deemed valid.
+	// As of PR #152, a respons is valid if either of the following holds:
+	//	- It is a valid JSONRPC error response
+	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
 }
 

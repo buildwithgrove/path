@@ -91,14 +91,14 @@ type GatewayObservations struct {
 	// Specifies the request type.
 	// For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
 	RequestType RequestType `protobuf:"varint,2,opt,name=request_type,json=requestType,proto3,enum=path.RequestType" json:"request_type,omitempty"`
-	// service_id stores the service ID specified by the request.
+	// service_id is the identifier specified via custom HTTP header.
 	// As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
 	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
-	// received_time specifies the time the request was received.
+	// received_time is when the request was initially received
 	ReceivedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=received_time,json=receivedTime,proto3" json:"received_time,omitempty"`
-	// completed_time specifies the time the request processing was completed, i.e. once a response was returned to the user.
+	// completed_time is when request processing finished and response was returned
 	CompletedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_time,json=completedTime,proto3" json:"completed_time,omitempty"`
-	// response_size captures the size of the response payload returned to the user.
+	// response_size is the size in bytes of the response payload
 	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
 }
 

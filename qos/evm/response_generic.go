@@ -36,6 +36,7 @@ type responseGeneric struct {
 	jsonRPCResponse jsonrpc.Response
 
 	// valid is set to true if the parsed response is deemed valid.
+	// As of PR #152, a respons is deemed valid if it can be unmarshaled as a JSONRPC struct.
 	valid bool
 }
 

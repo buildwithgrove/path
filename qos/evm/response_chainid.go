@@ -70,6 +70,9 @@ type responseToChainID struct {
 	result string
 
 	// valid is set to true if the parsed response is deemed valid.
+	// As of PR #152, a respons is valid if either of the following holds:
+	//	- It is a valid JSONRPC error response
+	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
 }
 

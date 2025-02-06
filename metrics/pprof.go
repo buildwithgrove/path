@@ -23,15 +23,19 @@ func ServePprof(ctx context.Context, logger polylog.Logger, addr string) {
 	}
 	// If no error, start the server in a new goroutine
 	go func() {
-		logger.Info().Str("endpoint", addr).Msg("starting a pprof endpoint")
+		logger.Info().Str("endpoint_addr", addr).Msg("starting pprof endpoint to serve go runtime debugging info asynchronously.")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error().Str("endpoint", addr).Msg("unable to start a pprof endpoint")
+			logger.Error().Err(err).Str("endpoint_addr", addr).Msg("unable to asynchronously start a pprof server for serving go runtime debugging info.")
 		}
 	}()
 
 	go func() {
 		<-ctx.Done()
-		logger.Info().Str("endpoint", addr).Msg("stopping a pprof endpoint")
-		_ = server.Shutdown(ctx)
+		logger = logger.With("endpoint_addr", addr)
+		logger.Info().Msg("stopping the asynchronous pprof server for serving go runtime debugging info.")
+		err := server.Shutdown(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("error stopping the asynchronous go runtime debugging info pprof server.")
+		}
 	}()
 }

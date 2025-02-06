@@ -82,3 +82,4 @@ include ./makefiles/shannon_configs.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk
+include ./makefiles/debug.mk

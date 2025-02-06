@@ -6,7 +6,7 @@ import (
 	"github.com/buildwithgrove/path/observation"
 )
 
-// See the metrics initialization below for details. 
+// See the metrics initialization below for details.
 const (
 	pathProcess = "path"
 
@@ -50,8 +50,10 @@ var (
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
 			Name:      relayDurationSeconds,
-			Help:      "Histogram of request processing time (duration) in seconds,
-			Buckets:   []float64{0.1, 0.5, 1, 2, 5, 15},
+			Help:      "Histogram of request processing time (duration) in seconds",
+			// Buckets are selected as: [0, 0.1), [0.1, 0.5), [0.5, 1), [1, 2), [2, 5), [5, 15)
+			// This is because the request processing time is expected to be normally distributed.
+			Buckets: []float64{0.1, 0.5, 1, 2, 5, 15},
 		},
 		[]string{"service_id"},
 	)

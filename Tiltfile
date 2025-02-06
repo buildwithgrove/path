@@ -73,8 +73,12 @@ docker_build_with_restart(
     live_update=[sync("bin/path", "/app/path")],
 )
 
+# Port 6060 is exposed to serve pprof data.
+# Use the `debug_goroutines` make target to view the pprof goroutine data: `make debug_goroutines`
+path_port_forwards = ["6060:6060"]
+
 # Specify the dependencies if PATH is running with auth.
-# No port exposed as all traffic must be routed through Envoy Proxy.
+# No ports, except 6060 for pprof, are exposed: all traffic must be routed through Envoy Proxy.
 if MODE == "path_with_auth":
     path_resource_deps = [
         "ext-authz",
@@ -84,20 +88,12 @@ if MODE == "path_with_auth":
         "redis",
     ]
 
-    # When running with auth, the following ports are exposed on PATH:
-    # 	- Port 6060: serves pprof data
-    # 	  Use with pprof like this: `go tool pprof -http=:3333 http://localhost:6060/debug/pprof/goroutine`
-    path_port_forwards = ["6060:6060"]
-
 # Specify the dependencies and port forwards if PATH is running WITHOUT auth.
 if MODE == "path_only":
     # Run PATH without any dependencies and port 3069 exposed
     path_resource_deps = []
-    # When running without auth, the following ports are exposed on PATH:
-    # 	- Port 3069: serves relay requests.
-    # 	- Port 6060: serves pprof data
-    # 	  Use with pprof like this: `go tool pprof -http=:3333 http://localhost:6060/debug/pprof/goroutine`
-    path_port_forwards = ["3069:3069", "6060:6060"]
+    # When running without auth port 3069 is exposed to serve relay requests.
+    path_port_forwards.append("3069:3069")
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 #   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports

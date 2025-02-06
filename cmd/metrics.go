@@ -22,20 +22,20 @@ const (
 	prometheusMetricsServerAddr = ":9090"
 )
 
-// setupMetricsServer initializes and starts the Prometheus metrics server at the default address.
-func setupMetricsServer(logger polylog.Logger) (*metrics.PrometheusMetricsReporter, error) {
+// setupMetricsServer initializes and starts the Prometheus metrics server at the supplied address.
+func setupMetricsServer(logger polylog.Logger, addr string) (*metrics.PrometheusMetricsReporter, error) {
 	pmr := &metrics.PrometheusMetricsReporter{
 		Logger: logger,
 	}
 
-	if err := pmr.ServeMetrics(prometheusMetricsServerAddr); err != nil {
+	if err := pmr.ServeMetrics(addr); err != nil {
 		return nil, err
 	}
 
 	return pmr, nil
 }
 
-// setupPprofServer starts the metric package's pprof server, at the default address.
-func setupPprofServer(ctx context.Context, logger polylog.Logger) {
-	metrics.ServePprof(ctx, logger, pprofAddr)
+// setupPprofServer starts the metric package's pprof server, at the supplied address.
+func setupPprofServer(ctx context.Context, logger polylog.Logger, addr string) {
+	metrics.ServePprof(ctx, logger, addr)
 }
