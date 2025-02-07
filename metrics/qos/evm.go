@@ -9,8 +9,10 @@ import (
 )
 
 const (
+	// The linux process that emits metrics
 	pathProcess = "path"
 
+	// The list of metrics being tracked
 	evmRequestsTotalMetric = "evm_requests_total"
 )
 
@@ -19,8 +21,8 @@ func init() {
 }
 
 var (
-	// TODO_MVP(@adshmh): add a `validation` object field to indicate whether the user's request was valid,
-	// with two fields:
+	// TODO_MVP(@adshmh): add a `validation` object field to indicate whether
+	// the user's request was valid, with two fields:
 	//	1. Valid: whether the user's request was valid.
 	//	2. Reason: The reason the request is considered invalid, if applicable.
 	//

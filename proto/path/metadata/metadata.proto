@@ -10,5 +10,3 @@ extend google.protobuf.FieldOptions {
   // Used for attaching a semantic meaning to a field.
   string semantic_meaning = 50001;
 }
-
-

@@ -8,16 +8,13 @@ import (
 	"github.com/buildwithgrove/path/metrics"
 )
 
+// TODO_TECHDEBT(@adshmh): Support configurable pprof server address/port.
 const (
-	// TODO_TECHDEBT(@adshmh): Support configurable pprof server address/port.
-	//
 	// pprofAddr is the address at which pprof server will be listening.
-	// This address is selected based on the following link's examples:
+	// NOTE: This address was selected based on the example here:
 	// https://pkg.go.dev/net/http/pprof
 	pprofAddr = ":6060"
 
-	// TODO_TECHDEBT(@adshmh): Support configurable metrics server address/port.
-	//
 	// prometheusMetricsServerAddr is the address at which the prometheus metrics server will be listening.
 	prometheusMetricsServerAddr = ":9090"
 )

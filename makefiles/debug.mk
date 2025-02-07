@@ -1,19 +1,16 @@
-######################
-### Debgug targets ###
-######################
+#####################
+### Debug targets ###
+#####################
 
-# TODO_TECHDEBT(@adshmh): Remove host networking mode flag i.e. --network=host, and use a standard method of accessing 
-# port 6060 on localhost from within the container.
-#
 .PHONY: debug_goroutines
-# Debugging helper: show goroutines pprof data on port 8081.
-# This adds graphviz to a golang docker container to remove the need for installing graphviz,
-# since graphviz does not have a general, distribution-independent, installation script:
-# https://www.graphviz.org/download
+# Deploys pprof (using graphviz) using docker at http://localhost:8081/ui/
+# Ref: https://www.graphviz.org/download
+#
+# TODO_TECHDEBT(@adshmh): Remove host networking mode flag (--network=host) and
+# use a standard method of accessing localhost:6060 within the container
+# to avoid the host from needing to download graphviz.
 debug_goroutines: check_docker
-	@echo "###########################################################################"
-	@echo "Starting a golang docker container with graphviz to display goruntime data."
-	@echo "###########################################################################"
+
 	@docker run --rm \
 		--network=host \
 		golang:1.23.6-alpine3.20 \
