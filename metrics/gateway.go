@@ -8,8 +8,10 @@ import (
 
 // See the metrics initialization below for details.
 const (
+	// The POSIX process that emits metrics
 	pathProcess = "path"
 
+	// The list of metrics being tracked for gateway-level observations
 	requestsTotal        = "requests_total"
 	responseSizeBytes    = "response_size_bytes"
 	relayDurationSeconds = "relay_duration_seconds"
@@ -23,7 +25,7 @@ func init() {
 
 var (
 	// relaysTotal is a counter tracking processed requests per PATH instance.
-	// It increments on each service request with labels:
+	// Increment on each service request with labels:
 	//   - service_id: Identifies the service
 	//   - request_type: "organic" or "synthetic"
 	//
@@ -53,6 +55,9 @@ var (
 			Help:      "Histogram of request processing time (duration) in seconds",
 			// Buckets are selected as: [0, 0.1), [0.1, 0.5), [0.5, 1), [1, 2), [2, 5), [5, 15)
 			// This is because the request processing time is expected to be normally distributed.
+			// This means we need a higher resolution (smaller buckets and more granularity) for the lower values,
+			// and less resolution (big buckets and low granularity) for the higher values because it'll have less
+			// data points.
 			Buckets: []float64{0.1, 0.5, 1, 2, 5, 15},
 		},
 		[]string{"service_id"},
@@ -64,22 +69,21 @@ var (
 	// Usage:
 	// 	- Performance tuning to understand skew of data distribution
 	//	- Visibility into small & large response size distribution
-	//
-	// TODO_TECHDEBT: Consider configuring bucket sizes externally for flexible adjustments
-	// in response to different data patterns or deployment scenarios.
 	relayResponseSizeBytes = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
 			Name:      responseSizeBytes,
 			Help:      "Histogram of response sizes in bytes for performance analysis.",
-			Buckets:   []float64{100, 500, 1000, 5000, 10000, 50000},
+			// TODO_IMPROVE: Consider configuring bucket sizes externally for flexible adjustments
+			// in response to different data patterns or deployment scenarios.
+			Buckets: []float64{100, 500, 1000, 5000, 10000, 50000},
 		},
 		[]string{"service_id"},
 	)
 
 	// TODO_MVP(@adshmh): Add a serviceRequestSize metric once the `request` package is refactored to
 	// fully encapsulate the task of dealing with the HTTP request, including:
-	//	!. Reading of all HTTP headers: target-service-id, etc.
+	//	1. Reading of all HTTP headers: target-service-id, etc.
 	//	2. Reading of the HTTP request's body
 	//	3. Building an HTTP observation using the extracted data.
 	// This will also involve a small refactor on protocol and qos packages to accept a custom struct
@@ -90,9 +94,9 @@ var (
 func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations) {
 	serviceID := gatewayObservations.GetServiceId()
 
-	// Increment request counter with the following labels:
-	// 	- request_type
-	// 	- service_id
+	// Increment on each service request with labels:
+	//   - service_id: Identifies the service
+	//   - request_type: "organic" or "synthetic"
 	relaysTotal.With(
 		prometheus.Labels{
 			"service_id":   serviceID,

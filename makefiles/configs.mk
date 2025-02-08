@@ -7,9 +7,13 @@
 clear_all_local_configs: ## Clear all local configs
 	rm -f ./bin/config/.config.yaml
 	rm -f ./config/.config.yaml
+	rm -f ./local/path/config/.config.yaml
 	rm -f ./e2e/.shannon.config.yaml
 	rm -f ./e2e/.morse.config.yaml
-	rm -f ./local/path/config/.config.yaml
+	rm -f ./local/path/envoy/.envoy.yaml
+	rm -f ./local/path/envoy/.ratelimit.yaml
+	rm -f ./local/path/envoy/.allowed-services.lua
+	rm -f ./local/path/envoy/.gateway-endpoints.yaml
 	@echo "################################################################"
 	@echo "Cleared all local configs"
 	@echo "################################################################"

@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	// The linux process that emits metrics
+	// The POSIX process that emits metrics
 	pathProcess = "path"
 
-	// The list of metrics being tracked
+	// The list of metrics being tracked for EVM QoS
 	evmRequestsTotalMetric = "evm_requests_total"
 )
 
@@ -50,9 +50,9 @@ func PublishEVMMetrics(evmObservations *qos.EVMRequestObservations) {
 	// Increment request counters with all corresponding labels
 	evmRequestsTotal.With(
 		prometheus.Labels{
-			"success":        fmt.Sprintf("%t", getEVMRequestSuccess(evmObservations)),
 			"chain_id":       evmObservations.GetChainId(),
 			"request_method": evmObservations.GetJsonrpcRequest().GetMethod(),
+			"success":        fmt.Sprintf("%t", getEVMRequestSuccess(evmObservations)),
 		},
 	).Inc()
 }
