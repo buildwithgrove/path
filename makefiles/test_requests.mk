@@ -85,7 +85,7 @@ test_request__evm_endpoint: debug_anvil_supplier_info_msg ## Test EVM endpoint r
 
 .PHONY: test_request__cometbft_endpoint
 test_request__cometbft_endpoint: ## Test CometBFT endpoint request against the PATH Gateway running on port 3069 without Envoy Proxy
-	curl 'http://localhost:3069/v1/status' \
+	curl 'http://localhost:3069/v1/health' \
 		-X GET \
 		-H 'Content-Type: application/json' \
 		-H 'target-service-id: cometbft'

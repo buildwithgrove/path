@@ -74,11 +74,13 @@ docker_build_with_restart(
 )
 
 # Port 6060 is exposed to serve pprof data.
-# Use the `debug_goroutines` make target to view the pprof goroutine data: `make debug_goroutines`
+# Run the following commands to view the pprof data:
+#   $ make debug_goroutines
 path_port_forwards = ["6060:6060"]
 
-# Specify the dependencies if PATH is running with auth.
-# No ports, except 6060 for pprof, are exposed: all traffic must be routed through Envoy Proxy.
+# Specify dependencies if PATH is running with auth.
+# No ports (except 6060 for pprof), are exposed because all traffic MUST
+# be routed through Envoy Proxy.
 if MODE == "path_with_auth":
     path_resource_deps = [
         "ext-authz",
@@ -90,9 +92,9 @@ if MODE == "path_with_auth":
 
 # Specify the dependencies and port forwards if PATH is running WITHOUT auth.
 if MODE == "path_only":
-    # Run PATH without any dependencies and port 3069 exposed
+    # Run PATH without any dependencies
     path_resource_deps = []
-    # When running without auth port 3069 is exposed to serve relay requests.
+    # Expose port 3069 to serve relay requests (since envoy proxy is not used)
     path_port_forwards.append("3069:3069")
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:

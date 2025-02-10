@@ -18,8 +18,8 @@ message EVMRequestObservations {
   // * Request is sent to additional endpoints for data collection
   repeated EVMEndpointObservation endpoint_observations = 2;
 
-	// chainID is the blockchain identifier for the evm QoS implementation.
-	// Expected as the `Result` field in eth_chainId responses.
+  // chainID is the blockchain identifier for the evm QoS implementation.
+  // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 3;
 }
 

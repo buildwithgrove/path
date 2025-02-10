@@ -28,7 +28,8 @@ func responseUnmarshallerBlockNumber(
 			logger: logger,
 
 			jsonRPCResponse: jsonrpcResp,
-			// A valid error JSONRPC response is considered a valid response.
+
+			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
 			valid: true,
 		}, nil
 	}
@@ -67,8 +68,9 @@ type responseToBlockNumber struct {
 
 	// result stores the result field of a response to a `eth_blockNumber` request.
 	result string
+
 	// valid is set to true if the endpoint response is deemed valid.
-	// As of PR #152, a respons is valid if either of the following holds:
+	// As of PR #152, a response is valid if either of the following holds:
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool

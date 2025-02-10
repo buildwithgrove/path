@@ -82,7 +82,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
-	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http level.
+	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http (L7) level.
 	// Required steps:
 	//  	1. Update QoSService interface to parse custom struct with []byte payload
 	//  	2. Read HTTP request body in `request` package and return struct for QoS Service

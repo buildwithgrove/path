@@ -30,7 +30,7 @@ func responseUnmarshallerChainID(
 
 			jsonRPCResponse: jsonrpcResp,
 
-			// A valid error JSONRPC response is considered a valid response.
+			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
 			valid: true,
 		}, nil
 	}
@@ -53,8 +53,8 @@ func responseUnmarshallerChainID(
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 
-		// if unmarhsaling succeeded, the response is considered valid.
-		valid: err == nil,
+		// if unmarshaling succeeded, the response is considered valid.
+		valid: (err == nil),
 	}, err
 }
 
@@ -70,7 +70,7 @@ type responseToChainID struct {
 	result string
 
 	// valid is set to true if the parsed response is deemed valid.
-	// As of PR #152, a respons is valid if either of the following holds:
+	// As of PR #152, a response is valid if either of the following holds:
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
