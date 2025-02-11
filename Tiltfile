@@ -113,7 +113,7 @@ helm_resource(
     labels=["path"],
     links=[
         link(
-            "http://localhost:3000/d/gateway/path-path-gateway?orgId=1",
+            "http://localhost:3000/d/relays/path-service-requests?orgId=1",
             "Grafana dashboard",
         ),
     ],
