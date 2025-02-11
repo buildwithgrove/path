@@ -22,7 +22,9 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/websockets"
 )
@@ -88,10 +90,11 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	gatewayRequestCtx := &requestContext{
 		logger: g.Logger,
 
-		protocol:          g.Protocol,
-		httpRequestParser: g.HTTPRequestParser,
-		metricsReporter:   g.MetricsReporter,
-		dataReporter:      g.DataReporter,
+		gatewayObservations: getUserRequestGatewayObservations(),
+		protocol:            g.Protocol,
+		httpRequestParser:   g.HTTPRequestParser,
+		metricsReporter:     g.MetricsReporter,
+		dataReporter:        g.DataReporter,
 		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
 		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
 	}
@@ -126,6 +129,15 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
+}
+
+// getUserRequestGatewayObservations returns gateway-level observations for an organic request.
+// Example: request originated from a user.
+func getUserRequestGatewayObservations() observation.GatewayObservations {
+	return observation.GatewayObservations{
+		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
+		ReceivedTime: timestamppb.Now(),
+	}
 }
 
 // handleWebsocketRequest handles WebSocket connection requests by directly connecting

@@ -28,6 +28,9 @@ func responseUnmarshallerBlockNumber(
 			logger: logger,
 
 			jsonRPCResponse: jsonrpcResp,
+
+			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
+			valid: true,
 		}, nil
 	}
 
@@ -48,6 +51,10 @@ func responseUnmarshallerBlockNumber(
 
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
+
+		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
+		// e.g. a response that fails parsing as a number is not valid.
+		valid: err == nil,
 	}, err
 }
 
@@ -61,6 +68,12 @@ type responseToBlockNumber struct {
 
 	// result stores the result field of a response to a `eth_blockNumber` request.
 	result string
+
+	// valid is set to true if the endpoint response is deemed valid.
+	// As of PR #152, a response is valid if either of the following holds:
+	//	- It is a valid JSONRPC error response
+	//	- It is a valid JSONRPC response with any string value in `result` field.
+	valid bool
 }
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
@@ -70,6 +83,7 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
 				BlockNumberResponse: r.result,
+				Valid:               r.valid,
 			},
 		},
 	}

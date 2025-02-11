@@ -47,6 +47,7 @@ The following tools are required to start a local PATH instance:
 - [**kubectl**](https://kubernetes.io/docs/tasks/tools/#kubectl): CLI for interacting with Kubernetes
 - [**Helm**](https://helm.sh/docs/intro/install/): Package manager for Kubernetes
 - [**Tilt**](https://docs.tilt.dev/install.html): Local Kubernetes development environment
+- [**Graphviz**](https://graphviz.org) (Debug only): Required for generating profiling & debugging performance
 
 **Development Tools:**
 

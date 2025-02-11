@@ -55,3 +55,6 @@ local/path/
 
 # Claudesync
 .claudesync/
+
+# Config Backup files
+*.backup

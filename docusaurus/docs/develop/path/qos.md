@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: Quality of Service
 description: High level overview of Quality of Service (QoS) in PATH
 ---
