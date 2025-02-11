@@ -15,7 +15,7 @@ and have PATH running in Tilt Mode.
 ## 1. Accessing PATH Metrics
 
 In Tilt Mode, PATH metrics can be accessed from [PATH Tilt UI](http://localhost:10350/r/path/overview) by clicking
-in the top left corner to view [PATH Grafana Service Requests Dashboard]("http://localhost:3000/d/relays/path-service-requests?orgId=1").
+in the top left corner to view [PATH Grafana Service Requests Dashboard](http://localhost:3000/d/relays/path-service-requests?orgId=1).
 
 ![Tilt PATH](./img/metrics_localnet_overview.png)
 
