@@ -89,3 +89,36 @@ test_request__cometbft_endpoint: ## Test CometBFT endpoint request against the P
 		-X GET \
 		-H 'Content-Type: application/json' \
 		-H 'target-service-id: cometbft'
+
+###################################
+#### Relay Utils Test Requests ####
+###################################
+
+.PHONY: check_relay_util
+check_relay_util:
+	@if ! command -v relay-util &> /dev/null; then \
+		echo "####################################################################################################"; \
+		echo "Relay Util is not installed. To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
+		echo "go install github.com/commoddity/relay-util/v2@latest"; \
+		echo "####################################################################################################"; \
+	fi
+
+.PHONY: test_request__relay_util_100
+test_request__relay_util_100: check_relay_util ## Test anvil with 100 requests
+	relay-util \
+		-u http://localhost:3069/v1 \
+		-s anvil \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-g 10 \
+		-w 100
+
+.PHONY: test_request__relay_util_1000
+test_request__relay_util_1000: check_relay_util ## Test anvil with 1000 requests
+	relay-util \
+		-u http://localhost:3069/v1 \
+		-s anvil \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 1000 \
+		-g 10 \
+		-w 100
