@@ -110,8 +110,7 @@ test_request__relay_util_100: check_relay_util ## Test anvil with 100 requests
 		-H "target-service-id: anvil" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 100 \
-		-g 10 \
-		-w 100
+		-b 
 
 .PHONY: test_request__relay_util_1000
 test_request__relay_util_1000: check_relay_util ## Test anvil with 1000 requests
@@ -120,5 +119,4 @@ test_request__relay_util_1000: check_relay_util ## Test anvil with 1000 requests
 		-H "target-service-id: anvil" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 1000 \
-		-g 10 \
-		-w 100
+		-b 
