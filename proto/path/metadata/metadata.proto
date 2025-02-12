@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package path.metadata;
+
+option go_package = "github.com/buildwithgrove/path/observation/metadata";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  // Used for attaching a semantic meaning to a field.
+  string semantic_meaning = 50001;
+}

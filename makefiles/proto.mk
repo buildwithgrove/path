@@ -14,6 +14,7 @@ proto_gen_observation: ## Generate observation protobuf artifacts
 		--go_out=./observation \
 		--go_opt=module='github.com/buildwithgrove/path/observation' \
 		./proto/path/*.proto \
+		./proto/path/metadata/*.proto \
 		./proto/path/protocol/*.proto \
 		./proto/path/qos/*.proto
 
