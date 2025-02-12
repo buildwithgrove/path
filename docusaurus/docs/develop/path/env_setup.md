@@ -48,6 +48,7 @@ The following tools are required to start a local PATH instance:
 - [**Helm**](https://helm.sh/docs/intro/install/): Package manager for Kubernetes
 - [**Tilt**](https://docs.tilt.dev/install.html): Local Kubernetes development environment
 - [**Graphviz**](https://graphviz.org) (Debug only): Required for generating profiling & debugging performance
+- [**Relay Util**](https://github.com/commoddity/relay-util): (Load testing tool): Used to send configurable batches of relays concurrently
 
 **Development Tools:**
 
