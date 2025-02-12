@@ -16,6 +16,10 @@ type ServiceState struct {
 
 	serviceStateLock sync.RWMutex
 
+	// chainID is the chain ID of the CometBFT blockchain.
+	// Corresponds with with the `network` field returned by the `/status` endpoint.
+	chainID string
+
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `/status` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
 	//
@@ -30,7 +34,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	defer s.serviceStateLock.RUnlock()
 
 	// Basic validation of the endpoint based on prior observations.
-	if err := endpoint.Validate(); err != nil {
+	if err := endpoint.Validate(s.chainID); err != nil {
 		return err
 	}
 
@@ -56,7 +60,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 		// DO NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.
 		// E.g. an endpoint with an invalid response to `/status` will not be used to update the perceived block number.
-		if err := endpoint.Validate(); err != nil {
+		if err := endpoint.Validate(s.chainID); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}

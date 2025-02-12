@@ -15,11 +15,16 @@ type (
 	// Result struct is the expected response from the `/status` endpoint.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#response-1
 	Result struct {
+		NodeInfo NodeInfo `json:"node_info"`
 		SyncInfo SyncInfo `json:"sync_info"`
 	}
-	// TODO_FUTURE: Extract more than just the `latest_block_height` field.
+	NodeInfo struct {
+		// Network field is the chain ID of the endpoint.
+		Network string `json:"network"`
+	}
 	SyncInfo struct {
 		LatestBlockHeight string `json:"latest_block_height"`
+		CatchingUp        bool   `json:"catching_up"`
 	}
 )
 
@@ -64,6 +69,8 @@ func responseUnmarshallerStatus(
 	return responseToStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResp,
+		chainID:           result.NodeInfo.Network,
+		synced:            !result.SyncInfo.CatchingUp,
 		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
 	}, nil
 }
@@ -76,6 +83,12 @@ type responseToStatus struct {
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
+	// chainID stores the chain ID of the endpoint.
+	chainID string
+
+	// synced indicates if the endpoint is synced to the network.
+	synced bool
+
 	// latestBlockHeight stores the latest block height of a
 	// response to a block height request as a string.
 	latestBlockHeight string
@@ -85,8 +98,10 @@ type responseToStatus struct {
 // Implements the response interface.
 func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObservation {
 	return qosobservations.CometBFTEndpointObservation{
-		ResponseObservation: &qosobservations.CometBFTEndpointObservation_LatestBlockHeightResponse{
-			LatestBlockHeightResponse: &qosobservations.CometBFTLatestBlockHeightResponse{
+		ResponseObservation: &qosobservations.CometBFTEndpointObservation_StatusResponse{
+			StatusResponse: &qosobservations.CometBFTStatusResponse{
+				ChainId:                   r.chainID,
+				Synced:                    r.synced,
 				LatestBlockHeightResponse: r.latestBlockHeight,
 			},
 		},
