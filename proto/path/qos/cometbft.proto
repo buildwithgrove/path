@@ -30,7 +30,7 @@ message CometBFTEndpointObservation {
         CometBFTHealthResponse health_response = 2;
 
         // Response to `status` request
-        CometBFTLatestBlockHeightResponse latest_block_height_response = 3;
+        CometBFTStatusResponse status_response = 3;
 
         // Responses not used in endpoint validation
         CometBFTUnrecognizedResponse unrecognized_response = 4;
@@ -47,8 +47,10 @@ message CometBFTHealthResponse {
 
 // CometBFTBlockNumberResponse stores the latest block number from a `status` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-message CometBFTLatestBlockHeightResponse {
-    string latest_block_height_response = 1;
+message CometBFTStatusResponse {
+    string chain_id = 1;
+    bool synced = 2;
+    string latest_block_height_response = 3;
 }
 
 // CometBFTUnrecognizedResponse handles requests with methods ignored by state update

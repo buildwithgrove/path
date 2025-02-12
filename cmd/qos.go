@@ -38,7 +38,7 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 			// TODO_TECHDEBT: add pokt qos service here
 
 		case config.ServiceIDCometBFT:
-			cometBFTQoS := cometbft.NewQoSInstance(logger)
+			cometBFTQoS := cometbft.NewQoSInstance(logger, config.GetCometBFTChainID(serviceID))
 			qosServices[serviceID] = cometBFTQoS
 
 		default: // this should never happen

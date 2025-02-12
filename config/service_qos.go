@@ -28,8 +28,9 @@ const (
 	ServiceIDCometBFT ServiceQoSType = "cometbft"
 )
 
-// TODO_MVP(@commoddity): figure out what this should be longer term.
+// TODO_MVP(@commoddity): figure out what these should be longer term.
 const defaultEVMChainID = "0x1" // ETH Mainnet (1)
+const defaultCometBFTChainID = "cosmoshub-4"
 
 // The ServiceQoSTypes map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
@@ -49,6 +50,9 @@ func init() {
 	}
 	for k := range shannonEVMChainIDs {
 		ServiceQoSTypes[k] = ServiceIDEVM
+	}
+	for k := range shannonCometBFTChainIDs {
+		ServiceQoSTypes[k] = ServiceIDCometBFT
 	}
 	for k, v := range morseQoSTypes {
 		ServiceQoSTypes[k] = v
@@ -71,22 +75,22 @@ func GetEVMChainID(serviceID protocol.ServiceID) string {
 	return defaultEVMChainID
 }
 
+func GetCometBFTChainID(serviceID protocol.ServiceID) string {
+	if chainID, ok := shannonCometBFTChainIDs[serviceID]; ok {
+		return chainID
+	}
+	return defaultCometBFTChainID
+}
+
 // IMPORTANT: To run QoS checks against a service, the service ID MUST be registered in one of the below maps.
 // TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
 
-// All non-EVM Shannon service IDs.
+// All non-EVM, non-CometBFT Shannon service IDs.
 // As of the latest update, these service IDs are on Beta TestNet and intended to be moved
 // over to MainNet once the network is ready.
 var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Solana Service IDs
 	"solana": ServiceIDSolana,
-
-	// POKT Service IDs
-	"pokt":  ServiceIDPOKT,
-	"morse": ServiceIDPOKT,
-
-	// CometBFT Service IDs
-	"cometbft": ServiceIDCometBFT,
 }
 
 // All Shannon EVM Service IDs and their corresponding EVM chain IDs.
@@ -99,6 +103,12 @@ var shannonEVMChainIDs = map[protocol.ServiceID]string{
 
 	// Test QoS EVMservice IDs
 	"anvil": "0x1", // ETH development/testing (1)
+}
+
+// All CometBFT Shannon Service IDs and their corresponding CometBFT chain IDs.
+var shannonCometBFTChainIDs = map[protocol.ServiceID]string{
+	"pocket-beta-rpc": "pocket-beta",
+	"cometbft":        "cosmoshub-4",
 }
 
 // All non-EVM Morse Service IDs.
