@@ -9,11 +9,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_TECHDEBT: factor-out any code that is common between the endpoint stores of diffrent QoS instances.
-// Alternatively, have a ServiceState instance wrapped around an endpoint store: the ServiceState performs all
-// endpoint selection/verification, using a minimal set of load/store operations from an endpoint store.
-//
-// UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
+// UpdateEndpointsFromObservations CRUDs endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
 func (es *EndpointStore) UpdateEndpointsFromObservations(
 	solanaObservations *qosobservations.SolanaRequestObservations,
@@ -27,7 +23,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 	endpointObservations := solanaObservations.GetEndpointObservations()
 
-	logger := es.Logger.With(
+	logger := es.logger.With(
 		"qos_instance", "solana",
 		"method", "UpdateEndpointsFromObservations",
 	)
@@ -46,9 +42,10 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.
-		// e.g. when the first observation(s) are received for an endpoint.
+		// E.g. when the first observation(s) are received for an endpoint.
 		endpoint := es.endpoints[endpointAddr]
 
+		// Apply the observation to the endpoint.
 		isMutated := endpoint.ApplyObservation(observation)
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
 		if !isMutated {

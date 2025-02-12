@@ -86,7 +86,7 @@ func (r responseToGetHealth) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.Response)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshalling JSONRPC response failed.")
+		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }

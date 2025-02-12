@@ -23,12 +23,12 @@ var _ gateway.QoSService = &QoS{}
 //   - Response building
 //   - Endpoint validation and selection
 type QoS struct {
+	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
-	logger polylog.Logger
 }
 
-// ParseHTTPRequest build a request context from an HTTP request.
+// ParseHTTPRequest builds a request context from an HTTP request.
 // Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {

@@ -10,7 +10,7 @@ import (
 
 const (
 	// Each endpoint check should use its own ID to avoid potential conflicts.
-	// ID of JSONRPC requests for any new checks should be added to the list below.
+	// ID of JSON-RPC requests for any new checks should be added to the list below.
 	_           = iota
 	idGetHealth = 1000 + iota
 	idGetEpochInfo
@@ -27,8 +27,8 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.Logger, endpointAddr, es, withGetHealth),
-		getEndpointCheck(es.Logger, endpointAddr, es, withGetEpochInfo),
+		getEndpointCheck(es.logger, endpointAddr, es, withGetHealth),
+		getEndpointCheck(es.logger, endpointAddr, es, withGetEpochInfo),
 		// TODO_MVP(@adshmh): Add a check for a `getBlock` request
 	}
 }

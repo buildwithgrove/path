@@ -17,31 +17,34 @@ var _ protocol.EndpointSelector = &EndpointStore{}
 
 // EndpointStore maintains QoS data on the set of available endpoints
 // for the Solana blockchain service.
-// It performs several tasks, most notably:
-//
-//	1- Endpoint selection based on the quality data available
-//	2- Application of endpoints' observations to update the data on endpoints.
+// It performs several tasks:
+// - Endpoint selection based on the quality data available
+// - Application of endpoints' observations to update the data on endpoints.
 type EndpointStore struct {
-	ServiceState *ServiceState
-	Logger       polylog.Logger
+	logger polylog.Logger
+
+	serviceState *ServiceState
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
-// Select returns an endpoint address matching an entry from the list of available endpoints.
-// available endpoints are filtered based on their validity first.
-// A random endpoint is then returned from the filtered list of valid endpoints.
-func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	filteredEndpointsAddr, err := es.filterEndpoints(availableEndpoints)
+// Select returns a random endpoint address from the list of valid endpoints.
+// Valid endpoints are determined by filtering the available endpoints based on their
+// validity criteria.
+func (es *EndpointStore) Select(allAvailableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
+	logger := es.logger.With("method", "Select")
+	logger.With("total_endpoints", len(allAvailableEndpoints)).Info().Msg("filtering available endpoints.")
+
+	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
 	if err != nil {
+		logger.Warn().Err(err).Msg("error filtering endpoints")
 		return protocol.EndpointAddr(""), err
 	}
 
-	logger := es.Logger.With("number of available endpoints", len(availableEndpoints))
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msg("select: all endpoints failed validation; selecting a random endpoint.")
-		randomAvailableEndpoint := availableEndpoints[rand.Intn(len(availableEndpoints))]
+		randomAvailableEndpoint := allAvailableEndpoints[rand.Intn(len(allAvailableEndpoints))]
 		return randomAvailableEndpoint.Addr(), nil
 	}
 
@@ -49,23 +52,23 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 }
 
-// filterEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
-func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
+// filterValidEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
+func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints []protocol.Endpoint) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	logger := es.Logger.With("method", "filterEndpoints").With("qos_instance", "solana")
+	logger := es.logger.With("method", "filterEndpoints").With("qos_instance", "solana")
 
-	if len(availableEndpoints) == 0 {
+	if len(allAvailableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
+	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(allAvailableEndpoints)))
 
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
 	// For example: latency rather than making a single selection.
 	var filteredEndpointsAddr []protocol.EndpointAddr
-	for _, availableEndpoint := range availableEndpoints {
+	for _, availableEndpoint := range allAvailableEndpoints {
 		endpointAddr := availableEndpoint.Addr()
 
 		logger := logger.With("endpoint", endpointAddr)
@@ -77,7 +80,7 @@ func (es *EndpointStore) filterEndpoints(availableEndpoints []protocol.Endpoint)
 			continue
 		}
 
-		if err := es.ServiceState.ValidateEndpoint(endpoint); err != nil {
+		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
 			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}

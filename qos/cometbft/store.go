@@ -24,7 +24,7 @@ type EndpointStore struct {
 	logger polylog.Logger
 
 	// ServiceState is the current perceived state of the CometBFT blockchain
-	*ServiceState
+	serviceState *ServiceState
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
@@ -33,10 +33,6 @@ type EndpointStore struct {
 // Select returns a random endpoint address from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria.
-//
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
-// For example, the EndpointStore is a great candidate for refactoring.
 func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	logger := es.logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
@@ -68,7 +64,7 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints []protocol.E
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	logger := es.logger.With("method", "filterEndpoints", "qos_instance", "cometbft")
+	logger := es.logger.With("method", "filterValidEndpoints", "qos_instance", "cometbft")
 
 	if len(allAvailableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")
@@ -90,7 +86,7 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints []protocol.E
 			continue
 		}
 
-		if err := es.ServiceState.ValidateEndpoint(endpoint); err != nil {
+		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
 			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}

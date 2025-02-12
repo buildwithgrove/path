@@ -14,20 +14,20 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// QoS struct performs the functionality defined by gateway package's ServiceQoS,
-// which consists of:
-// A) a QoSRequestParser which builds Solana-specific RequestQoSContext objects,
-// by parsing user HTTP requests.
-// B) an EndpointSelector, which selects an endpoint for performing a service request.
+// QoS implements gateway.QoSService by providing:
+//  1. QoSRequestParser - Builds Solana-specific RequestQoSContext objects from HTTP requests
+//  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
-// QoS is the ServiceQoS implementations for the Solana blockchain.
-// It contains logic specific to Solana, including request parsing,
-// response building, and endpoint validation/selection.
+// QoS implements ServiceQoS for Solana-based chains.
+// It handles chain-specific:
+//   - Request parsing
+//   - Response building
+//   - Endpoint validation and selection
 type QoS struct {
+	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
-	logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.

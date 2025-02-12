@@ -54,7 +54,7 @@ func (m *Messenger) Publish(observationSet message.ObservationSet) error {
 	// the same PATH instance.
 	bz, err := observationSet.MarshalJSON()
 	if err != nil {
-		return fmt.Errorf("publish: error marshalling service request context: %w", err)
+		return fmt.Errorf("publish: error marshaling service request context: %w", err)
 	}
 
 	return m.MessagePlatform.Publish(observationSetTopic, bz)
