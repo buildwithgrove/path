@@ -87,6 +87,18 @@ install_graphviz() {
     fi
 }
 
+# Function to install Relay Util if not present
+# This function checks if Relay Util is installed. If not, it installs it using the package manager.
+install_relay_util() {
+    if command_exists relay-util; then
+        echo "$(date) - Relay Util already installed." >>install.log
+    else
+        echo "$(date) - Installing Relay Util..." >>install.log
+        go install github.com/commoddity/relay-util/v2@latest
+        echo "$(date) - Relay Util installation complete." >>install.log
+    fi
+}
+
 # Main execution starts here
 echo "$(date) - Starting installation script..." >>install.log
 
@@ -96,5 +108,6 @@ install_kubectl
 install_helm
 install_tilt
 install_graphviz
+install_relay_util
 
 echo "$(date) - Installation script completed." >>install.log
