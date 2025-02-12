@@ -95,16 +95,18 @@ test_request__cometbft_endpoint: ## Test CometBFT endpoint request against the P
 ###################################
 
 .PHONY: check_relay_util
+# Internal helper: Checks if relay-util is installed locally
 check_relay_util:
 	@if ! command -v relay-util &> /dev/null; then \
 		echo "####################################################################################################"; \
-		echo "Relay Util is not installed. To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
+		echo "Relay Util is not installed." \
+		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
 		echo "go install github.com/commoddity/relay-util/v2@latest"; \
 		echo "####################################################################################################"; \
 	fi
 
 .PHONY: test_request__relay_util_100
-test_request__relay_util_100: check_relay_util ## Test anvil with 100 requests
+test_request__relay_util_100: check_relay_util ## Test anvil with 100 eth_blockNumber requests using relay-util
 	relay-util \
 		-u http://localhost:3069/v1 \
 		-H "target-service-id: anvil" \
@@ -113,7 +115,7 @@ test_request__relay_util_100: check_relay_util ## Test anvil with 100 requests
 		-b 
 
 .PHONY: test_request__relay_util_1000
-test_request__relay_util_1000: check_relay_util ## Test anvil with 1000 requests
+test_request__relay_util_1000: check_relay_util  ## Test anvil with 1000 eth_blockNumber requests using relay-util
 	relay-util \
 		-u http://localhost:3069/v1 \
 		-H "target-service-id: anvil" \
