@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -67,12 +68,20 @@ func main() {
 		QoSServices: qosInstances,
 	}
 
+	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
+	if err != nil {
+		log.Fatalf("failed to start metrics server: %v", err)
+	}
+
+	setupPprofServer(context.TODO(), logger, pprofAddr)
+
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
 		Logger: logger,
 
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
+		MetricsReporter:   metricsReporter,
 	}
 
 	// If Shannon configurations and WebsocketEndpointsURLs are set, configure the gateway's WebsocketEndpoints.

@@ -71,8 +71,8 @@ const config = {
     ({
       docs: {
         sidebar: {
-          hideable: false,
-          autoCollapseCategories: false,
+          hideable: true,
+          autoCollapseCategories: true,
         },
       },
       style: "dark",

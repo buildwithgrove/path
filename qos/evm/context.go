@@ -43,7 +43,12 @@ type endpointResponse struct {
 
 // requestContext implements the functionality for EVM-based blockchain services.
 type requestContext struct {
-	logger        polylog.Logger
+	logger polylog.Logger
+
+	// chainID is the chain identifier for EVM QoS implementation.
+	// Expected as the `Result` field in eth_chainId responses.
+	chainID string
+
 	endpointStore *EndpointStore
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
@@ -151,11 +156,8 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				// TODO_TECHDEBT(@adshmh): Set JSONRPCRequest field.
-				// Requires utility function to convert between:
-				// - qos.jsonrpc.Request
-				// - observation.qos.JsonRpcRequest
-				// Needed for setting JSONRPC fields in any QoS service's observations.
+				JsonrpcRequest:       rc.jsonrpcReq.GetObservation(),
+				ChainId:              rc.chainID,
 				EndpointObservations: observations,
 			},
 		},

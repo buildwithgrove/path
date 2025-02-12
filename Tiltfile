@@ -73,7 +73,14 @@ docker_build_with_restart(
     live_update=[sync("bin/path", "/app/path")],
 )
 
-# Specify the dependencies and port forwards if PATH is running WITH auth.
+# Port 6060 is exposed to serve pprof data.
+# Run the following commands to view the pprof data:
+#   $ make debug_goroutines
+path_port_forwards = ["6060:6060"]
+
+# Specify dependencies if PATH is running with auth.
+# No ports (except 6060 for pprof), are exposed because all traffic MUST
+# be routed through Envoy Proxy.
 if MODE == "path_with_auth":
     path_resource_deps = [
         "ext-authz",
@@ -82,15 +89,13 @@ if MODE == "path_with_auth":
         "ratelimit",
         "redis",
     ]
-    # No port exposed as all traffic must be routed through Envoy Proxy.
-    path_port_forwards = []
 
 # Specify the dependencies and port forwards if PATH is running WITHOUT auth.
 if MODE == "path_only":
-    # Run PATH without any dependencies and port 3069 exposed
+    # Run PATH without any dependencies
     path_resource_deps = []
-    # Expose port 3069 if PATH is running without auth.
-    port_forwards=["3069:3069"]
+    # Expose port 3069 to serve relay requests (since envoy proxy is not used)
+    path_port_forwards.append("3069:3069")
 
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 #   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
@@ -108,7 +113,7 @@ helm_resource(
     labels=["path"],
     links=[
         link(
-            "http://localhost:3003/d/gateway/path-path-gateway?orgId=1",
+            "http://localhost:3000/d/relays/path-service-requests?orgId=1",
             "Grafana dashboard",
         ),
     ],

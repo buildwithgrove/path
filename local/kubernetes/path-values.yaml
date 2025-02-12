@@ -27,7 +27,11 @@ path:
       protocol: TCP
       service:
         type: ClusterIP
-
+    - name: metrics
+      port: 9090
+      protocol: TCP
+      service:
+        type: ClusterIP
   # The PATH service uses the `/healthz` endpoint to check if the service is ready,
   # which uses the response from the QoS service to determine whether to send a 
   # 503 (Service Unavailable) or 200 (OK) status code.

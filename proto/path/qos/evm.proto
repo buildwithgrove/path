@@ -4,6 +4,7 @@ package path.qos;
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
+import "path/metadata/metadata.proto";
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
@@ -16,6 +17,10 @@ message EVMRequestObservations {
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
   repeated EVMEndpointObservation endpoint_observations = 2;
+
+  // chainID is the blockchain identifier for the evm QoS implementation.
+  // Expected as the `Result` field in eth_chainId responses.
+  string chain_id = 3;
 }
 
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
@@ -46,16 +51,25 @@ message EVMEndpointObservation {
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 message EVMChainIDResponse {
   string chain_id_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
 }
 
 // EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 message EVMBlockNumberResponse {
   string block_number_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
 // Example: As of PR #72, `eth_call` requests are not used for endpoint validation
 message EVMUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
+
+  // Whether the response is deemed valid by QoS
+  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
 }

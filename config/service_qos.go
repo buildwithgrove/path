@@ -159,4 +159,13 @@ var morseEVMChainIDs = map[protocol.ServiceID]string{
 	"F029": "0x44d",      // Polygon zkEVM (1101)
 	"F02A": "0xc5cc4",    // zkLink (812564)
 	"F02B": "0x144",      // zkSync (324)
+	"F02C": "0x15f902",   // XRPL EVM Devnet (1440002)
+	"F02D": "0x92",       // Sonic (146)
+	"F02E": "0x2b6653dc", // TRON (728426128)
+	"F030": "0xe708",     // Linea (59144)
+	"F031": "0x138d4",    // Berachain bArtio Testnet (80084)
+	"F032": "0xdef1",     // Ink (57073)
+	"F033": "0x1388",     // Mantle (5000)
+	"F034": "0x531",      // Sei (1329)
+	"F035": "0x138de",    // Berachain (80094)
 }
