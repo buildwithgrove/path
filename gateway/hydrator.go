@@ -83,16 +83,20 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+		// Block until the protocol is alive
+		for !eph.Protocol.IsAlive() {
+			eph.Logger.Info().Msg("Waiting for protocol to be alive...")
+			<-time.After(eph.RunInterval)
+		}
+
+		eph.Logger.Info().Msg("Protocol is alive, starting the hydrator run loop")
 
 		ticker := time.NewTicker(eph.RunInterval)
-		for {
-			if !eph.Protocol.IsAlive() {
-				eph.Logger.Warn().Msg("Protocol is not alive, skipping endpoint hydrator")
-				continue
-			}
+		defer ticker.Stop()
 
-			eph.run()
+		for {
 			<-ticker.C
+			eph.run()
 		}
 	}()
 
