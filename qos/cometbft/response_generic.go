@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	// errCodeUnmarshalling is set as the JSON-RPC response's error code if the endpoint returns a malformed response.
-	errCodeUnmarshalling = -32600
+	// errCodeUnmarshaling is set as the JSON-RPC response's error code if the endpoint returns a malformed response.
+	errCodeUnmarshaling = -32600
 
-	// errMsgUnmarshalling is the generic message returned to the user if the endpoint returns a malformed response.
-	errMsgUnmarshalling = "the response returned by the endpoint is not a valid JSON-RPC response"
+	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
+	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSON-RPC response"
 
 	// errDataFieldRawBytes is the key of the entry in the JSON-RPC error response's "data" map which holds the endpoint's original response.
 	errDataFieldRawBytes = "endpoint_response"
 
-	// errDataFieldUnmarshallingErr is the key of the entry in the JSON-RPC error response's "data" map which holds the unmarshalling error.
-	errDataFieldUnmarshallingErr = "unmarshalling_error"
+	// errDataFieldUnmarshalingErr is the key of the entry in the JSON-RPC error response's "data" map which holds the unmarshaling error.
+	errDataFieldUnmarshalingErr = "unmarshaling_error"
 )
 
 // responseGeneric represents the standard response structure for CometBFT-based blockchain requests.
@@ -53,12 +53,12 @@ func (r responseGeneric) GetObservation() qosobservations.CometBFTEndpointObserv
 // GetResponsePayload returns the payload for the response to a `/health` request.
 // Implements the response interface.
 //
-// TODO_MVP(@adshmh): handle any unmarshalling errors and build a method-specific payload generator.
+// TODO_MVP(@adshmh): handle any unmarshaling errors and build a method-specific payload generator.
 func (r responseGeneric) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseGeneric: Marshalling JSON-RPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseGeneric: Marshaling JSON-RPC response failed.")
 	}
 	return bz
 }
@@ -104,8 +104,8 @@ func getGenericJSONRPCErrResponse(
 	err error,
 ) responseGeneric {
 	errData := map[string]string{
-		errDataFieldRawBytes:         string(malformedResponsePayload),
-		errDataFieldUnmarshallingErr: err.Error(),
+		errDataFieldRawBytes:        string(malformedResponsePayload),
+		errDataFieldUnmarshalingErr: err.Error(),
 	}
 
 	// CometBFT always returns a "1" ID for error responses.
@@ -114,6 +114,6 @@ func getGenericJSONRPCErrResponse(
 	}
 
 	return responseGeneric{
-		jsonRPCResponse: jsonrpc.GetErrorResponse(response.ID, errCodeUnmarshalling, errMsgUnmarshalling, errData),
+		jsonRPCResponse: jsonrpc.GetErrorResponse(response.ID, errCodeUnmarshaling, errMsgUnmarshaling, errData),
 	}
 }

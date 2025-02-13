@@ -104,7 +104,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 
 	response, err := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz)
 
-	// TODO_MVP(@adshmh): Drop the unmarshalling error: the returned response interface should provide methods to allow the caller to:
+	// TODO_MVP(@adshmh): Drop the unmarshaling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
 	// the originally selected one fails to return a valid response to the user's request.
 	// 2. Return a generic but valid JSONRPC response to the user.
