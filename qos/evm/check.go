@@ -18,8 +18,11 @@ const (
 	idBlockNumberCheck
 )
 
+// endpointCheckName is a type for the names of the checks performed on an endpoint.
 type endpointCheckName string
 
+// evmEndpointCheck is an interface for the checks performed on an endpoint.
+// It is embedded in the struct that satisfies the gateway.QualityCheck interface.
 type evmEndpointCheck interface {
 	CheckName() string
 	IsValid(serviceState *ServiceState) error
@@ -35,6 +38,14 @@ var (
 	_ gateway.QualityCheck = &evmQualityCheck{}
 )
 
+// evmQualityCheck provides:
+//  1. the request context used to perform a quality check,
+//  2. The time until the check expires.
+//
+// If an endpoint has a check that is still considered valid,
+// it will not be check by the endpoint hydrator.
+//
+// It implements the QualityCheck interface for EVM-based endpoints.
 type evmQualityCheck struct {
 	evmEndpointCheck
 	requestContext *requestContext
@@ -48,6 +59,8 @@ func (q *evmQualityCheck) EndpointAddr() protocol.EndpointAddr {
 	return q.requestContext.preSelectedEndpointAddr
 }
 
+// GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
+// It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.QualityCheck {
 	endpoint, ok := es.endpoints[endpointAddr]
 	if !ok {

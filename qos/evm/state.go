@@ -8,6 +8,23 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// EndpointStoreConfig captures the modifiable settings of the EndpointStore.
+// This will enable `EndpointStore` to be used as part of QoS for other EVM-based
+// blockchains which may have different desired QoS properties.
+// e.g. different blockchains QoS instances could have different tolerance levels
+// for deviation from the current block height.
+type serviceStateConfig struct {
+	// syncAllowance specifies the maximum number of blocks an endpoint
+	// can be behind, compared to the blockchain's perceived block height,
+	// before being filtered out.
+	syncAllowance uint64
+
+	// chainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+	// See the following link for more details: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+	// Chain IDs Reference: https://chainlist.org/
+	chainID string
+}
+
 // ServiceState keeps the expected current state of the EVM blockchain based on the endpoints' responses to
 // different requests.
 type ServiceState struct {
@@ -15,12 +32,8 @@ type ServiceState struct {
 
 	serviceStateLock sync.RWMutex
 
-	// chainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
-	//
-	// See the following link for more details: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
-	//
-	// Chain IDs Reference: https://chainlist.org/
-	chainID string
+	// config captures the modifiable settings of the ServiceState.
+	config serviceStateConfig
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
