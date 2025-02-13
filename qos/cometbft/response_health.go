@@ -29,6 +29,8 @@ func responseUnmarshallerHealth(
 		}, nil
 	}
 
+	// `/health` endpoint returns an empty response on success,
+	// so any non-error response is considered healthy.
 	return responseToHealth{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,

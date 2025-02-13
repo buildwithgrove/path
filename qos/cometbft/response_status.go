@@ -4,28 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-)
-
-type (
-	// Result struct is the expected response from the `/status` endpoint.
-	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#response-1
-	Result struct {
-		NodeInfo NodeInfo `json:"node_info"`
-		SyncInfo SyncInfo `json:"sync_info"`
-	}
-	NodeInfo struct {
-		// Network field is the chain ID of the endpoint.
-		Network string `json:"network"`
-	}
-	SyncInfo struct {
-		LatestBlockHeight string `json:"latest_block_height"`
-		CatchingUp        bool   `json:"catching_up"`
-	}
 )
 
 // responseToStatus provides the functionality required from a response by a requestContext instance.
@@ -46,8 +31,6 @@ func responseUnmarshallerStatus(
 		}, nil
 	}
 
-	// We only care about the SyncInfo.LatestBlockHeight field of
-	// the JSON-RPC response, so first convert it from any to bytes.
 	resultBytes, err := json.Marshal(jsonrpcResp.Result)
 	if err != nil {
 		return responseToStatus{
@@ -56,10 +39,11 @@ func responseUnmarshallerStatus(
 		}, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	// Then unmarshal the JSON bytes into the Result struct.
-	var result Result
-	err = json.Unmarshal(resultBytes, &result)
-	if err != nil {
+	// Then unmarshal the JSON bytes into the ResultStatus struct
+	// from the CometBFT's `coretypes` package.
+	// Reference: https://github.com/cometbft/cometbft/blob/4226b0ea6ab4725ef807a16b86d6d24835bb45d4/rpc/core/types/responses.go#L100
+	var result coretypes.ResultStatus
+	if err := json.Unmarshal(resultBytes, &result); err != nil {
 		return responseToStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
@@ -70,8 +54,8 @@ func responseUnmarshallerStatus(
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResp,
 		chainID:           result.NodeInfo.Network,
-		synced:            !result.SyncInfo.CatchingUp,
-		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
+		catchingUp:        result.SyncInfo.CatchingUp,
+		latestBlockHeight: strconv.FormatInt(result.SyncInfo.LatestBlockHeight, 10),
 	}, nil
 }
 
@@ -86,8 +70,8 @@ type responseToStatus struct {
 	// chainID stores the chain ID of the endpoint.
 	chainID string
 
-	// synced indicates if the endpoint is synced to the network.
-	synced bool
+	// catchingUp indicates if the endpoint is catching up to the network.
+	catchingUp bool
 
 	// latestBlockHeight stores the latest block height of a
 	// response to a block height request as a string.
@@ -100,8 +84,8 @@ func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObser
 	return qosobservations.CometBFTEndpointObservation{
 		ResponseObservation: &qosobservations.CometBFTEndpointObservation_StatusResponse{
 			StatusResponse: &qosobservations.CometBFTStatusResponse{
-				ChainId:                   r.chainID,
-				Synced:                    r.synced,
+				ChainIdResponse:           r.chainID,
+				CatchingUpResponse:        r.catchingUp,
 				LatestBlockHeightResponse: r.latestBlockHeight,
 			},
 		},

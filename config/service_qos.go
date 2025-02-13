@@ -75,6 +75,9 @@ func GetEVMChainID(serviceID protocol.ServiceID) string {
 	return defaultEVMChainID
 }
 
+// GetCometBFTChainID returns the CometBFT chain ID for a given service ID.
+// If the service ID is not found in the ShannonCometBFTChainIDs map, the default
+// CometBFT chain ID of `cosmoshub-4` is returned.
 func GetCometBFTChainID(serviceID protocol.ServiceID) string {
 	if chainID, ok := shannonCometBFTChainIDs[serviceID]; ok {
 		return chainID
@@ -99,16 +102,16 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 // Reference: EVM chain IDs are sourced from https://chainlist.org
 var shannonEVMChainIDs = map[protocol.ServiceID]string{
 	// EVM service IDs
-	"eth": "0x1", // ETH Mainnet (1)
+	"eth": "0x1", // ETH Mainnet (1) [default EVM chain ID]
 
-	// Test QoS EVMservice IDs
+	// Test QoS EVM service IDs
 	"anvil": "0x1", // ETH development/testing (1)
 }
 
 // All CometBFT Shannon Service IDs and their corresponding CometBFT chain IDs.
 var shannonCometBFTChainIDs = map[protocol.ServiceID]string{
-	"pocket-beta-rpc": "pocket-beta",
-	"cometbft":        "cosmoshub-4",
+	"pocket-beta-rpc": "pocket-beta", // Pocket Beta Testnet [default CometBFT chain ID]
+	"cometbft":        "cosmoshub-4", // Cosmos Hub [default CometBFT chain ID]
 }
 
 // All non-EVM Morse Service IDs.

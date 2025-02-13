@@ -9,13 +9,17 @@ import (
 
 // The errors below list all the possible QoS validation errors of an endpoint.
 var (
-	errNoHealthObs           = fmt.Errorf("endpoint has not had an observation of its response to a health check request")
-	errInvalidHealthObs      = fmt.Errorf("endpoint not healthy and returned an invalid response to a health check request")
-	errNoChainIDObs          = fmt.Errorf("endpoint has not had an observation of its chain ID response to a status request")
-	errInvalidChainIDObs     = fmt.Errorf("endpoint did not return a valid chain ID in its response to a status request")
-	errInvalidSyncedObs      = fmt.Errorf("endpoint has returned a response indicating it is catching up")
-	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its block height response to a status request")
-	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid block height in its response to a status request")
+	// Health request validation errors.
+	errHealthReqNoObs      = fmt.Errorf("endpoint has not had an observation of its response to a health check request")
+	errHealthReqInvalidObs = fmt.Errorf("endpoint not healthy and returned an invalid response to a health check request")
+
+	// Status request validation errors.
+	errStatusReqNoChainIDObs      = fmt.Errorf("endpoint has not had an observation of its chain ID response to a status request")
+	errStatusReqInvalidChainIDObs = fmt.Errorf("endpoint did not return a valid chain ID in its response to a status request")
+	errStatusReqInvalidSyncedObs  = fmt.Errorf("endpoint has returned a response indicating it is catching up")
+
+	errStatusReqNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its block height response to a status request")
+	errStatusReqInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid block height in its response to a status request")
 )
 
 // endpoint stores validation details for a CometBFT endpoint.
@@ -25,13 +29,16 @@ type endpoint struct {
 	healthResponse *bool
 
 	// chainIDResponse stores the chain ID of the endpoint.
+	// Based off the response of NodeInfo.Network in the `/status` response.
 	chainIDResponse string
 
-	// syncedResponse stores if the endpoint is not catching up.
-	syncedResponse bool
+	// catchingUpResponse stores if the endpoint is not catching up.
+	// Based off the response of SyncInfo.CatchingUp in the `/status` response.
+	catchingUpResponse bool
 
 	// latestBlockHeightResponse stores latest block height reported by the endpoint.
 	// nil if no block height request has been made yet.
+	// Based off the response of SyncInfo.LatestBlockHeight in the `/status` response.
 	latestBlockHeightResponse *uint64
 }
 
@@ -42,31 +49,31 @@ func (e endpoint) Validate(chainID string) error {
 
 	// No health check has been performed yet.
 	case e.healthResponse == nil:
-		return errNoHealthObs
+		return errHealthReqNoObs
 
 	// Invalid health check response.
 	case !*e.healthResponse:
-		return errInvalidHealthObs
+		return errHealthReqInvalidObs
 
 	// No chain ID response.
 	case e.chainIDResponse == "":
-		return errNoChainIDObs
+		return errStatusReqNoChainIDObs
 
 	// Invalid chain ID response.
 	case e.chainIDResponse != chainID:
-		return errInvalidChainIDObs
+		return errStatusReqInvalidChainIDObs
 
-	// Invalid synced response.
-	case !e.syncedResponse:
-		return errInvalidSyncedObs
+	// Invalid catching up response.
+	case e.catchingUpResponse:
+		return errStatusReqInvalidSyncedObs
 
 	// No block height request has been made yet.
 	case e.latestBlockHeightResponse == nil:
-		return errNoBlockNumberObs
+		return errStatusReqNoBlockNumberObs
 
 	// Invalid block height response.
 	case *e.latestBlockHeightResponse == 0:
-		return errInvalidBlockNumberObs
+		return errStatusReqInvalidBlockNumberObs
 
 	default:
 		return nil
@@ -86,8 +93,8 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.CometBFTEndpointObserva
 
 	// Block height observation made - update parsedBlockNumberResponse.
 	if blockNumberResponse := obs.GetStatusResponse(); blockNumberResponse != nil {
-		e.chainIDResponse = blockNumberResponse.GetChainId()
-		e.syncedResponse = blockNumberResponse.GetSynced()
+		e.chainIDResponse = blockNumberResponse.GetChainIdResponse()
+		e.catchingUpResponse = blockNumberResponse.GetCatchingUpResponse()
 
 		// base0 uses the string's prefix to determine its base.
 		parsedBlockNumber, err := strconv.ParseUint(blockNumberResponse.GetLatestBlockHeightResponse(), 0, 64)
@@ -113,7 +120,7 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.CometBFTEndpointObserva
 func (e endpoint) GetBlockNumber() (uint64, error) {
 	// No block height request has been made yet.
 	if e.latestBlockHeightResponse == nil {
-		return 0, errNoBlockNumberObs
+		return 0, errStatusReqNoBlockNumberObs
 	}
 
 	// Return the parsed block number value.
