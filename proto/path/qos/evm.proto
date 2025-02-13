@@ -43,6 +43,12 @@ message EVMEndpointObservation {
 
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
     EVMUnrecognizedResponse unrecognized_response = 4;
+
+    // EVMEmptyResponse indicates an endpoint returned no data.
+    // Used to:
+    //   - Disqualify endpoints that return empty responses
+    //   - Track metrics for empty response patterns
+    EVMEmptyResponse empty_response = 5;
   }
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
@@ -72,4 +78,12 @@ message EVMUnrecognizedResponse {
 
   // Whether the response is deemed valid by QoS
   bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
+}
+
+// EVMEmptyResponse represents an endpoint's empty response, which triggers
+// automatic endpoint disqualification by EVM QoS processors.
+message EVMEmptyResponse {
+  // valid indicates if response meets QoS criteria
+  // Always false for empty responses
+  bool valid = 1 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
 }
