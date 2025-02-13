@@ -81,10 +81,6 @@ var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
 	// Solana Service IDs
 	"solana": ServiceIDSolana,
 
-	// POKT Service IDs
-	"pokt":  ServiceIDPOKT,
-	"morse": ServiceIDPOKT,
-
 	// CometBFT Service IDs
 	"cometbft": ServiceIDCometBFT,
 }
