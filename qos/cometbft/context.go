@@ -67,9 +67,13 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 	}
 
-	// If the request is REST-like, set the path.
+	// If the request is REST-like, set the path including query parameters.
 	if rc.httpReq.URL.Path != "" {
 		payload.Path = rc.httpReq.URL.Path
+
+		if rc.httpReq.URL.RawQuery != "" {
+			payload.Path += "?" + rc.httpReq.URL.RawQuery
+		}
 	}
 
 	// If the request is JSON-RPC, set the data from the stored []byte.

@@ -35,7 +35,7 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 			qosServices[serviceID] = solanaQoS
 
 		case config.ServiceIDCometBFT:
-			cometBFTQoS := cometbft.NewQoSInstance(logger)
+			cometBFTQoS := cometbft.NewQoSInstance(logger, config.GetCometBFTChainID(serviceID))
 			qosServices[serviceID] = cometBFTQoS
 
 		default: // this should never happen
