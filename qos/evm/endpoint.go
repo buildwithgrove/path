@@ -3,6 +3,7 @@ package evm
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
@@ -15,34 +16,85 @@ var (
 	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
 )
 
-// endpoint captures the details required to validate an EVM endpoint.
-type endpoint struct {
+type endpointCheckName string
+
+type endpointCheck interface {
+	IsValid(serviceState *ServiceState) error
+	ExpiresAt() time.Time
+}
+
+const (
+	endpointCheckNameChainID endpointCheckName = "chain_id"
+	chainIDCheckInterval                       = 60 * time.Minute
+)
+
+type endpointCheckChainID struct {
 	// chainIDResponse stores the result of processing the endpoint's response to an `eth_chainId` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_chainId` request.
-	chainIDResponse *string
+	chainID   *string
+	expiresAt time.Time
+}
 
+func (e *endpointCheckChainID) IsValid(serviceState *ServiceState) error {
+	if e.chainID == nil {
+		return errNoChainIDObs
+	}
+	if serviceState.chainID != *e.chainID {
+		return errInvalidChainIDObs
+	}
+	return nil
+}
+
+func (e *endpointCheckChainID) ExpiresAt() time.Time {
+	return e.expiresAt
+}
+
+const (
+	endpointCheckNameBlockHeight endpointCheckName = "block_height"
+	blockHeightCheckInterval                       = 60 * time.Second
+)
+
+type endpointCheckBlockHeight struct {
 	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
-	parsedBlockNumberResponse *uint64
+	blockHeight *uint64
+	expiresAt   time.Time
+}
 
-	// TODO_FUTURE: support archival endpoints.
+func (e *endpointCheckBlockHeight) IsValid(serviceState *ServiceState) error {
+	if e.blockHeight == nil {
+		return errNoBlockNumberObs
+	}
+	if serviceState.perceivedBlockNumber <= *e.blockHeight {
+		return errInvalidBlockNumberObs
+	}
+	return nil
+}
+
+func (e *endpointCheckBlockHeight) ExpiresAt() time.Time {
+	return e.expiresAt
+}
+
+// endpoint captures the details required to validate an EVM endpoint.
+type endpoint struct {
+	checks map[endpointCheckName]endpointCheck
+}
+
+func newEndpoint() endpoint {
+	return endpoint{
+		checks: make(map[endpointCheckName]endpointCheck),
+	}
 }
 
 // Validate returns an error if the endpoint is invalid.
 // e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
-func (e endpoint) Validate(chainID string) error {
-	switch {
-	case e.chainIDResponse == nil:
-		return errNoChainIDObs
-	case *e.chainIDResponse != chainID:
-		return fmt.Errorf("invalid response: %s expected %s :%w", *e.chainIDResponse, chainID, errInvalidChainIDObs)
-	case e.parsedBlockNumberResponse == nil:
-		return errNoBlockNumberObs
-	case *e.parsedBlockNumberResponse == 0:
-		return errInvalidBlockNumberObs
-	default:
-		return nil
+func (e endpoint) Validate(serviceState *ServiceState) error {
+	for _, check := range e.checks {
+		if err := check.IsValid(serviceState); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
@@ -53,7 +105,10 @@ func (e endpoint) Validate(chainID string) error {
 func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
 	if chainIDResponse := obs.GetChainIdResponse(); chainIDResponse != nil {
 		observedChainID := chainIDResponse.GetChainIdResponse()
-		e.chainIDResponse = &observedChainID
+		e.checks[endpointCheckNameChainID] = &endpointCheckChainID{
+			chainID:   &observedChainID,
+			expiresAt: time.Now().Add(chainIDCheckInterval),
+		}
 		return true
 	}
 
@@ -64,11 +119,17 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 		// Explicitly set the parsedBlockNumberResponse to a zero value as the ParseUInt does not guarantee returning a 0 on all error cases.
 		if err != nil {
 			zero := uint64(0)
-			e.parsedBlockNumberResponse = &zero
+			e.checks[endpointCheckNameBlockHeight] = &endpointCheckBlockHeight{
+				blockHeight: &zero,
+				expiresAt:   time.Now().Add(blockHeightCheckInterval),
+			}
 			return true
 		}
 
-		e.parsedBlockNumberResponse = &parsedBlockNumber
+		e.checks[endpointCheckNameBlockHeight] = &endpointCheckBlockHeight{
+			blockHeight: &parsedBlockNumber,
+			expiresAt:   time.Now().Add(blockHeightCheckInterval),
+		}
 		return true
 	}
 
@@ -77,9 +138,13 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 
 // GetBlockNumber returns the parsed block number value for the endpoint.
 func (e endpoint) GetBlockNumber() (uint64, error) {
-	if e.parsedBlockNumberResponse == nil {
+	observedBlockHeight, ok := e.checks[endpointCheckNameBlockHeight].(*endpointCheckBlockHeight)
+	if !ok {
+		return 0, errNoBlockNumberObs
+	}
+	if observedBlockHeight.blockHeight == nil {
 		return 0, errNoBlockNumberObs
 	}
 
-	return *e.parsedBlockNumberResponse, nil
+	return *observedBlockHeight.blockHeight, nil
 }

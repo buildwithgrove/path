@@ -38,7 +38,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
-	if err := endpoint.Validate(s.chainID); err != nil {
+	if err := endpoint.Validate(s); err != nil {
 		return err
 	}
 
@@ -63,7 +63,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 		// DO NOT use the endpoint for updating the perceived state of the EVM blockchain if the endpoint is not considered valid.
 		// e.g. an endpoint with an invalid response to `eth_chainId` will not be used to update the perceived block number.
-		if err := endpoint.Validate(s.chainID); err != nil {
+		if err := endpoint.Validate(s); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
