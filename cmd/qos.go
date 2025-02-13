@@ -34,9 +34,6 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 			solanaQoS := solana.NewQoSInstance(logger)
 			qosServices[serviceID] = solanaQoS
 
-		case config.ServiceIDPOKT:
-			// TODO_TECHDEBT: add pokt qos service here
-
 		case config.ServiceIDCometBFT:
 			cometBFTQoS := cometbft.NewQoSInstance(logger, config.GetCometBFTChainID(serviceID))
 			qosServices[serviceID] = cometBFTQoS
