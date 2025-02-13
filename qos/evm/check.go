@@ -21,14 +21,34 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
+type evmQualityCheck struct {
+	endpointCheck
+	requestContext *requestContext
+}
 
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_FUTURE: add an archival endpoint check.
+func (q *evmQualityCheck) GetRequestContext() gateway.RequestQoSContext {
+	return q.requestContext
+}
+
+func (q *evmQualityCheck) EndpointAddr() protocol.EndpointAddr {
+	return q.requestContext.preSelectedEndpointAddr
+}
+
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.QualityCheck {
+	endpoint, ok := es.endpoints[endpointAddr]
+	if !ok {
+		endpoint = newEndpoint()
+	}
+
+	return []gateway.QualityCheck{
+		&evmQualityCheck{
+			requestContext: getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
+			endpointCheck:  endpoint.checks[endpointCheckNameChainID],
+		},
+		&evmQualityCheck{
+			requestContext: getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
+			endpointCheck:  endpoint.checks[endpointCheckNameBlockHeight],
+		},
 	}
 }
 

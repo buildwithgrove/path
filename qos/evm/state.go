@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -31,25 +30,7 @@ type ServiceState struct {
 	perceivedBlockNumber uint64
 }
 
-// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-//
-// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
-func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.serviceStateLock.RLock()
-	defer s.serviceStateLock.RUnlock()
-
-	if err := endpoint.Validate(s); err != nil {
-		return err
-	}
-
-	if err := validateEndpointBlockNumber(endpoint, s.perceivedBlockNumber); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
+// UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.serviceStateLock.Lock()
@@ -80,20 +61,6 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		s.perceivedBlockNumber = blockNumber
 
 		logger.With("endpoint_block_number", blockNumber).Info().Msg("Updating latest block height")
-	}
-
-	return nil
-}
-
-// validateEndpointBlockNumber validates the supplied endpoint against the supplied perceived block number for the EVM blockchain.
-func validateEndpointBlockNumber(endpoint endpoint, perceivedBlockNumber uint64) error {
-	blockNumber, err := endpoint.GetBlockNumber()
-	if err != nil {
-		return err
-	}
-
-	if blockNumber < perceivedBlockNumber {
-		return fmt.Errorf("endpoint has block height %d, perceived block height is %d", blockNumber, perceivedBlockNumber)
 	}
 
 	return nil

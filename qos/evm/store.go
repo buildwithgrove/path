@@ -109,7 +109,7 @@ func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 			continue
 		}
 
-		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
+		if err := endpoint.Validate(es.serviceState); err != nil {
 			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}

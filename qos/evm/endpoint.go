@@ -19,6 +19,7 @@ var (
 type endpointCheckName string
 
 type endpointCheck interface {
+	CheckName() string
 	IsValid(serviceState *ServiceState) error
 	ExpiresAt() time.Time
 }
@@ -33,6 +34,10 @@ type endpointCheckChainID struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_chainId` request.
 	chainID   *string
 	expiresAt time.Time
+}
+
+func (e *endpointCheckChainID) CheckName() string {
+	return string(endpointCheckNameChainID)
 }
 
 func (e *endpointCheckChainID) IsValid(serviceState *ServiceState) error {
@@ -61,6 +66,10 @@ type endpointCheckBlockHeight struct {
 	expiresAt   time.Time
 }
 
+func (e *endpointCheckBlockHeight) CheckName() string {
+	return string(endpointCheckNameBlockHeight)
+}
+
 func (e *endpointCheckBlockHeight) IsValid(serviceState *ServiceState) error {
 	if e.blockHeight == nil {
 		return errNoBlockNumberObs
@@ -82,7 +91,10 @@ type endpoint struct {
 
 func newEndpoint() endpoint {
 	return endpoint{
-		checks: make(map[endpointCheckName]endpointCheck),
+		checks: map[endpointCheckName]endpointCheck{
+			endpointCheckNameChainID:     &endpointCheckChainID{},
+			endpointCheckNameBlockHeight: &endpointCheckBlockHeight{},
+		},
 	}
 }
 

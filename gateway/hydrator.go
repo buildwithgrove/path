@@ -75,7 +75,7 @@ type EndpointHydrator struct {
 // to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be provided.")
+		return errors.New("an instance of Protocol must be provided")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
@@ -83,8 +83,14 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
+			if !eph.Protocol.IsAlive() {
+				eph.Logger.Warn().Msg("Protocol is not alive, skipping endpoint hydrator")
+				continue
+			}
+
 			eph.run()
 			<-ticker.C
 		}
@@ -147,74 +153,78 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		return err
 	}
 
-	logger = logger.With("number_of_endpoints", len(uniqueEndpoints))
+	var checksToRun []QualityCheck
+	for _, endpoint := range uniqueEndpoints {
+		for _, check := range serviceQoS.GetRequiredQualityChecks(endpoint.Addr()) {
+			if check.ExpiresAt().IsZero() || check.ExpiresAt().After(time.Now()) {
+				checksToRun = append(checksToRun, check)
+			}
+		}
+	}
 
-	jobs := make(chan protocol.Endpoint, len(uniqueEndpoints))
+	logger = logger.With("number_of_checks", len(checksToRun))
 
-	var wgEndpoints sync.WaitGroup
+	jobs := make(chan QualityCheck, len(checksToRun))
+
+	var wgChecks sync.WaitGroup
 	for i := 0; i < eph.MaxEndpointCheckWorkers; i++ {
-		wgEndpoints.Add(1)
+		wgChecks.Add(1)
 
 		go func() {
-			defer wgEndpoints.Done()
+			defer wgChecks.Done()
 
-			for endpoint := range jobs {
+			for check := range jobs {
 				// Creating a new locally scoped logger
-				endpointLogger := logger.With("endpoint", string(endpoint.Addr()))
+				endpointLogger := logger.With(
+					"endpoint", string(check.EndpointAddr()),
+					"check", check.CheckName(),
+					"expires_at", check.ExpiresAt().Format(time.RFC3339),
+				)
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
-				// Retrieve all the required QoS checks for the endpoint.
-				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
-				if len(requiredQoSChecks) == 0 {
-					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
-					continue
+				// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
+				// Mark the request as Synthetic using the following steps:
+				// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
+				//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
+				//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
+				gatewayRequestCtx := requestContext{
+					logger: logger,
+
+					gatewayObservations: getSyntheticRequestGatewayObservations(),
+					serviceID:           serviceID,
+					serviceQoS:          serviceQoS,
+					qosCtx:              check.GetRequestContext(),
+					protocol:            eph.Protocol,
+					protocolCtx:         protocolRequestCtx,
 				}
 
-				for _, serviceRequestCtx := range requiredQoSChecks {
-					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
-					// Mark the request as Synthetic using the following steps:
-					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
-					//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
-					//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
-					gatewayRequestCtx := requestContext{
-						logger: logger,
-
-						gatewayObservations: getSyntheticRequestGatewayObservations(),
-						serviceID:           serviceID,
-						serviceQoS:          serviceQoS,
-						qosCtx:              serviceRequestCtx,
-						protocol:            eph.Protocol,
-						protocolCtx:         protocolRequestCtx,
-					}
-
-					err := gatewayRequestCtx.HandleRelayRequest()
-					if err != nil {
-						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
-						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
-						// in this iteration of QoS checks.
-						//
-						// TODO_FUTURE: consider retrying failed service requests
-						// as the failure may not be related to the quality of the endpoint.
-						logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
-					}
-
-					// publish all observations gathered through sending the synthetic service requests.
-					// e.g. protocol-level, qos-level observations.
-					gatewayRequestCtx.BroadcastAllObservations()
+				err := gatewayRequestCtx.HandleRelayRequest()
+				if err != nil {
+					// TODO_FUTURE: consider skipping the rest of the checks based on the error.
+					// e.g. if the endpoint is refusing connections it may be reasonable to skip it
+					// in this iteration of QoS checks.
+					//
+					// TODO_FUTURE: consider retrying failed service requests
+					// as the failure may not be related to the quality of the endpoint.
+					logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
 				}
+
+				// publish all observations gathered through sending the synthetic service requests.
+				// e.g. protocol-level, qos-level observations.
+				gatewayRequestCtx.BroadcastAllObservations()
 			}
 		}()
 	}
 
 	// Kick off the workers above for every unique endpoint.
-	for _, endpoint := range uniqueEndpoints {
-		jobs <- endpoint
+	for _, check := range checksToRun {
+		jobs <- check
 	}
 
 	close(jobs)
 
 	// Wait for all workers to finish processing the endpoints.
-	wgEndpoints.Wait()
+	wgChecks.Wait()
 
 	// TODO_FUTURE: publish aggregated QoS reports (in addition to reports on endpoints of a specific service)
 	return nil
