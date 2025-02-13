@@ -68,13 +68,19 @@ type responseToStatus struct {
 	jsonRPCResponse jsonrpc.Response
 
 	// chainID stores the chain ID of the endpoint.
+	// Comes from the `NodeInfo.Network` field in the `/status` response.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	chainID string
 
 	// catchingUp indicates if the endpoint is catching up to the network.
+	// Comes from the `SyncInfo.CatchingUp` field in the `/status` response.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	catchingUp bool
 
 	// latestBlockHeight stores the latest block height of a
 	// response to a block height request as a string.
+	// Comes from the `SyncInfo.LatestBlockHeight` field in the `/status` response.
+	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	latestBlockHeight string
 }
 
