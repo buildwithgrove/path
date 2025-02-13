@@ -46,7 +46,7 @@ type (
 )
 
 // UnmarshalYAML is a custom unmarshaller for MorseGatewayConfig.
-// It populates the serviceAliases map, sets the transport, and performs validation after unmarshalling the config.
+// It populates the serviceAliases map, sets the transport, and performs validation after unmarshaling the config.
 func (c *MorseGatewayConfig) UnmarshalYAML(value *yaml.Node) error {
 	// Temp alias to avoid recursion; this is the recommend pattern for Go YAML custom unmarshalers
 	type temp MorseGatewayConfig

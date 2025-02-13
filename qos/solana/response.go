@@ -8,46 +8,58 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseUnmarshaller is the entrypoint function for any
-// new supported response types.
-// E.g. to handle "getBalance" requests, the following need to be defined:
-//  1. A new custom responseUnmarshaller
-//  2. A new custom struct  to handle the details of the particular response.
-type responseUnmarshaller func(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error)
+// responseUnmarshaller is the entrypoint for processing new supported response types.
+//
+// To add support for a new endpoint (e.g. "getBalance"):
+// 1. Define a new custom responseUnmarshaller
+// 2. Create a corresponding struct to handle the response details
+type responseUnmarshaller func(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) (response, error)
 
 var (
-	// All response types needs to implement the response interface.
-	// Any new response struct needs to be added to the following list.
+	// All response types must implement the response interface.
 	_ response = &responseToGetEpochInfo{}
 	_ response = &responseToGetHealth{}
 	_ response = &responseGeneric{}
 
+	// Maps JSON-RPC methods to their corresponding response unmarshallers.
 	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
 		methodGetHealth:    responseUnmarshallerGetHealth,
 		methodGetEpochInfo: responseUnmarshallerGetEpochInfo,
 	}
 )
 
-func unmarshalResponse(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
+// unmarshalResponse parses the supplied raw byte slice from an endpoint into a JSON-RPC response.
+func unmarshalResponse(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	data []byte,
+) (response, error) {
+	// Unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
-	err := json.Unmarshal(data, &jsonrpcResponse)
-	if err != nil {
-		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
+	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
+		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSON-RPC response.
 		// Return a generic response to the user.
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
-	// Validate the JSONRPC response.
+	// Validate the JSON-RPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
-	// Note: we intentionally skip checking whether the JSONRPC response indicates an error. This allows the method-specific handler
-	// to determine how to respond to the user.
+	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
+	// This allows the method-specific handler to determine how to respond to the user.
+
+	// Unmarshal the JSON-RPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {
 		return unmarshaller(logger, jsonrpcReq, jsonrpcResponse)
 	}
 
+	// Default to a generic response if no method-specific response is found.
 	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
 }

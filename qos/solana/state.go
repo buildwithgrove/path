@@ -9,12 +9,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the solana blockchain based on the endpoints' responses to
-// different requests.
+// ServiceState keeps the expected current state of the Solana blockchain
+// based on the endpoints' responses to different requests.
 type ServiceState struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
-	stateLock sync.RWMutex
+	serviceStateLock sync.RWMutex
 	// perceivedEpoch is the perceived current epoch based on endpoints' responses to `getEpochInfo` requests.
 	// See the following link for more details:
 	// https://solana.com/docs/rpc/http/getepochinfo
@@ -27,8 +27,8 @@ type ServiceState struct {
 //
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of Solana blockchain.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.stateLock.RLock()
-	defer s.stateLock.RUnlock()
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
 
 	if err := endpoint.ValidateBasic(); err != nil {
 		return err
@@ -45,11 +45,11 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	return nil
 }
 
-// UpdateFromObservations updates the service state using estimation(s) deriven from the set of updated endpoints, i.e. the set of endpoints for which
-// an observation was received.
+// UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
+// NOTE: This only includes the set of endpoints for which an observation was received.
 func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.stateLock.Lock()
-	defer s.stateLock.Unlock()
+	s.serviceStateLock.Lock()
+	defer s.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
 		if err := endpoint.ValidateBasic(); err != nil {
@@ -66,13 +66,13 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 			continue
 		}
 
-		// TODO_IMPROVE: use a more resilient method for updating block height.
+		// TODO_TECHDEBT: use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
 		s.perceivedEpoch = endpoint.SolanaGetEpochInfoResponse.Epoch
 		s.perceivedBlockHeight = endpoint.SolanaGetEpochInfoResponse.BlockHeight
 
-		s.Logger.With(
+		s.logger.With(
 			"endpoint", endpointAddr,
 			"block height", s.perceivedBlockHeight,
 			"epoch", s.perceivedEpoch,
