@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"time"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -16,19 +18,64 @@ const (
 	idBlockNumberCheck
 )
 
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+// endpointCheckName is a type for the names of the checks performed on an endpoint.
+type endpointCheckName string
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
+// evmEndpointCheck is an interface for the checks performed on an endpoint.
+// It is embedded in the struct that satisfies the gateway.QualityCheck interface.
+type evmEndpointCheck interface {
+	CheckName() string
+	IsValid(serviceState *ServiceState) error
+	ExpiresAt() time.Time
+}
 
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_FUTURE: add an archival endpoint check.
+var (
+	// EndpointStore provides the endpoint check generator required by
+	// the gateway package to augment endpoints' quality data,
+	// using synthetic service requests.
+	_ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+	// evmQualityCheck implements the QualityCheck interface for EVM-based endpoints.
+	_ gateway.QualityCheck = &evmQualityCheck{}
+)
+
+// evmQualityCheck provides:
+//  1. the request context used to perform a quality check,
+//  2. The time until the check expires.
+//
+// If an endpoint has a check that is still considered valid,
+// it will not be check by the endpoint hydrator.
+//
+// It implements the QualityCheck interface for EVM-based endpoints.
+type evmQualityCheck struct {
+	evmEndpointCheck
+	requestContext *requestContext
+}
+
+func (q *evmQualityCheck) GetRequestContext() gateway.RequestQoSContext {
+	return q.requestContext
+}
+
+func (q *evmQualityCheck) EndpointAddr() protocol.EndpointAddr {
+	return q.requestContext.preSelectedEndpointAddr
+}
+
+// GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
+// It is called in the `gateway/hydrator.go` file on each run of the hydrator.
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.QualityCheck {
+	endpoint, ok := es.endpoints[endpointAddr]
+	if !ok {
+		endpoint = newEndpoint()
+	}
+
+	return []gateway.QualityCheck{
+		&evmQualityCheck{
+			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
+			evmEndpointCheck: endpoint.checks[endpointCheckNameChainID],
+		},
+		&evmQualityCheck{
+			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
+			evmEndpointCheck: endpoint.checks[endpointCheckNameBlockHeight],
+		},
 	}
 }
 

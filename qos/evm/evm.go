@@ -25,9 +25,9 @@ var _ gateway.QoSService = &QoS{}
 //   - Response building
 //   - Endpoint validation and selection
 type QoS struct {
+	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
-	logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
@@ -49,7 +49,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	return &requestContext{
 		logger: qos.logger,
 
-		chainID:       qos.ServiceState.chainID,
+		chainID:       qos.ServiceState.config.chainID,
 		jsonrpcReq:    jsonrpcReq,
 		endpointStore: qos.EndpointStore,
 
