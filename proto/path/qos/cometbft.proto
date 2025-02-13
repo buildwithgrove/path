@@ -29,7 +29,7 @@ message CometBFTEndpointObservation {
         // Response to `health` request
         CometBFTHealthResponse health_response = 2;
 
-        // Response to `status` request
+        // Response to `/status` request
         CometBFTStatusResponse status_response = 3;
 
         // Responses not used in endpoint validation

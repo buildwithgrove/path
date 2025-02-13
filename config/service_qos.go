@@ -28,7 +28,7 @@ const (
 	ServiceIDCometBFT ServiceQoSType = "cometbft"
 )
 
-// TODO_MVP(@commoddity): figure out what these should be longer term.
+// TODO_MVP(@Olshansk): figure out what these should be longer term.
 const defaultEVMChainID = "0x1" // ETH Mainnet (1)
 const defaultCometBFTChainID = "cosmoshub-4"
 
