@@ -9,13 +9,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-type QualityCheck interface {
-	GetRequestContext() RequestQoSContext
-	ExpiresAt() time.Time
-	CheckName() string
-	EndpointAddr() protocol.EndpointAddr
-}
-
 // RequestQoSContext represents the interactions of
 // the gateway with the QoS instance corresponding
 // to the service specified by a service request.
@@ -77,6 +70,13 @@ type QoSContextBuilder interface {
 
 	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
+}
+
+type QualityCheck interface {
+	GetRequestContext() RequestQoSContext
+	ExpiresAt() time.Time
+	CheckName() string
+	EndpointAddr() protocol.EndpointAddr
 }
 
 // QoSEndpointCheckGenerator returns one or more service request contexts

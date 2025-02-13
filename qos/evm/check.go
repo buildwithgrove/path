@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"time"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -16,13 +18,25 @@ const (
 	idBlockNumberCheck
 )
 
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+type endpointCheckName string
+
+type evmEndpointCheck interface {
+	CheckName() string
+	IsValid(serviceState *ServiceState) error
+	ExpiresAt() time.Time
+}
+
+var (
+	// EndpointStore provides the endpoint check generator required by
+	// the gateway package to augment endpoints' quality data,
+	// using synthetic service requests.
+	_ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+	// evmQualityCheck implements the QualityCheck interface for EVM-based endpoints.
+	_ gateway.QualityCheck = &evmQualityCheck{}
+)
 
 type evmQualityCheck struct {
-	endpointCheck
+	evmEndpointCheck
 	requestContext *requestContext
 }
 
@@ -42,12 +56,12 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 
 	return []gateway.QualityCheck{
 		&evmQualityCheck{
-			requestContext: getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-			endpointCheck:  endpoint.checks[endpointCheckNameChainID],
+			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
+			evmEndpointCheck: endpoint.checks[endpointCheckNameChainID],
 		},
 		&evmQualityCheck{
-			requestContext: getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-			endpointCheck:  endpoint.checks[endpointCheckNameBlockHeight],
+			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
+			evmEndpointCheck: endpoint.checks[endpointCheckNameBlockHeight],
 		},
 	}
 }
