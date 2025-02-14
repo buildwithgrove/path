@@ -23,7 +23,9 @@ in the top left corner to view [PATH Grafana Service Requests Dashboard](http://
 
 ## 2. Grafana Dashboards Definitions
 
-The predefined Grafana dashboard definitions live under [Grafana dashboards directory](https://github.com/buildwithgrove/path/tree/main/local/grafana-dashboards).
+The predefined Grafana dashboard definitions live under [path/local/grafana-dashboards](https://github.com/buildwithgrove/path/tree/main/local/grafana-dashboards).
+
+When Tilt is running, you can view all available dashboards by visiting [localhost:3000/dashboards](http://localhost:3000/dashboards).
 
 <!---
 TODO_MVP(@adshmh): add a section to reference the metrics package once PR #152 is merged.

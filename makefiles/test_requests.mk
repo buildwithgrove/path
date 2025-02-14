@@ -89,3 +89,46 @@ test_request__cometbft_endpoint: ## Test CometBFT endpoint request against the P
 		-X GET \
 		-H 'Content-Type: application/json' \
 		-H 'target-service-id: cometbft'
+
+###################################
+#### Relay Utils Test Requests ####
+###################################
+
+.PHONY: check_relay_util
+# Internal helper: Checks if relay-util is installed locally
+check_relay_util:
+	@if ! command -v relay-util &> /dev/null; then \
+		echo "####################################################################################################"; \
+		echo "Relay Util is not installed." \
+		echo "To use any Relay Util make targets to send load testing requests please install Relay Util with:"; \
+		echo "go install github.com/commoddity/relay-util/v2@latest"; \
+		echo "####################################################################################################"; \
+	fi
+
+.PHONY: test_request__relay_util_100
+test_request__relay_util_100: check_relay_util ## Test anvil with 100 eth_blockNumber requests using relay-util
+	relay-util \
+		-u http://localhost:3069/v1 \
+		-H "target-service-id: anvil" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b 
+
+.PHONY: test_request__relay_util_1000
+test_request__relay_util_1000: check_relay_util  ## Test anvil with 1000 eth_blockNumber requests using relay-util
+	relay-util \
+		-u http://localhost:3069/v1 \
+		-H "target-service-id: anvil" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 1000 \
+		-b 
+
+.PHONY: test_request__envoy_relay_util_100
+test_request__envoy_relay_util_100: check_relay_util  ## Test Envoy Proxy with 100 eth_blockNumber requests using relay-util
+	relay-util \
+		-u http://localhost:3070/v1/endpoint_1_static_key \
+		-H "target-service-id: anvil" \
+		-H "authorization: api_key_1" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b

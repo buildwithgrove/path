@@ -10,7 +10,7 @@ import (
 
 const (
 	// Each endpoint check should use its own ID to avoid potential conflicts.
-	// ID of JSONRPC requests for any new checks should be added to the list below.
+	// ID of JSON-RPC requests for any new checks should be added to the list below.
 	_              = iota
 	idChainIDCheck = 1000 + iota
 	idBlockNumberCheck
@@ -53,12 +53,12 @@ func getEndpointCheck(
 	return &requestCtx
 }
 
-// withChainIDCheck updates the request context to make a EVM JSON-RPC eth_chainId request.
+// withChainIDCheck updates the request context to make an EVM JSON-RPC eth_chainId request.
 func withChainIDCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
 }
 
-// withBlockHeightCheck updates the request context to make a EVM JSON-RPC eth_blockNumber request.
+// withBlockHeightCheck updates the request context to make an EVM JSON-RPC eth_blockNumber request.
 func withBlockHeightCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
 }

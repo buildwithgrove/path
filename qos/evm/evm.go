@@ -14,16 +14,16 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// QoS struct performs the functionality defined by gateway package's ServiceQoS,
-// which consists of:
-// A) a QoSRequestParser which builds EVM-specific RequestQoSContext objects,
-// by parsing user HTTP requests.
-// B) an EndpointSelector, which selects an endpoint for performing a service request.
+// QoS implements gateway.QoSService by providing:
+//  1. QoSRequestParser - Builds EVM-specific RequestQoSContext objects from HTTP requests
+//  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
-// QoS is the ServiceQoS implementations for EVM-based chains.
-// It contains logic specific to EVM-based chains, including request parsing,
-// response building, and endpoint validation/selection.
+// QoS implements ServiceQoS for EVM-based chains.
+// It handles chain-specific:
+//   - Request parsing
+//   - Response building
+//   - Endpoint validation and selection
 type QoS struct {
 	*EndpointStore
 	*ServiceState
@@ -31,7 +31,7 @@ type QoS struct {
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
-// Returns (context, false) if request cannot be parsed as JSONRPC.
+// Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	body, err := io.ReadAll(req.Body)
@@ -44,7 +44,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromUserError(err), false
 	}
 
-	// TODO_TECHDEBT(@adshmh): Add JSONRPC request validation to block invalid requests
+	// TODO_IMPROVE(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
 		logger: qos.logger,

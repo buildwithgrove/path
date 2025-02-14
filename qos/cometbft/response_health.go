@@ -29,6 +29,8 @@ func responseUnmarshallerHealth(
 		}, nil
 	}
 
+	// `/health` endpoint returns an empty response on success,
+	// so any non-error response is considered healthy.
 	return responseToHealth{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
@@ -63,7 +65,7 @@ func (r responseToHealth) GetObservation() qosobservations.CometBFTEndpointObser
 // GetResponsePayload returns the payload for the response to a `/health` request.
 // Implements the response interface.
 func (r responseToHealth) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.

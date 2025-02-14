@@ -1,8 +1,5 @@
 package cometbft
 
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
-
 import (
 	"fmt"
 	"net/http"
@@ -70,9 +67,13 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
 	}
 
-	// If the request is REST-like, set the path.
+	// If the request is REST-like, set the path including query parameters.
 	if rc.httpReq.URL.Path != "" {
 		payload.Path = rc.httpReq.URL.Path
+
+		if rc.httpReq.URL.RawQuery != "" {
+			payload.Path += "?" + rc.httpReq.URL.RawQuery
+		}
 	}
 
 	// If the request is JSON-RPC, set the data from the stored []byte.
@@ -107,11 +108,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 
 // GetHTTPResponse builds the HTTP response for a CometBFT blockchain service request.
 // Returns the last endpoint response if available, otherwise returns generic response.
-// TODO_TECHDEBT(@commoddity): Look into refactoring and reusing specific components
-// that play identical roles across QoS packages in order to reduce code duplication.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// Ignore unmarshalling errors since the payload is empty for REST-like requests.
+	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
 	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())

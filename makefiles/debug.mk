@@ -6,7 +6,7 @@
 # Internal helper: Check if graphviz is installed locally
 check_graphviz:
 	@if ! command -v graphviz >/dev/null 2>&1; then \
-		echo "Graphviz is not installed. Make sure you review README.md before continuing"; \
+		echo "Graphviz is not installed. Visit graphviz.org before continuing"; \
 		exit 1; \
 	fi;
 

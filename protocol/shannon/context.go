@@ -93,7 +93,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
 		return protocol.Response{EndpointAddr: selectedEndpointAddr},
-			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
+			fmt.Errorf("relay: error unmarshaling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}

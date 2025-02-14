@@ -8,6 +8,7 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
+// The errors below list all the possible validation errors on an endpoint.
 var (
 	// The errors below list all the possible validation errors on an endpoint.
 	errNoChainIDObs             = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)

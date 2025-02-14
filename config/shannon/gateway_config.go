@@ -28,7 +28,7 @@ type ShannonGatewayConfig struct {
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.
-// It performs validation after unmarshalling the config.
+// It performs validation after unmarshaling the config.
 func (c *ShannonGatewayConfig) UnmarshalYAML(value *yaml.Node) error {
 	// Temp alias to avoid recursion; this is the recommend pattern for Go YAML custom unmarshalers
 	type temp ShannonGatewayConfig

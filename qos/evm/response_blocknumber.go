@@ -22,11 +22,10 @@ func responseUnmarshallerBlockNumber(
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-
-		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
+		// TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber`
+		// request that was sent to the endpoint.
 		return responseToBlockNumber{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 
 			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
@@ -38,8 +37,7 @@ func responseUnmarshallerBlockNumber(
 	if err != nil {
 		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
 		return responseToBlockNumber{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 			invalidReason:   &invalidReason,
 		}, err
@@ -54,15 +52,13 @@ func responseUnmarshallerBlockNumber(
 	}
 
 	return responseToBlockNumber{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 
 		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
 		// e.g. a response that fails parsing as a number is not valid.
 		valid: err == nil,
-
 		invalidReason: &invalidReason,
 	}, err
 }
@@ -91,6 +87,7 @@ type responseToBlockNumber struct {
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
 // Implements the response interface.
+// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
@@ -104,7 +101,7 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 }
 
 func (r responseToBlockNumber) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshalling failed.
+	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.

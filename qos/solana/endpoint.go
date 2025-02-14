@@ -6,13 +6,11 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
-const (
-	// Expected value of the `result` field to a `getHealth` request.
-	resultGetHealthOK = "ok"
-)
+// Expected value of the `result` field to a `getHealth` request.
+const resultGetHealthOK = "ok"
 
+// The errors below list all the possible basic validation errors on an endpoint.
 var (
-	// The errors below list all the possible basic validation errors on an endpoint.
 	errNoGetHealthObs                   = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetHealth)
 	errInvalidGetHealthObs              = fmt.Errorf("endpoint responded incorrectly to a %q request, expected: %q", methodGetHealth, resultGetHealthOK)
 	errNoGetEpochInfoObs                = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetEpochInfo)
@@ -29,16 +27,16 @@ type endpoint struct {
 	*qosobservations.SolanaGetHealthResponse
 
 	// SolanaGetEpochInfoResponse stores the result of processing the endpoint's response to a `getEpochInfo` request.
-	// A pointer is used to distinguish between the following scenarios two scenarios:
+	// A pointer is used to distinguish between the following scenarios:
 	// 	1. There has NOT been an observation of the endpoint's response to a `getEpochInfo` request
-	// 	2. There has been an observation the endpoint's response to a `getEpochInfo` request
+	// 	2. There has been an observation of the endpoint's response to a `getEpochInfo` request
 	*qosobservations.SolanaGetEpochInfoResponse
 
 	// TODO_FUTURE: support archival endpoints.
 }
 
-// ValidateBasic returns an error if the endpoint is invalid regardless of the state of the service.
-// e.g. an endpoint without an observation of its response to a `GetHealth` request is not considered valid.
+// ValidateBasic checks if the endpoint has the required observations to be considered valid.
+// Returns an error if the necessary responses are either lacking or invalid.
 func (e endpoint) ValidateBasic() error {
 	switch {
 	case e.SolanaGetHealthResponse == nil:
@@ -56,11 +54,9 @@ func (e endpoint) ValidateBasic() error {
 	}
 }
 
-// ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
-// It Returns true if the observation was non-generic, i.e. mutated the endpoint.
-// TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
-//   - an endpoint that returned in invalid response.
-//   - an endpoint with no/incomplete observations.
+// ApplyObservation updates the endpoint data using the provided observation.
+// Returns true if the observation was recognized.
+// IMPORTANT: This function mutates the endpoint.
 func (e *endpoint) ApplyObservation(obs *qosobservations.SolanaEndpointObservation) bool {
 	if epochInfoResponse := obs.GetGetEpochInfoResponse(); epochInfoResponse != nil {
 		e.SolanaGetEpochInfoResponse = epochInfoResponse
