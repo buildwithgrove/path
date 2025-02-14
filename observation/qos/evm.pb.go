@@ -22,7 +22,7 @@ const (
 )
 
 // EVMResponseInvalidReason defines why an endpoint response was rejected.
-// Current invalid response types (as of PR #163):
+// Current invalid response types (as of PR #164):
 //  1. EmptyResponse - endpoint returned no data
 //  2. UnmarshalErr - response failed to parse into expected format
 type EVMResponseInvalidReason int32

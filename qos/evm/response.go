@@ -33,7 +33,7 @@ var (
 )
 
 // unmarshalResponse converts raw endpoint bytes into a JSONRPC response struct.
-// As of PR #163, generates endpoint observations for responses to:
+// As of PR #164, generates endpoint observations for responses to:
 //   - eth_chainId
 //   - eth_blockNumber
 //   - any empty response, regardless of method
