@@ -1,8 +1,6 @@
 package evm
 
 import (
-	"fmt"
-
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -11,8 +9,8 @@ import (
 // This indicates server misbehavior, triggers removal of the endpoint from the selection pool,
 // and tells the client they can retry with a different endpoint.
 var errResponseEmptyEndpointResponse = jsonrpc.GetErrorResponse(
-	nil,    // Use request's original ID if present
-	-32000, // JSON-RPC server error code
+	jsonrpc.ID{}, // Use request's original ID if present
+	-32000,       // JSON-RPC server error code
 	"Server error: Received an empty response. Server will be dropped from the selection pool. Please try again.", // Error Response Message
 	map[string]string{
 		"retryable": "true",

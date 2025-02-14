@@ -10,7 +10,7 @@ import (
 )
 
 // emptyResponse provides the functionality required from a response by a requestContext instance.
-var _ response = emptyResponse{}
+var _ response = responseEmpty{}
 
 // TODO_MVP(@adshmh): Implement request retry support:
 //  1. Add ShouldRetry() method to gateway.RequestQoSContext
@@ -29,10 +29,13 @@ type responseEmpty struct {
 // GetObservation returns an observation indicating the endpoint returned an empty response.
 // Implements the response interface.
 func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
+	invalidReason := qosobservations.EVMResponseInvalidReason_REASON_EMPTY_RESPONSE
+
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_EmptyResponse{
 			EmptyResponse: &qosobservations.EVMEmptyResponse{
-				Valid: false, // Empty responses are inherently invalid - explicitly set for clarity
+				Valid:         false, // Empty responses are inherently invalid - explicitly set for clarity
+				InvalidReason: &invalidReason,
 			},
 		},
 	}
