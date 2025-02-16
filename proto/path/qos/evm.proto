@@ -6,6 +6,16 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 import "path/metadata/metadata.proto";
 
+// EVMRequestValidationErrorKind enumerates possible causes for EVM request rejection:
+// Invalid request types (as of PR #165):
+//   1. Internal server error while reading the HTTP request body
+//   2. Unmarshal error when parsing request into the expected format
+enum EVMRequestValidationErrorKind {
+  EVM_REQUEST_VALIDATION_ERROR_KIND_UNSPECIFIED = 0;
+  EVM_REQUEST_VALIDATION_ERROR_KIND_HTTP_BODY_READ_FAILURE = 1;
+  EVM_REQUEST_VALIDATION_ERROR_KIND_REQUEST_UNMARSHALING_FAILURE = 2;
+}
+
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
   // The EVM blockchain service's JSON-RPC request.
@@ -21,6 +31,9 @@ message EVMRequestObservations {
   // chainID is the blockchain identifier for the evm QoS implementation.
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 3;
+
+  // Specifies the reason an EVM request failed validation.
+  optional EVMRequestValidationErrorKind request_validation_error_kind = 4;
 }
 
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.

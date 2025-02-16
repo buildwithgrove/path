@@ -14,47 +14,77 @@ const (
 
 	// The list of metrics being tracked for EVM QoS
 	evmRequestsTotalMetric = "evm_requests_total"
+	evmRequestsValidationFailuresTotalMetric = "evm_request_validation_failures_total"
 )
 
 func init() {
 	prometheus.MustRegister(evmRequestsTotal)
+	prometheus.MustRegister(evmRequestValidationFailuresTotal)
 }
 
 var (
-	// TODO_MVP(@adshmh): add a `validation` object field to indicate whether
-	// the user's request was valid, with two fields:
-	//	1. Valid: whether the user's request was valid.
-	//	2. Reason: The reason the request is considered invalid, if applicable.
+	// evmRequestsTotal tracks the total EVM requests processed.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - valid: Whether request parsing succeeded
+	//   - request_method: JSON-RPC method name
+	//   - success: Whether a valid response was received
 	//
-	// evmRequestsTotal counts EVM QoS processed requests with labels:
-	//   - chain_id: Chain identifier using EVM QoS
-	//   - request_method: JSONRPC method name
-	//   - success: Whether request received a valid response
-	//
-	// Usage:
-	// - Monitor EVM requests load across chains and methods
-	// - Monitor EVM requests across different PATH instances
-	// - Compare requests across different JSONRPC methods or chain IDs (i.e. different chains which use EVM as their QoS)
+	// Use to analyze:
+	//   - Request volume by chain and method
+	//   - Success rates across different PATH deployment regions
+	//   - Method usage patterns across chains
+	//   - End-to-end request success rates
 	evmRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      evmRequestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "request_method", "success"},
+		[]string{"chain_id", "valid", "request_method", "success"},
+	)
+
+	// evmRequestValidationFailuresTotal tracks validation failures of incoming EVM requests.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - reason: Validation failure type
+	//
+	// Use to analyze:
+	//   - Common request validation issues 
+	//   - Per-chain validation failure patterns
+	evmRequestValidationFailuresTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      evmRequestsValidationFailuresTotalMetric,
+			Help:      "Total requests that failed validation before being sent to any endpoints, e.g. malformed JSON-RPC or parse errors",
+		},
+		[]string{"chain_id", "reason"},
 	)
 )
 
 // PublishEVMMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
 func PublishEVMMetrics(evmObservations *qos.EVMRequestObservations) {
+	isRequestValid, requestValidationFailureReason := extractEVMRequestValidationStatus(evmObservations)
+
 	// Increment request counters with all corresponding labels
 	evmRequestsTotal.With(
 		prometheus.Labels{
 			"chain_id":       evmObservations.GetChainId(),
+			"valid":          fmt.Sprintf("%t", isRequestValid),
 			"request_method": evmObservations.GetJsonrpcRequest().GetMethod(),
 			"success":        fmt.Sprintf("%t", getEVMRequestSuccess(evmObservations)),
 		},
 	).Inc()
+
+	// Increment the request validation failure counter.
+	if !isRequestValid {
+		evmRequestValidationFailuresTotal.With(
+			prometheus.Labels{
+				"chain_id": evmObservations.GetChainId(),
+				"reason":   requestValidationFailureReason,
+			},
+		).Inc()
+	}
 }
 
 // getEVMRequestSuccess returns true if the request is assumed successful.
@@ -77,4 +107,17 @@ func getEVMRequestSuccess(evmObservations *qos.EVMRequestObservations) bool {
 	}
 
 	return false
+}
+
+// extractEVMRequestValidationStatus interprets validation results from the request observations.
+// Returns (true, "") if valid, or (false, failureReason) if invalid.
+func extractEVMRequestValidationStatus(evmObservations *qos.EVMRequestObservations) (bool, string) {
+	reasonEnum := evmObservations.GetRequestValidationFailureReason()
+
+	// Valid request
+	if reasonEnum == qos.EVMRequestValidationErrorKind_EVM_REQUEST_FAILURE_REASON_UNSPECIFIED {
+		return true, ""
+	}
+
+	return false, qos.EVMRequestValidationErrorKind_name[reasonEnum]
 }
