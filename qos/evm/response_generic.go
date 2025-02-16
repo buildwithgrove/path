@@ -41,6 +41,10 @@ type responseGeneric struct {
 	// As of PR #152, a response is deemed valid if it can be unmarshaled as a JSONRPC struct
 	// regardless of the contents of the response.
 	valid bool
+
+	// Why the response has failed validation.
+	// Used when generating observations.
+	invalidReason *qosobservations.EVMResponseInvalidReason
 }
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
@@ -53,7 +57,8 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
-				Valid: r.valid,
+				Valid:         r.valid,
+				InvalidReason: r.invalidReason,
 			},
 		},
 	}
@@ -76,7 +81,10 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	var response jsonrpc.Response
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), nil
+		errResponse := getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
+		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		errResponse.invalidReason = &invalidReason
+		return errResponse, err
 	}
 
 	return responseGeneric{
