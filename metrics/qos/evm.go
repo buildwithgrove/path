@@ -13,7 +13,7 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for EVM QoS
-	evmRequestsTotalMetric = "evm_requests_total"
+	evmRequestsTotalMetric                   = "evm_requests_total"
 	evmRequestsValidationFailuresTotalMetric = "evm_request_validation_failures_total"
 )
 
@@ -50,7 +50,7 @@ var (
 	//   - reason: Validation failure type
 	//
 	// Use to analyze:
-	//   - Common request validation issues 
+	//   - Common request validation issues
 	//   - Per-chain validation failure patterns
 	evmRequestValidationFailuresTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
