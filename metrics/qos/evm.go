@@ -92,7 +92,9 @@ func getEVMRequestSuccess(evmObservations *qos.EVMRequestObservations) bool {
 // aggregated observations.
 //
 // getEVMEndpointResponseValidationFailureReason returns why the endpoint response failed QoS validation.
-func getEVMEndpointResponseValidationFailureReason(evmObservations *qos.EVMRequestObservations) string {
+func getEVMEndpointResponseValidationFailureReason(
+	evmObservations *qos.EVMRequestObservations,
+) string {
 	for _, observation := range evmObservations.GetEndpointObservations() {
 		responses := []interface {
 			GetInvalidReason() qos.EVMResponseInvalidReason
