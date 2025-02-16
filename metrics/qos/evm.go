@@ -86,7 +86,7 @@ func getEVMRequestSuccess(evmObservations *qos.EVMRequestObservations) bool {
 	return false
 }
 
-// IN_THIS_PR: Add Grafana panel(s) to visualize the validation reason label in Local development mode.
+// TODO_IN_THIS_PR: Add Grafana panel(s) to visualize the validation reason label in Local development mode.
 
 // TODO_MVP(@adshmh): When retry functionality is added, refactor to evaluate QoS based on a single endpoint response rather than
 // aggregated observations.

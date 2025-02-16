@@ -11,9 +11,9 @@ import "path/metadata/metadata.proto";
 //   1. EmptyResponse - endpoint returned no data
 //   2. UnmarshalErr - response failed to parse into expected format
 enum EVMResponseInvalidReason {
- REASON_UNSPECIFIED = 0;
- REASON_EMPTY_RESPONSE = 1; // No response data received
- REASON_UNMARSHAL_ERR = 2;  // Response parsing failed
+	EVM_RESPONSE_INVALID_REASON_UNSPECIFIED = 0;
+	EVM_RESPONSE_INVALID_REASON_EMPTY = 1;      // No response data received
+	EVM_RESPONSE_INVALID_REASON_UNMARSHAL = 2;  // Response parsing failed
 }
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.

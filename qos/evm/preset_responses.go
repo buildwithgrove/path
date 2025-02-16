@@ -4,14 +4,14 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// errResponseEmptyEndpointResponse represents a JSON-RPC error response for when
-// an endpoint returns an empty response body.
+// errResponseEmptyEndpointResponse is a pre-defined JSON-RPC response structure to be used (i.e. returned)
+// for all EVM JSON-RPC requests when the endpoint returned an empty response body.
 // This indicates server misbehavior, triggers removal of the endpoint from the selection pool,
 // and tells the client they can retry with a different endpoint.
 var errResponseEmptyEndpointResponse = jsonrpc.GetErrorResponse(
 	jsonrpc.ID{}, // Use request's original ID if present
-	-32000,       // JSON-RPC server error code
-	"Server error: Received an empty response. Server will be dropped from the selection pool. Please try again.", // Error Response Message
+	-32000,       // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+	"Endpoint (data/service node error): Received an empty response. The endpoint will be dropped from the selection pool. Please try again.", // Error Response Message
 	map[string]string{
 		"retryable": "true",
 	},
