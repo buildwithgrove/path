@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,7 +73,21 @@ func Test_Bridge_Run(t *testing.T) {
 
 			// Call NewBridge with the clientConnURL and testEndpointConn
 			// NewBridge handles dialing the Client URL to create the Client connection
-			bridge, err := NewBridge(polyzero.NewLogger(), clientConnURL, testEndpointConn)
+
+			session := sessiontypes.Session{}
+			supplier := "supplier"
+			var relayRequestSigner RelayRequestSigner
+			var fullNode FullNode
+
+			bridge, err := NewBridge(
+				polyzero.NewLogger(),
+				clientConnURL,
+				session,
+				supplier,
+				relayRequestSigner,
+				fullNode,
+				testEndpointConn,
+			)
 			c.NoError(err)
 
 			// Start the bridge in a goroutine

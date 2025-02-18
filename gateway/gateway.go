@@ -17,16 +17,13 @@ package gateway
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
-	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/websockets"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -155,62 +152,36 @@ func getUserRequestGatewayObservations() observation.GatewayObservations {
 // - Match HTTP request handling pattern
 // - Use HandleWebsocketRequest method defined on gateway.Protocol
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// Upgrade HTTP to websocket connection first to enable error reporting
-	// via websocket close messages for easier debugging
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
+	gatewayRequestCtx := &requestContext{
+		logger: g.Logger,
+
+		gatewayObservations: getUserRequestGatewayObservations(),
+		protocol:            g.Protocol,
+		httpRequestParser:   g.HTTPRequestParser,
+		metricsReporter:     g.MetricsReporter,
+		dataReporter:        g.DataReporter,
+		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
+		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
 	}
 
-	clientConn, err := upgrader.Upgrade(w, httpReq, nil)
+	// Initialize the GatewayRequestContext struct using the HTTP request.
+	// e.g. extract the target service ID from the HTTP request.
+	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
 	if err != nil {
-		g.Logger.Error().Msg("handleWebsocketRequest: error upgrading websocket connection request")
 		return
 	}
 
-	// Check if there are any websocket endpoint URLs set for the service ID in the config.
-	if len(g.WebsocketEndpoints) == 0 {
-		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: no websocket endpoint URLs are set in config")
-		return
-	}
-
-	// Get service ID from HTTP request in order to select the correct websocket endpoint URL.
-	serviceID, _, err := g.HTTPRequestParser.GetQoSService(ctx, httpReq)
+	// Build the QoS context for the target service ID using the HTTP request's payload.
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
 	if err != nil {
-		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error getting QoS service")
 		return
 	}
 
-	// Get the websocket endpoint URL for the service ID.
-	endpointURL := g.WebsocketEndpoints[serviceID]
-	if endpointURL == "" {
-		errMsg := fmt.Sprintf("handleWebsocketRequest: websocket endpoint URL is not set in  config for service ID %s", serviceID)
-		handleWebsocketError(g.Logger, clientConn, errMsg)
-		return
-	}
-
-	// Create a websocket bridge to handle the websocket connection
-	// between the Client and the websocket Endpoint.
-	bridge, err := websockets.NewBridge(g.Logger, endpointURL, clientConn)
+	// Build the protocol context for the HTTP request.
+	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
-		handleWebsocketError(g.Logger, clientConn, "handleWebsocketRequest: error creating websocket bridge")
 		return
 	}
 
-	// Run the websocket bridge in a separate goroutine.
-	go bridge.Run()
-
-	g.Logger.Info().Str("ws_endpoints_urls", endpointURL).Msg("handleWebsocketRequest: websocket connection established")
-}
-
-// handleWebsocketError logs errors and sends close message to the websocket client.
-func handleWebsocketError(logger polylog.Logger, clientConn *websocket.Conn, errorMsg string) {
-	logger.Error().Msg(errorMsg)
-
-	closeMessage := websocket.FormatCloseMessage(websocket.CloseNormalClosure, errorMsg)
-
-	if err := clientConn.WriteMessage(websocket.CloseMessage, closeMessage); err != nil {
-		logger.Error().Msg("handleWebsocketError: error writing websocket close message")
-	}
-
-	clientConn.Close()
+	gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
 }

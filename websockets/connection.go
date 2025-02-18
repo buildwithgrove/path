@@ -62,13 +62,20 @@ type connection struct {
 }
 
 // connectEndpoint makes a websocket connection to the websocket Endpoint.
-func connectEndpoint(endpointURL string) (*websocket.Conn, error) {
+func connectEndpoint(endpointURL string, header http.Header) (*websocket.Conn, error) {
 	u, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), http.Header{})
+	switch u.Scheme {
+	case "http":
+		u.Scheme = "ws"
+	case "https":
+		u.Scheme = "wss"
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 		return nil, err
 	}

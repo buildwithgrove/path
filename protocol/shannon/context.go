@@ -124,7 +124,17 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		return err
 	}
 
-	bridge, err := websockets.NewBridge(wsLogger, selectedEndpointURL, clientConn)
+	session := rc.selectedEndpoint.session
+	supplier := rc.selectedEndpoint.supplier
+	bridge, err := websockets.NewBridge(
+		wsLogger,
+		selectedEndpointURL,
+		session,
+		supplier,
+		rc.relayRequestSigner,
+		rc.fullNode,
+		clientConn,
+	)
 	if err != nil {
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
 		return err

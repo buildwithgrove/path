@@ -49,7 +49,7 @@ func Test_connectEndpoint(t *testing.T) {
 			u.Host = strings.TrimPrefix(server.URL, "http://")
 			nodeURL := u.String()
 
-			conn, err := connectEndpoint(nodeURL)
+			conn, err := connectEndpoint(nodeURL, http.Header{})
 			if test.expectedError {
 				c.Error(err)
 			} else {

@@ -40,8 +40,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 	}
 
 	var jsonrpcReq jsonrpc.Request
-	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(err), false
+	if req.Method == http.MethodPost {
+		if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+			return requestContextFromUserError(err), false
+		}
 	}
 
 	// TODO_IMPROVE(@adshmh): Add JSON-RPC request validation to block invalid requests
