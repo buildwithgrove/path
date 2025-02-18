@@ -34,11 +34,18 @@ type QoS struct {
 // Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := qos.logger.With(
+		"qos", "EVM",
+		"method", "ParseHTTPRequest",
+	)
+
 	// TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
 	// Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
 	// Benefits: Decouples the qos package from HTTP-specific error handling.
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
+		logger.Warn().Err(err).Msg("HTTP request body read failed - returning generic error response.")
+
 		return requestContextFromInternalError(
 			qos.logger,
 			err,
@@ -46,10 +53,13 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		), false
 	}
 
-	// TODO_MVP(@adshmh): Add a request validator for JSONRPC requests:
-	// e.g. The request is invalid and the service request flow should be stopped if the specified JSONRPC method is not valid.
+	// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported method calls early in request flow.
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+		logger.With(
+			"request_preview", string(body[:min(1000, len(body))]), // truncate body to first 1000 bytes for logging.
+		).Info().Err(err).Msg("Request failed validation - returning generic error response.")
+
 		return requestContextFromUserError(
 			qos.logger,
 			err,
