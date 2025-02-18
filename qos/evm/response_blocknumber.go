@@ -35,14 +35,21 @@ func responseUnmarshallerBlockNumber(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
+		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
+			invalidReason:   &invalidReason,
 		}, err
 	}
 
 	var result string
+	invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNSPECIFIED
+
 	err = json.Unmarshal(resultBz, &result)
+	if err != nil {
+		invalidReason = qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+	}
 
 	return responseToBlockNumber{
 		logger:          logger,
@@ -52,6 +59,8 @@ func responseUnmarshallerBlockNumber(
 		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
 		// e.g. a response that fails parsing as a number is not valid.
 		valid: err == nil,
+
+		invalidReason: &invalidReason,
 	}, err
 }
 
@@ -71,6 +80,10 @@ type responseToBlockNumber struct {
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
+
+	// Why the response has failed validation.
+	// Used when generating observations.
+	invalidReason *qosobservations.EVMResponseInvalidReason
 }
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
@@ -82,6 +95,7 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
 				BlockNumberResponse: r.result,
 				Valid:               r.valid,
+				InvalidReason:       r.invalidReason,
 			},
 		},
 	}
@@ -92,7 +106,7 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToBlockNumber: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }

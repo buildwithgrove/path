@@ -11,7 +11,7 @@ import (
 func newErrResponseInternalErr(err error) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
 		jsonrpc.ID{},
-		-32000,
+		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("internal error: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),
@@ -31,13 +31,29 @@ func newErrResponseInternalErr(err error) jsonrpc.Response {
 // The error is marked as permanent since retrying without correcting the request will fail.
 func newErrResponseInvalidRequest(err error, requestID jsonrpc.ID) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
-		requestID,
-		-32000,
+		requestID, // Use request's original ID if present
+		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("invalid request: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),
 			// Indicates this error is permanent - the request must be corrected as retrying will not succeed
 			"retryable": "false",
+		},
+	)
+}
+
+// newErrResponseEmptyResponse creates a JSON-RPC error response when an endpoint returns no data.
+// This indicates server misbehavior and triggers removal of the endpoint from the selection pool.
+// Marks the error as retryable to allow clients to safely retry their request.
+// Preserves the request ID from the original request.
+func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {
+	return jsonrpc.GetErrorResponse(
+		requestID, // Use request's original ID if present
+		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		"Endpoint (data/service node error): Received an empty response. The endpoint will be dropped from the selection pool. Please try again.", // Error Response Message
+		map[string]string{
+			// Marks the error as retryable to allow clients to safely retry their request.
+			"retryable": "true",
 		},
 	)
 }

@@ -16,6 +16,16 @@ enum EVMRequestValidationErrorKind {
   EVM_REQUEST_VALIDATION_ERROR_KIND_REQUEST_UNMARSHALING_FAILURE = 2;
 }
 
+// EVMResponseInvalidReason defines why an endpoint response was rejected.
+// Current invalid response types (as of PR #164):
+//   1. EmptyResponse - endpoint returned no data
+//   2. UnmarshalErr - response failed to parse into expected format
+enum EVMResponseInvalidReason {
+	EVM_RESPONSE_INVALID_REASON_UNSPECIFIED = 0;
+	EVM_RESPONSE_INVALID_REASON_EMPTY = 1;      // No response data received
+	EVM_RESPONSE_INVALID_REASON_UNMARSHAL = 2;  // Response parsing failed
+}
+
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
   // The EVM blockchain service's JSON-RPC request.
@@ -56,6 +66,12 @@ message EVMEndpointObservation {
 
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
     EVMUnrecognizedResponse unrecognized_response = 4;
+
+    // EVMEmptyResponse indicates an endpoint returned no data.
+    // Used to:
+    //   - Disqualify endpoints that return empty responses
+    //   - Track metrics for empty response patterns
+    EVMEmptyResponse empty_response = 5;
   }
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
@@ -66,7 +82,10 @@ message EVMChainIDResponse {
   string chain_id_response = 1;
 
   // Whether the response is deemed valid by QoS
-  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
+  bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
+
+  // Why the response failed QoS validation
+  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validation failure reason"];
 }
 
 // EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
@@ -75,7 +94,10 @@ message EVMBlockNumberResponse {
   string block_number_response = 1;
 
   // Whether the response is deemed valid by QoS
-  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
+  bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
+
+  // Why the response failed QoS validation
+  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
@@ -84,5 +106,20 @@ message EVMUnrecognizedResponse {
   JsonRpcResponse jsonrpc_response = 1;
 
   // Whether the response is deemed valid by QoS
-  bool valid = 2 [(metadata.semantic_meaning) = "Indicates whether the response meets QoS criteria for validity"];
+  bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
+
+  // Why the response failed QoS validation
+  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
+}
+
+// EVMEmptyResponse represents an endpoint's empty response, which triggers
+// automatic endpoint disqualification by EVM QoS processors.
+message EVMEmptyResponse {
+  // valid indicates if response meets QoS criteria
+  // Always false for empty responses
+  bool valid = 1 [(metadata.semantic_meaning) = "Response validity status"];
+
+  // Why the response failed QoS validation
+  // Set to EmptyResponse for empty responses
+  optional EVMResponseInvalidReason invalid_reason = 2 [(metadata.semantic_meaning) = "Validity failure reason"];
 }
