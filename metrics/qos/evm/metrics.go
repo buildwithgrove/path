@@ -60,7 +60,7 @@ var (
 	requestValidationErrorsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
-			Name:      evmRequestsValidationErrorsTotalMetric,
+			Name:      requestsValidationErrorsTotalMetric,
 			Help:      "Total requests that failed validation before being sent to any endpoints, e.g. malformed JSON-RPC or parse errors",
 		},
 		[]string{"chain_id", "validation_error_kind"},
@@ -71,7 +71,7 @@ var (
 func PublishMetrics(
 	observations *qos.EVMRequestObservations,
 ) {
-	isRequestValid, requestValidationErrorKind := extractEVMRequestValidationStatus(observations)
+	isRequestValid, requestValidationErrorKind := extractRequestValidationStatus(observations)
 
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
@@ -120,7 +120,7 @@ func getEndpointResponseValidationFailureReason(
 ) string {
 	for _, observation := range observations.GetEndpointObservations() {
 		if response := extractEndpointResponseFromObservation(observation); response != nil {
-			return qos.EVMResponseInvalidReason_name[int32(response.GetInvalidReason())]
+			return qos.EVMResponseValidationErrorKind_name[int32(response.GetResponseValidationErrorKind())]
 		}
 	}
 
@@ -130,7 +130,7 @@ func getEndpointResponseValidationFailureReason(
 // extractRequestValidationStatus interprets validation results from the request observations.
 // Returns (true, "") if valid, or (false, failureReason) if invalid.
 func extractRequestValidationStatus(observations *qos.EVMRequestObservations) (bool, string) {
-	reasonEnum := evmObservations.GetRequestValidationErrorKind()
+	reasonEnum := observations.GetRequestValidationErrorKind()
 
 	// Valid request
 	if reasonEnum == qos.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_UNSPECIFIED {

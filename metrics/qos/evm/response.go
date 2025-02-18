@@ -9,7 +9,7 @@ import (
 // Note: Update when adding new metric requirements.
 type response interface {
 	GetValid() bool
-	GetInvalidReason() qos.EVMResponseInvalidReason
+	GetResponseValidationErrorKind() qos.EVMResponseValidationErrorKind
 }
 
 // getResponseFromObservation extracts the response data from an endpoint observation.

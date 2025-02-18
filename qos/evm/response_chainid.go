@@ -34,20 +34,20 @@ func responseUnmarshallerChainID(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
 		return responseToChainID{
-			logger:          logger,
-			jsonRPCResponse: jsonrpcResp,
-			invalidReason:   &invalidReason,
+			logger:              logger,
+			jsonRPCResponse:     jsonrpcResp,
+			validationErrorKind: &validationErrorKind,
 		}, err
 	}
 
 	var result string
-	invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNSPECIFIED
+	validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNSPECIFIED
 
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		invalidReason = qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		validationErrorKind = qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
 	}
 
 	return &responseToChainID{
@@ -58,7 +58,7 @@ func responseUnmarshallerChainID(
 		// if unmarshaling succeeded, the response is considered valid.
 		valid: (err == nil),
 
-		invalidReason: &invalidReason,
+		validationErrorKind: &validationErrorKind,
 	}, err
 }
 
@@ -81,7 +81,7 @@ type responseToChainID struct {
 
 	// Why the response has failed validation.
 	// Used when generating observations.
-	invalidReason *qosobservations.EVMResponseInvalidReason
+	validationErrorKind *qosobservations.EVMResponseValidationErrorKind
 }
 
 // GetObservation returns an observation of the endpoint's response to an `eth_chainId` request.
@@ -91,9 +91,9 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
-				ChainIdResponse: r.result,
-				Valid:           r.valid,
-				InvalidReason:   r.invalidReason,
+				ChainIdResponse:             r.result,
+				Valid:                       r.valid,
+				ResponseValidationErrorKind: r.validationErrorKind,
 			},
 		},
 	}

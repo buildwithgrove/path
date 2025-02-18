@@ -44,7 +44,7 @@ type responseGeneric struct {
 
 	// Why the response has failed validation.
 	// Used when generating observations.
-	invalidReason *qosobservations.EVMResponseInvalidReason
+	validationErrorKind *qosobservations.EVMResponseValidationErrorKind
 }
 
 // GetObservation returns an observation that is NOT used in validating endpoints.
@@ -57,8 +57,8 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
-				Valid:         r.valid,
-				InvalidReason: r.invalidReason,
+				Valid:                       r.valid,
+				ResponseValidationErrorKind: r.validationErrorKind,
 			},
 		},
 	}
@@ -82,8 +82,8 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	err := json.Unmarshal(data, &response)
 	if err != nil {
 		errResponse := getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
-		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
-		errResponse.invalidReason = &invalidReason
+		validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
+		errResponse.validationErrorKind = &validationErrorKind
 		return errResponse, err
 	}
 
