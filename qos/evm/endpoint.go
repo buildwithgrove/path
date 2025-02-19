@@ -19,8 +19,10 @@ var (
 
 // endpoint captures the details required to validate an EVM endpoint.
 type endpoint struct {
-	// hasReturnedEmptyResponse indicates if the endpoint has ever returned an empty response.
-	// Endpoints that return empty responses are marked invalid and excluded from selection.
+	// TODO_TECHDEBT(@adshmh): Persist this state across restarts to maintain endpoint exclusions.
+	//
+	// hasReturnedEmptyResponse tracks endpoints that have returned empty responses.
+	// These endpoints are excluded from selection until service restart.
 	hasReturnedEmptyResponse bool
 
 	// chainIDResponse stores the result of processing the endpoint's response to an `eth_chainId` request.

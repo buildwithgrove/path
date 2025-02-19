@@ -35,7 +35,7 @@ func responseUnmarshallerBlockNumber(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNMARSHAL
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
@@ -44,11 +44,11 @@ func responseUnmarshallerBlockNumber(
 	}
 
 	var result string
-	invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNSPECIFIED
+	invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNSPECIFIED
 
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		invalidReason = qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		invalidReason = qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNMARSHAL
 	}
 
 	return responseToBlockNumber{

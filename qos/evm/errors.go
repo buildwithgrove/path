@@ -4,9 +4,9 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// errResponseEmptyEndpointResponse is a pre-defined JSON-RPC response structure used when an EVM endpoint 
+// errResponseEmptyEndpointResponse is a pre-defined JSON-RPC response structure used when an EVM endpoint
 // returns an empty response body. This indicates:
-// - Server misbehavior 
+// - Server misbehavior
 // - Triggers endpoint removal from selection pool
 // - Allows client retry with different endpoint
 var errResponseEmptyEndpointResponse = jsonrpc.GetErrorResponse(

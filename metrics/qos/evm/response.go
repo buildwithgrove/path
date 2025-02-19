@@ -20,18 +20,22 @@ func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservat
 		return nil
 	}
 
+	// handle chain_id response
 	if response := observation.GetChainIdResponse(); response != nil {
 		return response
 	}
 
+	// handle block_number response
 	if response := observation.GetBlockNumberResponse(); response != nil {
 		return response
 	}
 
+	// handle unrecognized response
 	if response := observation.GetUnrecognizedResponse(); response != nil {
 		return response
 	}
 
+	// handle empty response
 	if response := observation.GetEmptyResponse(); response != nil {
 		return response
 	}

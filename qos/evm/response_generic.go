@@ -82,7 +82,7 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	err := json.Unmarshal(data, &response)
 	if err != nil {
 		errResponse := getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
-		invalidReason := qosobservations.EVMResponseInvalidReason_REASON_UNMARSHAL_ERR
+		invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNMARSHAL
 		errResponse.invalidReason = &invalidReason
 		return errResponse, err
 	}
