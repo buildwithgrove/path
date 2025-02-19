@@ -91,12 +91,13 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(ctx, httpReq)
+	rc.qosCtx = qosCtx
+
 	if !isValid {
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
 		return errHTTPRequestRejectedByQoS
 	}
 
-	rc.qosCtx = qosCtx
 	return nil
 }
 
@@ -106,12 +107,13 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 	// Create the QoS request context using the WebSocket request.
 	// This method will reject the request if it is for a service that does not support WebSocket connections.
 	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(ctx)
+	rc.qosCtx = qosCtx
+
 	if !isValid {
 		rc.logger.Info().Msg(errWebsocketRequestRejectedByQoS.Error())
 		return errWebsocketRequestRejectedByQoS
 	}
 
-	rc.qosCtx = qosCtx
 	return nil
 }
 

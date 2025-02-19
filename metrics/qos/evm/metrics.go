@@ -13,40 +13,57 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for EVM QoS
-	requestsTotalMetric = "evm_requests_total"
+	requestsTotalMetric                 = "evm_requests_total"
+	requestsValidationErrorsTotalMetric = "evm_request_validation_errors_total"
 )
 
 func init() {
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(requestValidationErrorsTotal)
 }
 
 var (
-	// TODO_MVP(@adshmh): add a `validation` object field to indicate whether
-	// the user's request was valid, with two fields:
-	//	1. Valid: whether the user's request was valid.
-	//	2. Reason: The reason the request is considered invalid, if applicable.
-	//
 	// TODO_MVP(@adshmh): Track endpoint responses separately from requests if/when retries are implemented,
 	// since a single request may generate multiple responses due to retry attempts.
 	//
-	// requestsTotal counts EVM QoS processed requests with labels:
-	//   - chain_id: Chain identifier using EVM QoS
-	//   - request_method: JSONRPC method name
-	//   - success: Whether request received a valid response
+	// requestsTotal tracks the total EVM requests processed.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - valid_request: Whether request parsing succeeded
+	//   - request_method: JSON-RPC method name
+	//   - success: Whether a valid response was received
 	//   - invalid_response_reason: the reason why an endpoint response failed QoS validation.
 	//
-	// Usage:
-	// - Monitor EVM requests load across chains and methods
-	// - Monitor EVM requests across different PATH instances
-	// - Compare requests across different JSONRPC methods or chain IDs (i.e. different chains which use EVM as their QoS)
-	// - Compare endpoint response validation failures across JSONRPC methods or chain IDs.
+	// Use to analyze:
+	//   - Request volume by chain and method
+	//   - Success rates across different PATH deployment regions
+	//   - Method usage patterns across chains
+	//   - End-to-end request success rates
+	//   - Response validation errors by JSON-RPC method and chain
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "request_method", "success", "invalid_response_reason"},
+		[]string{"chain_id", "valid_request", "request_method", "success", "invalid_response_reason"},
+	)
+
+	// requestValidationErrorsTotal tracks validation errors of incoming EVM requests.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - validation_error_kind: Validation error kind
+	//
+	// Use to analyze:
+	//   - Common request validation issues
+	//   - Per-chain validation error patterns
+	requestValidationErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      requestsValidationErrorsTotalMetric,
+			Help:      "Total requests that failed validation before being sent to any endpoints, e.g. malformed JSON-RPC or parse errors",
+		},
+		[]string{"chain_id", "validation_error_kind"},
 	)
 )
 
@@ -54,19 +71,34 @@ var (
 func PublishMetrics(
 	observations *qos.EVMRequestObservations,
 ) {
+	isRequestValid, requestValidationErrorKind := extractRequestValidationStatus(observations)
+
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
 			"chain_id":                observations.GetChainId(),
+			"valid_request":           fmt.Sprintf("%t", isRequestValid),
 			"request_method":          observations.GetJsonrpcRequest().GetMethod(),
 			"success":                 fmt.Sprintf("%t", getRequestSuccess(observations)),
 			"invalid_response_reason": getEndpointResponseValidationFailureReason(observations),
 		},
 	).Inc()
+
+	// Only export validation error metrics for invalid requests
+	if isRequestValid {
+		return
+	}
+
+	// Increment the request validation failure counter.
+	requestValidationErrorsTotal.With(
+		prometheus.Labels{
+			"chain_id":              observations.GetChainId(),
+			"validation_error_kind": requestValidationErrorKind,
+		},
+	).Inc()
 }
 
-// getRequestSuccess returns true if the request is assumed successful.
-// The request is assumed successful if any endpoint response is marked as valid.
+// getRequestSuccess checks if any endpoint provided a valid response.
 func getRequestSuccess(
 	observations *qos.EVMRequestObservations,
 ) bool {
@@ -88,9 +120,22 @@ func getEndpointResponseValidationFailureReason(
 ) string {
 	for _, observation := range observations.GetEndpointObservations() {
 		if response := extractEndpointResponseFromObservation(observation); response != nil {
-			return qos.EVMResponseInvalidReason_name[int32(response.GetInvalidReason())]
+			return qos.EVMResponseValidationErrorKind_name[int32(response.GetResponseValidationErrorKind())]
 		}
 	}
 
 	return ""
+}
+
+// extractRequestValidationStatus interprets validation results from the request observations.
+// Returns (true, "") if valid, or (false, failureReason) if invalid.
+func extractRequestValidationStatus(observations *qos.EVMRequestObservations) (bool, string) {
+	reasonEnum := observations.GetRequestValidationErrorKind()
+
+	// Valid request
+	if reasonEnum == qos.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_UNSPECIFIED {
+		return true, ""
+	}
+
+	return false, qos.EVMRequestValidationErrorKind_name[int32(reasonEnum)]
 }

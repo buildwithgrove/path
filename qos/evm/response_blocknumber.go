@@ -35,20 +35,20 @@ func responseUnmarshallerBlockNumber(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNMARSHAL
+		validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
 		return responseToBlockNumber{
-			logger:          logger,
-			jsonRPCResponse: jsonrpcResp,
-			invalidReason:   &invalidReason,
+			logger:              logger,
+			jsonRPCResponse:     jsonrpcResp,
+			validationErrorKind: &validationErrorKind,
 		}, err
 	}
 
 	var result string
-	invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNSPECIFIED
+	validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNSPECIFIED
 
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		invalidReason = qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_UNMARSHAL
+		validationErrorKind = qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
 	}
 
 	return responseToBlockNumber{
@@ -60,7 +60,7 @@ func responseUnmarshallerBlockNumber(
 		// e.g. a response that fails parsing as a number is not valid.
 		valid: err == nil,
 
-		invalidReason: &invalidReason,
+		validationErrorKind: &validationErrorKind,
 	}, err
 }
 
@@ -83,7 +83,7 @@ type responseToBlockNumber struct {
 
 	// Why the response has failed validation.
 	// Used when generating observations.
-	invalidReason *qosobservations.EVMResponseInvalidReason
+	validationErrorKind *qosobservations.EVMResponseValidationErrorKind
 }
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
@@ -93,9 +93,9 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
-				BlockNumberResponse: r.result,
-				Valid:               r.valid,
-				InvalidReason:       r.invalidReason,
+				BlockNumberResponse:         r.result,
+				Valid:                       r.valid,
+				ResponseValidationErrorKind: r.validationErrorKind,
 			},
 		},
 	}
