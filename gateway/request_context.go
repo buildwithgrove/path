@@ -102,7 +102,6 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 }
 
 // BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
-// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsReq *http.Request) error {
 	// Create the QoS request context using the WebSocket request.
 	// This method will reject the request if it is for a service that does not support WebSocket connections.
@@ -178,7 +177,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 }
 
 // HandleWebsocketRequest handles a websocket request.
-// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
 	// Make an endpoint selection using the QoS context.
 	// This modifies the internal state of protocolCtx for subsequent calls.
