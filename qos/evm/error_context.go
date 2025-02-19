@@ -17,6 +17,10 @@ var (
 	errInvalidSelectorUsage = errors.New("endpoint selection attempted on failed request")
 )
 
+// errorContext provides the support required by the gateway
+// package for handling service requests.
+var _ gateway.RequestQoSContext = &errorContext{}
+
 // requestContextFromInternalError creates an errorContext when encountering internal system errors, such as failures while reading an HTTP request body.
 func requestContextFromInternalError(logger polylog.Logger, err error, internalErrReason qosobservations.EVMRequestValidationErrorKind) errorContext {
 	return errorContext{
@@ -34,10 +38,6 @@ func requestContextFromUserError(logger polylog.Logger, err error, userErrReason
 		requestValidationErrorKind: &userErrReason,
 	}
 }
-
-// errorContext provides the support required by the gateway
-// package for handling service requests.
-var _ gateway.RequestQoSContext = &requestContext{}
 
 // errorContext terminates EVM request processing on errors (internal failures or invalid requests).
 // Provides:
