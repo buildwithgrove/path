@@ -127,6 +127,9 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
+	// TODO_MVP(@adshmh): Add `responseNone` type to handle cases where no endpoint response was received
+	// (e.g., protocol-level failures) and update both user response and metrics.
+	//
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
 	// intentionally ignoring the error here, since unmarshallResponse
@@ -146,6 +149,8 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
+	// TODO_MVP(@adshmh): Add responseNone type to track requests that fail without receiving endpoint responses
+	// (e.g., protocol failures) via metrics.
 	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
 		obs := endpointResponse.response.GetObservation()
