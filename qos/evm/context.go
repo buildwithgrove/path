@@ -149,7 +149,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
-	// TODO: Add responseNone type to track requests that fail without receiving endpoint responses
+	// TODO_MVP(@adshmh): Add responseNone type to track requests that fail without receiving endpoint responses
 	// (e.g., protocol failures) via metrics.
 	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {

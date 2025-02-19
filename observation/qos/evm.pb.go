@@ -4,6 +4,12 @@
 // 	protoc        v5.28.3
 // source: path/qos/evm.proto
 
+// TODO_MVP(@adshmh): Address linter warning on all the .proto files:
+// Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
+//
+// Buf used as linter for proto files:
+// https://buf.build/docs/lint/overview/
+
 package qos
 
 import (

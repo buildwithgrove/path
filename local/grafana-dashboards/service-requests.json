@@ -630,6 +630,6 @@
   "timezone": "browser",
   "title": "PATH / Service Requests",
   "uid": "relays",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
