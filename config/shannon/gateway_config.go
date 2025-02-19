@@ -1,14 +1,10 @@
 package shannon
 
 import (
-	"regexp"
-
 	"gopkg.in/yaml.v3"
 
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
-
-var websocketURLRegex = regexp.MustCompile("^(wss|ws)://.*$")
 
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type ShannonGatewayConfig struct {

@@ -66,21 +66,9 @@ type Gateway struct {
 // - Extract generic processing into common method
 // - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// Determine the type of service request and handle it accordingly.
-	switch determineServiceRequestType(httpReq) {
-	case websocketServiceRequest:
-		g.handleWebSocketRequest(ctx, httpReq, w)
-	default:
-		g.handleHTTPServiceRequest(ctx, httpReq, w)
-	}
-}
-
-// handleHTTPRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// build a gatewayRequestContext with components necessary to process HTTP requests.
+	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
-		logger: g.Logger,
-
+		logger:              g.Logger,
 		gatewayObservations: getUserRequestGatewayObservations(),
 		protocol:            g.Protocol,
 		httpRequestParser:   g.HTTPRequestParser,
@@ -91,10 +79,31 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	}
 
 	defer func() {
-		// Write the user-facing HTTP response.
-		gatewayRequestCtx.WriteHTTPUserResponse(w)
 		// Broadcast all observations, e.g. protocol-level, QoS-level, etc. contained in the gateway request context.
 		gatewayRequestCtx.BroadcastAllObservations()
+	}()
+
+	// Initialize the GatewayRequestContext struct using the HTTP request.
+	// e.g. extract the target service ID from the HTTP request.
+	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
+	if err != nil {
+		return
+	}
+
+	// Determine the type of service request and handle it accordingly.
+	switch determineServiceRequestType(httpReq) {
+	case websocketServiceRequest:
+		g.handleWebSocketRequest(ctx, httpReq, gatewayRequestCtx, w)
+	default:
+		g.handleHTTPServiceRequest(ctx, httpReq, gatewayRequestCtx, w)
+	}
+}
+
+// handleHTTPRequest handles a standard HTTP service request.
+func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+	defer func() {
+		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
+		gatewayRequestCtx.WriteHTTPUserResponse(w)
 	}()
 
 	// Initialize the GatewayRequestContext struct using the HTTP request.
@@ -122,38 +131,11 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-// getUserRequestGatewayObservations returns gateway-level observations for an organic request.
-// Example: request originated from a user.
-func getUserRequestGatewayObservations() observation.GatewayObservations {
-	return observation.GatewayObservations{
-		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
-		ReceivedTime: timestamppb.Now(),
-	}
-}
-
 // handleWebsocketRequest handles WebSocket connection requests
-func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	gatewayRequestCtx := &requestContext{
-		logger: g.Logger,
-
-		gatewayObservations: getUserRequestGatewayObservations(),
-		protocol:            g.Protocol,
-		httpRequestParser:   g.HTTPRequestParser,
-		metricsReporter:     g.MetricsReporter,
-		dataReporter:        g.DataReporter,
-		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
-		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
-	}
-
-	// Initialize the GatewayRequestContext struct using the HTTP request.
-	// e.g. extract the target service ID from the HTTP request.
-	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
-	if err != nil {
-		return
-	}
-
+func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
+	// This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body, so it
+	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
 	if err != nil {
 		return
 	}
@@ -164,5 +146,17 @@ func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Reque
 		return
 	}
 
-	gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+	// Use the gateway request context to process the websocket connection request.
+	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
+	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
+	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+}
+
+// getUserRequestGatewayObservations returns gateway-level observations for an organic request.
+// Example: request originated from a user.
+func getUserRequestGatewayObservations() observation.GatewayObservations {
+	return observation.GatewayObservations{
+		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
+		ReceivedTime: timestamppb.Now(),
+	}
 }
