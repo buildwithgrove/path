@@ -19,9 +19,9 @@ var errResponseEmptyEndpointResponse = jsonrpc.GetErrorResponse(
 	},
 )
 
-// NewEmptyResponse creates a JSON-RPC error response when an endpoint returns no data.
-// Preserves the request ID from the original request.
-// Marks the error as retryable to allow clients to safely retry their request.
+// NewEmptyResponse creates a JSON-RPC error response for empty endpoint responses:
+// - Preserves original request ID
+// - Marks error as retryable for safe client retry
 func NewEmptyResponseError(requestID jsonrpc.ID) jsonrpc.Response {
 	response := errResponseEmptyEndpointResponse
 	response.ID = requestID

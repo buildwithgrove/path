@@ -6,7 +6,7 @@ import (
 
 // response defines methods needed for response metrics collection.
 // Abstracts proto-specific details from metrics logic.
-// Note: Update when adding new metric requirements.
+// DEV_NOTE: You MUST update this when adding new metric requirements.
 type response interface {
 	GetValid() bool
 	GetInvalidReason() qos.EVMResponseInvalidReason
@@ -14,7 +14,7 @@ type response interface {
 
 // getResponseFromObservation extracts the response data from an endpoint observation.
 // Returns nil if no response is present.
-// Note: Update when adding new response types.
+// DEV_NOTE: You MUST update this when adding new metric requirements.
 func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservation) response {
 	if observation == nil {
 		return nil
