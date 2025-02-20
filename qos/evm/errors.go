@@ -8,9 +8,9 @@ import (
 
 // newErrResponseInternalErr creates a JSON-RPC error response when an internal error has occurred (e.g. reading HTTP request's body)
 // Marks the error as retryable to allow clients to safely retry their request.
-func newErrResponseInternalErr(err error) jsonrpc.Response {
+func newErrResponseInternalErr(requestID jsonrpc.ID, err error) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
-		jsonrpc.ID{},
+		requestID,
 		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("internal error: %s", err.Error()), // Error Message
 		map[string]string{

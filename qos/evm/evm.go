@@ -62,6 +62,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 		return requestContextFromUserError(
 			qos.logger,
+			jsonrpcReq.ID, // ID is set only if request parsing succeeded
 			err,
 			qosobservations.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_REQUEST_UNMARSHALING_FAILURE,
 		), false

@@ -20,22 +20,34 @@ var (
 // errorContext provides the support required by the gateway package for handling service requests.
 var _ gateway.RequestQoSContext = &errorContext{}
 
+// TODO_IMPROVE(@adshmh): Add request ID parameter to propagate on internal errors that occur after successful request parsing.
+// There are no such cases as of PR #165.
+//
 // requestContextFromInternalError creates an errorContext when encountering internal system errors.
 // For example, failures while reading an HTTP request body.
-func requestContextFromInternalError(logger polylog.Logger, err error, internalErrReason qosobservations.EVMRequestValidationErrorKind) errorContext {
+func requestContextFromInternalError(
+	logger polylog.Logger,
+	err error,
+	internalErrReason qosobservations.EVMRequestValidationErrorKind,
+) errorContext {
 	return errorContext{
 		logger:                     logger,
-		response:                   newErrResponseInternalErr(err),
+		response:                   newErrResponseInternalErr(jsonrpc.ID{}, err),
 		requestValidationErrorKind: &internalErrReason,
 	}
 }
 
 // requestContextFromUserError creates an errorContext for client-side errors.
 // FOr example, malformed JSON-RPC requests that fail to deserialize.
-func requestContextFromUserError(logger polylog.Logger, err error, userErrReason qosobservations.EVMRequestValidationErrorKind) errorContext {
+func requestContextFromUserError(
+	logger polylog.Logger,
+	requestID jsonrpc.ID,
+	err error,
+	userErrReason qosobservations.EVMRequestValidationErrorKind,
+) errorContext {
 	return errorContext{
 		logger:                     logger,
-		response:                   newErrResponseInvalidRequest(err, jsonrpc.ID{}),
+		response:                   newErrResponseInvalidRequest(err, requestID),
 		requestValidationErrorKind: &userErrReason,
 	}
 }
@@ -101,7 +113,8 @@ func (ec errorContext) GetServicePayload() protocol.Payload {
 	return protocol.Payload{}
 }
 
-// UpdateWithResponse logs a warning - should never be called.
+// UpdateWithResponse should never be called.
+// Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.
 func (ec errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
 	ec.logger.With(
@@ -110,7 +123,8 @@ func (ec errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, en
 	).Warn().Msg("Invalid usage: errorContext.UpdateWithResponse() should never be called.")
 }
 
-// UpdateWithResponse logs a warning and returns an errorTrackingSelector - should never be called.
+// UpdateWithResponse should never be called.
+// It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.
 func (ec errorContext) GetEndpointSelector() protocol.EndpointSelector {
 	ec.logger.Warn().Msg("Invalid usage: errorContext.GetEndpointSelector() should never be called.")
@@ -121,14 +135,15 @@ func (ec errorContext) GetEndpointSelector() protocol.EndpointSelector {
 }
 
 // errorTrackingSelector prevents panics in request handling goroutines by:
-// - Intentionally failing all endpoint selection attempts 
+// - Intentionally failing all endpoint selection attempts
 // - Logging diagnostic information when endpoint selection is incorrectly attempted on failed requests
 // Acts as a failsafe mechanism for request handling.
 type errorTrackingSelector struct {
 	logger polylog.Logger
 }
 
-// Select method of an errorTrackingSelector always returns an invalid usage error.
+// Select method of an errorTrackingSelector should never be called.
+// It logs a warning and returns an invalid usage error.
 // Implements the protocol.EndpointSelector interface.
 func (ets errorTrackingSelector) Select(endpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
 	ets.logger.With(
