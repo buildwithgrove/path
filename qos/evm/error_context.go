@@ -13,15 +13,15 @@ import (
 )
 
 var (
-	// Records that endpoint selection was attempted but failed due to an invalid request
+	// Error recording that endpoint selection was attempted but failed due to an invalid request
 	errInvalidSelectorUsage = errors.New("endpoint selection attempted on failed request")
 )
 
-// errorContext provides the support required by the gateway
-// package for handling service requests.
+// errorContext provides the support required by the gateway package for handling service requests.
 var _ gateway.RequestQoSContext = &errorContext{}
 
-// requestContextFromInternalError creates an errorContext when encountering internal system errors, such as failures while reading an HTTP request body.
+// requestContextFromInternalError creates an errorContext when encountering internal system errors.
+// For example, failures while reading an HTTP request body.
 func requestContextFromInternalError(logger polylog.Logger, err error, internalErrReason qosobservations.EVMRequestValidationErrorKind) errorContext {
 	return errorContext{
 		logger:                     logger,
@@ -30,7 +30,8 @@ func requestContextFromInternalError(logger polylog.Logger, err error, internalE
 	}
 }
 
-// requestContextFromUserError creates an errorContext for client-side errors, such as malformed JSON-RPC requests that fail to deserialize.
+// requestContextFromUserError creates an errorContext for client-side errors.
+// FOr example, malformed JSON-RPC requests that fail to deserialize.
 func requestContextFromUserError(logger polylog.Logger, err error, userErrReason qosobservations.EVMRequestValidationErrorKind) errorContext {
 	return errorContext{
 		logger:                     logger,
@@ -71,7 +72,7 @@ func (ec errorContext) GetHTTPResponse() gateway.HTTPResponse {
 			"qos", "evm",
 			"component", "errorContext",
 			"method", "GetHTTPResponse",
-		).Warn().Err(err).Msg("Failed to serialize user facing response.")
+		).Warn().Err(err).Msg("Failed to serialize client response.")
 	}
 
 	return httpResponse{
@@ -92,7 +93,8 @@ func (ec errorContext) GetObservations() qosobservations.Observations {
 	}
 }
 
-// GetServicePayload logs a warning and returns nil - should never be called.
+// GetServicePayload should never be called.
+// It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
 func (ec errorContext) GetServicePayload() protocol.Payload {
 	ec.logger.Warn().Msg("Invalid usage: errorContext.GetServicePayload() should never be called.")
@@ -118,10 +120,10 @@ func (ec errorContext) GetEndpointSelector() protocol.EndpointSelector {
 	}
 }
 
-// errorTrackingSelector intentionally fails all endpoint selection attempts.
-// This failsafe prevents panics in request handling goroutines and logs
-// diagnostic information when endpoint selection is incorrectly attempted
-// on already-failed requests.
+// errorTrackingSelector prevents panics in request handling goroutines by:
+// - Intentionally failing all endpoint selection attempts 
+// - Logging diagnostic information when endpoint selection is incorrectly attempted on failed requests
+// Acts as a failsafe mechanism for request handling.
 type errorTrackingSelector struct {
 	logger polylog.Logger
 }

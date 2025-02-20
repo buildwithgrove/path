@@ -61,7 +61,7 @@ var (
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsValidationErrorsTotalMetric,
-			Help:      "Total requests that failed validation before being sent to any endpoints, e.g. malformed JSON-RPC or parse errors",
+			Help:      "Total requests that failed validation BEFORE being sent to any endpoints; request was terminated in PATH. E.g. malformed JSON-RPC or parse errors",
 		},
 		[]string{"chain_id", "validation_error_kind"},
 	)
@@ -99,6 +99,7 @@ func PublishMetrics(
 }
 
 // getRequestSuccess checks if any endpoint provided a valid response.
+// Alternatively, It can be thought of "isAnyResponseSuccessful".
 func getRequestSuccess(
 	observations *qos.EVMRequestObservations,
 ) bool {
