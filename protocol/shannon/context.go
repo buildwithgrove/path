@@ -136,7 +136,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		return err
 	}
 
-	// TODO_IN_THIS_PR: ensure disconnection request propagates to the client when the session closes
+	// run bridge in a goroutine to avoid blocking the main thread
 	go bridge.Run()
 
 	wsLogger.Info().Msg("websocket connection established")
