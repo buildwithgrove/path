@@ -4,11 +4,11 @@
 
 Changes:
 - < Change 1 >
-- < Change 2 > 
+- < Change 2 >
 
 ## Issue
 
-- Description: < Description > 
+- Description: < Description >
 - Issue: #{ISSUE_NUMBER}
 
 ## Type of change
@@ -20,6 +20,12 @@ Select one or more from the following:
 - [ ] Code health or cleanup
 - [ ] Documentation
 - [ ] Other (specify)
+
+## QoS Checklist
+
+- [ ] 1. `make path_up`
+- [ ] 2. `make test_request__envoy_relay_util_100`
+- [ ] 3. Visit [http://localhost:3000/d/relays/path-service-requests](http://localhost:3000/d/relays/path-service-requests)
 
 ## Sanity Checklist
 
