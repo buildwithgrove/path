@@ -134,7 +134,6 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // handleWebsocketRequest handles WebSocket connection requests
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	// This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body, so it
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
 	if err != nil {
 		return

@@ -12,7 +12,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 )
 
-// FullNode is represents a Shannon FullNode as only Shannon supports websocket connections.
+// FullNode represents a Shannon FullNode as only Shannon supports websocket connections.
 // It is used only to validate the relay responses returned by the Endpoint.
 type FullNode interface {
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
@@ -37,7 +37,7 @@ type SelectedEndpoint interface {
 // One bridge represents a single WebSocket connection between
 // a Client and a WebSocket Endpoint.
 //
-// Full data flow: Client <---connection---> PATH Bridge <---connection---> Relay Miner Bridge <------> Endpoint
+// Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
 type bridge struct {
 	// ctx is used to stop the bridge when the context is cancelled from either connection
 	ctx context.Context
@@ -119,7 +119,7 @@ func NewBridge(
 // Run starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
-// Full data flow: Client <---connection---> PATH Bridge <---connection---> Relay Miner Bridge <------> Endpoint
+// Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
 func (b *bridge) Run() {
 	b.logger.Info().Msg("bridge operation started successfully")
 
@@ -144,7 +144,7 @@ func (b *bridge) Run() {
 // This method is passed to each connection and is called when an error is encountered
 // It ensures that both Client and Endpoint connections are closed and the message channel is closed
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
-// and it is critical that the closing of the connectiong propagates to the Client so they can reconnect.
+// and it is critical that the closing of the connection propagates to the Client so they can reconnect.
 func (b *bridge) Shutdown(err error) {
 	b.logger.Info().Err(err).Msg("bridge shutting down due to error")
 
