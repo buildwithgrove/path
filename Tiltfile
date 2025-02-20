@@ -64,7 +64,13 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 
 local_resource(
     'path-config-updater',
-    'kubectl delete secret path-config-local --ignore-not-found=true && kubectl create secret generic path-config-local --from-file=.config.yaml=./local/path/config/.config.yaml',
+    '''
+    kubectl delete secret path-config-local --ignore-not-found=true && \
+    kubectl create secret generic path-config-local --from-file=.config.yaml=./local/path/config/.config.yaml && \
+    kubectl get deployment path > /dev/null 2>&1 && \
+    kubectl rollout restart deployment path || \
+    echo "Deployment not found - skipping rollout restart"
+    ''',
     deps=['./local/path/config/.config.yaml']
 )
 
@@ -76,8 +82,7 @@ docker_build_with_restart(
     entrypoint="/app/path",
     live_update=[
         sync("bin/path", "/app/path"),
-        sync("./local/path/config/", "/tmp/config/"),
-        run("cp -r /tmp/config/* /app/config/")
+        run("/app/path")
     ],
 )
 
@@ -120,8 +125,6 @@ helm_resource(
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
     labels=["path"],
-    # trigger_mode=TRIGGER_MODE_AUTO,  # Add this
-    # triggers=[config_id],            # Add this
     links=[
         link(
             "http://localhost:3000/d/relays/path-service-requests?orgId=1",
@@ -177,9 +180,9 @@ if MODE == "path_with_auth":
 
     # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
     docker_build(
-    # docker_build_with_restart(
         "ext-authz",
         context="./envoy/auth_server",
+        # entrypoint="/app/auth_server",
         dockerfile="./envoy/auth_server/Dockerfile",
         live_update=[
             sync("./envoy/auth_server", "/app"),
