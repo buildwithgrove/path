@@ -10,23 +10,59 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_connectEndpoint(t *testing.T) {
 	tests := []struct {
-		name          string
-		nodeURL       string
-		expectedError bool
+		name                string
+		getSelectedEndpoint func(testServerURL string) *selectedEndpoint
+		expectedError       bool
 	}{
 		{
-			name:          "should connect successfully",
-			nodeURL:       "ws://localhost:8080",
+			name: "should connect successfully",
+			getSelectedEndpoint: func(testServerURL string) *selectedEndpoint {
+				baseURL := "ws://localhost:8080"
+				u, _ := url.Parse(baseURL)
+				u.Host = strings.TrimPrefix(testServerURL, "http://")
+				nodeURL := u.String()
+				return &selectedEndpoint{
+					url: nodeURL,
+					session: &sessiontypes.Session{
+						SessionId: "1",
+						Header: &sessiontypes.SessionHeader{
+							ServiceId:          "service_id",
+							ApplicationAddress: "application_address",
+						},
+						Application: &apptypes.Application{
+							Address: "application_address",
+						},
+					},
+					supplier: "supplier",
+				}
+			},
 			expectedError: false,
 		},
 		{
-			name:          "should fail to connect with invalid URL",
-			nodeURL:       "http://invalid-url",
+			name: "should fail to connect with invalid URL",
+			getSelectedEndpoint: func(testServerURL string) *selectedEndpoint {
+				return &selectedEndpoint{
+					url: "http://invalid-url",
+					session: &sessiontypes.Session{
+						SessionId: "1",
+						Header: &sessiontypes.SessionHeader{
+							ServiceId:          "service_id",
+							ApplicationAddress: "application_address",
+						},
+						Application: &apptypes.Application{
+							Address: "application_address",
+						},
+					},
+					supplier: "supplier",
+				}
+			},
 			expectedError: true,
 		},
 	}
@@ -45,11 +81,9 @@ func Test_connectEndpoint(t *testing.T) {
 			}))
 			defer server.Close()
 
-			u, _ := url.Parse(test.nodeURL)
-			u.Host = strings.TrimPrefix(server.URL, "http://")
-			nodeURL := u.String()
+			selectedEndpoint := test.getSelectedEndpoint(server.URL)
 
-			conn, err := connectEndpoint(nodeURL, http.Header{})
+			conn, err := connectEndpoint(selectedEndpoint)
 			if test.expectedError {
 				c.Error(err)
 			} else {

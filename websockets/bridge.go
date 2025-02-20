@@ -2,7 +2,6 @@ package websockets
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -12,19 +11,32 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 )
 
+// FullNode is represents a Shannon FullNode as only Shannon supports websocket connections.
+// It is used only to validate the relay responses returned by the Endpoint.
 type FullNode interface {
+	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
 	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
 }
 
+// RelayRequestSigner is used by the request context to sign the relay request.
+// It takes an unsigned relay request and an application, and returns a relay request signed either by the gateway that has delegation from the app.
+// If/when the Permissionless Gateway Mode is supported by the Shannon integration, the app's own private key may also be used for signing the relay request.
 type RelayRequestSigner interface {
 	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
 
+// SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
+type SelectedEndpoint interface {
+	PublicURL() string
+	Supplier() string
+	Session() *sessiontypes.Session
+}
+
 // bridge routes data between an Endpoint and a Client.
-// One bridge represents a single WebSocket connection between a
-// Client and a WebSocket Endpoint.
+// One bridge represents a single WebSocket connection between
+// a Client and a WebSocket Endpoint.
 //
-// Full data flow: Client <------> PATH Bridge <------> WebSocket Endpoint
+// Full data flow: Client <------> PATH Bridge <------> Relay Miner Bridge <------> Endpoint
 type bridge struct {
 	logger polylog.Logger
 
@@ -42,8 +54,7 @@ type bridge struct {
 	// stopChan is a channel that signals the bridge to stop
 	stopChan chan error
 
-	session            sessiontypes.Session
-	supplier           string
+	selectedEndpoint   SelectedEndpoint
 	relayRequestSigner RelayRequestSigner
 	fullNode           FullNode
 }
@@ -51,19 +62,14 @@ type bridge struct {
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
 func NewBridge(
 	logger polylog.Logger,
-	endpointURL string,
-	session sessiontypes.Session,
-	supplier string,
+	clientWSSConn *websocket.Conn,
+	selectedEndpoint SelectedEndpoint,
 	relayRequestSigner RelayRequestSigner,
 	fullNode FullNode,
-	clientWSSConn *websocket.Conn,
 ) (*bridge, error) {
-	header := http.Header{}
-	header.Add("target-service-id", session.Header.ServiceId)
-	header.Add("X-App-Address", session.Header.ApplicationAddress)
-	endpointWSSConn, err := connectEndpoint(endpointURL, header)
+	endpointWSSConn, err := connectEndpoint(selectedEndpoint)
 	if err != nil {
-		return nil, fmt.Errorf("error establishing connection to endpoint URL %s: %s", endpointURL, err.Error())
+		return nil, fmt.Errorf("NewBridge: %s", err.Error())
 	}
 
 	msgChan := make(chan message)
@@ -71,7 +77,7 @@ func NewBridge(
 
 	logger = logger.With(
 		"component", "bridge",
-		"endpoint_url", endpointURL,
+		"endpoint_url", selectedEndpoint.PublicURL(),
 	)
 
 	endpointConnection := newConnection(
@@ -90,14 +96,14 @@ func NewBridge(
 	)
 
 	return &bridge{
-		logger:       logger,
+		logger: logger,
+
 		endpointConn: endpointConnection,
 		clientConn:   clientConnection,
 		msgChan:      msgChan,
 		stopChan:     stopChan,
 
-		session:            session,
-		supplier:           supplier,
+		selectedEndpoint:   selectedEndpoint,
 		relayRequestSigner: relayRequestSigner,
 		fullNode:           fullNode,
 	}, nil
@@ -106,7 +112,7 @@ func NewBridge(
 // Run starts the bridge and establishes a bidirectional communication
 // through PATH between the Client and the selected websocket endpoint.
 //
-// Full data flow: Client <------> PATH Bridge <------> WebSocket Endpoint
+// Full data flow: Client <------> PATH Bridge <------> Relay Miner Bridge <------> Endpoint
 func (b *bridge) Run() {
 	// Start goroutine to read messages from message channel
 	go b.messageLoop()
@@ -145,41 +151,57 @@ func (b *bridge) messageLoop() {
 }
 
 // handleClientMessage processes a message from the Client and sends it to the Endpoint
+// It signs the request using the RelayRequestSigner and sends the signed request to the Endpoint
 func (b *bridge) handleClientMessage(msg message) {
 	b.logger.Debug().Msgf("received message from client: %s", string(msg.data))
 
-	unsignedRelayRequest := &servicetypes.RelayRequest{
-		Meta: servicetypes.RelayRequestMetadata{
-			SessionHeader:           b.session.Header,
-			SupplierOperatorAddress: b.supplier,
-		},
-		Payload: msg.data,
-	}
-
-	app := b.session.Application
-	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
+	// Sign the client message before sending it to the Endpoint
+	signedClientMessageBz, err := b.signClientMessage(msg)
 	if err != nil {
 		b.clientConn.handleError(err, messageSourceClient)
 		return
 	}
 
-	relayRequestBz, err := signedRelayRequest.Marshal()
-	if err != nil {
-		b.clientConn.handleError(err, messageSourceClient)
-		return
-	}
-
-	if err := b.endpointConn.WriteMessage(msg.messageType, relayRequestBz); err != nil {
+	// Send the signed request to the RelayMiner, which will forward it to the Endpoint
+	if err := b.endpointConn.WriteMessage(msg.messageType, signedClientMessageBz); err != nil {
 		b.endpointConn.handleError(err, messageSourceEndpoint)
 		return
 	}
 }
 
+// signClientMessage signs the client message in order to send it to the Endpoint
+// It uses the RelayRequestSigner to sign the request and returns the signed request
+func (b *bridge) signClientMessage(msg message) ([]byte, error) {
+	unsignedRelayRequest := &servicetypes.RelayRequest{
+		Meta: servicetypes.RelayRequestMetadata{
+			SessionHeader:           b.selectedEndpoint.Session().GetHeader(),
+			SupplierOperatorAddress: b.selectedEndpoint.Supplier(),
+		},
+		Payload: msg.data,
+	}
+
+	app := b.selectedEndpoint.Session().GetApplication()
+	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
+	if err != nil {
+		return nil, fmt.Errorf("signClientMessage: error signing client message: %s", err.Error())
+	}
+
+	relayRequestBz, err := signedRelayRequest.Marshal()
+	if err != nil {
+		return nil, fmt.Errorf("signClientMessage: error marshalling signed client message: %s", err.Error())
+	}
+
+	return relayRequestBz, nil
+}
+
 // handleEndpointMessage processes a message from the Endpoint and sends it to the Client
+// It validates the relay response using the Shannon FullNode and sends the relay response to the Client
+// Subscription events pushed from the Endpoint to the Client will be handled here as well.
 func (b *bridge) handleEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
 
-	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.supplier), msg.data)
+	// Validate the relay response using the Shannon FullNode
+	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
 	if err != nil {
 		b.endpointConn.handleError(err, messageSourceEndpoint)
 		return

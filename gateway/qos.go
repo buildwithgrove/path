@@ -67,6 +67,8 @@ type QoSContextBuilder interface {
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
 
 	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
+	// WebSocket connection requests do not have a body so there is no need to parse anything.
+	// As long as the service supports WebSocket connections, this method should return a valid RequestQoSContext.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
 

@@ -108,6 +108,8 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(ctx)
 	rc.qosCtx = qosCtx
 
+	// Only reject the request if the service QoS does not support WebSocket connections.
+	// All other WebSocket requests will have `isValid` set to true.
 	if !isValid {
 		rc.logger.Info().Msg(errWebsocketRequestRejectedByQoS.Error())
 		return errWebsocketRequestRejectedByQoS
@@ -186,6 +188,7 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 	}
 
 	// Establish a websocket connection with the selected endpoint and handle the request.
+	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err
