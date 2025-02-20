@@ -102,6 +102,8 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 }
 
 // BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
+// This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body,
+// so it will only return an error if called for a service that does not support WebSocket connections.
 func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsReq *http.Request) error {
 	// Create the QoS request context using the WebSocket request.
 	// This method will reject the request if it is for a service that does not support WebSocket connections.
