@@ -182,7 +182,6 @@ if MODE == "path_with_auth":
     docker_build(
         "ext-authz",
         context="./envoy/auth_server",
-        # entrypoint="/app/auth_server",
         dockerfile="./envoy/auth_server/Dockerfile",
         live_update=[
             sync("./envoy/auth_server", "/app"),

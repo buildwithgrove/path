@@ -34,7 +34,6 @@ func main() {
 	}
 
 	log.Printf("Initializing PATH logger with level: %s", config.Logger.Level)
-	fmt.Printf("OLSH %+v\n", config.MorseConfig)
 
 	loggerOpts := []polylog.LoggerOption{
 		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
