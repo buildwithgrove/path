@@ -105,8 +105,10 @@ var shannonEVMChainIDs = map[protocol.ServiceID]string{
 	"eth": defaultEVMChainID, // ETH Mainnet (1)
 
 	// Test QoS EVM service IDs
-	"anvil":   defaultEVMChainID, // ETH development/testing (1)
-	"anvilws": defaultEVMChainID, // ETH development/testing (1)
+	"anvil": defaultEVMChainID, // ETH development/testing (1)
+
+	// TODO_IMPROVE(@commoddity): Improve QoS for websockets to ensure that service endpoints support WebSocket connections before attempting connection
+	"anvilws": defaultEVMChainID, // ETH WebSockets development/testing (1)
 }
 
 // All CometBFT Shannon Service IDs and their corresponding CometBFT chain IDs.

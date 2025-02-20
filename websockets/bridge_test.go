@@ -120,9 +120,6 @@ func Test_Bridge_Run(t *testing.T) {
 			// Wait for a short duration for test requests and events to get sent
 			<-time.After(2 * time.Second)
 
-			// Close the bridge
-			bridge.Close()
-
 			// Assert that the Client sent the expected requests and the Endpoint returned the expected responses
 			for clientReq, endpointResp := range test.jsonrpcRequests {
 				_, exists := capturedMessages.clientRequests[clientReq]

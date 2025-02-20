@@ -1,6 +1,7 @@
 package websockets
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -124,17 +125,19 @@ func Test_connection(t *testing.T) {
 			c := require.New(t)
 
 			msgChan := make(chan message)
-			stopChan := make(chan error)
 
 			conn := testConn(t, test.msgs)
 			defer conn.Close()
 
+			ctx, cancelCtx := context.WithCancel(context.Background())
+
 			_ = newConnection(
+				ctx,
+				cancelCtx,
 				polyzero.NewLogger().With("conn", test.source),
 				conn,
 				test.source,
 				msgChan,
-				stopChan,
 			)
 
 			receivedMsgs := make(map[string]struct{})
@@ -146,8 +149,8 @@ func Test_connection(t *testing.T) {
 
 			<-time.After(2 * time.Second)
 
-			close(stopChan)
 			close(msgChan)
+			cancelCtx()
 
 			for msg := range test.msgs {
 				c.Contains(receivedMsgs, msg)
