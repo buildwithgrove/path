@@ -28,12 +28,12 @@ var _ gateway.RequestQoSContext = &errorContext{}
 func requestContextFromInternalError(
 	logger polylog.Logger,
 	err error,
-	internalErrReason qosobservations.EVMRequestValidationErrorKind,
+	internalErrReason qosobservations.EVMRequestValidationError,
 ) errorContext {
 	return errorContext{
-		logger:                     logger,
-		response:                   newErrResponseInternalErr(jsonrpc.ID{}, err),
-		requestValidationErrorKind: &internalErrReason,
+		logger:                 logger,
+		response:               newErrResponseInternalErr(jsonrpc.ID{}, err),
+		requestValidationError: &internalErrReason,
 	}
 }
 
@@ -43,12 +43,12 @@ func requestContextFromUserError(
 	logger polylog.Logger,
 	requestID jsonrpc.ID,
 	err error,
-	userErrReason qosobservations.EVMRequestValidationErrorKind,
+	userErrReason qosobservations.EVMRequestValidationError,
 ) errorContext {
 	return errorContext{
-		logger:                     logger,
-		response:                   newErrResponseInvalidRequest(err, requestID),
-		requestValidationErrorKind: &userErrReason,
+		logger:                 logger,
+		response:               newErrResponseInvalidRequest(err, requestID),
+		requestValidationError: &userErrReason,
 	}
 }
 
@@ -69,7 +69,7 @@ type errorContext struct {
 	response jsonrpc.Response
 
 	// Indicates why the request processing failed.
-	requestValidationErrorKind *qosobservations.EVMRequestValidationErrorKind
+	requestValidationError *qosobservations.EVMRequestValidationError
 }
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
@@ -98,8 +98,8 @@ func (ec errorContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				ChainId:                    ec.chainID,
-				RequestValidationErrorKind: ec.requestValidationErrorKind,
+				ChainId:                ec.chainID,
+				RequestValidationError: ec.requestValidationError,
 			},
 		},
 	}

@@ -29,13 +29,13 @@ type responseEmpty struct {
 // GetObservation returns an observation indicating the endpoint returned an empty response.
 // Implements the response interface.
 func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
-	validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_EMPTY
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_EMPTY
 
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_EmptyResponse{
 			EmptyResponse: &qosobservations.EVMEmptyResponse{
-				Valid:                       false, // Empty responses are inherently invalid - explicitly set for clarity
-				ResponseValidationErrorKind: &validationErrorKind,
+				Valid:                   false, // Empty responses are inherently invalid - explicitly set for clarity
+				ResponseValidationError: &validationError,
 			},
 		},
 	}
