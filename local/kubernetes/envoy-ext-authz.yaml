@@ -16,15 +16,15 @@ spec:
         - name: ext-authz
           image: ext-authz:latest
           volumeMounts:
-            - name: path-config
+            - name: path-config-local
               mountPath: /app/config/.config.yaml
               subPath: .config.yaml
           ports:
             - containerPort: 10003
       volumes:
-        - name: path-config
-          configMap:
-            name: path-config
+        - name: path-config-local
+          secret:
+            secretName: path-config-local
 ---
 apiVersion: v1
 kind: Service
