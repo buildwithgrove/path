@@ -12,14 +12,24 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 import "path/qos/jsonrpc.proto";
 import "path/metadata/metadata.proto";
 
-// EVMResponseInvalidReason defines why an endpoint response was rejected.
+// EVMRequestValidationError enumerates possible causes for EVM request rejection:
+// Invalid request types (as of PR #165):
+//   1. Internal server error while reading the HTTP request body
+//   2. Unmarshal error when parsing request into the expected format
+enum EVMRequestValidationError {
+  EVM_REQUEST_VALIDATION_ERROR_UNSPECIFIED = 0;
+  EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE = 1;
+  EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE = 2;
+}
+
+// EVMResponseValidationError defines why an endpoint response was rejected.
 // Current invalid response types (as of PR #164):
 //   1. EmptyResponse - endpoint returned no data
 //   2. UnmarshalErr - response failed to parse into expected format
-enum EVMResponseInvalidReason {
-	EVM_RESPONSE_INVALID_REASON_UNSPECIFIED = 0;
-	EVM_RESPONSE_INVALID_REASON_EMPTY = 1;      // No response data received
-	EVM_RESPONSE_INVALID_REASON_UNMARSHAL = 2;  // Response parsing failed
+enum EVMResponseValidationError {
+	EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
+	EVM_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // No response data received
+	EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
 }
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
@@ -37,6 +47,9 @@ message EVMRequestObservations {
   // chainID is the blockchain identifier for the evm QoS implementation.
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 3;
+
+  // Specifies the reason an EVM request failed validation.
+  optional EVMRequestValidationError request_validation_error = 4 [(metadata.semantic_meaning) = "How the request validation failed"];
 }
 
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
@@ -78,7 +91,7 @@ message EVMChainIDResponse {
   bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
 
   // Why the response failed QoS validation
-  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validation failure reason"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validation failure type"];
 }
 
 // EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
@@ -90,7 +103,7 @@ message EVMBlockNumberResponse {
   bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
 
   // Why the response failed QoS validation
-  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
@@ -102,7 +115,7 @@ message EVMUnrecognizedResponse {
   bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
 
   // Why the response failed QoS validation
-  optional EVMResponseInvalidReason invalid_reason = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMEmptyResponse represents an endpoint's empty response, which triggers
@@ -114,5 +127,5 @@ message EVMEmptyResponse {
 
   // Why the response failed QoS validation
   // Set to EmptyResponse for empty responses
-  optional EVMResponseInvalidReason invalid_reason = 2 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
 }

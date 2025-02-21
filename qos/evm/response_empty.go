@@ -29,13 +29,13 @@ type responseEmpty struct {
 // GetObservation returns an observation indicating the endpoint returned an empty response.
 // Implements the response interface.
 func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
-	invalidReason := qosobservations.EVMResponseInvalidReason_EVM_RESPONSE_INVALID_REASON_EMPTY
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_EMPTY
 
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_EmptyResponse{
 			EmptyResponse: &qosobservations.EVMEmptyResponse{
-				Valid:         false, // Empty responses are inherently invalid - explicitly set for clarity
-				InvalidReason: &invalidReason,
+				Valid:                   false, // Empty responses are inherently invalid - explicitly set for clarity
+				ResponseValidationError: &validationError,
 			},
 		},
 	}
@@ -45,7 +45,7 @@ func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
 // Implements the response interface with retry semantics.
 func (r responseEmpty) GetResponsePayload() []byte {
-	userResponse := NewEmptyResponseError(r.jsonrpcReq.ID)
+	userResponse := newErrResponseEmptyEndpointResponse(r.jsonrpcReq.ID)
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
