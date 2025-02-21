@@ -55,7 +55,7 @@ func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 
 // GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
 // Implements the gateway.QoSService interface.
-func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.QualityCheck {
+func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	return nil
 }
 

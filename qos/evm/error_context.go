@@ -123,6 +123,15 @@ func (ec errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, en
 	).Warn().Msg("Invalid usage: errorContext.UpdateWithResponse() should never be called.")
 }
 
+// SetPreSelectedEndpointAddr should never be called.
+// Only logs a warning.
+// Implements the gateway.RequestQoSContext interface.
+func (ec errorContext) SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
+	ec.logger.With(
+		"endpoint_addr", endpointAddr,
+	).Warn().Msg("Invalid usage: errorContext.SetPreSelectedEndpointAddr() should never be called.")
+}
+
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.

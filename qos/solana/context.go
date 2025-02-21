@@ -117,6 +117,13 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
+// SetPreSelectedEndpointAddr assigns the endpoint address to be used for hydrator checks.
+// It is called to override the endpoint selection process with a specific endpoint.
+// Is used to enforce performing quality checks on a specific endpoint.
+func (rc *requestContext) SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
+	rc.preSelectedEndpointAddr = endpointAddr
+}
+
 // TODO_MVP(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.

@@ -3,7 +3,6 @@ package gateway
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
@@ -58,6 +57,8 @@ type RequestQoSContext interface {
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
 	GetEndpointSelector() protocol.EndpointSelector
+
+	SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr)
 }
 
 // QoSContextBuilder builds the QoS context required for handling
@@ -70,18 +71,6 @@ type QoSContextBuilder interface {
 
 	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
-}
-
-// QualityCheck is an interface for the checks performed on an endpoint.
-// It must be implemented in each service-specific QoS instance.
-// It provides primarily:
-//  1. the request context used to perform a quality check
-//  2. the time until the check expires
-type QualityCheck interface {
-	GetRequestContext() RequestQoSContext
-	ExpiresAt() time.Time
-	CheckName() string
-	EndpointAddr() protocol.EndpointAddr
 }
 
 // QoSEndpointCheckGenerator returns one or more service request contexts
@@ -100,7 +89,7 @@ type QoSEndpointCheckGenerator interface {
 	// make a decision based on the specific endpoint.
 	// e.g. An EVM-based blockchain service QoS may decide to skip querying an endpoint on
 	// its current block height if it has already failed the chain ID check.
-	GetRequiredQualityChecks(protocol.EndpointAddr) []QualityCheck
+	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
 }
 
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.

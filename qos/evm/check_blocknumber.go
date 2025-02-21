@@ -3,12 +3,19 @@ package evm
 import (
 	"fmt"
 	"time"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+var _ check = &endpointCheckBlockNumber{}
+
 const (
-	endpointCheckNameBlockHeight endpointCheckName = "block_height"
+	checkNameBlockHeight endpointCheckName = "block_height"
+	// methodBlockNumber is the JSON-RPC method for getting the latest block number.
+	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
+	methodBlockNumber = jsonrpc.Method("eth_blockNumber")
 	// TODO_IMPROVE: determine an appropriate interval for checking the block height.
-	blockHeightCheckInterval = 60 * time.Second
+	checkBlockHeightInterval = 60 * time.Second
 )
 
 var (
@@ -25,11 +32,8 @@ type endpointCheckBlockNumber struct {
 	expiresAt   time.Time
 }
 
-func (e *endpointCheckBlockNumber) CheckName() string {
-	return string(endpointCheckNameBlockHeight)
-}
-
-func (e *endpointCheckBlockNumber) IsValid(serviceState *ServiceState) error {
+// isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
+func (e *endpointCheckBlockNumber) isValid(serviceState *ServiceState) error {
 	if e.blockHeight == nil {
 		return errNoBlockNumberObs
 	}
@@ -44,6 +48,16 @@ func (e *endpointCheckBlockNumber) IsValid(serviceState *ServiceState) error {
 	return nil
 }
 
-func (e *endpointCheckBlockNumber) ExpiresAt() time.Time {
-	return e.expiresAt
+func (e *endpointCheckBlockNumber) name() endpointCheckName {
+	return checkNameBlockHeight
+}
+
+// shouldRun returns true if the check is not yet initialized or has expired.
+func (e *endpointCheckBlockNumber) shouldRun() bool {
+	return e.expiresAt.IsZero() || e.expiresAt.Before(time.Now())
+}
+
+// withBlockNumberCheck updates the request context to make an EVM JSON-RPC eth_blockNumber request.
+func withBlockNumberCheck(requestCtx *requestContext) {
+	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
 }

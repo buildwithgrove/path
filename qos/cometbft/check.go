@@ -14,14 +14,13 @@ import (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-// TODO_FIX_IN_THIS_PR(@commoddity): implement the changes done in EVM to allow configuring required quality checks in this package
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.QualityCheck {
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
-	return []gateway.QualityCheck{
-		// getEndpointCheck(es.logger, es, endpointAddr, withHealthCheck),
-		// getEndpointCheck(es.logger, es, endpointAddr, withStatusCheck),
+	return []gateway.RequestQoSContext{
+		getEndpointCheck(es.logger, es, endpointAddr, withHealthCheck),
+		getEndpointCheck(es.logger, es, endpointAddr, withStatusCheck),
 	}
 }
 

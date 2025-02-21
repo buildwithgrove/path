@@ -45,7 +45,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		// e.g. when the first observation(s) are received for an endpoint.
 		endpoint, ok := es.endpoints[endpointAddr]
 		if !ok {
-			endpoint = newEndpoint()
+			endpoint = newEndpoint(es)
 		}
 
 		isMutated := endpoint.ApplyObservation(observation)

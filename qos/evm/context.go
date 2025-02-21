@@ -117,6 +117,13 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
+// SetPreSelectedEndpointAddr assigns the endpoint address to be used for hydrator checks.
+// It is called to override the endpoint selection process with a specific endpoint.
+// Is used to enforce performing quality checks on a specific endpoint.
+func (rc *requestContext) SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
+	rc.preSelectedEndpointAddr = endpointAddr
+}
+
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
 // single JSONRPC requests and tracking endpoints' response(s) to each.
 // This would also require combining the responses into a single, valid

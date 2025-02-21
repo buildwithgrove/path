@@ -1,10 +1,6 @@
 package evm
 
 import (
-	"time"
-
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -18,79 +14,64 @@ const (
 	idBlockNumberCheck
 )
 
-// endpointCheckName is a type for the names of the checks performed on an endpoint.
+// endpointCheckName is a type for the names of the checks applied to an endpoint.
 type endpointCheckName string
 
-// evmEndpointCheck is an interface for the checks performed on an endpoint.
+// check is an interface for the checks applied to an endpoint.
 // It is embedded in the struct that satisfies the gateway.QualityCheck interface.
-type evmEndpointCheck interface {
-	CheckName() string
-	IsValid(serviceState *ServiceState) error
-	ExpiresAt() time.Time
+type check interface {
+	name() endpointCheckName
+	isValid(serviceState *ServiceState) error
+	shouldRun() bool
 }
 
-var (
-	// EndpointStore provides the endpoint check generator required by
-	// the gateway package to augment endpoints' quality data,
-	// using synthetic service requests.
-	_ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
-	// evmQualityCheck implements the QualityCheck interface for EVM-based endpoints.
-	_ gateway.QualityCheck = &evmQualityCheck{}
-)
+// EndpointStore provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 // evmQualityCheck provides:
-//  1. the request context used to perform a quality check,
-//  2. The time until the check expires.
+//  1. The validity and expiry of the check.
+//  2. The request context used to perform a quality check.
 //
-// If an endpoint has a check that is still considered valid,
-// it will not be check by the endpoint hydrator.
-//
-// It implements the QualityCheck interface for EVM-based endpoints.
+// An evmQualityCheck may have an empty request context if the check
+// derives its validity from applying other observations.
+// For example: if the check is for an empty response to any request.
 type evmQualityCheck struct {
-	evmEndpointCheck
+	check
 	requestContext *requestContext
 }
 
-func (q *evmQualityCheck) GetRequestContext() gateway.RequestQoSContext {
-	return q.requestContext
+func (q *evmQualityCheck) shouldRun() bool {
+	return q.requestContext != nil && q.check.shouldRun()
 }
 
-func (q *evmQualityCheck) EndpointAddr() protocol.EndpointAddr {
-	return q.requestContext.preSelectedEndpointAddr
+func (q *evmQualityCheck) getRequestContext() gateway.RequestQoSContext {
+	return q.requestContext
 }
 
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.QualityCheck {
+func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+	es.endpointsMu.RLock()
 	endpoint, ok := es.endpoints[endpointAddr]
+	es.endpointsMu.RUnlock()
+
 	if !ok {
-		endpoint = newEndpoint()
+		endpoint = newEndpoint(es)
 	}
 
-	return []gateway.QualityCheck{
-		&evmQualityCheck{
-			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-			evmEndpointCheck: endpoint.checks[endpointCheckNameChainID],
-		},
-		&evmQualityCheck{
-			requestContext:   getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-			evmEndpointCheck: endpoint.checks[endpointCheckNameBlockHeight],
-		},
-	}
+	return endpoint.getChecks(endpointAddr)
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
-func getEndpointCheck(
-	logger polylog.Logger,
-	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
-	options ...func(*requestContext),
-) *requestContext {
+// The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
+// It is called in the individual `check_*.go` files to build the request context.
+func getEndpointCheck(endpointStore *EndpointStore, options ...func(*requestContext)) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        endpointStore.logger,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {
@@ -100,16 +81,8 @@ func getEndpointCheck(
 	return &requestCtx
 }
 
-// withChainIDCheck updates the request context to make an EVM JSON-RPC eth_chainId request.
-func withChainIDCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
-}
-
-// withBlockHeightCheck updates the request context to make an EVM JSON-RPC eth_blockNumber request.
-func withBlockHeightCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
-}
-
+// buildJSONRPCReq builds a JSON-RPC request with the given ID and method.
+// It is called in the individual `check_*.go` files to build the request context.
 func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
