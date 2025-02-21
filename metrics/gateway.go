@@ -83,7 +83,7 @@ var (
 
 	// TODO_MVP(@adshmh): Add a serviceRequestSize metric once the `request` package is refactored to
 	// fully encapsulate the task of dealing with the HTTP request, including:
-	//	1. Reading of all HTTP headers: target-service-id, etc.
+	//	1. Reading of all HTTP headers: Target-Service-Id, etc.
 	//	2. Reading of the HTTP request's body
 	//	3. Building an HTTP observation using the extracted data.
 	// This will also involve a small refactor on protocol and qos packages to accept a custom struct

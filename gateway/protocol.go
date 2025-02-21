@@ -54,7 +54,7 @@ type ProtocolRequestContext interface {
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
+	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
 
 	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.

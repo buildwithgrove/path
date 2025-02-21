@@ -84,12 +84,6 @@ func main() {
 		MetricsReporter:   metricsReporter,
 	}
 
-	// If Shannon configurations and WebsocketEndpointsURLs are set, configure the gateway's WebsocketEndpoints.
-	// TODO_HACK(@commoddity, #143): Remove this once Shannon protocol supports websocket connections.
-	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil && shannonConfig.WebsocketEndpointsURLs != nil {
-		gateway.WebsocketEndpoints = shannonConfig.WebsocketEndpointsURLs
-	}
-
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
 	// Unavailable status; once all components are ready, it will return a 200 OK status.
 	// health check components must implement the health.Check interface

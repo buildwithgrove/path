@@ -62,12 +62,13 @@ type RequestQoSContext interface {
 // QoSContextBuilder builds the QoS context required for handling
 // all steps of a service request, e.g. generating a user-facing
 // HTTP response from an endpoint's response.
-// TODO_FUTURE: It only supports HTTP service requests at this point.
 type QoSContextBuilder interface {
 	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
 
 	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
+	// WebSocket connection requests do not have a body so there is no need to parse anything.
+	// As long as the service supports WebSocket connections, this method should return a valid RequestQoSContext.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
 

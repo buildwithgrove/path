@@ -35,8 +35,19 @@ func (e endpoint) Addr() protocol.EndpointAddr {
 	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", e.supplier, e.url))
 }
 
+// PublicURL returns the URL of the endpoint.
 func (e endpoint) PublicURL() string {
 	return e.url
+}
+
+// Session returns a pointer to the session associated with the endpoint.
+func (e endpoint) Session() *sessiontypes.Session {
+	return &e.session
+}
+
+// Supplier returns the supplier address of the endpoint.
+func (e endpoint) Supplier() string {
+	return e.supplier
 }
 
 // endpointsFromSession returns the list of all endpoints from a Shannon session.
