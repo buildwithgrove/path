@@ -6,6 +6,11 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// EndpointStore provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+
 const (
 	// Each endpoint check should use its own ID to avoid potential conflicts.
 	// ID of JSON-RPC requests for any new checks should be added to the list below.
@@ -18,17 +23,11 @@ const (
 type endpointCheckName string
 
 // check is an interface for the checks applied to an endpoint.
-// It is embedded in the struct that satisfies the gateway.QualityCheck interface.
 type check interface {
 	name() endpointCheckName
 	isValid(serviceState *ServiceState) error
 	shouldRun() bool
 }
-
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 // evmQualityCheck provides:
 //  1. The validity and expiry of the check.
@@ -42,6 +41,9 @@ type evmQualityCheck struct {
 	requestContext *requestContext
 }
 
+// shouldRun returns true if the check should run.
+// If the check has no request context, it should never run.
+// For example: if the check is for an empty response to any request.
 func (q *evmQualityCheck) shouldRun() bool {
 	return q.requestContext != nil && q.check.shouldRun()
 }
@@ -57,6 +59,8 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	endpoint, ok := es.endpoints[endpointAddr]
 	es.endpointsMu.RUnlock()
 
+	// If the endpoint is not yet in the store, use an endpoint with the default empty checks.
+	// e.g. if `GetRequiredQualityChecks` is called before the first observation is received for an endpoint.
 	if !ok {
 		endpoint = newEndpoint(es)
 	}

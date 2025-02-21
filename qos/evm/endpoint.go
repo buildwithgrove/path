@@ -19,6 +19,7 @@ func newEndpoint(es *EndpointStore) endpoint {
 	return endpoint{
 		checks: map[endpointCheckName]*evmQualityCheck{
 			checkNameEmptyResponse: {
+				// TODO_MVP(@commoddity): should we provide for a mechanism to un-sanction an endpoint that has returned an empty response?
 				requestContext: nil, // An empty response disqualifies an endpoint for an entire session.
 				check:          &endpointCheckEmptyResponse{},
 			},
@@ -40,9 +41,9 @@ func (e *endpoint) getChecks(endpointAddr protocol.EndpointAddr) []gateway.Reque
 	var checks []gateway.RequestQoSContext
 
 	for _, check := range e.checks {
-		// The check should run if:
-		// 1. The check is initialized and has not yet expired.
-		// 2. The check has a non-nil request context.
+		// The check should run if both are true:
+		// 1. The check has a non-nil request context.
+		// 2. The check was just initialized or has expired.
 		if check.shouldRun() {
 			requestContext := check.getRequestContext()
 			requestContext.setPreSelectedEndpointAddr(endpointAddr)
