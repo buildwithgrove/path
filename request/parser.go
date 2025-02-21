@@ -23,6 +23,11 @@ import (
 // parameter names and why it wasn't used: https://www.rfc-editor.org/rfc/rfc6648#section-3
 const HTTPHeaderTargetServiceID = "Target-Service-Id"
 
+// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
+// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address in delegated mode.
+// The target app will be used for sending the relay request.
+const HTTPHeaderAppAddress = "App-Address"
+
 // The Parser struct is responsible for parsing the authoritative service ID from the request's
 // 'Target-Service-Id' header and returning the corresponding QoS service implementation.
 type Parser struct {

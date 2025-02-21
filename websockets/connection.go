@@ -14,10 +14,6 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-// TODO_TECHDEBT(@commoddity): remove deprecated `x-` prefix from the header name
-// here and in Relay Miner `async.go` file and move const to the request package.
-const headerAppAddress = "X-App-Address"
-
 const (
 	// Time allowed (in seconds) to write a message to the peer.
 	writeWait = 10 * time.Second
@@ -78,15 +74,6 @@ func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error)
 		return nil, err
 	}
 
-	// TODO_TECHDEBT(@commoddity): Remove this switch once RelayMiner
-	// supports setting websocket URLs as `backend_url`.
-	switch u.Scheme {
-	case "http":
-		u.Scheme = "ws"
-	case "https":
-		u.Scheme = "wss"
-	}
-
 	headers := getBridgeRequestHeaders(selectedEndpoint.Session())
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
@@ -102,7 +89,7 @@ func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error)
 func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 	headers := http.Header{}
 	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
-	headers.Add(headerAppAddress, session.Header.ApplicationAddress)
+	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
 	return headers
 }
 
