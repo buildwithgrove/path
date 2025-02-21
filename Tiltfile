@@ -8,6 +8,7 @@ load("ext://configmap", "configmap_create")
 hot_reload_dirs = [
     "./cmd",
     "./config",
+    "./local/path/config",
     "./gateway",
     "./health",
     "./message",
@@ -61,16 +62,28 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.\\
 
-# Import configuration files into Kubernetes ConfigMap
-configmap_create("path-config", from_file="local/path/config/.config.yaml", watch=True)
+local_resource(
+    'path-config-updater',
+    '''
+    kubectl delete secret path-config-local --ignore-not-found=true && \
+    kubectl create secret generic path-config-local --from-file=.config.yaml=./local/path/config/.config.yaml && \
+    kubectl get deployment path > /dev/null 2>&1 && \
+    kubectl rollout restart deployment path || \
+    echo "Deployment not found - skipping rollout restart"
+    ''',
+    deps=['./local/path/config/.config.yaml']
+)
 
 # Build an image with a path binary
 docker_build_with_restart(
     "path",
-    ".",
+    context=".",
     dockerfile="Dockerfile",
     entrypoint="/app/path",
-    live_update=[sync("bin/path", "/app/path")],
+    live_update=[
+        sync("bin/path", "/app/path"),
+        run("/app/path")
+    ],
 )
 
 # Port 6060 is exposed to serve pprof data.
@@ -88,12 +101,13 @@ if MODE == "path_with_auth":
         "path-auth-data-server",
         "ratelimit",
         "redis",
+        "path-config-updater",
     ]
 
 # Specify the dependencies and port forwards if PATH is running WITHOUT auth.
 if MODE == "path_only":
     # Run PATH without any dependencies
-    path_resource_deps = []
+    path_resource_deps = ["path-config-updater"]
     # Expose port 3069 to serve relay requests (since envoy proxy is not used)
     path_port_forwards.append("3069:3069")
 
@@ -118,7 +132,7 @@ helm_resource(
         ),
     ],
     port_forwards=path_port_forwards,
-    resource_deps=path_resource_deps
+    resource_deps=path_resource_deps,
 )
 
 if MODE == "path_with_auth":
@@ -169,7 +183,9 @@ if MODE == "path_with_auth":
         "ext-authz",
         context="./envoy/auth_server",
         dockerfile="./envoy/auth_server/Dockerfile",
-        live_update=[sync("./envoy/auth_server", "/app")],
+        live_update=[
+            sync("./envoy/auth_server", "/app"),
+        ],
     )
     # Load the Kubernetes YAML for the External Auth Server
     k8s_yaml("./local/kubernetes/envoy-ext-authz.yaml")
@@ -177,7 +193,8 @@ if MODE == "path_with_auth":
         "ext-authz",
         labels=["envoy_auth"],
         port_forwards=["10003:10003"],
-        resource_deps=["path-auth-data-server"],
+        resource_deps=["path-auth-data-server", "path-config-updater"],
+        trigger_mode=TRIGGER_MODE_AUTO,
     )
 
     # 3. Load the Kubernetes YAML for the path-auth-data-server service

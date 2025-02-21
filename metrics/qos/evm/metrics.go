@@ -61,7 +61,7 @@ var (
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsValidationErrorsTotalMetric,
-			Help:      "Total requests that failed validation before being sent to any endpoints, e.g. malformed JSON-RPC or parse errors",
+			Help:      "Total requests that failed validation BEFORE being sent to any endpoints; request was terminated in PATH. E.g. malformed JSON-RPC or parse errors",
 		},
 		[]string{"chain_id", "validation_error_kind"},
 	)
@@ -71,7 +71,7 @@ var (
 func PublishMetrics(
 	observations *qos.EVMRequestObservations,
 ) {
-	isRequestValid, requestValidationErrorKind := extractRequestValidationStatus(observations)
+	isRequestValid, requestValidationError := extractRequestValidationStatus(observations)
 
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
@@ -93,12 +93,13 @@ func PublishMetrics(
 	requestValidationErrorsTotal.With(
 		prometheus.Labels{
 			"chain_id":              observations.GetChainId(),
-			"validation_error_kind": requestValidationErrorKind,
+			"validation_error_kind": requestValidationError,
 		},
 	).Inc()
 }
 
 // getRequestSuccess checks if any endpoint provided a valid response.
+// Alternatively, It can be thought of "isAnyResponseSuccessful".
 func getRequestSuccess(
 	observations *qos.EVMRequestObservations,
 ) bool {
@@ -120,7 +121,7 @@ func getEndpointResponseValidationFailureReason(
 ) string {
 	for _, observation := range observations.GetEndpointObservations() {
 		if response := extractEndpointResponseFromObservation(observation); response != nil {
-			return qos.EVMResponseValidationErrorKind_name[int32(response.GetResponseValidationErrorKind())]
+			return qos.EVMResponseValidationError_name[int32(response.GetResponseValidationError())]
 		}
 	}
 
@@ -130,12 +131,12 @@ func getEndpointResponseValidationFailureReason(
 // extractRequestValidationStatus interprets validation results from the request observations.
 // Returns (true, "") if valid, or (false, failureReason) if invalid.
 func extractRequestValidationStatus(observations *qos.EVMRequestObservations) (bool, string) {
-	reasonEnum := observations.GetRequestValidationErrorKind()
+	reasonEnum := observations.GetRequestValidationError()
 
 	// Valid request
-	if reasonEnum == qos.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_UNSPECIFIED {
+	if reasonEnum == qos.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_UNSPECIFIED {
 		return true, ""
 	}
 
-	return false, qos.EVMRequestValidationErrorKind_name[int32(reasonEnum)]
+	return false, qos.EVMRequestValidationError_name[int32(reasonEnum)]
 }

@@ -34,20 +34,20 @@ func responseUnmarshallerChainID(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
+		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToChainID{
-			logger:              logger,
-			jsonRPCResponse:     jsonrpcResp,
-			validationErrorKind: &validationErrorKind,
+			logger:          logger,
+			jsonRPCResponse: jsonrpcResp,
+			validationError: &validationError,
 		}, err
 	}
 
 	var result string
-	validationErrorKind := qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNSPECIFIED
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
 
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		validationErrorKind = qosobservations.EVMResponseValidationErrorKind_EVM_RESPONSE_VALIDATION_ERROR_KIND_UNMARSHAL
+		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 	}
 
 	return &responseToChainID{
@@ -58,7 +58,7 @@ func responseUnmarshallerChainID(
 		// if unmarshaling succeeded, the response is considered valid.
 		valid: (err == nil),
 
-		validationErrorKind: &validationErrorKind,
+		validationError: &validationError,
 	}, err
 }
 
@@ -81,7 +81,7 @@ type responseToChainID struct {
 
 	// Why the response has failed validation.
 	// Used when generating observations.
-	validationErrorKind *qosobservations.EVMResponseValidationErrorKind
+	validationError *qosobservations.EVMResponseValidationError
 }
 
 // GetObservation returns an observation of the endpoint's response to an `eth_chainId` request.
@@ -91,9 +91,9 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
-				ChainIdResponse:             r.result,
-				Valid:                       r.valid,
-				ResponseValidationErrorKind: r.validationErrorKind,
+				ChainIdResponse:         r.result,
+				Valid:                   r.valid,
+				ResponseValidationError: r.validationError,
 			},
 		},
 	}

@@ -49,7 +49,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		return requestContextFromInternalError(
 			qos.logger,
 			err,
-			qosobservations.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_HTTP_BODY_READ_FAILURE,
+			qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
 		), false
 	}
 
@@ -62,12 +62,13 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 
 		return requestContextFromUserError(
 			qos.logger,
+			jsonrpcReq.ID, // ID is set only if request parsing succeeded
 			err,
-			qosobservations.EVMRequestValidationErrorKind_EVM_REQUEST_VALIDATION_ERROR_KIND_REQUEST_UNMARSHALING_FAILURE,
+			qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
 		), false
 	}
 
-	// TODO_IMPROVE(@adshmh): Add JSON-RPC request validation to block invalid requests
+	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
 		logger: qos.logger,

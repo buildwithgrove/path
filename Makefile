@@ -49,7 +49,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
 .PHONY: path_up
-path_up: check_path_config dev_up config_path_secrets ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_up: check_path_config dev_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 	tilt up # MODE=path_with_auth is the default
 
 .PHONY: path_up_standalone
