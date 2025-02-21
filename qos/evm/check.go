@@ -46,7 +46,7 @@ func (q *evmQualityCheck) shouldRun() bool {
 	return q.requestContext != nil && q.check.shouldRun()
 }
 
-func (q *evmQualityCheck) getRequestContext() gateway.RequestQoSContext {
+func (q *evmQualityCheck) getRequestContext() *requestContext {
 	return q.requestContext
 }
 

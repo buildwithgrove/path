@@ -106,13 +106,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// SetPreSelectedEndpointAddr assigns the endpoint address to be used for hydrator checks.
-// It is called to override the endpoint selection process with a specific endpoint.
-// Is used to enforce performing quality checks on a specific endpoint.
-func (rc *requestContext) SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
-	rc.preSelectedEndpointAddr = endpointAddr
-}
-
 // GetHTTPResponse builds the HTTP response for a CometBFT blockchain service request.
 // Returns the last endpoint response if available, otherwise returns generic response.
 // Implements gateway.RequestQoSContext interface.

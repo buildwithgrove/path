@@ -57,8 +57,6 @@ type RequestQoSContext interface {
 	// GetEndpointSelector is part of this interface to enable more specialized endpoint
 	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
 	GetEndpointSelector() protocol.EndpointSelector
-
-	SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr)
 }
 
 // QoSContextBuilder builds the QoS context required for handling

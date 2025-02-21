@@ -62,13 +62,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
 
-// SetPreSelectedEndpointAddr should never be called.
-// It is a no-op and does nothing.
-// Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) SetPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
-	// No-op
-}
-
 // GetHTTPResponse returns a user-facing response that fulfills the gateway.HTTPResponse interface.
 // Any preset failure responses, e.g. set during the construction of the requestContext instance, take priority.
 // After that, this method simply returns an HTTP response based on the most recently reported endpoint response.

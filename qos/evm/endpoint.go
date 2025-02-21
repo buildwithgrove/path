@@ -45,7 +45,7 @@ func (e *endpoint) getChecks(endpointAddr protocol.EndpointAddr) []gateway.Reque
 		// 2. The check has a non-nil request context.
 		if check.shouldRun() {
 			requestContext := check.getRequestContext()
-			requestContext.SetPreSelectedEndpointAddr(endpointAddr)
+			requestContext.setPreSelectedEndpointAddr(endpointAddr)
 			checks = append(checks, requestContext)
 		}
 	}
