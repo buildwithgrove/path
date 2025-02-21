@@ -9,6 +9,7 @@ import (
 // As of PR #170, it supports:
 // - An array of objects
 // - An array of strings
+// - An array of primitive types
 // See the below link on JSONRPC spec for more details:
 // https://www.jsonrpc.org/specification#parameter_structures
 type Params struct {
