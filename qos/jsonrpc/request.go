@@ -23,5 +23,5 @@ type Request struct {
 	// For an example of a JSONRPC request where the params field
 	// is not a slice of strings, see the link below:
 	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_signtransaction
-	Params []string `json:"params,omitempty"`
+	Params Params `json:"params,omitempty"`
 }
