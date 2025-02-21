@@ -6,7 +6,7 @@ import (
 )
 
 // Params stores the data contained in the `params` field of a JSONRPC request.
-// As of PR #165, it supports:
+// As of PR #170, it supports:
 // - An array of objects
 // - An array of strings
 // See the below link on JSONRPC spec for more details:
