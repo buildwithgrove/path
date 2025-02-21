@@ -7,7 +7,7 @@ WORKDIR /go/src/github.com/buildwithgrove/path
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Now copy the rest of the files
+# Copy the rest of the files
 COPY . .
 
 # Build the application
@@ -18,6 +18,9 @@ WORKDIR /app
 
 ARG IMAGE_TAG
 ENV IMAGE_TAG=${IMAGE_TAG}
+
+# Create config directory
+RUN mkdir -p /app/config
 
 COPY --from=builder /go/bin/path ./
 

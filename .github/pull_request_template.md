@@ -3,12 +3,13 @@
 < One line summary>
 
 Changes:
+
 - < Change 1 >
-- < Change 2 > 
+- < Change 2 >
 
 ## Issue
 
-- Description: < Description > 
+- Description: < Description >
 - Issue: #{ISSUE_NUMBER}
 
 ## Type of change
@@ -20,6 +21,15 @@ Select one or more from the following:
 - [ ] Code health or cleanup
 - [ ] Documentation
 - [ ] Other (specify)
+
+## QoS Checklist
+
+- [ ] 1. `make path_up` or `path_up_standalone`
+- [ ] 2. Run one of the following:
+  - For `path_up_standalone` with `anvil` on `Shannon`: `make test_request__relay_util_1000`
+  - For `path_up` with `anvil` on `Shannon`: `make test_request__envoy_relay_util_100`
+  - For `path_up` with `F00C` on `Morse`: `make test_request__relay_util_100_F00C_via_envoy`
+- [ ] 3. Visit [PATH Relay Grafana Dashboard](http://localhost:3000/d/relays/path-service-requests) to view results
 
 ## Sanity Checklist
 

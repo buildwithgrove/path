@@ -33,7 +33,7 @@ func (e *endpointCheckChainID) IsValid(serviceState *ServiceState) error {
 	if e.chainID == nil {
 		return errNoChainIDObs
 	}
-	if serviceState.config.chainID != *e.chainID {
+	if *e.chainID != serviceState.config.chainID {
 		return errInvalidChainIDObs
 	}
 	return nil

@@ -35,14 +35,21 @@ func responseUnmarshallerBlockNumber(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
+		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
+			validationError: &validationError,
 		}, err
 	}
 
 	var result string
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+
 	err = json.Unmarshal(resultBz, &result)
+	if err != nil {
+		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+	}
 
 	return responseToBlockNumber{
 		logger:          logger,
@@ -52,6 +59,8 @@ func responseUnmarshallerBlockNumber(
 		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
 		// e.g. a response that fails parsing as a number is not valid.
 		valid: err == nil,
+
+		validationError: &validationError,
 	}, err
 }
 
@@ -71,6 +80,10 @@ type responseToBlockNumber struct {
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
+
+	// Why the response has failed validation.
+	// Used when generating observations.
+	validationError *qosobservations.EVMResponseValidationError
 }
 
 // GetObservation returns an observation using an `eth_blockNumber` request's response.
@@ -80,8 +93,9 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
-				BlockNumberResponse: r.result,
-				Valid:               r.valid,
+				BlockNumberResponse:     r.result,
+				Valid:                   r.valid,
+				ResponseValidationError: r.validationError,
 			},
 		},
 	}
@@ -92,7 +106,7 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToBlockNumber: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }

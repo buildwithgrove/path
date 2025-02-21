@@ -36,9 +36,11 @@ func (e *endpointCheckBlockNumber) IsValid(serviceState *ServiceState) error {
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
 	minAllowedBlockHeight := serviceState.perceivedBlockNumber - serviceState.config.syncAllowance
+
 	if *e.blockHeight < minAllowedBlockHeight {
 		return errInvalidBlockNumberObs
 	}
+
 	return nil
 }
 

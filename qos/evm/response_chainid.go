@@ -34,14 +34,21 @@ func responseUnmarshallerChainID(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
+		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToChainID{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
+			validationError: &validationError,
 		}, err
 	}
 
 	var result string
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+
 	err = json.Unmarshal(resultBz, &result)
+	if err != nil {
+		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+	}
 
 	return &responseToChainID{
 		logger:          logger,
@@ -50,6 +57,8 @@ func responseUnmarshallerChainID(
 
 		// if unmarshaling succeeded, the response is considered valid.
 		valid: (err == nil),
+
+		validationError: &validationError,
 	}, err
 }
 
@@ -69,6 +78,10 @@ type responseToChainID struct {
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
+
+	// Why the response has failed validation.
+	// Used when generating observations.
+	validationError *qosobservations.EVMResponseValidationError
 }
 
 // GetObservation returns an observation of the endpoint's response to an `eth_chainId` request.
@@ -78,8 +91,9 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
-				ChainIdResponse: r.result,
-				Valid:           r.valid,
+				ChainIdResponse:         r.result,
+				Valid:                   r.valid,
+				ResponseValidationError: r.validationError,
 			},
 		},
 	}

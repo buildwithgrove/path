@@ -2,6 +2,7 @@
 package qos
 
 import (
+	"github.com/buildwithgrove/path/metrics/qos/evm"
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
@@ -11,8 +12,9 @@ func PublishQoSMetrics(qosObservations *qos.Observations) {
 		return
 	}
 
+	// Publish EVM metrics.
 	if evmObservations := qosObservations.GetEvm(); evmObservations != nil {
-		PublishEVMMetrics(evmObservations)
+		evm.PublishMetrics(evmObservations)
 	}
 	// TODO_MVP(@adshmh): add calls to metric exporter functions for Solana QoS
 }

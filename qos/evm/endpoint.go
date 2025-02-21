@@ -15,8 +15,9 @@ type endpoint struct {
 func newEndpoint() endpoint {
 	return endpoint{
 		checks: map[endpointCheckName]evmEndpointCheck{
-			endpointCheckNameChainID:     &endpointCheckChainID{},
-			endpointCheckNameBlockHeight: &endpointCheckBlockNumber{},
+			endpointCheckNameEmptyResponse: &endpointCheckEmptyResponse{},
+			endpointCheckNameChainID:       &endpointCheckChainID{},
+			endpointCheckNameBlockHeight:   &endpointCheckBlockNumber{},
 		},
 	}
 }
@@ -38,7 +39,12 @@ func (e endpoint) Validate(serviceState *ServiceState) error {
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
 func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
-	// If chainIDResponse is not nil, the obbservation is for a chainID check.
+	// If emptyResponse is not nil, the observation is for an empty response check.
+	if obs.GetEmptyResponse() != nil {
+		return e.applyEmptyResponseObservation()
+	}
+
+	// If chainIDResponse is not nil, the observation is for a chainID check.
 	if chainIDResponse := obs.GetChainIdResponse(); chainIDResponse != nil {
 		return e.applyChainIDObservation(chainIDResponse)
 	}
@@ -49,6 +55,15 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 	}
 
 	return false
+}
+
+// applyEmptyResponseObservation updates the empty response check if a valid observation is provided.
+func (e *endpoint) applyEmptyResponseObservation() bool {
+	e.checks[endpointCheckNameEmptyResponse] = &endpointCheckEmptyResponse{
+		hasReturnedEmptyResponse: true, // An empty response is always invalid.
+		expiresAt:                time.Now().Add(emptyResponseCheckInterval),
+	}
+	return true
 }
 
 // applyChainIDObservation updates the chain ID check if a valid observation is provided.
