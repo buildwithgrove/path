@@ -17,10 +17,6 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
 
-	if es.endpoints == nil {
-		es.endpoints = make(map[protocol.EndpointAddr]endpoint)
-	}
-
 	endpointObservations := evmObservations.GetEndpointObservations()
 
 	logger := es.logger.With(

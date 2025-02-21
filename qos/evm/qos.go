@@ -2,6 +2,8 @@ package evm
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_IMPROVE: make this configurable per-chain.
@@ -25,6 +27,7 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 	evmEndpointStore := &EndpointStore{
 		logger:       logger,
 		serviceState: serviceState,
+		endpoints:    make(map[protocol.EndpointAddr]endpoint),
 	}
 
 	return &QoS{
