@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -13,8 +12,8 @@ import (
 
 // getMorseProtocol returns an instance of the Morse protocol using the supplied Morse-specific configuration.
 func getMorseProtocol(
-	config *morseconfig.MorseGatewayConfig,
 	logger polylog.Logger,
+	config *morseconfig.MorseGatewayConfig,
 ) (gateway.Protocol, error) {
 	logger.Info().Msg("Starting PATH gateway with Morse protocol")
 
@@ -23,7 +22,7 @@ func getMorseProtocol(
 		return nil, fmt.Errorf("failed to create morse full node: %v", err)
 	}
 
-	protocol, err := morse.NewProtocol(context.Background(), fullNode, config)
+	protocol, err := morse.NewProtocol(logger, fullNode, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create morse protocol: %v", err)
 	}
