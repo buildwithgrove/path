@@ -27,7 +27,7 @@ func newEndpoint(es *EndpointStore) endpoint {
 				requestContext: getEndpointCheck(es, withChainIDCheck),
 				check:          &endpointCheckChainID{},
 			},
-			checkNameBlockHeight: {
+			checkNameBlockNumber: {
 				requestContext: getEndpointCheck(es, withBlockNumberCheck),
 				check:          &endpointCheckBlockNumber{},
 			},
@@ -119,30 +119,30 @@ func (e *endpoint) applyBlockNumberObservation(blockNumberResponse *qosobservati
 	// does not guarantee returning a 0 on all error cases.
 	if err != nil {
 		zero := uint64(0)
-		e.checks[checkNameBlockHeight].check = &endpointCheckBlockNumber{
-			blockHeight: &zero,
-			expiresAt:   time.Now().Add(checkBlockHeightInterval),
+		e.checks[checkNameBlockNumber].check = &endpointCheckBlockNumber{
+			blockNumber: &zero,
+			expiresAt:   time.Now().Add(checkBlockNumberInterval),
 		}
 		return
 	}
 
-	e.checks[checkNameBlockHeight].check = &endpointCheckBlockNumber{
-		blockHeight: &parsedBlockNumber,
-		expiresAt:   time.Now().Add(checkBlockHeightInterval),
+	e.checks[checkNameBlockNumber].check = &endpointCheckBlockNumber{
+		blockNumber: &parsedBlockNumber,
+		expiresAt:   time.Now().Add(checkBlockNumberInterval),
 	}
 }
 
 // GetBlockNumber returns the parsed block number value for the endpoint.
 func (e endpoint) GetBlockNumber() (uint64, error) {
-	blockNumberCheck, ok := e.checks[checkNameBlockHeight]
+	blockNumberCheck, ok := e.checks[checkNameBlockNumber]
 	if !ok {
 		return 0, errNoBlockNumberObs
 	}
 
-	observedBlockHeight := blockNumberCheck.check.(*endpointCheckBlockNumber)
-	if observedBlockHeight.blockHeight == nil {
+	observedBlockNumber := blockNumberCheck.check.(*endpointCheckBlockNumber)
+	if observedBlockNumber.blockNumber == nil {
 		return 0, errNoBlockNumberObs
 	}
 
-	return *observedBlockHeight.blockHeight, nil
+	return *observedBlockNumber.blockNumber, nil
 }

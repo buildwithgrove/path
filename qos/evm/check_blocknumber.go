@@ -10,12 +10,12 @@ import (
 var _ check = &endpointCheckBlockNumber{}
 
 const (
-	checkNameBlockHeight endpointCheckName = "block_height"
+	checkNameBlockNumber endpointCheckName = "block_number"
 	// methodBlockNumber is the JSON-RPC method for getting the latest block number.
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	methodBlockNumber = jsonrpc.Method("eth_blockNumber")
 	// TODO_IMPROVE: determine an appropriate interval for checking the block height.
-	checkBlockHeightInterval = 60 * time.Second
+	checkBlockNumberInterval = 60 * time.Second
 )
 
 var (
@@ -28,20 +28,20 @@ var (
 type endpointCheckBlockNumber struct {
 	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
-	blockHeight *uint64
+	blockNumber *uint64
 	expiresAt   time.Time
 }
 
 // isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
 func (e *endpointCheckBlockNumber) isValid(serviceState *ServiceState) error {
-	if e.blockHeight == nil {
+	if e.blockNumber == nil {
 		return errNoBlockNumberObs
 	}
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
-	minAllowedBlockHeight := serviceState.perceivedBlockNumber - serviceState.config.syncAllowance
+	minAllowedBlockNumber := serviceState.perceivedBlockNumber - serviceState.config.syncAllowance
 
-	if *e.blockHeight < minAllowedBlockHeight {
+	if *e.blockNumber < minAllowedBlockNumber {
 		return errInvalidBlockNumberObs
 	}
 
@@ -49,7 +49,7 @@ func (e *endpointCheckBlockNumber) isValid(serviceState *ServiceState) error {
 }
 
 func (e *endpointCheckBlockNumber) name() endpointCheckName {
-	return checkNameBlockHeight
+	return checkNameBlockNumber
 }
 
 // shouldRun returns true if the check is not yet initialized or has expired.
