@@ -159,7 +159,7 @@ func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Pr
 	}
 
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {
-		return getMorseProtocol(morseConfig, logger)
+		return getMorseProtocol(logger, morseConfig)
 	}
 
 	return nil, fmt.Errorf("no protocol config set")
