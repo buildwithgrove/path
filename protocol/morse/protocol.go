@@ -38,10 +38,9 @@ type FullNode interface {
 	SendRelay(context.Context, *sdkrelayer.Input) (*sdkrelayer.Output, error)
 }
 
-func NewProtocol(ctx context.Context, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
+func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
 	protocol := &Protocol{
-		logger: polylog.Ctx(ctx),
-
+		logger:          logger,
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
 	}
