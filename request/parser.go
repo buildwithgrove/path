@@ -18,10 +18,19 @@ import (
 	"github.com/buildwithgrove/path/qos/noop"
 )
 
-// HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
-// service's ID. Please see the following link on the deprecation of X- prefix in HTTP header
+// HTTP Request Headers
+// Please see the following link on the deprecation of X- prefix in HTTP header
 // parameter names and why it wasn't used: https://www.rfc-editor.org/rfc/rfc6648#section-3
-const HTTPHeaderTargetServiceID = "Target-Service-Id"
+const (
+	// HTTPHeaderTargetServiceID is the key used to lookup the HTTP header specifying the target
+	// service's ID.
+	HTTPHeaderTargetServiceID = "Target-Service-Id"
+
+	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
+	// HTTPHeaderAppAddress is the key of the entry in HTTP headers that holds the target app's address
+	// in delegated mode. The target app will be used for sending the relay request.
+	HTTPHeaderAppAddress = "App-Address"
+)
 
 // The Parser struct is responsible for parsing the authoritative service ID from the request's
 // 'Target-Service-Id' header and returning the corresponding QoS service implementation.
