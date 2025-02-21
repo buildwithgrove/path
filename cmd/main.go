@@ -48,7 +48,7 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosInstances, err := getServiceQoSInstances(logger)
+	qosInstances, err := getServiceQoSInstances(logger, config.HydratorConfig)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
