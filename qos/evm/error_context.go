@@ -38,7 +38,7 @@ func requestContextFromInternalError(
 }
 
 // requestContextFromUserError creates an errorContext for client-side errors.
-// FOr example, malformed JSON-RPC requests that fail to deserialize.
+// For example, malformed JSON-RPC requests that fail to deserialize.
 func requestContextFromUserError(
 	logger polylog.Logger,
 	requestID jsonrpc.ID,
