@@ -103,7 +103,7 @@ message EVMBlockNumberResponse {
   bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
 
   // Why the response failed QoS validation
-  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
@@ -115,7 +115,7 @@ message EVMUnrecognizedResponse {
   bool valid = 2 [(metadata.semantic_meaning) = "Response validity status"];
 
   // Why the response failed QoS validation
-  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMEmptyResponse represents an endpoint's empty response, which triggers
@@ -127,5 +127,5 @@ message EVMEmptyResponse {
 
   // Why the response failed QoS validation
   // Set to EmptyResponse for empty responses
-  optional EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure reason"];
+  optional EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
 }

@@ -68,7 +68,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		), false
 	}
 
-	// TODO_IMPROVE(@adshmh): Add JSON-RPC request validation to block invalid requests
+	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
 		logger: qos.logger,
