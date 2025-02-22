@@ -53,6 +53,9 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		), false
 	}
 
+	// TODO_TECHDEBT(@adshmh): support Batch JSONRPC requests, as per the JSONRPC spec:
+	// https://www.jsonrpc.org/specification#batch
+	//
 	// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported method calls early in request flow.
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
