@@ -105,10 +105,13 @@ func newConnection(
 	c := &connection{
 		ctx:       ctx,
 		cancelCtx: cancelCtx,
-		logger:    logger.With("connection", source),
-		Conn:      conn,
-		source:    source,
-		msgChan:   msgChan,
+
+		logger: logger.With("connection", source),
+
+		Conn: conn,
+
+		source:  source,
+		msgChan: msgChan,
 	}
 
 	go c.connLoop()
@@ -122,9 +125,10 @@ func (c *connection) connLoop() {
 	for {
 		messageType, msg, err := c.ReadMessage()
 		if err != nil {
-			c.handleError(err)
+			c.handleDisconnect(err)
 			return
 		}
+
 		c.msgChan <- message{
 			data:        msg,
 			source:      c.source,
@@ -133,8 +137,13 @@ func (c *connection) connLoop() {
 	}
 }
 
-// handleError handles errors from the websocket connection and sends them to the stopChan if applicable
-func (c *connection) handleError(err error) {
+// handleDisconnect handles any disconnection issues from the websocket connection.
+// This includes both:
+// - Expected disconnections (e.g. when the RelayMiner disconnects on session rollover)
+// - Unexpected disconnections (e.g. when the connection is lost due to network issues)
+//
+// This function will cancel the context to signal the bridge to handle shutdown.
+func (c *connection) handleDisconnect(err error) {
 	c.logger.Info().Err(err).Msgf("handling error in websocket connection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown
 }
@@ -164,9 +173,10 @@ func (c *connection) pingLoop() {
 		case <-ticker.C:
 			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(writeWait)); err != nil {
 				c.logger.Error().Err(err).Msg("failed to send ping to connection")
-				c.handleError(fmt.Errorf("failed to send ping: %w", err))
+				c.handleDisconnect(fmt.Errorf("failed to send ping: %w", err))
 				return
 			}
+
 		case <-c.ctx.Done():
 			c.logger.Info().Msg("pingLoop stopped due to context cancellation")
 			return

@@ -140,9 +140,11 @@ func (b *bridge) Run() {
 	}
 }
 
-// Shutdown stops the bridge and closes both connections
-// This method is passed to each connection and is called when an error is encountered
-// It ensures that both Client and Endpoint connections are closed and the message channel is closed
+// Shutdown stops the bridge and closes both connections.
+// This method is passed to each connection and is called when an error is encountered.
+//
+// It ensures that both Client and Endpoint connections are closed and the message channel is closed.
+//
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
 func (b *bridge) Shutdown(err error) {
@@ -177,13 +179,13 @@ func (b *bridge) handleClientMessage(msg message) {
 	// Sign the client message before sending it to the Endpoint
 	signedClientMessageBz, err := b.signClientMessage(msg)
 	if err != nil {
-		b.clientConn.handleError(fmt.Errorf("handleClientMessage: error signing client message: %w", err))
+		b.clientConn.handleDisconnect(fmt.Errorf("handleClientMessage: error signing client message: %w", err))
 		return
 	}
 
 	// Send the signed request to the RelayMiner, which will forward it to the Endpoint
 	if err := b.endpointConn.WriteMessage(msg.messageType, signedClientMessageBz); err != nil {
-		b.endpointConn.handleError(fmt.Errorf("handleClientMessage: error writing client message to endpoint: %w", err))
+		b.endpointConn.handleDisconnect(fmt.Errorf("handleClientMessage: error writing client message to endpoint: %w", err))
 		return
 	}
 }
@@ -222,12 +224,15 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	// Validate the relay response using the Shannon FullNode
 	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
 	if err != nil {
-		b.endpointConn.handleError(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
+		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
 		return
 	}
 
+	// Send the relay response or subscription push event to the Client
 	if err := b.clientConn.WriteMessage(msg.messageType, relayResponse.Payload); err != nil {
-		b.clientConn.handleError(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
+		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
+		// error. This is expected and the Client is expected to handle the reconnection in their connection logic.
+		b.clientConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error writing endpoint message to client: %w", err))
 		return
 	}
 }
