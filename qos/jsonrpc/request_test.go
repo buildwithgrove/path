@@ -94,6 +94,10 @@ func TestUnmarshalParams(t *testing.T) {
 			// rawPayload is a copy-paste from: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
 			rawPayload: []byte(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x1b4", true],"id":1}`),
 		},
+		{
+			name:       "params as an empty object",
+			rawPayload: []byte(`{"jsonrpc":"2.0","method":"eth_chainId","id":1,"params":{}}`),
+		},
 	}
 
 	for _, testCase := range testCases {

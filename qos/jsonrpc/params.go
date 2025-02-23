@@ -16,12 +16,19 @@ import (
 // See the below link on JSONRPC spec for more details:
 // https://www.jsonrpc.org/specification#parameter_structures
 type Params struct {
-	// Stores the JSON-formatted payload.
-	// Declared as private to ensure only valid JSON is accepted as the value, through the custom unmarshaler.
+	// rawMessage stores the actual value of the params field (e.g., ["0x1b4", true]), not the entire JSON-RPC request.
+	// It is kept private to ensure all values pass through JSON validation during unmarshaling.
+	//
+	// According to JSON-RPC 2.0 spec, params must be a structured value.
+	// Common blockchain examples:
+	//  - Block by number:  {"params": ["0x1b4", true]}  // [blockNum, includeTx]
+	//  - Get balance:      {"params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "latest"]} // [address, block]
 	rawMessage json.RawMessage
 }
 
-// Custom marshaler enforces JSON-RPC 2.0 param validation by keeping raw data private and only allowing params to be set through validated unmarshaling.
+// Custom marshaler allows Params to be serialized while keeping rawMessage private.
+// This is needed because Go's default JSON marshaler only processes public fields, but we want to keep rawMessage private
+// to enforce JSON-RPC 2.0 validation during unmarshaling.
 func (p Params) MarshalJSON() ([]byte, error) {
 	return p.rawMessage, nil
 }
@@ -34,7 +41,10 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("failed to unmarshal params field: %v", err)
 	}
 
-	// Then validate it's either array or object
+	// Validate that params follows JSON-RPC 2.0 spec: must be array or object.
+	// Examples:
+	//   Valid:   [1, "test"] or {"foo": "bar"}
+	//   Invalid: "test" or 42 or true
 	var checkType interface{}
 	if err := json.Unmarshal(data, &checkType); err != nil {
 		return err
@@ -46,7 +56,7 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 		p.rawMessage = rawMessage
 		return nil
 	default:
-		return fmt.Errorf("params must be either array or object")
+		return fmt.Errorf("params must be either array or object, got %T", checkType)
 	}
 }
 
