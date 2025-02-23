@@ -2,41 +2,56 @@ package jsonrpc
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
-// Params stores the data contained in the `params` field of a JSONRPC request.
-// As of PR #170, it supports:
-// - An array of objects
-// - An array of strings
-// - An array of primitive types
+// Params represents the 'params' field in a JSON-RPC request. It accepts any valid JSON data, including:
+//   - Objects (single or array)
+//   - Strings (single or array)
+//   - Basic Go types (single value or array, can be mixed types)
+//
+// Params only validates JSON formatting - it does not perform method-specific validation.
+// Individual request handlers must implement their own parameter validation logic.
+//
 // See the below link on JSONRPC spec for more details:
 // https://www.jsonrpc.org/specification#parameter_structures
 type Params struct {
-	// Params stores the raw JSON-RPC parameters without validation.
-	// The method-specific request handlers are responsible for validating the parameters based on the JSON-RPC method being called.
-	rawPayload []byte
+	// Stores the JSON-formatted payload.
+	// Declared as private to ensure only valid JSON is accepted as the value, through the custom unmarshaler.
+	rawMessage json.RawMessage
 }
 
+// Custom marshaler enforces JSON-RPC 2.0 param validation by keeping raw data private and only allowing params to be set through validated unmarshaling.
 func (p Params) MarshalJSON() ([]byte, error) {
-	return p.rawPayload, nil
+	return p.rawMessage, nil
 }
 
+// Custom unmarshaler ensures incoming data complies with JSON-RPC 2.0 specification
 func (p *Params) UnmarshalJSON(data []byte) error {
-	// Try first as a structure with array of interface{}
-	var genericValue []interface{}
-	if err := json.Unmarshal(data, &genericValue); err == nil {
-		p.rawPayload = data
-		return nil
+	// First validate the input is valid JSON.
+	var rawMessage json.RawMessage
+	if err := json.Unmarshal(data, &rawMessage); err != nil {
+		return fmt.Errorf("failed to unmarshal params field: %v", err)
 	}
 
-	// Try second as a structure with array of strings
-	var stringsValue []string
-	if err := json.Unmarshal(data, &stringsValue); err == nil {
-		p.rawPayload = data
-		return nil
+	// Then validate it's either array or object
+	var checkType interface{}
+	if err := json.Unmarshal(data, &checkType); err != nil {
+		return err
 	}
 
-	// If both failed, return the error from the first attempt
-	return errors.New("failed to unmarshal as either []interface{} or []string")
+	switch checkType.(type) {
+	// The only valid types for params are an array or an object.
+	case []interface{}, map[string]interface{}:
+		p.rawMessage = rawMessage
+		return nil
+	default:
+		return fmt.Errorf("params must be either array or object")
+	}
+}
+
+// IsEmpty returns true when params contains no data.
+// The JSON marshaler uses this to completely omit the params field from the JSON output when empty.
+func (p Params) IsEmpty() bool {
+	return len(p.rawMessage) == 0
 }
