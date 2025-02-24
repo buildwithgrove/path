@@ -24,7 +24,7 @@ type Request struct {
 }
 
 // MarshalJSON customizes the JSON serialization of a Request.
-// It omits empty ID and Params fields from the output without requiring them to be stored as pointers.
+// It returns a serialized version of the receiver with empty fields (e.g. ID, Params, etc) omitted
 func (r Request) MarshalJSON() ([]byte, error) {
 	// Define a structure that makes ID and Params optional in the JSON output
 	type requestAlias struct {
