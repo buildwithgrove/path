@@ -58,7 +58,3 @@ local/path/
 
 # Config Backup files
 *.backup
-
-# Codeweaver
-codeweaver/
-
