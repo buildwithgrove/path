@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+
+	"github.com/buildwithgrove/path/request"
 )
 
 // Delegated Gateway Mode represents an gateway operation mode which behaves as follows:
@@ -16,13 +18,6 @@ import (
 // TODO_DOCUMENT(@Olshansk): Convert the notion doc into a proper README.
 // See the following link for more details on PATH's centralized (i.e. trusted) operation mode.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
-const (
-	// TODO_DOCUMENT(@adshmh): Update the docs at https://path.grove.city/ to reflect this usage pattern.
-	// headerAppAddress is the key of the entry in HTTP headers that holds the target app's address in delegated mode.
-	// The target app will be used for sending the relay request.
-	// TODO_TECHDEBT(@commoddity): remove deprecated `x-` prefix from the header name.
-	headerAppAddr = "X-App-Address"
-)
 
 // getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
 func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, req *http.Request) ([]*apptypes.Application, error) {
@@ -49,9 +44,9 @@ func getAppAddrFromHTTPReq(httpReq *http.Request) (string, error) {
 		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied.")
 	}
 
-	selectedAppAddr := httpReq.Header.Get(headerAppAddr)
+	selectedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)
 	if selectedAppAddr == "" {
-		return "", fmt.Errorf("getAppAddrFromHTTPReq: a target app must be supplied as HTTP header %s", headerAppAddr)
+		return "", fmt.Errorf("getAppAddrFromHTTPReq: a target app must be supplied as HTTP header %s", request.HTTPHeaderAppAddress)
 	}
 
 	return selectedAppAddr, nil
