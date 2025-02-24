@@ -42,6 +42,7 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 	}
 
 	// Validate that params follows JSON-RPC 2.0 spec: must be array or object.
+	// json.Unmarshal into interface{} fails for primitive types as they are not valid top-level JSON structures.
 	// Examples:
 	//   Valid:   [1, "test"] or {"foo": "bar"}
 	//   Invalid: "test" or 42 or true
