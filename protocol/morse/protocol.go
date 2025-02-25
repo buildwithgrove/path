@@ -2,8 +2,10 @@ package morse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,9 +22,6 @@ import (
 // below using Morse-specific methods.
 var _ gateway.Protocol = &Protocol{}
 
-// TODO_TECHDEBT: Make this configurable via an env variable.
-const defaultRelayTimeoutMillisec = 5000
-
 // OffChainBackend allows enhancing an onchain application with extra fields that are required to sign/send relays.
 // This is used to supply AAT data to a Morse application, which is needed for sending relays on behalf of the application.
 type OffChainBackend interface {
@@ -30,85 +29,130 @@ type OffChainBackend interface {
 	GetSignedAAT(appAddr string) (provider.PocketAAT, bool)
 }
 
-// FullNode defines the functionality expected by the Protocol struct
-// from a Morse full node.
+// FullNode defines the interface for what a "full node" needs to expose
 type FullNode interface {
 	GetAllApps(context.Context) ([]provider.App, error)
 	GetSession(ctx context.Context, chainID, appPublicKey string) (provider.Session, error)
 	SendRelay(context.Context, *sdkrelayer.Input) (*sdkrelayer.Output, error)
 }
 
-func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffChainBackend) (*Protocol, error) {
+// NewProtocol creates a new Protocol.
+func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffChainBackend) *Protocol {
 	protocol := &Protocol{
+		quit:            make(chan struct{}),
+		appCache:        make(map[protocol.ServiceID][]app),
+		sessionCache:    make(map[string]provider.Session),
 		logger:          logger,
 		fullNode:        fullNode,
 		offChainBackend: offChainBackend,
+		endpointStore:   NewEndpointStore(logger),
 	}
 
 	go func() {
-		// TODO_IMPROVE: make the refresh interval configurable.
-		ticker := time.NewTicker(time.Minute)
-		for {
-			protocol.updateAppCache()
-			protocol.updateSessionCache()
+		// Start the initial refresh
+		protocol.refreshAll()
+		const refreshInterval = 10 * time.Minute
+		ticker := time.NewTicker(refreshInterval)
+		defer ticker.Stop()
 
-			<-ticker.C
+		for {
+			select {
+			case <-ticker.C:
+				protocol.refreshAll()
+			case <-protocol.quit:
+				return
+			}
 		}
 	}()
 
-	return protocol, nil
+	return protocol
 }
 
+// Protocol is Gateway protocol adapter for Morse protocol. It adapts Gateway interface to Morse interface.
 type Protocol struct {
-	logger polylog.Logger
+	quit chan struct{}
 
+	logger          polylog.Logger
 	fullNode        FullNode
 	offChainBackend OffChainBackend
+
+	// endpointStore tracks sanctioned endpoints
+	endpointStore *EndpointStore
 
 	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
 	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
-	// sessionCache caches sessions for use by the Relay function.
-	// map keys are of the format "serviceID-appID"
+	// because the current implementation is error-prone due to the manual key generation.
 	sessionCache   map[string]provider.Session
 	sessionCacheMu sync.RWMutex
 }
 
-// BuildRequestContext builds and returns a Morse-specific request context, which can be used to send relays.
+// BuildRequestContext builds a new request context for a given service ID.
+// The request context contains all the information needed to process a single service request.
 // Implements the gateway.Protocol interface.
-// The http.Request input parameter is intentionally ignored as Morse only supports the Centralized Gateway Mode.
-// TODO_TECHDEBT(@dashmh): validate the provided request's service ID is supported by the Morse protocol.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	_ *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-	apps, found := p.getServiceApps(serviceID)
-	if !found {
-		return nil, fmt.Errorf("buildRequestContext: no apps found for service %s", serviceID)
-	}
-
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, apps)
+	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Create a logger specifically for this request context
+	ctxLogger := p.logger.With(
+		"service_id", string(serviceID),
+		"component", "request_context",
+	)
+
+	// Return new request context with fullNode, endpointStore, and logger
 	return &requestContext{
-		fullNode:  p.fullNode,
-		endpoints: endpoints,
-		serviceID: serviceID,
+		fullNode:             p.fullNode,
+		store:                p.endpointStore,
+		endpoints:            endpoints,
+		serviceID:            serviceID,
+		logger:               ctxLogger,
+		endpointObservations: []*protocolobservations.MorseEndpointObservation{},
 	}, nil
 }
 
-// TODO_MVP(@adshmh): complete the ApplyObservations method by implementing:
-//  1. An endpoint store to maintain a status for each endpoint.
-//  2. Validation logic that updates the endpoint store based on the supplied observations.
-//  3. Use the endpoint store to filter out invalid endpoints before setting them on any requestContexts.
-//     e.g. an endpoint that is maxed out for an app should be dropped for the remaining of the current session.
-//
 // ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.
-// e.g. an invalid response from an endpoint could be used to disqualify it for a set period of time.
+// It processes endpoint error observations to apply appropriate sanctions.
 // Implements the gateway.Protocol interface.
-func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
+func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
+	if observations == nil || observations.GetMorse() == nil {
+		return nil
+	}
+
+	morseObservations := observations.GetMorse().GetObservations()
+	if len(morseObservations) == 0 {
+		return nil
+	}
+
+	// Process each observation for potential endpoint sanctions
+	for _, observationSet := range morseObservations {
+		// TODO_IMPROVE(@adshmh): include the Service ID in the logs.
+		for _, endpointObservation := range observationSet.GetEndpointObservations() {
+			// Process endpoints with sanctions
+			recommendedSanction := endpointObservation.GetRecommendedSanction()
+			if recommendedSanction == protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED {
+				continue
+			}
+
+			// Apply the sanction to the endpoint
+			p.endpointStore.AddSanction(
+				protocol.EndpointAddr(endpointObservation.GetEndpointAddr()),
+				endpointObservation.GetAppAddress(),
+				endpointObservation.GetSessionKey(),
+				endpointObservation.GetErrorType(),
+				recommendedSanction,
+				endpointObservation.GetErrorDetails(),
+				endpointObservation.GetSessionChain(),
+				int(endpointObservation.GetSessionHeight()),
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -127,39 +171,33 @@ func (p *Protocol) IsAlive() bool {
 	return len(p.appCache) > 0 && len(p.sessionCache) > 0
 }
 
-func (p *Protocol) getServiceApps(serviceID protocol.ServiceID) ([]app, bool) {
-	p.appCacheMu.RLock()
-	defer p.appCacheMu.RUnlock()
-
-	cachedApps, found := p.appCache[serviceID]
-	if !found {
-		return nil, false
+// refreshAll refreshes all caches
+func (p *Protocol) refreshAll() {
+	p.logger.Debug().Msg("refreshAll: starting cache refresh")
+	err := p.refreshAppsCache()
+	if err != nil {
+		p.logger.Error().Err(err).Msg("refreshAll: error refreshing apps cache")
 	}
-
-	apps := make([]app, len(cachedApps))
-	copy(apps, cachedApps)
-	return apps, true
+	err = p.refreshSessionCache()
+	if err != nil {
+		p.logger.Error().Err(err).Msg("refreshAll: error refreshing session cache")
+	}
+	p.logger.Debug().Msg("refreshAll: finished cache refresh")
 }
 
-func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (provider.Session, bool) {
-	p.sessionCacheMu.RLock()
-	defer p.sessionCacheMu.RUnlock()
-
-	session, found := p.sessionCache[sessionCacheKey(serviceID, appAddr)]
-	return session, found
-}
-
-func (p *Protocol) updateAppCache() {
+// refreshAppsCache refreshes the app cache
+func (p *Protocol) refreshAppsCache() error {
 	appData := p.fetchAppData()
-
 	if len(appData) == 0 {
-		p.logger.Warn().Msg("updateAppCache: received an empty app list; skipping update")
-		return
+		return errors.New("refreshAppCache: received an empty app list; skipping update")
 	}
 
 	p.appCacheMu.Lock()
 	defer p.appCacheMu.Unlock()
 	p.appCache = appData
+
+	p.logger.Debug().Int("apps_count", len(appData)).Msg("refreshAppsCache: refreshed app cache")
+	return nil
 }
 
 func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
@@ -210,65 +248,82 @@ func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 	return appData
 }
 
-func (p *Protocol) updateSessionCache() {
-	sessions := p.fetchSessions()
-	if len(sessions) == 0 {
-		p.logger.Warn().Msg("updateSessionCache: received empty session list; skipping update.")
-		return
-	}
-
-	p.sessionCacheMu.Lock()
-	defer p.sessionCacheMu.Unlock()
-	p.sessionCache = sessions
-}
-
-func (p *Protocol) fetchSessions() map[string]provider.Session {
+// refreshSessionCache refreshes the session cache
+func (p *Protocol) refreshSessionCache() error {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
 	sessions := make(map[string]provider.Session)
-	// TODO_TECHDEBT: use multiple go routines.
 	for serviceID, apps := range p.appCache {
 		for _, app := range apps {
-			// NOTE: We use the application's public key here because that is what Morse full nodes require to return a session,
-			// but we use an application's address to cache it and its corresponding session(s).
 			session, err := p.fullNode.GetSession(context.Background(), string(serviceID), app.publicKey)
 			if err != nil {
+				// Log the error but continue processing other sessions
 				p.logger.Warn().
 					Err(err).
 					Str("service", string(serviceID)).
 					Str("appPublicKey", string(app.publicKey)).
-					Msg("fetchSessions: error getting a session")
+					Msg("refreshSessionCache: error getting a session")
 
 				continue
 			}
-			sessions[sessionCacheKey(serviceID, app.address)] = session
+
+			key := sessionCacheKey(serviceID, app.address)
+			sessions[key] = session
 		}
 	}
 
-	return sessions
+	p.sessionCacheMu.Lock()
+	p.sessionCache = sessions
+	p.sessionCacheMu.Unlock()
+
+	p.logger.Debug().Int("count", len(sessions)).Msg("refreshSessionCache: refreshed session cache")
+	return nil
 }
 
-// TODO_MVP(@adshmh): Refactor all caching out of the Protocol struct, and use an interface to access Apps and Sessions, and send relays.
-// Then add 2 implementations of the FullNode interface:
-// - CachingFullNode
-// - LazyFullNode
-//
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
-// If an endpoint matches a service ID through multiple apps/sessions, only a single entry
-// matching one of the apps/sessions is returned.
-// This could happen because there is no guarantee on sessions having unique nodes/endpoints.
-// e.g. if there are only 30 Morse endpoints staked for some service, there will be some overlap of endpoints
-// between the two sessions corresponding to two different applications, as each session in Morse contains 24 endpoints.
+// It includes filtering of sanctioned endpoints based on the endpoint store.
 func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
+
+	// Get a logger specifically for this operation
+	logger := p.logger.With(
+		"service_id", string(serviceID),
+		"method", "getAppsUniqueEndpoints",
+	)
+
 	for _, app := range apps {
 		session, found := p.getSession(serviceID, app.Addr())
 		if !found {
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: no session found for service %s app %s", serviceID, app.Addr())
 		}
 
-		for _, endpoint := range getEndpointsFromAppSession(app, session) {
+		// Log session information for debugging
+		logger.Debug().
+			Str("app", string(app.Addr())).
+			Str("session_key", session.Key).
+			Str("session_chain", session.Header.Chain).
+			Int("session_height", session.Header.SessionHeight).
+			Msg("Processing app-session combination")
+
+		// Get all endpoints for this app-session combination
+		allAppEndpoints := getEndpointsFromAppSession(app, session)
+		logger.Debug().
+			Str("app", string(app.Addr())).
+			Int("endpoint_count", len(allAppEndpoints)).
+			Msg("Found endpoints for app")
+
+		// Filter out any sanctioned endpoints
+		filteredEndpoints := p.endpointStore.FilterSanctionedEndpoints(allAppEndpoints, app.Addr(), session.Key)
+		logger.Debug().
+			Str("app_addr", string(app.Addr())).
+			Str("session_key", session.Key).
+			Int("original_count", len(allAppEndpoints)).
+			Int("filtered_count", len(filteredEndpoints)).
+			Msg("Filtered sanctioned endpoints")
+
+		// Add remaining endpoints to the map
+		for _, endpoint := range filteredEndpoints {
 			endpoints[endpoint.Addr()] = endpoint
 		}
 	}
@@ -276,6 +331,45 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 	return endpoints, nil
 }
 
+// getSession gets a session from the session cache
+func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (provider.Session, bool) {
+	p.sessionCacheMu.RLock()
+	defer p.sessionCacheMu.RUnlock()
+
+	key := sessionCacheKey(serviceID, appAddr)
+	session, found := p.sessionCache[key]
+	return session, found
+}
+
+// getEndpoints returns all endpoints for a given service ID
+func (p *Protocol) getEndpoints(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, error) {
+	apps, found := p.getApps(serviceID)
+	if !found || len(apps) == 0 {
+		return nil, fmt.Errorf("getEndpoints: no apps found for service %s", serviceID)
+	}
+
+	return p.getAppsUniqueEndpoints(serviceID, apps)
+}
+
+// getApps gets apps from the app cache
+func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
+	p.appCacheMu.RLock()
+	defer p.appCacheMu.RUnlock()
+
+	apps, found := p.appCache[serviceID]
+	return apps, found
+}
+
+// sessionCacheKey generates a cache key for a service ID and app addr
 func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
-	return fmt.Sprintf("%s-%s", serviceID, appAddr)
+	return fmt.Sprintf("%s:%s", serviceID, appAddr)
+}
+
+// getChainID extracts the chain ID from a service ID
+func getChainID(serviceID protocol.ServiceID) string {
+	parts := strings.Split(string(serviceID), "-")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[len(parts)-1]
 }

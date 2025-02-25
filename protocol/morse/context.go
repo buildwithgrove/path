@@ -15,46 +15,82 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// requestContext provides all the functionality required by the gateway package
-// for handling a single service request.
 var _ gateway.ProtocolRequestContext = &requestContext{}
+
+// TODO_TECHDEBT: Make this configurable via an env variable.
+const defaultRelayTimeoutMillisec = 5000
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
 	fullNode  FullNode
+	store     *EndpointStore
 	serviceID protocol.ServiceID
+	logger    polylog.Logger
 
 	// endpoints contains all the candidate endpoints available for processing a service request.
 	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
+
+	// endpointObservations captures observations about endpoints encountered during request handling
+	endpointObservations []*protocolobservations.MorseEndpointObservation
 }
 
 // AvailableEndpoints returns the list of available endpoints for the current request context.
-// This list is populated by the Morse protocol instance when building the request context.
-// Implements the gateway.ProtocolRequestContext interface.
+// Satisfies the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
-	var availableEndpoints []protocol.Endpoint
-
-	for _, endpoint := range rc.endpoints {
-		availableEndpoints = append(availableEndpoints, endpoint)
+	if len(rc.endpoints) == 0 {
+		return nil, fmt.Errorf("AvailableEndpoints: no endpoints found for service %s", rc.serviceID)
 	}
 
-	return availableEndpoints, nil
+	endpoints := make([]protocol.Endpoint, 0, len(rc.endpoints))
+	for _, endpoint := range rc.endpoints {
+		endpoints = append(endpoints, endpoint)
+	}
+	return endpoints, nil
 }
 
-// HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
+// HandleServiceRequest handles incoming service request.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	if rc.selectedEndpoint == nil {
+		// Internal error: no endpoint selected, record an observation but no sanctions
+		// as no endpoint was contacted
+		rc.logger.Error().
+			Str("service_id", string(rc.serviceID)).
+			Msg("HandleServiceRequest: no endpoint has been selected")
+
+		rc.recordEndpointObservation(
+			endpoint{}, // No endpoint selected
+			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
+			"no endpoint has been selected, endpoint selection has not been performed or has failed",
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as no endpoint was contacted
+		)
+
 		return protocol.Response{}, fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
 	morseEndpoint, err := getEndpoint(rc.selectedEndpoint.session, rc.selectedEndpoint.Addr())
 	if err != nil {
-		return protocol.Response{},
-			fmt.Errorf("HandleServiceRequest: error matching the selected endpoint %s against session's nodes: %w", rc.selectedEndpoint.Addr(), err)
+		// Internal error: endpoint not in session, record an observation but no sanctions
+		// as this is an internal error, not an endpoint issue
+		rc.logger.Error().
+			Str("service_id", string(rc.serviceID)).
+			Str("endpoint", string(rc.selectedEndpoint.Addr())).
+			Str("session_chain", rc.selectedEndpoint.session.Header.Chain).
+			Int("session_height", rc.selectedEndpoint.session.Header.SessionHeight).
+			Err(err).
+			Msg("HandleServiceRequest: endpoint not found in session")
+
+		rc.recordEndpointObservation(
+			*rc.selectedEndpoint,
+			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
+			fmt.Sprintf("error matching endpoint against session's nodes: %v", err),
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as this is an internal error
+		)
+
+		return protocol.Response{}, NewEndpointNotInSessionError(string(rc.selectedEndpoint.Addr()))
 	}
 
 	output, err := rc.sendRelay(
@@ -67,6 +103,30 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		payload,
 	)
 
+	// Record any errors that occurred during relay
+	if err != nil {
+		endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, err)
+
+		rc.logger.Error().
+			Str("service_id", string(rc.serviceID)).
+			Str("app_addr", rc.selectedEndpoint.app.Addr()).
+			Str("endpoint", string(rc.selectedEndpoint.Addr())).
+			Str("session_key", rc.selectedEndpoint.session.Key).
+			Str("session_chain", rc.selectedEndpoint.session.Header.Chain).
+			Int("session_height", rc.selectedEndpoint.session.Header.SessionHeight).
+			Str("error_type", endpointErrorType.String()).
+			Str("sanction_type", recommendedSanctionType.String()).
+			Err(err).
+			Msg("HandleServiceRequest: relay error occurred")
+
+		rc.recordEndpointObservation(
+			*rc.selectedEndpoint,
+			endpointErrorType,
+			fmt.Sprintf("relay error: %v", err),
+			recommendedSanctionType,
+		)
+	}
+
 	return protocol.Response{
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          []byte(output.Response),
@@ -75,48 +135,76 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 }
 
 // HandleWebsocketRequest handles incoming WebSocket network request.
-// Morse does not support WebSocket connections so this method will always return an error every time.
+// Morse does not support WebSocket connections so this method will always return an error.
 // Satisfies the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) HandleWebsocketRequest(_ polylog.Logger, _ *http.Request, _ http.ResponseWriter) error {
 	return fmt.Errorf("HandleWebsocketRequest: Morse does not support WebSocket connections")
 }
 
-// SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
-// It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
-// for handling a service request.
+// SelectEndpoint selects an endpoint from the available endpoints using the provided EndpointSelector.
+// The selected endpoint will be used for subsequent service requests.
+// Satisfies the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
-	var endpoints []protocol.Endpoint
+	endpoints := make([]protocol.Endpoint, 0, len(rc.endpoints))
 	for _, endpoint := range rc.endpoints {
 		endpoints = append(endpoints, endpoint)
 	}
+
 	if len(endpoints) == 0 {
-		return fmt.Errorf("SelectEndpoint: No endpoints found to select from on service %s", rc.serviceID)
+		return NewNoEndpointsError(string(rc.serviceID))
 	}
 
 	selectedEndpointAddr, err := selector.Select(endpoints)
 	if err != nil {
-		return fmt.Errorf("SelectEndpoint: selector returned an error for service %s: %w", rc.serviceID, err)
+		return NewEndpointSelectionError(string(rc.serviceID), err)
 	}
 
 	selectedEndpoint, found := rc.endpoints[selectedEndpointAddr]
 	if !found {
-		return fmt.Errorf("SelectEndpoint: endpoint address %q does not match any available endpoints on service %s", selectedEndpointAddr, rc.serviceID)
+		return NewEndpointNotFoundError(string(selectedEndpointAddr), string(rc.serviceID))
 	}
 
 	rc.selectedEndpoint = &selectedEndpoint
 	return nil
 }
 
-// GetObservations returns Morse protocol-level observations from the current request context.
-// Used for:
-// - Updating Morse's endpoint store
-// - Reporting PATH operation metrics
-// - Sharing observations via messaging (NATS, REDIS) for data pipeline consumption
+// GetObservations returns the observations that have been collected during the protocol request processing.
+// These observations can be used by the caller to make decisions on endpoint reliability and quality.
 //
 // Implements gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
-	// TODO_MVP(@adshmh): implement MVP set of Morse protocol-level observations
-	return protocolobservations.Observations{}
+	return protocolobservations.Observations{
+		Protocol: &protocolobservations.Observations_Morse{
+			Morse: &protocolobservations.MorseObservationsList{
+				Observations: []*protocolobservations.MorseRequestObservations{
+					{
+						ServiceId:            string(rc.serviceID),
+						EndpointObservations: rc.endpointObservations,
+					},
+				},
+			},
+		},
+	}
+}
+
+// recordEndpointObservation records an observation for an endpoint
+// It only appends to the observations slice and does not return an error
+func (rc *requestContext) recordEndpointObservation(
+	endpoint endpoint,
+	errorType protocolobservations.MorseEndpointErrorType,
+	errorDetails string,
+	sanctionType protocolobservations.MorseSanctionType,
+) {
+	rc.endpointObservations = append(rc.endpointObservations, &protocolobservations.MorseEndpointObservation{
+		AppAddress:          string(endpoint.app.Addr()),
+		SessionKey:          endpoint.session.Key,
+		SessionChain:        endpoint.session.Header.Chain,
+		SessionHeight:       int32(endpoint.session.Header.SessionHeight),
+		EndpointAddr:        endpoint.address,
+		ErrorType:           &errorType,
+		ErrorDetails:        &errorDetails,
+		RecommendedSanction: &sanctionType,
+	})
 }
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.
@@ -138,28 +226,44 @@ func (rc *requestContext) sendRelay(
 		Path:       payload.Path,
 	}
 
+	rc.logger.Debug().
+		Str("chain", chainID).
+		Str("app_publickey", session.Header.AppPublicKey).
+		Str("endpoint", node.PublicKey).
+		Msg("Sending relay to endpoint")
+
 	timeout := timeoutMillisec
 	if timeout == 0 {
 		timeout = defaultRelayTimeoutMillisec
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
 	defer cancel()
 
 	output, err := rc.fullNode.SendRelay(ctx, fullNodeInput)
-	if output.RelayOutput == nil {
-		return provider.RelayOutput{}, fmt.Errorf("relay: received null RelayOutput field in the relay response from the SDK")
+	if err != nil {
+		// Check if the error is a timeout
+		if ctx.Err() == context.DeadlineExceeded {
+			return provider.RelayOutput{}, ErrRelayTimeout
+		}
+
+		return provider.RelayOutput{}, err
+	}
+
+	if output == nil || output.RelayOutput == nil {
+		return provider.RelayOutput{}, NewNullRelayResponseError("null RelayOutput field in the relay response from the SDK")
 	}
 
 	// TODO_TECHDEBT: complete the following items regarding the node and proof structs
 	// 1. Verify their correctness
 	// 2. Pass a logger to the request context to log them in debug mode.
 	if output.Node == nil {
-		return provider.RelayOutput{}, fmt.Errorf("relay: received null Node field in the relay response from the SDK")
+		return provider.RelayOutput{}, NewNullRelayResponseError("null Node field in the relay response from the SDK")
 	}
 
 	if output.Proof == nil {
-		return provider.RelayOutput{}, fmt.Errorf("relay: received null Proof field in the relay response from the SDK")
+		return provider.RelayOutput{}, NewNullRelayResponseError("null Proof field in the relay response from the SDK")
 	}
 
-	return *output.RelayOutput, err
+	return *output.RelayOutput, nil
 }
