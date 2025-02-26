@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -363,13 +362,4 @@ func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 // sessionCacheKey generates a cache key for a service ID and app addr
 func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
-}
-
-// getChainID extracts the chain ID from a service ID
-func getChainID(serviceID protocol.ServiceID) string {
-	parts := strings.Split(string(serviceID), "-")
-	if len(parts) < 2 {
-		return ""
-	}
-	return parts[len(parts)-1]
 }
