@@ -54,10 +54,8 @@ func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffCh
 		defer ticker.Stop()
 
 		for {
-			select {
-			case <-ticker.C:
-				protocol.refreshAll()
-			}
+			<-ticker.C
+			protocol.refreshAll()
 		}
 	}()
 
