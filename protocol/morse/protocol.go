@@ -38,7 +38,6 @@ type FullNode interface {
 // NewProtocol creates a new Protocol.
 func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffChainBackend) *Protocol {
 	protocol := &Protocol{
-		quit:            make(chan struct{}),
 		appCache:        make(map[protocol.ServiceID][]app),
 		sessionCache:    make(map[string]provider.Session),
 		logger:          logger,
@@ -50,16 +49,14 @@ func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffCh
 	go func() {
 		// Start the initial refresh
 		protocol.refreshAll()
-		const refreshInterval = 10 * time.Minute
-		ticker := time.NewTicker(refreshInterval)
+		// TODO_IMPROVE: make the refresh interval configurable.
+		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ticker.C:
 				protocol.refreshAll()
-			case <-protocol.quit:
-				return
 			}
 		}
 	}()
@@ -69,8 +66,6 @@ func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffCh
 
 // Protocol is Gateway protocol adapter for Morse protocol. It adapts Gateway interface to Morse interface.
 type Protocol struct {
-	quit chan struct{}
-
 	logger          polylog.Logger
 	fullNode        FullNode
 	offChainBackend OffChainBackend
@@ -81,7 +76,8 @@ type Protocol struct {
 	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
 	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
-	// because the current implementation is error-prone due to the manual key generation.
+	// sessionCache caches sessions for use by the Relay function.
+	// map keys are of the format "serviceID-appAddr"
 	sessionCache   map[string]provider.Session
 	sessionCacheMu sync.RWMutex
 }
@@ -106,12 +102,11 @@ func (p *Protocol) BuildRequestContext(
 
 	// Return new request context with fullNode, endpointStore, and logger
 	return &requestContext{
-		fullNode:             p.fullNode,
-		store:                p.endpointStore,
-		endpoints:            endpoints,
-		serviceID:            serviceID,
-		logger:               ctxLogger,
-		endpointObservations: []*protocolobservations.MorseEndpointObservation{},
+		logger:    ctxLogger,
+		fullNode:  p.fullNode,
+		store:     p.endpointStore,
+		endpoints: endpoints,
+		serviceID: serviceID,
 	}, nil
 }
 
@@ -226,7 +221,7 @@ func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 		// TODO_IMPROVE: validate the AAT received from the offChainBackend
 		signedAAT, ok := p.offChainBackend.GetSignedAAT(onchainApp.Address)
 		if !ok {
-			logger.Info().Msg("no AAT configured for app. Skipping the app.")
+			logger.Debug().Msg("no AAT configured for app. Skipping the app.")
 			continue
 		}
 
