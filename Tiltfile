@@ -96,12 +96,7 @@ path_port_forwards = ["6060:6060"]
 # be routed through Envoy Proxy.
 if MODE == "path_with_auth":
     path_resource_deps = [
-        "ext-authz",
-        "envoy-proxy",
-        "path-auth-data-server",
-        "ratelimit",
-        "redis",
-        "path-config-updater",
+        "guard",
     ]
 
 # Specify the dependencies and port forwards if PATH is running WITHOUT auth.
@@ -139,84 +134,17 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
-    # 1. Envoy Proxy                                                               #
-    # 2. External Auth Server                                                      #
-    # 3. Path Auth Data Server (PADS)                                              #
-    # 4. Rate Limiter                                                              #
-    # 5. Redis                                                                     #
+    # 1. Envoy Proxy (via Helm Chart)                                              #
+    # 2. External Auth Server (via Helm Chart)                                     #
+    # 3. Path Auth Data Server (PADS) (via Helm Chart)                             #
     # ---------------------------------------------------------------------------- #
 
-    # Import Envoy Auth configuration file into Kubernetes ConfigMaps
-    configmap_create(
-        "envoy-config",
-        from_file="./local/path/envoy/.envoy.yaml",
-        watch=True,
-    )
-    configmap_create(
-        "allowed-services",
-        from_file="./local/path/envoy/.allowed-services.lua",
-        watch=True,
-    )
-    configmap_create(
-        "gateway-endpoints",
-        from_file="./local/path/envoy/.gateway-endpoints.yaml",
-        watch=True,
-    )
-    configmap_create(
-        "ratelimit-config",
-        from_file="./local/path/envoy/.ratelimit.yaml",
-        watch=True,
-    )
-
-    # 1. Load the Kubernetes YAML for the envoy-proxy service
-    k8s_yaml("./local/kubernetes/envoy-proxy.yaml")
-    k8s_resource(
-        "envoy-proxy",
-        labels=["envoy_auth"],
-        # By default the Envoy Proxy container will bind to 127.0.0.1.
-        # Adding 0.0.0.0 allows it to be accessible from any IP address.
-        port_forwards=["0.0.0.0:3070:3070"],
-    )
-
-    # 2. Build the External Auth Server image from envoy/auth_server/Dockerfile
-    docker_build(
-        "ext-authz",
-        context="./envoy/auth_server",
-        dockerfile="./envoy/auth_server/Dockerfile",
-        live_update=[
-            sync("./envoy/auth_server", "/app"),
-        ],
-    )
-    # Load the Kubernetes YAML for the External Auth Server
-    k8s_yaml("./local/kubernetes/envoy-ext-authz.yaml")
-    k8s_resource(
-        "ext-authz",
-        labels=["envoy_auth"],
-        port_forwards=["10003:10003"],
-        resource_deps=["path-auth-data-server", "path-config-updater"],
-        trigger_mode=TRIGGER_MODE_AUTO,
-    )
-
-    # 3. Load the Kubernetes YAML for the path-auth-data-server service
-    k8s_yaml("./local/kubernetes/envoy-pads.yaml")
-    k8s_resource(
-        "path-auth-data-server",
-        labels=["envoy_auth"],
-    )
-
-    # 4. Load the Kubernetes YAML for the ratelimit service
-    k8s_yaml("./local/kubernetes/envoy-ratelimit.yaml")
-    k8s_resource(
-        "ratelimit",
-        labels=["envoy_auth"],
-        resource_deps=["redis"],
-    )
-
-    # 5. Load the Kubernetes YAML for the redis service
-    k8s_yaml("./local/kubernetes/envoy-redis.yaml")
-    k8s_resource(
-        "redis",
-        labels=["envoy_auth"],
+    # New resources created from Helm Charts
+    helm_resource(
+        "guard",
+        chart_prefix + "guard",
+        labels=["guard"],
+        port_forwards=["0.0.0.0:3070:3070"]
     )
 
 # ----------------------------------------------------------------------------- #
