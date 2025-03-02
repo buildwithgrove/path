@@ -37,10 +37,16 @@ dev_up: check_kind
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
 		kubectl config use-context kind-path-localnet; \
+<<<<<<< HEAD
 		kubectl create namespace path; \
 		kubectl create namespace monitoring; \
 		kubectl config set-context --current --namespace=path; \
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
+=======
+		kubectl create namespace path-local; \
+		kind load docker-image ghcr.io/buildwithgrove/ext-auth-server:latest --name path-localnet; \
+		kind load docker-image ghcr.io/buildwithgrove/path-auth-data-server:latest --name path-localnet; \
+>>>>>>> 196df0f (feat: created functioning implementation of GUARD/PATH in Tild using local Helm charts)
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi
