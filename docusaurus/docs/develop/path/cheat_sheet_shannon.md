@@ -175,10 +175,6 @@ shannon_config:
 hydrator_config:
   service_ids:
     - "anvil"
-auth_server_config:
-  grpc_host_port: path-auth-data-server:50051
-  grpc_use_insecure_credentials: true
-  endpoint_id_extractor_type: url_path
 ```
 
 :::important Gateway Configuration

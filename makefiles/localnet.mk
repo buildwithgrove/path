@@ -37,6 +37,9 @@ dev_up: check_kind
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet; \
 		kubectl config use-context kind-path-localnet; \
+		kubectl create namespace path-local; \
+		kind load docker-image ghcr.io/buildwithgrove/ext-auth-server:latest --name path-localnet; \
+		kind load docker-image ghcr.io/buildwithgrove/path-auth-data-server:latest --name path-localnet; \
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi

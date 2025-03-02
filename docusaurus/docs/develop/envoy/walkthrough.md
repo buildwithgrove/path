@@ -453,9 +453,7 @@ sequenceDiagram
 
 ### External Auth Server Configuration
 
-The external authorization server loads its config from the `auth_server_config` section of PATH's `.config.yaml` file. For the local Tilt stack, this file is located at `local/path/config/.config.yaml`.
-
-_`.config.yaml auth_server_config` example:_
+The external authorization server loads its config from a YAML structure that has the following format:
 
 ```yaml
 auth_server_config:

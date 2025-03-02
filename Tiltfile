@@ -16,10 +16,6 @@ hot_reload_dirs = [
     "./relayer",
     "./request",
     "./router",
-    "./envoy",
-    "./envoy/auth_server/auth",
-    "./envoy/auth_server/endpoint_store",
-    "./envoy/auth_server/proto",
 ]
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
@@ -65,8 +61,8 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 local_resource(
     'path-config-updater',
     '''
-    kubectl delete secret path-config-local --ignore-not-found=true && \
-    kubectl create secret generic path-config-local --from-file=.config.yaml=./local/path/config/.config.yaml && \
+    kubectl delete secret path-config-local -n path-local --ignore-not-found=true && \
+    kubectl create secret generic path-config-local -n path-local --from-file=.config.yaml=./local/path/config/.config.yaml && \
     kubectl get deployment path > /dev/null 2>&1 && \
     kubectl rollout restart deployment path || \
     echo "Deployment not found - skipping rollout restart"
@@ -106,6 +102,8 @@ if MODE == "path_only":
     # Expose port 3069 to serve relay requests (since envoy proxy is not used)
     path_port_forwards.append("3069:3069")
 
+NAMESPACE = "path-local"
+
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 #   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
 #   2. Without Auth: no dependencies but exposing dedicated por
@@ -115,6 +113,7 @@ helm_resource(
     flags=[
         "--values=./local/kubernetes/path-values.yaml",
     ],
+    namespace=NAMESPACE,
     # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
     # This can only be done once the CLI flags feature has been implemented.
     image_deps=["path"],
@@ -134,17 +133,28 @@ if MODE == "path_with_auth":
     # ---------------------------------------------------------------------------- #
     #                             Envoy Auth Resources                             #
     # ---------------------------------------------------------------------------- #
-    # 1. Envoy Proxy (via Helm Chart)                                              #
-    # 2. External Auth Server (via Helm Chart)                                     #
-    # 3. Path Auth Data Server (PADS) (via Helm Chart)                             #
+    # 1. Envoy Proxy                                                               #
+    # 2. External Auth Server                                                      #
+    # 3. Path Auth Data Server (PADS)                                              #
     # ---------------------------------------------------------------------------- #
 
     # New resources created from Helm Charts
     helm_resource(
         "guard",
         chart_prefix + "guard",
+        namespace=NAMESPACE,
         labels=["guard"],
-        port_forwards=["0.0.0.0:3070:3070"]
+        flags=[
+            "--values=./local/kubernetes/guard-values.yaml",
+        ]
+    )
+    # Add a local_resource to dynamically find and port-forward the envoy gateway pod
+    # TODO_IMPROVE(@commoddity): This is a somewhat hacky solution to port-forward the Envoy 
+    # Gateway service. It works but we should find a more elegant solution in the future.
+    local_resource(
+        "envoy-gateway-port-forward",
+        "sh -c \"svc=\\$(kubectl -n path-local get svc -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway -o jsonpath='{.items[0].metadata.name}'); echo 'Port forwarding service' \\$svc 'on port 3070'; kubectl -n path-local port-forward service/\\$svc 3070:3070\"",
+        resource_deps = ["guard"]
     )
 
 # ----------------------------------------------------------------------------- #
