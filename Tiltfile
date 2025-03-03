@@ -22,6 +22,9 @@ hot_reload_dirs = [
 local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
+# The namespace to deploy the PATH service to.
+NAMESPACE = "path-local"
+
 # PATH operation modes determine which services are loaded:
 #   1. (Default) 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
 #   2. 'path_only' - PATH Service Only.
@@ -102,8 +105,6 @@ if MODE == "path_only":
     # Expose port 3069 to serve relay requests (since envoy proxy is not used)
     path_port_forwards.append("3069:3069")
 
-NAMESPACE = "path-local"
-
 # Run PATH with dependencies and port forwarding settings matching the MODE:
 #   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
 #   2. Without Auth: no dependencies but exposing dedicated por
@@ -148,13 +149,19 @@ if MODE == "path_with_auth":
             "--values=./local/kubernetes/guard-values.yaml",
         ]
     )
-    # Add a local_resource to dynamically find and port-forward the envoy gateway pod
+    # Add a local_resource to dynamically find and port-forward the envoy gateway pod on port 3070
     # TODO_IMPROVE(@commoddity): This is a somewhat hacky solution to port-forward the Envoy 
     # Gateway service. It works but we should find a more elegant solution in the future.
     local_resource(
         "envoy-gateway-port-forward",
-        "sh -c \"svc=\\$(kubectl -n path-local get svc -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway -o jsonpath='{.items[0].metadata.name}'); echo 'Port forwarding service' \\$svc 'on port 3070'; kubectl -n path-local port-forward service/\\$svc 3070:3070\"",
-        resource_deps = ["guard"]
+        '''
+        sh -c "
+        svc=$(kubectl get services -n path-local -o json \
+        | jq -r '.items[] | select(.metadata.name | startswith(\"envoy-path-local-guard-envoy-gateway\")) | .metadata.name');
+        kubectl -n path-local port-forward service/$svc 3070:3070
+        "
+        ''',
+        resource_deps=["guard"]
     )
 
 # ----------------------------------------------------------------------------- #

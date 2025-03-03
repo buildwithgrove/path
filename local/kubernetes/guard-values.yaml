@@ -1,17 +1,13 @@
-# Set `localhost` for local development.
-domain: localhost
+# ---- GUARD Global settings ----
+global:
+  # Set `localhost` for local development.
+  domain: localhost
+  # namespace is the namespace that both Envoy Gateway and the PATH service are deployed to.
+  namespace: path-local
 
-# namespace is the namespace that both Envoy Gateway and the PATH service are deployed to.
-namespace: path-local
-
-# Set the services that are allowed to access the PATH service.
-# For example, if running PATH in Shannon mode, you would set:
-services:
-  - serviceId: anvil
-
-# Set the gateway endpoints that are allowed to access the PATH service.
-gatewayEndpointsData: |
-  endpoints:                
-    path_local_endpoint:                                               
-      auth:
-        api_key: "super_secret_api_key"
+# ---- GUARD configuration ----
+guard:
+  # Set the services that are allowed to access the PATH service.
+  # For example, if running PATH in Shannon mode, you would set:
+  services:
+    - serviceId: anvil
