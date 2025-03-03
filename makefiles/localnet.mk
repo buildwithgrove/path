@@ -44,9 +44,12 @@ dev_up: check_kind
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 =======
 		kubectl create namespace path-local; \
+<<<<<<< HEAD
 		kind load docker-image ghcr.io/buildwithgrove/ext-auth-server:latest --name path-localnet; \
 		kind load docker-image ghcr.io/buildwithgrove/path-auth-data-server:latest --name path-localnet; \
 >>>>>>> 196df0f (feat: created functioning implementation of GUARD/PATH in Tild using local Helm charts)
+=======
+>>>>>>> 94bc44e (feat: update envoy gateway configuration to work in Tilt with remote PADS/PEAS image)
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi
