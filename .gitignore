@@ -51,8 +51,13 @@ tmp/*
 # PATH artifacts
 install.log
 
+<<<<<<< HEAD
 # exclude values.tmpl.yaml files
 !values.tmpl.yaml
+=======
+# exclude values.template.yaml files
+!values.template.yaml
+>>>>>>> 445c312 (feat: re-organize ./local folder and update Tiltfile)
 
 # Claudesync
 .claudesync/

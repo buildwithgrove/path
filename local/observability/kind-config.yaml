@@ -1,5 +1,11 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane 
+    extraPortMappings:
+    - containerPort: 30070 # Port will be patched to this after install
+      hostPort: 3070
+      protocol: TCP
 containerdConfigPatches:
   # Ensure kind can pull images from GitHub Container Registry
   - |

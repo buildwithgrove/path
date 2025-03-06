@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+<<<<<<< HEAD
 # Envoy Gateway Port Configuration
 #
 # This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070),
@@ -19,6 +20,24 @@ PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":3007
 
 # Gets the name of the Envoy Gateway service in the local cluster.
 # eg. "envoy-path-guard-envoy-gateway-55375d27"
+=======
+# This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070) inside the container.
+# This allows Envoy Gateway to be reachable from the local machine on port 3070, as defined in the `kind-config.yaml` file.
+#
+# Context:
+# - The Envoy Gateway service is created as a LoadBalancer which, when running in kind, automatically
+#   uses a NodePort under the covers. 
+# - In a real cloud environment, the LoadBalancer provisioner would map a public IP to this NodePort. 
+# - In `kind`, since there's no external load balancer, Kubernetes auto-assigns a dynamic NodePort 
+#   (within the 30000–32767 range) if one is not explicitly specified. 
+
+PATH_NAMESPACE="path-local"
+SERVICE_PREFIX="envoy-path-local-guard-envoy-gateway"
+PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30070}]'
+
+# Gets the name of the Envoy Gateway service in the local cluster.
+# eg. "envoy-path-local-guard-envoy-gateway-55375d27"
+>>>>>>> 445c312 (feat: re-organize ./local folder and update Tiltfile)
 get_envoy_gateway_service_name() {
   local envoy_gateway_service_name
   envoy_gateway_service_name=$(kubectl get svc -n "$PATH_NAMESPACE" -o json | jq -r '.items[] | select(.metadata.name | startswith("'"$SERVICE_PREFIX"'")) | .metadata.name')
@@ -26,8 +45,13 @@ get_envoy_gateway_service_name() {
 }
 
 # Patches the Envoy Gateway service to enforce a consistent port number of 30070 inside the container.
+<<<<<<< HEAD
 # eg.  NAME                                     TYPE          CLUSTER-IP    EXTERNAL-IP  PORT(S)         AGE
 #      envoy-path-guard-envoy-gateway-55375d27  LoadBalancer  10.96.50.102  <pending>    3070:30070/TCP  3m19s
+=======
+# eg.  NAME                                           TYPE          CLUSTER-IP    EXTERNAL-IP  PORT(S)         AGE
+#      envoy-path-local-guard-envoy-gateway-55375d27  LoadBalancer  10.96.50.102  <pending>    3070:30070/TCP  3m19s
+>>>>>>> 445c312 (feat: re-organize ./local folder and update Tiltfile)
 patch_guard_port() {
     kubectl patch svc "$(get_envoy_gateway_service_name)" -n "$PATH_NAMESPACE" --type='json' -p="$PATCH_PAYLOAD"
 }
