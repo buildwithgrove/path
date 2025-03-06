@@ -3,7 +3,7 @@
 #######################
 
 .PHONY: proto_gen
-proto_gen: proto_gen_observation proto_gen_envoy ## Generate all protobuf artifacts
+proto_gen: proto_gen_observation ## Generate all protobuf artifacts
 
 .PHONY: proto_regen
 proto_regen: proto_clean proto_gen ## Regenerate all protobuf artifacts
