@@ -4,11 +4,19 @@ title: Local PATH Walkthrough
 description: Details on running PATH locally with various configurations
 ---
 
+<<<<<<< HEAD
 :::danger DOCUMENTATION IN FLUX
 	
 **🦖 This documentation is out of date as of [PATH PR #176](https://github.com/buildwithgrove/path/pull/176).**
 
 TODO_DOCUMENT(@commoddity): A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+=======
+:::danger
+
+### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
+
+A full revamp of these docs to capture improvements to the GUARD service is underway and will be available soon.
+>>>>>>> 2030520 (chore: add danger admonitions to docs)
 
 :::
 
