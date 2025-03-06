@@ -14,7 +14,11 @@ description: High-level architecture overview and detailed walkthrough
 
 ### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
 
+<<<<<<< HEAD
 A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+=======
+A full revamp of these docs to capture improvements to the GUARD service is underway and will be available soon.
+>>>>>>> 2030520d025ea4d4b7c104023c3777b713f26b4b
 
 :::
 
