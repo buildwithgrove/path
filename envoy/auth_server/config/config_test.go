@@ -32,7 +32,7 @@ func Test_LoadAuthServerConfigFromYAML(t *testing.T) {
 auth_server_config:
   grpc_use_insecure_credentials: true
   endpoint_id_extractor_type: "url_path"
-  port: 10003
+  port: 50051
 `,
 			wantErr: true,
 		},
@@ -43,7 +43,7 @@ auth_server_config:
   grpc_host_port: "invalid_host_port"
   grpc_use_insecure_credentials: true
   endpoint_id_extractor_type: "url_path"
-  port: 10003
+  port: 50051
 `,
 			wantErr: true,
 		},

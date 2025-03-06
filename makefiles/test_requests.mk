@@ -173,5 +173,5 @@ test_request__relay_util_100_F00C_via_envoy: check_path_up_with_envoy check_rela
 		-H "target-service-id: F00C" \
 		-H "authorization: api_key_1" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
-		-x 1000 \
+		-x 100 \
 		-b

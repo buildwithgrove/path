@@ -254,4 +254,4 @@ properties:
       port:
         description: "Port number for the auth server."
         type: integer
-        default: 10003
+        default: 50051
