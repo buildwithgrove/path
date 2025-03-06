@@ -53,7 +53,7 @@ static_resources:
                   address:
                     socket_address:
                       address: ext-authz
-                      port_value: 10003
+                      port_value: 50051
 
     # Cluster for the rate-limiting service.
     - name: ratelimit

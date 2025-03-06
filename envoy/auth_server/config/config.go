@@ -14,7 +14,7 @@ import (
 
 const (
 	defaultEndpointIDExtractorType = auth.EndpointIDExtractorTypeURLPath
-	defaultPort                    = 10003
+	defaultPort                    = 50051
 )
 
 var grpcHostPortPattern = "^[^:]+:[0-9]+$"

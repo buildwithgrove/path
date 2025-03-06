@@ -192,7 +192,7 @@ if MODE == "path_with_auth":
     k8s_resource(
         "ext-authz",
         labels=["envoy_auth"],
-        port_forwards=["10003:10003"],
+        port_forwards=["50051:50051"],
         resource_deps=["path-auth-data-server", "path-config-updater"],
         trigger_mode=TRIGGER_MODE_AUTO,
     )

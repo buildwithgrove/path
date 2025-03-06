@@ -20,7 +20,7 @@ spec:
               mountPath: /app/config/.config.yaml
               subPath: .config.yaml
           ports:
-            - containerPort: 10003
+            - containerPort: 50051
       volumes:
         - name: path-config-local
           secret:
@@ -32,8 +32,8 @@ metadata:
   name: ext-authz
 spec:
   ports:
-    - port: 10003
-      targetPort: 10003
+    - port: 50051
+      targetPort: 50051
   selector:
     app: ext-authz
   type: ClusterIP
