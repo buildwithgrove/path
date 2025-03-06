@@ -1,22 +1,14 @@
 ---
 sidebar_position: 1
-title: Walkthrough
+title: Introduction
 description: High-level architecture overview and detailed walkthrough
 ---
 
 <div align="center">
-<h1>PATH<br/>Authorization & Rate Limiting</h1>
+<h1>GUARD<br/>Gateway Utilities for Authentication, Routing & Defense</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 </div>
 <br/>
-
-:::danger
-
-### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
-
-A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
-
-:::
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -502,6 +494,7 @@ The `Remote gRPC Server` is responsible for providing the `External Auth Server`
 #### PATH Auth Data Server
 
 The [PADS repo](https://github.com/buildwithgrove/path-auth-data-server) provides a pre-built implementation of the remote gRPC server.
+
 
 This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 
