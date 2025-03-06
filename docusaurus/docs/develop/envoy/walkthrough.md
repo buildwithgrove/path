@@ -503,12 +503,6 @@ The `Remote gRPC Server` is responsible for providing the `External Auth Server`
 
 The [PADS repo](https://github.com/buildwithgrove/path-auth-data-server) provides a pre-built implementation of the remote gRPC server.
 
-:::info Repository
-
-See the [PADS Documentation](../pads/introduction.md) for more information on the PATH Auth Data Server.
-
-:::
-
 This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 
 ```bash
