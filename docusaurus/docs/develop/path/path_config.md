@@ -46,7 +46,7 @@ All configuration for the PATH gateway is defined in a single YAML file named `.
 The config file `.config.yaml` is located in:
 
 - **Default**: `./config/.config.yaml` (relative to PATH binary)
-- **Tilt**: `/app/config/.config.yaml` (mounted in container from `./local/path/config/.config.yaml`)
+- **Tilt**: `/app/config/.config.yaml` (mounted in container from `./local/path/.config.yaml`)
 
 :::tip Override Config Location
 Use `-config` flag to specify a custom location:

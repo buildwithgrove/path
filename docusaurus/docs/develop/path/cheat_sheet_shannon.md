@@ -138,7 +138,7 @@ Note that running `make shannon_populate_config` is equivalent to running the fo
 
 ```bash
 make prepare_morse_e2e_config # Generate ./e2e/.shannon.config.yaml
-make copy_morse_e2e_config_to_local # Copy to ./local/path/config/.config.yaml
+make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
 ```
 
 :::warning Private Key Export

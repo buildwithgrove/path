@@ -82,7 +82,7 @@ If you are comfortable updating the config file manually, then:
 make prepare_shannon_e2e_config
 # Update it manually
 
-# Copy it to ./local/path/config/.config.yaml
+# Copy it to ./local/path/.config.yaml
 make copy_shannon_e2e_config_to_local
 ```
 
@@ -98,7 +98,7 @@ If you are comfortable updating the config file manually, then:
 make prepare_morse_e2e_config
 # Update it manually
 
-# Copy it to ./local/path/config/.config.yaml
+# Copy it to ./local/path/.config.yaml
 make copy_morse_config_to_local
 ```
 
@@ -158,7 +158,7 @@ to view the Tilt dashboard.
 ```bash
 ❯ make path_up
 #########################################################################
-### ./local/path/config/.config.yaml already exists, not overwriting. ###
+### ./local/path/.config.yaml already exists, not overwriting. ###
 #########################################################################
 No kind clusters found.
 Cluster 'path-localnet' not found. Creating it...

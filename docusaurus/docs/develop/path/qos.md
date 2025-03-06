@@ -21,7 +21,7 @@ which the QoS package is taking as of 01/2025.
 
 ```mermaid
 classDiagram
-    class gateway.QoSService {
+    class QoSService {
         <<interface>>
     }
     class EVM {
@@ -70,11 +70,10 @@ classDiagram
         eth_chainId
     }
 
-
-    EVM ..> gateway.QoSService : implements
-    SolanaVM ..> gateway.QoSService : implements
-    Cosmos ..> gateway.QoSService : implements
-    MoveVM ..> gateway.QoSService : implements
+    EVM --|> QoSService : implements
+    SolanaVM --|> QoSService : implements
+    Cosmos --|> QoSService : implements
+    MoveVM --|> QoSService : implements
 
     DefaultEVM ..> EVM : NewQoSService
     DefaultCosmos ..> Cosmos : NewQoSService

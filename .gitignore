@@ -50,7 +50,9 @@ tmp/*
 
 # PATH artifacts
 install.log
-local/path/
+
+# exclude values.template.yaml files
+!values.template.yaml
 
 # Claudesync
 .claudesync/

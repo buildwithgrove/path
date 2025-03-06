@@ -25,9 +25,9 @@ path_build: ## Build the path binary locally (does not run anything)
 
 .PHONY: check_path_config
 check_path_config: ## Verify that path configuration file exists
-	@if [ ! -f ./local/path/config/.config.yaml ]; then \
+	@if [ ! -f ./local/path/.config.yaml ]; then \
 		echo "################################################################"; \
-   		echo "Error: Missing config file at ./local/path/config/.config.yaml"; \
+   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
    		echo ""; \
    		echo "Initialize using either:"; \
    		echo "  make prepare_shannon_e2e_config"; \
@@ -38,7 +38,7 @@ check_path_config: ## Verify that path configuration file exists
 
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ../local/path/config/.config.yaml)
+	(cd bin; ./path -config ../local/path/.config.yaml)
 
 #################################
 ###  Local PATH make targets  ###
@@ -75,7 +75,7 @@ path_help: ## Prints help commands if you cannot start path
 include ./makefiles/configs.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk
-include ./makefiles/envoy.mk
+include ./makefiles/guard.mk
 include ./makefiles/localnet.mk
 include ./makefiles/morse_configs.mk
 include ./makefiles/shannon_configs.mk

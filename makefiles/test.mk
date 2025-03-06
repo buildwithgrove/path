@@ -16,8 +16,8 @@ test_e2e_morse_relay: morse_e2e_config_warning ## Run an E2E Morse relay test
 .PHONY: test_e2e_shannon_relay_iterate
 test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
 	@echo "go build -o bin/path ./cmd"
-	@echo "# ⚠️ UPDATE ./local/path/config/.config.yaml ⚠️"
-	@echo "./bin/path -config ./local/path/config/.config.yaml"
+	@echo "# ⚠️ UPDATE ./local/path/.config.yaml ⚠️"
+	@echo "./bin/path -config ./local/path/.config.yaml"
 	@echo "curl http://anvil.localhost:3069/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
 
 .PHONY: test_e2e_shannon_relay
