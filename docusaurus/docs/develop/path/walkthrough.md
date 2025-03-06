@@ -4,6 +4,14 @@ title: Local PATH Walkthrough
 description: Details on running PATH locally with various configurations
 ---
 
+:::danger
+
+### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
+
+A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+
+:::
+
 ## Introduction <!-- omit in toc -->
 
 This walkthrough assumes you have gone through [environment setup](./env_setup.md)

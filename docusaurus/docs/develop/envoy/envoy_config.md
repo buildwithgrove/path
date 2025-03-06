@@ -11,6 +11,14 @@ description: Envoy configuration details
   </a>
 </div>
 
+:::danger
+
+### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
+
+A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+
+:::
+
 This document describes the configuration options for PATH's Envoy Proxy which is responsible for:
 
 1. Defining the set of allowed services
