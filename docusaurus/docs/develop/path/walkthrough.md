@@ -154,7 +154,7 @@ Once your configs are in place, simply run one of the following commands:
 make path_up
 
 # Standalone Binary Mode
-make path_up_standalone
+make path_run
 ```
 
 ### 4.1 View `PATH` Resources in Tilt

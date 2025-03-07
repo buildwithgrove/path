@@ -193,11 +193,6 @@ Run the entire stack (PATH, Envoy, Auth Server) by running:
 make path_up
 ```
 
-Run Standalone Mode (no Envoy Proxy) by running:
-
-```bash
-make path_up_standalone
-```
 
 You can stop the PATH stack by running:
 

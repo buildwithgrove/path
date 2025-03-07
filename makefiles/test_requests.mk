@@ -30,7 +30,7 @@ check_path_up_without_envoy: ## Checks if standalone PATH (without GUARD) is run
 		@echo "########################################################################"; \
 		@echo "ERROR: Standalone PATH is not currently running on localhost:3069"; \
 		@echo "Please start it with:"; \
-		@echo "  make path_up_standalone"; \
+		@echo "  make path_run"; \
 		@echo "########################################################################"; \
 		exit 1; \
 	fi
