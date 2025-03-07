@@ -166,6 +166,18 @@ test_request__relay_util_1000_via_envoy: check_path_up_with_envoy check_relay_ut
 		-x 1000 \
 		-b
 
+
+.PHONY: test_request__relay_util_100_F00C
+test_request__relay_util_100_F00C: check_path_up_without_envoy check_relay_util  ## Test F00C (Eth MainNet on Morse) via PATH with 10,000 eth_blockNumber requests using relay-util
+	relay-util \
+		-u http://localhost:3069/v1/endpoint_1_static_key \
+		-H "target-service-id: F00C" \
+		-H "authorization: api_key_1" \
+		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
+		-x 100 \
+		-b
+
+
 .PHONY: test_request__relay_util_100_F00C_via_envoy
 test_request__relay_util_100_F00C_via_envoy: check_path_up_with_envoy check_relay_util  ## Test F00C (Eth MainNet on Morse) via PATH behind Envoy Proxy with 10,000 eth_blockNumber requests using relay-util
 	relay-util \
@@ -173,5 +185,5 @@ test_request__relay_util_100_F00C_via_envoy: check_path_up_with_envoy check_rela
 		-H "target-service-id: F00C" \
 		-H "authorization: api_key_1" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
-		-x 1000 \
+		-x 100 \
 		-b
