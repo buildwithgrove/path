@@ -120,6 +120,7 @@ helm_resource(
 # 2. PATH External Auth Server (PEAS)                                          #
 # 3. Path Auth Data Server (PADS)                                              #
 # ---------------------------------------------------------------------------- #
+
 # The folder containing GUARD's local configuration files.
 GUARD_LOCAL_DIR = LOCAL_DIR + "/guard"
 # The values file for GUARD's Helm chart.
