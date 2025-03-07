@@ -51,8 +51,8 @@ tmp/*
 # PATH artifacts
 install.log
 
-# exclude values.template.yaml files
-!values.template.yaml
+# exclude values.tmpl.yaml files
+!values.tmpl.yaml
 
 # Claudesync
 .claudesync/
