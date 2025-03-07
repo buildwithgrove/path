@@ -11,11 +11,11 @@ description: Envoy configuration details
   </a>
 </div>
 
-:::danger
+:::danger DOCUMENTATION IN FLUX
+	
+**🦖 This documentation is out of date as of [PATH PR #176](https://github.com/buildwithgrove/path/pull/176).**
 
-### 🦖 This documentation is out of date as of [PATH PR # 176](https://github.com/buildwithgrove/path/pull/176).
-
-A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+TODO_DOCUMENT(@commoddity): A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
 
 :::
 
