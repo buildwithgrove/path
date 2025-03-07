@@ -52,12 +52,17 @@ tmp/*
 install.log
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # exclude values.tmpl.yaml files
 !values.tmpl.yaml
 =======
 # exclude values.template.yaml files
 !values.template.yaml
 >>>>>>> 445c312 (feat: re-organize ./local folder and update Tiltfile)
+=======
+# exclude values.tmpl.yaml files
+!values.tmpl.yaml
+>>>>>>> 09000bf (fix: implement review comments)
 
 # Claudesync
 .claudesync/
