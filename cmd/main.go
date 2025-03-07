@@ -120,7 +120,7 @@ func main() {
 // Examples:
 // - Executable in `/app` → config at `/app/config/.config.yaml`
 // - Executable in `./bin` → config at `./bin/config/.config.yaml`
-// - Executable in `./local/path` → config at `./local/path/config/.config.yaml`
+// - Executable in `./local/path` → config at `./local/path/.config.yaml`
 func getConfigPath(defaultConfigPath string) (string, error) {
 	var configPath string
 

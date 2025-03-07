@@ -4,6 +4,14 @@ title: Local PATH Walkthrough
 description: Details on running PATH locally with various configurations
 ---
 
+:::danger DOCUMENTATION IN FLUX
+	
+**🦖 This documentation is out of date as of [PATH PR #176](https://github.com/buildwithgrove/path/pull/176).**
+
+TODO_DOCUMENT(@commoddity): A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+
+:::
+
 ## Introduction <!-- omit in toc -->
 
 This walkthrough assumes you have gone through [environment setup](./env_setup.md)
@@ -82,7 +90,7 @@ If you are comfortable updating the config file manually, then:
 make prepare_shannon_e2e_config
 # Update it manually
 
-# Copy it to ./local/path/config/.config.yaml
+# Copy it to ./local/path/.config.yaml
 make copy_shannon_e2e_config_to_local
 ```
 
@@ -98,7 +106,7 @@ If you are comfortable updating the config file manually, then:
 make prepare_morse_e2e_config
 # Update it manually
 
-# Copy it to ./local/path/config/.config.yaml
+# Copy it to ./local/path/.config.yaml
 make copy_morse_config_to_local
 ```
 
@@ -146,7 +154,7 @@ Once your configs are in place, simply run one of the following commands:
 make path_up
 
 # Standalone Binary Mode
-make path_up_standalone
+make path_run
 ```
 
 ### 4.1 View `PATH` Resources in Tilt
@@ -158,7 +166,7 @@ to view the Tilt dashboard.
 ```bash
 ❯ make path_up
 #########################################################################
-### ./local/path/config/.config.yaml already exists, not overwriting. ###
+### ./local/path/.config.yaml already exists, not overwriting. ###
 #########################################################################
 No kind clusters found.
 Cluster 'path-localnet' not found. Creating it...
