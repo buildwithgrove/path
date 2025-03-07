@@ -23,14 +23,14 @@ var (
 	// ErrNullRelayResponse is returned when a relay response is null or incomplete
 	ErrNullRelayResponse = errors.New("null or incomplete relay response received")
 
-	// ErrRelayTimeout is returned when a relay times out
-	ErrRelayTimeout = errors.New("relay request timed out")
+	// ErrRelayTimeout is returned when a relay request from the gateway to the backend service (endpoint) times out
+	ErrRelayRequestTimeout = errors.New("relay request to backend service (endpoint) timed out")
 
 	// ErrConnectionFailed is returned when a connection to an endpoint fails
 	ErrConnectionFailed = errors.New("connection to endpoint failed")
 
-	// ErrMaxedOut is returned when an endpoint is maxed out
-	ErrMaxedOut = errors.New("endpoint is maxed out")
+	// ErrMaxedOut is returned when an endpoint is maxed out and cannot handle any more incoming requests
+	ErrMaxedOut = errors.New("endpoint is maxed out and cannot handle any more incoming requests")
 
 	// ErrInvalidResponse is returned when an endpoint returns an invalid response
 	ErrInvalidResponse = errors.New("invalid response from endpoint")
@@ -71,11 +71,12 @@ func NewNullRelayResponseError(detail string) error {
 	return fmt.Errorf("%w: %s", ErrNullRelayResponse, detail)
 }
 
-// extractErrFromRelayError analyzes an error returned during relay and attempts to match it
-// to one of our predefined error types. It first checks by error comparison (unwrapping),
-// then falls back to string analysis if the error type isn't recognized.
-// This function centralizes error recognition logic to avoid replicating string matching
-// throughout the codebase.
+// extractErrFromRelayError:
+// • Analyzes errors returned during relay operations
+// • Matches errors to predefined types through:
+//   - Primary: Error comparison (with unwrapping)
+//   - Fallback: String analysis for unrecognized types
+// • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
 	if err == nil {
 		return nil

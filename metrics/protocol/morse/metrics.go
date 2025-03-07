@@ -26,7 +26,7 @@ func init() {
 var (
 	// relaysTotal tracks the total Morse relay requests processed.
 	// Labels:
-	//   - service_id: Target service identifier
+	//   - service_id: Target service identifier (i.e. chain id in Morse)
 	//   - app_address: Application address that signed the relay
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
 	//   - endpoint_addr: Address of the endpoint (from the last entry in observations list)

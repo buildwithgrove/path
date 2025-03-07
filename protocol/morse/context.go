@@ -17,7 +17,7 @@ import (
 
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
-// TODO_TECHDEBT: Make this configurable via an env variable.
+// TODO_TECHDEBT(@adshmh): Make this configurable via either an env variable or YAML config.
 const defaultRelayTimeoutMillisec = 5000
 
 // requestContext captures all the data required for handling a single service request.
@@ -33,7 +33,7 @@ type requestContext struct {
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 
-	// endpointObservations captures observations about endpoints encountered during request handling
+	// endpointObservations captures observations about endpoints used during request handling
 	endpointObservations []*protocolobservations.MorseEndpointObservation
 }
 
@@ -187,8 +187,8 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 	}
 }
 
-// recordEndpointObservation records an observation for an endpoint
-// It only appends to the observations slice and does not return an error
+// recordEndpointObservation records an observation for an endpoint.
+// It only appends to the observations slice and does not return an error.
 func (rc *requestContext) recordEndpointObservation(
 	endpoint endpoint,
 	errorType protocolobservations.MorseEndpointErrorType,

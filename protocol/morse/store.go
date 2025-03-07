@@ -14,9 +14,12 @@ import (
 
 const (
 	// defaultSessionSanctionExpiration is the default TTL for session-limited sanctions
+	// TODO_TECHDEBT(@adshmh): Align this with protocol specific parameters determining a session
+	// length which may change and vary in Shannon.
 	defaultSessionSanctionExpiration = 1 * time.Hour
 
 	// defaultCacheCleanupInterval is how often the cache purges expired items
+	// DEV_NOTE: This was arbitrarily selected and can be changed in the future.
 	defaultCacheCleanupInterval = 10 * time.Minute
 )
 
@@ -35,7 +38,7 @@ type EndpointStore struct {
 	// Mutex for synchronized access to the permanent sanctions map
 	mu sync.RWMutex
 
-	// permanentSanctions stores endpoints with permanent sanctions
+	// permanentSanctions stores endpoints with permanent sanctions.
 	// These sanctions never expire and will require manual intervention to remove
 	permanentSanctions map[protocol.EndpointAddr]sanction
 
@@ -110,8 +113,8 @@ func (es *EndpointStore) AddSanction(
 	}
 }
 
-// IsSanctioned checks if an endpoint has an active sanction
-// It checks both permanent and session-based sanctions
+// IsSanctioned checks if an endpoint has an active sanction.
+// It checks both permanent and session-based sanctions.
 func (es *EndpointStore) IsSanctioned(
 	endpointAddr protocol.EndpointAddr,
 	appAddress string,
@@ -128,7 +131,7 @@ func (es *EndpointStore) IsSanctioned(
 
 	// Check session sanctions - these are specific to app+session+endpoint
 	key := sessionSanctionKey(appAddress, sessionKey, string(endpointAddr))
-	sessionSanctionObj, found := es.sessionSanctions.Get(key)
+	sessionSanctionObj, hasSessionSanction := es.sessionSanctions.Get(key)
 	if found {
 		sanctionRecord := sessionSanctionObj.(sanction)
 		return true, fmt.Sprintf("session sanction: %s", sanctionRecord.Reason)

@@ -1,4 +1,4 @@
-// Package qos handles exporting of all qos-related metrics.
+// Package protocol handles exporting of all protocol-related observation based metrics.
 package protocol
 
 import (

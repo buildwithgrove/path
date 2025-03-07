@@ -75,7 +75,7 @@ type Protocol struct {
 	appCacheMu sync.RWMutex
 	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
 	// sessionCache caches sessions for use by the Relay function.
-	// map keys are of the format "serviceID-appAddr"
+	// map keys are of the format "serviceID:appAddr"
 	sessionCache   map[string]provider.Session
 	sessionCacheMu sync.RWMutex
 }
@@ -125,7 +125,7 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	for _, observationSet := range morseObservations {
 		// TODO_IMPROVE(@adshmh): include the Service ID in the logs.
 		for _, endpointObservation := range observationSet.GetEndpointObservations() {
-			// Process endpoints with sanctions
+			// Process endpoints with specified sanctions
 			recommendedSanction := endpointObservation.GetRecommendedSanction()
 			if recommendedSanction == protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED {
 				continue
@@ -274,7 +274,7 @@ func (p *Protocol) refreshSessionCache() error {
 }
 
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
-// It includes filtering of sanctioned endpoints based on the endpoint store.
+// It also filters out sanctioned endpoints from the endpoint store.
 func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
@@ -323,7 +323,7 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 	return endpoints, nil
 }
 
-// getSession gets a session from the session cache
+// getSession gets a session from the session cache for the given service ID and application address
 func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (provider.Session, bool) {
 	p.sessionCacheMu.RLock()
 	defer p.sessionCacheMu.RUnlock()
@@ -343,7 +343,7 @@ func (p *Protocol) getEndpoints(serviceID protocol.ServiceID) (map[protocol.Endp
 	return p.getAppsUniqueEndpoints(serviceID, apps)
 }
 
-// getApps gets apps from the app cache
+// getApps gets apps from the app cache for a given service Id
 func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
@@ -352,7 +352,7 @@ func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 	return apps, found
 }
 
-// sessionCacheKey generates a cache key for a service ID and app addr
+// sessionCacheKey generates a cache key for a (serviceID, appAddr) pair
 func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
 }
