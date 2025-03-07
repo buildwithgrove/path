@@ -82,6 +82,10 @@ message EVMEndpointObservation {
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
 
+// TODO_MVP(@adshmh): Add SanctionType enum and RecommendedSanction field to response messages to:
+//   1. Align with Morse protocol sanction fields
+//   2. Make sanction policies explicit within the message itself
+//
 // EVMChainIDResponse stores the response to an `eth_chainId` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 message EVMChainIDResponse {
