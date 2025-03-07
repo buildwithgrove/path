@@ -183,6 +183,8 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 	return rc.endpointStore.Select(allEndpoints)
 }
 
+// preSelectedEndpoint returns the pre-selected endpoint address.
+// It is used to enforce performing quality checks on a specific endpoint.
 func preSelectedEndpoint(
 	preSelectedEndpointAddr protocol.EndpointAddr,
 	allEndpoints []protocol.Endpoint,
@@ -194,4 +196,11 @@ func preSelectedEndpoint(
 	}
 
 	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
+}
+
+// setPreSelectedEndpointAddr assigns the endpoint address to be used for hydrator checks.
+// It is called to override the endpoint selection process with a specific endpoint.
+// and is used to enforce performing quality checks on a specific endpoint.
+func (rc *requestContext) setPreSelectedEndpointAddr(endpointAddr protocol.EndpointAddr) {
+	rc.preSelectedEndpointAddr = endpointAddr
 }
