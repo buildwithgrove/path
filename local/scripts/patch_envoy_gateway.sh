@@ -2,6 +2,7 @@
 set -euo pipefail
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Envoy Gateway Port Configuration
 #
 # This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070),
@@ -23,13 +24,19 @@ PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":3007
 =======
 # This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070) inside the container.
 # This allows Envoy Gateway to be reachable from the local machine on port 3070, as defined in the `kind-config.yaml` file.
+=======
+# Envoy Gateway Port Configuration
+>>>>>>> b576f01 (Apply suggestions from code review)
 #
-# Context:
-# - The Envoy Gateway service is created as a LoadBalancer which, when running in kind, automatically
-#   uses a NodePort under the covers. 
-# - In a real cloud environment, the LoadBalancer provisioner would map a public IP to this NodePort. 
-# - In `kind`, since there's no external load balancer, Kubernetes auto-assigns a dynamic NodePort 
-#   (within the 30000–32767 range) if one is not explicitly specified. 
+# This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070),
+# making it reachable from the local machine on port 3070 as defined in the `kind-config.yaml` file.
+#
+# Implementation context:
+#   - Envoy Gateway service is created as a LoadBalancer 
+#   - When running in kind, LoadBalancer services automatically use NodePort underneath
+#   - In cloud environments, a LoadBalancer provisioner would map a public IP to this NodePort
+#   - In kind environments (without external load balancers), Kubernetes auto-assigns a dynamic 
+#     NodePort (30000-32767 range) unless explicitly specified
 
 PATH_NAMESPACE="path-local"
 SERVICE_PREFIX="envoy-path-local-guard-envoy-gateway"
