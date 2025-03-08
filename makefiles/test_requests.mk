@@ -45,7 +45,7 @@ check_path_up_without_envoy: ## Checks if standalone PATH (without GUARD) is run
 # - The 'anvil' service must be configured in the '.config.yaml' file.
 
 # The following are the various ways to make requests to PATH with Envoy running:
-# - **Auth**: static API key or no auth, passed in the 'Authorization' header
+# - **Auth**: static API key, passed in the 'Authorization' header
 # - **Service ID**: passed as the subdomain or in the 'Target-Service-Id' header
 
 .PHONY: test_request__service_id_subdomain
