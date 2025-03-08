@@ -45,53 +45,22 @@ check_path_up_without_envoy: ## Checks if standalone PATH (without GUARD) is run
 # - The 'anvil' service must be configured in the '.config.yaml' file.
 
 # The following are the various ways to make requests to PATH with Envoy running:
-# - **Auth**: static API key or no auth (JWT requires a non-expired JWT token, which cannot be statically set)
-# - **Service ID**: passed as the subdomain or in the 'target-service-id' header
-# - **Endpoint ID**: passed in the URL path or in the 'endpoint-id' header
+# - **Auth**: static API key or no auth, passed in the 'Authorization' header
+# - **Service ID**: passed as the subdomain or in the 'Target-Service-Id' header
 
-.PHONY: test_request__endpoint_url_path_mode__no_auth
-test_request__endpoint_url_path_mode__no_auth: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with no auth, endpoint ID passed in the URL path, and the service ID passed as the subdomain
-	curl http://anvil.localhost:3070/v1/test_endpoint_2_no_auth \
-		-X POST \
-		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-.PHONY: test_request__endpoint_header_mode__no_auth
-test_request__endpoint_header_mode__no_auth: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with no auth, endpoint ID passed in the endpoint-id header, and the service ID passed as the subdomain
+.PHONY: test_request__service_id_subdomain
+test_request__service_id_subdomain: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
 	curl http://anvil.localhost:3070/v1 \
 		-X POST \
-		-H "endpoint-id: test_endpoint_2_no_auth" \
-		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-.PHONY: test_request__endpoint_url_path_mode__no_auth__service_id_header
-test_request__endpoint_url_path_mode__no_auth__service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with no auth, endpoint ID passed in the URL path, and the service ID passed in the target-service-id header
-	curl http://localhost:3070/v1/test_endpoint_2_no_auth \
-		-X POST \
-		-H "target-service-id: anvil" \
-		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-.PHONY: test_request__endpoint_header_mode__static_key
-test_request__endpoint_header_mode__static_key: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with static key auth, endpoint ID passed in the endpoint-id header and the service ID passed as the subdomain
-	curl http://anvil.localhost:3070/v1 \
-		-X POST \
-		-H "endpoint-id: test_endpoint_1_api_key" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
-.PHONY: test_request__endpoint_url_path_mode__static_key_service_id_header
-test_request__endpoint_url_path_mode__static_key_service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with static key auth, endpoint ID passed in the URL path, and the service ID passed in the target-service-id header
+.PHONY: test_request__service_id_header
+test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the target-service-id header
 	curl http://localhost:3070/v1/test_endpoint_1_api_key \
 		-X POST \
-		-H "authorization: test_api_key" \
 		-H "target-service-id: anvil" \
-		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-.PHONY: test_request__endpoint_header_mode__static_key_service_id_header
-test_request__endpoint_header_mode__static_key_service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with all possible values passed as headers: service ID, endpoint ID and authorization
-	curl http://localhost:3070/v1 \
-		-X POST \
-		-H "endpoint-id: test_endpoint_1_api_key" \
 		-H "authorization: test_api_key" \
-		-H "target-service-id: anvil" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 ############################
@@ -146,10 +115,10 @@ test_request__relay_util_1000: check_path_up_without_envoy check_relay_util  ## 
 		-x 1000 \
 		-b
 
-.PHONY: test_request__relay_util_10_via_envoy
-test_request__relay_util_10_via_envoy: check_path_up_with_envoy check_relay_util  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util
+.PHONY: test_request__relay_util_10_via_guard
+test_request__relay_util_10_via_guard: check_path_up_with_envoy check_relay_util  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util
 	relay-util \
-		-u http://localhost:3070/v1/test_endpoint_1_api_key \
+		-u http://localhost:3070/v1 \
 		-H "target-service-id: anvil" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
@@ -159,7 +128,7 @@ test_request__relay_util_10_via_envoy: check_path_up_with_envoy check_relay_util
 .PHONY: test_request__relay_util_1000_via_envoy
 test_request__relay_util_1000_via_envoy: check_path_up_with_envoy check_relay_util  ## Test anvil via PATH behind GUARD with 10,000 eth_blockNumber requests using relay-util
 	relay-util \
-		-u http://localhost:3070/v1/test_endpoint_1_api_key \
+		-u http://localhost:3070/v1 \
 		-H "target-service-id: anvil" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
@@ -170,7 +139,7 @@ test_request__relay_util_1000_via_envoy: check_path_up_with_envoy check_relay_ut
 .PHONY: test_request__relay_util_100_F00C
 test_request__relay_util_100_F00C: check_path_up_without_envoy check_relay_util  ## Test F00C (Eth MainNet on Morse) via PATH with 10,000 eth_blockNumber requests using relay-util
 	relay-util \
-		-u http://localhost:3069/v1/test_endpoint_1_api_key \
+		-u http://localhost:3069/v1 \
 		-H "target-service-id: F00C" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
@@ -181,7 +150,7 @@ test_request__relay_util_100_F00C: check_path_up_without_envoy check_relay_util 
 .PHONY: test_request__relay_util_100_F00C_via_envoy
 test_request__relay_util_100_F00C_via_envoy: check_path_up_with_envoy check_relay_util  ## Test F00C (Eth MainNet on Morse) via PATH behind GUARD with 10,000 eth_blockNumber requests using relay-util
 	relay-util \
-		-u http://localhost:3070/v1/test_endpoint_1_api_key \
+		-u http://localhost:3070/v1 \
 		-H "target-service-id: F00C" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
