@@ -86,6 +86,8 @@ docker_build_with_restart(
 )
 
 # Run PATH & GUARD
+# TODO_IMPROVE(@commoddity): Split logging from PATH + GUARD + WATCH
+# into separate displays in Tilt for a better developer experience.
 helm_resource(
     "path",
     chart_prefix + "path",
