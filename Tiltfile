@@ -24,25 +24,6 @@ hot_reload_dirs = [
 local_config_path = "local_config.yaml"
 local_config = read_yaml(local_config_path, default={})
 
-# The namespace to deploy the PATH service to.
-NAMESPACE = "path-local"
-
-# The folder containing the local configuration files.
-LOCAL_DIR = "local"
-
-# --------------------------------------------------------------------------- #
-#                                PATH Service                                 #
-# --------------------------------------------------------------------------- #
-# 1. PATH Service                                                             #
-# --------------------------------------------------------------------------- #
-
-# The folder containing PATH's local configuration files.
-PATH_LOCAL_DIR = LOCAL_DIR + "/path"
-# The configuration file for PATH.
-PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
-# The values file for PATH's Helm chart.
-PATH_LOCAL_VALUES_FILE = PATH_LOCAL_DIR + "/.values.yaml"
-
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
 helm_repo("buildwithgrove", "https://buildwithgrove.github.io/helm-charts/")
@@ -52,6 +33,26 @@ if local_config["helm_chart_local_repo"]["enabled"]:
     hot_reload_dirs.append(helm_chart_local_repo)
     print("Using local helm chart repo " + helm_chart_local_repo)
     chart_prefix = helm_chart_local_repo + "/charts/"
+
+# The folder containing the local configuration files.
+LOCAL_DIR = "local"
+
+# The folder containing PATH's local configuration files.
+PATH_LOCAL_DIR = LOCAL_DIR + "/path"
+# The configuration file for PATH.
+PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
+
+# --------------------------------------------------------------------------- #
+#                                PATH Service                                 #
+# --------------------------------------------------------------------------- #
+# 1. PATH Service                                                             #
+# --------------------------------------------------------------------------- #
+#                             GUARD Resources                                 # 
+# --------------------------------------------------------------------------- #
+# 1. Envoy Gateway                                                            #
+# 2. PATH External Auth Server (PEAS) TODO: Remove this resource              #
+# 3. Path Auth Data Server (PADS) TODO: Remove this resource                  #
+# --------------------------------------------------------------------------- #
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
 # 1. Add place-holder files for sensitive data
@@ -63,8 +64,8 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 local_resource(
     'path-config-updater',
     '''
-    kubectl delete secret path-config-local -n path-local --ignore-not-found=true && \
-    kubectl create secret generic path-config-local -n path-local --from-file=.config.yaml=./local/path/.config.yaml && \
+    kubectl delete secret path-config --ignore-not-found=true && \
+    kubectl create secret generic path-config --from-file=.config.yaml=./local/path/.config.yaml && \
     kubectl get deployment path > /dev/null 2>&1 && \
     kubectl rollout restart deployment path || \
     echo "Deployment not found - skipping rollout restart"
@@ -84,14 +85,10 @@ docker_build_with_restart(
     ],
 )
 
-# Run PATH
+# Run PATH & GUARD
 helm_resource(
     "path",
     chart_prefix + "path",
-    flags=[
-        "--values=" + PATH_LOCAL_VALUES_FILE,
-    ],
-    namespace=NAMESPACE,
     # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
     # This can only be done once the CLI flags feature has been implemented.
     image_deps=["path"],
@@ -107,35 +104,9 @@ helm_resource(
     # Run the following commands to view the pprof data:
     #   $ make debug_goroutines
     port_forwards=["6060:6060"],
-    resource_deps=[
-        "guard",
-        "path-config-updater"
-    ]
+    resource_deps=["path-config-updater"]
 )
 
-# ---------------------------------------------------------------------------- #
-#                             GUARD Resources                                  #
-# ---------------------------------------------------------------------------- #
-# 1. Envoy Gateway                                                             #
-# 2. PATH External Auth Server (PEAS)                                          #
-# 3. Path Auth Data Server (PADS)                                              #
-# ---------------------------------------------------------------------------- #
-
-# The folder containing GUARD's local configuration files.
-GUARD_LOCAL_DIR = LOCAL_DIR + "/guard"
-# The values file for GUARD's Helm chart.
-GUARD_LOCAL_VALUES_FILE = GUARD_LOCAL_DIR + "/.values.yaml"
-
-# New resources created from Helm Charts
-helm_resource(
-    "guard",
-    chart_prefix + "guard",
-    namespace=NAMESPACE,
-    labels=["guard"],
-    flags=[
-        "--values=" + GUARD_LOCAL_VALUES_FILE,
-    ]
-)
 # Patch the Envoy Gateway LoadBalancer resource to ensure 
 # it is reachable from outside the cluster at "localhost:3070".
 #
@@ -143,7 +114,7 @@ helm_resource(
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
-    resource_deps=["guard"]
+    resource_deps=["path"]
 ) 
 
 # ----------------------------------------------------------------------------- #

@@ -10,5 +10,5 @@ observability:
 #   1. enabled: true
 #   2. path: {PATH_TO_LOCAL_HELM_CHART}
 helm_chart_local_repo:
-  enabled: false
+  enabled: true
   path: ../helm-charts
