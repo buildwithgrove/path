@@ -43,15 +43,10 @@ PATH_LOCAL_DIR = LOCAL_DIR + "/path"
 PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
 
 # --------------------------------------------------------------------------- #
-#                                PATH Service                                 #
+#                              PATH Resources                                 #
 # --------------------------------------------------------------------------- #
-# 1. PATH Service                                                             #
-# --------------------------------------------------------------------------- #
-#                             GUARD Resources                                 # 
-# --------------------------------------------------------------------------- #
-# 1. Envoy Gateway                                                            #
-# 2. PATH External Auth Server (PEAS) TODO: Remove this resource              #
-# 3. Path Auth Data Server (PADS) TODO: Remove this resource                  #
+# 1. PATH                                                                     #
+# 2. GUARD (Envoy Gateway)                                                    #
 # --------------------------------------------------------------------------- #
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
@@ -61,6 +56,7 @@ PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
+# Start a Tilt resource to update the PATH config with the local config file.
 local_resource(
     'path-config-updater',
     '''
@@ -73,7 +69,7 @@ local_resource(
     deps=[PATH_LOCAL_CONFIG_FILE]
 )
 
-# Build an image with a path binary
+# Build an image with a PATH binary
 docker_build_with_restart(
     "path",
     context=".",
@@ -86,8 +82,8 @@ docker_build_with_restart(
 )
 
 # Run PATH & GUARD
-# TODO_IMPROVE(@commoddity): Split logging from PATH + GUARD + WATCH
-# into separate displays in Tilt for a better developer experience.
+# TODO_IMPROVE(@commoddity): Split logging from PATH + GUARD into 
+# separate displays in Tilt for a better developer experience.
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -109,10 +105,11 @@ helm_resource(
     resource_deps=["path-config-updater"]
 )
 
-# Patch the Envoy Gateway LoadBalancer resource to ensure 
-# it is reachable from outside the cluster at "localhost:3070".
+# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
+# to ensure it is reachable from outside the cluster at "localhost:3070".
 #
-# For more context, see `./local/scripts/patch_envoy_gateway.sh`.
+# For more context, see the comments at:
+# `./local/scripts/patch_envoy_gateway.sh`.
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
