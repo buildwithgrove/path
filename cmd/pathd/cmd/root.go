@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/buildwithgrove/path/cmd/pathd/cmd/config"
+	"github.com/buildwithgrove/path/cmd/pathd/cmd/develop"
+	pathdConfig "github.com/buildwithgrove/path/cmd/pathd/config"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -36,4 +39,14 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.AddCommand(config.ConfigCmd)
+	rootCmd.AddCommand(develop.DevelopCmd)
+
+	if !pathdConfig.ConfigExists() {
+		err := config.RunFirstTimeSetup()
+		if err != nil {
+			fmt.Println("Error during first-time setup:", err)
+			os.Exit(1)
+		}
+		return
+	}
 }

@@ -42,9 +42,9 @@ import (
 	"github.com/spf13/cobra"
 
 	cfgEditor "github.com/buildwithgrove/gdi/config/editor"
-)
 
-const defaultConfigFilePath = "~/.path/.config.yaml"
+	"github.com/buildwithgrove/path/cmd/pathd/config"
+)
 
 var (
 	show           bool
@@ -54,6 +54,11 @@ var (
 
 // init sets up flags for the config command.
 func init() {
+	var defaultConfigFilePath string
+	if pathdConfig, _ := config.LoadConfig(); pathdConfig != nil {
+		defaultConfigFilePath = pathdConfig.GetPATHConfigFilepath()
+	}
+
 	ConfigCmd.Flags().BoolVarP(&show, "show", "s", false, "Show the configuration.")
 	ConfigCmd.Flags().StringVarP(&editor, "editor", "e", "", "Edit the configuration in the given text editor.")
 	ConfigCmd.Flags().StringVarP(&configFilePath, "config", "c", defaultConfigFilePath, "The path to the configuration file.")
@@ -90,7 +95,7 @@ Flags:
 		}
 
 		// Otherwise, start the interactive configuration editor.
-		schema, err := loadSchema()
+		schema, err := config.LoadSchema()
 		if err != nil {
 			fmt.Printf("Failed to load schema: %v", err)
 			os.Exit(1)

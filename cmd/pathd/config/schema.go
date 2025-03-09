@@ -9,8 +9,8 @@ import (
 
 const schemaUrl = "https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml"
 
-// loadSchema loads the schema from the specified URL.
-func loadSchema() (*yaml.Node, error) {
+// LoadSchema loads the schema from the specified URL.
+func LoadSchema() (*yaml.Node, error) {
 	resp, err := http.Get(schemaUrl)
 	if err != nil {
 		return nil, err
