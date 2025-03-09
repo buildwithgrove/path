@@ -21,7 +21,7 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	// Check for known predefined errors and map them to appropriate endpoint error types and sanctions
 	// TODO_TECHDEBT(@Olshansk): Re-evaluate which errors should be session based or permanent.
 	switch extractedErr {
-	case ErrRelayTimeout:
+	case ErrRelayRequestTimeout:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_TIMEOUT,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 
@@ -32,10 +32,6 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	case ErrInvalidResponse:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INVALID_RESPONSE,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
-
-	case ErrValidationFailed:
-		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_VALIDATION_FAILED,
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT
 
 	case ErrNullRelayResponse:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INVALID_RESPONSE,

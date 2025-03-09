@@ -23,7 +23,7 @@ var (
 	// ErrNullRelayResponse is returned when a relay response is null or incomplete
 	ErrNullRelayResponse = errors.New("null or incomplete relay response received")
 
-	// ErrRelayTimeout is returned when a relay request from the gateway to the backend service (endpoint) times out
+	// ErrRelayRequestTimeout is returned when a relay request from the gateway to the backend service (endpoint) times out
 	ErrRelayRequestTimeout = errors.New("relay request to backend service (endpoint) timed out")
 
 	// ErrConnectionFailed is returned when a connection to an endpoint fails
@@ -34,9 +34,6 @@ var (
 
 	// ErrInvalidResponse is returned when an endpoint returns an invalid response
 	ErrInvalidResponse = errors.New("invalid response from endpoint")
-
-	// ErrValidationFailed is returned when response validation fails
-	ErrValidationFailed = errors.New("response validation failed")
 
 	// ErrMisconfigured is returned when an endpoint is misconfigured
 	ErrMisconfigured = errors.New("endpoint is misconfigured")
@@ -76,6 +73,7 @@ func NewNullRelayResponseError(detail string) error {
 // • Matches errors to predefined types through:
 //   - Primary: Error comparison (with unwrapping)
 //   - Fallback: String analysis for unrecognized types
+//
 // • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
 	if err == nil {
@@ -83,10 +81,9 @@ func extractErrFromRelayError(err error) error {
 	}
 
 	// Check for known predefined errors through unwrapping
-	if errors.Is(err, ErrRelayTimeout) ||
+	if errors.Is(err, ErrRelayRequestTimeout) ||
 		errors.Is(err, ErrConnectionFailed) ||
 		errors.Is(err, ErrInvalidResponse) ||
-		errors.Is(err, ErrValidationFailed) ||
 		errors.Is(err, ErrNullRelayResponse) ||
 		errors.Is(err, ErrEndpointNotInSession) ||
 		errors.Is(err, ErrEndpointSelectionFailed) ||
@@ -113,7 +110,7 @@ func extractErrFromRelayError(err error) error {
 	// Check for timeouts using strings
 	if strings.Contains(errStr, "timeout") ||
 		strings.Contains(errStr, "deadline") {
-		return ErrRelayTimeout
+		return ErrRelayRequestTimeout
 	}
 
 	// Check for connection errors using strings
@@ -121,19 +118,6 @@ func extractErrFromRelayError(err error) error {
 		strings.Contains(errStr, "dial") ||
 		strings.Contains(errStr, "connect") {
 		return ErrConnectionFailed
-	}
-
-	// Check for max quota errors
-	if strings.Contains(errStr, "max") ||
-		strings.Contains(errStr, "quota") ||
-		strings.Contains(errStr, "limit") {
-		return ErrMaxedOut
-	}
-
-	// Check for validation failures
-	if strings.Contains(errStr, "validation") ||
-		strings.Contains(errStr, "invalid") {
-		return ErrValidationFailed
 	}
 
 	// If no specific error type matched, return the original error

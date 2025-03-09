@@ -198,7 +198,7 @@ func (rc *requestContext) recordEndpointObservation(
 	rc.endpointObservations = append(rc.endpointObservations, &protocolobservations.MorseEndpointObservation{
 		AppAddress:          string(endpoint.app.Addr()),
 		SessionKey:          endpoint.session.Key,
-		SessionChain:        endpoint.session.Header.Chain,
+		SessionServiceId:    endpoint.session.Header.Chain,
 		SessionHeight:       int32(endpoint.session.Header.SessionHeight),
 		EndpointAddr:        endpoint.address,
 		ErrorType:           &errorType,
@@ -242,11 +242,6 @@ func (rc *requestContext) sendRelay(
 
 	output, err := rc.fullNode.SendRelay(ctx, fullNodeInput)
 	if err != nil {
-		// Check if the error is a timeout
-		if ctx.Err() == context.DeadlineExceeded {
-			return provider.RelayOutput{}, ErrRelayTimeout
-		}
-
 		return provider.RelayOutput{}, err
 	}
 
