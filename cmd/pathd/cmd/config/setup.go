@@ -219,7 +219,7 @@ func promptForMorseAndShannon(reader *bufio.Reader, conf *config.Config, schema 
 	for {
 		fmt.Println(log.Blue + "Select one of the following protocols for configuration (or type 's' to skip):" + log.ResetColor)
 		for i, proto := range protocols {
-			fmt.Printf("%d. %s\n", i+1, proto)
+			fmt.Printf(log.Purple+"%d. %s\n"+log.ResetColor, i+1, proto)
 		}
 
 		input, err := prompt(reader, log.Blue+"Enter your choice:"+log.ResetColor)
