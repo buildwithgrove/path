@@ -14,23 +14,71 @@ import (
 	"github.com/buildwithgrove/path/cmd/pathd/config"
 )
 
+// displayShannonPreamble prints the color-coded Shannon preamble and waits for user confirmation.
+func displayShannonPreamble(reader *bufio.Reader) error {
+	preamble := fmt.Sprintf(
+		`%s🌿 Configuring PATH gateway for the Pocket Shannon Protocol.🌿%s
+
+%s🚨 IMPORTANT: READ THIS CAREFULLY 🚨%s
+
+Configuring a gateway for the Pocket Shannon Protocol requires the following fields:
+ - %s'gateway_address'%s - The gateway_address is the address of the gateway you want to configure.
+ - %s'gateway_private_key_hex'%s - The gateway_private_key_hex is the private key of the gateway you want to configure.
+ - One or more %s'owned_apps_private_keys_hex'%s - An owned app means an Application delegated to the onchain Gateway.
+
+💡 These fields may be obtained by following the Gateway Quickstart Guide:
+%s https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet%s
+(⏰ approximate time to complete: 10-15 minutes)
+
+👉 Once you have these fields, proceed to configure PATH on Shannon.`,
+		log.Green, log.ResetColor,
+		log.Red, log.ResetColor,
+		log.Purple, log.ResetColor,
+		log.Purple, log.ResetColor,
+		log.Purple, log.ResetColor,
+		log.Cyan, log.ResetColor,
+	)
+	fmt.Println(preamble)
+
+	// Use the prompt function to ensure consistent input prompt style
+	input, err := prompt(reader, log.Blue+"\nPress 'y' to continue: "+log.ResetColor)
+	if err != nil {
+		return err
+	}
+	if strings.ToLower(strings.TrimSpace(input)) != "y" {
+		return fmt.Errorf("shannon configuration aborted by user")
+	}
+	cfgEditor.ClearTerminal()
+	return nil
+}
+
 // ConfigureShannon performs an interactive configuration for Shannon settings.
-// It loads the schema, then prompts for gateway_address, gateway_private_key_hex,
-// and owned_apps_private_keys_hex using descriptions and regex patterns extracted
-// directly from the schema.
+// It first displays the preamble then proceeds with prompting for configuration fields.
 func ConfigureShannon(conf *config.Config, schema *yaml.Node) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	// Determine the path to the Shannon config file.
-	configPath := conf.GetPATHConfigFilepath()
+	// Display preamble and wait for confirmation.
+	if err := displayShannonPreamble(reader); err != nil {
+		return err
+	}
 
-	// Load existing configuration, if any.
+	configPath := conf.GetPATHConfigFilepath()
+	examplePath := conf.GetExamplePATHConfigFilepath("shannon")
+	if examplePath == "" {
+		return fmt.Errorf("no example config found for shannon")
+	}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if err := copyAndStripComments(examplePath, configPath); err != nil {
+			return fmt.Errorf("failed to create shannon config file: %v", err)
+		}
+		fmt.Printf(log.Green+"✅ Created config file for shannon at '%s'\n"+log.ResetColor, configPath)
+	}
+
 	cfgMap, err := loadShannonConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load shannon config: %v", err)
 	}
 
-	// Prompt the user for each field.
 	gatewayAddress, err := promptGatewayAddress(reader, schema)
 	if err != nil {
 		return err
@@ -46,15 +94,16 @@ func ConfigureShannon(conf *config.Config, schema *yaml.Node) error {
 		return err
 	}
 
-	// Update configuration map with new values.
+	// Clear the terminal only once after all inputs have been collected.
+	cfgEditor.ClearTerminal()
+
 	updateShannonConfig(cfgMap, gatewayAddress, gatewayPrivateKey, ownedAppsKeys)
 
-	// Save the updated configuration back to the file.
 	if err := saveShannonConfig(configPath, cfgMap); err != nil {
 		return fmt.Errorf("failed to save shannon config: %v", err)
 	}
 
-	fmt.Println(log.Green + "✅ Shannon configuration updated successfully." + log.ResetColor)
+	fmt.Println("✅ Shannon configuration updated successfully.")
 	return nil
 }
 
@@ -76,7 +125,16 @@ func getFieldDetailsFromSchema(fieldPath string, schema *yaml.Node) (description
 		if i == len(parts)-1 {
 			descNode := getMappingValue(node, "description")
 			patNode := getMappingValue(node, "pattern")
-			return getValueOrEmpty(descNode), getValueOrEmpty(patNode)
+			pat := getValueOrEmpty(patNode)
+			// If pattern not defined at the current level, check under "items".
+			if pat == "" {
+				itemsNode := getMappingValue(node, "items")
+				if itemsNode != nil {
+					itemPatNode := getMappingValue(itemsNode, "pattern")
+					pat = getValueOrEmpty(itemPatNode)
+				}
+			}
+			return getValueOrEmpty(descNode), pat
 		}
 		next := getMappingValue(node, "properties")
 		if next == nil {
@@ -93,9 +151,8 @@ func promptGatewayAddress(reader *bufio.Reader, schema *yaml.Node) (string, erro
 	fieldPath := "shannon_config.gateway_config.gateway_address"
 	description, pattern := getFieldDetailsFromSchema(fieldPath, schema)
 	for {
-		fmt.Println(log.Blue + "🔑 " + description + log.ResetColor)
-		fmt.Print(log.Blue + "📝 Gateway Address: " + log.ResetColor)
-		input, err := reader.ReadString('\n')
+		fmt.Println(log.Blue + "🏠 " + description + log.ResetColor)
+		input, err := prompt(reader, "Enter the staked Gateway actor's address: ")
 		if err != nil {
 			fmt.Println(log.Red + "❌ Error reading input. Please try again." + log.ResetColor)
 			continue
@@ -106,7 +163,6 @@ func promptGatewayAddress(reader *bufio.Reader, schema *yaml.Node) (string, erro
 			fmt.Println(log.Red + "❌ Input does not match required format. Expected pattern: " + pattern + log.ResetColor)
 			continue
 		}
-		cfgEditor.ClearTerminal()
 		return input, nil
 	}
 }
@@ -118,48 +174,51 @@ func promptGatewayPrivateKey(reader *bufio.Reader, schema *yaml.Node) (string, e
 	description, pattern := getFieldDetailsFromSchema(fieldPath, schema)
 	for {
 		fmt.Println(log.Blue + "🔒 " + description + log.ResetColor)
-		// Mask the input using ReadHiddenInput
-		input := cfgEditor.ReadHiddenInput(log.Blue + "📝 Gateway Private Key (hex): " + log.ResetColor)
+		input, err := promptHidden(reader, "Enter the staked Gateway actor's private key hex [input hidden]: ")
+		if err != nil {
+			fmt.Println(log.Red + "❌ Error reading hidden input. Please try again." + log.ResetColor)
+			continue
+		}
 		input = strings.TrimSpace(input)
 		matched, err := regexp.MatchString(pattern, input)
 		if err != nil || !matched {
 			fmt.Println(log.Red + "❌ Input does not match required format. Expected pattern: " + pattern + log.ResetColor)
 			continue
 		}
-		cfgEditor.ClearTerminal()
 		return input, nil
 	}
 }
 
-// promptOwnedAppsPrivateKeys prompts for owned_apps_private_keys_hex using schema-sourced details.
-// It masks the input and reprompts until all provided keys match the regex pattern.
+// promptOwnedAppsPrivateKeys prompts the user for one key at a time.
+// The user is instructed to press Enter without input to finish entering keys.
 func promptOwnedAppsPrivateKeys(reader *bufio.Reader, schema *yaml.Node) ([]string, error) {
 	fieldPath := "shannon_config.gateway_config.owned_apps_private_keys_hex"
 	description, pattern := getFieldDetailsFromSchema(fieldPath, schema)
+	fmt.Println(log.Blue + "🔐 " + description + log.ResetColor)
+
+	var keys []string
 	for {
-		fmt.Println(log.Blue + "📋 " + description + log.ResetColor)
-		// Mask the input for sensitive keys.
-		input := cfgEditor.ReadHiddenInput(log.Blue + "📝 Owned Apps Private Keys (hex, comma-separated): " + log.ResetColor)
-		input = strings.TrimSpace(input)
-		cfgEditor.ClearTerminal()
-		if input == "" {
-			return nil, nil
+		promptMsg := "Enter the private key hex of an Application delegated to the Gateway (or press Enter to finish): "
+		if len(keys) > 0 {
+			promptMsg = "Enter another delegated Application's private key (or press Enter to finish): "
 		}
-		keys := strings.Split(input, ",")
-		valid := true
-		for i := range keys {
-			keys[i] = strings.TrimSpace(keys[i])
-			matched, err := regexp.MatchString(pattern, keys[i])
-			if err != nil || !matched {
-				fmt.Println(log.Red + "❌ One or more keys do not match required format. Expected pattern: " + pattern + log.ResetColor)
-				valid = false
-				break
-			}
+		key, err := promptHidden(reader, promptMsg)
+		if err != nil {
+			fmt.Println(log.Red + "❌ Error reading hidden input. Please try again." + log.ResetColor)
+			continue
 		}
-		if valid {
-			return keys, nil
+		key = strings.TrimSpace(key)
+		if key == "" {
+			break
 		}
+		matched, err := regexp.MatchString(pattern, key)
+		if err != nil || !matched {
+			fmt.Println(log.Red + "❌ Key does not match required format. Expected pattern: " + pattern + log.ResetColor)
+			continue
+		}
+		keys = append(keys, key)
 	}
+	return keys, nil
 }
 
 // updateShannonConfig updates the shannon configuration in the provided map with the given values.

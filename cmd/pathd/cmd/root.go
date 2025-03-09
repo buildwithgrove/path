@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -11,23 +12,13 @@ import (
 	pathdConfig "github.com/buildwithgrove/path/cmd/pathd/config"
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "cli",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Short: "PATH CLI",
+	Long: `The PATH CLI is a command-line interface for PATH (PATH API & Toolkit Harness).
+It provides a set of commands to help you PATH local development and deployment.`,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -42,9 +33,16 @@ func init() {
 	rootCmd.AddCommand(develop.DevelopCmd)
 
 	if !pathdConfig.ConfigExists() {
-		err := config.RunFirstTimeSetup()
+		reader := bufio.NewReader(os.Stdin)
+
+		err := config.RunFirstTimeSetup(reader)
 		if err != nil {
 			fmt.Println("Error during first-time setup:", err)
+			os.Exit(1)
+		}
+
+		if err := config.PromptForDevelopmentMode(reader); err != nil {
+			fmt.Println("Error during development mode prompt:", err)
 			os.Exit(1)
 		}
 		return

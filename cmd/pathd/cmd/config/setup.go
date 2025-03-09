@@ -14,14 +14,13 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/cmd/pathd/config"
+	"golang.org/x/term"
 )
 
 const pathRepo = "https://github.com/buildwithgrove/path"
 
 // RunFirstTimeSetup performs an interactive configuration when the config file does not exist.
-func RunFirstTimeSetup() error {
-	reader := bufio.NewReader(os.Stdin)
-
+func RunFirstTimeSetup(reader *bufio.Reader) error {
 	schema, err := config.LoadSchema()
 	if err != nil {
 		return fmt.Errorf("failed to load schema: %v", err)
@@ -34,7 +33,7 @@ func RunFirstTimeSetup() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(log.Blue + "🌿 Local PATH repo path saved as: " + pathRepoPath + log.ResetColor)
+	fmt.Println("✅ Local PATH repo path saved as: " + pathRepoPath + "\n")
 
 	// Save the config file
 	savedConfig, err := saveConfig(pathRepoPath)
@@ -49,24 +48,23 @@ func RunFirstTimeSetup() error {
 	}
 
 	// (inside RunFirstTimeSetup, after printing the completion message)
-	fmt.Println(log.Green + "🌿 PATH configuration completed and saved.\n" + log.Blue + "ℹ️ You may edit the PATH local config file at any time by running 'pathd config'." + log.ResetColor)
-
-	if err := promptForDevelopmentMode(reader); err != nil {
-		return err
-	}
+	fmt.Println(log.Green + "\n🌿 PATH configuration completed and saved.\n" + log.Blue + "\nℹ️ You may edit the PATH local config file at any time by running " + log.ResetColor + "'pathd config'" + log.Blue + ".\n" + log.ResetColor)
 
 	return nil
 }
 
-// promptForDevelopmentMode prompts the user if they would like to run PATH in development mode and executes the appropriate command.
-func promptForDevelopmentMode(reader *bufio.Reader) error {
-	fmt.Print(log.Blue + "Would you like to run PATH in development mode now? (y/n): " + log.ResetColor)
-	devChoice, _ := reader.ReadString('\n')
+// PromptForDevelopmentMode prompts the user if they would like to run PATH in development mode and executes the appropriate command.
+func PromptForDevelopmentMode(reader *bufio.Reader) error {
+	devChoice, err := prompt(reader, log.Blue+"Would you like to run PATH in development mode now? (y/n):"+log.ResetColor)
+	if err != nil {
+		return err
+	}
 	devChoice = strings.TrimSpace(strings.ToLower(devChoice))
 	cfgEditor.ClearTerminal()
 
-	if devChoice == "y" {
-		fmt.Println(log.Green + "🚀Starting PATH in development mode..." + log.ResetColor)
+	switch devChoice {
+	case "y":
+		fmt.Println(log.Green + "🚀 Starting PATH in local development mode in Tilt ..." + log.ResetColor)
 		cmd := exec.Command("pathd", "develop", "up")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -74,7 +72,9 @@ func promptForDevelopmentMode(reader *bufio.Reader) error {
 			fmt.Println(log.Red + "❌ Failed to run PATH in development mode: " + err.Error() + log.ResetColor)
 			return err
 		}
-	} else {
+	case "n":
+		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH in development mode at any time by running 'pathd develop up'." + log.ResetColor)
+	default:
 		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH in development mode at any time by running 'pathd develop up'." + log.ResetColor)
 	}
 	return nil
@@ -85,19 +85,17 @@ func promptForDevelopmentMode(reader *bufio.Reader) error {
 func promptForPathRepoPath(reader *bufio.Reader) (string, error) {
 	for {
 		fmt.Println(log.Blue + "❓ Which of the following applies to you?" + log.ResetColor)
-		fmt.Println("1. I already have a locally cloned PATH repo checked out to the latest `main` branch.")
-		fmt.Println("2. I would like to clone the PATH repo to a location on your computer.")
-		fmt.Print(log.Blue + "Enter your choice (1/2): " + log.ResetColor)
-
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
+		fmt.Println("   1. I already have a locally cloned PATH repo checked out to the latest `main` branch.")
+		fmt.Println("   2. I would like to clone the PATH repo to a location on my computer.")
+		input, err := prompt(reader, log.Blue+"Enter your choice (1/2): "+log.ResetColor)
+		if err != nil {
+			return "", err
+		}
 		choice, err := strconv.Atoi(input)
 		if err != nil || (choice != 1 && choice != 2) {
 			fmt.Println(log.Red + "Invalid selection. Please enter 1 or 2." + log.ResetColor)
 			continue
 		}
-
 		cfgEditor.ClearTerminal()
 		if choice == 1 {
 			return promptForLocalPathRepoPath(reader)
@@ -108,33 +106,66 @@ func promptForPathRepoPath(reader *bufio.Reader) (string, error) {
 
 // promptForLocalPathRepoPath prompts the user to provide the filepath to their local PATH repo.
 func promptForLocalPathRepoPath(reader *bufio.Reader) (string, error) {
-	fmt.Print(log.Blue + "📝 Enter the absolute filepath to your local PATH repo: " + log.ResetColor)
-	pathRepoPath, _ := reader.ReadString('\n')
-	pathRepoPath = strings.TrimSpace(pathRepoPath)
-	return pathRepoPath, nil
+	for {
+		input, err := prompt(reader, log.Blue+"📝 Enter the absolute filepath to your local PATH repo"+log.ResetColor+" (e.g. /Users/greg/grove/path):")
+		if err != nil {
+			return "", err
+		}
+		if input == "" {
+			fmt.Println(log.Red + "Invalid input. Please enter a non-empty path." + log.ResetColor)
+			continue
+		}
+
+		// Validate that the provided path exists and is a directory
+		fi, err := os.Stat(input)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Printf(log.Red+"❌ The provided path "+log.ResetColor+"%s"+log.Red+" does not exist.\n"+log.ResetColor, input)
+				choice, err := prompt(reader, "❔ Would you like to (r)etry entering the path, (c)lone the repo instead, or (e)xit?")
+				if err != nil {
+					return "", err
+				}
+				choice = strings.ToLower(strings.TrimSpace(choice))
+				if choice == "r" {
+					continue
+				} else if choice == "c" {
+					return promptForClonePathRepoPath(reader)
+				} else if choice == "e" {
+					return "", fmt.Errorf("exiting setup")
+				} else {
+					fmt.Println(log.Red + "❌ Invalid selection. Please type 'r', 'c', or 'e'." + log.ResetColor)
+					continue
+				}
+			}
+			fmt.Printf(log.Red+"Error checking path: %v"+log.ResetColor, err)
+			continue
+		}
+		if !fi.IsDir() {
+			fmt.Println(log.Red + "The provided path is not a directory." + log.ResetColor)
+			continue
+		}
+		cfgEditor.ClearTerminal()
+		return input, nil
+	}
 }
 
 // promptForClonePathRepoPath prompts the user to provide the filepath to where they want to clone the PATH repo.
 func promptForClonePathRepoPath(reader *bufio.Reader) (string, error) {
-	fmt.Print(log.Blue + "📝 Enter the absolute filepath where you want to clone the PATH repo: " + log.ResetColor)
-	clonePath, _ := reader.ReadString('\n')
+	clonePath, err := prompt(reader, log.Blue+"📝 Enter the absolute filepath where you want to clone the PATH repo:"+log.ResetColor)
+	if err != nil {
+		return "", err
+	}
 	clonePath = strings.TrimSpace(clonePath)
-
-	// Check if the provided path already ends with "path"
 	if !strings.HasSuffix(clonePath, "path") {
 		clonePath += "/path"
 	}
-	cfgEditor.ClearTerminal()
-
 	if err := validateClonePath(clonePath); err != nil {
 		return "", err
 	}
-
-	// Clone the PATH repo
 	if err := clonePathRepo(clonePath); err != nil {
 		return "", err
 	}
-
+	cfgEditor.ClearTerminal()
 	return clonePath, nil
 }
 
@@ -191,8 +222,10 @@ func promptForMorseAndShannon(reader *bufio.Reader, conf *config.Config, schema 
 			fmt.Printf("%d. %s\n", i+1, proto)
 		}
 
-		fmt.Print(log.Blue + "Enter your choice: " + log.ResetColor)
-		input, _ := reader.ReadString('\n')
+		input, err := prompt(reader, log.Blue+"Enter your choice:"+log.ResetColor)
+		if err != nil {
+			return err
+		}
 		input = strings.TrimSpace(strings.ToLower(input))
 		cfgEditor.ClearTerminal()
 
@@ -216,49 +249,34 @@ func promptForMorseAndShannon(reader *bufio.Reader, conf *config.Config, schema 
 // and then calls the respective configuration function.
 // It uses copyAndStripComments to create the config file based on the example file from the repo.
 func processProtocolSelection(reader *bufio.Reader, conf *config.Config, schema *yaml.Node, protocol string) error {
-	targetPath := conf.GetPATHConfigFilepath()
-	if _, err := os.Stat(targetPath); err == nil {
-		fmt.Printf(log.Yellow+"⚠️ File '%s' already exists. Skipping creation to avoid overwriting.\n"+log.ResetColor, targetPath)
-		return fmt.Errorf("file '%s' already exists. Skipping creation", targetPath)
-	}
-
-	var sourcePath string
 	switch protocol {
 	case "shannon":
-		sourcePath = conf.GetExamplePATHConfigFilepath("shannon")
+		// All shannon-specific code has been moved to ConfigureShannon.
+		return ConfigureShannon(conf, schema)
 	case "morse":
-		sourcePath = conf.GetExamplePATHConfigFilepath("morse")
-	default:
-		return fmt.Errorf("unsupported protocol: %s", protocol)
-	}
-
-	if sourcePath == "" {
-		return fmt.Errorf("no example config found for protocol: %s", protocol)
-	}
-
-	if err := copyAndStripComments(sourcePath, targetPath); err != nil {
-		fmt.Printf(log.Red+"❌ Failed to create config file from example: %v"+log.ResetColor, err)
-		return fmt.Errorf("failed to create config file: %v", err)
-	}
-
-	fmt.Printf(log.Green+"✅ Created config file for protocol '%s' at '%s'\n"+log.ResetColor, protocol, targetPath)
-
-	// Call the specific configuration function for the selected protocol.
-	// Uncomment the following lines when ConfigureShannon and ConfigureMorse are implemented.
-	switch protocol {
-	case "shannon":
-		if err := ConfigureShannon(conf, schema); err != nil {
-			return err
-		}
-	case "morse":
-		// if err := ConfigureMorse(); err != nil {
-		// 	return err
+		// TODO_IMPROVE(@commoddity): uncomment this when ConfigureMorse is implemented.
+		// targetPath := conf.GetPATHConfigFilepath()
+		// if _, err := os.Stat(targetPath); err == nil {
+		// 	fmt.Printf(log.Yellow+"⚠️ File '%s' already exists. Skipping creation to avoid overwriting.\n"+log.ResetColor, targetPath)
+		// 	return fmt.Errorf("file '%s' already exists. Skipping creation", targetPath)
 		// }
+		// sourcePath := conf.GetExamplePATHConfigFilepath("morse")
+		// if sourcePath == "" {
+		// 	return fmt.Errorf("no example config found for protocol: morse")
+		// }
+		// if err := copyAndStripComments(sourcePath, targetPath); err != nil {
+		// 	fmt.Printf(log.Red+"❌ Failed to create config file from example: %v"+log.ResetColor, err)
+		// 	return fmt.Errorf("failed to create config file: %v", err)
+		// }
+		// fmt.Printf(log.Green+"✅ Created config file for protocol 'morse' at '%s'\n"+log.ResetColor, targetPath)
+		// // Uncomment the following lines when ConfigureMorse is implemented.
+		// // if err := ConfigureMorse(conf, schema); err != nil {
+		// //	   return err
+		// // }
+		return nil
 	default:
 		return fmt.Errorf("unsupported protocol: %s", protocol)
 	}
-
-	return nil
 }
 
 // stripComments reads the file at srcPath and returns its content with every comment stripped out.
@@ -287,4 +305,28 @@ func copyAndStripComments(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, data, 0644)
+}
+
+// prompt ensures that the promtp shows `>` on a new line.
+func prompt(reader *bufio.Reader, message string) (string, error) {
+	fmt.Println(message)
+	fmt.Print("> ")
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(input), nil
+}
+
+// promptHidden reads input from the terminal without echoing it.
+// Ensure that "golang.org/x/term" is imported in this file.
+func promptHidden(reader *bufio.Reader, message string) (string, error) {
+	fmt.Println(message)
+	fmt.Print("> ")
+	byteInput, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("") // Print a newline after hidden input.
+	return strings.TrimSpace(string(byteInput)), nil
 }
