@@ -10,11 +10,12 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/buildwithgrove/gdi/log"
 )
 
-// Dependency represents an external dependency required by the application.
+// Dependency represents an external dependency required to run PATH in development mode.
 type Dependency struct {
 	Name        string
 	Cmd         string
@@ -39,42 +40,42 @@ func getDependencies() []Dependency {
 
 	return []Dependency{
 		{
-			Name:        "Docker",
+			Name:        "🐳 Docker",
 			Cmd:         "docker",
 			Description: "Docker is a container engine that lets you run applications in containers.",
 			InstallCmd:  dockerInstallCmd,
 			InstallFunc: checkAndInstallDocker,
 		},
 		{
-			Name:        "Kind",
+			Name:        "🌀 Kind",
 			Cmd:         "kind",
 			Description: "Kind creates local Kubernetes clusters using Docker container nodes.",
 			InstallCmd:  kindInstallCmd,
 			InstallFunc: checkAndInstallKind,
 		},
 		{
-			Name:        "kubectl",
+			Name:        "🔧 kubectl",
 			Cmd:         "kubectl",
 			Description: "kubectl is the CLI tool for controlling Kubernetes clusters.",
 			InstallCmd:  kubectlInstallCmd,
 			InstallFunc: checkAndInstallKubectl,
 		},
 		{
-			Name:        "Helm",
+			Name:        "⛵ Helm",
 			Cmd:         "helm",
 			Description: "Helm is a package manager for Kubernetes.",
 			InstallCmd:  "curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash",
 			InstallFunc: checkAndInstallHelm,
 		},
 		{
-			Name:        "Tilt",
+			Name:        "🚀 Tilt",
 			Cmd:         "tilt",
 			Description: "Tilt simplifies development on Kubernetes by automating build & deploy cycles.",
 			InstallCmd:  "curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash",
 			InstallFunc: checkAndInstallTilt,
 		},
 		{
-			Name:        "Relay Util",
+			Name:        "🚚 Relay Util",
 			Cmd:         "relay-util",
 			Description: "Relay Util is a simple load-testing tool for PATH relays.",
 			InstallCmd:  "go install github.com/commoddity/relay-util/v2@latest",
@@ -96,25 +97,24 @@ func getMissingDependencies() []Dependency {
 
 // promptUserToInstall displays the missing dependencies list and prompts the user
 // to confirm installation of all missing items.
-func promptUserToInstall(missing []Dependency) error {
-	fmt.Println(log.Blue + "The following dependencies are missing:" + log.ResetColor)
+func promptUserToInstall(missing []Dependency, reader *bufio.Reader) (bool, error) {
+	fmt.Println(log.Red + "\n🚨 The following required dependencies are missing:" + log.ResetColor)
 	for _, dep := range missing {
 		fmt.Printf("%s: %s\n", log.Yellow+dep.Name+log.ResetColor, dep.Description)
 		fmt.Printf("   Install command: %s\n", log.Green+dep.InstallCmd+log.ResetColor)
 	}
-	fmt.Print(log.Blue + "Would you like to install these dependencies? (y/n): " + log.ResetColor)
-	reader := bufio.NewReader(os.Stdin)
-	answer, err := reader.ReadString('\n')
+
+	answer, err := prompt(reader, log.Blue+"\n❔ Would you like to install these dependencies? (y/n): "+log.ResetColor)
 	if err != nil {
-		return fmt.Errorf("failed to read input: %v", err)
+		return false, err
 	}
-	answer = strings.TrimSpace(strings.ToLower(answer))
+
+	answer = strings.ToLower(strings.TrimSpace(answer))
 	if answer == "y" || answer == "yes" {
-		return nil
+		return true, nil
+	} else {
+		return false, nil
 	}
-	fmt.Println(log.Yellow + "👋 Goodbye! Exiting without installing dependencies." + log.ResetColor)
-	os.Exit(0)
-	return nil
 }
 
 // installMissingDependencies iterates over missing dependencies and runs their install function.
@@ -130,17 +130,26 @@ func installMissingDependencies(missing []Dependency) error {
 
 // checkAndInstallDependencies first checks for missing dependencies,
 // prompts the user to install them, and if agreed, installs them.
-func checkAndInstallDependencies() error {
+func checkAndInstallDependencies(reader *bufio.Reader) error {
 	missing := getMissingDependencies()
 	if len(missing) == 0 {
 		return nil
 	}
-	if err := promptUserToInstall(missing); err != nil {
+
+	install, err := promptUserToInstall(missing, reader)
+	if err != nil {
 		return err
 	}
-	if err := installMissingDependencies(missing); err != nil {
-		return err
+
+	if install {
+		if err := installMissingDependencies(missing); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println(log.Yellow + "👋 Exiting without installing required dependencies." + log.ResetColor)
+		os.Exit(0)
 	}
+
 	return nil
 }
 
@@ -169,15 +178,36 @@ func checkAndInstallDocker() error {
 		fmt.Println(log.Green + "✅ Docker installed successfully." + log.ResetColor)
 	} else if osType == "linux" {
 		fmt.Println(log.Blue + "🐳 Installing Docker using the official install script..." + log.ResetColor)
-		cmd := exec.Command("curl", "-fsSL", "https://get.docker.com", "-o", "get-docker.sh")
+		cmd := exec.Command("wget", "-qO", "get-docker.sh", "https://get.docker.com")
 		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to download Docker install script: %v, output: %s", err, string(output))
+			return fmt.Errorf("failed to download Docker install script using wget: %v, output: %s", err, string(output))
 		}
 		cmd = exec.Command("sh", "get-docker.sh")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("failed to run Docker install script: %v, output: %s", err, string(output))
 		}
 		os.Remove("get-docker.sh")
+		// Ensure the docker socket has appropriate permissions
+		if _, err := os.Stat("/var/run/docker.sock"); err == nil {
+			cmd = exec.Command("chmod", "666", "/var/run/docker.sock")
+			if output, err := cmd.CombinedOutput(); err != nil {
+				return fmt.Errorf("failed to set permissions on docker socket: %v, output: %s", err, string(output))
+			}
+		}
+		// Check if the Docker daemon is running; if not, attempt to start it
+		if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
+			fmt.Println(log.Yellow + "Docker daemon not running. Attempting to start dockerd..." + log.ResetColor)
+			dcmd := exec.Command("dockerd")
+			if err := dcmd.Start(); err != nil {
+				return fmt.Errorf("failed to start Docker daemon: %v", err)
+			}
+			// Wait a few seconds for the daemon to initialize
+			time.Sleep(3 * time.Second)
+			if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
+				return fmt.Errorf("docker daemon did not start correctly")
+			}
+			fmt.Println(log.Green + "Docker daemon started successfully." + log.ResetColor)
+		}
 		fmt.Println(log.Green + "✅ Docker installed successfully." + log.ResetColor)
 	} else {
 		return fmt.Errorf("unsupported OS for Docker installation: %s", osType)
@@ -216,7 +246,7 @@ func checkAndInstallKind() error {
 
 	fmt.Println(log.Blue + "🌀 Installing Kind..." + log.ResetColor)
 	tmpFile := "/tmp/kind"
-	cmd := exec.Command("curl", "-Lo", tmpFile, downloadURL)
+	cmd := exec.Command("wget", "-qO", tmpFile, downloadURL)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to download Kind binary: %v, output: %s", err, string(output))
 	}
@@ -273,7 +303,7 @@ func checkAndInstallKubectl() error {
 
 	fmt.Println(log.Blue + "🔧 Installing kubectl..." + log.ResetColor)
 	tmpFile := "/tmp/kubectl"
-	cmd := exec.Command("curl", "-Lo", tmpFile, downloadURL)
+	cmd := exec.Command("wget", "-qO", tmpFile, downloadURL)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to download kubectl: %v, output: %s", err, string(output))
 	}
@@ -306,7 +336,7 @@ func checkAndInstallHelm() error {
 		return nil
 	}
 	fmt.Println(log.Blue + "⛵ Installing Helm..." + log.ResetColor)
-	cmd := exec.Command("sh", "-c", "curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash")
+	cmd := exec.Command("sh", "-c", "wget -qO- https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("❌ failed to install Helm: %v, output: %s", err, string(output))
 	}
@@ -319,7 +349,17 @@ func checkAndInstallTilt() error {
 		return nil
 	}
 	fmt.Println(log.Blue + "🚀 Installing Tilt..." + log.ResetColor)
-	cmd := exec.Command("sh", "-c", "curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash")
+
+	// Ensure the local bin directory exists
+	localBin := os.ExpandEnv("$HOME/.local/bin")
+	if _, err := os.Stat(localBin); os.IsNotExist(err) {
+		if err := os.MkdirAll(localBin, 0755); err != nil {
+			return fmt.Errorf("failed to create local bin directory: %v", err)
+		}
+	}
+
+	// Update PATH to include the local bin and run the Tilt installer with NO_SUDO=1
+	cmd := exec.Command("sh", "-c", "export PATH="+localBin+":$PATH && wget -qO- https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("❌ failed to install Tilt: %v, output: %s", err, string(output))
 	}
@@ -338,4 +378,15 @@ func checkAndInstallRelayUtil() error {
 	}
 	fmt.Println(log.Green + "✅ Relay Util installed successfully." + log.ResetColor)
 	return nil
+}
+
+// prompt ensures that the promtp shows `>` on a new line.
+func prompt(reader *bufio.Reader, message string) (string, error) {
+	fmt.Println(message)
+	fmt.Print("> ")
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(input), nil
 }

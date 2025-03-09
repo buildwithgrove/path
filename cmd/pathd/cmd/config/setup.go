@@ -66,6 +66,7 @@ func PromptForDevelopmentMode(reader *bufio.Reader) error {
 	case "y":
 		fmt.Println(log.Green + "🚀 Starting PATH in local development mode in Tilt ..." + log.ResetColor)
 		cmd := exec.Command("pathd", "develop", "up")
+		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -219,7 +220,7 @@ func promptForMorseAndShannon(reader *bufio.Reader, conf *config.Config, schema 
 	for {
 		fmt.Println(log.Blue + "Select one of the following protocols for configuration (or type 's' to skip):" + log.ResetColor)
 		for i, proto := range protocols {
-			fmt.Printf(log.Purple+"%d. %s\n"+log.ResetColor, i+1, proto)
+			fmt.Printf("   %d."+log.Purple+" %s"+log.ResetColor+"\n", i+1, proto)
 		}
 
 		input, err := prompt(reader, log.Blue+"Enter your choice:"+log.ResetColor)

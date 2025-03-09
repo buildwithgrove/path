@@ -1,12 +1,15 @@
 package develop
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 
-	pathdConfig "github.com/buildwithgrove/path/cmd/pathd/config"
+	"github.com/buildwithgrove/gdi/log"
 	"github.com/spf13/cobra"
+
+	pathdConfig "github.com/buildwithgrove/path/cmd/pathd/config"
 )
 
 func init() {
@@ -35,8 +38,15 @@ var developUpCmd = &cobra.Command{
 	Short: "Bring up the development environment",
 	Long:  "Loads the PATH configuration, installs required dependencies, and runs 'make path_up' in the local PATH repository.",
 	Run: func(cmd *cobra.Command, args []string) {
+		reader := bufio.NewReader(os.Stdin)
+		if err := checkAndInstallDependencies(reader); err != nil {
+			fmt.Printf(log.Red+"❌ Failed to install dependencies: %v"+log.ResetColor, err)
+			os.Exit(1)
+		}
+
 		if err := runMakeTask("path_up"); err != nil {
-			fmt.Println(err)
+			fmt.Printf(log.Red+"❌ Failed to run 'make path_up': %v"+log.ResetColor, err)
+			os.Exit(1)
 		}
 	},
 }
@@ -63,10 +73,6 @@ func runMakeTask(task string) error {
 	}
 
 	fmt.Println("Target directory:", cfg.GetPATHRepoFilepath())
-
-	if err := checkAndInstallDependencies(); err != nil {
-		return fmt.Errorf("❌ Failed to install dependencies: %v", err)
-	}
 
 	c := exec.Command("make", task)
 	c.Dir = cfg.GetPATHRepoFilepath()
