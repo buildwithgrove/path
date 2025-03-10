@@ -6,7 +6,7 @@
 CONFIG_FILES := \
 	./bin/config/.config.yaml \
 	./config/.config.yaml \
-	./local/path/config/.config.yaml \
+	./local/path/.config.yaml \
 	./e2e/.shannon.config.yaml \
 	./e2e/.morse.config.yaml \
 	./local/path/envoy/.envoy.yaml \

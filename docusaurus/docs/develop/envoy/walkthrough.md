@@ -10,6 +10,14 @@ description: High-level architecture overview and detailed walkthrough
 </div>
 <br/>
 
+:::danger DOCUMENTATION IN FLUX
+	
+**🦖 This documentation is out of date as of [PATH PR #176](https://github.com/buildwithgrove/path/pull/176).**
+
+TODO_DOCUMENT(@commoddity): A full revamp of these docs to capture improvements to PATH's GUARD auth functionality is underway and will be available soon.
+
+:::
+
 ## Table of Contents <!-- omit in toc -->
 
 - [Quickstart](#quickstart)
@@ -453,9 +461,7 @@ sequenceDiagram
 
 ### External Auth Server Configuration
 
-The external authorization server loads its config from the `auth_server_config` section of PATH's `.config.yaml` file. For the local Tilt stack, this file is located at `local/path/config/.config.yaml`.
-
-_`.config.yaml auth_server_config` example:_
+The external authorization server loads its config from a YAML structure that has the following format:
 
 ```yaml
 auth_server_config:
@@ -496,12 +502,6 @@ The `Remote gRPC Server` is responsible for providing the `External Auth Server`
 #### PATH Auth Data Server
 
 The [PADS repo](https://github.com/buildwithgrove/path-auth-data-server) provides a pre-built implementation of the remote gRPC server.
-
-:::info Repository
-
-See the [PADS Documentation](../pads/introduction.md) for more information on the PATH Auth Data Server.
-
-:::
 
 This service is available as a Docker image and may be configured to load data from a YAML file or using an opinionated Postgres database driver.
 
