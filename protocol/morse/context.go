@@ -22,10 +22,10 @@ const defaultRelayTimeoutMillisec = 5000
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
-	fullNode  FullNode
-	store     *EndpointStore
-	serviceID protocol.ServiceID
-	logger    polylog.Logger
+	fullNode                 FullNode
+	sanctionedEndpointsStore *sanctionedEndpointsStore
+	serviceID                protocol.ServiceID
+	logger                   polylog.Logger
 
 	// endpoints contains all the candidate endpoints available for processing a service request.
 	endpoints map[protocol.EndpointAddr]endpoint
@@ -51,15 +51,38 @@ func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
 	return endpoints, nil
 }
 
+func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
+	hydratedLogger := rc.logger.With(
+		"method", methodName,
+		"service_id", string(rc.serviceID),
+	)
+
+	if rc.selectedEndpoint == nil {
+		return hydratedLogger
+	}
+
+	return hydratedLogger.With(
+		"service_id", rc.serviceID,
+		"app_addr", rc.selectedEndpoint.app.Addr(),
+		"app_publickey", rc.selectedEndpoint.session.Header.AppPublicKey,
+		"session_key", rc.selectedEndpoint.session.Key,
+		"endpoint_addr", string(rc.selectedEndpoint.Addr()),
+		"endpoint_publickey",
+		"session_service_id", rc.selectedEndpoint.session.Header.Chain,
+		"session_height", fmt.Sprintf("%d", rc.selectedEndpoint.session.Header.SessionHeight),
+	)
+}
+
 // HandleServiceRequest handles incoming service request.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
+	// TODO_IMPROVE(@adshmh): use the same pattern for hydrated loggers in any packages with large number of logger fields.
+	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
+
 	if rc.selectedEndpoint == nil {
 		// Internal error: no endpoint selected, record an observation but no sanctions
 		// as no endpoint was contacted
-		rc.logger.Error().
-			Str("service_id", string(rc.serviceID)).
-			Msg("HandleServiceRequest: no endpoint has been selected")
+		hydratedLogger.Error().Msg("no endpoint has been selected.")
 
 		rc.recordEndpointObservation(
 			endpoint{}, // No endpoint selected
@@ -75,13 +98,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	if err != nil {
 		// Internal error: endpoint not in session, record an observation but no sanctions
 		// as this is an internal error, not an endpoint issue
-		rc.logger.Error().
-			Str("service_id", string(rc.serviceID)).
-			Str("endpoint", string(rc.selectedEndpoint.Addr())).
-			Str("session_chain", rc.selectedEndpoint.session.Header.Chain).
-			Int("session_height", rc.selectedEndpoint.session.Header.SessionHeight).
-			Err(err).
-			Msg("HandleServiceRequest: endpoint not found in session")
+		hydratedLogger.Error().Err(err).Msg("endpoint not found in session.")
 
 		rc.recordEndpointObservation(
 			*rc.selectedEndpoint,
@@ -94,11 +111,11 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	}
 
 	output, err := rc.sendRelay(
-		string(rc.serviceID),
+		hydratedLogger,
 		morseEndpoint,
 		rc.selectedEndpoint.session,
 		rc.selectedEndpoint.app.aat,
-		// TODO_IMPROVE: chain-specific timeouts
+		// TODO_FUTURE(@adshmh): support service-specific timeouts, passed from the Qos instance.
 		0, // SDK to use the default timeout.
 		payload,
 	)
@@ -107,17 +124,11 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	if err != nil {
 		endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, err)
 
-		rc.logger.Error().
-			Str("service_id", string(rc.serviceID)).
-			Str("app_addr", rc.selectedEndpoint.app.Addr()).
-			Str("endpoint", string(rc.selectedEndpoint.Addr())).
-			Str("session_key", rc.selectedEndpoint.session.Key).
-			Str("session_chain", rc.selectedEndpoint.session.Header.Chain).
-			Int("session_height", rc.selectedEndpoint.session.Header.SessionHeight).
+		hydratedLogger.Error().
 			Str("error_type", endpointErrorType.String()).
 			Str("sanction_type", recommendedSanctionType.String()).
 			Err(err).
-			Msg("HandleServiceRequest: relay error occurred")
+			Msg("relay error occurred.")
 
 		rc.recordEndpointObservation(
 			*rc.selectedEndpoint,
@@ -209,7 +220,7 @@ func (rc *requestContext) recordEndpointObservation(
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.
 func (rc *requestContext) sendRelay(
-	chainID string,
+	logger polylog.Logger,
 	node provider.Node,
 	session provider.Session,
 	aat provider.PocketAAT,
@@ -217,7 +228,7 @@ func (rc *requestContext) sendRelay(
 	payload protocol.Payload,
 ) (provider.RelayOutput, error) {
 	fullNodeInput := &sdkrelayer.Input{
-		Blockchain: chainID,
+		Blockchain: string(rc.serviceID),
 		Node:       &node,
 		Session:    &session,
 		PocketAAT:  &aat,
@@ -226,9 +237,7 @@ func (rc *requestContext) sendRelay(
 		Path:       payload.Path,
 	}
 
-	rc.logger.Debug().
-		Str("chain", chainID).
-		Str("app_publickey", session.Header.AppPublicKey).
+	logger.Debug().
 		Str("endpoint", node.PublicKey).
 		Msg("Sending relay to endpoint")
 

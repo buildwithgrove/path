@@ -10,19 +10,29 @@ import (
 // Sanctions can be temporary (e.g. session-based) or permanent (e.g. gateway restart)
 // depending on the severity of the observed issue.
 type sanction struct {
-	// Type of sanction (session or permanent)
-	Type protocolobservations.MorseSanctionType
-
-	// Reason provides a human-readable explanation for this sanction
-	Reason string
+	// reason provides a human-readable explanation for this sanction
+	reason string
 
 	// ErrorType that triggered the sanction
-	ErrorType protocolobservations.MorseEndpointErrorType
+	errorType protocolobservations.MorseEndpointErrorType
 
 	// CreatedAt captures the timestamp when the sanction was created
-	CreatedAt time.Time
+	createdAt time.Time
 
 	// Onchain session information when sanction was created if available
-	SessionChain  string
-	SessionHeight int
+	sessionServiceID string
+	sessionHeight    int
+}
+
+// buildSanctionFromObservation creates a sanction struct from an endpoint observation.
+func buildSanctionFromObservation(observation *protocolobservations.MorseEndpointObservation) sanction {
+	return sanction{
+		// Type no longer stored in the sanction struct as it's implicitly known by
+		// which store it's saved in (permanent vs session)
+		reason:           observation.GetErrorDetails(),
+		errorType:        observation.GetErrorType(),
+		createdAt:        time.Now(),
+		sessionServiceID: observation.GetSessionServiceId(),
+		sessionHeight:    int(observation.GetSessionHeight()),
+	}
 }

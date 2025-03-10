@@ -21,6 +21,9 @@ import (
 // below using Morse-specific methods.
 var _ gateway.Protocol = &Protocol{}
 
+// TODO_TECHDEBT(@adshmh): make the apps and sessions cache refresh interval configurable.
+var appsAndSessionsCacheRefreshInterval = time.Minute
+
 // OffChainBackend allows enhancing an onchain application with extra fields that are required to sign/send relays.
 // This is used to supply AAT data to a Morse application, which is needed for sending relays on behalf of the application.
 type OffChainBackend interface {
@@ -37,20 +40,22 @@ type FullNode interface {
 
 // NewProtocol creates a new Protocol.
 func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffChainBackend) *Protocol {
+	morseLogger := logger.With("protocol", "morse")
+
 	protocol := &Protocol{
-		appCache:        make(map[protocol.ServiceID][]app),
-		sessionCache:    make(map[string]provider.Session),
-		logger:          logger,
-		fullNode:        fullNode,
-		offChainBackend: offChainBackend,
-		endpointStore:   NewEndpointStore(logger),
+		appCache:                 make(map[protocol.ServiceID][]app),
+		sessionCache:             make(map[string]provider.Session),
+		logger:                   morseLogger,
+		fullNode:                 fullNode,
+		offChainBackend:          offChainBackend,
+		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
 	}
 
 	go func() {
 		// Start the initial refresh
 		protocol.refreshAll()
-		// TODO_IMPROVE: make the refresh interval configurable.
-		ticker := time.NewTicker(time.Minute)
+		// TODO_TECHDEBT(@adshmh): make the refresh interval configurable.
+		ticker := time.NewTicker(appsAndSessionsCacheRefreshInterval)
 		defer ticker.Stop()
 
 		for {
@@ -68,8 +73,8 @@ type Protocol struct {
 	fullNode        FullNode
 	offChainBackend OffChainBackend
 
-	// endpointStore tracks sanctioned endpoints
-	endpointStore *EndpointStore
+	// sanctionedEndpointsStore tracks sanctioned endpoints
+	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
@@ -100,11 +105,11 @@ func (p *Protocol) BuildRequestContext(
 
 	// Return new request context with fullNode, endpointStore, and logger
 	return &requestContext{
-		logger:    ctxLogger,
-		fullNode:  p.fullNode,
-		store:     p.endpointStore,
-		endpoints: endpoints,
-		serviceID: serviceID,
+		logger:                   ctxLogger,
+		fullNode:                 p.fullNode,
+		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
+		endpoints:                endpoints,
+		serviceID:                serviceID,
 	}, nil
 }
 
@@ -112,38 +117,19 @@ func (p *Protocol) BuildRequestContext(
 // It processes endpoint error observations to apply appropriate sanctions.
 // Implements the gateway.Protocol interface.
 func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
+	// Sanity check the input
 	if observations == nil || observations.GetMorse() == nil {
+		p.logger.Warn().Msg("ApplyObservations called with nil input or nil Morse observation list.")
 		return nil
 	}
-
 	morseObservations := observations.GetMorse().GetObservations()
 	if len(morseObservations) == 0 {
+		p.logger.Warn().Msg("ApplyObservations called with nil set of Morse request observations.")
 		return nil
 	}
 
-	// Process each observation for potential endpoint sanctions
-	for _, observationSet := range morseObservations {
-		// TODO_IMPROVE(@adshmh): include the Service ID in the logs.
-		for _, endpointObservation := range observationSet.GetEndpointObservations() {
-			// Process endpoints with specified sanctions
-			recommendedSanction := endpointObservation.GetRecommendedSanction()
-			if recommendedSanction == protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED {
-				continue
-			}
-
-			// Apply the sanction to the endpoint
-			p.endpointStore.AddSanction(
-				protocol.EndpointAddr(endpointObservation.GetEndpointAddr()),
-				endpointObservation.GetAppAddress(),
-				endpointObservation.GetSessionKey(),
-				endpointObservation.GetErrorType(),
-				recommendedSanction,
-				endpointObservation.GetErrorDetails(),
-				endpointObservation.GetSessionChain(),
-				int(endpointObservation.GetSessionHeight()),
-			)
-		}
-	}
+	// hand over the observations to the sanctioned endpoints store for adding any applicable sanctions.
+	p.sanctionedEndpointsStore.ApplyObservations(morseObservations)
 
 	return nil
 }
@@ -279,10 +265,7 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	// Get a logger specifically for this operation
-	logger := p.logger.With(
-		"service_id", string(serviceID),
-		"method", "getAppsUniqueEndpoints",
-	)
+	logger := p.logger.With("method", "getAppsUniqueEndpoints")
 
 	for _, app := range apps {
 		session, found := p.getSession(serviceID, app.Addr())
@@ -290,26 +273,20 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: no session found for service %s app %s", serviceID, app.Addr())
 		}
 
+		logger := hydrateLoggerWithSession(logger, app.Addr(), session)
+
 		// Log session information for debugging
-		logger.Debug().
-			Str("app", string(app.Addr())).
-			Str("session_key", session.Key).
-			Str("session_chain", session.Header.Chain).
-			Int("session_height", session.Header.SessionHeight).
-			Msg("Processing app-session combination")
+		logger.Debug().Msg("Processing app-session combination")
 
 		// Get all endpoints for this app-session combination
 		allAppEndpoints := getEndpointsFromAppSession(app, session)
 		logger.Debug().
-			Str("app", string(app.Addr())).
 			Int("endpoint_count", len(allAppEndpoints)).
 			Msg("Found endpoints for app")
 
 		// Filter out any sanctioned endpoints
-		filteredEndpoints := p.endpointStore.FilterSanctionedEndpoints(allAppEndpoints, app.Addr(), session.Key)
+		filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(allAppEndpoints, app.Addr(), session.Key)
 		logger.Debug().
-			Str("app_addr", string(app.Addr())).
-			Str("session_key", session.Key).
 			Int("original_count", len(allAppEndpoints)).
 			Int("filtered_count", len(filteredEndpoints)).
 			Msg("Filtered sanctioned endpoints")
