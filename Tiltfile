@@ -30,20 +30,6 @@ NAMESPACE = "path-local"
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
 
-# PATH operation modes determine which services are loaded:
-#   1. (Default) 'path_with_auth' - PATH Service, External Auth Server, Envoy Proxy, PADS, Rate Limiter, Redis.
-#   2. 'path_only' - PATH Service Only.
-#   - The observability stack is loaded in both modes.
-
-MODE = os.getenv("MODE", "path_with_auth")   # Default to 'path_with_auth' if MODE is not set
-
-# Define the valid modes
-VALID_MODES = ["path_only", "path_with_auth"]
-
-# Check if the MODE is valid
-if MODE not in VALID_MODES:
-    fail("Invalid MODE: '{}'. Allowed values are {}. Please set a valid MODE.".format(MODE, VALID_MODES))
-
 # --------------------------------------------------------------------------- #
 #                                PATH Service                                 #
 # --------------------------------------------------------------------------- #
@@ -98,29 +84,7 @@ docker_build_with_restart(
     ],
 )
 
-# Port 6060 is exposed to serve pprof data.
-# Run the following commands to view the pprof data:
-#   $ make debug_goroutines
-path_port_forwards = ["6060:6060"]
-
-# Specify dependencies if PATH is running with auth.
-# No ports (except 6060 for pprof), are exposed because all traffic MUST
-# be routed through Envoy Proxy.
-if MODE == "path_with_auth":
-    path_resource_deps = [
-        "guard",
-    ]
-
-# Specify the dependencies and port forwards if PATH is running WITHOUT auth.
-if MODE == "path_only":
-    # Run PATH without any dependencies
-    path_resource_deps = ["path-config-updater"]
-    # Expose port 3069 to serve relay requests (since envoy proxy is not used)
-    path_port_forwards.append("3069:3069")
-
-# Run PATH with dependencies and port forwarding settings matching the MODE:
-#   1. With Auth: dependencies on envoy-proxy components, and NO exposed ports
-#   2. Without Auth: no dependencies but exposing dedicated por
+# Run PATH
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -139,42 +103,48 @@ helm_resource(
             "Grafana dashboard",
         ),
     ],
-    port_forwards=path_port_forwards,
-    resource_deps=path_resource_deps,
+    # Port 6060 is exposed to serve pprof data.
+    # Run the following commands to view the pprof data:
+    #   $ make debug_goroutines
+    port_forwards=["6060:6060"],
+    resource_deps=[
+        "guard",
+        "path-config-updater"
+    ]
 )
 
-if MODE == "path_with_auth":
-    # ---------------------------------------------------------------------------- #
-    #                             GUARD Resources                                  #
-    # ---------------------------------------------------------------------------- #
-    # 1. Envoy Gateway                                                             #
-    # 2. PATH External Auth Server (PEAS)                                          #
-    # 3. Path Auth Data Server (PADS)                                              #
-    # ---------------------------------------------------------------------------- #
-    # The folder containing GUARD's local configuration files.
-    GUARD_LOCAL_DIR = LOCAL_DIR + "/guard"
-    # The values file for GUARD's Helm chart.
-    GUARD_LOCAL_VALUES_FILE = GUARD_LOCAL_DIR + "/.values.yaml"
+# ---------------------------------------------------------------------------- #
+#                             GUARD Resources                                  #
+# ---------------------------------------------------------------------------- #
+# 1. Envoy Gateway                                                             #
+# 2. PATH External Auth Server (PEAS)                                          #
+# 3. Path Auth Data Server (PADS)                                              #
+# ---------------------------------------------------------------------------- #
 
-    # New resources created from Helm Charts
-    helm_resource(
-        "guard",
-        chart_prefix + "guard",
-        namespace=NAMESPACE,
-        labels=["guard"],
-        flags=[
-            "--values=" + GUARD_LOCAL_VALUES_FILE,
-        ]
-    )
-    # Patch the Envoy Gateway LoadBalancer resource to ensure 
-    # it is reachable from outside the cluster at "localhost:3070".
-    #
-    # For more context, see `./local/scripts/patch_envoy_gateway.sh`.
-    local_resource(
-        "patch-envoy-gateway",
-        "./local/scripts/patch_envoy_gateway.sh",
-        resource_deps=["guard"]
-    ) 
+# The folder containing GUARD's local configuration files.
+GUARD_LOCAL_DIR = LOCAL_DIR + "/guard"
+# The values file for GUARD's Helm chart.
+GUARD_LOCAL_VALUES_FILE = GUARD_LOCAL_DIR + "/.values.yaml"
+
+# New resources created from Helm Charts
+helm_resource(
+    "guard",
+    chart_prefix + "guard",
+    namespace=NAMESPACE,
+    labels=["guard"],
+    flags=[
+        "--values=" + GUARD_LOCAL_VALUES_FILE,
+    ]
+)
+# Patch the Envoy Gateway LoadBalancer resource to ensure 
+# it is reachable from outside the cluster at "localhost:3070".
+#
+# For more context, see `./local/scripts/patch_envoy_gateway.sh`.
+local_resource(
+    "patch-envoy-gateway",
+    "./local/scripts/patch_envoy_gateway.sh",
+    resource_deps=["guard"]
+) 
 
 # ----------------------------------------------------------------------------- #
 #                            Observability Resources                            #
