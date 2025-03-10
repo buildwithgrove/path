@@ -273,7 +273,7 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: no session found for service %s app %s", serviceID, app.Addr())
 		}
 
-		logger := hydrateLoggerWithSession(logger, app.Addr(), session)
+		logger := loggerWithSession(logger, app.Addr(), session)
 
 		// Log session information for debugging
 		logger.Debug().Msg("Processing app-session combination")

@@ -10,7 +10,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// hydrateLoggerWithEndpointObservation enhances a logger with detailed information from a
+// loggerWithEndpointObservation enhances a logger with detailed information from a
 // MorseEndpointObservation. This creates contextually rich logs that include all relevant
 // fields from the observation for better debugging and traceability.
 //
@@ -22,7 +22,7 @@ import (
 //
 // Returns:
 //   - An enhanced logger with all relevant observation fields attached
-func hydrateLoggerWithEndpointObservation(
+func loggerWithEndpointObservation(
 	logger polylog.Logger,
 	endpointObservation *protocolobservations.MorseEndpointObservation,
 ) polylog.Logger {
@@ -31,7 +31,7 @@ func hydrateLoggerWithEndpointObservation(
 		return logger
 	}
 
-	loggerWithSession := hydrateLoggerWithSessionDetails(
+	loggerWithSession := loggerWithSessionFields(
 		logger,
 		endpointObservation.GetAppAddress(),
 		endpointObservation.GetSessionKey(),
@@ -47,7 +47,7 @@ func hydrateLoggerWithEndpointObservation(
 	)
 }
 
-// hydrateLoggerWithEndpoint creates an enhanced logger with contextual information about
+// loggerWithEndpoint creates an enhanced logger with contextual information about
 // an endpoint and its sanction status. This is typically used when filtering endpoints
 // or when applying sanctions to provide a clear context for log entries.
 //
@@ -60,7 +60,7 @@ func hydrateLoggerWithEndpointObservation(
 //
 // Returns:
 //   - An enhanced logger with endpoint information and context attached
-func hydrateLoggerWithEndpoint(
+func loggerWithEndpoint(
 	logger polylog.Logger,
 	appAddr string,
 	sessionKey string,
@@ -75,12 +75,23 @@ func hydrateLoggerWithEndpoint(
 	)
 }
 
-func hydrateLoggerWithSession(
+// loggerWithSession enhances a logger with session information from a provider.Session object.
+// This is a convenience wrapper around loggerWithSessionFields, extracting the
+// necessary session fields from the provider.Session structure.
+//
+// Parameters:
+//   - logger: The base logger to enhance
+//   - appAddr: Address of the application associated with the session
+//   - session: The Session object containing session details
+//
+// Returns:
+//   - A logger enhanced with session context information
+func loggerWithSession(
 	logger polylog.Logger,
 	appAddr string,
 	session provider.Session,
 ) polylog.Logger {
-	return hydrateLoggerWithSessionDetails(
+	return loggerWithSessionFields(
 		logger,
 		appAddr,
 		session.Key,
@@ -89,7 +100,20 @@ func hydrateLoggerWithSession(
 	)
 }
 
-func hydrateLoggerWithSessionDetails(
+// loggerWithSessionFields adds session-specific fields to a logger.
+// This function is used internally by other logging helpers to maintain consistent
+// session-related fields across different log contexts.
+//
+// Parameters:
+//   - logger: The base logger to enhance
+//   - appAddr: Address of the application
+//   - sessionKey: Unique identifier for the session
+//   - sessionServiceID: Service/chain ID for which the session was created
+//   - sessionHeight: Blockchain height at which the session was established
+//
+// Returns:
+//   - A logger with session details attached for context
+func loggerWithSessionFields(
 	logger polylog.Logger,
 	appAddr string,
 	sessionKey string,
