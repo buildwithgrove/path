@@ -124,7 +124,8 @@ func extractErrFromRelayError(err error) error {
 	return err
 }
 
-// isEndpointMaxedOutError checks if the error string indicates an endpoint is maxed out
+// isEndpointMaxedOutError determines if the error message indicates the endpoint has reached its capacity.
+// Returns true when the endpoint cannot accept additional relays for the current (app,session) pair.
 func isEndpointMaxedOutError(errStr string) bool {
 	return matchesAllSubstrings(
 		errStr,
