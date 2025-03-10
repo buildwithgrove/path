@@ -15,6 +15,7 @@ import (
 func init() {
 	DevelopCmd.AddCommand(developUpCmd)
 	DevelopCmd.AddCommand(developDownCmd)
+	DevelopCmd.AddCommand(installDepsCommand)
 }
 
 // DevelopCmd is the parent command for development tasks.
@@ -29,7 +30,8 @@ Subcommands:
   up   : Loads the PATH configuration, installs dependencies if needed,
          and executes "make path_up" to bring the environment up.
   down : Loads the PATH configuration, installs dependencies if needed,
-         and executes "make path_down" to bring the environment down.`,
+         and executes "make path_down" to bring the environment down.
+  install-deps : Checks for required dependencies and installs them if missing.`,
 }
 
 // developUpCmd runs "make path_up" to bring up the development environment.
@@ -82,4 +84,18 @@ func runMakeTask(task string) error {
 		return fmt.Errorf("❌ Failed to run 'make %s': %v", task, err)
 	}
 	return nil
+}
+
+// installDepsCommand runs "make path_up" to bring up the development environment.
+var installDepsCommand = &cobra.Command{
+	Use:   "install-deps",
+	Short: "Install dependencies",
+	Long:  "Checks for required dependencies and installs them if missing.",
+	Run: func(cmd *cobra.Command, args []string) {
+		reader := bufio.NewReader(os.Stdin)
+		if err := checkAndInstallDependencies(reader); err != nil {
+			fmt.Printf(log.Red+"❌ Failed to install dependencies: %v"+log.ResetColor, err)
+			os.Exit(1)
+		}
+	},
 }

@@ -15,79 +15,208 @@ import (
 	"github.com/buildwithgrove/gdi/log"
 )
 
+// DependencyName represents a string enum of dependency names.
+type DependencyName string
+
+const (
+	Docker    DependencyName = "🐳 Docker"
+	Kind      DependencyName = "🌀 Kind"
+	Kubectl   DependencyName = "🔧 kubectl"
+	Helm      DependencyName = "⛵ Helm"
+	Tilt      DependencyName = "🚀 Tilt"
+	RelayUtil DependencyName = "🚚 Relay Util"
+)
+
+// SystemArch represents the architecture and OS of the system.
+type SystemArch int
+
+const (
+	ArchUnknown SystemArch = iota
+	MacX86
+	MacARM
+	LinuxX86
+	LinuxARM
+)
+
+// getSystemArch determines the architecture and OS of the system.
+func getSystemArch() SystemArch {
+	arch := runtime.GOARCH
+	osType := runtime.GOOS
+
+	switch {
+	case osType == "darwin" && arch == "amd64":
+		return MacX86
+	case osType == "darwin" && arch == "arm64":
+		return MacARM
+	case osType == "linux" && arch == "amd64":
+		return LinuxX86
+	case osType == "linux" && arch == "arm64":
+		return LinuxARM
+	default:
+		return ArchUnknown
+	}
+}
+
 // Dependency represents an external dependency required to run PATH in development mode.
 type Dependency struct {
-	Name        string
+	Name        DependencyName
 	Cmd         string
 	Description string
 	InstallCmd  string
 	InstallFunc func() error
 }
 
-// getDependencies returns the full list of dependencies along with metadata.
-func getDependencies() []Dependency {
-	var dockerInstallCmd string
-	if runtime.GOOS == "darwin" {
-		dockerInstallCmd = "brew install --cask docker"
-	} else if runtime.GOOS == "linux" {
-		dockerInstallCmd = "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh"
-	} else {
-		dockerInstallCmd = "N/A"
+// -------------------- Main Func --------------------
+
+// checkAndInstallDependencies checks for missing dependencies and installs them if the user agrees.
+func checkAndInstallDependencies(reader *bufio.Reader) error {
+	// Get system arch
+	arch := getSystemArch()
+
+	// Compute install commands
+	cmds := computeInstallCommands(arch)
+
+	// Get missing dependencies
+	missing := getMissingDependencies(arch, cmds)
+
+	// If no missing dependencies, return
+	if len(missing) == 0 {
+		fmt.Println(log.Green + "✅ All dependencies are installed." + log.ResetColor)
+		return nil
 	}
 
-	kindInstallCmd := "curl -Lo /tmp/kind <latest_release_url> && chmod +x /tmp/kind && mv /tmp/kind /usr/local/bin/kind"
-	kubectlInstallCmd := "curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/<os>/<arch>/kubectl && chmod +x kubectl && mv kubectl /usr/local/bin/kubectl"
-
-	return []Dependency{
-		{
-			Name:        "🐳 Docker",
-			Cmd:         "docker",
-			Description: "Docker is a container engine that lets you run applications in containers.",
-			InstallCmd:  dockerInstallCmd,
-			InstallFunc: checkAndInstallDocker,
-		},
-		{
-			Name:        "🌀 Kind",
-			Cmd:         "kind",
-			Description: "Kind creates local Kubernetes clusters using Docker container nodes.",
-			InstallCmd:  kindInstallCmd,
-			InstallFunc: checkAndInstallKind,
-		},
-		{
-			Name:        "🔧 kubectl",
-			Cmd:         "kubectl",
-			Description: "kubectl is the CLI tool for controlling Kubernetes clusters.",
-			InstallCmd:  kubectlInstallCmd,
-			InstallFunc: checkAndInstallKubectl,
-		},
-		{
-			Name:        "⛵ Helm",
-			Cmd:         "helm",
-			Description: "Helm is a package manager for Kubernetes.",
-			InstallCmd:  "curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash",
-			InstallFunc: checkAndInstallHelm,
-		},
-		{
-			Name:        "🚀 Tilt",
-			Cmd:         "tilt",
-			Description: "Tilt simplifies development on Kubernetes by automating build & deploy cycles.",
-			InstallCmd:  "curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash",
-			InstallFunc: checkAndInstallTilt,
-		},
-		{
-			Name:        "🚚 Relay Util",
-			Cmd:         "relay-util",
-			Description: "Relay Util is a simple load-testing tool for PATH relays.",
-			InstallCmd:  "go install github.com/commoddity/relay-util/v2@latest",
-			InstallFunc: checkAndInstallRelayUtil,
-		},
+	// Prompt user to install missing dependencies
+	shouldInstall, err := promptUserToInstall(missing, reader)
+	if err != nil {
+		return err
 	}
+
+	// If user doesn't want to install, return
+	if !shouldInstall {
+		return fmt.Errorf("installation aborted by user")
+	}
+
+	// Install missing dependencies
+	return installMissingDependencies(missing)
 }
 
-// getMissingDependencies compiles a list of dependencies that are not currently installed.
-func getMissingDependencies() []Dependency {
+// -------------------- Install Commands --------------------
+
+// computeInstallCommands computes all the install commands for the dependencies given the system arch.
+func computeInstallCommands(arch SystemArch) map[DependencyName]string {
+	// Get Docker install command
+	cmds := make(map[DependencyName]string)
+	switch arch {
+	case MacX86, MacARM:
+		cmds[Docker] = "brew install --cask docker"
+	case LinuxX86, LinuxARM:
+		cmds[Docker] = "curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && rm get-docker.sh"
+	default:
+		cmds[Docker] = "N/A"
+	}
+
+	// Get Kind install command
+	var kindURL string
+	kindResp, err := http.Get("https://api.github.com/repos/kubernetes-sigs/kind/releases/latest")
+	if err == nil {
+		defer kindResp.Body.Close()
+		var release struct {
+			TagName string `json:"tag_name"`
+		}
+		if err = json.NewDecoder(kindResp.Body).Decode(&release); err == nil {
+			var osName, archName string
+			switch arch {
+			case MacX86, MacARM:
+				osName = "darwin"
+			case LinuxX86, LinuxARM:
+				osName = "linux"
+			default:
+				osName = "unknown"
+			}
+			switch arch {
+			case MacX86, LinuxX86:
+				archName = "amd64"
+			case MacARM, LinuxARM:
+				archName = "arm64"
+			default:
+				archName = "unknown"
+			}
+			binaryName := fmt.Sprintf("kind-%s-%s", osName, archName)
+			kindURL = fmt.Sprintf("https://kind.sigs.k8s.io/dl/%s/%s", release.TagName, binaryName)
+		}
+	}
+	if kindURL == "" {
+		var osName, archName string
+		switch arch {
+		case MacX86, MacARM:
+			osName = "darwin"
+		case LinuxX86, LinuxARM:
+			osName = "linux"
+		default:
+			osName = "unknown"
+		}
+		switch arch {
+		case MacX86, LinuxX86:
+			archName = "amd64"
+		case MacARM, LinuxARM:
+			archName = "arm64"
+		default:
+			archName = "unknown"
+		}
+		binaryName := fmt.Sprintf("kind-%s-%s", osName, archName)
+		kindURL = fmt.Sprintf("https://kind.sigs.k8s.io/dl/%s/%s", KindVersion, binaryName)
+	}
+	cmds[Kind] = fmt.Sprintf("curl -Lo /tmp/kind '%s' && chmod +x /tmp/kind && sudo mv /tmp/kind /usr/local/bin/kind", kindURL)
+
+	// Get Kubectl install command
+	var osStr, archStr string
+	switch arch {
+	case MacX86, MacARM:
+		osStr = "darwin"
+	case LinuxX86, LinuxARM:
+		osStr = "linux"
+	default:
+		osStr = ""
+	}
+	switch arch {
+	case MacX86, LinuxX86:
+		archStr = "amd64"
+	case MacARM, LinuxARM:
+		archStr = "arm64"
+	default:
+		archStr = ""
+	}
+	var kubectlVersion string
+	kubectlResp, err := http.Get("https://storage.googleapis.com/kubernetes-release/release/stable.txt")
+	if err == nil {
+		defer kubectlResp.Body.Close()
+		bytes, err := io.ReadAll(kubectlResp.Body)
+		if err == nil {
+			kubectlVersion = strings.TrimSpace(string(bytes))
+		}
+	}
+	if kubectlVersion == "" {
+		kubectlVersion = "latest"
+	}
+	cmds[Kubectl] = fmt.Sprintf("curl -LO https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/kubectl", kubectlVersion, osStr, archStr)
+
+	// Get Helm install command
+	cmds[Helm] = "curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash"
+
+	// Get Tilt install command
+	cmds[Tilt] = "curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash"
+
+	// Get Relay Util install command
+	cmds[RelayUtil] = "go install github.com/commoddity/relay-util/v2@latest"
+
+	return cmds
+}
+
+// getMissingDependencies compiles a list of dependencies that are not currently installed,
+// using the install commands provided.
+func getMissingDependencies(arch SystemArch, cmds map[DependencyName]string) []Dependency {
 	var missing []Dependency
-	for _, dep := range getDependencies() {
+	for _, dep := range getDependencies(arch, cmds) {
 		if !commandExists(dep.Cmd) {
 			missing = append(missing, dep)
 		}
@@ -95,61 +224,85 @@ func getMissingDependencies() []Dependency {
 	return missing
 }
 
+// getDependencies returns the full list of dependencies along with metadata.
+func getDependencies(arch SystemArch, cmds map[DependencyName]string) []Dependency {
+	return []Dependency{
+		{
+			Name:        Docker,
+			Cmd:         "docker",
+			Description: "Docker is a container engine that lets you run applications in containers.",
+			InstallCmd:  cmds[Docker],
+			InstallFunc: func() error { return checkAndInstallDocker(arch, cmds[Docker]) },
+		},
+		{
+			Name:        Kind,
+			Cmd:         "kind",
+			Description: "Kind creates local Kubernetes clusters using Docker container nodes.",
+			InstallCmd:  cmds[Kind],
+			InstallFunc: func() error { return checkAndInstallKind(arch, cmds[Kind]) },
+		},
+		{
+			Name:        Kubectl,
+			Cmd:         "kubectl",
+			Description: "kubectl is the CLI tool for controlling Kubernetes clusters.",
+			InstallCmd:  cmds[Kubectl],
+			InstallFunc: func() error { return checkAndInstallKubectl(arch, cmds[Kubectl]) },
+		},
+		{
+			Name:        Helm,
+			Cmd:         "helm",
+			Description: "Helm is a package manager for Kubernetes.",
+			InstallCmd:  cmds[Helm],
+			InstallFunc: func() error { return checkAndInstallHelm(cmds[Helm]) },
+		},
+		{
+			Name:        Tilt,
+			Cmd:         "tilt",
+			Description: "Tilt simplifies development on Kubernetes by automating build & deploy cycles.",
+			InstallCmd:  cmds[Tilt],
+			InstallFunc: func() error { return checkAndInstallTilt(cmds[Tilt]) },
+		},
+		{
+			Name:        RelayUtil,
+			Cmd:         "relay-util",
+			Description: "Relay Util is a simple load-testing tool for PATH relays.",
+			InstallCmd:  cmds[RelayUtil],
+			InstallFunc: func() error { return checkAndInstallRelayUtil(cmds[RelayUtil]) },
+		},
+	}
+}
+
 // promptUserToInstall displays the missing dependencies list and prompts the user
 // to confirm installation of all missing items.
 func promptUserToInstall(missing []Dependency, reader *bufio.Reader) (bool, error) {
-	fmt.Println(log.Red + "\n🚨 The following required dependencies are missing:" + log.ResetColor)
+	fmt.Println(log.Red + "\n🚨 The following required dependencies are missing:\n" + log.ResetColor)
 	for _, dep := range missing {
-		fmt.Printf("%s: %s\n", log.Yellow+dep.Name+log.ResetColor, dep.Description)
-		fmt.Printf("   Install command: %s\n", log.Green+dep.InstallCmd+log.ResetColor)
+		fmt.Printf("%s: %s\n", log.Yellow+string(dep.Name)+log.ResetColor, dep.Description)
+		cmdToLog := dep.InstallCmd
+		if strings.Contains(cmdToLog, "&&") {
+			parts := strings.Split(cmdToLog, "&&")
+			cmdToLog = strings.TrimSpace(parts[0])
+		}
+		fmt.Printf(log.Purple+"   Install command: \n"+log.ResetColor+"    %s\n", cmdToLog)
 	}
-
 	answer, err := prompt(reader, log.Blue+"\n❔ Would you like to install these dependencies? (y/n): "+log.ResetColor)
 	if err != nil {
 		return false, err
 	}
-
 	answer = strings.ToLower(strings.TrimSpace(answer))
 	if answer == "y" || answer == "yes" {
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
 }
 
 // installMissingDependencies iterates over missing dependencies and runs their install function.
 func installMissingDependencies(missing []Dependency) error {
 	for _, dep := range missing {
-		fmt.Printf(log.Blue+"Installing %s...\n"+log.ResetColor, dep.Name)
 		if err := dep.InstallFunc(); err != nil {
 			return fmt.Errorf("failed to install %s: %v", dep.Name, err)
 		}
 	}
-	return nil
-}
-
-// checkAndInstallDependencies first checks for missing dependencies,
-// prompts the user to install them, and if agreed, installs them.
-func checkAndInstallDependencies(reader *bufio.Reader) error {
-	missing := getMissingDependencies()
-	if len(missing) == 0 {
-		return nil
-	}
-
-	install, err := promptUserToInstall(missing, reader)
-	if err != nil {
-		return err
-	}
-
-	if install {
-		if err := installMissingDependencies(missing); err != nil {
-			return err
-		}
-	} else {
-		fmt.Println(log.Yellow + "👋 Exiting without installing required dependencies." + log.ResetColor)
-		os.Exit(0)
-	}
-
 	return nil
 }
 
@@ -159,228 +312,7 @@ func commandExists(cmd string) bool {
 	return err == nil
 }
 
-func checkAndInstallDocker() error {
-	if commandExists("docker") {
-		return nil
-	}
-
-	osType := runtime.GOOS
-	if osType == "darwin" {
-		if !commandExists("brew") {
-			fmt.Println(log.Yellow + "⚠️ Docker not found and Homebrew is missing. Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop" + log.ResetColor)
-			return nil
-		}
-		fmt.Println(log.Blue + "🐳 Installing Docker Desktop via Homebrew..." + log.ResetColor)
-		cmd := exec.Command("brew", "install", "--cask", "docker")
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("❌ failed to install Docker via Homebrew: %v, output: %s", err, string(output))
-		}
-		fmt.Println(log.Green + "✅ Docker installed successfully." + log.ResetColor)
-	} else if osType == "linux" {
-		fmt.Println(log.Blue + "🐳 Installing Docker using the official install script..." + log.ResetColor)
-		cmd := exec.Command("wget", "-qO", "get-docker.sh", "https://get.docker.com")
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to download Docker install script using wget: %v, output: %s", err, string(output))
-		}
-		cmd = exec.Command("sh", "get-docker.sh")
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to run Docker install script: %v, output: %s", err, string(output))
-		}
-		os.Remove("get-docker.sh")
-		// Ensure the docker socket has appropriate permissions
-		if _, err := os.Stat("/var/run/docker.sock"); err == nil {
-			cmd = exec.Command("chmod", "666", "/var/run/docker.sock")
-			if output, err := cmd.CombinedOutput(); err != nil {
-				return fmt.Errorf("failed to set permissions on docker socket: %v, output: %s", err, string(output))
-			}
-		}
-		// Check if the Docker daemon is running; if not, attempt to start it
-		if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
-			fmt.Println(log.Yellow + "Docker daemon not running. Attempting to start dockerd..." + log.ResetColor)
-			dcmd := exec.Command("dockerd")
-			if err := dcmd.Start(); err != nil {
-				return fmt.Errorf("failed to start Docker daemon: %v", err)
-			}
-			// Wait a few seconds for the daemon to initialize
-			time.Sleep(3 * time.Second)
-			if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
-				return fmt.Errorf("docker daemon did not start correctly")
-			}
-			fmt.Println(log.Green + "Docker daemon started successfully." + log.ResetColor)
-		}
-		fmt.Println(log.Green + "✅ Docker installed successfully." + log.ResetColor)
-	} else {
-		return fmt.Errorf("unsupported OS for Docker installation: %s", osType)
-	}
-	return nil
-}
-
-func checkAndInstallKind() error {
-	if commandExists("kind") {
-		return nil
-	}
-
-	osType := runtime.GOOS
-	var binaryName string
-	if osType == "darwin" {
-		binaryName = "kind-darwin-amd64"
-	} else if osType == "linux" {
-		binaryName = "kind-linux-amd64"
-	} else {
-		return fmt.Errorf("unsupported OS for Kind installation: %s", osType)
-	}
-
-	resp, err := http.Get("https://api.github.com/repos/kubernetes-sigs/kind/releases/latest")
-	if err != nil {
-		return fmt.Errorf("failed to fetch Kind release info: %v", err)
-	}
-	defer resp.Body.Close()
-	var release struct {
-		TagName string `json:"tag_name"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return fmt.Errorf("failed to decode Kind release info: %v", err)
-	}
-	version := release.TagName
-	downloadURL := fmt.Sprintf("https://kind.sigs.k8s.io/dl/%s/%s", version, binaryName)
-
-	fmt.Println(log.Blue + "🌀 Installing Kind..." + log.ResetColor)
-	tmpFile := "/tmp/kind"
-	cmd := exec.Command("wget", "-qO", tmpFile, downloadURL)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to download Kind binary: %v, output: %s", err, string(output))
-	}
-	if err := os.Chmod(tmpFile, 0755); err != nil {
-		return fmt.Errorf("failed to chmod Kind binary: %v", err)
-	}
-	destPath := "/usr/local/bin/kind"
-	if err := os.Rename(tmpFile, destPath); err != nil {
-		in, err := os.Open(tmpFile)
-		if err != nil {
-			return fmt.Errorf("failed to open temporary Kind binary: %v", err)
-		}
-		defer in.Close()
-		out, err := os.Create(destPath)
-		if err != nil {
-			return fmt.Errorf("failed to create destination for Kind binary: %v", err)
-		}
-		defer out.Close()
-		if _, err = io.Copy(out, in); err != nil {
-			return fmt.Errorf("failed to copy Kind binary: %v", err)
-		}
-		os.Remove(tmpFile)
-	}
-	fmt.Println(log.Green + "✅ Kind installed successfully." + log.ResetColor)
-	return nil
-}
-
-func checkAndInstallKubectl() error {
-	if commandExists("kubectl") {
-		return nil
-	}
-
-	osType := runtime.GOOS
-	var osPath string
-	if osType == "darwin" {
-		osPath = "darwin"
-	} else if osType == "linux" {
-		osPath = "linux"
-	} else {
-		return fmt.Errorf("unsupported OS for kubectl installation: %s", osType)
-	}
-	arch := "amd64"
-	resp, err := http.Get("https://storage.googleapis.com/kubernetes-release/release/stable.txt")
-	if err != nil {
-		return fmt.Errorf("failed to get kubectl version: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read kubectl version: %v", err)
-	}
-	version := strings.TrimSpace(string(body))
-	downloadURL := fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl", version, osPath, arch)
-
-	fmt.Println(log.Blue + "🔧 Installing kubectl..." + log.ResetColor)
-	tmpFile := "/tmp/kubectl"
-	cmd := exec.Command("wget", "-qO", tmpFile, downloadURL)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to download kubectl: %v, output: %s", err, string(output))
-	}
-	if err := os.Chmod(tmpFile, 0755); err != nil {
-		return fmt.Errorf("failed to chmod kubectl binary: %v", err)
-	}
-	destPath := "/usr/local/bin/kubectl"
-	if err := os.Rename(tmpFile, destPath); err != nil {
-		in, err := os.Open(tmpFile)
-		if err != nil {
-			return fmt.Errorf("failed to open temporary kubectl binary: %v", err)
-		}
-		defer in.Close()
-		out, err := os.Create(destPath)
-		if err != nil {
-			return fmt.Errorf("failed to create destination for kubectl binary: %v", err)
-		}
-		defer out.Close()
-		if _, err = io.Copy(out, in); err != nil {
-			return fmt.Errorf("failed to copy kubectl binary: %v", err)
-		}
-		os.Remove(tmpFile)
-	}
-	fmt.Println(log.Green + "✅ kubectl installed successfully." + log.ResetColor)
-	return nil
-}
-
-func checkAndInstallHelm() error {
-	if commandExists("helm") {
-		return nil
-	}
-	fmt.Println(log.Blue + "⛵ Installing Helm..." + log.ResetColor)
-	cmd := exec.Command("sh", "-c", "wget -qO- https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("❌ failed to install Helm: %v, output: %s", err, string(output))
-	}
-	fmt.Println(log.Green + "✅ Helm installed successfully." + log.ResetColor)
-	return nil
-}
-
-func checkAndInstallTilt() error {
-	if commandExists("tilt") {
-		return nil
-	}
-	fmt.Println(log.Blue + "🚀 Installing Tilt..." + log.ResetColor)
-
-	// Ensure the local bin directory exists
-	localBin := os.ExpandEnv("$HOME/.local/bin")
-	if _, err := os.Stat(localBin); os.IsNotExist(err) {
-		if err := os.MkdirAll(localBin, 0755); err != nil {
-			return fmt.Errorf("failed to create local bin directory: %v", err)
-		}
-	}
-
-	// Update PATH to include the local bin and run the Tilt installer with NO_SUDO=1
-	cmd := exec.Command("sh", "-c", "export PATH="+localBin+":$PATH && wget -qO- https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("❌ failed to install Tilt: %v, output: %s", err, string(output))
-	}
-	fmt.Println(log.Green + "✅ Tilt installed successfully." + log.ResetColor)
-	return nil
-}
-
-func checkAndInstallRelayUtil() error {
-	if commandExists("relay-util") {
-		return nil
-	}
-	fmt.Println(log.Blue + "🚚 Installing Relay Util..." + log.ResetColor)
-	cmd := exec.Command("go", "install", "github.com/commoddity/relay-util/v2@latest")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("❌ failed to install Relay Util: %v, output: %s", err, string(output))
-	}
-	fmt.Println(log.Green + "✅ Relay Util installed successfully." + log.ResetColor)
-	return nil
-}
-
-// prompt ensures that the promtp shows `>` on a new line.
+// prompt ensures that the prompt shows `>` on a new line.
 func prompt(reader *bufio.Reader, message string) (string, error) {
 	fmt.Println(message)
 	fmt.Print("> ")
@@ -389,4 +321,157 @@ func prompt(reader *bufio.Reader, message string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(input), nil
+}
+
+// -------------------- Docker --------------------
+func checkAndInstallDocker(arch SystemArch, installCmd string) error {
+	if commandExists("docker") {
+		return nil
+	}
+	// If using brew on mac, ensure brew exists
+	if (arch == MacX86 || arch == MacARM) && strings.Contains(installCmd, "brew") {
+		if !commandExists("brew") {
+			fmt.Println(log.Yellow + "🚨 Docker not found and Homebrew is missing. Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop" + log.ResetColor)
+			return fmt.Errorf("Homebrew is missing. Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop")
+		}
+	}
+	fmt.Println(log.Blue + "🐳 Installing Docker..." + log.ResetColor)
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("❌ failed to install Docker: %v, output: %s", err, string(output))
+	}
+	if _, err := os.Stat("/var/run/docker.sock"); err == nil {
+		cmd = exec.Command("sudo", "chmod", "666", "/var/run/docker.sock")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to set permissions on docker socket: %v, output: %s", err, string(output))
+		}
+	}
+	if arch == LinuxX86 || arch == LinuxARM {
+		if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
+			fmt.Println(log.Yellow + "Docker daemon not running. Attempting to start dockerd..." + log.ResetColor)
+			dcmd := exec.Command("dockerd")
+			if err := dcmd.Start(); err != nil {
+				return fmt.Errorf("failed to start Docker daemon: %v", err)
+			}
+			time.Sleep(3 * time.Second)
+			if _, err := exec.Command("pgrep", "dockerd").CombinedOutput(); err != nil {
+				return fmt.Errorf("docker daemon did not start correctly")
+			}
+			fmt.Println(log.Green + "✅ Docker daemon started successfully." + log.ResetColor)
+		}
+	}
+	fmt.Println(log.Green + "✅ Docker installed successfully." + log.ResetColor)
+	versionCmd := exec.Command("docker", "--version")
+	versionOutput, err := versionCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s❌ failed to get Docker version: %v%s", log.Red, err, log.ResetColor)
+	}
+	fmt.Println("   " + log.White + strings.TrimSpace(string(versionOutput)) + log.ResetColor)
+	return nil
+}
+
+const KindVersion = "v0.27.0"
+
+// -------------------- Kind --------------------
+func checkAndInstallKind(arch SystemArch, installCmd string) error {
+	if commandExists("kind") {
+		return nil
+	}
+	fmt.Println(log.Blue + "🌀 Installing Kind..." + log.ResetColor)
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to install Kind: %v, output: %s", err, string(output))
+	}
+	fmt.Println(log.Green + "✅ Kind installed successfully." + log.ResetColor)
+	versionCmd := exec.Command("kind", "--version")
+	versionOutput, err := versionCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s❌ failed to get Kind version: %v%s", log.Red, err, log.ResetColor)
+	}
+	fmt.Println("   " + log.White + strings.TrimSpace(string(versionOutput)) + log.ResetColor)
+	return nil
+}
+
+// -------------------- Kubectl --------------------
+func checkAndInstallKubectl(arch SystemArch, installCmd string) error {
+	if commandExists("kubectl") {
+		return nil
+	}
+	fmt.Println(log.Blue + "🔧 Installing kubectl..." + log.ResetColor)
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to install kubectl: %v, output: %s", err, string(output))
+	}
+	fmt.Println(log.Green + "✅ kubectl installed successfully." + log.ResetColor)
+	versionCmd := exec.Command("kubectl", "version", "--client")
+	versionOutput, err := versionCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s❌ failed to get kubectl version: %v%s", log.Red, err, log.ResetColor)
+	}
+	fmt.Println("   " + log.White + strings.TrimSpace(string(versionOutput)) + log.ResetColor)
+	return nil
+}
+
+// -------------------- Helm --------------------
+func checkAndInstallHelm(installCmd string) error {
+	if commandExists("helm") {
+		return nil
+	}
+	fmt.Println(log.Blue + "⛵ Installing Helm..." + log.ResetColor)
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("❌ failed to install Helm: %v, output: %s", err, string(output))
+	}
+	fmt.Println(log.Green + "✅ Helm installed successfully." + log.ResetColor)
+	versionCmd := exec.Command("helm", "version", "--short")
+	versionOutput, err := versionCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s❌ failed to get Helm version: %v%s", log.Red, err, log.ResetColor)
+	}
+	fmt.Println("   " + log.White + strings.TrimSpace(string(versionOutput)) + log.ResetColor)
+	return nil
+}
+
+// -------------------- Tilt --------------------
+func checkAndInstallTilt(installCmd string) error {
+	if commandExists("tilt") {
+		return nil
+	}
+	fmt.Println(log.Blue + "🚀 Installing Tilt..." + log.ResetColor)
+	localBin := os.ExpandEnv("$HOME/.local/bin")
+	if _, err := os.Stat(localBin); os.IsNotExist(err) {
+		if err := os.MkdirAll(localBin, 0755); err != nil {
+			return fmt.Errorf("failed to create local bin directory: %v", err)
+		}
+	}
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("❌ failed to install Tilt: %v, output: %s", err, string(output))
+	}
+	fmt.Println(log.Green + "✅ Tilt installed successfully." + log.ResetColor)
+	versionCmd := exec.Command("tilt", "version")
+	versionOutput, err := versionCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s❌ failed to get Tilt version: %v%s", log.Red, err, log.ResetColor)
+	}
+	fmt.Println("   " + log.White + strings.TrimSpace(string(versionOutput)) + log.ResetColor)
+	return nil
+}
+
+// -------------------- Relay Util --------------------
+func checkAndInstallRelayUtil(installCmd string) error {
+	if commandExists("relay-util") {
+		return nil
+	}
+	if !commandExists("go") {
+		fmt.Println(log.Yellow + "🚨 Go is not installed. In order to install Relay Util, please install Go from https://go.dev/doc/install" + log.ResetColor)
+		return nil
+	}
+	fmt.Println(log.Blue + "🚚 Installing Relay Util..." + log.ResetColor)
+	cmd := exec.Command("sh", "-c", installCmd)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("❌ failed to install Relay Util: %v, output: %s", err, string(output))
+	}
+	fmt.Println(log.Green + "✅ Relay Util installed successfully." + log.ResetColor)
+	return nil
 }
