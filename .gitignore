@@ -19,7 +19,6 @@ go.work.sum
 
 # Config
 .*.yaml
-.*.lua
 .config.yaml
 .config.*.yaml
 !.config.example.yaml
@@ -51,7 +50,9 @@ tmp/*
 
 # PATH artifacts
 install.log
-local/path/
+
+# exclude values.tmpl.yaml files
+!values.tmpl.yaml
 
 # Claudesync
 .claudesync/

@@ -1,0 +1,30 @@
+# ---- GUARD Global settings ----
+global:
+  # Set `localhost` for local development.
+  domain: localhost
+  # namespace is the k8s namespace that both Envoy Gateway and the PATH service are deployed to.
+  namespace: path-local
+
+# ---- GUARD configuration ----
+guard:
+  # Set the services that are allowed to access the PATH service.
+  # For example, if running PATH in Shannon mode, you would set:
+  services:
+    - serviceId: anvil
+
+# TODO_MVP(@commoddity): Remove this once Helm Charts Issue #27 is implemented.
+# This will create a simplified default API key implementation for GUARD and remove
+# any dependency on the PADS or PEAS services.
+# See: https://github.com/buildwithgrove/helm-charts/issues/27
+#
+# ---- PADS configuration ----
+pads:
+  configMap:
+    # These endpoints correspond to the test requests
+    # defined in the `makefiles/test_requests.mk` file.
+    .gateway-endpoints.yaml: |
+      endpoints:
+        test_endpoint_1_api_key:
+          auth:
+            api_key: "test_api_key"
+        test_endpoint_2_no_auth: {}

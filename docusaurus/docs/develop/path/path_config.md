@@ -34,7 +34,6 @@ For details, see the the [**Envoy Configuration Guide**](../envoy/envoy_config.m
     - [Shannon Field Descriptions](#shannon-field-descriptions)
   - [`router_config` (optional)](#router_config-optional)
   - [`hydrator_config` (optional)](#hydrator_config-optional)
-  - [`auth_server_config` (optional)](#auth_server_config-optional)
   - [`logger_config` (optional)](#logger_config-optional)
   - [`messaging_config` (TODO)](#messaging_config-todo)
 
@@ -47,7 +46,7 @@ All configuration for the PATH gateway is defined in a single YAML file named `.
 The config file `.config.yaml` is located in:
 
 - **Default**: `./config/.config.yaml` (relative to PATH binary)
-- **Tilt**: `/app/config/.config.yaml` (mounted in container from `./local/path/config/.config.yaml`)
+- **Tilt**: `/app/config/.config.yaml` (mounted in container from `./local/path/.config.yaml`)
 
 :::tip Override Config Location
 Use `-config` flag to specify a custom location:
@@ -132,12 +131,6 @@ hydrator_config:
     - "eth"
     - "solana"
     - "pokt"
-
-# (Optional) Authorization Server Configuration
-auth_server_config:
-  grpc_host_port: path-auth-data-server:50051
-  grpc_use_insecure_credentials: true
-  endpoint_id_extractor_type: url_path
 
 # (Optional) Logger Configuration
 logger_config:
@@ -303,35 +296,6 @@ In order to enable QoS for a service, the ID provided here must match a service 
 Not all services currently have a QoS implementation in PATH; new QoS implementations are actively being worked on.
 
 If a service ID is not present in [`config/service_qos.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos.go), a No-Op QoS implementation will be used for that service. This means a random endpoint will be selected for requests to that service.
-
-:::
-
----
-
-### `auth_server_config` (optional)
-
-**Required in order to authorize requests with Envoy Proxy.**
-
-Configures the External Authorization Server.
-
-| Field                           | Type    | Required | Default | Description                                                                                                                                                      |
-| ------------------------------- | ------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `grpc_host_port`                | string  | Yes      | -       | Host and port for the remote gRPC connection to the `Remote gRPC Server` (eg. PADS). Pattern requires a `host:port` format.                                      |
-| `grpc_use_insecure_credentials` | boolean | No       | false   | Set to true if the `Remote gRPC Server` does not use TLS                                                                                                         |
-| `endpoint_id_extractor_type`    | string  | No       | -       | Either `url_path` or `header`. Specifies how endpoint IDs are extracted. [See here for more details](../envoy/walkthrough.md#specifying-the-gateway-endpoint-id) |
-| `port`                          | integer | No       | 10003   | The local port for running the Auth Server                                                                                                                       |
-
-:::info
-
-For detailed information on the External Auth Server, please refer to the [External Auth Server Documentation](../envoy/walkthrough.md#external-auth-server).
-
-:::caution
-
-This IS NOT used by the PATH Gateway logic itself, but was placed in the PATH
-Gateway's config file for convenience with the goal of avoiding another config file.
-This may change in the future.
-
-:::
 
 :::
 

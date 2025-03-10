@@ -3,7 +3,7 @@
 # This script updates configuration values in a specified config file using sed.
 # It includes checks for required commands, address existence, and supports custom flag and address name overrides.
 
-CONFIG_FILE="./local/path/config/.config.yaml"
+CONFIG_FILE="./local/path/.config.yaml"
 
 # Wrapper function for poktrolld with overridden flags
 pkd() {
