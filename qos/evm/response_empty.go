@@ -2,6 +2,7 @@ package evm
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -41,10 +42,19 @@ func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
 	}
 }
 
-// GetResponsePayload constructs a JSONRPC error response indicating endpoint failure.
+// GetHTTPResponse builds and returns the httpResponse matching the responseEmpty instance.
+// Implements the response interface.
+func (r responseEmpty) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		// HTTP Status 500 Internal Server Error for an empty response
+		httpStatusCode: http.StatusInternalServerError,
+	}
+}
+
+// getResponsePayload constructs a JSONRPC error response indicating endpoint failure.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
-// Implements the response interface with retry semantics.
-func (r responseEmpty) GetResponsePayload() []byte {
+func (r responseEmpty) getResponsePayload() []byte {
 	userResponse := newErrResponseEmptyEndpointResponse(r.jsonrpcReq.ID)
 	bz, err := json.Marshal(userResponse)
 	if err != nil {

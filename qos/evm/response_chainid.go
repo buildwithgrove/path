@@ -107,9 +107,17 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
 //
-// GetResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
-// It implements the response interface.
-func (r responseToChainID) GetResponsePayload() []byte {
+// GetHTTPResponse builds and returns the httpResponse matching the responseToChainID instance.
+// Implements the response interface.
+func (r responseToChainID) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		httpStatusCode:  r.jsonRPCResponse.GetRecommendedHTTPStatusCode(),
+	}
+}
+
+// getResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
+func (r responseToChainID) getResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.

@@ -40,5 +40,10 @@ func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservat
 		return response
 	}
 
+	// handle no response
+	if response := observation.GetNoResponse(); response != nil {
+		return response
+	}
+
 	return nil
 }

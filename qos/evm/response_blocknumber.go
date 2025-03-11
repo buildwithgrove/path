@@ -101,7 +101,14 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 	}
 }
 
-func (r responseToBlockNumber) GetResponsePayload() []byte {
+func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		httpStatusCode:  r.jsonRPCResponse.GetRecommendedHTTPStatusCode(),
+	}
+}
+
+func (r responseToBlockNumber) getResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {

@@ -28,8 +28,9 @@ enum EVMRequestValidationError {
 //   2. UnmarshalErr - response failed to parse into expected format
 enum EVMResponseValidationError {
 	EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
-	EVM_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // No response data received
+	EVM_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // Response with no data.
 	EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
+	EVM_RESPONSE_VALIDATION_ERROR_NO_RESPONSE = 3;  // No response received from any endpoint
 }
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
@@ -78,6 +79,10 @@ message EVMEndpointObservation {
     //   - Disqualify endpoints that return empty responses
     //   - Track metrics for empty response patterns
     EVMEmptyResponse empty_response = 5;
+
+    // EVMNoResponse indicates no response was received from any endpoint.
+    // This differs from EVMEmptyResponse as no response was reported by the protocol.
+    EVMNoResponse no_response = 6;
   }
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
@@ -127,5 +132,17 @@ message EVMEmptyResponse {
 
   // Why the response failed QoS validation
   // Set to EmptyResponse for empty responses
+  optional EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
+}
+
+// EVMNoResponse represents a situation where no responses were reported to QoS by the protocol.
+// This is due to protocol failures, e.g. if the selected endpoint was maxed out.
+message EVMNoResponse {
+  // valid indicates if response meets QoS criteria
+  // Always false for no response scenario
+  bool valid = 1 [(metadata.semantic_meaning) = "Response validity status"];
+
+  // Why the response failed QoS validation
+  // Set to NoResponse for this scenario
   optional EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
 }

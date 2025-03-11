@@ -32,7 +32,7 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // a parsed endpoint response.
 type response interface {
 	GetObservation() qosobservations.EVMEndpointObservation
-	GetResponsePayload() []byte
+	GetHTTPResponse() httpResponse
 }
 
 type endpointResponse struct {
@@ -127,35 +127,42 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// TODO_MVP(@adshmh): Add `responseNone` type to handle cases where no endpoint response was received
-	// (e.g., protocol-level failures) and update both user response and metrics.
-	//
-	// By default, return a generic HTTP response if no endpoint responses
-	// have been reported to the request context.
-	// intentionally ignoring the error here, since unmarshallResponse
-	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.logger, rc.jsonrpcReq, []byte(""))
+	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
+	if len(rc.endpointResponses) == 0 {
+		noResponseObj := responseNoResponse{
+			logger:     rc.logger,
+			jsonrpcReq: rc.jsonrpcReq,
+		}
 
-	if len(rc.endpointResponses) >= 1 {
-		// return the last endpoint response reported to the context.
-		response = rc.endpointResponses[len(rc.endpointResponses)-1]
+		return noResponseObj.GetHTTPResponse()
+
 	}
 
-	return httpResponse{
-		responsePayload: response.GetResponsePayload(),
-	}
+	// return the last endpoint response reported to the context.
+	return rc.endpointResponses[len(rc.endpointResponses)-1].GetHTTPResponse()
 }
 
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
-	// TODO_MVP(@adshmh): Add responseNone type to track requests that fail without receiving endpoint responses
-	// (e.g., protocol failures) via metrics.
-	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
-	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
-		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
-		observations[idx] = &obs
+	var observations []*qosobservations.EVMEndpointObservation
+
+	// If no responses were received, create an observation for the no-response scenario
+	if len(rc.endpointResponses) == 0 {
+		noResponseObj := responseNoResponse{
+			logger:     rc.logger,
+			jsonrpcReq: rc.jsonrpcReq,
+		}
+		noResponseObs := noResponseObj.GetObservation()
+		observations = append(observations, &noResponseObs)
+	} else {
+		// Process responses if any were received
+		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
+		for idx, endpointResponse := range rc.endpointResponses {
+			obs := endpointResponse.response.GetObservation()
+			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+			observations[idx] = &obs
+		}
 	}
 
 	return qosobservations.Observations{

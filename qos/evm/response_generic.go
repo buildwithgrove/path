@@ -64,9 +64,19 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 	}
 }
 
+// GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
+// Implements the response interface.
+func (r responseGeneric) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		// Use the HTTP status code recommended by for the underlying JSONRPC response by the jsonrpc package.
+		httpStatusCode: r.jsonRPCResponse.GetRecommendedHTTPStatusCode(),
+	}
+}
+
 // TODO_MVP(@adshmh): handle any unmarshaling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
-func (r responseGeneric) GetResponsePayload() []byte {
+func (r responseGeneric) getResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.

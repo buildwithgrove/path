@@ -17,6 +17,8 @@ var _ gateway.HTTPResponse = httpResponse{}
 
 type httpResponse struct {
 	responsePayload []byte
+	// allow over-riding the default HTTP status code of 200.
+	httpStatusCode int
 }
 
 func (hr httpResponse) GetPayload() []byte {
@@ -24,7 +26,12 @@ func (hr httpResponse) GetPayload() []byte {
 }
 
 func (hr httpResponse) GetHTTPStatusCode() int {
-	// EVM always returns a 200 HTTP status code.
+	// Return the custom status code if set, otherwise default to 200 OK
+	if hr.httpStatusCode != 0 {
+		return hr.httpStatusCode
+	}
+
+	// Default to 200 OK HTTP status code.
 	return http.StatusOK
 }
 
