@@ -23,6 +23,11 @@ func init() {
 }
 
 var (
+	// TODO_UPNEXT(@adshmh): Add a new metric or update existing ones to track HTTP status codes returned to the user.
+	// There are 2 places to check:
+	// 1. request validtion failures: any HTTP status entry here would be returned to the user first: there will be no endpoint observations.
+	// 2. endpoint response observations: first HTTP status entry will be returned to the user
+	//
 	// TODO_MVP(@adshmh): Track endpoint responses separately from requests if/when retries are implemented,
 	// since a single request may generate multiple responses due to retry attempts.
 	//
@@ -68,18 +73,27 @@ var (
 )
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
-func PublishMetrics(
-	observations *qos.EVMRequestObservations,
-) {
-	isRequestValid, requestValidationError := extractRequestValidationStatus(observations)
+func PublishMetrics(observations *qos.EVMRequestObservations) {
+	if observations == nil {
+		return
+	}
+
+	reqStatus := extractRequestStatus(observations)
+	isRequestValid := reqStatus.GetRequestValidationError() == nil
+
+	// Get request method - handle the case where jsonrpc_request might be nil for invalid requests
+	var requestMethod string
+	if jsonReq := observations.GetJsonrpcRequest(); jsonReq != nil {
+		requestMethod = jsonReq.GetMethod()
+	}
 
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
 			"chain_id":                observations.GetChainId(),
 			"valid_request":           fmt.Sprintf("%t", isRequestValid),
-			"request_method":          observations.GetJsonrpcRequest().GetMethod(),
-			"success":                 fmt.Sprintf("%t", getRequestSuccess(observations)),
+			"request_method":          requestMethod,
+			"success":                 fmt.Sprintf("%t", reqStatus.IsSuccessful()),
 			"invalid_response_reason": getEndpointResponseValidationFailureReason(observations),
 		},
 	).Inc()
@@ -89,54 +103,19 @@ func PublishMetrics(
 		return
 	}
 
-	// Increment the request validation failure counter.
+	// Get the validation error kind as a string
+	var errorKind string
+	if validationErr := reqStatus.GetRequestValidationError(); validationErr != nil {
+		errorKind = validationErr.String()
+	} else {
+		errorKind = "UNKNOWN"
+	}
+
+	// Increment the request validation failure counter
 	requestValidationErrorsTotal.With(
 		prometheus.Labels{
 			"chain_id":              observations.GetChainId(),
-			"validation_error_kind": requestValidationError,
+			"validation_error_kind": errorKind,
 		},
 	).Inc()
-}
-
-// getRequestSuccess checks if any endpoint provided a valid response.
-// Alternatively, It can be thought of "isAnyResponseSuccessful".
-func getRequestSuccess(
-	observations *qos.EVMRequestObservations,
-) bool {
-	for _, observation := range observations.GetEndpointObservations() {
-		if response := extractEndpointResponseFromObservation(observation); response != nil && response.GetValid() {
-			return true
-		}
-	}
-
-	return false
-}
-
-// TODO_MVP(@adshmh): When retry functionality is added, refactor to evaluate QoS based on a single endpoint response rather than
-// aggregated observations.
-//
-// getEndpointResponseValidationFailureReason returns why the endpoint response failed QoS validation.
-func getEndpointResponseValidationFailureReason(
-	observations *qos.EVMRequestObservations,
-) string {
-	for _, observation := range observations.GetEndpointObservations() {
-		if response := extractEndpointResponseFromObservation(observation); response != nil {
-			return qos.EVMResponseValidationError_name[int32(response.GetResponseValidationError())]
-		}
-	}
-
-	return ""
-}
-
-// extractRequestValidationStatus interprets validation results from the request observations.
-// Returns (true, "") if valid, or (false, failureReason) if invalid.
-func extractRequestValidationStatus(observations *qos.EVMRequestObservations) (bool, string) {
-	reasonEnum := observations.GetRequestValidationError()
-
-	// Valid request
-	if reasonEnum == qos.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_UNSPECIFIED {
-		return true, ""
-	}
-
-	return false, qos.EVMRequestValidationError_name[int32(reasonEnum)]
 }

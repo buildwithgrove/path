@@ -8,11 +8,13 @@ import (
 // Abstracts proto-specific details from metrics logic.
 // DEV_NOTE: You MUST update this when adding new metric requirements.
 type response interface {
-	GetValid() bool
-	GetResponseValidationError() qos.EVMResponseValidationError
+	// GetResponseValidationError returns the validation error if any.
+	// A nil return value indicates the response is valid.
+	// A non-nil value indicates the response is invalid, with the specific error type.
+	GetResponseValidationError() *qos.EVMResponseValidationError
 }
 
-// getResponseFromObservation extracts the response data from an endpoint observation.
+// extractEndpointResponseFromObservation extracts the response data from an endpoint observation.
 // Returns nil if no response is present.
 // DEV_NOTE: You MUST update this when adding new metric requirements.
 func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservation) response {
@@ -21,29 +23,78 @@ func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservat
 	}
 
 	// handle chain_id response
-	if response := observation.GetChainIdResponse(); response != nil {
-		return response
+	if chainIDResp := observation.GetChainIdResponse(); chainIDResp != nil {
+		return responseAdapter{chainIDResp.ResponseValidationError}
 	}
 
 	// handle block_number response
-	if response := observation.GetBlockNumberResponse(); response != nil {
-		return response
+	if blockNumResp := observation.GetBlockNumberResponse(); blockNumResp != nil {
+		return responseAdapter{blockNumResp.ResponseValidationError}
 	}
 
 	// handle unrecognized response
-	if response := observation.GetUnrecognizedResponse(); response != nil {
-		return response
+	if unrecognizedResp := observation.GetUnrecognizedResponse(); unrecognizedResp != nil {
+		return responseAdapter{unrecognizedResp.ResponseValidationError}
 	}
 
 	// handle empty response
-	if response := observation.GetEmptyResponse(); response != nil {
-		return response
+	if emptyResp := observation.GetEmptyResponse(); emptyResp != nil {
+		// Empty responses are always invalid
+		err := emptyResp.ResponseValidationError
+		return responseAdapter{&err}
 	}
 
 	// handle no response
-	if response := observation.GetNoResponse(); response != nil {
-		return response
+	if noResp := observation.GetNoResponse(); noResp != nil {
+		// No responses are always invalid
+		err := noResp.ResponseValidationError
+		return responseAdapter{&err}
 	}
 
 	return nil
+}
+
+// TODO_MVP(@adshmh): When retry functionality is added, refactor to evaluate QoS based on a single endpoint response rather than
+// aggregated observations.
+//
+// getEndpointResponseValidationFailureReason returns why the endpoint response failed QoS validation.
+// Returns the validation error from the first endpoint observation, or an empty string if none exist
+// or if the response was valid.
+func getEndpointResponseValidationFailureReason(observations *qos.EVMRequestObservations) string {
+	// First check if we have any endpoint observations
+	if len(observations.GetEndpointObservations()) == 0 {
+		return ""
+	}
+
+	// Look for the first invalid response and return its validation error
+	for _, observation := range observations.GetEndpointObservations() {
+		resp := extractEndpointResponseFromObservation(observation)
+		if resp == nil {
+			continue
+		}
+
+		if validationErr := resp.GetResponseValidationError(); validationErr != nil {
+			return validationErr.String()
+		}
+	}
+
+	return ""
+}
+
+// Simple adapter that implements the response interface
+type responseAdapter struct {
+	validationError *qos.EVMResponseValidationError
+}
+
+func (a responseAdapter) GetResponseValidationError() *qos.EVMResponseValidationError {
+	if a.validationError == nil {
+		return nil
+	}
+
+	// If the error is UNSPECIFIED, treat it as valid (return nil)
+	if *a.validationError == qos.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
+		return nil
+	}
+
+	return a.validationError
 }
