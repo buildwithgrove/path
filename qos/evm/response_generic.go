@@ -37,12 +37,10 @@ type responseGeneric struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// valid is set to true if the parsed response is deemed valid.
+	// Why the response has failed validation.
+	// Only set if the response is invalid.
 	// As of PR #152, a response is deemed valid if it can be unmarshaled as a JSONRPC struct
 	// regardless of the contents of the response.
-	valid bool
-
-	// Why the response has failed validation.
 	// Used when generating observations.
 	validationError *qosobservations.EVMResponseValidationError
 }
@@ -57,8 +55,8 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
-				Valid:                   r.valid,
 				ResponseValidationError: r.validationError,
+				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 			},
 		},
 	}
@@ -70,7 +68,7 @@ func (r responseGeneric) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.getResponsePayload(),
 		// Use the HTTP status code recommended by for the underlying JSONRPC response by the jsonrpc package.
-		httpStatusCode: r.jsonRPCResponse.GetRecommendedHTTPStatusCode(),
+		httpStatusCode: r.getHTTPStatusCode(),
 	}
 }
 
@@ -85,6 +83,10 @@ func (r responseGeneric) getResponsePayload() []byte {
 	return bz
 }
 
+func (r responseGeneric) getHTTPStatusCode() int {
+	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
 // responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
 // It extracts and stores any data needed for generating a response payload.
 func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
@@ -97,13 +99,12 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 		return errResponse, err
 	}
 
+	// Response successfully parsed into JSONRPC format.
+	// A nil validationError field indicates a valid response.
 	return responseGeneric{
 		logger: logger,
 
 		jsonRPCResponse: response,
-
-		// The response is assumed valid if it can be successfully unmarshaled into a JSONRPC response struct.
-		valid: true,
 	}, nil
 }
 

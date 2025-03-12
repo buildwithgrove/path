@@ -2,16 +2,13 @@ package evm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // QoS implements gateway.QoSService by providing:
@@ -47,7 +44,6 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 	return &requestContext{
 		logger:        qos.logger,
 		endpointStore: qos.EndpointStore,
-		isValid:       true,
 	}, true
 }
 

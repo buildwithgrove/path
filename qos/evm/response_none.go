@@ -2,7 +2,6 @@ package evm
 
 import (
 	"encoding/json"
-	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -27,13 +26,12 @@ type responseNone struct {
 // This allows tracking metrics for scenarios where endpoint selection or communication failed.
 // Implements the response interface.
 func (r responseNone) GetObservation() qosobservations.EVMEndpointObservation {
-	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_NO_RESPONSE
-
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_NoResponse{
 			NoResponse: &qosobservations.EVMNoResponse{
-				HttpStatusCode:          r.getHTTPStatusCode(), // NoResponse always returns a 500 Internal error HTTP status code.
-				ResponseValidationError: &validationError,      // NoResponse is always an invalid response.
+				HttpStatusCode: int32(r.getHTTPStatusCode()), // NoResponse always returns a 500 Internal error HTTP status code.
+				// NoResponse is always an invalid response.
+				ResponseValidationError: qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_NO_RESPONSE,
 			},
 		},
 	}
@@ -63,6 +61,5 @@ func (r responseNone) getResponsePayload() []byte {
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
 // Always returns returns 500 Internal Server Error on responseNone struct.
 func (r responseNone) getHTTPStatusCode() int {
-	// TODO_IN_THIS_PR: decide whether 503 Service Unavailable - is more appropriate for no endpoint response
-	return http.StatusInternalServerError
+	return httpStatusResponseValidationFailureNoResponse
 }

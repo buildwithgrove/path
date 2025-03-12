@@ -75,17 +75,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
 
 	// Create the observations object with the HTTP body read failure observation
-	errorDetails := err.Error()
-	observations := &qosobservations.EVMRequestObservations{
-		ChainId: rv.chainID,
-		RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
-			EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
-				HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
-				ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
-				ErrorDetails:    &errorDetails,
-			},
-		},
-	}
+	observations := createHTTPBodyReadFailureObservation(rv.chainID, err)
 
 	// TODO_IMPROVE(@adshmh): Propagate a request ID parameter on internal errors that occur after successful request parsing.
 	// There are no such cases as of PR #165.
@@ -96,7 +86,6 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	// Build and return the error context
 	return &errorContext{
 		logger:                 rv.logger,
-		chainID:                rv.chainID,
 		response:               response,
 		responseHTTPStatusCode: httpStatusRequestValidationFailureReadHTTPBodyFailure,
 		observations:           observations,
@@ -107,27 +96,81 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 func (rv *requestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.ID, err error) gateway.RequestQoSContext {
 
 	// Create the observations object with the request unmarshaling failure observation
-	errorDetails := err.Error()
-	observations := &qosobservations.EVMRequestObservations{
-		ChainId: rv.chainID,
-		RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
-			EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
-				HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
-				ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
-				ErrorDetails:    &errorDetails,
-			},
-		},
-	}
-
+	observations := createRequestUnmarshalingFailureObservation(id, rv.chainID, err)
 	// Create the JSON-RPC error response
 	response := newErrResponseInvalidRequest(err, id)
 
 	// Build and return the error context
 	return &errorContext{
 		logger:                 rv.logger,
-		chainID:                rv.chainID,
 		response:               response,
-		responseHttpStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
+		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
 		observations:           observations,
+	}
+}
+
+// createRequestUnmarshalingFailureObservation creates an observation for an EVM request
+// that failed to unmarshal from JSON. This observation captures details about the validation
+// failure, including the request ID, error message, and chain ID. It is used for both
+// reporting metrics and providing context for debugging.
+//
+// Parameters:
+//   - id: The JSON-RPC request ID associated with the failed request
+//   - err: The error that occurred during unmarshaling
+//   - chainID: The EVM chain identifier for which the request was intended
+//
+// Returns:
+//   - qosobservations.Observations: A structured observation containing details about the validation failure
+func createRequestUnmarshalingFailureObservation(
+	id jsonrpc.ID,
+	chainID string,
+	err error,
+) qosobservations.Observations {
+	errorDetails := err.Error()
+	return qosobservations.Observations{
+		ServiceObservations: &qosobservations.Observations_Evm{
+			Evm: &qosobservations.EVMRequestObservations{
+				ChainId: chainID,
+				RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
+					EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
+						HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
+						ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
+						ErrorDetails:    &errorDetails,
+					},
+				},
+			},
+		},
+	}
+}
+
+// createHTTPBodyReadFailureObservation creates an observation for cases where
+// reading the HTTP request body for an EVM service request has failed. This observation
+// includes the chainID and detailed error information, which is useful for diagnosing
+// connectivity or HTTP parsing issues.
+//
+// Parameters:
+//   - chainID: The EVM chain identifier for which the request was intended
+//   - err: The error that occurred during HTTP body reading
+//
+// Returns:
+//   - qosobservations.Observations: A structured observation containing details about the HTTP read failure
+func createHTTPBodyReadFailureObservation(
+	chainID string,
+	err error,
+) qosobservations.Observations {
+	errorDetails := err.Error()
+	return qosobservations.Observations{
+		ServiceObservations: &qosobservations.Observations_Evm{
+			Evm: &qosobservations.EVMRequestObservations{
+				ChainId: chainID,
+				RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
+					EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
+						HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
+						ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
+						ErrorDetails:    &errorDetails,
+					},
+				},
+			},
+		},
 	}
 }

@@ -3,7 +3,6 @@ package evm
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -31,7 +30,7 @@ type errorContext struct {
 	logger polylog.Logger
 
 	// The observation to return, to be processed by the metrics and data pipeline components.
-	observation *qosobservations.Observations_Evm
+	observations qosobservations.Observations
 
 	// The response to be returned to the user.
 	response jsonrpc.Response
@@ -67,17 +66,10 @@ func (ec errorContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
-// GetObservation returns a QoS observation explaining why the request failed based on its error context.
+// GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
 func (ec errorContext) GetObservations() qosobservations.Observations {
-	return qosobservations.Observations{
-		ServiceObservations: &qosobservations.Observations_Evm{
-			Evm: &qosobservations.EVMRequestObservations{
-				ChainId:                  ec.chainID,
-				RequestValidationFailure: ec.requestValidationError,
-			},
-		},
-	}
+	return ec.observations
 }
 
 // GetServicePayload should never be called.
