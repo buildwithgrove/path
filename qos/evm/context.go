@@ -28,9 +28,13 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // the caller, e.g. gateway, determine whether the endpoint's
 // response was valid, and whether a retry makes sense.
 //
-// response defines the functionality required from
-// a parsed endpoint response.
+// response defines the functionality required from a parsed endpoint response, which all response types must implement.
+// It provides methods to:
+// 1. Generate observations for endpoint quality tracking
+// 2. Format HTTP responses to send back to clients
 type response interface {
+	// GetObservation returns an observation of the endpoint's response
+	// for quality metrics tracking, including HTTP status code.
 	GetObservation() qosobservations.EVMEndpointObservation
 	GetHTTPResponse() httpResponse
 }
@@ -53,13 +57,6 @@ type requestContext struct {
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
-
-	// isValid indicates whether the underlying user request
-	// for this request context was found to be valid.
-	// This field is set by the corresponding QoS instance
-	// when creating this request context during the parsing
-	// of the user request.
-	isValid bool
 
 	// preSelectedEndpointAddr allows overriding the default
 	// endpoint selector with a specific endpoint's addresss.
@@ -126,15 +123,16 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 //
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
+// Implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
-		noResponseObj := responseNoResponse{
+		responseNoneObj := responseNone{
 			logger:     rc.logger,
 			jsonrpcReq: rc.jsonrpcReq,
 		}
 
-		return noResponseObj.GetHTTPResponse()
+		return responseNoneObj.GetHTTPResponse()
 
 	}
 
@@ -149,12 +147,12 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	// If no responses were received, create an observation for the no-response scenario
 	if len(rc.endpointResponses) == 0 {
-		noResponseObj := responseNoResponse{
+		responseNoneObj := responseNone{
 			logger:     rc.logger,
 			jsonrpcReq: rc.jsonrpcReq,
 		}
-		noResponseObs := noResponseObj.GetObservation()
-		observations = append(observations, &noResponseObs)
+		responseNoneObs := responseNoneObj.GetObservation()
+		observations = append(observations, &responseNoneObs)
 	} else {
 		// Process responses if any were received
 		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))

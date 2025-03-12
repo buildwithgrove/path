@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -20,38 +21,6 @@ var (
 // errorContext provides the support required by the gateway package for handling service requests.
 var _ gateway.RequestQoSContext = &errorContext{}
 
-// TODO_IMPROVE(@adshmh): Add request ID parameter to propagate on internal errors that occur after successful request parsing.
-// There are no such cases as of PR #165.
-//
-// requestContextFromInternalError creates an errorContext when encountering internal system errors.
-// For example, failures while reading an HTTP request body.
-func requestContextFromInternalError(
-	logger polylog.Logger,
-	err error,
-	internalErrReason qosobservations.EVMRequestValidationError,
-) errorContext {
-	return errorContext{
-		logger:                 logger,
-		response:               newErrResponseInternalErr(jsonrpc.ID{}, err),
-		requestValidationError: &internalErrReason,
-	}
-}
-
-// requestContextFromUserError creates an errorContext for client-side errors.
-// For example, malformed JSON-RPC requests that fail to deserialize.
-func requestContextFromUserError(
-	logger polylog.Logger,
-	requestID jsonrpc.ID,
-	err error,
-	userErrReason qosobservations.EVMRequestValidationError,
-) errorContext {
-	return errorContext{
-		logger:                 logger,
-		response:               newErrResponseInvalidRequest(err, requestID),
-		requestValidationError: &userErrReason,
-	}
-}
-
 // errorContext terminates EVM request processing on errors (internal failures or invalid requests).
 // Provides:
 //  1. Detailed error response to the user
@@ -61,15 +30,15 @@ func requestContextFromUserError(
 type errorContext struct {
 	logger polylog.Logger
 
-	// chainID is the chain identifier for EVM QoS implementation.
-	// Expected as the `Result` field in eth_chainId responses.
-	chainID string
+	// The observation to return, to be processed by the metrics and data pipeline components.
+	observation *qosobservations.Observations_Evm
 
 	// The response to be returned to the user.
 	response jsonrpc.Response
 
-	// Indicates why the request processing failed.
-	requestValidationError *qosobservations.EVMRequestValidationError
+	// HTTP status code for the response
+	// If not set, will default to the status code recommended by the JSONRPC response.
+	responseHTTPStatusCode int
 }
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
@@ -87,8 +56,14 @@ func (ec errorContext) GetHTTPResponse() gateway.HTTPResponse {
 		).Warn().Err(err).Msg("Failed to serialize client response.")
 	}
 
+	httpStatusCode := ec.responseHTTPStatusCode
+	if httpStatusCode == 0 {
+		httpStatusCode = ec.response.GetRecommendedHTTPStatusCode()
+	}
+
 	return httpResponse{
 		responsePayload: bz,
+		httpStatusCode:  httpStatusCode,
 	}
 }
 
@@ -98,8 +73,8 @@ func (ec errorContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				ChainId:                ec.chainID,
-				RequestValidationError: ec.requestValidationError,
+				ChainId:                  ec.chainID,
+				RequestValidationFailure: ec.requestValidationError,
 			},
 		},
 	}
