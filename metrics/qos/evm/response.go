@@ -1,3 +1,4 @@
+// response.go
 package evm
 
 import (
@@ -12,6 +13,34 @@ type response interface {
 	// A nil return value indicates the response is valid.
 	// A non-nil value indicates the response is invalid, with the specific error type.
 	GetResponseValidationError() *qos.EVMResponseValidationError
+
+	// GetHTTPStatusCode returns the HTTP status code from the response.
+	// Returns 0 if no HTTP status code is available.
+	GetHTTPStatusCode() int
+}
+
+// responseAdapter is an implementation of the response interface
+// that wraps different response types and provides a common interface.
+type responseAdapter struct {
+	validationError *qos.EVMResponseValidationError
+	httpStatusCode  int
+}
+
+func (a responseAdapter) GetResponseValidationError() *qos.EVMResponseValidationError {
+	if a.validationError == nil {
+		return nil
+	}
+
+	// If the error is UNSPECIFIED, treat it as valid (return nil)
+	if *a.validationError == qos.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
+		return nil
+	}
+
+	return a.validationError
+}
+
+func (a responseAdapter) GetHTTPStatusCode() int {
+	return a.httpStatusCode
 }
 
 // extractEndpointResponseFromObservation extracts the response data from an endpoint observation.
@@ -24,39 +53,51 @@ func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservat
 
 	// handle chain_id response
 	if chainIDResp := observation.GetChainIdResponse(); chainIDResp != nil {
-		return responseAdapter{chainIDResp.ResponseValidationError}
+		return responseAdapter{
+			validationError: chainIDResp.ResponseValidationError,
+			httpStatusCode:  int(chainIDResp.GetHttpStatusCode()),
+		}
 	}
 
 	// handle block_number response
 	if blockNumResp := observation.GetBlockNumberResponse(); blockNumResp != nil {
-		return responseAdapter{blockNumResp.ResponseValidationError}
+		return responseAdapter{
+			validationError: blockNumResp.ResponseValidationError,
+			httpStatusCode:  int(blockNumResp.GetHttpStatusCode()),
+		}
 	}
 
 	// handle unrecognized response
 	if unrecognizedResp := observation.GetUnrecognizedResponse(); unrecognizedResp != nil {
-		return responseAdapter{unrecognizedResp.ResponseValidationError}
+		return responseAdapter{
+			validationError: unrecognizedResp.ResponseValidationError,
+			httpStatusCode:  int(unrecognizedResp.GetHttpStatusCode()),
+		}
 	}
 
 	// handle empty response
 	if emptyResp := observation.GetEmptyResponse(); emptyResp != nil {
 		// Empty responses are always invalid
 		err := emptyResp.ResponseValidationError
-		return responseAdapter{&err}
+		return responseAdapter{
+			validationError: &err,
+			httpStatusCode:  int(emptyResp.GetHttpStatusCode()),
+		}
 	}
 
 	// handle no response
 	if noResp := observation.GetNoResponse(); noResp != nil {
 		// No responses are always invalid
 		err := noResp.ResponseValidationError
-		return responseAdapter{&err}
+		return responseAdapter{
+			validationError: &err,
+			httpStatusCode:  int(noResp.GetHttpStatusCode()),
+		}
 	}
 
 	return nil
 }
 
-// TODO_MVP(@adshmh): When retry functionality is added, refactor to evaluate QoS based on a single endpoint response rather than
-// aggregated observations.
-//
 // getEndpointResponseValidationFailureReason returns why the endpoint response failed QoS validation.
 // Returns the validation error from the first endpoint observation, or an empty string if none exist
 // or if the response was valid.
@@ -79,22 +120,4 @@ func getEndpointResponseValidationFailureReason(observations *qos.EVMRequestObse
 	}
 
 	return ""
-}
-
-// Simple adapter that implements the response interface
-type responseAdapter struct {
-	validationError *qos.EVMResponseValidationError
-}
-
-func (a responseAdapter) GetResponseValidationError() *qos.EVMResponseValidationError {
-	if a.validationError == nil {
-		return nil
-	}
-
-	// If the error is UNSPECIFIED, treat it as valid (return nil)
-	if *a.validationError == qos.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
-		return nil
-	}
-
-	return a.validationError
 }

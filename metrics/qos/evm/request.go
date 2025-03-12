@@ -1,4 +1,3 @@
-// request.go
 package evm
 
 import (
@@ -15,6 +14,11 @@ type request interface {
 
 	// IsSuccessful checks if any endpoint provided a valid response to this request.
 	IsSuccessful() bool
+
+	// GetHTTPStatusCode returns the HTTP status code that should be returned to the user.
+	// For invalid requests, this returns the status code from the validation error.
+	// Returns 0 if no specific status code is available.
+	GetHTTPStatusCode() int
 }
 
 // requestAdapter implements the request interface for EVMRequestObservations
@@ -55,9 +59,24 @@ func (a requestAdapter) IsSuccessful() bool {
 	return false
 }
 
-// extractRequestStatus creates a request adapter from EVMRequestObservations.
+func (a requestAdapter) GetHTTPStatusCode() int {
+	// Check if this is an HTTP body read failure
+	if httpBodyReadFailure := a.observations.GetEvmHttpBodyReadFailure(); httpBodyReadFailure != nil {
+		return int(httpBodyReadFailure.GetHttpStatusCode())
+	}
+
+	// Check if this is a request unmarshaling failure
+	if unmarshalingFailure := a.observations.GetEvmRequestUnmarshalingFailure(); unmarshalingFailure != nil {
+		return int(unmarshalingFailure.GetHttpStatusCode())
+	}
+
+	// No specific HTTP status code for this request
+	return 0
+}
+
+// newRequestAdapter creates a request adapter from EVMRequestObservations.
 // Returns nil if observations is nil.
-func extractRequestStatus(observations *qos.EVMRequestObservations) request {
+func newRequestAdapter(observations *qos.EVMRequestObservations) request {
 	if observations == nil {
 		return nil
 	}

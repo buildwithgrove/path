@@ -23,14 +23,6 @@ func init() {
 }
 
 var (
-	// TODO_UPNEXT(@adshmh): Add a new metric or update existing ones to track HTTP status codes returned to the user.
-	// There are 2 places to check:
-	// 1. request validtion failures: any HTTP status entry here would be returned to the user first: there will be no endpoint observations.
-	// 2. endpoint response observations: first HTTP status entry will be returned to the user
-	//
-	// TODO_MVP(@adshmh): Track endpoint responses separately from requests if/when retries are implemented,
-	// since a single request may generate multiple responses due to retry attempts.
-	//
 	// requestsTotal tracks the total EVM requests processed.
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
@@ -38,6 +30,7 @@ var (
 	//   - request_method: JSON-RPC method name
 	//   - success: Whether a valid response was received
 	//   - invalid_response_reason: the reason why an endpoint response failed QoS validation.
+	//   - http_status_code: The HTTP status code returned to the user
 	//
 	// Use to analyze:
 	//   - Request volume by chain and method
@@ -45,30 +38,33 @@ var (
 	//   - Method usage patterns across chains
 	//   - End-to-end request success rates
 	//   - Response validation errors by JSON-RPC method and chain
+	//   - HTTP status code distribution
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "valid_request", "request_method", "success", "invalid_response_reason"},
+		[]string{"chain_id", "valid_request", "request_method", "success", "invalid_response_reason", "http_status_code"},
 	)
 
 	// requestValidationErrorsTotal tracks validation errors of incoming EVM requests.
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
 	//   - validation_error_kind: Validation error kind
+	//   - http_status_code: The HTTP status code returned to the user
 	//
 	// Use to analyze:
 	//   - Common request validation issues
 	//   - Per-chain validation error patterns
+	//   - HTTP status code distribution for validation errors
 	requestValidationErrorsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsValidationErrorsTotalMetric,
 			Help:      "Total requests that failed validation BEFORE being sent to any endpoints; request was terminated in PATH. E.g. malformed JSON-RPC or parse errors",
 		},
-		[]string{"chain_id", "validation_error_kind"},
+		[]string{"chain_id", "validation_error_kind", "http_status_code"},
 	)
 )
 
@@ -78,8 +74,8 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 		return
 	}
 
-	reqStatus := extractRequestStatus(observations)
-	isRequestValid := reqStatus.GetRequestValidationError() == nil
+	req := newRequestAdapter(observations)
+	isRequestValid := req.GetRequestValidationError() == nil
 
 	// Get request method - handle the case where jsonrpc_request might be nil for invalid requests
 	var requestMethod string
@@ -87,14 +83,19 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 		requestMethod = jsonReq.GetMethod()
 	}
 
+	// Get HTTP status code that would be returned to the user
+	httpStatusCode := getHTTPStatusCodeFromObservations(observations)
+	httpStatusCodeStr := fmt.Sprintf("%d", httpStatusCode)
+
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
 			"chain_id":                observations.GetChainId(),
 			"valid_request":           fmt.Sprintf("%t", isRequestValid),
 			"request_method":          requestMethod,
-			"success":                 fmt.Sprintf("%t", reqStatus.IsSuccessful()),
+			"success":                 fmt.Sprintf("%t", req.IsSuccessful()),
 			"invalid_response_reason": getEndpointResponseValidationFailureReason(observations),
+			"http_status_code":        httpStatusCodeStr,
 		},
 	).Inc()
 
@@ -105,7 +106,7 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 
 	// Get the validation error kind as a string
 	var errorKind string
-	if validationErr := reqStatus.GetRequestValidationError(); validationErr != nil {
+	if validationErr := req.GetRequestValidationError(); validationErr != nil {
 		errorKind = validationErr.String()
 	} else {
 		errorKind = "UNKNOWN"
@@ -116,6 +117,7 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 		prometheus.Labels{
 			"chain_id":              observations.GetChainId(),
 			"validation_error_kind": errorKind,
+			"http_status_code":      httpStatusCodeStr,
 		},
 	).Inc()
 }
