@@ -176,15 +176,6 @@ properties:
             items:
               type: string
               pattern: "^[0-9a-fA-F]{64}$"
-      ws_endpoints_urls:
-        description: "Map of service IDs to their websocket endpoint URLs for the Shannon gateway. Keys must be valid service IDs and unique."
-        type: object
-        additionalProperties: false
-        patternProperties:
-          "^[a-zA-Z0-9_-]+$":
-            type: string
-            description: "Websocket endpoint URL for service"
-            pattern: "^(wss|ws)://.*$"
 
   # Logger Configuration (optional)
   logger_config:
@@ -240,27 +231,3 @@ properties:
         type: array
         items:
           type: string
-
-  # Auth Server Configuration (optional)
-  # This part of the config is only used by the Envoy Auth Server, not in PATH itself.
-  auth_server_config:
-    description: "Configuration for the Envoy Auth Server, which is used to authorize requests to the gateway."
-    type: object
-    additionalProperties: false
-    properties:
-      grpc_host_port:
-        description: "Host and port for gRPC connections, e.g., 127.0.0.1:4040"
-        type: string
-        pattern: "^[^:]+:[0-9]+$"
-      grpc_use_insecure_credentials:
-        description: "Indicates if the gRPC connection uses insecure credentials."
-        type: boolean
-        default: false
-      endpoint_id_extractor_type:
-        description: "Type of endpoint ID extractor."
-        type: string
-        enum: ["url_path", "header"]
-      port:
-        description: "Port number for the auth server."
-        type: integer
-        default: 10003

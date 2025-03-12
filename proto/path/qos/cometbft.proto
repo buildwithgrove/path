@@ -26,11 +26,11 @@ message CometBFTEndpointObservation {
 
     // Details of the response received from the endpoint
     oneof response_observation {
-        // Response to `health` request
+        // Response to `/health` request
         CometBFTHealthResponse health_response = 2;
 
-        // Response to `status` request
-        CometBFTLatestBlockHeightResponse latest_block_height_response = 3;
+        // Response to `/status` request
+        CometBFTStatusResponse status_response = 3;
 
         // Responses not used in endpoint validation
         CometBFTUnrecognizedResponse unrecognized_response = 4;
@@ -45,10 +45,22 @@ message CometBFTHealthResponse {
     bool health_status_response = 1;
 }
 
-// CometBFTBlockNumberResponse stores the latest block number from a `status` request
+// CometBFTStatusResponse stores the latest block number from a `/status` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-message CometBFTLatestBlockHeightResponse {
-    string latest_block_height_response = 1;
+message CometBFTStatusResponse {
+    // Chain ID of the endpoint. Comes from the `NodeInfo.Network` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    string chain_id_response = 1;
+
+    // Indicates if the endpoint is catching up to the network.
+    // Comes from the `SyncInfo.CatchingUp` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    bool catching_up_response = 2;
+
+    // Latest block height of the endpoint.
+    // Comes from the `SyncInfo.LatestBlockHeight` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    string latest_block_height_response = 3;
 }
 
 // CometBFTUnrecognizedResponse handles requests with methods ignored by state update

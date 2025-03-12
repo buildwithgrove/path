@@ -35,23 +35,11 @@ check_docker:
 dev_up: check_kind
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
-		kind create cluster --name path-localnet; \
+		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
 		kubectl config use-context kind-path-localnet; \
+		kubectl create namespace path-local; \
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
-	fi
-
-# TODO_UPNEXT(@HebertCL): Integrate this process into the Tiltfile to enable hot reloading on the .config.yaml file values to work in Tilt.
-.PHONY: config_path_secrets
-# Internal helper: Creates path config secret if it doesn't already exist
-config_path_secrets: check_path_config
-	@echo "[INFO] Checking if secret 'path-config-local' exists..."
-	@if ! kubectl get secret path-config-local > /dev/null 2>&1; then \
-		echo "[INFO] Secret 'path-config-local' not found. Creating it..."; \
-		kubectl create secret generic path-config-local \
-			--from-file=.config.yaml=./local/path/config/.config.yaml; \
-	else \
-		echo "[DEBUG] Secret 'path-config-local' already exists. Skipping creation."; \
 	fi
 
 .PHONY: dev_down
@@ -59,7 +47,6 @@ config_path_secrets: check_path_config
 dev_down:
 	@echo "Tearing down local environment..."
 	@tilt down
-	@kubectl delete secret path-config-local
 	@kind delete cluster --name path-localnet
 	@if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
 		kubectl config delete-context kind-path-localnet; \

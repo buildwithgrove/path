@@ -93,7 +93,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
 		return protocol.Response{EndpointAddr: selectedEndpointAddr},
-			fmt.Errorf("relay: error unmarshalling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
+			fmt.Errorf("relay: error unmarshaling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
@@ -104,19 +104,19 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
 // Satisfies the gateway.ProtocolRequestContext interface.
-// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *http.Request, w http.ResponseWriter) error {
-	var selectedEndpointURL string
-	if rc.selectedEndpoint != nil {
-		selectedEndpointURL = rc.selectedEndpoint.PublicURL()
+	if rc.selectedEndpoint == nil {
+		return fmt.Errorf("handleWebsocketRequest: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
 	wsLogger := logger.With(
-		"endpoint_url", selectedEndpointURL,
+		"endpoint_url", rc.selectedEndpoint.PublicURL(),
 		"endpoint_addr", rc.selectedEndpoint.Addr(),
 		"service_id", rc.serviceID,
 	)
 
+	// Upgrade the HTTP request from the client to a websocket connection.
+	// This connection is then passed to the websocket bridge to handle the Client<->Gateway communication.
 	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	clientConn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -124,12 +124,19 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		return err
 	}
 
-	bridge, err := websockets.NewBridge(wsLogger, selectedEndpointURL, clientConn)
+	bridge, err := websockets.NewBridge(
+		wsLogger,
+		clientConn,
+		rc.selectedEndpoint,
+		rc.relayRequestSigner,
+		rc.fullNode,
+	)
 	if err != nil {
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
 		return err
 	}
 
+	// run bridge in a goroutine to avoid blocking the main thread
 	go bridge.Run()
 
 	wsLogger.Info().Msg("websocket connection established")

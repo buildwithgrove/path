@@ -1,22 +1,30 @@
 package evm
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
+// The errors below list all the possible validation errors on an endpoint.
 var (
-	// The errors below list all the possible validation errors on an endpoint.
-	errNoChainIDObs          = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
-	errInvalidChainIDObs     = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
-	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errNoChainIDObs             = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
+	errInvalidChainIDObs        = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
+	errNoBlockNumberObs         = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
+	errInvalidBlockNumberObs    = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
 type endpoint struct {
+	// TODO_TECHDEBT(@adshmh): Persist this state across restarts to maintain endpoint exclusions.
+	//
+	// hasReturnedEmptyResponse tracks endpoints that have returned empty responses.
+	// These endpoints are excluded from selection until service restart.
+	hasReturnedEmptyResponse bool
+
 	// chainIDResponse stores the result of processing the endpoint's response to an `eth_chainId` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_chainId` request.
 	chainIDResponse *string
@@ -32,6 +40,8 @@ type endpoint struct {
 // e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
 func (e endpoint) Validate(chainID string) error {
 	switch {
+	case e.hasReturnedEmptyResponse:
+		return errHasReturnedEmptyResponse
 	case e.chainIDResponse == nil:
 		return errNoChainIDObs
 	case *e.chainIDResponse != chainID:
@@ -51,6 +61,11 @@ func (e endpoint) Validate(chainID string) error {
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
 func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
+	if obs.GetEmptyResponse() != nil {
+		e.hasReturnedEmptyResponse = true
+		return true
+	}
+
 	if chainIDResponse := obs.GetChainIdResponse(); chainIDResponse != nil {
 		observedChainID := chainIDResponse.GetChainIdResponse()
 		e.chainIDResponse = &observedChainID

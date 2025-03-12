@@ -14,37 +14,64 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// QoS struct performs the functionality defined by gateway package's ServiceQoS,
-// which consists of:
-// A) a QoSRequestParser which builds EVM-specific RequestQoSContext objects,
-// by parsing user HTTP requests.
-// B) an EndpointSelector, which selects an endpoint for performing a service request.
+// QoS implements gateway.QoSService by providing:
+//  1. QoSRequestParser - Builds EVM-specific RequestQoSContext objects from HTTP requests
+//  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
-// QoS is the ServiceQoS implementations for EVM-based chains.
-// It contains logic specific to EVM-based chains, including request parsing,
-// response building, and endpoint validation/selection.
+// QoS implements ServiceQoS for EVM-based chains.
+// It handles chain-specific:
+//   - Request parsing
+//   - Response building
+//   - Endpoint validation and selection
 type QoS struct {
+	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
-	logger polylog.Logger
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
-// Returns (context, false) if request cannot be parsed as JSONRPC.
+// Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := qos.logger.With(
+		"qos", "EVM",
+		"method", "ParseHTTPRequest",
+	)
+
+	// TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
+	// Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
+	// Benefits: Decouples the qos package from HTTP-specific error handling.
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return requestContextFromInternalError(err), false
+		logger.Warn().Err(err).Msg("HTTP request body read failed - returning generic error response.")
+
+		return requestContextFromInternalError(
+			qos.logger,
+			err,
+			qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
+		), false
 	}
 
+	// TODO_TECHDEBT(@adshmh): support Batch JSONRPC requests, as per the JSONRPC spec:
+	// https://www.jsonrpc.org/specification#batch
+	//
+	// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported method calls early in request flow.
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(err), false
+		logger.With(
+			"request_preview", string(body[:min(1000, len(body))]), // truncate body to first 1000 bytes for logging.
+		).Info().Err(err).Msg("Request failed validation - returning generic error response.")
+
+		return requestContextFromUserError(
+			qos.logger,
+			jsonrpcReq.ID, // ID is set only if request parsing succeeded
+			err,
+			qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
+		), false
 	}
 
-	// TODO_TECHDEBT(@adshmh): Add JSONRPC request validation to block invalid requests
+	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
 	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
 	return &requestContext{
 		logger: qos.logger,
@@ -61,7 +88,6 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // WebSocket connection requests do not have a body, so we don't need to parse it.
 //
 // This method implements the gateway.QoSService interface.
-// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		logger:        qos.logger,

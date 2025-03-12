@@ -138,7 +138,7 @@ Note that running `make shannon_populate_config` is equivalent to running the fo
 
 ```bash
 make prepare_morse_e2e_config # Generate ./e2e/.shannon.config.yaml
-make copy_morse_e2e_config_to_local # Copy to ./local/path/config/.config.yaml
+make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
 ```
 
 :::warning Private Key Export
@@ -175,10 +175,6 @@ shannon_config:
 hydrator_config:
   service_ids:
     - "anvil"
-auth_server_config:
-  grpc_host_port: path-auth-data-server:50051
-  grpc_use_insecure_credentials: true
-  endpoint_id_extractor_type: url_path
 ```
 
 :::important Gateway Configuration
@@ -197,11 +193,6 @@ Run the entire stack (PATH, Envoy, Auth Server) by running:
 make path_up
 ```
 
-Run Standalone Mode (no Envoy Proxy) by running:
-
-```bash
-make path_up_standalone
-```
 
 You can stop the PATH stack by running:
 

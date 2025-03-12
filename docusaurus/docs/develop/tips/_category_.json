@@ -1,0 +1,8 @@
+{
+  "label": "Developer Tips",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation to configure and run the `PATH` Gateway locally"
+  }
+}

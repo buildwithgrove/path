@@ -12,7 +12,7 @@ import (
 // new supported response types.
 // E.g. to handle "eth_getBalance" requests, the following need to be defined:
 //  1. A new custom responseUnmarshaller
-//  2. A new custom struct  to handle the details of the particular response.
+//  2. A new custom struct to handle the details of the particular response.
 type responseUnmarshaller func(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
@@ -20,7 +20,7 @@ type responseUnmarshaller func(
 ) (response, error)
 
 var (
-	// All response types needs to implement the response interface.
+	// All response types need to implement the response interface.
 	// Any new response struct needs to be added to the following list.
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockNumber{}
@@ -32,10 +32,11 @@ var (
 	}
 )
 
-// unmarshalResponse parses the supplied raw byte slice, received from an endpoint, into a JSONRPC response.
-// As of PR #72, responses to the following JSONRPC methods are processed into endpoint observations:
+// unmarshalResponse converts raw endpoint bytes into a JSONRPC response struct.
+// As of PR #164, generates endpoint observations for responses to:
 //   - eth_chainId
 //   - eth_blockNumber
+//   - any empty response, regardless of method
 func unmarshalResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
@@ -43,6 +44,14 @@ func unmarshalResponse(
 ) (
 	response, error,
 ) {
+	// Create a specialized response for empty endpoint response.
+	if len(data) == 0 {
+		return responseEmpty{
+			logger:     logger,
+			jsonrpcReq: jsonrpcReq,
+		}, nil
+	}
+
 	// Unmarshal the raw response payload into a JSONRPC response.
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)

@@ -100,7 +100,7 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 		ImageTag:    imageTag,
 	})
 	if err != nil {
-		c.Logger.Error().Msgf("error marshalling health check response: %s", err.Error())
+		c.Logger.Error().Msgf("error marshaling health check response: %s", err.Error())
 		return nil
 	}
 

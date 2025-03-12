@@ -111,8 +111,8 @@ Run the following commands to generate a Morse config at `local/path/config/.con
 
 ```bash
 make prepare_morse_e2e_config # Generate ./e2e/.morse.config.yaml
-make copy_morse_e2e_config_to_local # Copy to ./local/path/config/.config.yaml
-# Manually update ./local/path/config/.config.yaml
+make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
+# Manually update ./local/path/.config.yaml
 ```
 
 ### Update & Verify the Configuration
@@ -139,12 +139,6 @@ Run the entire stack (PATH, Envoy, Auth Server) by running:
 
 ```bash
 make path_up
-```
-
-Run Standalone Mode (no Envoy Proxy) by running:
-
-```bash
-make path_up_standalone
 ```
 
 You can stop the PATH stack by running:

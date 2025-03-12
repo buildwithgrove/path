@@ -23,11 +23,8 @@ func responseUnmarshallerChainID(
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-
-		// TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request sent to the endpoint.
 		return responseToChainID{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 
 			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
@@ -37,24 +34,31 @@ func responseUnmarshallerChainID(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
+		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToChainID{
-			logger: logger,
-
+			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
+			validationError: &validationError,
 		}, err
 	}
 
 	var result string
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+
 	err = json.Unmarshal(resultBz, &result)
+	if err != nil {
+		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+	}
 
 	return &responseToChainID{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
 
 		// if unmarshaling succeeded, the response is considered valid.
 		valid: (err == nil),
+
+		validationError: &validationError,
 	}, err
 }
 
@@ -74,16 +78,22 @@ type responseToChainID struct {
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
 	valid bool
+
+	// Why the response has failed validation.
+	// Used when generating observations.
+	validationError *qosobservations.EVMResponseValidationError
 }
 
-// GetObservation returns an observation using an `eth_chainId` request's response.
+// GetObservation returns an observation of the endpoint's response to an `eth_chainId` request.
 // Implements the response interface.
+// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
-				ChainIdResponse: r.result,
-				Valid:           r.valid,
+				ChainIdResponse:         r.result,
+				Valid:                   r.valid,
+				ResponseValidationError: r.validationError,
 			},
 		},
 	}
@@ -103,7 +113,7 @@ func (r responseToChainID) GetResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToChainID: Marshalling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToChainID: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }
