@@ -1,5 +1,3 @@
-// File: qos/evm/validation.go
-
 package evm
 
 import (

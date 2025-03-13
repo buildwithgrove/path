@@ -11,8 +11,7 @@ import (
 
 // responseNone satisfies the response interface and handles the case
 // where no response has been received from any endpoint.
-// This differs from empty responses (where an endpoint responded with empty data),
-// as this represents a case where no endpoint communication occurred at all.
+// This is not the same as empty responses (where an endpoint responded with empty data).
 var _ response = responseNone{}
 
 // responseNone represents the absence of any endpoint response.

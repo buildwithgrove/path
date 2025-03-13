@@ -23,6 +23,9 @@ func init() {
 }
 
 var (
+	// TODO_MVP(@adshmh): Track endpoint responses separately from requests if/when retries are implemented,
+	// since a single request may generate multiple responses due to retry attempts.
+	//
 	// requestsTotal tracks the total EVM requests processed.
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
