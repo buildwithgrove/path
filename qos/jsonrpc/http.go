@@ -4,8 +4,8 @@ import (
 	"net/http"
 )
 
-// GetRecommendedHTTPStatusCode returns the recommended HTTP status code for the JSONRPC response.
-// DEV_NOTE: this is only a recommendation based on a common practice. It does NOT necessarily reflect the JSONRPC spec.
+// GetRecommendedHTTPStatusCode suggests an appropriate HTTP status code for the JSONRPC response.
+// DEV_NOTE: This is based on common implementation patterns and not strictly defined in the JSONRPC specification.
 func (r Response) GetRecommendedHTTPStatusCode() int {
 	if r.Error == nil {
 		return http.StatusOK
