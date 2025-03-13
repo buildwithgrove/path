@@ -11,6 +11,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/gorilla/websocket v1.5.3
 	github.com/ory/dockertest/v3 v3.11.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.0.9
 	github.com/pokt-network/shannon-sdk v0.0.0-20241120182248-2b3d4ad6e3f2
