@@ -30,3 +30,8 @@ When Tilt is running, you can view all available dashboards by visiting [localho
 <!---
 TODO_MVP(@adshmh): add a section to reference the metrics package once PR #152 is merged.
 -->
+
+<!--- TODO_DOCUMENT(@Olshansk): add a section for dashboards to:
+  1. Add screenshots of the dashboards available
+  2. Link to dashboards available
+-->

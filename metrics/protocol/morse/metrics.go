@@ -118,7 +118,9 @@ func recordRelayTotal(serviceID string, observations []*protocol.MorseEndpointOb
 
 	// Get the last observation for endpoint address and session height
 	// TODO_TECHDEBT(@adshmh): Currently using the last entry in observations list for endpoint_addr and session_height.
-	// This is a simplification that should be revisited when implementing retry mechanisms.
+	// This is a simplified approach that will need review when implementing retry mechanisms:
+	//   - Split metrics: total relays vs service requests
+	//   - Track relay attempts per service request
 	lastObs := observations[len(observations)-1]
 
 	// Extract values for labels
@@ -164,7 +166,7 @@ func processEndpointErrors(serviceID string, observations []*protocol.MorseEndpo
 		errorType := endpointObs.GetErrorType().String()
 
 		// Extract sanction type (if any)
-		sanctionType := "none"
+		var sanctionType string
 		if endpointObs.RecommendedSanction != nil {
 			sanctionType = endpointObs.GetRecommendedSanction().String()
 		}

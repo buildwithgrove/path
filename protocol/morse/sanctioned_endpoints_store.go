@@ -40,6 +40,7 @@ type sanctionedEndpointsStore struct {
 	// sessionSanctions stores endpoints with session-limited sanctions
 	// The key is a combination of app address, session key, and endpoint address
 	// These sanctions automatically expire after defaultSessionSanctionExpiration
+	// They will be lost on PATH process restart and are not shared across multiple instances.
 	sessionSanctions *cache.Cache
 }
 
@@ -91,7 +92,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(morseObservations []*prot
 				)
 
 			// Session-based sanctions: These automatically expire after a set duration.
-			// They are more ephemeral than permanent session, and are also 
+			// They are more ephemeral than permanent session, and are also
 			// lost on PATH process restart and are not shared across multiple instances.
 			case protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION:
 				logger.Info().Msg("Adding session sanction for endpoint")
@@ -153,7 +154,6 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	sessionKey string,
 	sanctionData sanction,
 ) {
-	// TODO_MVP(@adshmh): validate the session key format. Should not create a sanction entry if the session key is not valid.
 	key := sessionSanctionKey(appAddr, sessionKey, string(endpointAddr))
 	ses.sessionSanctions.Set(key, sanctionData, defaultSessionSanctionExpiration)
 }
@@ -185,6 +185,8 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	return false, ""
 }
 
+// TODO_MVP(@adshmh): return an error if any of the composite key components are empty.
+//
 // sessionSanctionKey creates a unique key for session-based sanctions
 // Format: app_addr:session_key:endpoint_addr
 func sessionSanctionKey(appAddr, sessionKey, endpointAddr string) string {

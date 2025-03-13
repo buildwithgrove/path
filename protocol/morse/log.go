@@ -13,6 +13,37 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// getHydratedLogger creates an enriched logger with context-specific information for the request context.
+// It adds method name and service ID to the base logger. If an endpoint has been selected for this
+// request context, it further enhances the logger with detailed information about the endpoint,
+// associated application, and session.
+//
+// Parameters:
+//   - methodName: The name of the method that will be using this logger, for traceability
+//
+// Returns:
+//   - A logger enhanced with relevant context information for improved debugging and tracing
+func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
+	hydratedLogger := rc.logger.With(
+		"method", methodName,
+		"service_id", string(rc.serviceID),
+	)
+
+	if rc.selectedEndpoint == nil {
+		return hydratedLogger
+	}
+
+	return hydratedLogger.With(
+		"service_id", rc.serviceID,
+		"app_addr", rc.selectedEndpoint.app.Addr(),
+		"app_publickey", rc.selectedEndpoint.session.Header.AppPublicKey,
+		"session_key", rc.selectedEndpoint.session.Key,
+		"endpoint_addr", string(rc.selectedEndpoint.Addr()),
+		"session_service_id", rc.selectedEndpoint.session.Header.Chain,
+		"session_height", fmt.Sprintf("%d", rc.selectedEndpoint.session.Header.SessionHeight),
+	)
+}
+
 // loggerWithEndpointObservation enhances a logger with detailed information from a
 // MorseEndpointObservation. This creates contextually rich logs that include all relevant
 // fields from the observation for better debugging and traceability.

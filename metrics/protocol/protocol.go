@@ -16,5 +16,5 @@ func PublishMetrics(protocolObservations *protocol.Observations) {
 	if morseObservations := protocolObservations.GetMorse(); morseObservations != nil {
 		morse.PublishMetrics(morseObservations)
 	}
-	// TODO_MVP(@adshmh): add calls to metric exporter functions for the Shannon protocol.
+	// TODO_UPNEXT(@adshmh): add calls to metric exporter functions for the Shannon protocol.
 }
