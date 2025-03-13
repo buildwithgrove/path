@@ -42,7 +42,7 @@ type errorContext struct {
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
 // Implements the gateway.RequestQoSContext interface.
-func (ec errorContext) GetHTTPResponse() gateway.HTTPResponse {
+func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
 	bz, err := json.Marshal(ec.response)
 	if err != nil {
 		// TODO_IMPROVE(@adshmh): Standardize logger labels across packages
@@ -68,14 +68,14 @@ func (ec errorContext) GetHTTPResponse() gateway.HTTPResponse {
 
 // GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
-func (ec errorContext) GetObservations() qosobservations.Observations {
+func (ec *errorContext) GetObservations() qosobservations.Observations {
 	return ec.observations
 }
 
 // GetServicePayload should never be called.
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
-func (ec errorContext) GetServicePayload() protocol.Payload {
+func (ec *errorContext) GetServicePayload() protocol.Payload {
 	ec.logger.Warn().Msg("Invalid usage: errorContext.GetServicePayload() should never be called.")
 	return protocol.Payload{}
 }
@@ -83,7 +83,7 @@ func (ec errorContext) GetServicePayload() protocol.Payload {
 // UpdateWithResponse should never be called.
 // Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.
-func (ec errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
+func (ec *errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
 	ec.logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),
@@ -93,7 +93,7 @@ func (ec errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, en
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.
-func (ec errorContext) GetEndpointSelector() protocol.EndpointSelector {
+func (ec *errorContext) GetEndpointSelector() protocol.EndpointSelector {
 	ec.logger.Warn().Msg("Invalid usage: errorContext.GetEndpointSelector() should never be called.")
 
 	return errorTrackingSelector{
