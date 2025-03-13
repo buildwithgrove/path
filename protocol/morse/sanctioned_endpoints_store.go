@@ -91,6 +91,8 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(morseObservations []*prot
 				)
 
 			// Session-based sanctions: These automatically expire after a set duration.
+			// They are more ephemeral than permanent session, and are also 
+			// lost on PATH process restart and are not shared across multiple instances.
 			case protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION:
 				logger.Info().Msg("Adding session sanction for endpoint")
 
@@ -165,8 +167,8 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 ) (bool, string) {
 	// Check permanent sanctions first - these apply regardless of session
 	ses.mu.RLock()
+	defer ses.mu.RUnlock()
 	sanctionRecord, hasPermanentSanction := ses.permanentSanctions[endpointAddr]
-	ses.mu.RUnlock()
 
 	if hasPermanentSanction {
 		return true, fmt.Sprintf("permanent sanction: %s", sanctionRecord.reason)

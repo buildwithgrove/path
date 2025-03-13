@@ -1,5 +1,8 @@
 package morse
 
+// TODO_FUTURE(#agent): Ensure that the helpers in this files are used everywhere appropriate.
+// For existing code and new code incoming from PRs, find opportunities to provide additional context
+// or refactor existing code that should be using them instead of reimplementing similar logic.
 import (
 	"fmt"
 

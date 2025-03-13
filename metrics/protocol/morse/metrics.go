@@ -105,15 +105,15 @@ func PublishMetrics(observations *protocol.MorseObservationsList) {
 	}
 }
 
-// recordRelayTotal records the total relays metric with appropriate labels including success status,
-// endpoint address (from last observation), and session height.
+// recordRelayTotal records the total relays metric collected.
+// See relaysTotal above for details on additional metadata and use-cases.
 func recordRelayTotal(serviceID string, observations []*protocol.MorseEndpointObservation) {
 	// Skip if there are no observations
 	if len(observations) == 0 {
 		return
 	}
 
-	// Determine if any of the observations was successful (no error)
+	// Determine if any of the observations were successful (no error)
 	success := isAnyObservationSuccessful(observations)
 
 	// Get the last observation for endpoint address and session height

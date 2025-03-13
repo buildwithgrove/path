@@ -52,7 +52,7 @@ message MorseEndpointObservation {
   // Session information when available
   string session_key = 3;
   string session_service_id = 4;
-  int32 session_height = 5;
+  int32 session_height = 5; // session start height
   
   // Error type if relay to this endpoint failed
   optional MorseEndpointErrorType error_type = 6;
