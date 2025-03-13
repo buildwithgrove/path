@@ -1,12 +1,15 @@
 package evm
 
 import (
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+// EndpointStore provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
 const (
 	// Each endpoint check should use its own ID to avoid potential conflicts.
@@ -16,34 +19,63 @@ const (
 	idBlockNumberCheck
 )
 
-// EndpointStore provides the endpoint check generator required by
-// the gateway package to augment endpoints' quality data,
-// using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+// endpointCheckName is a type for the names of the checks applied to an endpoint.
+type endpointCheckName string
 
+// check is an interface for the checks applied to an endpoint.
+type check interface {
+	name() endpointCheckName
+	isValid(serviceState *ServiceState) error
+	shouldRun() bool
+}
+
+// evmQualityCheck provides:
+//  1. The validity and expiry of the check.
+//  2. The request context used to perform a quality check.
+//
+// An evmQualityCheck may have an empty request context if the check
+// derives its validity from applying other observations.
+// For example: if the check is for an empty response to any request.
+type evmQualityCheck struct {
+	check
+	requestContext *requestContext
+}
+
+// shouldRun returns true if the check should run.
+// If the check has no request context, it should never run.
+// For example: if the check is for an empty response to any request.
+func (q *evmQualityCheck) shouldRun() bool {
+	return q.requestContext != nil && q.check.shouldRun()
+}
+
+func (q *evmQualityCheck) getRequestContext() *requestContext {
+	return q.requestContext
+}
+
+// GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
+// It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
+	es.endpointsMu.RLock()
+	endpoint, ok := es.endpoints[endpointAddr]
+	es.endpointsMu.RUnlock()
 
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_FUTURE: add an archival endpoint check.
+	// If the endpoint is not yet in the store, use an endpoint with the default empty checks.
+	// e.g. if `GetRequiredQualityChecks` is called before the first observation is received for an endpoint.
+	if !ok {
+		endpoint = newEndpoint(es)
 	}
+
+	return endpoint.getChecks(endpointAddr)
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
-func getEndpointCheck(
-	logger polylog.Logger,
-	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
-	options ...func(*requestContext),
-) *requestContext {
+// The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
+// It is called in the individual `check_*.go` files to build the request context.
+func getEndpointCheck(endpointStore *EndpointStore, options ...func(*requestContext)) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        endpointStore.logger,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {
@@ -53,16 +85,8 @@ func getEndpointCheck(
 	return &requestCtx
 }
 
-// withChainIDCheck updates the request context to make an EVM JSON-RPC eth_chainId request.
-func withChainIDCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
-}
-
-// withBlockHeightCheck updates the request context to make an EVM JSON-RPC eth_blockNumber request.
-func withBlockHeightCheck(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
-}
-
+// buildJSONRPCReq builds a JSON-RPC request with the given ID and method.
+// It is called in the individual `check_*.go` files to build the request context.
 func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
