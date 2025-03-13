@@ -86,7 +86,7 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 		logger:                 rv.logger,
 		response:               response,
 		responseHTTPStatusCode: httpStatusRequestValidationFailureReadHTTPBodyFailure,
-		observations:           observations,
+		evmObservations:        observations,
 	}
 }
 
@@ -103,7 +103,7 @@ func (rv *requestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.I
 		logger:                 rv.logger,
 		response:               response,
 		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
-		observations:           observations,
+		evmObservations:        observations,
 	}
 }
 
@@ -123,18 +123,16 @@ func createRequestUnmarshalingFailureObservation(
 	id jsonrpc.ID,
 	chainID string,
 	err error,
-) qosobservations.Observations {
+) *qosobservations.Observations_Evm {
 	errorDetails := err.Error()
-	return qosobservations.Observations{
-		ServiceObservations: &qosobservations.Observations_Evm{
-			Evm: &qosobservations.EVMRequestObservations{
-				ChainId: chainID,
-				RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
-					EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
-						HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
-						ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
-						ErrorDetails:    &errorDetails,
-					},
+	return &qosobservations.Observations_Evm{
+		Evm: &qosobservations.EVMRequestObservations{
+			ChainId: chainID,
+			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
+				EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
+					HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
+					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_REQUEST_UNMARSHALING_FAILURE,
+					ErrorDetails:    &errorDetails,
 				},
 			},
 		},
@@ -155,18 +153,16 @@ func createRequestUnmarshalingFailureObservation(
 func createHTTPBodyReadFailureObservation(
 	chainID string,
 	err error,
-) qosobservations.Observations {
+) *qosobservations.Observations_Evm {
 	errorDetails := err.Error()
-	return qosobservations.Observations{
-		ServiceObservations: &qosobservations.Observations_Evm{
-			Evm: &qosobservations.EVMRequestObservations{
-				ChainId: chainID,
-				RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
-					EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
-						HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
-						ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
-						ErrorDetails:    &errorDetails,
-					},
+	return &qosobservations.Observations_Evm{
+		Evm: &qosobservations.EVMRequestObservations{
+			ChainId: chainID,
+			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
+				EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
+					HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
+					ValidationError: qosobservations.EVMRequestValidationError_EVM_REQUEST_VALIDATION_ERROR_HTTP_BODY_READ_FAILURE,
+					ErrorDetails:    &errorDetails,
 				},
 			},
 		},

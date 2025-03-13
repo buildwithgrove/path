@@ -30,7 +30,7 @@ type errorContext struct {
 	logger polylog.Logger
 
 	// The observation to return, to be processed by the metrics and data pipeline components.
-	observations qosobservations.Observations
+	evmObservations *qosobservations.Observations_Evm
 
 	// The response to be returned to the user.
 	response jsonrpc.Response
@@ -69,7 +69,9 @@ func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
 // GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
 func (ec *errorContext) GetObservations() qosobservations.Observations {
-	return ec.observations
+	return qosobservations.Observations{
+		ServiceObservations: ec.evmObservations,
+	}
 }
 
 // GetServicePayload should never be called.
