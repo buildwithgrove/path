@@ -37,7 +37,10 @@ dev_up: check_kind
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
 		kubectl config use-context kind-path-localnet; \
-		kubectl create namespace path-local; \
+		kubectl create namespace path; \
+		kubectl create namespace monitoring; \
+		kubectl config set-context --current --namespace=path; \
+		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi

@@ -13,12 +13,12 @@ set -euo pipefail
 #   - In kind environments (without external load balancers), Kubernetes auto-assigns a dynamic 
 #     NodePort (30000-32767 range) unless explicitly specified
 
-PATH_NAMESPACE="path-local"
-SERVICE_PREFIX="envoy-path-local-guard-envoy-gateway"
+PATH_NAMESPACE="path"
+SERVICE_PREFIX="envoy-path-guard-envoy-gateway"
 PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30070}]'
 
 # Gets the name of the Envoy Gateway service in the local cluster.
-# eg. "envoy-path-local-guard-envoy-gateway-55375d27"
+# eg. "envoy-path-guard-envoy-gateway-55375d27"
 get_envoy_gateway_service_name() {
   local envoy_gateway_service_name
   envoy_gateway_service_name=$(kubectl get svc -n "$PATH_NAMESPACE" -o json | jq -r '.items[] | select(.metadata.name | startswith("'"$SERVICE_PREFIX"'")) | .metadata.name')
@@ -26,8 +26,8 @@ get_envoy_gateway_service_name() {
 }
 
 # Patches the Envoy Gateway service to enforce a consistent port number of 30070 inside the container.
-# eg.  NAME                                           TYPE          CLUSTER-IP    EXTERNAL-IP  PORT(S)         AGE
-#      envoy-path-local-guard-envoy-gateway-55375d27  LoadBalancer  10.96.50.102  <pending>    3070:30070/TCP  3m19s
+# eg.  NAME                                     TYPE          CLUSTER-IP    EXTERNAL-IP  PORT(S)         AGE
+#      envoy-path-guard-envoy-gateway-55375d27  LoadBalancer  10.96.50.102  <pending>    3070:30070/TCP  3m19s
 patch_guard_port() {
     kubectl patch svc "$(get_envoy_gateway_service_name)" -n "$PATH_NAMESPACE" --type='json' -p="$PATCH_PAYLOAD"
 }
