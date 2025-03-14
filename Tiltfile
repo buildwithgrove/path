@@ -29,7 +29,7 @@ local_config = read_yaml(local_config_path, default={})
 helm_repo(
     "buildwithgrove", 
     "https://buildwithgrove.github.io/helm-charts/",
-    labels=["helm-charts"],
+    labels=["configuration"],
 )
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
@@ -143,30 +143,31 @@ helm_resource(
 # --------------------------------------------------------------------------- #
 
 # 1.PATH Logs
+# Uses a `k8s_resource` to displays logs for the `path` pod.
 k8s_resource(
     workload="path",
     new_name="path",
-    labels=["logs"],
+    labels=["path"],
     port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
 )
 
-# 2. GUARD (Envoy Gateway) Logs
+# 2. GUARD  Logs
+# Uses a `local_resource` to display logs for the `envoy` and `gateway-helm` pods.
 local_resource(
     "guard",
-    cmd="echo 'Following Envoy logs...'",  # A simple command that completes quickly
+    cmd="echo 'Following GUARD logs...'",
     serve_cmd="kubectl logs -l app.kubernetes.io/name=envoy -l app.kubernetes.io/name=gateway-helm --follow",
-    labels=["logs"],
+    labels=["path"],
     resource_deps=["path"]
 )
 
 # 3. WATCH (Observability) Logs
+# Uses a `local_resource` to display logs for the `grafana`, `kube-state-metrics`, and `prometheus-node-exporter` pods.
 local_resource(
     "watch",
-    cmd="echo 'Following Kube State Metrics logs...'",  # A simple command that completes quickly
-    # TODO_FIX_IN_THIS_PR(@commoddity): Fix the PVC issue that is stopping the Grafana pod from starting.
-    # Then add -l app.kubernetes.io/name=grafana to the serve_cmd.
-    serve_cmd="kubectl logs -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
-    labels=["logs"],
+    cmd="echo 'Following WATCH logs...'", 
+    serve_cmd="kubectl logs -l app.kubernetes.io/name=grafana -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
+    labels=["path"],
     resource_deps=["path"]
 )
