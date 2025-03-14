@@ -99,6 +99,11 @@ helm_resource(
             "Grafana dashboard",
         ),
     ],
+    flags=[
+        "--set", "config.fromSecret.enabled=true",
+        "--set", "config.fromSecret.name=path-config",
+        "--set", "config.fromSecret.key=.config.yaml",
+    ],
     # Port 6060 is exposed to serve pprof data.
     # Run the following commands to view the pprof data:
     #   $ make debug_goroutines
