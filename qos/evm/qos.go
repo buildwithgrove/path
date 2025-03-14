@@ -21,9 +21,16 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 		serviceState: serviceState,
 	}
 
-	return &QoS{
+	requestValidator := &requestValidator{
 		logger:        logger,
-		ServiceState:  serviceState,
-		EndpointStore: evmEndpointStore,
+		chainID:       evmChainID,
+		endpointStore: evmEndpointStore,
+	}
+
+	return &QoS{
+		logger:           logger,
+		ServiceState:     serviceState,
+		EndpointStore:    evmEndpointStore,
+		requestValidator: requestValidator,
 	}
 }
