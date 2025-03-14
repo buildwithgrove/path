@@ -29,7 +29,7 @@ local_config = read_yaml(local_config_path, default={})
 helm_repo(
     "buildwithgrove", 
     "https://buildwithgrove.github.io/helm-charts/",
-    labels=["configuration"],
+    labels=["helm-charts"],
 )
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
@@ -47,19 +47,11 @@ PATH_LOCAL_DIR = LOCAL_DIR + "/path"
 PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
 
 # --------------------------------------------------------------------------- #
-#                              PATH Resources                                 #
+#                              Configuration Resources                        #
 # --------------------------------------------------------------------------- #
-# 1. PATH                                                                     #
-# 2. GUARD (Envoy Gateway)                                                    #
-# 3. WATCH (Observability)                                                    #
+# 1. PATH Config Updater                                                      #
+# 2. Patch Envoy Gateway LoadBalancer                                         #
 # --------------------------------------------------------------------------- #
-
-# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
-# 1. Add place-holder files for sensitive data
-# 2. Add a secret per sensitive data item (e.g. gateway's private key)
-# 3. Load the secrets into environment variables of an init container
-# 4. Use an init container to run the scripts for updating config from environment variables.
-# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
 # Start a Tilt resource to update the PATH config with the local config file.
 local_resource(
@@ -75,6 +67,33 @@ local_resource(
     labels=["configuration"],
 )
 
+# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
+# to ensure it is reachable from outside the cluster at "localhost:3070".
+#
+# For more context, see the comments at:
+# `./local/scripts/patch_envoy_gateway.sh`.
+local_resource(
+    "patch-envoy-gateway",
+    "./local/scripts/patch_envoy_gateway.sh",
+    resource_deps=["path"],
+    labels=["configuration"],
+)
+# --------------------------------------------------------------------------- #
+#                              PATH Resources                                 #
+# --------------------------------------------------------------------------- #
+# The following resources are installed from a PATH Helm chart.               #
+# 1. PATH                                                                     #
+# 2. GUARD (Envoy Gateway)                                                    #
+# 3. WATCH (Observability)                                                    #
+# --------------------------------------------------------------------------- #
+
+# TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
+# 1. Add place-holder files for sensitive data
+# 2. Add a secret per sensitive data item (e.g. gateway's private key)
+# 3. Load the secrets into environment variables of an init container
+# 4. Use an init container to run the scripts for updating config from environment variables.
+# This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
+
 # Build an image with a PATH binary
 docker_build_with_restart(
     "path",
@@ -87,15 +106,16 @@ docker_build_with_restart(
     ],
 )
 
-# Run PATH & GUARD
-# TODO_IMPROVE(@commoddity): Split logging from PATH + GUARD into 
-# separate displays in Tilt for a better developer experience.
+# Run PATH Helm chart, including:
+# 1. PATH
+# 2. GUARD (Envoy Gateway)
+# 3. WATCH (Observability)
 helm_resource(
     "path",
     chart_prefix + "path",
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
-    labels=["path"],
+    labels=["helm-charts"],
     links=[
         link(
             "http://localhost:3000/d/relays/path-service-requests?orgId=1",
@@ -117,55 +137,39 @@ helm_resource(
     resource_deps=["path-config-updater"]
 )
 
-# Add separate k8s_resources to split logs clearly in Tilt UI
+# --------------------------------------------------------------------------- #
+#                              Logs Resources                                 #
+# --------------------------------------------------------------------------- #
+# 1. PATH Logs                                                                #
+# 2. GUARD (Envoy Gateway) Logs                                               #
+# 3. WATCH (Observability) Logs                                               #
+# --------------------------------------------------------------------------- #
 
+# 1.PATH Logs
 local_resource(
     "path-logs",
-    "kubectl logs -l app.kubernetes.io/name=path --follow",
-    labels=["path"],
+    cmd="echo 'Following PATH logs...'",  # A simple command that completes quickly
+    serve_cmd="kubectl logs -l app.kubernetes.io/name=path --follow",
+    labels=["logs"],
     resource_deps=["path"]
-) 
-
-# # PATH pods
-# k8s_resource(
-#     workload="path",
-#     new_name="path",
-#     labels=["path"],
-#     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
-# )
-
-# # GUARD pods (Envoy Gateway)
-# k8s_resource(
-#     workload="path",
-#     new_name="guard",
-#     labels=["guard"],
-#     extra_pod_selectors=[
-#         {"app.kubernetes.io/name": "envoy"},
-#         {"app.kubernetes.io/name": "gateway-helm"},
-#     ],
-# )
-
-# # WATCH pods (Observability)
-# k8s_resource(
-#     workload="path",
-#     new_name="watch",
-#     labels=["watch"],
-#     extra_pod_selectors=[
-#         {"app.kubernetes.io/name": "grafana"},
-#         {"app.kubernetes.io/name": "kube-state-metrics"},
-#         {"app.kubernetes.io/name": "prometheus-node-exporter"},
-#     ],
-# )
-
-# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
-# to ensure it is reachable from outside the cluster at "localhost:3070".
-#
-# For more context, see the comments at:
-# `./local/scripts/patch_envoy_gateway.sh`.
-local_resource(
-    "patch-envoy-gateway",
-    "./local/scripts/patch_envoy_gateway.sh",
-    resource_deps=["path"],
-    labels=["configuration"],
 )
 
+# 2. GUARD (Envoy Gateway) Logs
+local_resource(
+    "guard-logs",
+    cmd="echo 'Following Envoy logs...'",  # A simple command that completes quickly
+    serve_cmd="kubectl logs -l app.kubernetes.io/name=envoy -l app.kubernetes.io/name=gateway-helm --follow",
+    labels=["logs"],
+    resource_deps=["path"]
+)
+
+# 3. WATCH (Observability) Logs
+local_resource(
+    "watch-logs",
+    cmd="echo 'Following Kube State Metrics logs...'",  # A simple command that completes quickly
+    # TODO_FIX_IN_THIS_PR(@commoddity): Fix the PVC issue that is stopping the Grafana pod from starting.
+    # Then add -l app.kubernetes.io/name=grafana to the serve_cmd.
+    serve_cmd="kubectl logs -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
+    labels=["logs"],
+    resource_deps=["path"]
+)
