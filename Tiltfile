@@ -47,6 +47,7 @@ PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
 # --------------------------------------------------------------------------- #
 # 1. PATH                                                                     #
 # 2. GUARD (Envoy Gateway)                                                    #
+# 3. WATCH (Observability)                                                    #
 # --------------------------------------------------------------------------- #
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
@@ -115,61 +116,3 @@ local_resource(
     "./local/scripts/patch_envoy_gateway.sh",
     resource_deps=["path"]
 ) 
-
-# ----------------------------------------------------------------------------- #
-#                            Observability Resources                            #
-# ----------------------------------------------------------------------------- #
-# 1. Prometheus                                                                 #
-# 2. Loki                                                                       #
-# 3. Grafana                                                                    #
-# ----------------------------------------------------------------------------- #
-
-helm_repo("prometheus-community", "https://prometheus-community.github.io/helm-charts")
-helm_repo("grafana-helm-repo", "https://grafana.github.io/helm-charts")
-
-# Increase timeout for building the image
-update_settings(k8s_upsert_timeout_secs=120)
-
-helm_resource(
-    "observability",
-    "prometheus-community/kube-prometheus-stack",
-    flags=[
-        "--values=./local/observability/prometheus-stack.yaml",
-        "--set=grafana.defaultDashboardsEnabled="
-        + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
-    ],
-    resource_deps=["prometheus-community"],
-)
-
-helm_resource(
-    "loki",
-    "grafana-helm-repo/loki-stack",
-    flags=[
-        "--values=./local/observability/loki-stack.yaml",
-    ],
-    labels=["monitoring"],
-    resource_deps=["grafana-helm-repo"],
-)
-
-k8s_resource(
-    new_name="grafana",
-    workload="observability",
-    extra_pod_selectors=[{"app.kubernetes.io/name": "grafana"}],
-    port_forwards=["3000:3000"],
-    labels=["monitoring"],
-    links=[
-        link("localhost:3000", "Grafana"),
-    ],
-    pod_readiness="wait",
-    discovery_strategy="selectors-only",
-)
-
-# Import custom grafana dashboards into Kubernetes ConfigMap
-configmap_create("path-dashboards", from_file=listdir("local/observability/grafana-dashboards/"))
-
-# Grafana discovers dashboards to "import" via a label
-local_resource(
-    "path-dashboards-label",
-    "kubectl label configmap path-dashboards grafana_dashboard=1 --overwrite",
-    resource_deps=["path-dashboards"],
-)
