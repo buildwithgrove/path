@@ -63,8 +63,8 @@ EOF
 **Create gateway and application accounts in your keyring**
 
 ```bash
-pkd keys add gateway
-pkd keys add application
+poktrolld keys add gateway
+poktrolld keys add application
 ```
 
 Fund the accounts by visiting the tools & faucets [here](https://dev.poktroll.com/explore/tools).
@@ -72,8 +72,8 @@ Fund the accounts by visiting the tools & faucets [here](https://dev.poktroll.co
 For **Grove employees only**, you can manually fund the accounts:
 
 ```bash
-pkd_beta_tx tx bank send faucet_beta $(pkd keys show -a application) 6900000000042upokt
-pkd_beta_tx tx bank send faucet_beta $(pkd keys show -a gateway) 6900000000042upokt
+pkd_beta_tx tx bank send faucet_beta $(poktrolld keys show -a application) 6900000000042upokt
+pkd_beta_tx tx bank send faucet_beta $(poktrolld keys show -a gateway) 6900000000042upokt
 ```
 
 **Stake the gateway:**
@@ -118,10 +118,10 @@ You can validate it like so:
 poktrolld keys list
 
 # Gateway only
-pkd keys show -a gateway
+poktrolld keys show -a gateway
 
 # Application only
-pkd keys show -a application
+poktrolld keys show -a application
 ```
 
 ## 2. Configure PATH for Shannon
