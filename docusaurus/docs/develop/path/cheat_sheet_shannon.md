@@ -134,6 +134,14 @@ Run the following command to generate a Shannon config at `local/path/config/.co
 make shannon_populate_config
 ```
 
+:::important Command configuration
+This command relies on `poktrolld` command line interface to export the Gateway and Application address from your keyring backend.
+
+To override the keyring backend, you can export the `POKTROLL_TEST_KEYRING_BACKEND` environment variable (default 'test').
+
+To override the poktrolld home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
+:::
+
 Note that running `make shannon_populate_config` is equivalent to running the following commands:
 
 ```bash
