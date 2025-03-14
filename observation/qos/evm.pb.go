@@ -13,11 +13,13 @@
 package qos
 
 import (
-	_ "github.com/buildwithgrove/path/observation/metadata"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
+	_ "github.com/buildwithgrove/path/observation/metadata"
 )
 
 const (
@@ -160,10 +162,11 @@ type EVMRequestObservations struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// chainID is the blockchain identifier for the evm QoS implementation.
+	// chain_id is the blockchain identifier for the evm QoS implementation.
 	// This is preset by the processor and not determined by the request.
 	// Expected as the `Result` field in eth_chainId responses.
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+
 	// If set with one of the validation failure types, indicates the request failed validation
 	// and contains details about the specific failure type.
 	// The HTTP status code in the selected failure type overrides any status codes from
@@ -177,10 +180,12 @@ type EVMRequestObservations struct {
 	//	*EVMRequestObservations_EvmHttpBodyReadFailure
 	//	*EVMRequestObservations_EvmRequestUnmarshalingFailure
 	RequestValidationFailure isEVMRequestObservations_RequestValidationFailure `protobuf_oneof:"request_validation_failure"`
+
 	// The EVM blockchain service's JSON-RPC request.
 	// This field will be populated only if request validation succeeds.
 	// TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
 	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,4,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3" json:"jsonrpc_request,omitempty"`
+
 	// EVM-specific observations from endpoint(s) that responded to the service request.
 	// Multiple observations may occur when:
 	// * Original endpoint fails

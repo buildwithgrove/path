@@ -1,4 +1,3 @@
-// response.go
 package evm
 
 import (
@@ -8,6 +7,7 @@ import (
 // response defines methods needed for response metrics collection.
 // Abstracts proto-specific details from metrics logic.
 // DEV_NOTE: You MUST update this when adding new metric requirements.
+// TODO(@adshmh): Document the requirement above and refactor the metrics/qos package to generalize to all service types.
 type response interface {
 	// GetResponseValidationError returns the validation error if any.
 	// A nil return value indicates the response is valid.
@@ -19,6 +19,8 @@ type response interface {
 	GetHTTPStatusCode() int
 }
 
+var _ response = responseAdapter{}
+
 // responseAdapter is an implementation of the response interface
 // that wraps different response types and provides a common interface.
 type responseAdapter struct {
@@ -26,6 +28,7 @@ type responseAdapter struct {
 	httpStatusCode  int
 }
 
+// GetResponseValidationError implements the response interface.
 func (a responseAdapter) GetResponseValidationError() *qos.EVMResponseValidationError {
 	if a.validationError == nil {
 		return nil
@@ -39,6 +42,7 @@ func (a responseAdapter) GetResponseValidationError() *qos.EVMResponseValidation
 	return a.validationError
 }
 
+// GetHTTPStatusCode implements the response interface.
 func (a responseAdapter) GetHTTPStatusCode() int {
 	return a.httpStatusCode
 }
@@ -46,6 +50,7 @@ func (a responseAdapter) GetHTTPStatusCode() int {
 // extractEndpointResponseFromObservation extracts the response data from an endpoint observation.
 // Returns nil if no response is present.
 // DEV_NOTE: You MUST update this when adding new metric requirements.
+// TODO(@adshmh): Document the requirement above and refactor the metrics/qos package to generalize to all service types.
 func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservation) response {
 	if observation == nil {
 		return nil
@@ -99,8 +104,9 @@ func extractEndpointResponseFromObservation(observation *qos.EVMEndpointObservat
 }
 
 // getEndpointResponseValidationFailureReason returns why the endpoint response failed QoS validation.
-// Returns the validation error from the first endpoint observation, or an empty string if none exist
-// or if the response was valid.
+// - If there is at least one endpoint observation: returns the validation error from the first one
+// - If there are no endpoint observations: returns an empty string
+// - If there are no validation errors: returns an empty string
 func getEndpointResponseValidationFailureReason(observations *qos.EVMRequestObservations) string {
 	// First check if we have any endpoint observations
 	if len(observations.GetEndpointObservations()) == 0 {

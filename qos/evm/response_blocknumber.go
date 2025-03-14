@@ -27,7 +27,7 @@ func responseUnmarshallerBlockNumber(
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-			// DEV_NOTE: A valid JSONRPC error response is considered a valid response, marked by a nil value for validationError field.
+			validationError: nil, // Explicitly set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 
@@ -114,6 +114,8 @@ func (r responseToBlockNumber) getResponsePayload() []byte {
 	return bz
 }
 
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToBlockNumber) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }

@@ -83,6 +83,8 @@ func (r responseGeneric) getResponsePayload() []byte {
 	return bz
 }
 
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseGeneric) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
@@ -100,11 +102,11 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 	}
 
 	// Response successfully parsed into JSONRPC format.
-	// A nil validationError field indicates a valid response.
 	return responseGeneric{
 		logger: logger,
 
 		jsonRPCResponse: response,
+		validationError: nil, // Set explicitly to indicate a valid response.
 	}, nil
 }
 

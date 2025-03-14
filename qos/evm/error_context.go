@@ -56,6 +56,8 @@ func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 
 	httpStatusCode := ec.responseHTTPStatusCode
+	// A 0 status code indicates that no HTTP status code was received, observed
+	// or identified yet.
 	if httpStatusCode == 0 {
 		httpStatusCode = ec.response.GetRecommendedHTTPStatusCode()
 	}

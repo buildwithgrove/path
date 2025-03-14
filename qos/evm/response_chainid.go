@@ -122,6 +122,8 @@ func (r responseToChainID) getResponsePayload() []byte {
 	return bz
 }
 
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 func (r responseToChainID) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }

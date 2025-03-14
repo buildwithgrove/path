@@ -4,14 +4,19 @@ import (
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
-// getHTTPStatusCodeFromObservations extracts the HTTP status code that would be returned to the user.
-// Returns the appropriate status code by checking:
-// 1. First check request validation failures (takes precedence)
-// 2. Then check endpoint response observations
-// 3. Return 0 if no status code can be determined
+const (
+	// TODO_TECHDEBT(@adshmh): Revisit the decision to use 0 as the unknown status code if one cannot be found.
+	unknownHTTPStatusCode = 0
+)
+
+// getHTTPStatusCodeFromObservations tries to extract an HTTP status code from the observations.
+// Returns the found status code by checking (in order of precedence):
+// 1. Request validation failures for an HTTP status code
+// 2. Then, check endpoint response observations for an HTTP status code
+// 3. Return the unknownHTTPStatusCode (0) if no status code can be determined
 func getHTTPStatusCodeFromObservations(observations *qos.EVMRequestObservations) int {
 	if observations == nil {
-		return 0
+		return unknownHTTPStatusCode
 	}
 
 	// Use request interface to check for validation failures
@@ -22,14 +27,15 @@ func getHTTPStatusCodeFromObservations(observations *qos.EVMRequestObservations)
 
 	endpointObservations := observations.GetEndpointObservations()
 
-	// No status code could be determined
+	// No status code could be determined since there are no endpoint observations
 	if len(endpointObservations) == 0 {
-		return 0
+		return unknownHTTPStatusCode
 	}
 
-	// Check endpoint observations
+	// Check endpoint observations for status code if they are present
 	// The last endpoint observation's status code is what's returned to the user
-	lastObs := endpointObservations[len(endpointObservations)-1]
+	lastObsIndex := len(endpointObservations) - 1
+	lastObs := endpointObservations[lastObsIndex]
 
 	// Use the response interface to get the HTTP status code
 	if resp := extractEndpointResponseFromObservation(lastObs); resp != nil {
@@ -37,5 +43,5 @@ func getHTTPStatusCodeFromObservations(observations *qos.EVMRequestObservations)
 	}
 
 	// No status code could be determined
-	return 0
+	return unknownHTTPStatusCode
 }

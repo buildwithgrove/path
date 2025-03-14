@@ -80,7 +80,8 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 	req := newRequestAdapter(observations)
 	isRequestValid := req.GetRequestValidationError() == nil
 
-	// Get request method - handle the case where jsonrpc_request might be nil for invalid requests
+	// Get JSON RPC request method.
+	// Handle the case where jsonrpc_request might be nil by defaulting to an empty string.
 	var requestMethod string
 	if jsonReq := observations.GetJsonrpcRequest(); jsonReq != nil {
 		requestMethod = jsonReq.GetMethod()
@@ -108,18 +109,16 @@ func PublishMetrics(observations *qos.EVMRequestObservations) {
 	}
 
 	// Get the validation error kind as a string
-	var errorKind string
+	var validationErrorKind string = "UNKNOWN"
 	if validationErr := req.GetRequestValidationError(); validationErr != nil {
-		errorKind = validationErr.String()
-	} else {
-		errorKind = "UNKNOWN"
+		validationErrorKind = validationErr.String()
 	}
 
 	// Increment the request validation failure counter
 	requestValidationErrorsTotal.With(
 		prometheus.Labels{
 			"chain_id":              observations.GetChainId(),
-			"validation_error_kind": errorKind,
+			"validation_error_kind": validationErrorKind,
 			"http_status_code":      httpStatusCodeStr,
 		},
 	).Inc()

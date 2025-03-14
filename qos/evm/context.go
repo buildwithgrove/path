@@ -36,8 +36,12 @@ type response interface {
 	// GetObservation returns an observation of the endpoint's response
 	// for quality metrics tracking, including HTTP status code.
 	GetObservation() qosobservations.EVMEndpointObservation
+
+	// GetHTTPResponse returns the HTTP response to be sent back to the client.
 	GetHTTPResponse() httpResponse
 }
+
+var _ response = &endpointResponse{}
 
 type endpointResponse struct {
 	protocol.EndpointAddr

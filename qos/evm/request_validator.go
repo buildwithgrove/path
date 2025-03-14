@@ -13,6 +13,7 @@ import (
 )
 
 // maximum length of the error message stored in request validation failure observations and logs.
+// This is used to prevent overly verbose error messages from being stored in logs and metrics leading to excessive memory usage and cost.
 const maxErrMessageLen = 1000
 
 // requestValidator handles EVM request validation, generating appropriate error contexts
@@ -35,8 +36,8 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 	// TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
 	// Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
 	// Benefits: Decouples the qos package from HTTP-specific error handling.
-	//
-	// Read the request body
+
+	// Read the HTTP request body
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		logger.Warn().Err(err).Msg("HTTP request body read failed - returning generic error response")
@@ -71,7 +72,6 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 
 // createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.
 func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
-
 	// Create the observations object with the HTTP body read failure observation
 	observations := createHTTPBodyReadFailureObservation(rv.chainID, err)
 

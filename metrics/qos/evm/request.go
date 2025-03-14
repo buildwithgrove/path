@@ -21,11 +21,14 @@ type request interface {
 	GetHTTPStatusCode() int
 }
 
+var _ request = requestAdapter{}
+
 // requestAdapter implements the request interface for EVMRequestObservations
 type requestAdapter struct {
 	observations *qos.EVMRequestObservations
 }
 
+// GetRequestValidationError satisfies the request interface
 func (a requestAdapter) GetRequestValidationError() *qos.EVMRequestValidationError {
 	// Check if this is an HTTP body read failure
 	if httpBodyReadFailure := a.observations.GetEvmHttpBodyReadFailure(); httpBodyReadFailure != nil {
@@ -41,12 +44,14 @@ func (a requestAdapter) GetRequestValidationError() *qos.EVMRequestValidationErr
 	return nil
 }
 
+// IsSuccessful satisfies the request interface.
 func (a requestAdapter) IsSuccessful() bool {
 	// If there are no endpoint observations, the request was not successful
 	if len(a.observations.GetEndpointObservations()) == 0 {
 		return false
 	}
 
+	// Iterate through all endpoint observations and return true if any (i.e. at least one) are valid
 	for _, observation := range a.observations.GetEndpointObservations() {
 		if resp := extractEndpointResponseFromObservation(observation); resp != nil {
 			// Response is valid if GetResponseValidationError returns nil
@@ -59,6 +64,7 @@ func (a requestAdapter) IsSuccessful() bool {
 	return false
 }
 
+// GetHTTPStatusCode satisfies the request interface.
 func (a requestAdapter) GetHTTPStatusCode() int {
 	// Check if this is an HTTP body read failure
 	if httpBodyReadFailure := a.observations.GetEvmHttpBodyReadFailure(); httpBodyReadFailure != nil {
@@ -70,7 +76,7 @@ func (a requestAdapter) GetHTTPStatusCode() int {
 		return int(unmarshalingFailure.GetHttpStatusCode())
 	}
 
-	// No specific HTTP status code for this request
+	// No specific HTTP status code for this request was recorded, found or determined otherwise
 	return 0
 }
 

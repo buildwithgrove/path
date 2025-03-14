@@ -58,8 +58,9 @@ func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response 
 }
 
 // newErrResponseNoEndpointResponse creates a JSON-RPC error response for the case
-// where no endpoint response was received at all:
-// - Preserves original request ID
+// where no endpoint response was received at all.
+// This response:
+// - Preserves the original request ID
 // - Marks error as retryable for safe client retry
 // - Provides actionable message for clients
 func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {

@@ -53,31 +53,33 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // chainID is the blockchain identifier for the evm QoS implementation.
+  // chain_id is the blockchain identifier is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 1;
-  
-  // If set with one of the validation failure types, indicates the request failed validation
-  // and contains details about the specific failure type.
-  // The HTTP status code in the selected failure type overrides any status codes from 
-  // endpoint observations and should be returned to the client.
-  // If this oneof is NOT set, the request passed validation and the HTTP status code
-  // from the most recent endpoint observation should be used instead.
+
+  // If set with one of the validation failure types:
+  //  - Indicates the request failed validation
+  //  - Contains details about the specific failure type
+  //  - The HTTP status code in the selected failure type overrides any status codes from
+  //    endpoint observations and should be returned to the client
+  // If this oneof is NOT set:
+  //  - The request passed validation
+  //  - The HTTP status code from the most recent endpoint observation should be used instead
   // Note: If there is an error reading the HTTP request, there will be no jsonrpc_request.
   oneof request_validation_failure {
     // Indicates a failure to read the HTTP request body
     EVMHTTPBodyReadFailure evm_http_body_read_failure = 2;
-    
+
     // Indicates a failure to unmarshal/parse the request
     EVMRequestUnmarshalingFailure evm_request_unmarshaling_failure = 3;
   }
-  
+
   // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
   JsonRpcRequest jsonrpc_request = 4;
-  
+
   // EVM-specific observations from endpoint(s) that responded to the service request.
   // Multiple observations may occur when:
   // * Original endpoint fails
@@ -93,10 +95,10 @@ message EVMRequestObservations {
 message EVMHTTPBodyReadFailure {
   // The HTTP status code to return to the client - typically 500 Internal Server Error
   int32 http_status_code = 1;
-  
+
   // The specific type of request validation error
   EVMRequestValidationError validation_error = 2;
-  
+
   // Additional error details if available
   optional string error_details = 3;
 }
@@ -106,10 +108,10 @@ message EVMHTTPBodyReadFailure {
 message EVMRequestUnmarshalingFailure {
   // The HTTP status code to return to the client - typically 400 Bad Request
   int32 http_status_code = 1;
-  
+
   // The specific type of request validation error
   EVMRequestValidationError validation_error = 2;
-  
+
   // Additional error details if available
   optional string error_details = 3;
 }
@@ -160,7 +162,7 @@ message EVMEndpointObservation {
 message EVMChainIDResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
-  
+
   // The chain ID value returned in the response
   string chain_id_response = 2;
 
@@ -174,7 +176,7 @@ message EVMChainIDResponse {
 message EVMBlockNumberResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
-  
+
   // The block number value returned in the response
   string block_number_response = 2;
 
@@ -188,7 +190,7 @@ message EVMBlockNumberResponse {
 message EVMUnrecognizedResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
-  
+
   // The JSON-RPC response received
   JsonRpcResponse jsonrpc_response = 2;
 
@@ -202,7 +204,7 @@ message EVMUnrecognizedResponse {
 message EVMEmptyResponse {
   // The HTTP status code received from the endpoint, typically 204 No Content or an error code
   int32 http_status_code = 1;
-  
+
   // Always set to EMPTY for empty responses
   EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
 }
@@ -212,7 +214,7 @@ message EVMEmptyResponse {
 message EVMNoResponse {
   // The HTTP status code to return, typically 503 Service Unavailable
   int32 http_status_code = 1;
-  
+
   // Always set to NO_RESPONSE for this scenario
   EVMResponseValidationError response_validation_error = 2 [(metadata.semantic_meaning) = "Validity failure type"];
 }
