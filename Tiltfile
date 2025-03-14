@@ -115,7 +115,6 @@ helm_resource(
     chart_prefix + "path",
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
-    labels=["helm-charts"],
     links=[
         link(
             "http://localhost:3000/d/relays/path-service-requests?orgId=1",
@@ -146,17 +145,17 @@ helm_resource(
 # --------------------------------------------------------------------------- #
 
 # 1.PATH Logs
-local_resource(
-    "path-logs",
-    cmd="echo 'Following PATH logs...'",  # A simple command that completes quickly
-    serve_cmd="kubectl logs -l app.kubernetes.io/name=path --follow",
+k8s_resource(
+    workload="path",
+    new_name="path",
     labels=["logs"],
-    resource_deps=["path"]
+    port_forwards=["6060:6060"],
+    extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
 )
 
 # 2. GUARD (Envoy Gateway) Logs
 local_resource(
-    "guard-logs",
+    "guard",
     cmd="echo 'Following Envoy logs...'",  # A simple command that completes quickly
     serve_cmd="kubectl logs -l app.kubernetes.io/name=envoy -l app.kubernetes.io/name=gateway-helm --follow",
     labels=["logs"],
@@ -165,7 +164,7 @@ local_resource(
 
 # 3. WATCH (Observability) Logs
 local_resource(
-    "watch-logs",
+    "watch",
     cmd="echo 'Following Kube State Metrics logs...'",  # A simple command that completes quickly
     # TODO_FIX_IN_THIS_PR(@commoddity): Fix the PVC issue that is stopping the Grafana pod from starting.
     # Then add -l app.kubernetes.io/name=grafana to the serve_cmd.
