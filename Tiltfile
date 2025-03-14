@@ -26,7 +26,11 @@ local_config = read_yaml(local_config_path, default={})
 
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
-helm_repo("buildwithgrove", "https://buildwithgrove.github.io/helm-charts/")
+helm_repo(
+    "buildwithgrove", 
+    "https://buildwithgrove.github.io/helm-charts/",
+    labels=["configuration"],
+)
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
     helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
@@ -67,7 +71,8 @@ local_resource(
     kubectl rollout restart deployment path || \
     echo "Deployment not found - skipping rollout restart"
     ''',
-    deps=[PATH_LOCAL_CONFIG_FILE]
+    deps=[PATH_LOCAL_CONFIG_FILE],
+    labels=["configuration"],
 )
 
 # Build an image with a PATH binary
@@ -88,8 +93,6 @@ docker_build_with_restart(
 helm_resource(
     "path",
     chart_prefix + "path",
-    # TODO_MVP(@adshmh): Add the CLI flag for loading the configuration file.
-    # This can only be done once the CLI flags feature has been implemented.
     image_deps=["path"],
     image_keys=[("image.repository", "image.tag")],
     labels=["path"],
@@ -99,6 +102,9 @@ helm_resource(
             "Grafana dashboard",
         ),
     ],
+    # Enable PATH to load the config from a secret.
+    # PATH supports loading the config from either a Secret or a ConfigMap.
+    # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
     flags=[
         "--set", "config.fromSecret.enabled=true",
         "--set", "config.fromSecret.name=path-config",
@@ -111,6 +117,46 @@ helm_resource(
     resource_deps=["path-config-updater"]
 )
 
+# Add separate k8s_resources to split logs clearly in Tilt UI
+
+local_resource(
+    "path-logs",
+    "kubectl logs -l app.kubernetes.io/name=path --follow",
+    labels=["path"],
+    resource_deps=["path"]
+) 
+
+# # PATH pods
+# k8s_resource(
+#     workload="path",
+#     new_name="path",
+#     labels=["path"],
+#     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
+# )
+
+# # GUARD pods (Envoy Gateway)
+# k8s_resource(
+#     workload="path",
+#     new_name="guard",
+#     labels=["guard"],
+#     extra_pod_selectors=[
+#         {"app.kubernetes.io/name": "envoy"},
+#         {"app.kubernetes.io/name": "gateway-helm"},
+#     ],
+# )
+
+# # WATCH pods (Observability)
+# k8s_resource(
+#     workload="path",
+#     new_name="watch",
+#     labels=["watch"],
+#     extra_pod_selectors=[
+#         {"app.kubernetes.io/name": "grafana"},
+#         {"app.kubernetes.io/name": "kube-state-metrics"},
+#         {"app.kubernetes.io/name": "prometheus-node-exporter"},
+#     ],
+# )
+
 # Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
 # to ensure it is reachable from outside the cluster at "localhost:3070".
 #
@@ -119,5 +165,7 @@ helm_resource(
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
-    resource_deps=["path"]
-) 
+    resource_deps=["path"],
+    labels=["configuration"],
+)
+
