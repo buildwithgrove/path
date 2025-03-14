@@ -82,6 +82,7 @@ local_resource(
 #                              PATH Resources                                 #
 # --------------------------------------------------------------------------- #
 # The following resources are installed from a PATH Helm chart.               #
+# Repo: https://github.com/buildwithgrove/helm-charts/tree/main/charts/path   #
 # 1. PATH                                                                     #
 # 2. GUARD (Envoy Gateway)                                                    #
 # 3. WATCH (Observability)                                                    #
@@ -106,10 +107,7 @@ docker_build_with_restart(
     ],
 )
 
-# Run PATH Helm chart, including:
-# 1. PATH
-# 2. GUARD (Envoy Gateway)
-# 3. WATCH (Observability)
+# Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
     "path",
     chart_prefix + "path",
