@@ -347,6 +347,12 @@ func (*EVMEndpointObservation_UnrecognizedResponse) isEVMEndpointObservation_Res
 
 func (*EVMEndpointObservation_EmptyResponse) isEVMEndpointObservation_ResponseObservation() {}
 
+// TODO_MVP(@adshmh): Implement a consolidated SanctionObservation message structure that:
+//  1. Contains both SanctionType enum and RecommendedSanction field
+//  2. Can be embedded as a single field within all qos/Response.proto messages
+//  3. Ensures sanction policies are explicitly documented within message definitions
+//  4. Maintains alignment with the Morse protocol sanction specifications
+//
 // EVMChainIDResponse stores the response to an `eth_chainId` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 type EVMChainIDResponse struct {
