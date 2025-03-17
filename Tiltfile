@@ -79,15 +79,16 @@ local_resource(
     labels=["configuration"],
 )
 
-# --------------------------------------------------------------------------- #
-#                              PATH Resources                                 #
-# --------------------------------------------------------------------------- #
-# The following resources are installed from a PATH Helm chart.               #
-# Repo: https://github.com/buildwithgrove/helm-charts/tree/main/charts/path   #
-# 1. PATH (PATH API & Toolkit Harness): RPC/API Gateway                                                                       #
-# 2. GUARD (Gateway Utilities for Authentication, Routing & Defense): Envoy Gateway                                                    #
-# 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability                                                    #
-# --------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------------- #
+#                                  PATH Resources                                     #
+# ----------------------------------------------------------------------------------- #
+# The following resources are installed from the PATH Helm chart.                     #
+# Repo: https://github.com/buildwithgrove/helm-charts/tree/main/charts/path           #
+# ----------------------------------------------------------------------------------- #
+# 1. PATH (PATH API & Toolkit Harness): RPC/API Gateway                               #
+# 2. GUARD (Gateway Utilities for Authentication, Routing & Defense): Envoy Gateway   #
+# 3. WATCH (Workload Analytics and Telemetry for Comprehensive Health): Observability #
+# ----------------------------------------------------------------------------------- #
 
 # TODO_TECHDEBT(@adshmh): use secrets for sensitive data with the following steps:
 # 1. Add place-holder files for sensitive data
