@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: PATH Config
 description: PATH configuration details
 ---
@@ -8,16 +8,6 @@ description: PATH configuration details
 <h1>PATH<br/>Path Configration YAML File</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 </div>
-
-:::info PATH Configuration
-
-These instructions are intended for configuring the **PATH Gateway**.
-
-**Envoy Proxy** has its own set of configuration files.
-
-For details, see the the [**Envoy Configuration Guide**](../envoy/envoy_config.md).
-
-:::
 
 ## Table of Contents <!-- omit in toc -->
 
