@@ -7,6 +7,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/qos"
+	"github.com/buildwithgrove/path/metrics/protocol"
 	"github.com/buildwithgrove/path/observation"
 )
 
@@ -29,4 +30,7 @@ func (pmr *PrometheusMetricsReporter) Publish(observations *observation.RequestR
 
 	// Publish QoS observations
 	qos.PublishQoSMetrics(observations.GetQos())
+
+	// Publish Protocol observations
+	protocol.PublishMetrics(observations.GetProtocol())
 }

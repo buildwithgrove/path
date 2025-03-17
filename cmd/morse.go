@@ -22,10 +22,6 @@ func getMorseProtocol(
 		return nil, fmt.Errorf("failed to create morse full node: %v", err)
 	}
 
-	protocol, err := morse.NewProtocol(logger, fullNode, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create morse protocol: %v", err)
-	}
-
+	protocol := morse.NewProtocol(logger, fullNode, config)
 	return protocol, nil
 }

@@ -3,12 +3,65 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
+// MorseEndpointErrorType enumerates possible relay errors when interacting with Morse endpoints
+enum MorseEndpointErrorType {
+  MORSE_ENDPOINT_ERROR_UNSPECIFIED = 0;
+  MORSE_ENDPOINT_ERROR_CONNECTION_FAILED = 1;
+  MORSE_ENDPOINT_ERROR_TIMEOUT = 2;
+  MORSE_ENDPOINT_ERROR_MAXED_OUT = 3;
+  MORSE_ENDPOINT_ERROR_MISCONFIGURED = 4;
+  MORSE_ENDPOINT_ERROR_INVALID_RESPONSE = 5;
+  MORSE_ENDPOINT_ERROR_INTERNAL = 6;  // Added for internal gateway errors
+}
+
+// TODO_DOCUMENT(@adshmh): Document the sanction system in the Morse protocol implementation:
+// - Enumerate all sanction types with their specific triggers
+// - Detail error conditions that activate each sanction category
+// - Explain the rationale behind each sanction's severity level
+// - Specify sanction durations and how they're calculated
+// - Document potential escalation path for repeated violations
+// - Include examples of boundary cases where sanctions apply/don't apply
+//
+// MorseSanctionType specifies the duration type for endpoint sanctions
+enum MorseSanctionType {
+  MORSE_SANCTION_UNSPECIFIED = 0;
+  MORSE_SANCTION_SESSION = 1;  // Valid only for current session
+  MORSE_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+}
+
 // MorseRequestObservations contains Morse-specific observations collected from relays
 // handling a single service request.
 message MorseRequestObservations {
-  // Application address that signed the associated relay(s).
-  // Note: In Grove terminology, "Gigastake" refers to Morse apps staked across multiple blockchains.
-  string app_address = 1;
+  // Service ID (i.e. chain ID) for which the observation was made
+  string service_id = 1;
+  
+  // Multiple observations possible if:
+  // - Original endpoint returns invalid response
+  // - Retry mechanism activates
+  repeated MorseEndpointObservation endpoint_observations = 2;
+}
+
+// MorseEndpointObservation stores a single observation from an endpoint
+message MorseEndpointObservation {
+  // Address of the endpoint handling the request
+  string endpoint_addr = 1;
+  
+  // Application address that signed the associated relay
+  string app_address = 2;
+  
+  // Session information when available
+  string session_key = 3;
+  string session_service_id = 4;
+  int32 session_height = 5; // session start height
+  
+  // Error type if relay to this endpoint failed
+  optional MorseEndpointErrorType error_type = 6;
+  
+  // Additional error details when available
+  optional string error_details = 7;
+  
+  // Recommended sanction type based on the error
+  optional MorseSanctionType recommended_sanction = 8;
 }
 
 // MorseObservationsList is a wrapper message that enables embedding lists of

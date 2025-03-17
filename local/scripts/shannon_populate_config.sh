@@ -7,7 +7,7 @@ CONFIG_FILE="./local/path/.config.yaml"
 
 # Wrapper function for poktrolld with overridden flags
 pkd() {
-    poktrolld --keyring-backend="${POKTROLL_TEST_KEYRING_BACKEND:-test}" --home="${POKTROLL_HOME_PROD:-/Users/$(whoami)/.poktroll}" "$@"
+    poktrolld --keyring-backend="${POKTROLL_TEST_KEYRING_BACKEND:-test}" --home="${POKTROLL_HOME_PROD:-${HOME}/.poktroll}" "$@"
 }
 
 # Function to check if a command exists on the system

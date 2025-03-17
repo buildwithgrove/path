@@ -6,11 +6,11 @@
 
 # NOTE: All of these requests assume a Shannon Gateway, as the service ID is 'anvil'.
 
-.PHONY: debug_anvil_supplier_info_msg
-debug_anvil_supplier_info_msg: ## Displays debugging guidance for Anvil supplier issues
+.PHONY: debug_relayminer_supplier_info_msg
+debug_relayminer_supplier_info_msg: ## Displays debugging guidance for Anvil supplier issues
 	@echo "#######################################################################################################################################"
-	@echo "INFO: If the request did not succeed, look into debugging the Anvil supplier by reviewing:"
-	@echo "  https://www.notion.so/buildwithgrove/PATH-Anvil-RelayMiner-Supplier-in-E2E-Test-infrastructure-17da36edfff680da98f2ff01705be00b?pvs=4"
+	@echo "INFO: If a request did not succeed, look into debugging the Anvil supplier by reviewing:"
+	@echo "  https://www.notion.so/buildwithgrove/PATH-Shannon-Beta-Critical-Relay-Miner-Infrastructure-for-PATH-Supplier-Anvil-E2E-17da36edfff680da98f2ff01705be00b"
 	@echo "########################################################################################################################################"
 
 .PHONY: check_path_up_with_envoy
@@ -68,7 +68,7 @@ test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_i
 ############################
 
 .PHONY: test_request__evm_endpoint
-test_request__evm_endpoint: check_path_up_without_envoy debug_anvil_supplier_info_msg ## Test EVM endpoint request against the PATH Gateway running on port 3069 without GUARD
+test_request__evm_endpoint: check_path_up_without_envoy debug_relayminer_supplier_info_msg ## Test EVM endpoint request against the PATH Gateway running on port 3069 without GUARD
 	curl http://localhost:3069/v1/ \
 		-X POST \
 		-H "Content-Type: application/json" \

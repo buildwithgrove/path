@@ -3,8 +3,18 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane 
     extraPortMappings:
-    - containerPort: 30070 # Port will be patched to this after install
+    # GUARD (Envoy Gateway)
+    # Port will be patched to 30070 after install
+    # For more context see: 
+    #   https://github.com/buildwithgrove/path/blob/main/local/scripts/patch_envoy_gateway.sh
+    - containerPort: 30070 
       hostPort: 3070
+      protocol: TCP
+    # WATCH (Grafana)
+    # For usage instructions see:
+    #   https://github.com/buildwithgrove/helm-charts/blob/main/charts/watch/docs/accessing-grafana.md
+    - containerPort: 80
+      hostPort: 3000
       protocol: TCP
 containerdConfigPatches:
   # Ensure kind can pull images from GitHub Container Registry
