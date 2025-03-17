@@ -14,7 +14,9 @@ description: High-level architecture overview and detailed walkthrough
 
 - [Introduction](#introduction)
   - [Envoy Gateway](#envoy-gateway)
-  - [Request Flow](#request-flow)
+- [Helm Chart](#helm-chart)
+- [Auth Methods](#auth-methods)
+  - [API Key Auth](#api-key-auth)
 
 # Introduction
 
@@ -47,16 +49,30 @@ _Envoy Gateway is an open source project for managing Envoy Proxy as a standalon
 
 - [Envoy Gateway Resources](https://gateway.envoyproxy.io/docs/concepts/concepts_overview/)
 
-## Request Flow
+# Helm Chart
 
-The default authentication flow, which uses Envoy Gateway's built-in [API key authentication](https://gateway.envoyproxy.io/docs/tasks/security/apikey-auth/), is as follows:
+The GUARD Helm chart is used to install and configure Envoy Gateway, as well as the other components required to run GUARD.
+
+# Auth Methods
 
 :::info IN PROGRESS
-Envoy Gateway supports a variety of authentication mechanisms, including JWT, OIDC, Basic Auth, and more.
 
-See the [Envoy Gateway Authentication docs](https://gateway.envoyproxy.io/docs/concepts/auth/auth-overview/) for more information.
+Envoy Gateway supports a variety of authentication mechanisms, including:
+
+- [API Key](https://gateway.envoyproxy.io/docs/tasks/security/apikey-auth/)
+- [JSON Web Token (JWT)](https://gateway.envoyproxy.io/docs/tasks/security/jwt-authentication/)
+- [OIDC](https://gateway.envoyproxy.io/docs/tasks/security/oidc/)
+- [Basic Auth](https://gateway.envoyproxy.io/docs/tasks/security/basic-auth/)
+
+Currently GUARD supports API key auth, with plans to add JWT and OIDC support in the near future.
+
 :::
 
+## API Key Auth
+
+API Key Authentication verifies whether an incoming request includes a valid API key in the header, parameter, or cookie before routing the request to a backend service.
+
+**Sequence Diagram**
 
 ```mermaid
 sequenceDiagram

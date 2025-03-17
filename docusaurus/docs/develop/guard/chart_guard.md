@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Helm Chart Values
+title: GUARD Helm Chart
 description: Chart values for the GUARD Helm chart
 ---
 
