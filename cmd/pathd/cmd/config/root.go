@@ -1,37 +1,3 @@
-// ---------------------------------------------------------------------------
-// File: root.go
-// Package: config
-//
-// Purpose:
-//
-//	This command implements an interactive configuration editor for the
-//	Grove Developer Interface (GDI). It allows the user to traverse and edit
-//	the YAML configuration file (~/.config.gdi.yaml) interactively, based on the
-//	schema defined in ./config/config.schema.yaml. The command supports editing
-//	of nested fields, enum selection with allowed values (displayed in purple),
-//	and provider-specific validation (e.g., ensuring that a default LLM provider
-//	is properly configured before it can be selected).
-//
-// Features:
-//   - Interactive traversal of config fields with options to "go up" a level.
-//   - Dynamic prompts that display the field's schema description.
-//   - Enum-based selections with allowed values.
-//   - Provider validation: if a default LLM provider is selected which
-//     lacks configuration (api_key or client_model), the user is prompted to fill
-//     in the necessary details. The client_model field uses enum options.
-//   - Colorized output and emojis for improved readability and guidance.
-//   - The ability to save and exit from any prompt by typing 's' (save option) in yellow.
-//   - Clear text prompts for errors, field names, and schema descriptions.
-//
-// Usage:
-//
-//	Running the "gdi config" command will launch the interactive configuration editor.
-//	It supports flags:
-//	   --show (-s): Show the current configuration.
-//	   --editor (-e): Open the configuration in a text editor instead of interactive mode.
-//	   --config (-c): The path to the configuration file (default is ~/.path/.config.yaml).
-//
-// ---------------------------------------------------------------------------
 package config
 
 import (
@@ -70,12 +36,9 @@ var ConfigCmd = &cobra.Command{
 	Short: "Edit the configuration for the application.",
 	Long: `Edit the configuration for the application.
 
-This command is used to modify the YAML configuration file for the Grove Developer Interface.
+This command is used to modify the YAML configuration file for PATH.
 It uses an interactive command-line interface to traverse and update configuration fields,
-using the schema defined in ./config/config.schema.yaml. You can navigate through nested fields,
-edit values (with enum validation where applicable), and ensure that required fields for providers
-(such as LLM configurations) are appropriately set. You may also choose to save and exit at any
-time by entering the save command.
+using the schema defined in ./config/config.schema.yaml.
 	  
 Flags:
   --show (-s)   : Show the current config file.

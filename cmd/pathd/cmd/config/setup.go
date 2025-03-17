@@ -11,10 +11,10 @@ import (
 	cfgEditor "github.com/buildwithgrove/gdi/config/editor"
 	"github.com/buildwithgrove/gdi/log"
 	"github.com/go-git/go-git/v5"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/cmd/pathd/config"
-	"golang.org/x/term"
 )
 
 const pathRepo = "https://github.com/buildwithgrove/path"

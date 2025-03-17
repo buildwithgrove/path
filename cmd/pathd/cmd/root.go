@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "PATH CLI",
 	Long: `The PATH CLI is a command-line interface for PATH (PATH API & Toolkit Harness).
-It provides a set of commands to help you PATH local development and deployment.`,
+It provides a set of commands to help you manage your PATH local development and deployment.`,
 }
 
 func Execute() {

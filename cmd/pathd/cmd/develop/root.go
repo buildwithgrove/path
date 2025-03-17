@@ -28,9 +28,8 @@ the PATH development environment.
 
 Subcommands:
   up   : Loads the PATH configuration, installs dependencies if needed,
-         and executes "make path_up" to bring the environment up.
-  down : Loads the PATH configuration, installs dependencies if needed,
-         and executes "make path_down" to bring the environment down.
+         and runs "make path_up" to bring the environment up.
+  down : Runs "make path_down" to bring the environment down.
   install-deps : Checks for required dependencies and installs them if missing.`,
 }
 
@@ -57,7 +56,7 @@ var developUpCmd = &cobra.Command{
 var developDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Bring down the development environment",
-	Long:  "Loads the PATH configuration, installs required dependencies, and runs 'make path_down' in the local PATH repository.",
+	Long:  "Runs 'make path_down' in the local PATH repository.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runMakeTask("path_down"); err != nil {
 			fmt.Println(err)
