@@ -1,56 +1,53 @@
-global:
-  imagePullPolicy: IfNotPresent
-  serviceAccount:
-    create: true
-    name: "path-sa"
+# This file allows optional configuration of the PATH service.
+# It is used to customize the PATH service for local development in two main ways:
+#
+#    TODO_DOCUMENT(@commoddity): Add documentation for updating service IDs and aliases.
+# 1. Configure the service IDs and aliases for the PATH service.
+#    This allows configuring the PATH service to use different service IDs and aliases
+#    for different environments.
+#
+#    TODO_DOCUMENT(@commoddity): Add documentation for updating API keys.
+# 2. Configure the allowed set of API keys for the PATH service.
+#    This allows configuring the allowed set of API keys for the PATH service.
+#
+# See the PATH Helm Chart `values.yaml` file for the full set of available customizations.
+# https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
 
-path:
-  mountSecrets:
-    - name: path-config-local
-      mountPath: /app/config/.config.yaml
-      subPath: .config.yaml
-      items:
-        - key: .config.yaml
-          path: .config.yaml
+# 🚨 IMPORTANT: To use this file 🚨
+# 1. Run `make copy_values_yaml` to create the .gitignored `.values.yaml` file if not already present.
+# 2. Make any changes to the `local/path/.values.yaml` file, then save. Tilt will
+#    automatically pick up the changes and restart PATH & GUARD with the updated values.
 
-  replicas: 1
-  resources:
-    limits:
-      memory: 2G
-      cpu: 4
-    requests:
-      cpu: 1.8
-      memory: 800Mi
-  ports:
-    - name: http
-      port: 3069
-      protocol: TCP
-      service:
-        type: ClusterIP
-    - name: metrics
-      port: 9090
-      protocol: TCP
-      service:
-        type: ClusterIP
-  # The PATH service uses the `/healthz` endpoint to check if the service is ready,
-  # which uses the response from the QoS service to determine whether to send a
-  # 503 (Service Unavailable) or 200 (OK) status code.
+###########################################################################
+# -------------------- GUARD Specific Configurations -------------------- #
+###########################################################################
+guard:
+  # The services section allows configuring the HTTPRoutes that the PATH service will
+  # use to route requests to the correct service.
   #
-  # When using PATH with large numbers of services enabled, the QoS service
-  # may take a long time to return a healthy response. Therefore, it is expected
-  # that the readinessProbe may take a large number of attempts to succeed.
-  readinessProbe:
-    failureThreshold: 600 # Set to high value to account for the potential long response time of the QoS service.
-    httpGet:
-      path: /healthz
-      port: 3069
-      scheme: HTTP
-  livenessProbe:
-    failureThreshold: 600 # Set to high value to account for the potential long response time of the QoS service.
-    httpGet:
-      path: /healthz
-      port: 3069
-      scheme: HTTP
+  # 1. Each service must have a unique service ID.
+  # 2. Each service can have a list of aliases that can be used to route requests to the service.
+  services:  
+    - serviceId: F00C
+      aliases:
+        - eth
+    - serviceId: F021
+      aliases:
+        - polygon
+    #- serviceId: F000
+    #  aliases:
+    #    - pocket
+    #    - mainnet
+    # etc...
 
-  delve:
-    enabled: false
+  # The auth section allows configuring the API key authentication for the PATH service.
+  auth:
+    apiKey:
+      # To disable API key authentication, set `enabled` to `false`.
+      enabled: true
+      # The `apiKeys` section allows configuring the allowed set of API keys for the PATH service.
+      apiKeys:
+        - test_api_key
+        # - api_key_123
+        # - api_key_456
+        # etc..
