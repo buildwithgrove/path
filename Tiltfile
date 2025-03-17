@@ -6,7 +6,7 @@ load("ext://configmap", "configmap_create")
 # A list of directories where changes trigger a hot-reload of PATH.
 # Note: this list needs to be updated each time a new package is added to the repo.
 hot_reload_dirs = [
-    "./local/path",
+    "./local/path/.config.yaml",
     "./local/guard",
     "./local/observability",
     "./cmd",
@@ -107,6 +107,39 @@ docker_build_with_restart(
     ],
 )
 
+# Tilt will run the Helm Chart with the following flags by default.
+#
+# For example:
+# helm install path buildwithgrove/path \
+#    --set config.fromSecret.enabled=true \
+#    --set config.fromSecret.name=path-config \
+#    --set config.fromSecret.key=.config.yaml
+flags = [
+# Enable PATH to load the config from a secret.
+# PATH supports loading the config from either a Secret or a ConfigMap.
+# See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
+    "--set", "config.fromSecret.enabled=true",
+    "--set", "config.fromSecret.name=path-config",
+    "--set", "config.fromSecret.key=.config.yaml",
+]
+
+# TODO_DOCUMENT(@commoddity): Add documentation for the .values.yaml file.
+#
+# Optional: Use a local values.yaml file to override the default values.
+#
+# For example, Tilt will append the flags:
+#    --values ./local/path/.values.yaml --reset-values
+# to the Helm command if the file exists.
+#
+# See file `./local/path/values.tmpl.yaml` for more details.
+valuesFile = "./local/path/.values.yaml"
+if read_yaml(valuesFile, default=None) != None:
+    watch_file(valuesFile)
+    flags.append("--reset-values") # Ensure that values are overridden by the .values.yaml file.
+    flags.append("--values")
+    flags.append(valuesFile)
+    
+
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
     "path",
@@ -119,14 +152,7 @@ helm_resource(
             "Grafana dashboard",
         ),
     ],
-    # Enable PATH to load the config from a secret.
-    # PATH supports loading the config from either a Secret or a ConfigMap.
-    # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
-    flags=[
-        "--set", "config.fromSecret.enabled=true",
-        "--set", "config.fromSecret.name=path-config",
-        "--set", "config.fromSecret.key=.config.yaml",
-    ],
+    flags=flags,
     # Port 6060 is exposed to serve pprof data.
     # Run the following commands to view the pprof data:
     #   $ make debug_goroutines
