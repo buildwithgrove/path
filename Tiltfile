@@ -123,6 +123,7 @@ flags = [
     "--set", "config.fromSecret.enabled=true",
     "--set", "config.fromSecret.name=path-config",
     "--set", "config.fromSecret.key=.config.yaml",
+    "--set", "global.imagePullPolicy=Never",
 ]
 
 # TODO_DOCUMENT(@commoddity): Add documentation for the .values.yaml file.
