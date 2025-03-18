@@ -33,7 +33,8 @@ func getHTTPStatusCodeFromObservations(observations *qos.EVMRequestObservations)
 	}
 
 	// Check endpoint observations for status code if they are present
-	// The last endpoint observation's status code is what's returned to the user
+	// The status code from the final endpoint observation is returned to the user.
+	// Subsequent endpoints are only selected if previous endpoints fail for any reason.
 	lastObsIndex := len(endpointObservations) - 1
 	lastObs := endpointObservations[lastObsIndex]
 

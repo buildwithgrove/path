@@ -5,7 +5,7 @@ import (
 )
 
 // request defines methods needed for request metrics collection.
-// Abstracts proto-specific details from metrics logic.
+// Abstracts details from the EVMRequestObservations proto message (from evm.proto) such as validation errors and status code extraction.
 type request interface {
 	// GetRequestValidationError returns the validation error if any.
 	// A nil return value indicates the request is valid.

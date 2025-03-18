@@ -73,6 +73,8 @@ var (
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
 func PublishMetrics(observations *qos.EVMRequestObservations) {
+	// Skip if observations is nil.
+	// Should never occur as PublishQoSMetrics uses nil checks to identify which QoS service produced the observations.
 	if observations == nil {
 		return
 	}

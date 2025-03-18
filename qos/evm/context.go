@@ -24,6 +24,13 @@ const (
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
+
+// TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
+// in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
+// Consider renaming:
+//   - metrics/qos/evm: response → EVMMetricsResponse
+//   - qos/evm: response → EVMResponse
+//
 // TODO_TECHDEBT: Need a Validate() method here to allow
 // the caller, e.g. gateway, determine whether the endpoint's
 // response was valid, and whether a retry makes sense.

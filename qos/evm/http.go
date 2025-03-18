@@ -48,6 +48,7 @@ func (hr httpResponse) GetPayload() []byte {
 
 // GetHTTPStatusCode returns the HTTP status code for this response.
 // If no status code was explicitly set, returns http.StatusOK (200).
+// StatusOK is returned by default from EVM QoS because it is the responsibility of the QoS service to decide on the HTTP status code returned to the client.
 func (hr httpResponse) GetHTTPStatusCode() int {
 	// Return the custom status code if set, otherwise default to 200 OK
 	if hr.httpStatusCode != 0 {

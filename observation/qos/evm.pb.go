@@ -13,13 +13,11 @@
 package qos
 
 import (
-	reflect "reflect"
-	sync "sync"
-
+	_ "github.com/buildwithgrove/path/observation/metadata"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	_ "github.com/buildwithgrove/path/observation/metadata"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -30,7 +28,7 @@ const (
 )
 
 // EVMRequestValidationError enumerates possible causes for EVM request rejection:
-// Invalid request types (as of PR #165):
+// Invalid request types (as of PR #186):
 //  1. Internal server error while reading the HTTP request body
 //  2. Unmarshal error when parsing request into the expected format
 type EVMRequestValidationError int32
@@ -82,6 +80,7 @@ func (EVMRequestValidationError) EnumDescriptor() ([]byte, []int) {
 	return file_path_qos_evm_proto_rawDescGZIP(), []int{0}
 }
 
+// TODO_DOCUMENT(@adshmh): Create a design document for the feature described below.
 // TODO_MVP(@adshmh): Add EVMUserErrorType enum
 //
 // Purpose: Distinguish between endpoint technical failures and user input errors
@@ -101,9 +100,10 @@ func (EVMRequestValidationError) EnumDescriptor() ([]byte, []int) {
 // - Better client debugging experience
 //
 // EVMResponseValidationError defines why an endpoint response was rejected.
-// Current invalid response types (as of PR #164):
+// Current invalid response types (as of PR #186):
 //  1. EmptyResponse - endpoint returned no data
 //  2. UnmarshalErr - response failed to parse into expected format
+//  3. NoResponse - no responses recorded by the QoS service: probably caused by protocol-level errors
 type EVMResponseValidationError int32
 
 const (
@@ -162,17 +162,20 @@ type EVMRequestObservations struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// chain_id is the blockchain identifier for the evm QoS implementation.
+	// chain_id is the blockchain identifier is the blockchain identifier for the evm QoS implementation.
 	// This is preset by the processor and not determined by the request.
 	// Expected as the `Result` field in eth_chainId responses.
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-
-	// If set with one of the validation failure types, indicates the request failed validation
-	// and contains details about the specific failure type.
-	// The HTTP status code in the selected failure type overrides any status codes from
-	// endpoint observations and should be returned to the client.
-	// If this oneof is NOT set, the request passed validation and the HTTP status code
-	// from the most recent endpoint observation should be used instead.
+	// If set with one of the validation failure types:
+	//   - Indicates the request failed validation
+	//   - Contains details about the specific failure type
+	//   - The HTTP status code in the selected failure type overrides any status codes from
+	//     endpoint observations and should be returned to the client
+	//
+	// If this oneof is NOT set:
+	//   - The request passed validation
+	//   - The HTTP status code from the most recent endpoint observation should be used instead
+	//
 	// Note: If there is an error reading the HTTP request, there will be no jsonrpc_request.
 	//
 	// Types that are assignable to RequestValidationFailure:
@@ -180,12 +183,10 @@ type EVMRequestObservations struct {
 	//	*EVMRequestObservations_EvmHttpBodyReadFailure
 	//	*EVMRequestObservations_EvmRequestUnmarshalingFailure
 	RequestValidationFailure isEVMRequestObservations_RequestValidationFailure `protobuf_oneof:"request_validation_failure"`
-
 	// The EVM blockchain service's JSON-RPC request.
 	// This field will be populated only if request validation succeeds.
 	// TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
 	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,4,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3" json:"jsonrpc_request,omitempty"`
-
 	// EVM-specific observations from endpoint(s) that responded to the service request.
 	// Multiple observations may occur when:
 	// * Original endpoint fails
@@ -796,7 +797,7 @@ type EVMEmptyResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The HTTP status code received from the endpoint, typically 204 No Content or an error code
+	// The HTTP status code represents the status code sent to the client when the chosen endpoint returns an empty response.
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// Always set to EMPTY for empty responses
 	ResponseValidationError EVMResponseValidationError `protobuf:"varint,2,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError" json:"response_validation_error,omitempty"`

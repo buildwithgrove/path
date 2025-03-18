@@ -25,7 +25,7 @@ type QoS struct {
 	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
-	*requestValidator
+	*evmRequestValidator
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
@@ -33,7 +33,7 @@ type QoS struct {
 // Returns (errorContext, false) if the request is not valid JSONRPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	return qos.requestValidator.validateHTTPRequest(req)
+	return qos.evmRequestValidator.validateHTTPRequest(req)
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
