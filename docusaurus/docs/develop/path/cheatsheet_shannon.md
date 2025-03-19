@@ -22,7 +22,7 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
+1. Prepare your environment by following the instructions in the [**environment setup**](./environment.md) guide.
 2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/poktrolld_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
 
 :::tip
@@ -190,7 +190,7 @@ Ensure that `gateway_config` is filled out correctly before continuing.
 
 ## 3. Start PATH
 
-Make sure to have followed the entire [**environment setup**](./env_setup.md) guide before proceeding.
+Make sure to have followed the entire [**environment setup**](./environment.md) guide before proceeding.
 
 ## 3.1 Start PATH
 
