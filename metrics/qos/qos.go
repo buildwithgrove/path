@@ -25,12 +25,12 @@ func PublishQoSMetrics(
 	// Publish EVM metrics.
 	if evmObservations := qosObservations.GetEvm(); evmObservations != nil {
 		hasProcessedObservations = true
-		evm.PublishMetrics(evmObservations)
+		evm.PublishMetrics(hydratedLogger, evmObservations)
 	}
 	// TODO_MVP(@adshmh): add calls to metric exporter functions for Solana QoS
 
 	// Log warning if no matching observation types were found
 	if !hasProcessedObservations {
-	        hydratedLogger.Warn().Msg("supplied observations do not match any known QoS service")
+		hydratedLogger.Warn().Msg("supplied observations do not match any known QoS service")
 	}
 }
