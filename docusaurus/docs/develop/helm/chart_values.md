@@ -21,4 +21,4 @@ helm upgrade guard buildwithgrove/guard -f values.yaml
 import RemoteMarkdown from '@site/src/components/RemoteMarkdown';
 
 <!-- TODO_IMPROVE(@commoddity): Update this to point to main branc once PR # 20 merged -->
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/helm-charts/refs/heads/guard-helm-charts/charts/guard/README.md" />
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/helm-charts/refs/heads/main/charts/guard/README.md" />

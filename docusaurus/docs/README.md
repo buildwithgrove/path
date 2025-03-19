@@ -21,15 +21,8 @@ interaction with decentralized protocols.
 
 ## Getting Started
 
-### PATH
-
-Start by going through the [PATH Walkthrough](develop/path/introduction.md).
+Start by going through the [PATH Introduction](develop/path/introduction.md).
 to learn how PATH works, how to configure it and how to run it locally.
-
-### Envoy
-
-Start by going through the [Envoy Walkthrough](./develop/envoy/walkthrough.md).
-to learn how our Envoy integration works, how to configure it and how to run it locally.
 
 ## Is PATH for me?
 
@@ -111,7 +104,7 @@ If you're a Web2 Gateway Provider, you can use this table to understand you pref
 
 | Mode                         | Your Backend Infrastructure | Your Gateway Frontend | Your Gateway uses PATH | Customer uses Grove's Portal | Traffic Settled on Pocket Network | Description / Example                                                                                                         |
 | ---------------------------- | --------------------------- | --------------------- | ---------------------- | ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 1. Dependent (Step Aside)    | ❌                          | ❌                    | ❌                     | ✅                           | ✅                                | Customers go to Grove's Portal for direct access                                                                              |
-| 2. Grove Hybrid (Frontend)   | ❌                          | ✅                    | ❌                     | ❌                           | ✅                                | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
-| 3. PATH Hybrid (Full Stack)  | ❌                          | ✅                    | ✅                     | ❌                           | ✅                                | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
-| 4. Independent (On Your Own) | ✅                          | ✅                    | ✅                     | ❌                           | ❌                                | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |
+| 1. Dependent (Step Aside)    | ❌                           | ❌                     | ❌                      | ✅                            | ✅                                 | Customers go to Grove's Portal for direct access                                                                              |
+| 2. Grove Hybrid (Frontend)   | ❌                           | ✅                     | ❌                      | ❌                            | ✅                                 | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
+| 3. PATH Hybrid (Full Stack)  | ❌                           | ✅                     | ✅                      | ❌                            | ✅                                 | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
+| 4. Independent (On Your Own) | ✅                           | ✅                     | ✅                      | ❌                            | ❌                                 | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |

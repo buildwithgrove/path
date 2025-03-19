@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-title: Configuration Files
+title: Configuration
 description: PATH configuration details
 ---
 

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Environment Setup
+title: Environment
 description: Quick reference to setup your environment
 ---
 
@@ -8,8 +8,8 @@ This guide provides a quick reference for setting up and running a local `PATH` 
 
 It is a pre-requisite for the following protocol-specific guides:
 
-- [**Shannon Protocol Guide**](./cheat_sheet_shannon.md): For the new Shannon protocol (Beta TestNet as of 11/2025)
-- [**Morse Protocol Guide**](./cheat_sheet_morse.md): For the original Morse protocol (MainNet as of 2020)
+- [**Shannon Protocol Guide**](./cheatsheet_shannon.md): For the new Shannon protocol (Beta TestNet as of 11/2025)
+- [**Morse Protocol Guide**](./cheatsheet_morse.md): For the original Morse protocol (MainNet as of 2020)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -70,12 +70,13 @@ This script currently only works on Linux. MacOS version coming soon.
 
 ## 3. Choose Your Protocol
 
-| Protocol | Version | Status   | Network | Documentation                                      |
-| -------- | ------- | -------- | ------- | -------------------------------------------------- |
-| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Guide](./cheat_sheet_shannon.md) |
-| Morse    | v0      | Original | MainNet | [Morse Protocol Guide](./cheat_sheet_morse.md)     |
+| Protocol | Version | Status   | Network | Documentation                                     |
+| -------- | ------- | -------- | ------- | ------------------------------------------------- |
+| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Guide](./cheatsheet_shannon.md) |
+| Morse    | v0      | Original | MainNet | [Morse Protocol Guide](./cheatsheet_morse.md)     |
 
 ## Additional Resources
 
-- [PATH Walkthrough](introduction.md) - Detailed explanation of PATH architecture
-- [PATH Config Docs](path_config.md) - Detailed configuration guide
+- [PATH Walkthrough](./introduction.md) - Detailed explanation of PATH architecture
+- [PATH Environment Setup](./environment.md) - Detailed configuration guide
+- [PATH Configuration Files](./configuration.md) - Detailed configuration guide

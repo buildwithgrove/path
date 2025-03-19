@@ -22,7 +22,7 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
+1. Prepare your environment by following the instructions in the [**environment setup**](./environment.md) guide.
 2. Install the [**Pocket CLI**](https://github.com/pokt-network/homebrew-pocket-core): CLI for interacting with Pocket's Morse Network
 
 ## 1. Setup Morse Protocol Accounts
@@ -131,11 +131,11 @@ cat local/path/config/.config.yaml
 
 ## 3. Start PATH
 
-Make sure to have followed the entire [**environment setup**](./env_setup.md) guide before proceeding.
+Make sure to have followed the entire [**environment setup**](./environment.md) guide before proceeding.
 
 ## 3.1 Start PATH
 
-Run the entire stack (PATH, Envoy, Auth Server) by running:
+Run the entire PATH stack in Tilt by running:
 
 ```bash
 make path_up
