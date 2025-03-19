@@ -9,4 +9,4 @@ go_docs: ## Start Go documentation server
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
-	cd docusaurus && npm i && npm run start
+	cd docusaurus && npm i && npm run start -- --port 4000
