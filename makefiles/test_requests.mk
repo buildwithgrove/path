@@ -51,16 +51,14 @@ check_path_up_without_envoy: ## Checks if standalone PATH (without GUARD) is run
 .PHONY: test_request__service_id_subdomain
 test_request__service_id_subdomain: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
 	curl http://anvil.localhost:3070/v1 \
-		-X POST \
-		-H "authorization: test_api_key" \
+		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request__service_id_header
-test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the target-service-id header
-	curl http://localhost:3070/v1/test_endpoint_1_api_key \
-		-X POST \
-		-H "target-service-id: anvil" \
-		-H "authorization: test_api_key" \
+test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+	curl http://localhost:3070/v1 \
+		-H "Target-Service-Id: anvil" \
+		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 ############################
@@ -70,17 +68,13 @@ test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_i
 .PHONY: test_request__evm_endpoint
 test_request__evm_endpoint: check_path_up_without_envoy debug_relayminer_supplier_info_msg ## Test EVM endpoint request against the PATH Gateway running on port 3069 without GUARD
 	curl http://localhost:3069/v1/ \
-		-X POST \
-		-H "Content-Type: application/json" \
-		-H "target-service-id: anvil" \
+		-H "Target-Service-Id: anvil" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request__cometbft_endpoint
 test_request__cometbft_endpoint: check_path_up_without_envoy ## Test CometBFT endpoint request against the PATH Gateway running on port 3069 without GUARD
 	curl 'http://localhost:3069/v1/status' \
-		-X GET \
-		-H 'Content-Type: application/json' \
-		-H 'target-service-id: cometbft'
+		-H 'Target-Service-Id: cometbft'
 
 ###################################
 #### Relay Utils Test Requests ####
