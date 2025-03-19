@@ -29,7 +29,7 @@ func (pmr *PrometheusMetricsReporter) Publish(observations *observation.RequestR
 	publishGatewayMetrics(observations.GetGateway())
 
 	// Publish QoS observations
-	qos.PublishQoSMetrics(observations.GetQos())
+	qos.PublishQoSMetrics(pmr.Logger, observations.GetQos())
 
 	// Publish Protocol observations
 	protocol.PublishMetrics(observations.GetProtocol())

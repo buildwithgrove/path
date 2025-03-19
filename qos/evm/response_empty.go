@@ -29,22 +29,31 @@ type responseEmpty struct {
 // GetObservation returns an observation indicating the endpoint returned an empty response.
 // Implements the response interface.
 func (r responseEmpty) GetObservation() qosobservations.EVMEndpointObservation {
-	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_EMPTY
 
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_EmptyResponse{
 			EmptyResponse: &qosobservations.EVMEmptyResponse{
-				Valid:                   false, // Empty responses are inherently invalid - explicitly set for clarity
-				ResponseValidationError: &validationError,
+				HttpStatusCode: int32(r.getHTTPStatusCode()), // EmptyResponse always returns a 500 Internal error HTTP status code.
+				// An empty response is always invalid.
+				ResponseValidationError: qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_EMPTY,
 			},
 		},
 	}
 }
 
-// GetResponsePayload constructs a JSONRPC error response indicating endpoint failure.
+// GetHTTPResponse builds and returns the httpResponse matching the responseEmpty instance.
+// Implements the response interface.
+func (r responseEmpty) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		// HTTP Status 500 Internal Server Error for an empty response
+		httpStatusCode: r.getHTTPStatusCode(),
+	}
+}
+
+// getResponsePayload constructs a JSONRPC error response indicating endpoint failure.
 // Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
-// Implements the response interface with retry semantics.
-func (r responseEmpty) GetResponsePayload() []byte {
+func (r responseEmpty) getResponsePayload() []byte {
 	userResponse := newErrResponseEmptyEndpointResponse(r.jsonrpcReq.ID)
 	bz, err := json.Marshal(userResponse)
 	if err != nil {
@@ -52,4 +61,10 @@ func (r responseEmpty) GetResponsePayload() []byte {
 		r.logger.Warn().Err(err).Msg("responseEmpty: Marshaling JSONRPC response failed.")
 	}
 	return bz
+}
+
+// getHTTPStatusCode returns the HTTP status code to be returned to the client.
+// Always returns returns 500 Internal Server Error on responseEmpty struct.
+func (r responseEmpty) getHTTPStatusCode() int {
+	return httpStatusResponseValidationFailureEmptyResponse
 }

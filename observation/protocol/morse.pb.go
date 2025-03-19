@@ -214,7 +214,7 @@ type MorseEndpointObservation struct {
 	// Session information when available
 	SessionKey       string `protobuf:"bytes,3,opt,name=session_key,json=sessionKey,proto3" json:"session_key,omitempty"`
 	SessionServiceId string `protobuf:"bytes,4,opt,name=session_service_id,json=sessionServiceId,proto3" json:"session_service_id,omitempty"`
-	SessionHeight    int32  `protobuf:"varint,5,opt,name=session_height,json=sessionHeight,proto3" json:"session_height,omitempty"`
+	SessionHeight    int32  `protobuf:"varint,5,opt,name=session_height,json=sessionHeight,proto3" json:"session_height,omitempty"` // session start height
 	// Error type if relay to this endpoint failed
 	ErrorType *MorseEndpointErrorType `protobuf:"varint,6,opt,name=error_type,json=errorType,proto3,enum=path.protocol.MorseEndpointErrorType,oneof" json:"error_type,omitempty"`
 	// Additional error details when available

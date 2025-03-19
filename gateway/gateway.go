@@ -119,6 +119,13 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// TODO_MVP(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.
+	// Implementation should:
+	//   1. Differentiate between user errors (e.g., invalid Service ID in request) and system errors (e.g., endpoint timeout)
+	//   2. Add error type field to protocol response structure
+	//   3. Pass specific error codes from the protocol back to QoS service
+	// This will allow the QoS service to return more helpful diagnostic messages and enable better metrics collection for different failure modes.
+	//
 	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {

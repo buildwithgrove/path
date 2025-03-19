@@ -42,7 +42,6 @@ func getEndpointCheck(
 	requestCtx := requestContext{
 		logger:                  logger,
 		endpointStore:           endpointStore,
-		isValid:                 true,
 		preSelectedEndpointAddr: endpointAddr,
 	}
 
