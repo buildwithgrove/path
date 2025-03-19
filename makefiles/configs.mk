@@ -1,18 +1,13 @@
-################################################################
-# Shared config helpers
-################
+#########################################################
+#               Shared config helpers                   #
+#########################################################
 
 # Helper variable for all config files
 CONFIG_FILES := \
-	./bin/config/.config.yaml \
-	./config/.config.yaml \
 	./local/path/.config.yaml \
+	./local/path/.values.yaml \
 	./e2e/.shannon.config.yaml \
 	./e2e/.morse.config.yaml \
-	./local/path/envoy/.envoy.yaml \
-	./local/path/envoy/.ratelimit.yaml \
-	./local/path/envoy/.allowed-services.lua \
-	./local/path/envoy/.gateway-endpoints.yaml
 
 # Helper function to check if a config file exists
 define check_config_exists
