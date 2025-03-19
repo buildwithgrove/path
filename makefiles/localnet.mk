@@ -41,7 +41,6 @@ dev_up: check_kind
 		kubectl create namespace monitoring; \
 		kubectl config set-context --current --namespace=path; \
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
-		kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml; \
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi
