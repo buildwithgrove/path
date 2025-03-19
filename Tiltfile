@@ -117,12 +117,13 @@ docker_build_with_restart(
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
-# Enable PATH to load the config from a secret.
-# PATH supports loading the config from either a Secret or a ConfigMap.
-# See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
+    # Enable PATH to load the config from a secret.
+    # PATH supports loading the config from either a Secret or a ConfigMap.
+    # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
     "--set", "config.fromSecret.enabled=true",
     "--set", "config.fromSecret.name=path-config",
     "--set", "config.fromSecret.key=.config.yaml",
+    # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
 ]
 
