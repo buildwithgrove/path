@@ -71,7 +71,6 @@ path_help: ## Prints help commands if you cannot start path
 include ./makefiles/configs.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk
-include ./makefiles/guard.mk
 include ./makefiles/localnet.mk
 include ./makefiles/morse_configs.mk
 include ./makefiles/shannon_configs.mk
