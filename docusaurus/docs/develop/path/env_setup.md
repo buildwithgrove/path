@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 title: Environment Setup
 description: Quick reference to setup your environment
 ---
@@ -17,8 +17,7 @@ It is a pre-requisite for the following protocol-specific guides:
 - [Prerequisites](#prerequisites)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Install Required Tools](#2-install-required-tools)
-- [3. Setup Envoy Proxy](#3-setup-envoy-proxy)
-- [4. Choose Your Protocol](#4-choose-your-protocol)
+- [3. Choose Your Protocol](#3-choose-your-protocol)
 - [Additional Resources](#additional-resources)
 
 ## Development Environment
@@ -62,30 +61,14 @@ To install all dependencies automatically:
 make install_deps
 ```
 
-:::
+:::warning
 
-## 3. Setup Envoy Proxy
+This script currently only works on Linux. MacOS version coming soon.
 
-Setup all the configurations to enable authorization, service aliasing, and rate limiting:
-
-```bash
-make init_envoy
-```
-
-This will generate four configuration files:
-
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
-
-:::tip
-
-For a quick initial setup, choose **Option 2 (no authorization)** when prompted.
 
 :::
 
-## 4. Choose Your Protocol
+## 3. Choose Your Protocol
 
 | Protocol | Version | Status   | Network | Documentation                                      |
 | -------- | ------- | -------- | ------- | -------------------------------------------------- |
@@ -96,4 +79,3 @@ For a quick initial setup, choose **Option 2 (no authorization)** when prompted.
 
 - [PATH Walkthrough](introduction.md) - Detailed explanation of PATH architecture
 - [PATH Config Docs](path_config.md) - Detailed configuration guide
-- [Envoy Config Docs](../envoy/envoy_config.md) - Envoy proxy configuration guide

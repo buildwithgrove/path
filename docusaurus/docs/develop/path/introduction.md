@@ -53,8 +53,8 @@ docker pull ghcr.io/buildwithgrove/path
 If you're unsure of where to start, we recommend the following:
 
 1. [**Environment Setup**](./env_setup.md): Prepare your environment for running PATH
-2. [**Shannon Cheat Sheet**](./cheat_sheet_shannon.md): Get up and running with a Gateway to Shannon
-3. [**Configs**](./path_config.md): Explore other PATH configuration files
+2. [**Configuration Files**](./config.md): Explore other PATH configuration files
+3. [**Shannon Cheat Sheet**](./cheat_sheet_shannon.md): Get up and running with a Gateway to Shannon
 4. [**Walkthrough**](./walkthrough.md): A step-by-step guide of local PATH configurations and running tests
 5. [**Morse Cheat Sheet**](./cheat_sheet_morse.md): Get up and running with a Gateway to Morse if you're feeling adventurous
 
