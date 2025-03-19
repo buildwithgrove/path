@@ -25,6 +25,12 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
 2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/poktrolld_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
 
+:::tip
+
+You can use the `make install_deps` command to install the dependencies for the PATH stack, including the `poktrolld` CLI.
+
+:::
+
 ## 1. Setup Shannon Protocol Accounts (Gateway & Application)
 
 Before starting, you'll need to create and configure:
@@ -34,7 +40,7 @@ Before starting, you'll need to create and configure:
 
 ### 1.1 Gateway and Application Account Creation
 
-We strongly recommend following the [**Gateway cheat sheets**](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet) for setting up your accounts.
+We strongly recommend following the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for setting up your accounts.
 
 However, a quick copy-pasta tl;dr is provided here for convenience:
 
@@ -142,13 +148,6 @@ To override the keyring backend, you can export the `POKTROLL_TEST_KEYRING_BACKE
 To override the poktrolld home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
 :::
 
-Note that running `make shannon_populate_config` is equivalent to running the following commands:
-
-```bash
-make prepare_morse_e2e_config # Generate ./e2e/.shannon.config.yaml
-make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
-```
-
 :::warning Private Key Export
 
 1. **Ignore instructions** that prompt you to update the file manually.
@@ -195,12 +194,11 @@ Make sure to have followed the entire [**environment setup**](./env_setup.md) gu
 
 ## 3.1 Start PATH
 
-Run the entire stack (PATH, Envoy, Auth Server) by running:
+Run PATH in local development mode in Tilt by running:
 
 ```bash
 make path_up
 ```
-
 
 You can stop the PATH stack by running:
 
@@ -220,6 +218,8 @@ Wait for initialization logs:
 {"level":"info","package":"router","message":"PATH gateway running on port 3069"}
 ```
 
+<!-- TODO_IN_THIS_PR(@commoddity): add screenshot of Tilt dashboard -->
+
 ## 4. Test Relays
 
 :::tip
@@ -228,32 +228,13 @@ The makefile helpers in `makefiles/test_requests.mk` can make iterating on these
 
 :::
 
-Send a relay using **static key authorization** (`make test_request__endpoint_url_path_mode__static_key_service_id_header`):
+Send a test relay (`make test_request__service_id_header`):
 
 ```bash
-curl http://localhost:3070/v1/endpoint_1_static_key \
-    -X POST \
-    -H "authorization: api_key_1" \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-Send a relay **without authorization** (`make test_request__endpoint_url_path_mode__no_auth__service_id_header`):
-
-```bash
-curl http://localhost:3070/v1/endpoint_3_no_auth \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-If you launched **PATH in standalone mode (no Envoy Proxy)**, you can test a relay like so (`make test_request_path_only`):
-
-```bash
-curl http://localhost:3069/v1/ \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+curl http://localhost:3070/v1 \
+  -H "Target-Service-Id: anvil" \
+  -H "Authorization: test_api_key" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 :::warning Retries
