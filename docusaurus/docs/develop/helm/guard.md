@@ -4,11 +4,8 @@ title: GUARD Helm Chart
 description: GUARD Helm Chart
 ---
 
-<!-- TODO_DOCUMENT(@commoddity): Embed documentation for the GUARD Helm Chart, once completed in the Helm Charts repo -->
+import RemoteMarkdown from '@site/src/components/RemoteMarkdown';
 
-:::warning UNDER CONSTRUCTION
-
-This document is under construction.
-
-:::
-
+<!-- TODO_MVP(@commoddity): Update this embed to point to `main` branch once PR #62 merged:
+https://github.com/buildwithgrove/helm-charts/pull/62 -->
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/helm-charts/refs/heads/guard-docs/charts/guard/README.md" />

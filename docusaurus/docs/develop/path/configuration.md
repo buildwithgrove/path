@@ -320,6 +320,8 @@ logger_config:
 
 ## Helm Values Config File (`.values.yaml`)
 
+The `.values.yaml` file is used to configure a PATH deployment by overriding the default values in the Helm chart.
+
 :::info DEFAULT VALUES
 
 **Using the `.values.yaml` file is optional; PATH will run with default values if the file is not present.**
@@ -349,14 +351,9 @@ make copy_values_yaml
 
 :::
 
-
-The `.values.yaml` file is used to configure a PATH deployment by overriding the default values in the Helm chart.
-
-**PATH may be run in development mode without the `values.yaml` file using default values.**
-
 :::info
 
-For more information on Helm `values.yaml` files, see the [Helm values files documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+For the full list of configurable values in the PATH Helm Chart, see the [Helm Values Documentation](../helm/values.md).
 
 :::
 
@@ -367,7 +364,6 @@ In development mode, the config file must be located at:
 ```bash
 ./local/path/.values.yaml
 ```
-
 
 Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH gateway with the new values.
 
@@ -451,6 +447,3 @@ curl http://localhost:3070/v1 \
   -H "Authorization: test_api_key_3" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
-
-
-<!-- TODO_IN_THIS_PR(@commoddity): embed the Helm Docs generated values.yaml file and link to it here. -->
