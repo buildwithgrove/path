@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 title: Morse Cheat Sheet
 description: Quick reference guide for setting up PATH with Morse protocol
 ---
