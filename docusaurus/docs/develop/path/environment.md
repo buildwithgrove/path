@@ -22,8 +22,16 @@ It is a pre-requisite for the following protocol-specific guides:
 
 ## Development Environment
 
-PATH uses a Kubernetes-based local development environment. We use Kind (Kubernetes in Docker)
-for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
+<div align="center">
+  <a href="https://docs.tilt.dev/">
+    <img src="https://blog.tilt.dev/assets/img/blog-default-preview.png" alt="Tilt logo" width="200"/>
+  <p><b>Tilt Documentation</b></p>
+  </a>
+</div>
+
+PATH's development mode uses a Kubernetes-based local development environment with Tilt.
+
+We use Kind (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
 image building process compared to Docker Desktop's Kubernetes cluster.
 
 ## Prerequisites
@@ -70,13 +78,14 @@ This script currently only works on Linux. MacOS version coming soon.
 
 ## 3. Choose Your Protocol
 
-| Protocol | Version | Status   | Network | Documentation                                     |
-| -------- | ------- | -------- | ------- | ------------------------------------------------- |
-| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Guide](./cheatsheet_shannon.md) |
-| Morse    | v0      | Original | MainNet | [Morse Protocol Guide](./cheatsheet_morse.md)     |
+| Protocol | Version | Status   | Network | Documentation                                                |
+| -------- | ------- | -------- | ------- | ------------------------------------------------------------ |
+| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Quickstart Guide](./cheatsheet_shannon.md) |
+| Morse    | v0      | Original | MainNet | [Morse Protocol Quickstart Guide](./cheatsheet_morse.md)     |
 
 ## Additional Resources
 
-- [PATH Walkthrough](./introduction.md) - Detailed explanation of PATH architecture
-- [PATH Environment Setup](./environment.md) - Detailed configuration guide
-- [PATH Configuration Files](./configuration.md) - Detailed configuration guide
+- [PATH Configuration Files](./configuration.md) - Detailed configuration instructions
+- [PATH Helm Chart](../helm/path.md) - Full documentation for the PATH Helm chart
+- [GUARD Helm Chart](../helm/guard.md) - Full documentation for the GUARD Helm chart
+- [WATCH Helm Chart](../helm/watch.md) - Full documentation for the WATCH Helm chart

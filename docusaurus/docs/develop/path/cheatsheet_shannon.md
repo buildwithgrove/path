@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 title: Shannon Cheat Sheet
 description: Quick reference guide for setting up PATH with Shannon protocol
 ---
@@ -15,10 +15,11 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 - [2. Configure PATH for Shannon](#2-configure-path-for-shannon)
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
   - [2.2 Verify Configuration](#22-verify-configuration)
-- [3. Start PATH](#3-start-path)
+- [3. Run PATH in development mode](#3-run-path-in-development-mode)
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
+- [What's Next?](#whats-next)
 
 ## 0. Prerequisites
 
@@ -185,12 +186,12 @@ hydrator_config:
 ```
 
 :::important Gateway Configuration
+
 Ensure that `gateway_config` is filled out correctly before continuing.
+
 :::
 
-## 3. Start PATH
-
-Make sure to have followed the entire [**environment setup**](./environment.md) guide before proceeding.
+## 3. Run PATH in development mode
 
 ## 3.1 Start PATH
 
@@ -242,3 +243,8 @@ curl http://localhost:3070/v1 \
 If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::
+
+
+## What's Next?
+
+Now that you have PATH running, take a look at the [Configuration](./configuration.md) guide to learn more about the different configuration options available.
