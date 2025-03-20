@@ -1,13 +1,8 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: Configuration
 description: PATH configuration details
 ---
-
-<div align="center">
-<h1>PATH<br/>Configuration Files</h1>
-<img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
-</div>
 
 The following documentation describes how to configure a local PATH deployment running in development mode in Tilt.
 
@@ -24,14 +19,16 @@ For production deployments of PATH, the Operate documentation is currently under
 
 A PATH deployment is configured via two files:
 
-1. `.config.yaml` - configures the PATH **gateway**
-2. `.values.yaml` - configures the PATH **kubernetes deployment**
+| File           | Required | Description                                   |
+| -------------- | -------- | --------------------------------------------- |
+| `.config.yaml` | ✅        | configures the PATH **gateway**               |
+| `.values.yaml` | ❌        | configures the PATH **Helm chart deployment** |
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
-- [PATH Configuration File](#path-configuration-file)
+- [PATH Config File (`.config.yaml`)](#path-config-file-configyaml)
   - [Config File Location](#config-file-location)
   - [Config File Fields](#config-file-fields)
     - [`morse_config`](#morse_config)
@@ -39,14 +36,15 @@ A PATH deployment is configured via two files:
     - [`hydrator_config` (optional)](#hydrator_config-optional)
     - [`router_config` (optional)](#router_config-optional)
     - [`logger_config` (optional)](#logger_config-optional)
-- [Helm Values Configuration File](#helm-values-configuration-file)
+- [Helm Values Config File (`.values.yaml`)](#helm-values-config-file-valuesyaml)
   - [Config File Location](#config-file-location-1)
   - [GUARD Configuration](#guard-configuration)
     - [`auth.apiKey` Section](#authapikey-section)
     - [`services` Section](#services-section)
-  - [Example `.values.yaml` File](#example-valuesyaml-file)
+    - [Example `.values.yaml` File](#example-valuesyaml-file)
+  - [Example Requests](#example-requests)
 
-# PATH Configuration File
+## PATH Config File (`.config.yaml`)
 
 All configuration for the PATH gateway is defined in a single YAML file named `.config.yaml`.
 
@@ -117,7 +115,7 @@ logger_config:
 
 </details>
 
-## Config File Location
+### Config File Location
 
 In development mode, the config file must be located at:
 
@@ -127,7 +125,7 @@ In development mode, the config file must be located at:
 
 :::tip VSCode Validation
 
-Use the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension for real-time validation by ensuring the following annotation is present at the top of your config file:
+If you are using VSCode, we recommend using the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension for in-editor validation of the `.config.yaml` file. Enable it by ensuring the following annotation is present at the top of your config file:
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
@@ -135,11 +133,11 @@ Use the [YAML Language Support](https://marketplace.visualstudio.com/items?itemN
 
 :::
 
-## Config File Fields
+### Config File Fields
 
 This is a comprehensive outline and explanation of each YAML field in the configuration file.
 
-### Protocol Section <!-- omit in toc -->
+#### Protocol Section <!-- omit in toc -->
 
 The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
 
@@ -148,7 +146,7 @@ The config file **MUST contain EXACTLY one** of the following top-level protocol
 
 ---
 
-### `morse_config`
+#### `morse_config`
 
 Configuration for the Morse protocol gateway.
 
@@ -194,7 +192,7 @@ morse_config:
 
 ---
 
-### `shannon_config`
+#### `shannon_config`
 
 Configuration for the Shannon protocol gateway.
 
@@ -255,7 +253,7 @@ shannon_config:
 
 ---
 
-### `hydrator_config` (optional)
+#### `hydrator_config` (optional)
 
 
 Configures the QoS hydrator to run synthetic checks against endpoints of the provided service IDs.
@@ -289,7 +287,7 @@ A list of all service IDs with QoS implementations can be found in [`config/serv
 
 ---
 
-### `router_config` (optional)
+#### `router_config` (optional)
 
 **Enables configuring how incoming requests are handled.**
 
@@ -305,7 +303,7 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 ---
 
-### `logger_config` (optional)
+#### `logger_config` (optional)
 
 Controls the logging behavior of the PATH gateway.
 
@@ -320,50 +318,30 @@ logger_config:
 
 <br/>
 
-# Helm Values Configuration File
+## Helm Values Config File (`.values.yaml`)
 
-<div align="center">
-  <a href="https://helm.sh/docs/">
-    <img src="https://www.redhat.com/rhdc/managed-files/helm.svg" alt="Helm logo" width="75"/>
-  </a>
-  <br/>
-  <a href="https://helm.sh/docs/">
-    <h2>Helm Docs</h2>
-  </a>
-</div>
+:::info DEFAULT VALUES
 
-A full PATH deployment is packaged as a Helm chart, with 3 main components:
-- [PATH (PATH API and Tooling Harness)](https://github.com/buildwithgrove/helm-charts/tree/main/charts/path)
-  - The Gateway component of PATH
-- [GUARD (Gateway Utilities for Authentication, Routing & Defense)](https://github.com/buildwithgrove/helm-charts/tree/main/charts/guard)
-  - The authentication, routing and security layer for the gateway built using Envoy Gateway.
-- [WATCH (Workload Analytics and Telemetry for Comprehensive Health)](https://github.com/buildwithgrove/helm-charts/tree/main/charts/watch)
-  - The observability layer for the gateway, including Prometheus, Grafana, and Alertmanager.
+**Using the `.values.yaml` file is optional; PATH will run with default values if the file is not present.**
 
+However, it is is highly recommended to override the default values in the `.values.yaml` file to customize the local PATH deployment to your needs.
 
-<!-- TODO_IN_THIS_PR(@commoddity): link to the PATH, GUARD & WATCH Helm Chart READMEs-->
+By default PATH is configured as follows:
 
+**1. Services**
+   | Protocol  | Service ID | Aliases                      |
+   | --------- | ---------- | ---------------------------- |
+   | `shannon` | `anvil`    | -                            |
+   | `morse`   | `F00C`     | `eth`, `eth-mainnet`         |
+   | `morse`   | `F021`     | `polygon`, `polygon-mainnet` |
 
-The `.values.yaml` file is used to configure a PATH deployment by overriding the default values in the Helm chart.
+**2. API Keys:**
+   - `test_api_key`
 
-
-:::info
-
-For more information on Helm `values.yaml` files, see the [Helm values files documentation](https://helm.sh/docs/chart_template_guide/values_files/).
-
-:::
-
-## Config File Location
-
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.values.yaml
-```
 
 :::tip
 
-A Make target is provided to copy a template `.values.yaml` file to the local directory.
+If you wish to customize the default values, you can copy the template file to the local directory and modify it.
 
 ```bash
 make copy_values_yaml
@@ -371,17 +349,31 @@ make copy_values_yaml
 
 :::
 
-Tilt's hot reload feature is enabled by default in the Helm chart.
 
-This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH gateway with the new values.
+The `.values.yaml` file is used to configure a PATH deployment by overriding the default values in the Helm chart.
 
-## GUARD Configuration
+**PATH may be run in development mode without the `values.yaml` file using default values.**
 
-For the purposes of a running PATH in development mode, you will likely only need to override the `GUARD` section of the `.values.yaml` file. 
+:::info
 
-**Specifically, the sections for `auth.apiKey.apiKeys` and `services` should be overridden**.
+For more information on Helm `values.yaml` files, see the [Helm values files documentation](https://helm.sh/docs/chart_template_guide/values_files/).
 
-### `auth.apiKey` Section
+:::
+
+### Config File Location
+
+In development mode, the config file must be located at:
+
+```bash
+./local/path/.values.yaml
+```
+
+
+Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH gateway with the new values.
+
+### GUARD Configuration
+
+#### `auth.apiKey` Section
 
 This section configures the list of allowed API keys for the PATH gateway. Any request without a valid API key will be rejected.
 
@@ -396,7 +388,7 @@ _See Envoy Gateway's [API Key Authentication documentation](https://gateway.envo
 | `enabled` | boolean       | Yes      | true           | Whether to enforce API key authentication         |
 | `apiKeys` | array[string] | Yes      | [test_api_key] | List of API keys authorized to access the gateway |
 
-### `services` Section
+#### `services` Section
 
 This section configures the list of services that are allowed to access the PATH gateway.
 
@@ -410,7 +402,7 @@ The service ID is specified per-request as the `Target-Service-Id` header; eithe
 | `services[].serviceId` | string        | Yes      | -       | The unique identifier for the service |
 | `services[].aliases`   | array[string] | Yes      | -       | List of aliases for the service       |
 
-## Example `.values.yaml` File
+#### Example `.values.yaml` File
 
 ```yaml
 guard:
@@ -433,7 +425,9 @@ guard:
         - pocket
 ```
 
-The above configuration means the following requests to PATH will be allowed:
+### Example Requests
+
+The above `.values.yaml` files will allow the following requests to PATH:
 
 ```bash
 # Request to the "polygon" service using the service ID
