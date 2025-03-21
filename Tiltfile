@@ -40,7 +40,6 @@ if local_config["helm_chart_local_repo"]["enabled"]:
 
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
-
 # The folder containing PATH's local configuration files.
 PATH_LOCAL_DIR = LOCAL_DIR + "/path"
 # The configuration file for PATH.
@@ -50,7 +49,6 @@ PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
 #                              Configuration Resources                        #
 # --------------------------------------------------------------------------- #
 # 1. PATH Config Updater                                                      #
-# 2. Patch Envoy Gateway LoadBalancer                                         #
 # --------------------------------------------------------------------------- #
 
 # Start a Tilt resource to update the PATH config with the local config file.
@@ -64,18 +62,6 @@ local_resource(
     echo "Deployment not found - skipping rollout restart"
     ''',
     deps=[PATH_LOCAL_CONFIG_FILE],
-    labels=["configuration"],
-)
-
-# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
-# to ensure it is reachable from outside the cluster at "localhost:3070".
-#
-# For more context, see the comments at:
-# `./local/scripts/patch_envoy_gateway.sh`.
-local_resource(
-    "patch-envoy-gateway",
-    "./local/scripts/patch_envoy_gateway.sh",
-    resource_deps=["path"],
     labels=["configuration"],
 )
 
@@ -115,18 +101,19 @@ docker_build_with_restart(
 # helm install path buildwithgrove/path \
 #    --set config.fromSecret.enabled=true \
 #    --set config.fromSecret.name=path-config \
-#    --set config.fromSecret.key=.config.yaml
+#    --set config.fromSecret.key=.config.yaml \
+#    --timeout 90s
 flags = [
-# Enable PATH to load the config from a secret.
-# PATH supports loading the config from either a Secret or a ConfigMap.
-# See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
+    # Enable PATH to load the config from a secret.
+    # PATH supports loading the config from either a Secret or a ConfigMap.
+    # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
     "--set", "config.fromSecret.enabled=true",
     "--set", "config.fromSecret.name=path-config",
     "--set", "config.fromSecret.key=.config.yaml",
+    # Set the timeout to 90 seconds as "helm upgrade ..." can timeout with the default 30s timeout.
+    "--timeout", "90s"
 ]
 
-# TODO_DOCUMENT(@commoddity): Add documentation for the .values.yaml file.
-#
 # Optional: Use a local values.yaml file to override the default values.
 #
 # For example, Tilt will append the flags:
@@ -137,10 +124,9 @@ flags = [
 valuesFile = "./local/path/.values.yaml"
 if read_yaml(valuesFile, default=None) != None:
     watch_file(valuesFile)
-    flags.append("--reset-values") # Ensure that values are overridden by the .values.yaml file.
     flags.append("--values")
     flags.append(valuesFile)
-    
+    flags.append("--reset-values") # Ensure that values are overridden by the .values.yaml file.
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
@@ -163,11 +149,13 @@ helm_resource(
 )
 
 # --------------------------------------------------------------------------- #
-#                              Logs Resources                                 #
+#                              Cluster Resources                              #
 # --------------------------------------------------------------------------- #
 # 1. PATH Logs                                                                #
-# 2. GUARD (Envoy Gateway) Logs                                               #
-# 3. WATCH (Observability) Logs                                               #
+# 2. GUARD Logs                                                               #
+# 3. GUARD Port Forwarding                                                    #
+# 4. WATCH Logs                                                               #
+# 5. WATCH Port Forwarding                                                    #
 # --------------------------------------------------------------------------- #
 
 # 1.PATH Logs
@@ -190,12 +178,37 @@ local_resource(
     resource_deps=["path"]
 )
 
-# 3. WATCH (Observability) Logs
+# 3. GUARD Port Forwarding
+# Ensures that the `guard` service is accessible from the local machine on port 3070.
+local_resource(
+    "guard-port-forward",
+    cmd="echo 'Waiting for svc/guard to be ready for port forwarding...'",
+    serve_cmd="""
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=envoy --timeout=90s && \
+    kubectl port-forward svc/guard 3070:3070
+    """,
+    labels=["configuration"],
+    resource_deps=["path"]
+)
+
+# 4. WATCH (Observability) Logs
 # Uses a `local_resource` to display logs for the `grafana`, `kube-state-metrics`, and `prometheus-node-exporter` pods.
 local_resource(
     "watch",
     cmd="echo 'Following WATCH logs...'", 
     serve_cmd="kubectl logs -l app.kubernetes.io/name=grafana -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
     labels=["path"],
+    resource_deps=["path"]
+)
+
+# 5. WATCH (Observability) Port Forwarding
+local_resource(
+    "watch-port-forward",
+    cmd="echo 'Waiting for svc/path-grafana pods to be ready for port forwarding...'",
+    serve_cmd="""
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana --timeout=90s && \
+    kubectl port-forward svc/path-grafana 3000:80
+    """,
+    labels=["configuration"],
     resource_deps=["path"]
 )
