@@ -174,6 +174,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		if err != nil {
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
 		}
+		logger.Debug().Msgf("getAppsUniqueEndpoints: got session %s for app %s", session, app.Address)
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
