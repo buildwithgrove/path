@@ -201,6 +201,7 @@ Run PATH in local development mode in Tilt by running:
 make path_up
 ```
 
+
 You can stop the PATH stack by running:
 
 ```bash
@@ -209,17 +210,14 @@ make path_down
 
 ### 3.1 Monitor PATH
 
-Visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
+![Tilt Dashboard](../../../static/img/path-in-tilt-console.png)
 
-Wait for initialization logs:
+Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
 
-```json
-{"level":"info","message":"Starting PATH gateway with Shannon protocol"}
-{"level":"info","message":"Starting the cache update process."}
-{"level":"info","package":"router","message":"PATH gateway running on port 3069"}
-```
 
-<!-- TODO_IN_THIS_PR(@commoddity): add screenshot of Tilt dashboard -->
+![Tilt Console](../../../static/img/path-in-tilt.png)
+
+_PATH Running in Tilt_
 
 ## 4. Test Relays
 
@@ -229,7 +227,7 @@ The makefile helpers in `makefiles/test_requests.mk` can make iterating on these
 
 :::
 
-Send a test relay (`make test_request__service_id_header`):
+Send a test relay (`make test_request__service_id_header_shannon`):
 
 ```bash
 curl http://localhost:3070/v1 \

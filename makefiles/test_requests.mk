@@ -54,10 +54,17 @@ test_request__service_id_subdomain: check_path_up_with_envoy debug_anvil_supplie
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
-.PHONY: test_request__service_id_header
-test_request__service_id_header: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+.PHONY: test_request__service_id_header_shannon
+test_request__service_id_header_shannon: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
 	curl http://localhost:3070/v1 \
 		-H "Target-Service-Id: anvil" \
+		-H "Authorization: test_api_key" \
+		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+
+.PHONY: test_request__service_id_header_morse
+test_request__service_id_header_morse: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+	curl http://localhost:3070/v1 \
+		-H "Target-Service-Id: polygon" \
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
