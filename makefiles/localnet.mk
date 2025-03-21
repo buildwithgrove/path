@@ -35,7 +35,7 @@ check_docker:
 dev_up: check_kind
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
-		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
+		kind create cluster --name path-localnet; \
 		kubectl config use-context kind-path-localnet; \
 		kubectl create namespace path; \
 		kubectl create namespace monitoring; \
