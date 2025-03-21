@@ -102,6 +102,7 @@ docker_build_with_restart(
 #    --set config.fromSecret.enabled=true \
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml \
+#    --set global.imagePullPolicy=Never \
 #    --timeout 90s
 flags = [
     # Enable PATH to load the config from a secret.
@@ -110,6 +111,8 @@ flags = [
     "--set", "config.fromSecret.enabled=true",
     "--set", "config.fromSecret.name=path-config",
     "--set", "config.fromSecret.key=.config.yaml",
+    # Always use the local image.
+    "--set", "global.imagePullPolicy=Never",
     # Set the timeout to 90 seconds as "helm upgrade ..." can timeout with the default 30s timeout.
     "--timeout", "90s"
 ]

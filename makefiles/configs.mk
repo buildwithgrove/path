@@ -1,18 +1,13 @@
-################################################################
-# Shared config helpers
-################
+#########################################################
+#               Shared config helpers                   #
+#########################################################
 
 # Helper variable for all config files
 CONFIG_FILES := \
-	./bin/config/.config.yaml \
-	./config/.config.yaml \
 	./local/path/.config.yaml \
+	./local/path/.values.yaml \
 	./e2e/.shannon.config.yaml \
 	./e2e/.morse.config.yaml \
-	./local/path/envoy/.envoy.yaml \
-	./local/path/envoy/.ratelimit.yaml \
-	./local/path/envoy/.allowed-services.lua \
-	./local/path/envoy/.gateway-endpoints.yaml
 
 # Helper function to check if a config file exists
 define check_config_exists
@@ -77,3 +72,19 @@ clear_all_local_configs: check_clear_confirmation ## Clear all local configs wit
 	@echo "################################################################"
 	@echo "Completed: All configs processed (backups created where applicable)"
 	@echo "################################################################"
+
+.PHONY: copy_values_yaml
+copy_values_yaml: ## Copies the values template file to the local directory.
+	@if [ ! -f ./local/path/.values.yaml ]; then \
+		cp ./local/path/values.tmpl.yaml ./local/path/.values.yaml; \
+		echo "################################################################"; \
+		echo "Created ./local/path/.values.yaml"; \
+		echo "################################################################"; \
+	else \
+		echo "################################################################"; \
+		echo "Warning: ./local/path/.values.yaml already exists"; \
+		echo "To recreate the file, delete it first and run this command again"; \
+		echo "	rm ./local/path/.values.yaml"; \
+		echo "	make copy_values_yaml"; \
+		echo "################################################################"; \
+	fi
