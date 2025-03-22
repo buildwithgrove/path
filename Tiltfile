@@ -163,6 +163,9 @@ helm_resource(
     port_forwards=["6060:6060"],
     resource_deps=["path-config-updater"]
 )
+update_settings(
+    k8s_upsert_timeout_secs=90,
+)
 
 # --------------------------------------------------------------------------- #
 #                              Logs Resources                                 #
