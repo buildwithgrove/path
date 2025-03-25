@@ -1,100 +1,148 @@
 package evm
 
 import (
-	"errors"
-	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-)
-
-// The errors below list all the possible validation errors on an endpoint.
-var (
-	errNoChainIDObs             = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
-	errInvalidChainIDObs        = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
-	errNoBlockNumberObs         = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs    = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
-	errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
 type endpoint struct {
-	// TODO_TECHDEBT(@adshmh): Persist this state across restarts to maintain endpoint exclusions.
-	//
-	// hasReturnedEmptyResponse tracks endpoints that have returned empty responses.
-	// These endpoints are excluded from selection until service restart.
-	hasReturnedEmptyResponse bool
+	checks map[endpointCheckName]*evmQualityCheck
+}
 
-	// chainIDResponse stores the result of processing the endpoint's response to an `eth_chainId` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_chainId` request.
-	chainIDResponse *string
+// newEndpoint initializes a new endpoint with the checks that should be run for the endpoint.
+func newEndpoint(es *EndpointStore) endpoint {
+	return endpoint{
+		checks: map[endpointCheckName]*evmQualityCheck{
+			checkNameEmptyResponse: {
+				// TODO_MVP(@commoddity): should we provide for a mechanism to un-sanction an endpoint that has returned an empty response?
+				requestContext: nil, // An empty response disqualifies an endpoint for an entire session.
+				check:          &endpointCheckEmptyResponse{},
+			},
+			checkNameChainID: {
+				requestContext: getEndpointCheck(es, withChainIDCheck),
+				check:          &endpointCheckChainID{},
+			},
+			checkNameBlockNumber: {
+				requestContext: getEndpointCheck(es, withBlockNumberCheck),
+				check:          &endpointCheckBlockNumber{},
+			},
+		},
+	}
+}
 
-	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
-	parsedBlockNumberResponse *uint64
+// getChecks returns the list of checks that should be run for the endpoint.
+// The pre-selected endpoint address is assigned to the request context in this method.
+func (e *endpoint) getChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+	var checks []gateway.RequestQoSContext
 
-	// TODO_FUTURE: support archival endpoints.
+	for _, check := range e.checks {
+		// The check should run if both are true:
+		// 1. The check has a non-nil request context.
+		// 2. The check was just initialized or has expired.
+		if check.shouldRun() {
+			requestContext := check.getRequestContext()
+			requestContext.setPreSelectedEndpointAddr(endpointAddr)
+			checks = append(checks, requestContext)
+		}
+	}
+
+	return checks
 }
 
 // Validate returns an error if the endpoint is invalid.
 // e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
-func (e endpoint) Validate(chainID string) error {
-	switch {
-	case e.hasReturnedEmptyResponse:
-		return errHasReturnedEmptyResponse
-	case e.chainIDResponse == nil:
-		return errNoChainIDObs
-	case *e.chainIDResponse != chainID:
-		return fmt.Errorf("invalid response: %s expected %s :%w", *e.chainIDResponse, chainID, errInvalidChainIDObs)
-	case e.parsedBlockNumberResponse == nil:
-		return errNoBlockNumberObs
-	case *e.parsedBlockNumberResponse == 0:
-		return errInvalidBlockNumberObs
-	default:
-		return nil
+func (e endpoint) Validate(serviceState *ServiceState) error {
+	for _, check := range e.checks {
+		if err := check.isValid(serviceState); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
-// It Returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+// It returns true if the observation was not unrecognized, i.e. mutated the endpoint.
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
 func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
+	// If emptyResponse is not nil, the observation is for an empty response check.
 	if obs.GetEmptyResponse() != nil {
-		e.hasReturnedEmptyResponse = true
+		e.applyEmptyResponseObservation()
 		return true
 	}
 
+	// If chainIDResponse is not nil, the observation is for a chainID check.
 	if chainIDResponse := obs.GetChainIdResponse(); chainIDResponse != nil {
-		observedChainID := chainIDResponse.GetChainIdResponse()
-		e.chainIDResponse = &observedChainID
+		e.applyChainIDObservation(chainIDResponse)
 		return true
 	}
 
+	// If blockNumberResponse is not nil, the obbservation is for a blockNumber check.
 	if blockNumberResponse := obs.GetBlockNumberResponse(); blockNumberResponse != nil {
-		// base 0: use the string's prefix to determine its base.
-		parsedBlockNumber, err := strconv.ParseUint(blockNumberResponse.GetBlockNumberResponse(), 0, 64)
-		// The endpoint returned an invalid response to an `eth_blockNumber` request.
-		// Explicitly set the parsedBlockNumberResponse to a zero value as the ParseUInt does not guarantee returning a 0 on all error cases.
-		if err != nil {
-			zero := uint64(0)
-			e.parsedBlockNumberResponse = &zero
-			return true
-		}
-
-		e.parsedBlockNumberResponse = &parsedBlockNumber
+		e.applyBlockNumberObservation(blockNumberResponse)
 		return true
 	}
 
 	return false
 }
 
+// applyEmptyResponseObservation updates the empty response check if a valid observation is provided.
+func (e *endpoint) applyEmptyResponseObservation() {
+	e.checks[checkNameEmptyResponse].check = &endpointCheckEmptyResponse{
+		hasReturnedEmptyResponse: true, // An empty response is always invalid.
+	}
+}
+
+// applyChainIDObservation updates the chain ID check if a valid observation is provided.
+func (e *endpoint) applyChainIDObservation(chainIDResponse *qosobservations.EVMChainIDResponse) {
+	observedChainID := chainIDResponse.GetChainIdResponse()
+
+	e.checks[checkNameChainID].check = &endpointCheckChainID{
+		chainID:   &observedChainID,
+		expiresAt: time.Now().Add(checkChainIDInterval),
+	}
+}
+
+// applyBlockNumberObservation updates the block number check if a valid observation is provided.
+func (e *endpoint) applyBlockNumberObservation(blockNumberResponse *qosobservations.EVMBlockNumberResponse) {
+	// base 0: use the string's prefix to determine its base.
+	parsedBlockNumber, err := strconv.ParseUint(blockNumberResponse.GetBlockNumberResponse(), 0, 64)
+
+	// The endpoint returned an invalid response to an `eth_blockNumber` request.
+	// Explicitly set the parsedBlockNumberResponse to a zero value as the ParseUInt
+	// does not guarantee returning a 0 on all error cases.
+	if err != nil {
+		zero := uint64(0)
+		e.checks[checkNameBlockNumber].check = &endpointCheckBlockNumber{
+			blockNumber: &zero,
+			expiresAt:   time.Now().Add(checkBlockNumberInterval),
+		}
+		return
+	}
+
+	e.checks[checkNameBlockNumber].check = &endpointCheckBlockNumber{
+		blockNumber: &parsedBlockNumber,
+		expiresAt:   time.Now().Add(checkBlockNumberInterval),
+	}
+}
+
 // GetBlockNumber returns the parsed block number value for the endpoint.
 func (e endpoint) GetBlockNumber() (uint64, error) {
-	if e.parsedBlockNumberResponse == nil {
+	blockNumberCheck, ok := e.checks[checkNameBlockNumber]
+	if !ok {
 		return 0, errNoBlockNumberObs
 	}
 
-	return *e.parsedBlockNumberResponse, nil
+	observedBlockNumber := blockNumberCheck.check.(*endpointCheckBlockNumber)
+	if observedBlockNumber.blockNumber == nil {
+		return 0, errNoBlockNumberObs
+	}
+
+	return *observedBlockNumber.blockNumber, nil
 }
