@@ -110,8 +110,6 @@ flags = [
     "--set", "config.fromSecret.enabled=true",
     "--set", "config.fromSecret.name=path-config",
     "--set", "config.fromSecret.key=.config.yaml",
-    # Set the timeout to 90 seconds as "helm upgrade ..." can timeout with the default 30s timeout.
-    "--timeout", "90s"
 ]
 
 # Optional: Use a local values.yaml file to override the default values.
@@ -146,6 +144,10 @@ helm_resource(
     #   $ make debug_goroutines
     port_forwards=["6060:6060"],
     resource_deps=["path-config-updater"]
+)
+# Set the timeout for the `k8s_upsert` command to 90 seconds.
+update_settings(
+    k8s_upsert_timeout_secs=90,
 )
 
 # --------------------------------------------------------------------------- #
