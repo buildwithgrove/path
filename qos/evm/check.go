@@ -35,7 +35,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	return []gateway.RequestQoSContext{
 		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
 		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_IN_THIS_PR@(commoddity): make adding this check configurable.
+		// TODO_IN_THIS_PR(@commoddity): make adding this check configurable.
 		getEndpointCheck(es.logger, es, endpointAddr, withArchivalBlockCheck),
 	}
 }
