@@ -135,7 +135,7 @@ poktrolld keys show -a application
 
 ### 2.1 Generate Shannon Config
 
-Run the following command to generate a Shannon config at `local/path/config/.config.yaml`:
+Run the following command to generate a Shannon config at `local/path/.config.yaml`:
 
 ```bash
 make shannon_populate_config
@@ -161,7 +161,7 @@ To override the poktrolld home directory, you can export the `POKTROLL_HOME_PROD
 Check your config file:
 
 ```bash
-cat local/path/config/.config.yaml
+cat local/path/.config.yaml
 ```
 
 It should look similar to the following with the `gateway_config` filled out.

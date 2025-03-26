@@ -108,7 +108,7 @@ signed_aats:
 
 ### 2.1 Generate Morse Config
 
-Run the following commands to generate a Morse config at `local/path/config/.config.yaml`:
+Run the following commands to generate a Morse config at `local/path/.config.yaml`:
 
 ```bash
 make prepare_morse_e2e_config # Generate ./e2e/.morse.config.yaml
@@ -127,7 +127,7 @@ You'll need to manually update these fields in the config file:
 And then check the updated config:
 
 ```bash
-cat local/path/config/.config.yaml
+cat ./local/path/.config.yaml
 ```
 
 ## 3. Start PATH
