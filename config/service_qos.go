@@ -166,6 +166,7 @@ var morseEVMChainIDs = map[protocol.ServiceID]string{
 	"F02A": "0xc5cc4",         // zkLink (812564)
 	"F02B": "0x144",           // zkSync (324)
 	"F02C": "0x15f902",        // XRPL EVM Devnet (1440002)
+	"F036": "0x15f902",        // XRPL EVM Testnet (1440002)
 	"F02D": "0x92",            // Sonic (146)
 	"F02E": "0x2b6653dc",      // TRON (728426128)
 	"F030": "0xe708",          // Linea (59144)

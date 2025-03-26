@@ -56,8 +56,8 @@ func responseUnmarshallerArchival(
 		validationError = &errValue
 	}
 
-	// Validate the archival block data using our custom helper.
-	validArchivalNodeResponse := validateArchivalBlockResult(block)
+	// Validate the archival block data
+	validArchivalNodeResponse := validateArchivalBlockResult(block, jsonrpcReq.Params)
 
 	return responseToArchival{
 		logger:                    logger,
@@ -120,17 +120,29 @@ func (r responseToArchival) getHTTPStatusCode() int {
 // It checks that critical fields are non-empty, validates the block number format,
 // and verifies that the block hash appears to be the correct length.
 // TODO_IN_THIS_PR(@commoddity): Finalize checks to perform on archival check to validate that node is archival.
-func validateArchivalBlockResult(block ArchivalResponse) bool {
+func validateArchivalBlockResult(block ArchivalResponse, params jsonrpc.Params) bool {
 	// Ensure critical fields are present.
 	if block.Number == "" || block.Hash == "" || block.ParentHash == "" || block.Timestamp == "" {
+		return false
+	}
+	// Check that the block hash has the expected length (e.g., "0x" plus 64 hex digits).
+	if len(block.Hash) != 66 {
 		return false
 	}
 	// Validate that block number is a valid hex value.
 	if _, err := strconv.ParseUint(block.Number, 0, 64); err != nil {
 		return false
 	}
-	// Check that the block hash has the expected length (e.g., "0x" plus 64 hex digits).
-	if len(block.Hash) != 66 {
+	// Validate that the returned block number matches the requested block number.
+	paramsSlice, err := params.Slice()
+	if err != nil {
+		return false
+	}
+	blockNumber, ok := paramsSlice[0].(string)
+	if !ok {
+		return false
+	}
+	if blockNumber != block.Number {
 		return false
 	}
 	return true

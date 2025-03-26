@@ -73,7 +73,7 @@ func withBlockHeightCheck(requestCtx *requestContext) {
 }
 
 // withArchivalBlockCheck updates the request context to make an EVM JSON-RPC eth_getBlockByNumber request with a random archival block number.
-// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x1b4", true]}'
+// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x1b4", false]}'
 func withArchivalBlockCheck(requestCtx *requestContext) {
 	// Get the current perceived block number.
 	perceivedBlockNumber := requestCtx.endpointStore.getPerceivedBlockNumber()
@@ -84,10 +84,10 @@ func withArchivalBlockCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(
 		idArchivalBlockCheck,
 		methodGetBlockByNumber,
-		// Pass params in this order, eg. "params":["0x1b4", true]
+		// Pass params in this order, eg. "params":["0x1b4", false]
 		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
 		archivalBlockNumber,
-		true,
+		false, // Return only hashes of the transactions in the block
 	)
 }
 
@@ -117,7 +117,7 @@ func getArchivalBlockNumber(currentBlockHeight uint64) string {
 	// This is to avoid sending a request with an invalid block number until the
 	// service state has calculated the current block height from other checks.
 	if currentBlockHeight == 0 {
-		return "earliest"
+		return "0x0" // 0x0 is equivalent to "earliest"
 	}
 
 	const (

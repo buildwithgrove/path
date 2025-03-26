@@ -10,11 +10,12 @@ import (
 
 // The errors below list all the possible validation errors on an endpoint.
 var (
-	errNoChainIDObs             = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
-	errInvalidChainIDObs        = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
-	errNoBlockNumberObs         = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs    = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
-	errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
+	errNoChainIDObs                = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
+	errInvalidChainIDObs           = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
+	errNoBlockNumberObs            = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
+	errInvalidBlockNumberObs       = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errInvalidArchivalNodeResponse = fmt.Errorf("endpoint returned an invalid archival checkresponse to a %q request", methodGetBlockByNumber)
+	errHasReturnedEmptyResponse    = errors.New("endpoint is invalid: history of empty responses")
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
@@ -33,6 +34,10 @@ type endpoint struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
 	parsedBlockNumberResponse *uint64
 
+	// invalidArchivalNodeResponse stores whether the node has been observed to return an invalid
+	//response to an `eth_getBlockByNumber` request for an archival block.
+	invalidArchivalNodeResponse bool
+
 	// TODO_FUTURE: support archival endpoints.
 }
 
@@ -50,6 +55,8 @@ func (e endpoint) Validate(chainID string) error {
 		return errNoBlockNumberObs
 	case *e.parsedBlockNumberResponse == 0:
 		return errInvalidBlockNumberObs
+	case e.invalidArchivalNodeResponse:
+		return errInvalidArchivalNodeResponse
 	default:
 		return nil
 	}
@@ -84,6 +91,11 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 		}
 
 		e.parsedBlockNumberResponse = &parsedBlockNumber
+		return true
+	}
+
+	if validArchivalNodeResponse := obs.GetArchivalResponse(); validArchivalNodeResponse != nil {
+		e.invalidArchivalNodeResponse = !validArchivalNodeResponse.GetValidArchivalNodeResponse()
 		return true
 	}
 
