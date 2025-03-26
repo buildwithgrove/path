@@ -120,3 +120,7 @@ func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 
 	return filteredEndpointsAddr, nil
 }
+
+func (es *EndpointStore) getPerceivedBlockNumber() uint64 {
+	return es.serviceState.perceivedBlockNumber
+}

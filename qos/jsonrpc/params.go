@@ -26,6 +26,10 @@ type Params struct {
 	rawMessage json.RawMessage
 }
 
+func NewParams(rawMessage json.RawMessage) Params {
+	return Params{rawMessage: rawMessage}
+}
+
 // Custom marshaler allows Params to be serialized while keeping rawMessage private.
 // This is needed because Go's default JSON marshaler only processes public fields, but we want to keep rawMessage private
 // to enforce JSON-RPC 2.0 validation during unmarshaling.
