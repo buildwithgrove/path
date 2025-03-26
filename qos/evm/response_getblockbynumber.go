@@ -137,15 +137,24 @@ func validateGetBlockByNumberResult(block GetBlockByNumberResponse, params jsonr
 		return false
 	}
 	// Validate that the returned block number matches the requested block number.
+	// TODO_IN_THIS_PR(@commoddity): Ensure that this check cannot mark a node as invalid due to user error
+	// (eg. if a user passes a param that is not a block number as the first param of the params array by mistake)
 	paramsSlice, err := params.Slice()
 	if err != nil {
 		return false
 	}
-	blockNumber, ok := paramsSlice[0].(string)
+	blockNumberParam, ok := paramsSlice[0].(string)
 	if !ok {
 		return false
 	}
-	if blockNumber != block.Number {
+	// If the request param for block number is `earliest` then we don't need to check if it matches the block number.
+	// This covers the case where the perceived block height is not yet known and so we use `earliest` as the block number
+	// to avoid sending an invalid block number request.
+	if blockNumberParam == earliestParam {
+		return true
+	}
+	// If the request param for block number is not `earliest` then we need to check if it matches the block number
+	if blockNumberParam != block.Number {
 		return false
 	}
 	return true

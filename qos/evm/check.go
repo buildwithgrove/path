@@ -23,6 +23,8 @@ const (
 	idArchivalBlockCheck
 )
 
+const earliestParam = "earliest"
+
 // EndpointStore provides the endpoint check generator required by
 // the gateway package to augment endpoints' quality data,
 // using synthetic service requests.
@@ -117,7 +119,7 @@ func getArchivalBlockNumber(currentBlockHeight uint64) string {
 	// This is to avoid sending a request with an invalid block number until the
 	// service state has calculated the current block height from other checks.
 	if currentBlockHeight == 0 {
-		return "0x0" // 0x0 is equivalent to "earliest"
+		return earliestParam
 	}
 
 	const (
@@ -130,5 +132,9 @@ func getArchivalBlockNumber(currentBlockHeight uint64) string {
 
 	archivalBlockNumber = uint64(math.Max(float64(archivalBlockNumber), float64(minBlockNumber)))
 
-	return fmt.Sprintf("0x%x", archivalBlockNumber)
+	return blockNumberToHex(archivalBlockNumber)
+}
+
+func blockNumberToHex(blockNumber uint64) string {
+	return fmt.Sprintf("0x%x", blockNumber)
 }
