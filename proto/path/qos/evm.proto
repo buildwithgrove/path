@@ -136,18 +136,23 @@ message EVMEndpointObservation {
     // * Chain IDs: https://chainlist.org
     EVMBlockNumberResponse block_number_response = 3;
 
+    // Response to `eth_getBlockByNumber` request
+    // References:
+    // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+    EVMArchivalResponse archival_response = 4;
+
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
-    EVMUnrecognizedResponse unrecognized_response = 4;
+    EVMUnrecognizedResponse unrecognized_response = 5;
 
     // EVMEmptyResponse indicates an endpoint returned no data.
     // Used to:
     //   - Disqualify endpoints that return empty responses
     //   - Track metrics for empty response patterns
-    EVMEmptyResponse empty_response = 5;
+    EVMEmptyResponse empty_response = 6;
 
     // EVMNoResponse indicates no response was received from any endpoint.
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
-    EVMNoResponse no_response = 6;
+    EVMNoResponse no_response = 7;
   }
   // TODO_MVP(@adshmh): add observations for archival checks.
 }
@@ -181,6 +186,20 @@ message EVMBlockNumberResponse {
 
   // The block number value returned in the response
   string block_number_response = 2;
+
+  // Why the response failed QoS validation
+  // If not set, the response is considered valid
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
+}
+
+// EVMArchivalResponse stores the response to an `eth_getBlockByNumber` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+message EVMArchivalResponse {
+  // The HTTP status code received from the endpoint
+  int32 http_status_code = 1;
+
+  // Whether the response is from a valid archival node
+  bool valid_archival_node_response = 2;
 
   // Why the response failed QoS validation
   // If not set, the response is considered valid
