@@ -10,10 +10,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseToArchival provides the functionality required from a response by a requestContext instance.
-var _ response = responseToArchival{}
+// TODO_IN_THIS_PR(@commoddity): Configure this response to be able to exclude performing
+// validation checks for `eth_getBlockByNumber` requests that do not require archival nodes.
 
-type ArchivalResponse struct {
+// responseToGetBlockByNumber provides the functionality required from a response by a requestContext instance.
+var _ response = responseToGetBlockByNumber{}
+
+type GetBlockByNumberResponse struct {
 	Number     string `json:"number"`
 	Hash       string `json:"hash"`
 	ParentHash string `json:"parentHash"`
@@ -21,17 +24,17 @@ type ArchivalResponse struct {
 	Difficulty string `json:"difficulty"`
 }
 
-// responseUnmarshallerArchival deserializes the provided payload
-// into a responseToArchival struct, adding any encountered errors
+// responseUnmarshallerGetBlockByNumber deserializes the provided payload
+// into a responseToGetBlockByNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerArchival(
+func responseUnmarshallerGetBlockByNumber(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-		return responseToArchival{
+		return responseToGetBlockByNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 			validationError: nil, // Valid JSON-RPC error response.
@@ -41,7 +44,7 @@ func responseUnmarshallerArchival(
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-		return responseToArchival{
+		return responseToGetBlockByNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 			validationError: &validationError,
@@ -50,16 +53,16 @@ func responseUnmarshallerArchival(
 
 	var validationError *qosobservations.EVMResponseValidationError
 
-	var block ArchivalResponse
-	if err := json.Unmarshal(resultBz, &block); err != nil {
+	var blockResponse GetBlockByNumberResponse
+	if err := json.Unmarshal(resultBz, &blockResponse); err != nil {
 		errValue := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		validationError = &errValue
 	}
 
 	// Validate the archival block data
-	validArchivalNodeResponse := validateArchivalBlockResult(block, jsonrpcReq.Params)
+	validArchivalNodeResponse := validateGetBlockByNumberResult(blockResponse, jsonrpcReq.Params)
 
-	return responseToArchival{
+	return responseToGetBlockByNumber{
 		logger:                    logger,
 		jsonRPCResponse:           jsonrpcResp,
 		validArchivalNodeResponse: validArchivalNodeResponse,
@@ -67,9 +70,9 @@ func responseUnmarshallerArchival(
 	}, nil
 }
 
-// responseToArchival captures the fields expected in a
+// responseToGetBlockByNumber captures the fields expected in a
 // response to an `eth_getBlockByNumber` request.
-type responseToArchival struct {
+type responseToGetBlockByNumber struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
@@ -84,7 +87,7 @@ type responseToArchival struct {
 
 // GetObservation returns an observation based on the archival response.
 // Implements the response interface.
-func (r responseToArchival) GetObservation() qosobservations.EVMEndpointObservation {
+func (r responseToGetBlockByNumber) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ArchivalResponse{
 			ArchivalResponse: &qosobservations.EVMArchivalResponse{
@@ -96,23 +99,23 @@ func (r responseToArchival) GetObservation() qosobservations.EVMEndpointObservat
 	}
 }
 
-func (r responseToArchival) GetHTTPResponse() httpResponse {
+func (r responseToGetBlockByNumber) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.getResponsePayload(),
 		httpStatusCode:  r.getHTTPStatusCode(),
 	}
 }
 
-func (r responseToArchival) getResponsePayload() []byte {
+func (r responseToGetBlockByNumber) getResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
-		r.logger.Warn().Err(err).Msg("responseToArchival: Marshaling JSONRPC response failed.")
+		r.logger.Warn().Err(err).Msg("responseToGetBlockByNumber: Marshaling JSONRPC response failed.")
 	}
 	return bz
 }
 
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response.
-func (r responseToArchival) getHTTPStatusCode() int {
+func (r responseToGetBlockByNumber) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
@@ -120,7 +123,7 @@ func (r responseToArchival) getHTTPStatusCode() int {
 // It checks that critical fields are non-empty, validates the block number format,
 // and verifies that the block hash appears to be the correct length.
 // TODO_IN_THIS_PR(@commoddity): Finalize checks to perform on archival check to validate that node is archival.
-func validateArchivalBlockResult(block ArchivalResponse, params jsonrpc.Params) bool {
+func validateGetBlockByNumberResult(block GetBlockByNumberResponse, params jsonrpc.Params) bool {
 	// Ensure critical fields are present.
 	if block.Number == "" || block.Hash == "" || block.ParentHash == "" || block.Timestamp == "" {
 		return false

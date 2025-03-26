@@ -24,13 +24,13 @@ var (
 	// Any new response struct needs to be added to the following list.
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockNumber{}
-	_ response = &responseToArchival{}
+	_ response = &responseToGetBlockByNumber{}
 	_ response = &responseGeneric{}
 
 	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
 		methodChainID:          responseUnmarshallerChainID,
 		methodBlockNumber:      responseUnmarshallerBlockNumber,
-		methodGetBlockByNumber: responseUnmarshallerArchival,
+		methodGetBlockByNumber: responseUnmarshallerGetBlockByNumber,
 	}
 )
 
