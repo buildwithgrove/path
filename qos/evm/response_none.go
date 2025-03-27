@@ -28,7 +28,8 @@ func (r responseNone) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_NoResponse{
 			NoResponse: &qosobservations.EVMNoResponse{
-				HttpStatusCode: int32(r.getHTTPStatusCode()), // NoResponse always returns a 500 Internal error HTTP status code.
+				// NoResponse's underlying getHTTPStatusCode always returns a 500 Internal error.
+				HttpStatusCode: int32(r.getHTTPStatusCode()),
 				// NoResponse is always an invalid response.
 				ResponseValidationError: qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_NO_RESPONSE,
 			},
@@ -58,7 +59,7 @@ func (r responseNone) getResponsePayload() []byte {
 }
 
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
-// Always returns returns 500 Internal Server Error on responseNone struct.
+// Always a 500 Internal Server Error for the responseNone struct.
 func (r responseNone) getHTTPStatusCode() int {
 	return httpStatusResponseValidationFailureNoResponse
 }

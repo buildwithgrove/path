@@ -3,17 +3,21 @@ package qos
 // EVMRequestError represents a failure in processing an EVM request or response
 // Contains information extracted from error types defined in evm.proto
 type EVMRequestError struct {
-	// For request validation errors - non-nil indicates a request error
+	// For request validation errors: non-nil indicates a request error
 	requestValidationError *EVMRequestValidationError
-	// For response validation errors - non-nil indicates a response error
+	// For response validation errors: non-nil indicates a response error
 	responseValidationError *EVMResponseValidationError
 }
 
-// GetError returns the error type string representation
+// GetError returns the error type string representation.
+// As of #186, this is limited to request, response or unknown error.
 func (e *EVMRequestError) GetError() string {
+	// Request error
 	if e.IsRequestError() {
 		return e.requestValidationError.String()
 	}
+
+	// Response error
 	if e.IsResponseError() {
 		return e.responseValidationError.String()
 	}

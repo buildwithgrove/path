@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var errInvalidResponseType = errors.New("endpont response observation does not match any registered response type")
+var errInvalidResponseType = errors.New("endpoint response observation does not match any registered response type")
 
 // EVMResponseHandler defines the interface for handling different response types
 type EVMResponseHandler interface {
@@ -50,6 +50,7 @@ func getEVMResponseHandler(obs *EVMEndpointObservation) (EVMResponseHandler, err
 // chainIDEVMResponseHandler handles eth_chainId responses
 type chainIDEVMResponseHandler struct{}
 
+// ExtractValidityStatus returns the status code and error type for chain ID responses
 func (h *chainIDEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetChainIdResponse()
 	validationErr := response.GetResponseValidationError()
@@ -65,6 +66,7 @@ func (h *chainIDEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObserv
 // blockNumberEVMResponseHandler handles eth_blockNumber responses
 type blockNumberEVMResponseHandler struct{}
 
+// ExtractValidityStatus returns the status code and error type for block number responses
 func (h *blockNumberEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetBlockNumberResponse()
 	validationErr := response.GetResponseValidationError()
@@ -80,6 +82,7 @@ func (h *blockNumberEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointOb
 // unrecognizedEVMResponseHandler handles unrecognized responses
 type unrecognizedEVMResponseHandler struct{}
 
+// ExtractValidityStatus returns an error for unrecognized response scenarios
 func (h *unrecognizedEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetUnrecognizedResponse()
 	validationErr := response.GetResponseValidationError()
@@ -95,6 +98,7 @@ func (h *unrecognizedEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointO
 // emptyEVMResponseHandler handles empty responses
 type emptyEVMResponseHandler struct{}
 
+// ExtractValidityStatus returns an error for empty response scenarios
 func (h *emptyEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetEmptyResponse()
 	// Empty responses are always errors
@@ -105,6 +109,7 @@ func (h *emptyEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservat
 // noEVMResponseHandler handles no response scenarios
 type noEVMResponseHandler struct{}
 
+// ExtractValidityStatus returns an error for no response scenarios
 func (h *noEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetNoResponse()
 	// No response is always an error

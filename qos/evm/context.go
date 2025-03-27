@@ -15,8 +15,7 @@ import (
 
 const (
 	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
-	// The default timeout when sending a request to
-	// an EVM blockchain endpoint.
+	// The default timeout when sending a request to an EVM blockchain endpoint.
 	defaultServiceRequestTimeoutMillisec = 10000
 )
 
@@ -24,16 +23,15 @@ const (
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
-
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
 // in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
 // Consider renaming:
 //   - metrics/qos/evm: response → EVMMetricsResponse
-//   - qos/evm: response → EVMResponse
+//   - qos/evm: response → EVMQoSResponse
+//   - observation/evm: observation -> EVMObservation
 //
-// TODO_TECHDEBT: Need a Validate() method here to allow
-// the caller, e.g. gateway, determine whether the endpoint's
-// response was valid, and whether a retry makes sense.
+// TODO_TECHDEBT: Need to add a Validate() method here to allow the caller (e.g. gateway)
+// determine whether the endpoint's response was valid, and whether a retry makes sense.
 //
 // response defines the functionality required from a parsed endpoint response, which all response types must implement.
 // It provides methods to:
@@ -156,7 +154,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	var observations []*qosobservations.EVMEndpointObservation
 
-	// If no responses were received, create an observation for the no-response scenario
+	// If no (zero) responses were received, create a single observation for the no-response scenario.
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
 			logger:     rc.logger,
@@ -165,7 +163,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		responseNoneObs := responseNoneObj.GetObservation()
 		observations = append(observations, &responseNoneObs)
 	} else {
-		// Process responses if any were received
+		// Otherwise, process all responses as individual observations.
 		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 		for idx, endpointResponse := range rc.endpointResponses {
 			obs := endpointResponse.response.GetObservation()
@@ -174,6 +172,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		}
 	}
 
+	// Return the set of observations for the single JSONRPC request.
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{

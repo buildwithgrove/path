@@ -27,7 +27,7 @@ func responseUnmarshallerBlockNumber(
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-			validationError: nil, // Explicitly set to nil to indicate a valid JSONRPC error response.
+			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 
@@ -97,6 +97,8 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 	}
 }
 
+// GetHTTPResponse builds and returns the httpResponse matching the responseToBlockNumber instance.
+// Implements the response interface.
 func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.getResponsePayload(),
@@ -104,6 +106,7 @@ func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
 	}
 }
 
+// getResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
 func (r responseToBlockNumber) getResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)

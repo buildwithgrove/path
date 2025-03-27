@@ -26,8 +26,7 @@ func responseUnmarshallerChainID(
 		return responseToChainID{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-
-			// DEV_NOTE: A valid JSONRPC error response is considered a valid response, marked by nil value for validationError field.
+			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 

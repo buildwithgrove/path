@@ -103,10 +103,9 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 
 	// Response successfully parsed into JSONRPC format.
 	return responseGeneric{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: response,
-		validationError: nil, // Set explicitly to indicate a valid response.
+		validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 	}, nil
 }
 
