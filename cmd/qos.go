@@ -14,20 +14,26 @@ import (
 )
 
 // getServiceQoSInstances returns all QoS instances to be used by the Gateway and the EndpointHydrator.
-func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gateway.QoSService, error) {
+func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayConfig) (map[protocol.ServiceID]gateway.QoSService, error) {
 	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
 
 	logger = logger.With("module", "qos")
 
+	// Get the service configs for the current protocol
+	serviceConfigs := config.ServiceConfigs.GetServiceConfigs(gatewayConfig)
+
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.
-	for serviceID, serviceQoSType := range config.ServiceQoSTypes {
-		switch serviceQoSType {
+	for _, serviceConfig := range serviceConfigs {
+		serviceID := serviceConfig.GetServiceID()
+
+		switch serviceConfig.GetServiceQoSType() {
 
 		case config.ServiceIDEVM:
-			evmQoS := evm.NewQoSInstance(logger, config.GetEVMChainID(serviceID))
+			evmChainID := serviceConfig.(config.EVMServiceConfig).GetServiceChainID()
+			evmQoS := evm.NewQoSInstance(logger, evmChainID)
 			qosServices[serviceID] = evmQoS
 
 		case config.ServiceIDSolana:
@@ -35,7 +41,8 @@ func getServiceQoSInstances(logger polylog.Logger) (map[protocol.ServiceID]gatew
 			qosServices[serviceID] = solanaQoS
 
 		case config.ServiceIDCometBFT:
-			cometBFTQoS := cometbft.NewQoSInstance(logger, config.GetCometBFTChainID(serviceID))
+			cometBFTChainID := serviceConfig.(config.CometBFTServiceConfig).GetServiceChainID()
+			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTChainID)
 			qosServices[serviceID] = cometBFTQoS
 
 		default: // this should never happen

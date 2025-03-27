@@ -1,178 +1,255 @@
 package config
 
-// NOTE: Service ID list last updated 2025/01/22
-//
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
 // Consider a similar automated approach to "docs_update_gov_params_page"
 
-import "github.com/buildwithgrove/path/protocol"
+// NOTE: Service ID list last updated 2025/03/27
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
-// ServiceQoSType maps to a gateway.QoSService implementation that builds request QoS context
-// and selects endpoints for a given service ID.
-type ServiceQoSType string
+type qosServiceConfigs struct {
+	shannonServices []ServiceConfig
+	morseServices   []ServiceConfig
+}
 
-const (
-	// ServiceIDEVM represents the EVM service type, containing all EVM-based blockchains.
-	ServiceIDEVM ServiceQoSType = "evm"
+// GetServiceConfigs returns the service configs for the provided protocol.
+func (c qosServiceConfigs) GetServiceConfigs(config GatewayConfig) []ServiceConfig {
+	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
+		return c.shannonServices
+	}
+	if morseConfig := config.GetMorseConfig(); morseConfig != nil {
+		return c.morseServices
+	}
+	return nil
+}
 
-	// ServiceIDSolana represents the Solana blockchain service type.
-	ServiceIDSolana ServiceQoSType = "solana"
-
-	// ServiceIDPOKT represents the POKT blockchain service type.
-	ServiceIDPOKT ServiceQoSType = "pokt"
-
-	// ServiceIDCometBFT represents the CometBFT blockchain service type.
-	ServiceIDCometBFT ServiceQoSType = "cometbft"
-)
-
-// TODO_MVP(@Olshansk): figure out what these should be longer term.
-const defaultEVMChainID = "0x1" // ETH Mainnet (1)
-const defaultCometBFTChainID = "cosmoshub-4"
-
-// The ServiceQoSTypes map associates each supported service ID with a specific
+// The ServiceConfigs map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
 // This is to handle requests for a given service ID.
-//
-// IMPORTANT: Only service IDs that are part of this map will have QoS checks performed.
-// All other service IDS will be supported but will have the NoOp service QoS type,
-// which does not perform any observations or QoS checks, meaning a random endpoint
-// for the given service ID will be selected for the request.
-//
-// DEV_NOTE: The ServiceQoSTypes map is initialized in the init() function.
-var ServiceQoSTypes = map[protocol.ServiceID]ServiceQoSType{}
-
-func init() {
-	for k, v := range shannonQoSTypes {
-		ServiceQoSTypes[k] = v
-	}
-	for k := range shannonEVMChainIDs {
-		ServiceQoSTypes[k] = ServiceIDEVM
-	}
-	for k := range shannonCometBFTChainIDs {
-		ServiceQoSTypes[k] = ServiceIDCometBFT
-	}
-	for k, v := range morseQoSTypes {
-		ServiceQoSTypes[k] = v
-	}
-	for k := range morseEVMChainIDs {
-		ServiceQoSTypes[k] = ServiceIDEVM
-	}
+var ServiceConfigs = qosServiceConfigs{
+	shannonServices: shannonServices,
+	morseServices:   morseServices,
 }
 
-// GetEVMChainID returns the hexadecimal EVM chain ID for a given service ID.
-// If the service ID is not found in the ShannonEVMChainIDs or MorseEVMChainIDs
-// maps, the default EVM chain ID of `0x1` is returned.
-func GetEVMChainID(serviceID protocol.ServiceID) string {
-	if chainID, ok := shannonEVMChainIDs[serviceID]; ok {
-		return chainID
-	}
-	if chainID, ok := morseEVMChainIDs[serviceID]; ok {
-		return chainID
-	}
-	return defaultEVMChainID
+// shannonServices is the list of QoS service configs for the Shannon protocol.
+var shannonServices = []ServiceConfig{
+	EVMServiceConfig{
+		serviceID:  "eth",             // Ethereum
+		evmChainID: defaultEVMChainID, // (1)
+	},
+	EVMServiceConfig{
+		serviceID:  "anvil",           // Anvil (Ethereum development/testing)
+		evmChainID: defaultEVMChainID, // (1)
+	},
+	EVMServiceConfig{
+		serviceID:  "anvilws",         // Anvil WebSockets (Ethereum WebSockets development/testing)
+		evmChainID: defaultEVMChainID, // (1)
+	},
+	CometBFTServiceConfig{
+		serviceID:       "pocket-beta-rpc", // Pocket Beta Testnet
+		cometBFTChainID: "pocket-beta",
+	},
+	CometBFTServiceConfig{
+		serviceID:       "cometbft",             // CometBFT (Cosmos Hub)
+		cometBFTChainID: defaultCometBFTChainID, // Cosmos Hub
+	},
+	SolanaServiceConfig{
+		serviceID: "solana", // Solana
+	},
 }
 
-// GetCometBFTChainID returns the CometBFT chain ID for a given service ID.
-// If the service ID is not found in the ShannonCometBFTChainIDs map, the default
-// CometBFT chain ID of `cosmoshub-4` is returned.
-func GetCometBFTChainID(serviceID protocol.ServiceID) string {
-	if chainID, ok := shannonCometBFTChainIDs[serviceID]; ok {
-		return chainID
-	}
-	return defaultCometBFTChainID
-}
-
-// IMPORTANT: To run QoS checks against a service, the service ID MUST be registered in one of the below maps.
-// TODO_IMPROVE(@commoddity): consider using protocol scope for the service IDs.
-
-// All non-EVM, non-CometBFT Shannon service IDs.
-// As of the latest update, these service IDs are on Beta TestNet and intended to be moved
-// over to MainNet once the network is ready.
-var shannonQoSTypes = map[protocol.ServiceID]ServiceQoSType{
-	// Solana Service IDs
-	"solana": ServiceIDSolana,
-}
-
-// All Shannon EVM Service IDs and their corresponding EVM chain IDs.
-// The map values are in hexadecimal format as this is the format returned by the
-// node when making chain ID checks in the QoS hydrator.
-// Reference: EVM chain IDs are sourced from https://chainlist.org
-var shannonEVMChainIDs = map[protocol.ServiceID]string{
-	// EVM service IDs
-	"eth": defaultEVMChainID, // ETH Mainnet (1)
-
-	// Test QoS EVM service IDs
-	"anvil": defaultEVMChainID, // ETH development/testing (1)
-
-	// TODO_IMPROVE(@commoddity): Improve QoS for websockets to ensure that service endpoints support WebSocket connections before attempting connection
-	"anvilws": defaultEVMChainID, // ETH WebSockets development/testing (1)
-}
-
-// All CometBFT Shannon Service IDs and their corresponding CometBFT chain IDs.
-var shannonCometBFTChainIDs = map[protocol.ServiceID]string{
-	"pocket-beta-rpc": "pocket-beta",          // Pocket Beta Testnet
-	"cometbft":        defaultCometBFTChainID, // Cosmos Hub
-}
-
-// All non-EVM Morse Service IDs.
-var morseQoSTypes = map[protocol.ServiceID]ServiceQoSType{
-	// Solana Service IDs
-	"F025": ServiceIDSolana, // Solana
-}
-
-// All Morse EVM Service IDs and their corresponding EVM chain IDs.
-// The map values are in hexadecimal format as this is the format returned by the
-// node when making chain ID checks in the QoS hydrator.
-// Reference: EVM chain IDs are sourced from https://chainlist.org
-var morseEVMChainIDs = map[protocol.ServiceID]string{
-	"F001": "0xa4b1",          // Arbitrum One (42161)
-	"F002": "0x66EEE",         // Arbitrum Sepolia Testnet (421614)
-	"F003": "0xa86a",          // Avalanche (43114)
-	"F004": "0xd2af",          // Avalanche-DFK (53935)
-	"F005": "0x2105",          // Base (8453)
-	"F006": "0x14a34",         // Base Sepolia Testnet (84660)
-	"F008": "0x13e31",         // Blast (81649)
-	"F009": "0x38",            // BNB Smart Chain (56)
-	"F00A": "0x120",           // Boba (288)
-	"F00B": "0xa4ec",          // Celo (42220)
-	"F00C": defaultEVMChainID, // Ethereum (1)
-	"F00D": "0x4268",          // Ethereum Holesky Testnet (17000)
-	"F00E": "0xaa36a7",        // Ethereum Sepolia Testnet (11155420)
-	"F00F": "0x2329",          // Evmos (9001)
-	"F010": "0xfa",            // Fantom (250)
-	"F011": "0xfc",            // Fraxtal (252)
-	"F012": "0x7a",            // Fuse (122)
-	"F013": "0x64",            // Gnosis (100)
-	"F014": "0x63564c40",      // Harmony-0 (1666600000)
-	"F015": "0x1251",          // IoTeX (4681)
-	"F016": "0x2019",          // Kaia (8217)
-	"F017": "0x8ae",           // Kava (2222)
-	"F018": "0x440",           // Metis (1088)
-	"F019": "0x504",           // Moonbeam (1284)
-	"F01A": "0x505",           // Moonriver (1285)
-	"F01C": "0xf8",            // Oasys (248)
-	"F01D": "0xa",             // Optimism (10)
-	"F01E": "0xAA37DC",        // Optimism Sepolia Testnet (11155420)
-	"F01F": "0xcc",            // opBNB (204)
-	"F021": "0x89",            // Polygon (137)
-	"F022": "0x13882",         // Polygon Amoy Testnet (80002)
-	"F024": "0x82750",         // Scroll (534992)
-	"F027": "0x28c58",         // Taiko (167000)
-	"F028": "0x28c61",         // Taiko Hekla Testnet (167009)
-	"F029": "0x44d",           // Polygon zkEVM (1101)
-	"F02A": "0xc5cc4",         // zkLink (812564)
-	"F02B": "0x144",           // zkSync (324)
-	"F02C": "0x15f902",        // XRPL EVM Devnet (1440002)
-	"F036": "0x161c28",        // XRPL EVM Testnet (1449000)
-	"F02D": "0x92",            // Sonic (146)
-	"F02E": "0x2b6653dc",      // TRON (728426128)
-	"F030": "0xe708",          // Linea (59144)
-	"F031": "0x138d4",         // Berachain bArtio Testnet (80084)
-	"F032": "0xdef1",          // Ink (57073)
-	"F033": "0x1388",          // Mantle (5000)
-	"F034": "0x531",           // Sei (1329)
-	"F035": "0x138de",         // Berachain (80094)
+// morseServices is the list of QoS service configs for the Morse protocol.
+var morseServices = []ServiceConfig{
+	EVMServiceConfig{
+		serviceID:  "F001",   // Arbitrum One
+		evmChainID: "0xa4b1", // (42161)
+	},
+	EVMServiceConfig{
+		serviceID:  "F002",    // Arbitrum Sepolia Testnet
+		evmChainID: "0x66EEE", // (421614)
+	},
+	EVMServiceConfig{
+		serviceID:  "F003",   // Avalanche
+		evmChainID: "0xa86a", // (43114)
+	},
+	EVMServiceConfig{
+		serviceID:  "F004",   // Avalanche-DFK
+		evmChainID: "0xd2af", // (53935)
+	},
+	EVMServiceConfig{
+		serviceID:  "F005",   // Base
+		evmChainID: "0x2105", // (8453)
+	},
+	EVMServiceConfig{
+		serviceID:  "F006",    // Base Sepolia Testnet
+		evmChainID: "0x14a34", // (84660)
+	},
+	EVMServiceConfig{
+		serviceID:  "F008",    // Blast
+		evmChainID: "0x13e31", // (81649)
+	},
+	EVMServiceConfig{
+		serviceID:  "F009", // BNB Smart Chain
+		evmChainID: "0x38", // (56)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00A",  // Boba
+		evmChainID: "0x120", // (288)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00B",   // Celo
+		evmChainID: "0xa4ec", // (42220)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00C",            // Ethereum
+		evmChainID: defaultEVMChainID, // (1)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00D",   // Ethereum Holesky Testnet
+		evmChainID: "0x4268", // (17000)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00E",     // Ethereum Sepolia Testnet
+		evmChainID: "0xaa36a7", // (11155420)
+	},
+	EVMServiceConfig{
+		serviceID:  "F00F",   // Evmos
+		evmChainID: "0x2329", // (9001)
+	},
+	EVMServiceConfig{
+		serviceID:  "F010", // Fantom
+		evmChainID: "0xfa", // (250)
+	},
+	EVMServiceConfig{
+		serviceID:  "F011", // Fraxtal
+		evmChainID: "0xfc", // (252)
+	},
+	EVMServiceConfig{
+		serviceID:  "F012", // Fuse
+		evmChainID: "0x7a", // (122)
+	},
+	EVMServiceConfig{
+		serviceID:  "F013", // Gnosis
+		evmChainID: "0x64", // (100)
+	},
+	EVMServiceConfig{
+		serviceID:  "F014",       // Harmony-0
+		evmChainID: "0x63564c40", // (1666600000)
+	},
+	EVMServiceConfig{
+		serviceID:  "F015",   // IoTeX
+		evmChainID: "0x1251", // (4681)
+	},
+	EVMServiceConfig{
+		serviceID:  "F016",   // Kaia
+		evmChainID: "0x2019", // (8217)
+	},
+	EVMServiceConfig{
+		serviceID:  "F017",  // Kava
+		evmChainID: "0x8ae", // (2222)
+	},
+	EVMServiceConfig{
+		serviceID:  "F018",  // Metis
+		evmChainID: "0x440", // (1088)
+	},
+	EVMServiceConfig{
+		serviceID:  "F019",  // Moonbeam
+		evmChainID: "0x504", // (1284)
+	},
+	EVMServiceConfig{
+		serviceID:  "F01A",  // Moonriver
+		evmChainID: "0x505", // (1285)
+	},
+	EVMServiceConfig{
+		serviceID:  "F01C", // Oasys
+		evmChainID: "0xf8", // (248)
+	},
+	EVMServiceConfig{
+		serviceID:  "F01D", // Optimism
+		evmChainID: "0xa",  // (10)
+	},
+	EVMServiceConfig{
+		serviceID:  "F01E",     // Optimism Sepolia Testnet
+		evmChainID: "0xAA37DC", // (11155420)
+	},
+	EVMServiceConfig{
+		serviceID:  "F01F", // opBNB
+		evmChainID: "0xcc", // (204)
+	},
+	EVMServiceConfig{
+		serviceID:  "F021", // Polygon
+		evmChainID: "0x89", // (137)
+	},
+	EVMServiceConfig{
+		serviceID:  "F022",    // Polygon Amoy Testnet
+		evmChainID: "0x13882", // (80002)
+	},
+	EVMServiceConfig{
+		serviceID:  "F024",    // Scroll
+		evmChainID: "0x82750", // (534992)
+	},
+	EVMServiceConfig{
+		serviceID:  "F027",    // Taiko
+		evmChainID: "0x28c58", // (167000)
+	},
+	EVMServiceConfig{
+		serviceID:  "F028",    // Taiko Hekla Testnet
+		evmChainID: "0x28c61", // (167009)
+	},
+	EVMServiceConfig{
+		serviceID:  "F029",  // Polygon zkEVM
+		evmChainID: "0x44d", // (1101)
+	},
+	EVMServiceConfig{
+		serviceID:  "F02A",    // zkLink
+		evmChainID: "0xc5cc4", // (812564)
+	},
+	EVMServiceConfig{
+		serviceID:  "F02B",  // zkSync
+		evmChainID: "0x144", // (324)
+	},
+	EVMServiceConfig{
+		serviceID:  "F02C",     // XRPL EVM Devnet
+		evmChainID: "0x15f902", // (1440002)
+	},
+	EVMServiceConfig{
+		serviceID:  "F036",     // XRPL EVM Testnet
+		evmChainID: "0x161c28", // (1449000)
+	},
+	EVMServiceConfig{
+		serviceID:  "F02D", // Sonic
+		evmChainID: "0x92", // (146)
+	},
+	EVMServiceConfig{
+		serviceID:  "F02E",       // TRON
+		evmChainID: "0x2b6653dc", // (728426128)
+	},
+	EVMServiceConfig{
+		serviceID:  "F030",   // Linea
+		evmChainID: "0xe708", // (59144)
+	},
+	EVMServiceConfig{
+		serviceID:  "F031",    // Berachain bArtio Testnet
+		evmChainID: "0x138d4", // (80084)
+	},
+	EVMServiceConfig{
+		serviceID:  "F032",   // Ink
+		evmChainID: "0xdef1", // (57073)
+	},
+	EVMServiceConfig{
+		serviceID:  "F033",   // Mantle
+		evmChainID: "0x1388", // (5000)
+	},
+	EVMServiceConfig{
+		serviceID:  "F034",  // Sei
+		evmChainID: "0x531", // (1329)
+	},
+	EVMServiceConfig{
+		serviceID:  "F035",    // Berachain
+		evmChainID: "0x138de", // (80094)
+	},
+	SolanaServiceConfig{
+		serviceID: "solana", // Solana
+	},
 }
