@@ -1,11 +1,18 @@
 syntax = "proto3";
 
-// TODO_MVP(@adshmh): Address linter warning on all the .proto files:
-// Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
+// TODO_TECHDEBT(@adshmh): Address linter warning on all the .proto files.
+// TODO_TECHDEBT(@adshmh): Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
 //
 // Buf used as linter for proto files:
 // https://buf.build/docs/lint/overview/
 package path.qos;
+
+// TODO_UPNEXT(@adshmh): Organize qos & observation code + structures like so:
+// - Separate out `evm.proto` into `evm_qos.proto` and `evm_observation.proto`
+// - Organize code under the `observations` package into appropriate `observation/qos/evm/**` files like it's done in `qos/evm/**`
+// Why the TODO?
+// As a reader of the code, the separation of concerns yet simultaneous overlap of data & primitives
+// leads to very confusing conflation between qos (i.e. request/responses) with observations (i.e. metrics/data).
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
@@ -55,20 +62,19 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // chain_id is the blockchain identifier is the blockchain identifier for the evm QoS implementation.
+  // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 1;
 
-  // If set with one of the validation failure types:
+  // If this oneof IS SET, then one of the following validation failures happened:
   //  - Indicates the request failed validation
   //  - Contains details about the specific failure type
   //  - The HTTP status code in the selected failure type overrides any status codes from
   //    endpoint observations and should be returned to the client
-  // If this oneof is NOT set:
+  // If this oneof IS NOT SET, then one of the following occurred:
   //  - The request passed validation
   //  - The HTTP status code from the most recent endpoint observation should be used instead
-  // Note: If there is an error reading the HTTP request, there will be no jsonrpc_request.
   oneof request_validation_failure {
     // Indicates a failure to read the HTTP request body
     EVMHTTPBodyReadFailure evm_http_body_read_failure = 2;
@@ -79,6 +85,7 @@ message EVMRequestObservations {
 
   // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
+  // If there is an error reading the HTTP request, there will be no jsonrpc_request.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
   JsonRpcRequest jsonrpc_request = 4;
 
@@ -90,7 +97,8 @@ message EVMRequestObservations {
   repeated EVMEndpointObservation endpoint_observations = 5;
 }
 
-// TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated to receive request payload directly rather than reading from the HTTP request body.
+// TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated
+// to receive request payload directly rather than reading from the HTTP request body.
 //
 // EVMHTTPBodyReadFailure represents a validation failure due to internal server error
 // while attempting to read the HTTP request body.
@@ -154,7 +162,7 @@ message EVMEndpointObservation {
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
     EVMNoResponse no_response = 7;
   }
-  // TODO_MVP(@adshmh): add observations for archival checks.
+  // TODO_MVP(@commoddity): add observations for archival checks.
 }
 
 // TODO_MVP(@adshmh): Implement a consolidated SanctionObservation message structure that:

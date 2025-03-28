@@ -81,6 +81,9 @@ var shannonServices = []ServiceConfig{
 //   - Enabled
 //   - ContractAddress
 //   - ContractStartBlock
+// Currently, only the following EVM services have archival check configurations:
+//   - F00C
+//   - F021
 
 // morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceConfig{

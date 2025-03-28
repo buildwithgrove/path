@@ -4,8 +4,8 @@
 // 	protoc        v5.28.3
 // source: path/qos/evm.proto
 
-// TODO_MVP(@adshmh): Address linter warning on all the .proto files:
-// Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
+// TODO_TECHDEBT(@adshmh): Address linter warning on all the .proto files.
+// TODO_TECHDEBT(@adshmh): Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
 //
 // Buf used as linter for proto files:
 // https://buf.build/docs/lint/overview/
@@ -162,21 +162,19 @@ type EVMRequestObservations struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// chain_id is the blockchain identifier is the blockchain identifier for the evm QoS implementation.
+	// chain_id is the blockchain identifier for the evm QoS implementation.
 	// This is preset by the processor and not determined by the request.
 	// Expected as the `Result` field in eth_chainId responses.
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// If set with one of the validation failure types:
+	// If this oneof IS SET, then one of the following validation failures happened:
 	//   - Indicates the request failed validation
 	//   - Contains details about the specific failure type
 	//   - The HTTP status code in the selected failure type overrides any status codes from
 	//     endpoint observations and should be returned to the client
 	//
-	// If this oneof is NOT set:
+	// If this oneof IS NOT SET, then one of the following occurred:
 	//   - The request passed validation
 	//   - The HTTP status code from the most recent endpoint observation should be used instead
-	//
-	// Note: If there is an error reading the HTTP request, there will be no jsonrpc_request.
 	//
 	// Types that are assignable to RequestValidationFailure:
 	//
@@ -185,6 +183,7 @@ type EVMRequestObservations struct {
 	RequestValidationFailure isEVMRequestObservations_RequestValidationFailure `protobuf_oneof:"request_validation_failure"`
 	// The EVM blockchain service's JSON-RPC request.
 	// This field will be populated only if request validation succeeds.
+	// If there is an error reading the HTTP request, there will be no jsonrpc_request.
 	// TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
 	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,4,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3" json:"jsonrpc_request,omitempty"`
 	// EVM-specific observations from endpoint(s) that responded to the service request.
@@ -289,7 +288,8 @@ func (*EVMRequestObservations_EvmHttpBodyReadFailure) isEVMRequestObservations_R
 func (*EVMRequestObservations_EvmRequestUnmarshalingFailure) isEVMRequestObservations_RequestValidationFailure() {
 }
 
-// TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated to receive request payload directly rather than reading from the HTTP request body.
+// TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated
+// to receive request payload directly rather than reading from the HTTP request body.
 //
 // EVMHTTPBodyReadFailure represents a validation failure due to internal server error
 // while attempting to read the HTTP request body.

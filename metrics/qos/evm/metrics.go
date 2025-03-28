@@ -3,6 +3,7 @@ package evm
 import (
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/buildwithgrove/path/observation/qos"
@@ -80,11 +81,10 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 
 	// Get request status
 	statusCode, requestError, err := interpreter.GetRequestStatus()
-
-	// If we couldn't get status info due to missing observations, skip metrics
-	// This should never happen if the observations are properly initialized
+	// If we couldn't get status info due to missing observations, skip metrics.
+	// This should never happen if the observations are properly initialized.
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to get request status for EVM metrics - this indicates a programming error")
+		logger.Error().Err(err).Msg("Failed to get request status for EVM metrics - this indicates a programming/implementation error")
 		return
 	}
 
@@ -107,8 +107,8 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	).Inc()
 }
 
-// extractChainID extracts the chain ID from the interpreter
-// Returns empty string if chain ID cannot be determined
+// extractChainID extracts the chain ID from the interpreter.
+// Returns empty string if chain ID cannot be determined.
 func extractChainID(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) string {
 	chainID, chainIDFound := interpreter.GetChainID()
 	if !chainIDFound {
@@ -120,8 +120,8 @@ func extractChainID(logger polylog.Logger, interpreter *qos.EVMObservationInterp
 	return chainID
 }
 
-// extractRequestMethod extracts the request method from the interpreter
-// Returns empty string if method cannot be determined
+// extractRequestMethod extracts the request method from the interpreter.
+// Returns empty string if method cannot be determined.
 func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) string {
 	method, methodFound := interpreter.GetRequestMethod()
 	if !methodFound {
