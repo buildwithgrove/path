@@ -1,5 +1,10 @@
 package config
 
+import (
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/evm"
+)
+
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
 // Consider a similar automated approach to "docs_update_gov_params_page"
 
@@ -7,6 +12,11 @@ package config
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
+
+type ServiceConfig interface {
+	GetServiceID() protocol.ServiceID
+	GetServiceQoSType() string
+}
 
 type qosServiceConfigs struct {
 	shannonServices []ServiceConfig
@@ -32,224 +42,233 @@ var ServiceConfigs = qosServiceConfigs{
 	morseServices:   morseServices,
 }
 
+const (
+	defaultEVMChainID = "0x1" // ETH Mainnet (1)
+)
+
 // shannonServices is the list of QoS service configs for the Shannon protocol.
 var shannonServices = []ServiceConfig{
-	EVMServiceConfig{
-		serviceID:  "eth",             // Ethereum
-		evmChainID: defaultEVMChainID, // (1)
+	evm.ServiceConfig{
+		ServiceID:  "eth",             // Ethereum
+		EVMChainID: defaultEVMChainID, // (1)
 	},
-	EVMServiceConfig{
-		serviceID:  "anvil",           // Anvil (Ethereum development/testing)
-		evmChainID: defaultEVMChainID, // (1)
+	evm.ServiceConfig{
+		ServiceID:  "anvil",           // Anvil (Ethereum development/testing)
+		EVMChainID: defaultEVMChainID, // (1)
 	},
-	EVMServiceConfig{
-		serviceID:  "anvilws",         // Anvil WebSockets (Ethereum WebSockets development/testing)
-		evmChainID: defaultEVMChainID, // (1)
+	evm.ServiceConfig{
+		ServiceID:  "anvilws",         // Anvil WebSockets (Ethereum WebSockets development/testing)
+		EVMChainID: defaultEVMChainID, // (1)
 	},
-	CometBFTServiceConfig{
-		serviceID:       "pocket-beta-rpc", // Pocket Beta Testnet
-		cometBFTChainID: "pocket-beta",
-	},
-	CometBFTServiceConfig{
-		serviceID:       "cometbft",             // CometBFT (Cosmos Hub)
-		cometBFTChainID: defaultCometBFTChainID, // Cosmos Hub
-	},
-	SolanaServiceConfig{
-		serviceID: "solana", // Solana
-	},
+	// CometBFTServiceConfig{
+	// 	ServiceID:       "pocket-beta-rpc", // Pocket Beta Testnet
+	// 	cometBFTChainID: "pocket-beta",
+	// },
+	// CometBFTServiceConfig{
+	// 	ServiceID:       "cometbft",             // CometBFT (Cosmos Hub)
+	// 	cometBFTChainID: defaultCometBFTChainID, // Cosmos Hub
+	// },
+	// SolanaServiceConfig{
+	// 	ServiceID: "solana", // Solana
+	// },
 }
 
 // morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceConfig{
-	EVMServiceConfig{
-		serviceID:  "F001",   // Arbitrum One
-		evmChainID: "0xa4b1", // (42161)
+	evm.ServiceConfig{
+		ServiceID:  "F001",   // Arbitrum One
+		EVMChainID: "0xa4b1", // (42161)
 	},
-	EVMServiceConfig{
-		serviceID:  "F002",    // Arbitrum Sepolia Testnet
-		evmChainID: "0x66EEE", // (421614)
+	evm.ServiceConfig{
+		ServiceID:  "F002",    // Arbitrum Sepolia Testnet
+		EVMChainID: "0x66EEE", // (421614)
 	},
-	EVMServiceConfig{
-		serviceID:  "F003",   // Avalanche
-		evmChainID: "0xa86a", // (43114)
+	evm.ServiceConfig{
+		ServiceID:  "F003",   // Avalanche
+		EVMChainID: "0xa86a", // (43114)
 	},
-	EVMServiceConfig{
-		serviceID:  "F004",   // Avalanche-DFK
-		evmChainID: "0xd2af", // (53935)
+	evm.ServiceConfig{
+		ServiceID:  "F004",   // Avalanche-DFK
+		EVMChainID: "0xd2af", // (53935)
 	},
-	EVMServiceConfig{
-		serviceID:  "F005",   // Base
-		evmChainID: "0x2105", // (8453)
+	evm.ServiceConfig{
+		ServiceID:  "F005",   // Base
+		EVMChainID: "0x2105", // (8453)
 	},
-	EVMServiceConfig{
-		serviceID:  "F006",    // Base Sepolia Testnet
-		evmChainID: "0x14a34", // (84660)
+	evm.ServiceConfig{
+		ServiceID:  "F006",    // Base Sepolia Testnet
+		EVMChainID: "0x14a34", // (84660)
 	},
-	EVMServiceConfig{
-		serviceID:  "F008",    // Blast
-		evmChainID: "0x13e31", // (81649)
+	evm.ServiceConfig{
+		ServiceID:  "F008",    // Blast
+		EVMChainID: "0x13e31", // (81649)
 	},
-	EVMServiceConfig{
-		serviceID:  "F009", // BNB Smart Chain
-		evmChainID: "0x38", // (56)
+	evm.ServiceConfig{
+		ServiceID:  "F009", // BNB Smart Chain
+		EVMChainID: "0x38", // (56)
 	},
-	EVMServiceConfig{
-		serviceID:  "F00A",  // Boba
-		evmChainID: "0x120", // (288)
+	evm.ServiceConfig{
+		ServiceID:  "F00A",  // Boba
+		EVMChainID: "0x120", // (288)
 	},
-	EVMServiceConfig{
-		serviceID:  "F00B",   // Celo
-		evmChainID: "0xa4ec", // (42220)
+	evm.ServiceConfig{
+		ServiceID:  "F00B",   // Celo
+		EVMChainID: "0xa4ec", // (42220)
 	},
-	EVMServiceConfig{
-		serviceID:  "F00C",            // Ethereum
-		evmChainID: defaultEVMChainID, // (1)
+	evm.ServiceConfig{
+		ServiceID:  "F00C",            // Ethereum
+		EVMChainID: defaultEVMChainID, // (1)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled:            true,
+			ContractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
+			ContractStartBlock: 12_300_000,
+		},
 	},
-	EVMServiceConfig{
-		serviceID:  "F00D",   // Ethereum Holesky Testnet
-		evmChainID: "0x4268", // (17000)
+	evm.ServiceConfig{
+		ServiceID:  "F00D",   // Ethereum Holesky Testnet
+		EVMChainID: "0x4268", // (17000)
 	},
-	EVMServiceConfig{
-		serviceID:  "F00E",     // Ethereum Sepolia Testnet
-		evmChainID: "0xaa36a7", // (11155420)
+	evm.ServiceConfig{
+		ServiceID:  "F00E",     // Ethereum Sepolia Testnet
+		EVMChainID: "0xaa36a7", // (11155420)
 	},
-	EVMServiceConfig{
-		serviceID:  "F00F",   // Evmos
-		evmChainID: "0x2329", // (9001)
+	evm.ServiceConfig{
+		ServiceID:  "F00F",   // Evmos
+		EVMChainID: "0x2329", // (9001)
 	},
-	EVMServiceConfig{
-		serviceID:  "F010", // Fantom
-		evmChainID: "0xfa", // (250)
+	evm.ServiceConfig{
+		ServiceID:  "F010", // Fantom
+		EVMChainID: "0xfa", // (250)
 	},
-	EVMServiceConfig{
-		serviceID:  "F011", // Fraxtal
-		evmChainID: "0xfc", // (252)
+	evm.ServiceConfig{
+		ServiceID:  "F011", // Fraxtal
+		EVMChainID: "0xfc", // (252)
 	},
-	EVMServiceConfig{
-		serviceID:  "F012", // Fuse
-		evmChainID: "0x7a", // (122)
+	evm.ServiceConfig{
+		ServiceID:  "F012", // Fuse
+		EVMChainID: "0x7a", // (122)
 	},
-	EVMServiceConfig{
-		serviceID:  "F013", // Gnosis
-		evmChainID: "0x64", // (100)
+	evm.ServiceConfig{
+		ServiceID:  "F013", // Gnosis
+		EVMChainID: "0x64", // (100)
 	},
-	EVMServiceConfig{
-		serviceID:  "F014",       // Harmony-0
-		evmChainID: "0x63564c40", // (1666600000)
+	evm.ServiceConfig{
+		ServiceID:  "F014",       // Harmony-0
+		EVMChainID: "0x63564c40", // (1666600000)
 	},
-	EVMServiceConfig{
-		serviceID:  "F015",   // IoTeX
-		evmChainID: "0x1251", // (4681)
+	evm.ServiceConfig{
+		ServiceID:  "F015",   // IoTeX
+		EVMChainID: "0x1251", // (4681)
 	},
-	EVMServiceConfig{
-		serviceID:  "F016",   // Kaia
-		evmChainID: "0x2019", // (8217)
+	evm.ServiceConfig{
+		ServiceID:  "F016",   // Kaia
+		EVMChainID: "0x2019", // (8217)
 	},
-	EVMServiceConfig{
-		serviceID:  "F017",  // Kava
-		evmChainID: "0x8ae", // (2222)
+	evm.ServiceConfig{
+		ServiceID:  "F017",  // Kava
+		EVMChainID: "0x8ae", // (2222)
 	},
-	EVMServiceConfig{
-		serviceID:  "F018",  // Metis
-		evmChainID: "0x440", // (1088)
+	evm.ServiceConfig{
+		ServiceID:  "F018",  // Metis
+		EVMChainID: "0x440", // (1088)
 	},
-	EVMServiceConfig{
-		serviceID:  "F019",  // Moonbeam
-		evmChainID: "0x504", // (1284)
+	evm.ServiceConfig{
+		ServiceID:  "F019",  // Moonbeam
+		EVMChainID: "0x504", // (1284)
 	},
-	EVMServiceConfig{
-		serviceID:  "F01A",  // Moonriver
-		evmChainID: "0x505", // (1285)
+	evm.ServiceConfig{
+		ServiceID:  "F01A",  // Moonriver
+		EVMChainID: "0x505", // (1285)
 	},
-	EVMServiceConfig{
-		serviceID:  "F01C", // Oasys
-		evmChainID: "0xf8", // (248)
+	evm.ServiceConfig{
+		ServiceID:  "F01C", // Oasys
+		EVMChainID: "0xf8", // (248)
 	},
-	EVMServiceConfig{
-		serviceID:  "F01D", // Optimism
-		evmChainID: "0xa",  // (10)
+	evm.ServiceConfig{
+		ServiceID:  "F01D", // Optimism
+		EVMChainID: "0xa",  // (10)
 	},
-	EVMServiceConfig{
-		serviceID:  "F01E",     // Optimism Sepolia Testnet
-		evmChainID: "0xAA37DC", // (11155420)
+	evm.ServiceConfig{
+		ServiceID:  "F01E",     // Optimism Sepolia Testnet
+		EVMChainID: "0xAA37DC", // (11155420)
 	},
-	EVMServiceConfig{
-		serviceID:  "F01F", // opBNB
-		evmChainID: "0xcc", // (204)
+	evm.ServiceConfig{
+		ServiceID:  "F01F", // opBNB
+		EVMChainID: "0xcc", // (204)
 	},
-	EVMServiceConfig{
-		serviceID:  "F021", // Polygon
-		evmChainID: "0x89", // (137)
+	evm.ServiceConfig{
+		ServiceID:  "F021", // Polygon
+		EVMChainID: "0x89", // (137)
 	},
-	EVMServiceConfig{
-		serviceID:  "F022",    // Polygon Amoy Testnet
-		evmChainID: "0x13882", // (80002)
+	evm.ServiceConfig{
+		ServiceID:  "F022",    // Polygon Amoy Testnet
+		EVMChainID: "0x13882", // (80002)
 	},
-	EVMServiceConfig{
-		serviceID:  "F024",    // Scroll
-		evmChainID: "0x82750", // (534992)
+	evm.ServiceConfig{
+		ServiceID:  "F024",    // Scroll
+		EVMChainID: "0x82750", // (534992)
 	},
-	EVMServiceConfig{
-		serviceID:  "F027",    // Taiko
-		evmChainID: "0x28c58", // (167000)
+	evm.ServiceConfig{
+		ServiceID:  "F027",    // Taiko
+		EVMChainID: "0x28c58", // (167000)
 	},
-	EVMServiceConfig{
-		serviceID:  "F028",    // Taiko Hekla Testnet
-		evmChainID: "0x28c61", // (167009)
+	evm.ServiceConfig{
+		ServiceID:  "F028",    // Taiko Hekla Testnet
+		EVMChainID: "0x28c61", // (167009)
 	},
-	EVMServiceConfig{
-		serviceID:  "F029",  // Polygon zkEVM
-		evmChainID: "0x44d", // (1101)
+	evm.ServiceConfig{
+		ServiceID:  "F029",  // Polygon zkEVM
+		EVMChainID: "0x44d", // (1101)
 	},
-	EVMServiceConfig{
-		serviceID:  "F02A",    // zkLink
-		evmChainID: "0xc5cc4", // (812564)
+	evm.ServiceConfig{
+		ServiceID:  "F02A",    // zkLink
+		EVMChainID: "0xc5cc4", // (812564)
 	},
-	EVMServiceConfig{
-		serviceID:  "F02B",  // zkSync
-		evmChainID: "0x144", // (324)
+	evm.ServiceConfig{
+		ServiceID:  "F02B",  // zkSync
+		EVMChainID: "0x144", // (324)
 	},
-	EVMServiceConfig{
-		serviceID:  "F02C",     // XRPL EVM Devnet
-		evmChainID: "0x15f902", // (1440002)
+	evm.ServiceConfig{
+		ServiceID:  "F02C",     // XRPL EVM Devnet
+		EVMChainID: "0x15f902", // (1440002)
 	},
-	EVMServiceConfig{
-		serviceID:  "F036",     // XRPL EVM Testnet
-		evmChainID: "0x161c28", // (1449000)
+	evm.ServiceConfig{
+		ServiceID:  "F036",     // XRPL EVM Testnet
+		EVMChainID: "0x161c28", // (1449000)
 	},
-	EVMServiceConfig{
-		serviceID:  "F02D", // Sonic
-		evmChainID: "0x92", // (146)
+	evm.ServiceConfig{
+		ServiceID:  "F02D", // Sonic
+		EVMChainID: "0x92", // (146)
 	},
-	EVMServiceConfig{
-		serviceID:  "F02E",       // TRON
-		evmChainID: "0x2b6653dc", // (728426128)
+	evm.ServiceConfig{
+		ServiceID:  "F02E",       // TRON
+		EVMChainID: "0x2b6653dc", // (728426128)
 	},
-	EVMServiceConfig{
-		serviceID:  "F030",   // Linea
-		evmChainID: "0xe708", // (59144)
+	evm.ServiceConfig{
+		ServiceID:  "F030",   // Linea
+		EVMChainID: "0xe708", // (59144)
 	},
-	EVMServiceConfig{
-		serviceID:  "F031",    // Berachain bArtio Testnet
-		evmChainID: "0x138d4", // (80084)
+	evm.ServiceConfig{
+		ServiceID:  "F031",    // Berachain bArtio Testnet
+		EVMChainID: "0x138d4", // (80084)
 	},
-	EVMServiceConfig{
-		serviceID:  "F032",   // Ink
-		evmChainID: "0xdef1", // (57073)
+	evm.ServiceConfig{
+		ServiceID:  "F032",   // Ink
+		EVMChainID: "0xdef1", // (57073)
 	},
-	EVMServiceConfig{
-		serviceID:  "F033",   // Mantle
-		evmChainID: "0x1388", // (5000)
+	evm.ServiceConfig{
+		ServiceID:  "F033",   // Mantle
+		EVMChainID: "0x1388", // (5000)
 	},
-	EVMServiceConfig{
-		serviceID:  "F034",  // Sei
-		evmChainID: "0x531", // (1329)
+	evm.ServiceConfig{
+		ServiceID:  "F034",  // Sei
+		EVMChainID: "0x531", // (1329)
 	},
-	EVMServiceConfig{
-		serviceID:  "F035",    // Berachain
-		evmChainID: "0x138de", // (80094)
+	evm.ServiceConfig{
+		ServiceID:  "F035",    // Berachain
+		EVMChainID: "0x138de", // (80094)
 	},
-	SolanaServiceConfig{
-		serviceID: "solana", // Solana
-	},
+	// SolanaServiceConfig{
+	// 	ServiceID: "solana", // Solana
+	// },
 }

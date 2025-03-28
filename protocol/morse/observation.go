@@ -50,11 +50,12 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 	}
 
-	// If the error doesn't match any of our defined errors, log it and return a generic internal error.
-	// TODO_IMPROVE: Find a way to make tracking these during deployment part of the (automated?) process.
-	// This should never happen because any logged entry should result in code updates to handle the newly encountered error.
-	logger.Error().Err(err).
-		Msg("Unrecognized relay error type encountered - code update needed to properly classify this error")
+	// TODO_IN_THIS_PR(@commoddity): re-enable this logging.
+	// // If the error doesn't match any of our defined errors, log it and return a generic internal error.
+	// // TODO_IMPROVE: Find a way to make tracking these during deployment part of the (automated?) process.
+	// // This should never happen because any logged entry should result in code updates to handle the newly encountered error.
+	// logger.Error().Err(err).
+	// 	Msg("Unrecognized relay error type encountered - code update needed to properly classify this error")
 
 	return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
 		protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED

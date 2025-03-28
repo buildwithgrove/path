@@ -10,12 +10,22 @@ import (
 
 // The errors below list all the possible validation errors on an endpoint.
 var (
-	errNoChainIDObs                = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
-	errInvalidChainIDObs           = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
-	errNoBlockNumberObs            = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs       = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
-	errInvalidArchivalNodeResponse = fmt.Errorf("endpoint returned an invalid archival checkresponse to a %q request", methodGetBlockByNumber)
-	errHasReturnedEmptyResponse    = errors.New("endpoint is invalid: history of empty responses")
+	// empty response errors
+	errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
+
+	// chainID check errors
+	errNoChainIDObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
+	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
+
+	// block number check errors
+	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
+	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errBlockNumberTooLow     = "endpoint has block height %d, perceived block height is %d"
+
+	// archival check errorss
+	errTrieNodeError             = errors.New("endpoint is invalid: history of trie node errors")
+	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetBalance)
+	errInvalidArchivalBalanceObs = "endpoint has archival balance %s, expected archival balance %s"
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
@@ -34,32 +44,69 @@ type endpoint struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
 	parsedBlockNumberResponse *uint64
 
-	// invalidArchivalNodeResponse stores whether the node has been observed to return an invalid
-	//response to an `eth_getBlockByNumber` request for an archival block.
-	invalidArchivalNodeResponse bool
+	// returnedTrieNodeError tracks endpoints that have returned trie node errors.
+	// These endpoints are excluded from selection until service restart.
+	returnedTrieNodeError bool
 
-	// TODO_FUTURE: support archival endpoints.
+	// archivalStateData stores the result of processing the endpoint's response to an `eth_getBlockByNumber` request.
+	// archivalBlockNumber *uint64
+	archivalBalance string
 }
 
-// Validate returns an error if the endpoint is invalid.
-// e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
-func (e endpoint) Validate(chainID string) error {
-	switch {
-	case e.hasReturnedEmptyResponse:
+func (e *endpoint) validateEmptyResponse() error {
+	if e.hasReturnedEmptyResponse {
 		return errHasReturnedEmptyResponse
-	case e.chainIDResponse == nil:
-		return errNoChainIDObs
-	case *e.chainIDResponse != chainID:
-		return fmt.Errorf("invalid response: %s expected %s :%w", *e.chainIDResponse, chainID, errInvalidChainIDObs)
-	case e.parsedBlockNumberResponse == nil:
-		return errNoBlockNumberObs
-	case *e.parsedBlockNumberResponse == 0:
-		return errInvalidBlockNumberObs
-	case e.invalidArchivalNodeResponse:
-		return errInvalidArchivalNodeResponse
-	default:
-		return nil
 	}
+	return nil
+}
+
+func (e *endpoint) validateChainID(chainID string) error {
+	if e.chainIDResponse == nil {
+		return errNoChainIDObs
+	}
+	if *e.chainIDResponse != chainID {
+		return fmt.Errorf("%s. expected: %s, got: %s", errInvalidChainIDObs, chainID, *e.chainIDResponse)
+	}
+	return nil
+}
+
+func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
+	blockNumber, err := e.getBlockNumber()
+	if err != nil {
+		return err
+	}
+	if blockNumber < perceivedBlockNumber {
+		return fmt.Errorf(errBlockNumberTooLow, blockNumber, perceivedBlockNumber)
+	}
+	return nil
+}
+
+// getBlockNumber returns the parsed block number value for the endpoint.
+func (e endpoint) getBlockNumber() (uint64, error) {
+	if e.parsedBlockNumberResponse == nil {
+		return 0, errNoBlockNumberObs
+	}
+	if *e.parsedBlockNumberResponse == 0 {
+		return 0, errInvalidBlockNumberObs
+	}
+	return *e.parsedBlockNumberResponse, nil
+}
+
+func (e *endpoint) validateArchivalCheck(archivalBalance string) error {
+	if e.returnedTrieNodeError {
+		return errTrieNodeError
+	}
+	if e.archivalBalance != archivalBalance {
+		return fmt.Errorf(errInvalidArchivalBalanceObs, e.archivalBalance, archivalBalance)
+	}
+	return nil
+}
+
+func (e endpoint) getArchivalBalance() (string, error) {
+	if e.archivalBalance == "" {
+		return "", errNoArchivalBalanceObs
+	}
+	return e.archivalBalance, nil
 }
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
@@ -80,33 +127,26 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 	}
 
 	if blockNumberResponse := obs.GetBlockNumberResponse(); blockNumberResponse != nil {
-		// base 0: use the string's prefix to determine its base.
-		parsedBlockNumber, err := strconv.ParseUint(blockNumberResponse.GetBlockNumberResponse(), 0, 64)
-		// The endpoint returned an invalid response to an `eth_blockNumber` request.
-		// Explicitly set the parsedBlockNumberResponse to a zero value as the ParseUInt does not guarantee returning a 0 on all error cases.
-		if err != nil {
-			zero := uint64(0)
-			e.parsedBlockNumberResponse = &zero
-			return true
-		}
-
-		e.parsedBlockNumberResponse = &parsedBlockNumber
+		e.parsedBlockNumberResponse = parseBlockNumberResponse(blockNumberResponse.GetBlockNumberResponse())
 		return true
 	}
 
-	if validArchivalNodeResponse := obs.GetArchivalResponse(); validArchivalNodeResponse != nil {
-		e.invalidArchivalNodeResponse = !validArchivalNodeResponse.GetValidArchivalNodeResponse()
+	if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
+		if archivalResponse.GetHasReturnedTrieNodeError() {
+			e.returnedTrieNodeError = true
+		}
+		e.archivalBalance = archivalResponse.GetBalance()
 		return true
 	}
 
 	return false
 }
 
-// GetBlockNumber returns the parsed block number value for the endpoint.
-func (e endpoint) GetBlockNumber() (uint64, error) {
-	if e.parsedBlockNumberResponse == nil {
-		return 0, errNoBlockNumberObs
+func parseBlockNumberResponse(response string) *uint64 {
+	parsed, err := strconv.ParseUint(response, 0, 64)
+	if err != nil {
+		zero := uint64(0)
+		return &zero
 	}
-
-	return *e.parsedBlockNumberResponse, nil
+	return &parsed
 }

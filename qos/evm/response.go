@@ -24,13 +24,13 @@ var (
 	// Any new response struct needs to be added to the following list.
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockNumber{}
-	_ response = &responseToGetBlockByNumber{}
+	_ response = &responseToGetBalance{}
 	_ response = &responseGeneric{}
 
 	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
-		methodChainID:          responseUnmarshallerChainID,
-		methodBlockNumber:      responseUnmarshallerBlockNumber,
-		methodGetBlockByNumber: responseUnmarshallerGetBlockByNumber,
+		methodChainID:     responseUnmarshallerChainID,
+		methodBlockNumber: responseUnmarshallerBlockNumber,
+		methodGetBalance:  responseUnmarshallerGetBalance,
 	}
 )
 
@@ -70,6 +70,13 @@ func unmarshalResponse(
 
 	// We intentionally skip checking whether the JSONRPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
+
+	// Only getBalance requests performed as part of the archival check
+	// should be handled by a custom unmarshaller.
+	// TODO_IN_THIS_PR(@commoddity): find a better way to handle this.
+	if jsonrpcReq.Method == methodGetBalance && jsonrpcReq.ID.Int() != idArchivalBlockCheck {
+		return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
+	}
 
 	// Unmarshal the JSONRPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]

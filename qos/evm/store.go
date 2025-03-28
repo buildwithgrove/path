@@ -49,7 +49,7 @@ type EndpointStore struct {
 	serviceState *ServiceState
 
 	endpointsMu sync.RWMutex
-	endpoints   map[protocol.EndpointAddr]endpoint
+	endpoints   map[protocol.EndpointAddr]*endpoint
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
@@ -119,8 +119,4 @@ func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 	}
 
 	return filteredEndpointsAddr, nil
-}
-
-func (es *EndpointStore) getPerceivedBlockNumber() uint64 {
-	return es.serviceState.perceivedBlockNumber
 }

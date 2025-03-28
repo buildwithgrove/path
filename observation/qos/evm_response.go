@@ -23,6 +23,7 @@ type EVMResponseHandler interface {
 var responseHandlers = map[string]EVMResponseHandler{
 	"chain_id":     &chainIDEVMResponseHandler{},
 	"block_number": &blockNumberEVMResponseHandler{},
+	"get_balance":  &getBalanceEVMResponseHandler{},
 	"unrecognized": &unrecognizedEVMResponseHandler{},
 	"empty":        &emptyEVMResponseHandler{},
 	"no_response":  &noEVMResponseHandler{},
@@ -36,6 +37,8 @@ func getEVMResponseHandler(obs *EVMEndpointObservation) (EVMResponseHandler, err
 		return responseHandlers["chain_id"], nil
 	case obs.GetBlockNumberResponse() != nil:
 		return responseHandlers["block_number"], nil
+	case obs.GetArchivalResponse() != nil:
+		return responseHandlers["get_balance"], nil
 	case obs.GetUnrecognizedResponse() != nil:
 		return responseHandlers["unrecognized"], nil
 	case obs.GetEmptyResponse() != nil:
@@ -67,6 +70,20 @@ type blockNumberEVMResponseHandler struct{}
 
 func (h *blockNumberEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetBlockNumberResponse()
+	validationErr := response.GetResponseValidationError()
+
+	if validationErr != 0 {
+		errType := EVMResponseValidationError(validationErr)
+		return int(response.GetHttpStatusCode()), &errType
+	}
+
+	return int(response.GetHttpStatusCode()), nil
+}
+
+type getBalanceEVMResponseHandler struct{}
+
+func (h *getBalanceEVMResponseHandler) ExtractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
+	response := obs.GetArchivalResponse()
 	validationErr := response.GetResponseValidationError()
 
 	if validationErr != 0 {

@@ -2,10 +2,6 @@ package evm
 
 import (
 	"encoding/json"
-	"fmt"
-	"math"
-	"math/rand"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -23,8 +19,6 @@ const (
 	idArchivalBlockCheck
 )
 
-const earliestParam = "earliest"
-
 // EndpointStore provides the endpoint check generator required by
 // the gateway package to augment endpoints' quality data,
 // using synthetic service requests.
@@ -34,12 +28,17 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
-	return []gateway.RequestQoSContext{
+	qualityChecks := []gateway.RequestQoSContext{
 		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
 		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_IN_THIS_PR(@commoddity): make adding this check configurable.
-		getEndpointCheck(es.logger, es, endpointAddr, withArchivalBlockCheck),
 	}
+	// If the service is configured to perform an archival check and has calculated an expected archival balance,
+	// add the archival check to the list of quality checks to perform on every hydrator run.
+	if es.serviceState.performArchivalCheck() {
+		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, endpointAddr, withArchivalBlockCheck))
+	}
+
+	return qualityChecks
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
@@ -74,22 +73,19 @@ func withBlockHeightCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
 }
 
-// withArchivalBlockCheck updates the request context to make an EVM JSON-RPC eth_getBlockByNumber request with a random archival block number.
-// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x1b4", false]}'
+// withArchivalBlockCheck updates the request context to make an EVM JSON-RPC eth_getBalance request with a random archival block number.
+// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
 func withArchivalBlockCheck(requestCtx *requestContext) {
-	// Get the current perceived block number.
-	perceivedBlockNumber := requestCtx.endpointStore.getPerceivedBlockNumber()
-
-	// Get a random archival block number.
-	archivalBlockNumber := getArchivalBlockNumber(perceivedBlockNumber)
+	// Get the archival block number from the endpoint store.
+	archivalCheckConfig := requestCtx.endpointStore.serviceState.archivalCheckConfig
 
 	requestCtx.jsonrpcReq = buildJSONRPCReq(
 		idArchivalBlockCheck,
-		methodGetBlockByNumber,
-		// Pass params in this order, eg. "params":["0x1b4", false]
-		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-		archivalBlockNumber,
-		false, // Return only hashes of the transactions in the block
+		methodGetBalance,
+		// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
+		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+		archivalCheckConfig.ContractAddress,
+		archivalCheckConfig.archivalBlockNumber,
 	)
 }
 
@@ -108,33 +104,4 @@ func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) jsonrpc.Reque
 	}
 
 	return request
-}
-
-// getArchivalBlockNumber returns a random archival block number as a hex string.
-// The block number is a fraction of the current block height with given threshold.
-//
-// eg. "0x1b4" (436 in decimal)
-func getArchivalBlockNumber(currentBlockHeight uint64) string {
-	// If the current block height is not yet determined, use the earliest block number.
-	// This is to avoid sending a request with an invalid block number until the
-	// service state has calculated the current block height from other checks.
-	if currentBlockHeight == 0 {
-		return earliestParam
-	}
-
-	const (
-		minBlockNumber uint64  = 0
-		maxFraction    float64 = 0.5
-	)
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomFraction := r.Float64() * maxFraction
-	archivalBlockNumber := uint64(float64(currentBlockHeight) * randomFraction)
-
-	archivalBlockNumber = uint64(math.Max(float64(archivalBlockNumber), float64(minBlockNumber)))
-
-	return blockNumberToHex(archivalBlockNumber)
-}
-
-func blockNumberToHex(blockNumber uint64) string {
-	return fmt.Sprintf("0x%x", blockNumber)
 }

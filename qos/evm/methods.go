@@ -13,9 +13,9 @@ const (
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	methodBlockNumber = jsonrpc.Method("eth_blockNumber")
 
-	// methodGetBlockByNumber is the JSON-RPC method for getting a specific block by number.
-	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-	methodGetBlockByNumber = jsonrpc.Method("eth_getBlockByNumber")
+	// methodGetBalance is the JSON-RPC method for getting the balance of an account.
+	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+	methodGetBalance = jsonrpc.Method("eth_getBalance")
 
 	// TODO_MVP(@adshmh): add more examples of methods here.
 )

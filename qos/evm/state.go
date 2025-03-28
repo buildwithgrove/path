@@ -2,7 +2,9 @@ package evm
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -29,31 +31,24 @@ type ServiceState struct {
 	// See the following link for more details:
 	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	perceivedBlockNumber uint64
+
+	archivalCheckConfig EVMArchivalCheckConfig
 }
 
-// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-//
-// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
-func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.serviceStateLock.RLock()
-	defer s.serviceStateLock.RUnlock()
-
-	if err := endpoint.Validate(s.chainID); err != nil {
-		return err
-	}
-
-	if err := validateEndpointBlockNumber(endpoint, s.perceivedBlockNumber); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UpdateFromObservations updates the service state using estimation(s) derived from the set of updated endpoints.
+// UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
-func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
+func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]*endpoint) error {
 	s.serviceStateLock.Lock()
 	defer s.serviceStateLock.Unlock()
+
+	// Initialize consensus map if it doesn't exist.
+	if s.archivalCheckConfig.parsedBalanceConsensus == nil {
+		s.archivalCheckConfig.parsedBalanceConsensus = make(map[string]int)
+	}
+
+	// Define a consensus threshold for archival balance agreement.
+	// TODO_IMPROVE: Make this value configurable.
+	const consensusThreshold = 5
 
 	for endpointAddr, endpoint := range updatedEndpoints {
 		logger := s.logger.With(
@@ -61,40 +56,116 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 			"perceived_block_number", s.perceivedBlockNumber,
 		)
 
-		// DO NOT use the endpoint for updating the perceived state of the EVM blockchain if the endpoint is not considered valid.
-		// e.g. an endpoint with an invalid response to `eth_chainId` will not be used to update the perceived block number.
-		if err := endpoint.Validate(s.chainID); err != nil {
+		// Validate the endpoint's chain ID; do not update the perceived block number if the chain ID is invalid.
+		if err := endpoint.validateChainID(s.chainID); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
 
-		// TODO_TECHDEBT: use a more resilient method for updating block height.
-		// E.g. one endpoint returning a very large number as block height should
-		// not result in all other endpoints being marked as invalid.
-		blockNumber, err := endpoint.GetBlockNumber()
+		// Retrieve the block number from the endpoint.
+		blockNumber, err := endpoint.getBlockNumber()
 		if err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid block number")
 			continue
 		}
 
+		// Update the perceived block number.
 		s.perceivedBlockNumber = blockNumber
 
-		logger.With("endpoint_block_number", blockNumber).Info().Msg("Updating latest block height")
+		// Attempt to retrieve the archival balance from the endpoint.
+		balance, err := endpoint.getArchivalBalance()
+		if err != nil {
+			logger.Info().Err(err).Msg("Skipping endpoint without archival balance")
+			continue
+		}
+
+		// Only count non-empty balances toward consensus.
+		if s.archivalCheckConfig.archivalBalance == "" && balance != "" {
+			s.archivalCheckConfig.parsedBalanceConsensus[balance]++
+		}
+	}
+
+	// Update archival block number and archival balance only if not yet set.
+	if s.perceivedBlockNumber != 0 && s.archivalCheckConfig.archivalBlockNumber == "" {
+		s.assignArchivalBlockNumber()
+	}
+	if s.archivalCheckConfig.archivalBalance == "" {
+		s.updateArchivalBalance(consensusThreshold)
 	}
 
 	return nil
 }
 
-// validateEndpointBlockNumber validates the supplied endpoint against the supplied perceived block number for the EVM blockchain.
-func validateEndpointBlockNumber(endpoint endpoint, perceivedBlockNumber uint64) error {
-	blockNumber, err := endpoint.GetBlockNumber()
-	if err != nil {
+// assignArchivalBlockNumber returns a random archival block number based on the perceived block number.
+func (s *ServiceState) assignArchivalBlockNumber() string {
+	archivalThreshold := s.archivalCheckConfig.Threshold
+	minArchivalBlock := s.archivalCheckConfig.ContractStartBlock
+
+	var result string
+	if s.perceivedBlockNumber <= archivalThreshold {
+		result = blockNumberToHex(0)
+	} else {
+		maxBlockNumber := s.perceivedBlockNumber - archivalThreshold
+		if maxBlockNumber < minArchivalBlock {
+			result = blockNumberToHex(minArchivalBlock)
+		} else {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			rangeSize := maxBlockNumber - minArchivalBlock + 1
+			result = blockNumberToHex(minArchivalBlock + (r.Uint64() % rangeSize))
+		}
+	}
+
+	s.archivalCheckConfig.archivalBlockNumber = result
+	return result
+}
+
+// updateArchivalBalance checks for consensus and updates the archival balance if it hasn't been set yet.
+func (s *ServiceState) updateArchivalBalance(consensusThreshold int) {
+	for balance, count := range s.archivalCheckConfig.parsedBalanceConsensus {
+		if count >= consensusThreshold {
+			s.archivalCheckConfig.archivalBalance = balance
+			// Reset consensus map after consensus is reached.
+			s.archivalCheckConfig.parsedBalanceConsensus = make(map[string]int)
+			break
+		}
+	}
+}
+
+// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
+//
+// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
+func (s *ServiceState) ValidateEndpoint(endpoint *endpoint) error {
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
+
+	if err := endpoint.validateEmptyResponse(); err != nil {
 		return err
 	}
-
-	if blockNumber < perceivedBlockNumber {
-		return fmt.Errorf("endpoint has block height %d, perceived block height is %d", blockNumber, perceivedBlockNumber)
+	if err := endpoint.validateChainID(s.chainID); err != nil {
+		return err
 	}
-
+	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
+		return err
+	}
+	if s.performArchivalCheck() {
+		if err := endpoint.validateArchivalCheck(s.archivalCheckConfig.archivalBalance); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (s *ServiceState) performArchivalCheck() bool {
+	if s.archivalCheckConfig.Enabled && s.getArchivalBlockNumber() != "" {
+		return true
+	}
+	return false
+}
+
+func (s *ServiceState) getArchivalBlockNumber() string {
+	return s.archivalCheckConfig.archivalBlockNumber
+}
+
+func blockNumberToHex(blockNumber uint64) string {
+	return fmt.Sprintf("0x%x", blockNumber)
 }

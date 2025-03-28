@@ -105,11 +105,12 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	if err != nil {
 		endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, err)
 
-		hydratedLogger.Error().
-			Str("error_type", endpointErrorType.String()).
-			Str("sanction_type", recommendedSanctionType.String()).
-			Err(err).
-			Msg("relay error occurred.")
+		// TODO_IN_THIS_PR(@commoddity): re-enable this logging.
+		// hydratedLogger.Error().
+		// 	Str("error_type", endpointErrorType.String()).
+		// 	Str("sanction_type", recommendedSanctionType.String()).
+		// 	Err(err).
+		// 	Msg("relay error occurred.")
 
 		rc.recordEndpointObservation(
 			*rc.selectedEndpoint,
