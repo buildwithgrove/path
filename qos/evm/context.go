@@ -15,8 +15,7 @@ import (
 
 const (
 	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
-	// The default timeout when sending a request to
-	// an EVM blockchain endpoint.
+	// The default timeout when sending a request to an EVM blockchain endpoint.
 	defaultServiceRequestTimeoutMillisec = 10000
 )
 
@@ -24,16 +23,30 @@ const (
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
-// TODO_TECHDEBT: Need a Validate() method here to allow
-// the caller, e.g. gateway, determine whether the endpoint's
-// response was valid, and whether a retry makes sense.
+// TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
+// in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
+// Consider renaming:
+//   - metrics/qos/evm: response → EVMMetricsResponse
+//   - qos/evm: response → EVMQoSResponse
+//   - observation/evm: observation -> EVMObservation
 //
-// response defines the functionality required from
-// a parsed endpoint response.
+// TODO_TECHDEBT: Need to add a Validate() method here to allow the caller (e.g. gateway)
+// determine whether the endpoint's response was valid, and whether a retry makes sense.
+//
+// response defines the functionality required from a parsed endpoint response, which all response types must implement.
+// It provides methods to:
+// 1. Generate observations for endpoint quality tracking
+// 2. Format HTTP responses to send back to clients
 type response interface {
+	// GetObservation returns an observation of the endpoint's response
+	// for quality metrics tracking, including HTTP status code.
 	GetObservation() qosobservations.EVMEndpointObservation
-	GetResponsePayload() []byte
+
+	// GetHTTPResponse returns the HTTP response to be sent back to the client.
+	GetHTTPResponse() httpResponse
 }
+
+var _ response = &endpointResponse{}
 
 type endpointResponse struct {
 	protocol.EndpointAddr
@@ -53,13 +66,6 @@ type requestContext struct {
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
-
-	// isValid indicates whether the underlying user request
-	// for this request context was found to be valid.
-	// This field is set by the corresponding QoS instance
-	// when creating this request context during the parsing
-	// of the user request.
-	isValid bool
 
 	// preSelectedEndpointAddr allows overriding the default
 	// endpoint selector with a specific endpoint's addresss.
@@ -126,38 +132,47 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 //
 // GetHTTPResponse builds the HTTP response that should be returned for
 // an EVM blockchain service request.
+// Implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// TODO_MVP(@adshmh): Add `responseNone` type to handle cases where no endpoint response was received
-	// (e.g., protocol-level failures) and update both user response and metrics.
-	//
-	// By default, return a generic HTTP response if no endpoint responses
-	// have been reported to the request context.
-	// intentionally ignoring the error here, since unmarshallResponse
-	// is being called with an empty endpoint response payload.
-	response, _ := unmarshalResponse(rc.logger, rc.jsonrpcReq, []byte(""))
+	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
+	if len(rc.endpointResponses) == 0 {
+		responseNoneObj := responseNone{
+			logger:     rc.logger,
+			jsonrpcReq: rc.jsonrpcReq,
+		}
 
-	if len(rc.endpointResponses) >= 1 {
-		// return the last endpoint response reported to the context.
-		response = rc.endpointResponses[len(rc.endpointResponses)-1]
+		return responseNoneObj.GetHTTPResponse()
+
 	}
 
-	return httpResponse{
-		responsePayload: response.GetResponsePayload(),
-	}
+	// return the last endpoint response reported to the context.
+	return rc.endpointResponses[len(rc.endpointResponses)-1].GetHTTPResponse()
 }
 
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
-	// TODO_MVP(@adshmh): Add responseNone type to track requests that fail without receiving endpoint responses
-	// (e.g., protocol failures) via metrics.
-	observations := make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
-	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
-		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
-		observations[idx] = &obs
+	var observations []*qosobservations.EVMEndpointObservation
+
+	// If no (zero) responses were received, create a single observation for the no-response scenario.
+	if len(rc.endpointResponses) == 0 {
+		responseNoneObj := responseNone{
+			logger:     rc.logger,
+			jsonrpcReq: rc.jsonrpcReq,
+		}
+		responseNoneObs := responseNoneObj.GetObservation()
+		observations = append(observations, &responseNoneObs)
+	} else {
+		// Otherwise, process all responses as individual observations.
+		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
+		for idx, endpointResponse := range rc.endpointResponses {
+			obs := endpointResponse.response.GetObservation()
+			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+			observations[idx] = &obs
+		}
 	}
 
+	// Return the set of observations for the single JSONRPC request.
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{

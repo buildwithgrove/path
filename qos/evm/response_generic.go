@@ -37,12 +37,10 @@ type responseGeneric struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// valid is set to true if the parsed response is deemed valid.
+	// Why the response has failed validation.
+	// Only set if the response is invalid.
 	// As of PR #152, a response is deemed valid if it can be unmarshaled as a JSONRPC struct
 	// regardless of the contents of the response.
-	valid bool
-
-	// Why the response has failed validation.
 	// Used when generating observations.
 	validationError *qosobservations.EVMResponseValidationError
 }
@@ -57,22 +55,38 @@ func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
-				Valid:                   r.valid,
 				ResponseValidationError: r.validationError,
+				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 			},
 		},
 	}
 }
 
+// GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
+// Implements the response interface.
+func (r responseGeneric) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		// Use the HTTP status code recommended by for the underlying JSONRPC response by the jsonrpc package.
+		httpStatusCode: r.getHTTPStatusCode(),
+	}
+}
+
 // TODO_MVP(@adshmh): handle any unmarshaling errors
 // TODO_INCOMPLETE: build a method-specific payload generator.
-func (r responseGeneric) GetResponsePayload() []byte {
+func (r responseGeneric) getResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.logger.Warn().Err(err).Msg("responseGeneric: Marshaling JSONRPC response failed.")
 	}
 	return bz
+}
+
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
+func (r responseGeneric) getHTTPStatusCode() int {
+	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
 // responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
@@ -87,13 +101,11 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 		return errResponse, err
 	}
 
+	// Response successfully parsed into JSONRPC format.
 	return responseGeneric{
-		logger: logger,
-
+		logger:          logger,
 		jsonRPCResponse: response,
-
-		// The response is assumed valid if it can be successfully unmarshaled into a JSONRPC response struct.
-		valid: true,
+		validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 	}, nil
 }
 
