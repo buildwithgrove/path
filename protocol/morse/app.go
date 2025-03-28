@@ -13,6 +13,10 @@ type app struct {
 	aat provider.PocketAAT
 }
 
+func (a app) IsEmpty() bool {
+	return a.address == "" || a.publicKey == "" || a.aat.Signature == ""
+}
+
 func (a app) Addr() string {
 	return a.address
 }

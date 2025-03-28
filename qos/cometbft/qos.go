@@ -5,12 +5,18 @@ import (
 )
 
 // NewQoSInstance builds and returns an instance of the CometBFT QoS service.
-func NewQoSInstance(logger polylog.Logger, chainID string) *QoS {
-	logger = logger.With("qos_instance", "cometbft")
+func NewQoSInstance(logger polylog.Logger, config ServiceConfig) *QoS {
+	cometBFTChainID := config.GetCometBFTChainID()
 
+	logger = logger.With(
+		"qos_instance", "cometbft",
+		"cometbft_chain_id", cometBFTChainID,
+	)
+
+	// TODO_IMPROVE(@commoddity): add archival check configuration for CometBFT.
 	serviceState := &ServiceState{
 		logger:  logger,
-		chainID: chainID,
+		chainID: cometBFTChainID,
 	}
 
 	cometBFTEndpointStore := &EndpointStore{

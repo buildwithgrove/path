@@ -142,7 +142,6 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		}
 
 		return responseNoneObj.GetHTTPResponse()
-
 	}
 
 	// return the last endpoint response reported to the context.
