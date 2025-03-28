@@ -128,6 +128,27 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
+// GetUniqueEndpoints returns a map of all unique endpoints for a given service ID.
+// Implements the gateway.Protocol interface.
+func (p *Protocol) GetUniqueEndpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+	}
+
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
+	if err != nil {
+		return nil, fmt.Errorf("getUniqueEndpoints: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	uniqueEndpoints := make([]protocol.Endpoint, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		uniqueEndpoints = append(uniqueEndpoints, endpoint)
+	}
+
+	return uniqueEndpoints, nil
+}
+
 // ApplyObservations updates protocol instance state based on endpoint observations.
 // Examples:
 // - Mark endpoints as invalid based on response quality

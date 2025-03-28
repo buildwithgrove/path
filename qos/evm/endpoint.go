@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // The errors below list all the possible validation errors on an endpoint.
@@ -23,8 +24,7 @@ var (
 	errBlockNumberTooLow     = "endpoint has block height %d, perceived block height is %d"
 
 	// archival check errorss
-	errTrieNodeError             = errors.New("endpoint is invalid: history of trie node errors")
-	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodGetBalance)
+	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not returned an archival balance response to a %q request", methodGetBalance)
 	errInvalidArchivalBalanceObs = "endpoint has archival balance %s, expected archival balance %s"
 )
 
@@ -43,10 +43,6 @@ type endpoint struct {
 	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
 	parsedBlockNumberResponse *uint64
-
-	// returnedTrieNodeError tracks endpoints that have returned trie node errors.
-	// These endpoints are excluded from selection until service restart.
-	returnedTrieNodeError bool
 
 	// archivalStateData stores the result of processing the endpoint's response to an `eth_getBlockByNumber` request.
 	// archivalBlockNumber *uint64
@@ -71,13 +67,13 @@ func (e *endpoint) validateChainID(chainID string) error {
 }
 
 func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
-	blockNumber, err := e.getBlockNumber()
+	_, err := e.getBlockNumber()
 	if err != nil {
 		return err
 	}
-	if blockNumber < perceivedBlockNumber {
-		return fmt.Errorf(errBlockNumberTooLow, blockNumber, perceivedBlockNumber)
-	}
+	// if blockNumber < perceivedBlockNumber {
+	// 	return fmt.Errorf(errBlockNumberTooLow, blockNumber, perceivedBlockNumber)
+	// }
 	return nil
 }
 
@@ -92,9 +88,9 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 	return *e.parsedBlockNumberResponse, nil
 }
 
-func (e *endpoint) validateArchivalCheck(archivalBalance string) error {
-	if e.returnedTrieNodeError {
-		return errTrieNodeError
+func (e *endpoint) validateArchivalCheck(archivalBalance string, endpointAddr protocol.EndpointAddr) error {
+	if e.archivalBalance == "" {
+		return errNoArchivalBalanceObs
 	}
 	if e.archivalBalance != archivalBalance {
 		return fmt.Errorf(errInvalidArchivalBalanceObs, e.archivalBalance, archivalBalance)
@@ -114,7 +110,7 @@ func (e endpoint) getArchivalBalance() (string, error) {
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
-func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation) bool {
+func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, performArchivalCheck bool) bool {
 	if obs.GetEmptyResponse() != nil {
 		e.hasReturnedEmptyResponse = true
 		return true
@@ -131,12 +127,11 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation)
 		return true
 	}
 
-	if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
-		if archivalResponse.GetHasReturnedTrieNodeError() {
-			e.returnedTrieNodeError = true
+	if performArchivalCheck {
+		if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
+			e.archivalBalance = archivalResponse.GetBalance()
+			return true
 		}
-		e.archivalBalance = archivalResponse.GetBalance()
-		return true
 	}
 
 	return false

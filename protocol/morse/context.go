@@ -31,7 +31,7 @@ type requestContext struct {
 	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
-	selectedEndpoint *endpoint
+	selectedEndpoint endpoint
 
 	// endpointObservations captures observations about endpoints used during request handling
 	endpointObservations []*protocolobservations.MorseEndpointObservation
@@ -57,7 +57,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// TODO_IMPROVE(@adshmh): use the same pattern for hydrated loggers in any packages with large number of logger fields.
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
-	if rc.selectedEndpoint == nil {
+	if rc.selectedEndpoint.IsEmpty() {
 		// Internal error: no endpoint selected, record an observation but no sanctions
 		// as no endpoint was contacted
 		hydratedLogger.Error().Msg("no endpoint has been selected.")
@@ -79,7 +79,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		hydratedLogger.Error().Err(err).Msg("endpoint not found in session.")
 
 		rc.recordEndpointObservation(
-			*rc.selectedEndpoint,
+			rc.selectedEndpoint,
 			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
 			fmt.Sprintf("error matching endpoint against session's nodes: %v", err),
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as this is an internal error
@@ -105,15 +105,14 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	if err != nil {
 		endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, err)
 
-		// TODO_IN_THIS_PR(@commoddity): re-enable this logging.
-		// hydratedLogger.Error().
-		// 	Str("error_type", endpointErrorType.String()).
-		// 	Str("sanction_type", recommendedSanctionType.String()).
-		// 	Err(err).
-		// 	Msg("relay error occurred.")
+		hydratedLogger.Error().
+			Str("error_type", endpointErrorType.String()).
+			Str("sanction_type", recommendedSanctionType.String()).
+			Err(err).
+			Msg("relay error occurred.")
 
 		rc.recordEndpointObservation(
-			*rc.selectedEndpoint,
+			rc.selectedEndpoint,
 			endpointErrorType,
 			fmt.Sprintf("relay error: %v", err),
 			recommendedSanctionType,
@@ -157,7 +156,7 @@ func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) err
 		return NewEndpointNotFoundError(string(selectedEndpointAddr), string(rc.serviceID))
 	}
 
-	rc.selectedEndpoint = &selectedEndpoint
+	rc.selectedEndpoint = selectedEndpoint
 	return nil
 }
 

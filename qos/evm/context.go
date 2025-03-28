@@ -24,7 +24,6 @@ const (
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
-
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
 // in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
 // Consider renaming:

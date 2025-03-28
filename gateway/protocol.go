@@ -13,6 +13,7 @@ import (
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a particular service ID.
 type Protocol interface {
+	GetUniqueEndpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error)
 	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
 	// request, which matches the provided Service ID.
 	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)

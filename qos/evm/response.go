@@ -71,9 +71,8 @@ func unmarshalResponse(
 	// We intentionally skip checking whether the JSONRPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
 
-	// Only getBalance requests performed as part of the archival check
-	// should be handled by a custom unmarshaller.
 	// TODO_IN_THIS_PR(@commoddity): find a better way to handle this.
+	// Filter out getBalance requests that are not performed as part of the archival check.
 	if jsonrpcReq.Method == methodGetBalance && jsonrpcReq.ID.Int() != idArchivalBlockCheck {
 		return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
 	}

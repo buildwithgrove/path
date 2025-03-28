@@ -37,7 +37,7 @@ type ServiceState struct {
 
 // UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
-func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]*endpoint) error {
+func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.serviceStateLock.Lock()
 	defer s.serviceStateLock.Unlock()
 
@@ -134,7 +134,7 @@ func (s *ServiceState) updateArchivalBalance(consensusThreshold int) {
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
 //
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
-func (s *ServiceState) ValidateEndpoint(endpoint *endpoint) error {
+func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
@@ -148,7 +148,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint *endpoint) error {
 		return err
 	}
 	if s.performArchivalCheck() {
-		if err := endpoint.validateArchivalCheck(s.archivalCheckConfig.archivalBalance); err != nil {
+		if err := endpoint.validateArchivalCheck(s.archivalCheckConfig.archivalBalance, endpointAddr); err != nil {
 			return err
 		}
 	}

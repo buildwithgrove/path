@@ -8,7 +8,9 @@ import (
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
+	"github.com/buildwithgrove/path/qos/solana"
 )
 
 // getServiceQoSInstances returns all QoS instances to be used by the Gateway and the EndpointHydrator.
@@ -28,7 +30,7 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 		serviceID := serviceConfig.GetServiceID()
 
 		switch serviceConfig.GetServiceQoSType() {
-		case evm.QoSTypeEVM:
+		case evm.QoSType:
 			evmServiceConfig, ok := serviceConfig.(evm.ServiceConfig)
 			if !ok { // this should never happen
 				return nil, fmt.Errorf("error building QoS instances: service ID %q is not an EVM service", serviceID)
@@ -37,20 +39,18 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 			evmQoS := evm.NewQoSInstance(logger, evmServiceConfig)
 			qosServices[serviceID] = evmQoS
 
-		// case config.ServiceIDCometBFT:
-		// 	cometBFTServiceConfig, ok := serviceConfig.(config.CometBFTServiceConfig)
-		// 	if !ok { // this should never happen
-		// 		return nil, fmt.Errorf("error building QoS instances: service ID %q is not a CometBFT service", serviceID)
-		// 	}
+		case cometbft.QoSType:
+			cometBFTServiceConfig, ok := serviceConfig.(cometbft.ServiceConfig)
+			if !ok { // this should never happen
+				return nil, fmt.Errorf("error building QoS instances: service ID %q is not a CometBFT service", serviceID)
+			}
 
-		// 	cometBFTChainID := cometBFTServiceConfig.GetServiceChainID()
+			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceConfig)
+			qosServices[serviceID] = cometBFTQoS
 
-		// 	cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTChainID)
-		// 	qosServices[serviceID] = cometBFTQoS
-
-		// case config.ServiceIDSolana:
-		// 	solanaQoS := solana.NewQoSInstance(logger)
-		// 	qosServices[serviceID] = solanaQoS
+		case solana.QoSType:
+			solanaQoS := solana.NewQoSInstance(logger)
+			qosServices[serviceID] = solanaQoS
 
 		default: // this should never happen
 			return nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)

@@ -3,9 +3,9 @@ package evm
 import "github.com/buildwithgrove/path/protocol"
 
 // QoSTypeEVM is the QoS type for the EVM blockchain.
-const QoSTypeEVM = "evm"
+const QoSType = "evm"
 
-// TODO_TECHDEBT(@commoddity): this should be configurable.
+// TODO_IN_THIS_PR(@commoddity): this should be configurable.
 const defaultEVMArchivalThreshold = 128
 
 type ServiceConfig struct {
@@ -33,7 +33,7 @@ func (c ServiceConfig) GetServiceID() protocol.ServiceID {
 }
 
 func (c ServiceConfig) GetServiceQoSType() string {
-	return QoSTypeEVM
+	return QoSType
 }
 
 func (c ServiceConfig) GetEVMChainID() string {

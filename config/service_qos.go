@@ -2,7 +2,9 @@ package config
 
 import (
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
+	"github.com/buildwithgrove/path/qos/solana"
 )
 
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
@@ -43,7 +45,8 @@ var ServiceConfigs = qosServiceConfigs{
 }
 
 const (
-	defaultEVMChainID = "0x1" // ETH Mainnet (1)
+	defaultEVMChainID      = "0x1" // ETH Mainnet (1)
+	defaultCometBFTChainID = "cosmoshub-4"
 )
 
 // shannonServices is the list of QoS service configs for the Shannon protocol.
@@ -60,18 +63,24 @@ var shannonServices = []ServiceConfig{
 		ServiceID:  "anvilws",         // Anvil WebSockets (Ethereum WebSockets development/testing)
 		EVMChainID: defaultEVMChainID, // (1)
 	},
-	// CometBFTServiceConfig{
-	// 	ServiceID:       "pocket-beta-rpc", // Pocket Beta Testnet
-	// 	cometBFTChainID: "pocket-beta",
-	// },
-	// CometBFTServiceConfig{
-	// 	ServiceID:       "cometbft",             // CometBFT (Cosmos Hub)
-	// 	cometBFTChainID: defaultCometBFTChainID, // Cosmos Hub
-	// },
-	// SolanaServiceConfig{
-	// 	ServiceID: "solana", // Solana
-	// },
+	cometbft.ServiceConfig{
+		ServiceID:       "pocket-beta-rpc", // Pocket Beta Testnet
+		CometBFTChainID: "pocket-beta",
+	},
+	cometbft.ServiceConfig{
+		ServiceID:       "cometbft",             // CometBFT (Cosmos Hub)
+		CometBFTChainID: defaultCometBFTChainID, // Cosmos Hub
+	},
+	solana.ServiceConfig{
+		ServiceID: "solana", // Solana
+	},
 }
+
+// TODO_IN_THIS_PR(@commoddity): Add archival check configurations for all EVM services.
+// This means setting the following fields:
+//   - Enabled
+//   - ContractAddress
+//   - ContractStartBlock
 
 // morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceConfig{
@@ -199,6 +208,11 @@ var morseServices = []ServiceConfig{
 	evm.ServiceConfig{
 		ServiceID:  "F021", // Polygon
 		EVMChainID: "0x89", // (137)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled:            true,
+			ContractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+			ContractStartBlock: 5_000_000,
+		},
 	},
 	evm.ServiceConfig{
 		ServiceID:  "F022",    // Polygon Amoy Testnet
@@ -268,7 +282,7 @@ var morseServices = []ServiceConfig{
 		ServiceID:  "F035",    // Berachain
 		EVMChainID: "0x138de", // (80094)
 	},
-	// SolanaServiceConfig{
-	// 	ServiceID: "solana", // Solana
-	// },
+	solana.ServiceConfig{
+		ServiceID: "solana", // Solana
+	},
 }

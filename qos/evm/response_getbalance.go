@@ -2,7 +2,6 @@ package evm
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -12,8 +11,6 @@ import (
 
 // responseToGetBalance provides the functionality required from a response by a requestContext instance.
 var _ response = responseToGetBalance{}
-
-const trieNodeErrorString = "missing trie node"
 
 // responseUnmarshallerGetBalance deserializes the provided payload
 // into a responseToGetBalance struct, adding any encountered errors
@@ -25,14 +22,6 @@ func responseUnmarshallerGetBalance(
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-		if strings.Contains(jsonrpcResp.Error.Message, trieNodeErrorString) {
-			return responseToGetBalance{
-				logger:          logger,
-				jsonRPCResponse: jsonrpcResp,
-				trieNodeError:   true,
-			}, nil
-		}
-
 		return responseToGetBalance{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
@@ -74,9 +63,6 @@ type responseToGetBalance struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// trieNodeError tracks whether the endpoint has returned a trie node error.
-	trieNodeError bool
-
 	// balance string
 	balance string
 
@@ -90,10 +76,9 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ArchivalResponse{
 			ArchivalResponse: &qosobservations.EVMArchivalResponse{
-				HttpStatusCode:           int32(r.getHTTPStatusCode()),
-				HasReturnedTrieNodeError: r.trieNodeError,
-				Balance:                  r.balance,
-				ResponseValidationError:  r.validationError,
+				HttpStatusCode:          int32(r.getHTTPStatusCode()),
+				Balance:                 r.balance,
+				ResponseValidationError: r.validationError,
 			},
 		},
 	}

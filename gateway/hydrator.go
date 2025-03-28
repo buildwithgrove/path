@@ -135,13 +135,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
 	// no need for specifying a specific app.
-	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to build a protocol request context")
-		return err
-	}
-
-	uniqueEndpoints, err := protocolRequestCtx.AvailableEndpoints()
+	uniqueEndpoints, err := eph.Protocol.GetUniqueEndpoints(serviceID)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
 		return err
@@ -171,6 +165,13 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				}
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
+					// Populate the protocol request context with the endpoint's session and app.
+					protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)
+					if err != nil {
+						logger.Warn().Err(err).Msg("Failed to build a protocol request context")
+						continue
+					}
+
 					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 					// Mark the request as Synthetic using the following steps:
 					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -187,7 +188,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						protocolCtx:         protocolRequestCtx,
 					}
 
-					err := gatewayRequestCtx.HandleRelayRequest()
+					err = gatewayRequestCtx.HandleRelayRequest()
 					if err != nil {
 						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it

@@ -49,7 +49,7 @@ type EndpointStore struct {
 	serviceState *ServiceState
 
 	endpointsMu sync.RWMutex
-	endpoints   map[protocol.EndpointAddr]*endpoint
+	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
@@ -66,7 +66,8 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Warn().Msg("all endpoints failed validation; selecting a random endpoint.")
+		// All endpoints failing validation should not happen and thus should be considered an error.
+		logger.Error().Msg("all endpoints failed validation; selecting a random endpoint.")
 		randomAvailableEndpoint := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpoint.Addr(), nil
 	}
@@ -77,7 +78,9 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.Endpoint) (protoco
 	).Info().Msg("filtered endpoints")
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
-	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
+	// return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
+	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
+	return selectedEndpointAddr, nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
@@ -109,7 +112,7 @@ func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 			continue
 		}
 
-		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
+		if err := es.serviceState.ValidateEndpoint(endpoint, endpointAddr); err != nil {
 			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}

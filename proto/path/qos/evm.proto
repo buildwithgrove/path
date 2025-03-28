@@ -198,15 +198,12 @@ message EVMArchivalResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
 
-  // Whether the endpoint has returned a trie node error
-  bool has_returned_trie_node_error = 2;
-
   // The balance value at the archival block number
-  string balance = 3;
+  string balance = 2;
 
   // Why the response failed QoS validation
   // If not set, the response is considered valid
-  optional EVMResponseValidationError response_validation_error = 4 [(metadata.semantic_meaning) = "Validity failure type"];
+  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
