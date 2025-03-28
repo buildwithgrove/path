@@ -1,7 +1,7 @@
 package qos
 
 // TODO_REFACTOR(@adshmh): Extract patterns from this package into a shared location to enable reuse across other observation interpreters (e.g., solana, cometbft).
-// This would establish a consistent interpretation pattern across all QoS services while maintaining service-specific handlers.
+// This would establish a consistent interpretation pattern across all QoS services while maintaining service-specific interpreters.
 
 import (
 	"errors"
@@ -14,16 +14,22 @@ var (
 )
 
 // EVMObservationInterpreter provides interpretation helpers for EVM QoS observations.
-// It can be treated as a "utils" struct for the EVMRequestObservations protobuf type.
-// Recall that the EVMRequestObservations type various metadata (e.g. ChainID) and:
+// It serves as a utility layer for the EVMRequestObservations protobuf type, making
+// the relationships and meaning of different observation fields clear while shielding
+// the rest of the codebase from proto type details.
+//
+// The EVMRequestObservations type contains:
+// - Various metadata (e.g., ChainID)
 // - A single JSON-RPC request (exactly one)
 // - A list of endpoint observations (zero or more)
-// The data above needs to be easily interpreted for metrics and other downstream processing.
+//
+// This interpreter allows the rest of the code to draw conclusions about the observations
+// without needing to understand the structure of the proto-generated types.
 type EVMObservationInterpreter struct {
 	Observations *EVMRequestObservations
 }
 
-// GetRequestMethod returns the JSON-RPC method from the request.
+// GetRequestMethod extracts the JSON-RPC method from the request.
 // Returns (method, true) if extraction succeeded
 // Returns ("", false) if request is invalid or missing
 func (i *EVMObservationInterpreter) GetRequestMethod() (string, bool) {
@@ -52,7 +58,7 @@ func (i *EVMObservationInterpreter) GetRequestMethod() (string, bool) {
 	return method, true
 }
 
-// GetChainID returns the chain ID associated with the EVM observations
+// GetChainID extracts the chain ID associated with the EVM observations.
 // Returns (chainID, true) if available
 // Returns ("", false) if chain ID is missing or observations are nil
 //
@@ -71,7 +77,7 @@ func (i *EVMObservationInterpreter) GetChainID() (string, bool) {
 	return chainID, true
 }
 
-// GetRequestStatus returns the request status information:
+// GetRequestStatus interprets the observations to determine request status information:
 // - httpStatusCode: the suggested HTTP status code to return to the client
 // - requestError: error details (nil if successful)
 // - err: error if interpreter cannot determine status (e.g., nil observations)
@@ -86,11 +92,11 @@ func (i *EVMObservationInterpreter) GetRequestStatus() (httpStatusCode int, requ
 		return httpStatusCode, requestError, nil
 	}
 
-	// Then, check for endpoint response status
+	// Then, interpret endpoint response status
 	return i.getEndpointResponseStatus()
 }
 
-// GetEndpointObservations returns endpoint observations and a boolean indicating success
+// GetEndpointObservations extracts endpoint observations and indicates success
 // Returns (nil, false) if observations are missing or validation failed
 // Returns (observations, true) if observations are available
 func (i *EVMObservationInterpreter) GetEndpointObservations() ([]*EVMEndpointObservation, bool) {
@@ -134,7 +140,7 @@ func (i *EVMObservationInterpreter) checkRequestValidationFailures() (int, *EVMR
 	return 0, nil
 }
 
-// getEndpointResponseStatus extracts status info about endpoint responses
+// getEndpointResponseStatus interprets endpoint response observations to extract status information
 // Returns (httpStatusCode, requestError, error) tuple
 func (i *EVMObservationInterpreter) getEndpointResponseStatus() (int, *EVMRequestError, error) {
 	observations := i.Observations.GetEndpointObservations()
@@ -146,18 +152,18 @@ func (i *EVMObservationInterpreter) getEndpointResponseStatus() (int, *EVMReques
 
 	// Use only the last observation (latest response)
 	lastObs := observations[len(observations)-1]
-	handler, err := getEVMResponseHandler(lastObs)
+	responseInterpreter, err := getEVMResponseInterpreter(lastObs)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	// Extract the status code and error type
-	statusCode, errType := handler.ExtractValidityStatus(lastObs)
+	statusCode, errType := responseInterpreter.extractValidityStatus(lastObs)
 	if errType == nil {
 		return statusCode, nil, nil
 	}
 
-	// Create appropriate EVmRequestError based on the observed error type
+	// Create appropriate EVMRequestError based on the observed error type
 	reqError := &EVMRequestError{
 		responseValidationError: errType,
 	}
