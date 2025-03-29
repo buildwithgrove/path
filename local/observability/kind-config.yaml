@@ -3,11 +3,7 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane 
     extraPortMappings:
-    # GUARD (Envoy Gateway)
-    # Port will be patched to 30070 after install
-    # For more context see: 
-    #   https://github.com/buildwithgrove/path/blob/main/local/scripts/patch_envoy_gateway.sh
-    - containerPort: 30070 
+    - containerPort: 30070 # Port will be patched to this after install
       hostPort: 3070
       protocol: TCP
 containerdConfigPatches:

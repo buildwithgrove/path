@@ -37,21 +37,10 @@ prepare_shannon_e2e_config: ## Setup Shannon E2E test configuration file from ex
 		echo "################################################################"; \
 	fi
 
-.PHONY: copy_shannon_e2e_config_to_local
-+shannon_populate_config: prepare_shannon_e2e_config ## Populates the shannon config file with the correct values
-	$(call check_config_exists,./e2e/.shannon.config.yaml,prepare_shannon_e2e_config)
-	$(call warn_file_exists,./local/path/.config.yaml)
-	@cp ./e2e/.shannon.config.yaml ./local/path/.config.yaml
-	@echo "################################################################"
-	@echo "Successfully copied configuration:"
-	@echo "  From: ./e2e/.shannon.config.yaml"
-	@echo "  To:   ./local/path/.config.yaml"
-	@echo "################################################################"
-
 .PHONY: install_poktrolld
 install_poktrolld: ## Installs the poktrolld binary
 	./local/scripts/install_poktrolld_cli.sh
 
 .PHONY: shannon_populate_config
-shannon_populate_config: prepare_shannon_e2e_config ## Populates the shannon config file with the correct values
+shannon_populate_config: ## Populates the shannon config file with the correct values
 	./local/scripts/shannon_populate_config.sh
