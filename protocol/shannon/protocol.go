@@ -128,6 +128,46 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
+// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// This method is used only in the hydrator to allow performing QoS checks on a specific pre-selected endpoint.
+// The QoS EndpointSelector will select only the provided endpoint and the hydrator will use this method to build a request context for the endpoint.
+func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+	serviceID protocol.ServiceID,
+	preselectedEndpointAddr protocol.EndpointAddr,
+) (gateway.ProtocolRequestContext, error) {
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+	}
+
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	preselectedEndpoint, ok := endpoints[preselectedEndpointAddr]
+	if !ok {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preselectedEndpointAddr)
+	}
+
+	// Create an endpoint map containing only the selected endpoint
+	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
+		preselectedEndpointAddr: preselectedEndpoint,
+	}
+
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
+	}
+
+	return &requestContext{
+		fullNode:           p.FullNode,
+		endpoints:          preselectedEndpointMap,
+		serviceID:          serviceID,
+		relayRequestSigner: permittedSigner,
+	}, nil
+}
+
 // ApplyObservations updates protocol instance state based on endpoint observations.
 // Examples:
 // - Mark endpoints as invalid based on response quality

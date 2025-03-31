@@ -94,7 +94,7 @@ func (p *Protocol) BuildRequestContext(
 ) (gateway.ProtocolRequestContext, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	// Create a logger specifically for this request context
@@ -109,6 +109,44 @@ func (p *Protocol) BuildRequestContext(
 		fullNode:                 p.fullNode,
 		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
 		endpoints:                endpoints,
+		serviceID:                serviceID,
+	}, nil
+}
+
+// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// This method is used only in the hydrator to allow performing QoS checks on a specific pre-selected endpoint.
+// The QoS EndpointSelector will select only the provided endpoint and the hydrator will use this method to build a request context for the endpoint.
+func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+	serviceID protocol.ServiceID,
+	preselectedEndpointAddr protocol.EndpointAddr,
+) (gateway.ProtocolRequestContext, error) {
+	endpoints, err := p.getEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	// Create a logger specifically for this request context
+	ctxLogger := p.logger.With(
+		"service_id", string(serviceID),
+		"component", "request_context",
+	)
+
+	preselectedEndpoint, ok := endpoints[preselectedEndpointAddr]
+	if !ok {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preselectedEndpointAddr)
+	}
+
+	// Create an endpoint map containing only the selected endpoint
+	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
+		preselectedEndpointAddr: preselectedEndpoint,
+	}
+
+	// Return new request context with fullNode, endpointStore, and logger
+	return &requestContext{
+		logger:                   ctxLogger,
+		fullNode:                 p.fullNode,
+		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
+		endpoints:                preselectedEndpointMap,
 		serviceID:                serviceID,
 	}, nil
 }

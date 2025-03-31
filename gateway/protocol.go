@@ -17,6 +17,11 @@ type Protocol interface {
 	// request, which matches the provided Service ID.
 	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)
 
+	// BuildHydratorRequestContextForEndpoint builds and returns a ProtocolRequestContext interface
+	// for handling a single service request, which matches the provided Service ID and Endpoint.
+	// This method is used only in the hydrator to allow performing QoS checks on a specific pre-selected endpoint.
+	BuildHydratorRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr) (ProtocolRequestContext, error)
+
 	// SupportedGamewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode

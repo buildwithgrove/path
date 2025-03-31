@@ -171,6 +171,14 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				}
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
+					// Create a new protocol request context with a pre-selected endpoint for each request.
+					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
+					hydratorRequestCtx, err := eph.Protocol.BuildHydratorRequestContextForEndpoint(serviceID, endpoint.Addr())
+					if err != nil {
+						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
+						continue
+					}
+
 					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 					// Mark the request as Synthetic using the following steps:
 					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -184,10 +192,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						serviceQoS:          serviceQoS,
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
-						protocolCtx:         protocolRequestCtx,
+						protocolCtx:         hydratorRequestCtx,
 					}
 
-					err := gatewayRequestCtx.HandleRelayRequest()
+					err = gatewayRequestCtx.HandleRelayRequest()
 					if err != nil {
 						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
