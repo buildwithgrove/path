@@ -87,21 +87,22 @@ type Protocol struct {
 
 // BuildRequestContext builds a new request context for a given service ID.
 // The request context contains all the information needed to process a single service request.
+//
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
 	_ *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-	endpoints, err := p.getEndpoints(serviceID)
-	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
-	}
-
 	// Create a logger specifically for this request context
 	ctxLogger := p.logger.With(
 		"service_id", string(serviceID),
 		"component", "request_context",
 	)
+
+	endpoints, err := p.getEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+	}
 
 	// Return new request context with fullNode, endpointStore, and logger
 	return &requestContext{
@@ -114,33 +115,41 @@ func (p *Protocol) BuildRequestContext(
 }
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
-// This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+//
+// DEV_NOTE: This method is **intended** to only be used in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+//
+// Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	preSelectedEndpointAddr protocol.EndpointAddr,
 ) (gateway.ProtocolRequestContext, error) {
+	// Create a logger specifically for this request context
+	ctxLogger := p.logger.With(
+		"service_id", string(serviceID),
+		"component", "request_context_for_endpoint",
+	)
+
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID.
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	// Create a logger specifically for this request context
-	ctxLogger := p.logger.With(
-		"service_id", string(serviceID),
-		"component", "request_context",
-	)
-
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
 	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
 	if !ok {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
 	}
 
-	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
+	// Create an endpoint map containing only the selected endpoint to ensure
+	// the QoS check is performed on the selected endpoint.
 	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
 		preSelectedEndpointAddr: preselectedEndpoint,
 	}
 
-	// Return new request context with fullNode, endpointStore, and logger
+	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:                   ctxLogger,
 		fullNode:                 p.fullNode,

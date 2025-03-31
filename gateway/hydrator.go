@@ -141,24 +141,32 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		return err
 	}
 
+	// ********* MAJOR REFACTOR *********
 	// TODO_REFACTOR(@adshmh): Unify protocol interface across gateway and hydrator:
+	//
 	// 1. Modify `gateway.Protocol`:
 	//   - Add: `AvailableEndpoints(ServiceID, http.Request) []protocol.EndpointAddr`
 	//   - Remove: `BuildRequestContext()`
 	//   - Add: `BuildRequestContextForEndpoint(ServiceID, protocol.EndpointAddr)`
+	//
 	// 2. Update `gateway.ProtocolRequestContext`:
 	//   - Remove: `SelectEndpoint()` and `AvailableEndpoints()`
+	//
 	// 3. In Hydrator:
 	//   - Get endpoints: `protocol.AvailableEndpoints(svcID, nil)`
 	//   - For each endpoint: `BuildRequestContextForEndpointAddr(svcID, endpointAddr)`
+	//
 	// 4. In Gateway:
 	//   - Get endpoints: `protocol.AvailableEndpoints(svcID, nil)`
 	//   - Select endpoint: `qos.SelectEndpoint(availableEndpoints)`
 	//   - Build context: `BuildRequestContextForEndpointAddr(svcID, selectedEndpointAddr)`
+	//
 	// Benefits:
 	//   - Single protocol entry point
 	//   - Consistent usage in both Hydrator and Gateway
 	//   - Explicit QoS endpoint selection in Gateway code
+	// ********* MAJOR REFACTOR *********
+
 	uniqueEndpoints, err := protocolRequestCtx.AvailableEndpoints()
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
@@ -190,7 +198,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
 					// Create a new protocol request context with a pre-selected endpoint for each request.
-					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
+					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
+					// avoid a race conditions related to concurrent access issues when running concurrent QoS checks.
 					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpoint.Addr())
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
