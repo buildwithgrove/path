@@ -6,7 +6,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // EndpointStore provides the endpoint check generator required by
@@ -14,13 +13,13 @@ import (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+func (es *EndpointStore) GetRequiredQualityChecks() []gateway.RequestQoSContext {
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withHealthCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withStatusCheck),
+		getEndpointCheck(es.logger, es, withHealthCheck),
+		getEndpointCheck(es.logger, es, withStatusCheck),
 	}
 }
 
@@ -28,7 +27,6 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 func getEndpointCheck(
 	logger polylog.Logger,
 	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{

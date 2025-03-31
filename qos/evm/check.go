@@ -6,7 +6,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -24,18 +23,18 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+func (es *EndpointStore) GetRequiredQualityChecks() []gateway.RequestQoSContext {
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
 	qualityChecks := []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
+		getEndpointCheck(es.logger, es, withChainIDCheck),
+		getEndpointCheck(es.logger, es, withBlockHeightCheck),
 	}
 	// If the service is configured to perform an archival check and has calculated an expected archival balance,
 	// add the archival check to the list of quality checks to perform on every hydrator run.
 	if es.serviceState.shouldPerformArchivalCheck() {
-		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, endpointAddr, withArchivalBlockCheck))
+		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, withArchivalBlockCheck))
 	}
 
 	return qualityChecks
@@ -45,7 +44,6 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 func getEndpointCheck(
 	logger polylog.Logger,
 	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
