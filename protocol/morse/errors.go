@@ -37,6 +37,12 @@ var (
 
 	// ErrMisconfigured is returned when an endpoint is misconfigured
 	ErrMisconfigured = errors.New("endpoint is misconfigured")
+
+	// ErrTLSCertificateVerificationFailed is returned when TLS certificate verification failed
+	ErrTLSCertificateVerificationFailed = errors.New("TLS certificate verification failed")
+
+	// ErrNonJSONResponse is returned when an endpoint returns a non-JSON response
+	ErrNonJSONResponse = errors.New("non JSON response received from endpoint")
 )
 
 // NewNoEndpointsError creates a formatted error for when no endpoints are available
@@ -107,6 +113,16 @@ func extractErrFromRelayError(err error) error {
 		return ErrMisconfigured
 	}
 
+	// Check for TLS certificate verification errors
+	if strings.Contains(errStr, "tls: failed to verify certificate") {
+		return ErrTLSCertificateVerificationFailed
+	}
+
+	// Check for non-JSON response errors
+	if strings.Contains(errStr, "non json response") {
+		return ErrNonJSONResponse
+	}
+
 	// Check for timeouts using strings
 	if strings.Contains(errStr, "timeout") ||
 		strings.Contains(errStr, "deadline") {
@@ -130,12 +146,9 @@ func isEndpointMaxedOutError(errStr string) bool {
 	return matchesAllSubstrings(
 		errStr,
 		[]string{
-			"codespace: sdk",
-			"code: 1",
-			"codespace: pocketcore",
 			"code: 90",
+			"codespace: pocketcore",
 			"the evidence is sealed",
-			"max relays reached",
 		},
 	)
 }
