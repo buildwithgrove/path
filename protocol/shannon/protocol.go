@@ -129,11 +129,10 @@ func (p *Protocol) BuildRequestContext(
 }
 
 // BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
-// This method is used only in the hydrator to allow performing QoS checks on a specific pre-selected endpoint.
-// The QoS EndpointSelector will select only the provided endpoint and the hydrator will use this method to build a request context for the endpoint.
+// This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
 func (p *Protocol) BuildHydratorRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
-	preselectedEndpointAddr protocol.EndpointAddr,
+	preSelectedEndpointAddr protocol.EndpointAddr,
 ) (gateway.ProtocolRequestContext, error) {
 	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
 	if err != nil {
@@ -145,14 +144,14 @@ func (p *Protocol) BuildHydratorRequestContextForEndpoint(
 		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	preselectedEndpoint, ok := endpoints[preselectedEndpointAddr]
+	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preselectedEndpointAddr)
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
 	}
 
-	// Create an endpoint map containing only the selected endpoint
+	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
 	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
-		preselectedEndpointAddr: preselectedEndpoint,
+		preSelectedEndpointAddr: preselectedEndpoint,
 	}
 
 	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)

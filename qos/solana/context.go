@@ -2,7 +2,6 @@ package solana
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -56,12 +55,6 @@ type requestContext struct {
 	// when creating this request context during the parsing
 	// of the user request.
 	isValid bool
-
-	// preSelectedEndpointAddr allows overriding the default
-	// endpoint selector with a specific endpoint's addresss.
-	// This is used when building a request context as a check
-	// for a specific endpoint.
-	preSelectedEndpointAddr protocol.EndpointAddr
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -170,22 +163,5 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 // Select chooses an endpoint from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	if rc.preSelectedEndpointAddr != "" {
-		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
-	}
-
 	return rc.endpointStore.Select(allEndpoints)
-}
-
-func preSelectedEndpoint(
-	preSelectedEndpointAddr protocol.EndpointAddr,
-	allEndpoints []protocol.Endpoint,
-) (protocol.EndpointAddr, error) {
-	for _, endpoint := range allEndpoints {
-		if endpoint.Addr() == preSelectedEndpointAddr {
-			return preSelectedEndpointAddr, nil
-		}
-	}
-
-	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }
