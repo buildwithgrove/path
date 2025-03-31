@@ -87,6 +87,11 @@ func withArchivalBlockCheck(requestCtx *requestContext) {
 		archivalCheckConfig.ContractAddress,
 		serviceArchivalState.blockNumberHex,
 	)
+
+	// Set the archival balance check flag to true.
+	// This is used to ensure that only hydrator requests for the archival block number are used
+	// to update QoS data on whether endpoints are able to service archival requests.
+	requestCtx.archivalBalanceCheck = true
 }
 
 func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) jsonrpc.Request {

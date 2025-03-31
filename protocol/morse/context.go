@@ -29,7 +29,7 @@ type requestContext struct {
 
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
-	selectedEndpoint endpoint
+	selectedEndpoint *endpoint
 
 	// endpointObservations captures observations about endpoints used during request handling
 	endpointObservations []*protocolobservations.MorseEndpointObservation
@@ -63,7 +63,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		hydratedLogger.Error().Err(err).Msg("endpoint not found in session.")
 
 		rc.recordEndpointObservation(
-			rc.selectedEndpoint,
+			*rc.selectedEndpoint,
 			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
 			fmt.Sprintf("error matching endpoint against session's nodes: %v", err),
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as this is an internal error
@@ -96,7 +96,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 			Msg("relay error occurred.")
 
 		rc.recordEndpointObservation(
-			rc.selectedEndpoint,
+			*rc.selectedEndpoint,
 			endpointErrorType,
 			fmt.Sprintf("relay error: %v", err),
 			recommendedSanctionType,
