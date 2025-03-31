@@ -98,7 +98,10 @@ type Protocol struct {
 	ownedAppsAddr map[string]struct{}
 }
 
+// AvailableEndpoints returns the list available endpoints for a given service ID.
+// Implements the gateway.Protocol interface.
 func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
+	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
 	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
@@ -119,6 +122,7 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+// Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	preSelectedEndpointAddr protocol.EndpointAddr,
