@@ -162,7 +162,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
 				// Retrieve all the required QoS checks for the endpoint.
-				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
+				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 				if len(requiredQoSChecks) == 0 {
 					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
 					continue
