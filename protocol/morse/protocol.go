@@ -85,39 +85,27 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
-// BuildRequestContext builds a new request context for a given service ID.
-// The request context contains all the information needed to process a single service request.
+// AvailableEndpoints returns the list of available endpoints for a given service ID.
 // Implements the gateway.Protocol interface.
-func (p *Protocol) BuildRequestContext(
-	serviceID protocol.ServiceID,
-	_ *http.Request,
-) (gateway.ProtocolRequestContext, error) {
+func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	// Create a logger specifically for this request context
-	ctxLogger := p.logger.With(
-		"service_id", string(serviceID),
-		"component", "request_context",
-	)
+	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
+	for endpointAddr := range endpoints {
+		endpointAddrs = append(endpointAddrs, endpointAddr)
+	}
 
-	// Return new request context with fullNode, endpointStore, and logger
-	return &requestContext{
-		logger:                   ctxLogger,
-		fullNode:                 p.fullNode,
-		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		endpoints:                endpoints,
-		serviceID:                serviceID,
-	}, nil
+	return endpointAddrs, nil
 }
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
-	preSelectedEndpointAddr protocol.EndpointAddr,
+	selectedEndpointAddr protocol.EndpointAddr,
 ) (gateway.ProtocolRequestContext, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
@@ -130,14 +118,9 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"component", "request_context",
 	)
 
-	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
-	}
-
-	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
-	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
-		preSelectedEndpointAddr: preselectedEndpoint,
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Return new request context with fullNode, endpointStore, and logger
@@ -145,7 +128,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		logger:                   ctxLogger,
 		fullNode:                 p.fullNode,
 		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		endpoints:                preselectedEndpointMap,
+		selectedEndpoint:         &selectedEndpoint,
 		serviceID:                serviceID,
 	}, nil
 }

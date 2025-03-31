@@ -183,6 +183,6 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
-func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
+func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
 }
