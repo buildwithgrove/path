@@ -49,9 +49,8 @@ func getEndpointCheck(
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        logger,
+		endpointStore: endpointStore,
 	}
 
 	for _, option := range options {

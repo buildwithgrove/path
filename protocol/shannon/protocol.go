@@ -98,79 +98,73 @@ type Protocol struct {
 	ownedAppsAddr map[string]struct{}
 }
 
-// GetEndpoints returns a map of all endpoints matching serviceID and passing appFilter.
-// If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
-// matching one of the apps/sessions is returned.
-// Implements the gateway.Protocol interface.
-func (p *Protocol) GetEndpoints(
-	serviceID protocol.ServiceID,
-	httpReq *http.Request,
-) (map[protocol.EndpointAddr]protocol.Endpoint, error) {
-	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("GetEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
-	}
-
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
-	if err != nil {
-		return nil, fmt.Errorf("GetEndpoints: error getting endpoints for service %s: %w", serviceID, err)
-	}
-
-	return endpoints, nil
-}
-
 // BuildRequestContext builds and returns a Shannon-specific request context, which can be used to send relays.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
-	endpoints map[protocol.EndpointAddr]protocol.Endpoint,
+	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
+	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
 
-	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
-	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
-	}
-
-	// Convert the map of interfaces to a map of concrete types
-	shannonEndpoints := make(map[protocol.EndpointAddr]endpoint)
-	for addr, ep := range endpoints {
-		concreteEndpoint, ok := ep.(endpoint)
-		if !ok {
-			// This should never happen, since PATH will only ever use a single protocol instance
-			// and thus the endpoints from `GetEndpoints` will always be Shannon endpoints.
-			return nil, fmt.Errorf("BuildRequestContext: endpoint %s is not a shannon endpoint", addr)
-		}
-		shannonEndpoints[addr] = concreteEndpoint
-	}
-
-	return &requestContext{
-		fullNode:           p.FullNode,
-		endpoints:          shannonEndpoints,
-		serviceID:          serviceID,
-		relayRequestSigner: permittedSigner,
-	}, nil
-}
-
-// GetUniqueEndpoints returns a map of all unique endpoints for a given service ID.
-// Implements the gateway.Protocol interface.
-func (p *Protocol) GetUniqueEndpoints(serviceID protocol.ServiceID) ([]protocol.Endpoint, error) {
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContext: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
-		return nil, fmt.Errorf("getUniqueEndpoints: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	uniqueEndpoints := make([]protocol.Endpoint, 0, len(endpoints))
-	for _, endpoint := range endpoints {
-		uniqueEndpoints = append(uniqueEndpoints, endpoint)
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContext: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
-	return uniqueEndpoints, nil
+	return &requestContext{
+		fullNode:           p.FullNode,
+		endpoints:          endpoints,
+		serviceID:          serviceID,
+		relayRequestSigner: permittedSigner,
+	}, nil
+}
+
+// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+	serviceID protocol.ServiceID,
+	preSelectedEndpointAddr protocol.EndpointAddr,
+) (gateway.ProtocolRequestContext, error) {
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+	}
+
+	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
+	if !ok {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
+	}
+
+	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
+	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
+		preSelectedEndpointAddr: preselectedEndpoint,
+	}
+
+	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
+	}
+
+	return &requestContext{
+		fullNode:           p.FullNode,
+		endpoints:          preselectedEndpointMap,
+		serviceID:          serviceID,
+		relayRequestSigner: permittedSigner,
+	}, nil
 }
 
 // ApplyObservations updates protocol instance state based on endpoint observations.
@@ -207,10 +201,10 @@ func (p *Protocol) IsAlive() bool {
 func (p *Protocol) getAppsUniqueEndpoints(
 	serviceID protocol.ServiceID,
 	permittedApps []*apptypes.Application,
-) (map[protocol.EndpointAddr]protocol.Endpoint, error) {
+) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.Logger.With("service", serviceID)
 
-	var endpoints = make(map[protocol.EndpointAddr]protocol.Endpoint)
+	var endpoints = make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range permittedApps {
 		logger = logger.With("permitted_app_address", app.Address)
 		logger.Debug().Msg("getAppsUniqueEndpoints: processing app.")

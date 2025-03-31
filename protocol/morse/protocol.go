@@ -85,43 +85,59 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
-// GetEndpoints returns all endpoints for a given service ID as a map of endpoint addresses to endpoints.
-// Implements the gateway.Protocol interface.
-func (p *Protocol) GetEndpoints(
-	serviceID protocol.ServiceID,
-	_ *http.Request,
-) (map[protocol.EndpointAddr]protocol.Endpoint, error) {
-	apps, found := p.getApps(serviceID)
-	if !found || len(apps) == 0 {
-		return nil, fmt.Errorf("GetEndpoints: no apps found for service %s", serviceID)
-	}
-
-	return p.getAppsUniqueEndpoints(serviceID, apps)
-}
-
 // BuildRequestContext builds a new request context for a given service ID.
 // The request context contains all the information needed to process a single service request.
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContext(
 	serviceID protocol.ServiceID,
-	endpoints map[protocol.EndpointAddr]protocol.Endpoint,
+	_ *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
+	endpoints, err := p.getEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
 	// Create a logger specifically for this request context
 	ctxLogger := p.logger.With(
 		"service_id", string(serviceID),
 		"component", "request_context",
 	)
 
-	// Convert the map of interfaces to a map of concrete types
-	morseEndpoints := make(map[protocol.EndpointAddr]endpoint)
-	for addr, ep := range endpoints {
-		concreteEndpoint, ok := ep.(endpoint)
-		if !ok {
-			// This should never happen, since PATH will only ever use a single protocol instance
-			// and thus the endpoints from `GetEndpoints` will always be Morse endpoints.
-			return nil, fmt.Errorf("BuildRequestContext: endpoint %s is not a morse endpoint", addr)
-		}
-		morseEndpoints[addr] = concreteEndpoint
+	// Return new request context with fullNode, endpointStore, and logger
+	return &requestContext{
+		logger:                   ctxLogger,
+		fullNode:                 p.fullNode,
+		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
+		endpoints:                endpoints,
+		serviceID:                serviceID,
+	}, nil
+}
+
+// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+	serviceID protocol.ServiceID,
+	preSelectedEndpointAddr protocol.EndpointAddr,
+) (gateway.ProtocolRequestContext, error) {
+	endpoints, err := p.getEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	// Create a logger specifically for this request context
+	ctxLogger := p.logger.With(
+		"service_id", string(serviceID),
+		"component", "request_context",
+	)
+
+	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
+	if !ok {
+		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
+	}
+
+	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
+	preselectedEndpointMap := map[protocol.EndpointAddr]endpoint{
+		preSelectedEndpointAddr: preselectedEndpoint,
 	}
 
 	// Return new request context with fullNode, endpointStore, and logger
@@ -129,7 +145,7 @@ func (p *Protocol) BuildRequestContext(
 		logger:                   ctxLogger,
 		fullNode:                 p.fullNode,
 		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		endpoints:                morseEndpoints,
+		endpoints:                preselectedEndpointMap,
 		serviceID:                serviceID,
 	}, nil
 }
@@ -282,8 +298,8 @@ func (p *Protocol) refreshSessionCache() error {
 
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
 // It also filters out sanctioned endpoints from the endpoint store.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]protocol.Endpoint, error) {
-	endpoints := make(map[protocol.EndpointAddr]protocol.Endpoint)
+func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	// Get a logger specifically for this operation
 	logger := p.logger.With("method", "getAppsUniqueEndpoints")
@@ -329,6 +345,16 @@ func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (pro
 	key := sessionCacheKey(serviceID, appAddr)
 	session, found := p.sessionCache[key]
 	return session, found
+}
+
+// getEndpoints returns all endpoints for a given service ID
+func (p *Protocol) getEndpoints(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, error) {
+	apps, found := p.getApps(serviceID)
+	if !found || len(apps) == 0 {
+		return nil, fmt.Errorf("getEndpoints: no apps found for service %s", serviceID)
+	}
+
+	return p.getAppsUniqueEndpoints(serviceID, apps)
 }
 
 // getApps gets apps from the app cache for a given service Id
