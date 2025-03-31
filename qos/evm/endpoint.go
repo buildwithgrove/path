@@ -71,9 +71,10 @@ func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
 	if err != nil {
 		return err
 	}
-	// if blockNumber < perceivedBlockNumber {
-	// 	return fmt.Errorf(errBlockNumberTooLow, blockNumber, perceivedBlockNumber)
-	// }
+	// TODO_IN_THIS_PR(@commoddity): re-enable this check - possibly with allowance value to remove the need for a block number check.
+	if *e.parsedBlockNumberResponse < perceivedBlockNumber {
+		return fmt.Errorf(errBlockNumberTooLow, e.parsedBlockNumberResponse, perceivedBlockNumber)
+	}
 	return nil
 }
 
@@ -110,7 +111,7 @@ func (e endpoint) getArchivalBalance() (string, error) {
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
-func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, performArchivalCheck bool) bool {
+func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, shouldPerformArchivalCheck bool) bool {
 	if obs.GetEmptyResponse() != nil {
 		e.hasReturnedEmptyResponse = true
 		return true
@@ -127,7 +128,7 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 		return true
 	}
 
-	if performArchivalCheck {
+	if shouldPerformArchivalCheck {
 		if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
 			e.archivalBalance = archivalResponse.GetBalance()
 			return true

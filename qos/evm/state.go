@@ -32,7 +32,54 @@ type ServiceState struct {
 	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	perceivedBlockNumber uint64
 
+	// archivalCheckConfig contains all configurable values for an EVM archival check.
 	archivalCheckConfig EVMArchivalCheckConfig
+	// archivalState contains the current state of the EVM archival check.
+	archivalState evmArchivalState
+}
+
+// consensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
+// selected archival block number before it is considered to be the source of truth for the archival check.
+// TODO_IN_THIS_PR(@commoddity): make this value configurable.
+const consensusThreshold = 5
+
+// evmArchivalState contains the current state of the EVM archival check for the service.
+type evmArchivalState struct {
+	// blockNumberHex is a randomly selected block number from which to check the balance of the contract.
+	blockNumberHex string
+	// balance is the balance of the contract at the block number specified in `blockNumberHex`.
+	balance string
+	// balanceConsensus is a map of balances and the number of endpoints that reported them.
+	balanceConsensus map[string]int
+	// refreshAt is the time at which the archival state should be refreshed.
+	// If it has passed, the archival state should be refreshed by randomly selecting a new block number.
+	// TODO_IMPROVE(@commoddity): Implement a refresh mechanism to calculate a new archival block number
+	// and update the archival state when this time has passed.
+	refreshAt time.Time
+}
+
+// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
+//
+// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
+func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
+	s.serviceStateLock.RLock()
+	defer s.serviceStateLock.RUnlock()
+
+	if err := endpoint.validateEmptyResponse(); err != nil {
+		return err
+	}
+	if err := endpoint.validateChainID(s.chainID); err != nil {
+		return err
+	}
+	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
+		return err
+	}
+	if s.shouldPerformArchivalCheck() {
+		if err := endpoint.validateArchivalCheck(s.archivalState.balance, endpointAddr); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
@@ -42,13 +89,9 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	defer s.serviceStateLock.Unlock()
 
 	// Initialize consensus map if it doesn't exist.
-	if s.archivalCheckConfig.parsedBalanceConsensus == nil {
-		s.archivalCheckConfig.parsedBalanceConsensus = make(map[string]int)
+	if s.archivalState.balanceConsensus == nil {
+		s.archivalState.balanceConsensus = make(map[string]int)
 	}
-
-	// Define a consensus threshold for archival balance agreement.
-	// TODO_IMPROVE: Make this value configurable.
-	const consensusThreshold = 5
 
 	for endpointAddr, endpoint := range updatedEndpoints {
 		logger := s.logger.With(
@@ -80,16 +123,16 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		}
 
 		// Only count non-empty balances toward consensus.
-		if s.archivalCheckConfig.archivalBalance == "" && balance != "" {
-			s.archivalCheckConfig.parsedBalanceConsensus[balance]++
+		if s.archivalState.balance == "" && balance != "" {
+			s.archivalState.balanceConsensus[balance]++
 		}
 	}
 
 	// Update archival block number and archival balance only if not yet set.
-	if s.perceivedBlockNumber != 0 && s.archivalCheckConfig.archivalBlockNumber == "" {
+	if s.perceivedBlockNumber != 0 && s.archivalState.blockNumberHex == "" {
 		s.assignArchivalBlockNumber()
 	}
-	if s.archivalCheckConfig.archivalBalance == "" {
+	if s.archivalState.balance == "" {
 		s.updateArchivalBalance(consensusThreshold)
 	}
 
@@ -115,55 +158,35 @@ func (s *ServiceState) assignArchivalBlockNumber() string {
 		}
 	}
 
-	s.archivalCheckConfig.archivalBlockNumber = result
+	s.archivalState.blockNumberHex = result
 	return result
 }
 
 // updateArchivalBalance checks for consensus and updates the archival balance if it hasn't been set yet.
 func (s *ServiceState) updateArchivalBalance(consensusThreshold int) {
-	for balance, count := range s.archivalCheckConfig.parsedBalanceConsensus {
+	for balance, count := range s.archivalState.balanceConsensus {
 		if count >= consensusThreshold {
-			s.archivalCheckConfig.archivalBalance = balance
+			s.archivalState.balance = balance
 			// Reset consensus map after consensus is reached.
-			s.archivalCheckConfig.parsedBalanceConsensus = make(map[string]int)
+			s.archivalState.balanceConsensus = make(map[string]int)
 			break
 		}
 	}
 }
 
-// TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-//
-// ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
-func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
-	s.serviceStateLock.RLock()
-	defer s.serviceStateLock.RUnlock()
-
-	if err := endpoint.validateEmptyResponse(); err != nil {
-		return err
-	}
-	if err := endpoint.validateChainID(s.chainID); err != nil {
-		return err
-	}
-	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
-		return err
-	}
-	if s.performArchivalCheck() {
-		if err := endpoint.validateArchivalCheck(s.archivalCheckConfig.archivalBalance, endpointAddr); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *ServiceState) performArchivalCheck() bool {
-	if s.archivalCheckConfig.Enabled && s.getArchivalBlockNumber() != "" {
+// shouldPerformArchivalCheck returns a boolean indicating whether the archival check should be performs.
+// This depends on:
+//   - The archival check is enabled for the service
+//   - The archival block number to check the balance of has been set in the service state.
+func (s *ServiceState) shouldPerformArchivalCheck() bool {
+	if s.archivalCheckConfig.Enabled && s.getArchivalBlockNumberHex() != "" {
 		return true
 	}
 	return false
 }
 
-func (s *ServiceState) getArchivalBlockNumber() string {
-	return s.archivalCheckConfig.archivalBlockNumber
+func (s *ServiceState) getArchivalBlockNumberHex() string {
+	return s.archivalState.blockNumberHex
 }
 
 func blockNumberToHex(blockNumber uint64) string {

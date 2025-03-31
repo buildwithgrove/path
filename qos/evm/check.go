@@ -34,7 +34,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	}
 	// If the service is configured to perform an archival check and has calculated an expected archival balance,
 	// add the archival check to the list of quality checks to perform on every hydrator run.
-	if es.serviceState.performArchivalCheck() {
+	if es.serviceState.shouldPerformArchivalCheck() {
 		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, endpointAddr, withArchivalBlockCheck))
 	}
 
@@ -77,6 +77,8 @@ func withBlockHeightCheck(requestCtx *requestContext) {
 func withArchivalBlockCheck(requestCtx *requestContext) {
 	// Get the archival block number from the endpoint store.
 	archivalCheckConfig := requestCtx.endpointStore.serviceState.archivalCheckConfig
+	// Get the current state of the archival check.
+	serviceArchivalState := requestCtx.endpointStore.serviceState.archivalState
 
 	requestCtx.jsonrpcReq = buildJSONRPCReq(
 		idArchivalBlockCheck,
@@ -84,7 +86,7 @@ func withArchivalBlockCheck(requestCtx *requestContext) {
 		// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
 		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 		archivalCheckConfig.ContractAddress,
-		archivalCheckConfig.archivalBlockNumber,
+		serviceArchivalState.blockNumberHex,
 	)
 }
 

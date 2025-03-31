@@ -22,10 +22,6 @@ type EVMArchivalCheckConfig struct {
 	Threshold          uint64
 	ContractAddress    string
 	ContractStartBlock uint64
-
-	archivalBlockNumber    string
-	archivalBalance        string
-	parsedBalanceConsensus map[string]int
 }
 
 func (c ServiceConfig) GetServiceID() protocol.ServiceID {
