@@ -98,7 +98,7 @@ func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
 	var filteredEndpointsAddr []protocol.EndpointAddr
 	for _, availableEndpointAddr := range availableEndpoints {
-		logger := logger.With("endpoint", availableEndpointAddr)
+		logger := logger.With("endpoint_addr", availableEndpointAddr)
 		logger.Info().Msg("processing endpoint")
 
 		endpoint, found := es.endpoints[availableEndpointAddr]

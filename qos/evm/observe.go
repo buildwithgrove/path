@@ -38,7 +38,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 		endpointAddr := protocol.EndpointAddr(observation.EndpointAddr)
 
-		logger := logger.With("endpoint", endpointAddr)
+		logger := logger.With("endpoint_addr", endpointAddr)
 		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.

@@ -158,7 +158,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 			for endpointAddr := range jobs {
 				// Creating a new locally scoped logger
-				endpointLogger := logger.With("endpoint", string(endpointAddr))
+				endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
 				// Retrieve all the required QoS checks for the endpoint.
