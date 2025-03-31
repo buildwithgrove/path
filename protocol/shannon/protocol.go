@@ -128,25 +128,25 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
-// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
-func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	preSelectedEndpointAddr protocol.EndpointAddr,
 ) (gateway.ProtocolRequestContext, error) {
 	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
 	}
 
 	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
@@ -156,7 +156,7 @@ func (p *Protocol) BuildHydratorRequestContextForEndpoint(
 
 	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
 	if err != nil {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
 	return &requestContext{

@@ -113,15 +113,15 @@ func (p *Protocol) BuildRequestContext(
 	}, nil
 }
 
-// BuildHydratorRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
-func (p *Protocol) BuildHydratorRequestContextForEndpoint(
+func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	preSelectedEndpointAddr protocol.EndpointAddr,
 ) (gateway.ProtocolRequestContext, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	// Create a logger specifically for this request context
@@ -132,7 +132,7 @@ func (p *Protocol) BuildHydratorRequestContextForEndpoint(
 
 	preselectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildHydratorRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
 	}
 
 	// Create an endpoint map containing only the selected endpoint to ensure the QoS check is performed on the selected endpoint.
