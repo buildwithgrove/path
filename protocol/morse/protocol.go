@@ -145,6 +145,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		logger:                   ctxLogger,
 		fullNode:                 p.fullNode,
 		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
+		selectedEndpoint:         &preselectedEndpoint,
 		endpoints:                preselectedEndpointMap,
 		serviceID:                serviceID,
 	}, nil

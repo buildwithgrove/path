@@ -162,6 +162,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	return &requestContext{
 		fullNode:           p.FullNode,
 		endpoints:          preselectedEndpointMap,
+		selectedEndpoint:   &preselectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
 	}, nil
