@@ -22,5 +22,5 @@ type Endpoint interface {
 // EndpointSelector defines the functionality that the user of a protocol needs to provide.
 // E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
-	Select([]Endpoint) (EndpointAddr, error)
+	Select([]EndpointAddr) (EndpointAddr, error)
 }

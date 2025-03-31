@@ -10,6 +10,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_TECHDEBT(@adshmh): support customization of the endpoint response's timeout.
@@ -54,7 +55,7 @@ func (NoOpQoS) ApplyObservations(_ *qosobservations.Observations) error {
 
 // GetRequiredQualityChecks on noop QoS only fulfills the interface requirements and does not perform any actions.
 // Implements the gateway.QoSService interface.
-func (NoOpQoS) GetRequiredQualityChecks() []gateway.RequestQoSContext {
+func (NoOpQoS) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -23,14 +24,14 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks() []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
-
+// TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
+// to filter out checks for any endpoint which has acurrently valid QoS data point.
+func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	qualityChecks := []gateway.RequestQoSContext{
 		getEndpointCheck(es.logger, es, withChainIDCheck),
 		getEndpointCheck(es.logger, es, withBlockHeightCheck),
 	}
+
 	// If the service is configured to perform an archival check and has calculated an expected archival balance,
 	// add the archival check to the list of quality checks to perform on every hydrator run.
 	if es.serviceState.shouldPerformArchivalCheck() {

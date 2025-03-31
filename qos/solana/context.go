@@ -162,6 +162,6 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 
 // Select chooses an endpoint from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
 // It is required to satisfy the protocol package's EndpointSelector interface.
-func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
+func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
 }

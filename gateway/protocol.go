@@ -13,13 +13,12 @@ import (
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a particular service ID.
 type Protocol interface {
-	// BuildRequestContext builds and returns a ProtocolRequestContext interface for handling a single service
-	// request, which matches the provided Service ID.
-	BuildRequestContext(protocol.ServiceID, *http.Request) (ProtocolRequestContext, error)
+	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
+	AvailableEndpoints(protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
 
-	// BuildHydratorRequestContextForEndpoint builds and returns a ProtocolRequestContext containing only a single possible endpoint.
+	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing only a single possible endpoint.
 	// This method is used to build a request context for the hydrator and enforces performing QoS checks on a single endpoint.
-	BuildHydratorRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr) (ProtocolRequestContext, error)
+	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr) (ProtocolRequestContext, error)
 
 	// SupportedGamewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
@@ -47,12 +46,6 @@ type Protocol interface {
 //   - Morse: in the relayer/morse package, and
 //   - Shannon: in the relayer/shannon package.
 type ProtocolRequestContext interface {
-	// TODO_TECHDEBT(@adshmh): any protocol/network-level errors should result in
-	// the endpoint being dropped by the protocol instance from the returned
-	// set of available endpoints.
-	// e.g. an endpoint that is temporarily/permanently unavailable.
-	SelectEndpoint(protocol.EndpointSelector) error
-
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
@@ -60,12 +53,6 @@ type ProtocolRequestContext interface {
 	// HandleWebsocketRequest handles a WebSocket connection request.
 	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
-
-	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
-	// This is needed by the Endpoint Hydrator as an easy-to-read method of obtaining all available endpoints, rather than using the SelectEndpoint method.
-	// This method is scoped to a specific ProtocolRequestContext, because different operation modes impact the available applications and endpoints.
-	// See the Shannon package's operation_mode.go file for more details.
-	AvailableEndpoints() ([]protocol.Endpoint, error)
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
 	//

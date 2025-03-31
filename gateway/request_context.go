@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -125,7 +126,21 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 //   - Sending relays to endpoint(s)
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
-	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, httpReq)
+	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.serviceID, httpReq)
+	if err != nil {
+		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
+	}
+
+	if len(availableEndpoints) == 0 {
+		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints available for service %s", rc.serviceID)
+	}
+
+	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
+	if err != nil {
+		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
+	}
+
+	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
@@ -148,12 +163,6 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
-	// Make an endpoint selection using the QoS context.
-	if err := rc.protocolCtx.SelectEndpoint(rc.qosCtx.GetEndpointSelector()); err != nil {
-		rc.logger.Warn().Err(err).Msg("SendRelay: error selecting an endpoint.")
-		return err
-	}
-
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	if err != nil {
@@ -182,13 +191,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 
 // HandleWebsocketRequest handles a websocket request.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
-	// Make an endpoint selection using the QoS context.
-	// This modifies the internal state of protocolCtx for subsequent calls.
-	if err := rc.protocolCtx.SelectEndpoint(rc.qosCtx.GetEndpointSelector()); err != nil {
-		rc.logger.Warn().Err(err).Msg("SendRelay: error selecting an endpoint.")
-		return err
-	}
-
 	// Establish a websocket connection with the selected endpoint and handle the request.
 	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {

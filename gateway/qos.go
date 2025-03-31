@@ -86,7 +86,7 @@ type QoSEndpointCheckGenerator interface {
 	// the a QoS instance to assess the validity of an endpoint.
 	// e.g. An EVM-based blockchain service QoS may decide to skip querying an endpoint on
 	// its current block height if it has already failed the chain ID check.
-	GetRequiredQualityChecks() []RequestQoSContext
+	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
 }
 
 // TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
