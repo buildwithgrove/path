@@ -4,7 +4,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -22,13 +21,13 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+func (es *EndpointStore) GetRequiredQualityChecks() []gateway.RequestQoSContext {
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, endpointAddr, es, withGetHealth),
-		getEndpointCheck(es.logger, endpointAddr, es, withGetEpochInfo),
+		getEndpointCheck(es.logger, es, withGetHealth),
+		getEndpointCheck(es.logger, es, withGetEpochInfo),
 		// TODO_MVP(@adshmh): Add a check for a `getBlock` request
 	}
 }
@@ -36,7 +35,6 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 // getEndpointCheck prepares a request context for a specific endpoint check.
 func getEndpointCheck(
 	logger polylog.Logger,
-	endpointAddr protocol.EndpointAddr,
 	endpointStore *EndpointStore,
 	options ...func(*requestContext),
 ) *requestContext {
