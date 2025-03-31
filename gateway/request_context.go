@@ -125,13 +125,7 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 //   - Sending relays to endpoint(s)
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
-	endpoints, err := rc.protocol.GetEndpoints(rc.serviceID, httpReq)
-	if err != nil {
-		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
-		return errHTTPRequestRejectedByProtocol
-	}
-
-	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, endpoints)
+	protocolCtx, err := rc.protocol.BuildRequestContext(rc.serviceID, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.
