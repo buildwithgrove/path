@@ -90,7 +90,7 @@ hydrator_config:
 | zkLink | F02A | EVM | 812564 |  |
 | zkSync | F02B | EVM | 324 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
-| XRPL EVM Testnet | F036 | EVM | 1449000 |  |
+| XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
 | Sonic | F02D | EVM | 146 |  |
 | TRON | F02E | EVM | 728426128 |  |
 | Linea | F030 | EVM | 59144 |  |
