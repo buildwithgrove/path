@@ -71,7 +71,8 @@ func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
 	if err != nil {
 		return err
 	}
-	// TODO_IN_THIS_PR(@commoddity): re-enable this check - possibly with allowance value to remove the need for a block number check.
+	// TODO_IMPROVE(@commoddity): implement Allowance for block number check to allow blocks within
+	// a certain range of the current block number to still be considered valid to serve requests.
 	if *e.parsedBlockNumberResponse < perceivedBlockNumber {
 		return fmt.Errorf(errBlockNumberTooLow, e.parsedBlockNumberResponse, perceivedBlockNumber)
 	}

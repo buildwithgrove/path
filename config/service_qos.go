@@ -10,10 +10,21 @@ import (
 // TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
 // Consider a similar automated approach to "docs_update_gov_params_page"
 
-// NOTE: Service ID list last updated 2025/03/27
+// NOTE: Service ID list last updated 2025/04/01
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
+
+// TODO_IMPROVE(@commoddity): Add archival check configurations for all EVM services.
+// This means setting the following fields:
+//   - Enabled
+//   - ContractAddress
+//   - ContractStartBlock
+// Currently the following EVM services have archival check configurations:
+//   - F00C (Ethereum)
+//   - F021 (Polygon)
+//   - F01C (Oasys)
+//   - F036 (XRPL EVM Testnet)
 
 type ServiceConfig interface {
 	GetServiceID() protocol.ServiceID
@@ -75,15 +86,6 @@ var shannonServices = []ServiceConfig{
 	},
 }
 
-// TODO_IN_THIS_PR(@commoddity): Add archival check configurations for all EVM services.
-// This means setting the following fields:
-//   - Enabled
-//   - ContractAddress
-//   - ContractStartBlock
-// Currently, only the following EVM services have archival check configurations:
-//   - F00C
-//   - F021
-
 // morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceConfig{
 	evm.ServiceConfig{
@@ -130,7 +132,8 @@ var morseServices = []ServiceConfig{
 		ServiceID:  "F00C",            // Ethereum
 		EVMChainID: defaultEVMChainID, // (1)
 		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
-			Enabled:            true,
+			Enabled: true,
+			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 			ContractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
 			ContractStartBlock: 12_300_000,
 		},
@@ -194,6 +197,12 @@ var morseServices = []ServiceConfig{
 	evm.ServiceConfig{
 		ServiceID:  "F01C", // Oasys
 		EVMChainID: "0xf8", // (248)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled: true,
+			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+			ContractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+			ContractStartBlock: 424_300,
+		},
 	},
 	evm.ServiceConfig{
 		ServiceID:  "F01D", // Optimism
@@ -211,7 +220,8 @@ var morseServices = []ServiceConfig{
 		ServiceID:  "F021", // Polygon
 		EVMChainID: "0x89", // (137)
 		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
-			Enabled:            true,
+			Enabled: true,
+			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 			ContractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
 			ContractStartBlock: 5_000_000,
 		},
@@ -251,6 +261,12 @@ var morseServices = []ServiceConfig{
 	evm.ServiceConfig{
 		ServiceID:  "F036",     // XRPL EVM Testnet
 		EVMChainID: "0x161c28", // (1449000)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled: true,
+			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+			ContractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+			ContractStartBlock: 368_266,
+		},
 	},
 	evm.ServiceConfig{
 		ServiceID:  "F02D", // Sonic

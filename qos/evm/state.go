@@ -40,7 +40,7 @@ type ServiceState struct {
 
 // consensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
 // selected archival block number before it is considered to be the source of truth for the archival check.
-// TODO_IN_THIS_PR(@commoddity): make this value configurable.
+// TODO_IMPROVE(@commoddity): make this value configurable.
 const consensusThreshold = 5
 
 // evmArchivalState contains the current state of the EVM archival check for the service.

@@ -5,7 +5,6 @@ import "github.com/buildwithgrove/path/protocol"
 // QoSType is the QoS type for the CometBFT blockchain.
 const QoSType = "cometbft"
 
-// TODO_IN_THIS_PR(@commoddity): this should be configurable.
 const defaultCometBFTArchivalThreshold = 128
 
 type ServiceConfig struct {

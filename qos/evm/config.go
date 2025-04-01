@@ -5,7 +5,6 @@ import "github.com/buildwithgrove/path/protocol"
 // QoSTypeEVM is the QoS type for the EVM blockchain.
 const QoSType = "evm"
 
-// TODO_IN_THIS_PR(@commoddity): this should be configurable.
 const defaultEVMArchivalThreshold = 128
 
 type ServiceConfig struct {
