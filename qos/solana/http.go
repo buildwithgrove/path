@@ -19,9 +19,10 @@ func (hr httpResponse) GetPayload() []byte {
 	return hr.responsePayload
 }
 
+// TODO_MVP(@adshmh): Implement HTTP status code selection based on JSONRPC error codes. See qos/evm for reference.
 // GetHTTPStatusCode returns the HTTP status code for the response.
 func (hr httpResponse) GetHTTPStatusCode() int {
-	// Solana always returns a 200 HTTP status code.
+	// TODO_TECHDEBT: Default to 200 OK HTTP status code for Solana for now.
 	return http.StatusOK
 }
 

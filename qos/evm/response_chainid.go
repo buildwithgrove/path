@@ -26,9 +26,7 @@ func responseUnmarshallerChainID(
 		return responseToChainID{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-
-			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
-			valid: true,
+			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 
@@ -42,23 +40,22 @@ func responseUnmarshallerChainID(
 		}, err
 	}
 
-	var result string
-	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+	var (
+		result          string
+		validationError *qosobservations.EVMResponseValidationError
+	)
 
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+		errValue := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+		validationError = &errValue
 	}
 
 	return &responseToChainID{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
-
-		// if unmarshaling succeeded, the response is considered valid.
-		valid: (err == nil),
-
-		validationError: &validationError,
+		validationError: validationError,
 	}, err
 }
 
@@ -73,13 +70,11 @@ type responseToChainID struct {
 	// result captures the `result` field of a JSONRPC response to an `eth_chainId` request.
 	result string
 
-	// valid is set to true if the parsed response is deemed valid.
+	// Why the response has failed validation.
+	// Only set if the response is invalid.
 	// As of PR #152, a response is valid if either of the following holds:
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
-	valid bool
-
-	// Why the response has failed validation.
 	// Used when generating observations.
 	validationError *qosobservations.EVMResponseValidationError
 }
@@ -91,8 +86,8 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_ChainIdResponse{
 			ChainIdResponse: &qosobservations.EVMChainIDResponse{
+				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 				ChainIdResponse:         r.result,
-				Valid:                   r.valid,
 				ResponseValidationError: r.validationError,
 			},
 		},
@@ -107,13 +102,27 @@ func (r responseToChainID) GetObservation() qosobservations.EVMEndpointObservati
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
 //
-// GetResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
-// It implements the response interface.
-func (r responseToChainID) GetResponsePayload() []byte {
+// GetHTTPResponse builds and returns the httpResponse matching the responseToChainID instance.
+// Implements the response interface.
+func (r responseToChainID) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		httpStatusCode:  r.getHTTPStatusCode(),
+	}
+}
+
+// getResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
+func (r responseToChainID) getResponsePayload() []byte {
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		// This should never happen: log an entry but return the response anyway.
 		r.logger.Warn().Err(err).Msg("responseToChainID: Marshaling JSONRPC response failed.")
 	}
 	return bz
+}
+
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
+func (r responseToChainID) getHTTPStatusCode() int {
+	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }

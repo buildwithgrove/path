@@ -8,6 +8,14 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// clientRespMsgNoProtocolEndpoints is the error message sent to clients when
+// the underlying protocol fails to register any endpoint responses with the NoOp QoS service.
+// This can occur due to:
+//   - User error: invalid service ID in the request's HTTP header
+//   - Protocol error: selected endpoint failed to provide a valid response
+//   - System timeout: no endpoints responded within the allowed time window
+const clientRespMsgNoProtocolEndpoints = "NoOp QoS service error: No responses received from any service endpoints. Please verify your service ID and retry."
+
 // requestContext implements all the functionality required by gateway.RequestQoSContext interface.
 var _ gateway.RequestQoSContext = &requestContext{}
 
@@ -74,7 +82,7 @@ func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	if len(rc.receivedResponses) == 0 {
 		return &HTTPResponse{
 			httpStatusCode: http.StatusOK,
-			payload:        []byte("No responses have been received from any endpoints"),
+			payload:        []byte(clientRespMsgNoProtocolEndpoints),
 		}
 	}
 
