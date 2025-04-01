@@ -14,11 +14,9 @@ import (
 // ServiceState keeps the expected current state of the EVM blockchain based on the endpoints' responses to
 // different requests.
 type ServiceState struct {
-	logger polylog.Logger
-
+	logger           polylog.Logger
 	serviceStateLock sync.RWMutex
-
-	serviceConfig ServiceConfig
+	serviceConfig    ServiceConfig
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.

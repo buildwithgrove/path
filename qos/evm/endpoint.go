@@ -9,6 +9,8 @@ import (
 )
 
 // endpoint captures the details required to validate an EVM endpoint.
+// It contains all checks that should be run for the endpoint to validate
+// it is providing a valid response to service requests.
 type endpoint struct {
 	checkEmptyResponse *endpointCheckEmptyResponse
 	checkChainID       *endpointCheckChainID
@@ -159,6 +161,7 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 	return *e.checkBlockNumber.blockNumber, nil
 }
 
+// getArchivalBalance returns the parsed archival balance value for the endpoint.
 func (e endpoint) getArchivalBalance() (string, error) {
 	if e.checkArchival.archivalBalance == "" {
 		return "", errNoArchivalBalanceObs
