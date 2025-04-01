@@ -38,22 +38,22 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 		endpointAddr := protocol.EndpointAddr(observation.EndpointAddr)
 
-		logger := logger.With("endpoint", endpointAddr)
+		logger := logger.With("endpoint_addr", endpointAddr)
 		logger.Info().Msg("processing observation for endpoint.")
 
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
-		endpoint := es.endpoints[endpointAddr]
+		storedEndpoint := es.endpoints[endpointAddr]
 
-		isMutated := endpoint.ApplyObservation(observation)
+		isMutated := storedEndpoint.ApplyObservation(observation, es.serviceState.shouldPerformArchivalCheck())
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
 		if !isMutated {
 			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
 			continue
 		}
 
-		es.endpoints[endpointAddr] = endpoint
-		updatedEndpoints[endpointAddr] = endpoint
+		es.endpoints[endpointAddr] = storedEndpoint
+		updatedEndpoints[endpointAddr] = storedEndpoint
 	}
 
 	return updatedEndpoints

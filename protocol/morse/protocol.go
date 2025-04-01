@@ -85,30 +85,56 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
-// BuildRequestContext builds a new request context for a given service ID.
-// The request context contains all the information needed to process a single service request.
+// AvailableEndpoints returns the list of available endpoints for a given service ID.
+//
 // Implements the gateway.Protocol interface.
-func (p *Protocol) BuildRequestContext(
-	serviceID protocol.ServiceID,
-	_ *http.Request,
-) (gateway.ProtocolRequestContext, error) {
+func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("buildRequestContext: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
+	for endpointAddr := range endpoints {
+		endpointAddrs = append(endpointAddrs, endpointAddr)
+	}
+
+	return endpointAddrs, nil
+}
+
+// BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
+// Implements the gateway.Protocol interface.
+func (p *Protocol) BuildRequestContextForEndpoint(
+	serviceID protocol.ServiceID,
+	selectedEndpointAddr protocol.EndpointAddr,
+	_ *http.Request,
+) (gateway.ProtocolRequestContext, error) {
 	// Create a logger specifically for this request context
 	ctxLogger := p.logger.With(
 		"service_id", string(serviceID),
-		"component", "request_context",
+		"component", "request_context_for_endpoint",
 	)
 
-	// Return new request context with fullNode, endpointStore, and logger
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID.
+	endpoints, err := p.getEndpoints(serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+	}
+
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
+	if !ok {
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+	}
+
+	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:                   ctxLogger,
 		fullNode:                 p.fullNode,
 		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		endpoints:                endpoints,
+		selectedEndpoint:         &selectedEndpoint,
 		serviceID:                serviceID,
 	}, nil
 }

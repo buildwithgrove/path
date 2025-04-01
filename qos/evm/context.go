@@ -2,7 +2,6 @@ package evm
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -67,18 +66,17 @@ type requestContext struct {
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
 
-	// preSelectedEndpointAddr allows overriding the default
-	// endpoint selector with a specific endpoint's addresss.
-	// This is used when building a request context as a check
-	// for a specific endpoint.
-	preSelectedEndpointAddr protocol.EndpointAddr
-
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
 	// NOTE: these are all related to a single JSONRPC request,
 	// enhancing to support batch JSONRPC requests will involve the
 	// modification of this field's type.
 	endpointResponses []endpointResponse
+
+	// archivalBalanceCheck is a flag to indicate if the request context is for an archival balance check.
+	// This is used to ensure that only hydrator requests for the archival block number are used
+	// to update QoS data on whether endpoints are able to service archival requests.
+	archivalBalanceCheck bool
 }
 
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
@@ -112,7 +110,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
+	response, err := rc.unmarshalResponse(responseBz)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -142,7 +140,6 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		}
 
 		return responseNoneObj.GetHTTPResponse()
-
 	}
 
 	// return the last endpoint response reported to the context.
@@ -190,23 +187,6 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
-func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	if rc.preSelectedEndpointAddr != "" {
-		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
-	}
-
+func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
-}
-
-func preSelectedEndpoint(
-	preSelectedEndpointAddr protocol.EndpointAddr,
-	allEndpoints []protocol.Endpoint,
-) (protocol.EndpointAddr, error) {
-	for _, endpoint := range allEndpoints {
-		if endpoint.Addr() == preSelectedEndpointAddr {
-			return preSelectedEndpointAddr, nil
-		}
-	}
-
-	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }

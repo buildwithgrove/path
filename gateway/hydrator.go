@@ -4,6 +4,7 @@ package gateway
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -135,21 +136,18 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
 	// no need for specifying a specific app.
-	protocolRequestCtx, err := eph.Protocol.BuildRequestContext(serviceID, nil)
+	availableEndpoints, err := eph.Protocol.AvailableEndpoints(serviceID, nil)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to build a protocol request context")
-		return err
+		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
 	}
 
-	uniqueEndpoints, err := protocolRequestCtx.AvailableEndpoints()
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to get the list of available endpoints")
-		return err
+	if len(availableEndpoints) == 0 {
+		return fmt.Errorf("performChecks: no endpoints available for service %s when running hydrator checks", serviceID)
 	}
 
-	logger = logger.With("number_of_endpoints", len(uniqueEndpoints))
+	logger = logger.With("number_of_endpoints", len(availableEndpoints))
 
-	jobs := make(chan protocol.Endpoint, len(uniqueEndpoints))
+	jobs := make(chan protocol.EndpointAddr, len(availableEndpoints))
 
 	var wgEndpoints sync.WaitGroup
 	for i := 0; i < eph.MaxEndpointCheckWorkers; i++ {
@@ -158,19 +156,27 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 		go func() {
 			defer wgEndpoints.Done()
 
-			for endpoint := range jobs {
+			for endpointAddr := range jobs {
 				// Creating a new locally scoped logger
-				endpointLogger := logger.With("endpoint", string(endpoint.Addr()))
+				endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
 				endpointLogger.Info().Msg("running checks against the endpoint")
 
 				// Retrieve all the required QoS checks for the endpoint.
-				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpoint.Addr())
+				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 				if len(requiredQoSChecks) == 0 {
 					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
 					continue
 				}
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
+					// Create a new protocol request context with a pre-selected endpoint for each request.
+					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
+					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
+					if err != nil {
+						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
+						continue
+					}
+
 					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 					// Mark the request as Synthetic using the following steps:
 					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -184,10 +190,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						serviceQoS:          serviceQoS,
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
-						protocolCtx:         protocolRequestCtx,
+						protocolCtx:         hydratorRequestCtx,
 					}
 
-					err := gatewayRequestCtx.HandleRelayRequest()
+					err = gatewayRequestCtx.HandleRelayRequest()
 					if err != nil {
 						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
@@ -207,8 +213,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	}
 
 	// Kick off the workers above for every unique endpoint.
-	for _, endpoint := range uniqueEndpoints {
-		jobs <- endpoint
+	for _, endpointAddr := range availableEndpoints {
+		jobs <- endpointAddr
 	}
 
 	close(jobs)

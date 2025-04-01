@@ -20,19 +20,19 @@ import (
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 
 // getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, req *http.Request) ([]*apptypes.Application, error) {
-	selectedAppAddr, err := getAppAddrFromHTTPReq(req)
+func (p *Protocol) getDelegatedGatewayModeApps(_ context.Context, httpReq *http.Request) ([]*apptypes.Application, error) {
+	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("Delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
+		return nil, fmt.Errorf("delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
 	}
 
 	selectedApp, err := p.FullNode.GetApp(context.TODO(), selectedAppAddr)
 	if err != nil {
-		return nil, fmt.Errorf("Delegated GatewayMode: error getting the selected app %s data from the SDK: %w", selectedAppAddr, err)
+		return nil, fmt.Errorf("delegated GatewayMode: error getting the selected app %s data from the SDK: %w", selectedAppAddr, err)
 	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
-		return nil, fmt.Errorf("Delegated GatewayMode: app with address %s does not delegate to gateway address: %s", selectedApp.Address, p.gatewayAddr)
+		return nil, fmt.Errorf("delegated GatewayMode: app with address %s does not delegate to gateway address: %s", selectedApp.Address, p.gatewayAddr)
 	}
 
 	return []*apptypes.Application{selectedApp}, nil
@@ -41,7 +41,7 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, req *http.Re
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.
 func getAppAddrFromHTTPReq(httpReq *http.Request) (string, error) {
 	if httpReq == nil || len(httpReq.Header) == 0 {
-		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied.")
+		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied")
 	}
 
 	selectedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)

@@ -92,7 +92,6 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 
 	// Create the observations object with the request unmarshaling failure observation
 	observations := createRequestUnmarshalingFailureObservation(id, erv.chainID, err)
-
 	// Create the JSON-RPC error response
 	response := newErrResponseInvalidRequest(err, id)
 

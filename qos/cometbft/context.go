@@ -1,7 +1,6 @@
 package cometbft
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -47,10 +46,6 @@ type requestContext struct {
 	// isValid indicates if the user request was valid when parsed.
 	// Set by QoS instance during request context creation.
 	isValid bool
-
-	// preSelectedEndpointAddr overrides default endpoint selection with specific address.
-	// Used when building request context to check specific endpoint.
-	preSelectedEndpointAddr protocol.EndpointAddr
 
 	// endpointResponses contains responses from endpoints handling this service request
 	// NOTE: Currently only supports responses associated with a single JSON-RPC request.
@@ -158,12 +153,7 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
-func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.EndpointAddr, error) {
-	// If set, override the selection with the pre-selected endpoint address.
-	if rc.preSelectedEndpointAddr != "" {
-		return preSelectedEndpoint(rc.preSelectedEndpointAddr, allEndpoints)
-	}
-
+func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	// Select an endpoint from the available endpoints using the endpoint store.
 	return rc.endpointStore.Select(allEndpoints)
 }
@@ -172,19 +162,4 @@ func (rc *requestContext) Select(allEndpoints []protocol.Endpoint) (protocol.End
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 func (rc *requestContext) isJSONRPCRequest() bool {
 	return len(rc.jsonrpcRequestBz) > 0
-}
-
-// preSelectedEndpoint returns the pre-selected endpoint address if it exists in the list of available endpoints.
-// It is used to override the default endpoint selection with a specific address.
-func preSelectedEndpoint(
-	preSelectedEndpointAddr protocol.EndpointAddr,
-	allEndpoints []protocol.Endpoint,
-) (protocol.EndpointAddr, error) {
-	for _, endpoint := range allEndpoints {
-		if endpoint.Addr() == preSelectedEndpointAddr {
-			return preSelectedEndpointAddr, nil
-		}
-	}
-
-	return protocol.EndpointAddr(""), fmt.Errorf("singleEndpointSelector: endpoint %s not found in available endpoints", preSelectedEndpointAddr)
 }

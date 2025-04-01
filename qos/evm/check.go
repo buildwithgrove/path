@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"encoding/json"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -14,6 +16,7 @@ const (
 	_              = iota
 	idChainIDCheck = 1000 + iota
 	idBlockNumberCheck
+	idArchivalBlockCheck
 )
 
 // EndpointStore provides the endpoint check generator required by
@@ -21,28 +24,32 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
-
-	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withChainIDCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withBlockHeightCheck),
-		// TODO_FUTURE: add an archival endpoint check.
+// TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
+// to filter out checks for any endpoint which has acurrently valid QoS data point.
+func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
+	qualityChecks := []gateway.RequestQoSContext{
+		getEndpointCheck(es.logger, es, withChainIDCheck),
+		getEndpointCheck(es.logger, es, withBlockHeightCheck),
 	}
+
+	// If the service is configured to perform an archival check and has calculated an expected archival balance,
+	// add the archival check to the list of quality checks to perform on every hydrator run.
+	if es.serviceState.shouldPerformArchivalCheck() {
+		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, withArchivalBlockCheck))
+	}
+
+	return qualityChecks
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
 func getEndpointCheck(
 	logger polylog.Logger,
 	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        logger,
+		endpointStore: endpointStore,
 	}
 
 	for _, option := range options {
@@ -53,19 +60,53 @@ func getEndpointCheck(
 }
 
 // withChainIDCheck updates the request context to make an EVM JSON-RPC eth_chainId request.
+// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}'
 func withChainIDCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
 }
 
 // withBlockHeightCheck updates the request context to make an EVM JSON-RPC eth_blockNumber request.
+// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}'
 func withBlockHeightCheck(requestCtx *requestContext) {
 	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
 }
 
-func buildJSONRPCReq(id int, method jsonrpc.Method) jsonrpc.Request {
-	return jsonrpc.Request{
+// withArchivalBlockCheck updates the request context to make an EVM JSON-RPC eth_getBalance request with a random archival block number.
+// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
+func withArchivalBlockCheck(requestCtx *requestContext) {
+	// Get the archival block number from the endpoint store.
+	archivalCheckConfig := requestCtx.endpointStore.serviceState.archivalCheckConfig
+	// Get the current state of the archival check.
+	serviceArchivalState := requestCtx.endpointStore.serviceState.archivalState
+
+	requestCtx.jsonrpcReq = buildJSONRPCReq(
+		idArchivalBlockCheck,
+		methodGetBalance,
+		// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
+		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+		archivalCheckConfig.ContractAddress,
+		serviceArchivalState.blockNumberHex,
+	)
+
+	// Set the archival balance check flag to true.
+	// This is used to ensure that only hydrator requests for the archival block number are used
+	// to update QoS data on whether endpoints are able to service archival requests.
+	requestCtx.archivalBalanceCheck = true
+}
+
+func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) jsonrpc.Request {
+	request := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(id),
 		Method:  method,
 	}
+
+	if len(params) > 0 {
+		jsonParams, err := json.Marshal(params)
+		if err == nil {
+			request.Params = jsonrpc.NewParams(jsonParams)
+		}
+	}
+
+	return request
 }
