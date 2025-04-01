@@ -140,7 +140,7 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
-	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr)
+	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues.

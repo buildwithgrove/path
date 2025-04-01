@@ -103,13 +103,11 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 }
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
-//
-// DEV_NOTE: This method is **intended** to only be used in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
-//
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
+	_ *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
 	// Create a logger specifically for this request context
 	ctxLogger := p.logger.With(

@@ -17,8 +17,8 @@ type Protocol interface {
 	AvailableEndpoints(protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
 
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing only a single possible endpoint.
-	// Used to build a request context for the hydrator and enforces performing QoS checks on a single endpoint.
-	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr) (ProtocolRequestContext, error)
+	// Used to build a request context for the hydrator and enforces performing QoS checks on a single endpoint.s
+	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
