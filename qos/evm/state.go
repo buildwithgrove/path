@@ -18,12 +18,7 @@ type ServiceState struct {
 
 	serviceStateLock sync.RWMutex
 
-	// chainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
-	//
-	// See the following link for more details: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
-	//
-	// Chain IDs Reference: https://chainlist.org/
-	chainID string
+	serviceConfig ServiceConfig
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -32,8 +27,6 @@ type ServiceState struct {
 	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	perceivedBlockNumber uint64
 
-	// archivalCheckConfig contains all configurable values for an EVM archival check.
-	archivalCheckConfig EVMArchivalCheckConfig
 	// archivalState contains the current state of the EVM archival check.
 	archivalState evmArchivalState
 }
@@ -65,20 +58,10 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
-	if err := endpoint.validateEmptyResponse(); err != nil {
+	if err := endpoint.Validate(s); err != nil {
 		return err
 	}
-	if err := endpoint.validateChainID(s.chainID); err != nil {
-		return err
-	}
-	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
-		return err
-	}
-	if s.shouldPerformArchivalCheck() {
-		if err := endpoint.validateArchivalCheck(s.archivalState.balance, endpointAddr); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -100,7 +83,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		)
 
 		// Validate the endpoint's chain ID; do not update the perceived block number if the chain ID is invalid.
-		if err := endpoint.validateChainID(s.chainID); err != nil {
+		if err := endpoint.checkChainID.isValid(s); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
@@ -141,8 +124,9 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 // assignArchivalBlockNumber returns a random archival block number based on the perceived block number.
 func (s *ServiceState) assignArchivalBlockNumber() string {
-	archivalThreshold := s.archivalCheckConfig.Threshold
-	minArchivalBlock := s.archivalCheckConfig.ContractStartBlock
+	archivalConfig := s.serviceConfig.getArchivalCheckConfig()
+	archivalThreshold := archivalConfig.Threshold
+	minArchivalBlock := archivalConfig.ContractStartBlock
 
 	var result string
 	if s.perceivedBlockNumber <= archivalThreshold {
@@ -179,10 +163,13 @@ func (s *ServiceState) updateArchivalBalance(consensusThreshold int) {
 //   - The archival check is enabled for the service
 //   - The archival block number to check the balance of has been set in the service state.
 func (s *ServiceState) shouldPerformArchivalCheck() bool {
-	if s.archivalCheckConfig.Enabled && s.getArchivalBlockNumberHex() != "" {
-		return true
+	archivalConfig := s.serviceConfig.getArchivalCheckConfig()
+
+	if !archivalConfig.Enabled || s.getArchivalBlockNumberHex() == "" {
+		return false
 	}
-	return false
+
+	return true
 }
 
 func (s *ServiceState) getArchivalBlockNumberHex() string {

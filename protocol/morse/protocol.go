@@ -126,7 +126,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: endpoint not found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Return new request context for the pre-selected endpoint

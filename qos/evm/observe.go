@@ -43,7 +43,10 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 
 		// It is a valid scenario for an endpoint to not be present in the store.
 		// e.g. when the first observation(s) are received for an endpoint.
-		storedEndpoint := es.endpoints[endpointAddr]
+		storedEndpoint, ok := es.endpoints[endpointAddr]
+		if !ok {
+			storedEndpoint = newEndpoint()
+		}
 
 		isMutated := storedEndpoint.ApplyObservation(observation, es.serviceState.shouldPerformArchivalCheck())
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
