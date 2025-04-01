@@ -18,9 +18,10 @@ import (
 //   - ContractAddress
 //   - ContractStartBlock
 // Currently the following EVM services have archival check configurations:
-//   - F00C (eth)
-//   - F021 (polygon)
-//   - F01C (oasys)
+//   - F00C (Ethereum)
+//   - F021 (Polygon)
+//   - F01C (Oasys)
+//   - F036 (XRPL EVM Testnet)
 
 type ServiceConfig interface {
 	GetServiceID() protocol.ServiceID
@@ -257,6 +258,12 @@ var morseServices = []ServiceConfig{
 	evm.ServiceConfig{
 		ServiceID:  "F036",     // XRPL EVM Testnet
 		EVMChainID: "0x161c28", // (1449000)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled: true,
+			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+			ContractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+			ContractStartBlock: 368_266,
+		},
 	},
 	evm.ServiceConfig{
 		ServiceID:  "F02D", // Sonic
