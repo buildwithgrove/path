@@ -19,6 +19,23 @@ PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":3007
 
 # Gets the name of the Envoy Gateway service in the local cluster.
 # eg. "envoy-path-guard-envoy-gateway-55375d27"
+#
+# This script patches the Envoy Gateway LoadBalancer service to expose a static port (30070),
+# making it reachable from the local machine on port 3070 as defined in the `kind-config.yaml` file.
+#
+# Implementation context:
+#   - Envoy Gateway service is created as a LoadBalancer 
+#   - When running in kind, LoadBalancer services automatically use NodePort underneath
+#   - In cloud environments, a LoadBalancer provisioner would map a public IP to this NodePort
+#   - In kind environments (without external load balancers), Kubernetes auto-assigns a dynamic 
+#     NodePort (30000-32767 range) unless explicitly specified
+
+PATH_NAMESPACE="path-local"
+SERVICE_PREFIX="envoy-path-local-guard-envoy-gateway"
+PATCH_PAYLOAD='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30070}]'
+
+# Gets the name of the Envoy Gateway service in the local cluster.
+# eg. "envoy-path-local-guard-envoy-gateway-55375d27"
 get_envoy_gateway_service_name() {
   local envoy_gateway_service_name
   envoy_gateway_service_name=$(kubectl get svc -n "$PATH_NAMESPACE" -o json | jq -r '.items[] | select(.metadata.name | startswith("'"$SERVICE_PREFIX"'")) | .metadata.name')

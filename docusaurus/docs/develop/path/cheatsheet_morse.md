@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 title: Morse Cheat Sheet
 description: Quick reference guide for setting up PATH with Morse protocol
 ---
@@ -18,11 +18,12 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
+- [What's Next?](#whats-next)
 - [Additional Notes](#additional-notes)
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
+1. Prepare your environment by following the instructions in the [**environment setup**](./environment.md) guide.
 2. Install the [**Pocket CLI**](https://github.com/pokt-network/homebrew-pocket-core): CLI for interacting with Pocket's Morse Network
 
 ## 1. Setup Morse Protocol Accounts
@@ -107,7 +108,7 @@ signed_aats:
 
 ### 2.1 Generate Morse Config
 
-Run the following commands to generate a Morse config at `local/path/config/.config.yaml`:
+Run the following commands to generate a Morse config at `local/path/.config.yaml`:
 
 ```bash
 make prepare_morse_e2e_config # Generate ./e2e/.morse.config.yaml
@@ -126,16 +127,16 @@ You'll need to manually update these fields in the config file:
 And then check the updated config:
 
 ```bash
-cat local/path/config/.config.yaml
+cat ./local/path/.config.yaml
 ```
 
 ## 3. Start PATH
 
-Make sure to have followed the entire [**environment setup**](./env_setup.md) guide before proceeding.
+Make sure to have followed the entire [**environment setup**](./environment.md) guide before proceeding.
 
 ## 3.1 Start PATH
 
-Run the entire stack (PATH, Envoy, Auth Server) by running:
+Run the entire PATH stack in Tilt by running:
 
 ```bash
 make path_up
@@ -149,15 +150,14 @@ make path_down
 
 ### 3.1 Monitor PATH
 
-Visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
+![Tilt Dashboard](../../../static/img/path-in-tilt-console.png)
 
-Wait for initialization logs:
+Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
 
-```json
-{"level":"info","message":"Starting PATH gateway with Shannon protocol"}
-{"level":"info","message":"Starting the cache update process."}
-{"level":"info","package":"router","message":"PATH gateway running on port 3069"}
-```
+
+![Tilt Console](../../../static/img/path-in-tilt.png)
+
+_PATH Running in Tilt_
 
 ## 4. Test Relays
 
@@ -167,32 +167,13 @@ The makefile helpers in `makefiles/test_requests.mk` can make iterating on these
 
 :::
 
-Send a relay using **static key authorization** (`make test_request__endpoint_url_path_mode__static_key_service_id_header`):
+Send a test relay (`make test_request__service_id_header_morse`):
 
 ```bash
-curl http://localhost:3070/v1/endpoint_1_static_key \
-    -X POST \
-    -H "authorization: api_key_1" \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-Send a relay **without authorization** (`make test_request__endpoint_url_path_mode__no_auth__service_id_header`):
-
-```bash
-curl http://localhost:3070/v1/endpoint_3_no_auth \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-If you launched **PATH in standalone mode (no Envoy Proxy)**, you can test a relay like so:
-
-```bash
-curl http://localhost:3069/v1/ \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+curl http://localhost:3070/v1 \
+  -H "Target-Service-Id: polygon" \
+  -H "Authorization: test_api_key" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 :::warning Retries
@@ -200,6 +181,11 @@ curl http://localhost:3069/v1/ \
 If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::
+
+
+## What's Next?
+
+Now that you have PATH running, take a look at the [Configuration](./configuration.md) guide to learn more about the different configuration options available.
 
 ## Additional Notes
 
