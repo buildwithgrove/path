@@ -171,7 +171,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 				for _, serviceRequestCtx := range requiredQoSChecks {
 					// Create a new protocol request context with a pre-selected endpoint for each request.
 					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
-					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr)
+					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
