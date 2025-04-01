@@ -256,7 +256,9 @@ shannon_config:
 #### `hydrator_config` (optional)
 
 
-Configures the QoS hydrator to run synthetic checks against endpoints of the provided service IDs.
+Configures the QoS hydrator to run synthetic Quality of Service (QoS) checks against endpoints of the provided service IDs.
+
+For example, to enable QoS checks for the Ethereum & Polygon services, the following configuration must be added to the `.config.yaml` file:
 
 
 ```yaml
@@ -268,11 +270,11 @@ hydrator_config:
 
 :::info
 
-A list of all service IDs with QoS implementations can be found in [`config/service_qos.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos.go).
+For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](./qos.md).
 
 :::warning
 
-⚠️ Any ID provided here must match a service ID in this file; if an invalid ID is provided, the gateway will error.
+⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](./qos.md); if an invalid ID is provided, the gateway will error.
 
 :::
 

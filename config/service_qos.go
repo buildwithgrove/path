@@ -7,13 +7,20 @@ import (
 	"github.com/buildwithgrove/path/qos/solana"
 )
 
-// TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
-// Consider a similar automated approach to "docs_update_gov_params_page"
-
-// NOTE: Service ID list last updated 2025/04/01
-
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
+
+// See [QoS Documentation](https://path.grove.city/develop/path/qos) for more information.
+
+// TODO_IMPROVE(@commoddity): Add archival check configurations for all EVM services.
+// This means setting the following fields:
+//   - Enabled
+//   - ContractAddress
+//   - ContractStartBlock
+// Currently the following EVM services have archival check configurations:
+//   - F00C (eth)
+//   - F021 (polygon)
+//   - F01C (oasys)
 
 type ServiceConfig interface {
 	GetServiceID() protocol.ServiceID
@@ -74,16 +81,6 @@ var shannonServices = []ServiceConfig{
 		ServiceID: "solana", // Solana
 	},
 }
-
-// TODO_IMPROVE(@commoddity): Add archival check configurations for all EVM services.
-// This means setting the following fields:
-//   - Enabled
-//   - ContractAddress
-//   - ContractStartBlock
-// Currently the following EVM services have archival check configurations:
-//   - F00C (eth)
-//   - F021 (polygon)
-//   - F01C (oasys)
 
 // morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceConfig{
