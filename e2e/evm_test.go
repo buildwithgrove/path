@@ -126,10 +126,10 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 	var pathContainerPort string
 
-	// // Start an instance of PATH using the E2E config file for Shannon.
-	// configFilePath := fmt.Sprintf(configPath, testProtocol)
-	// pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
-	// defer teardownFn()
+	// Start an instance of PATH using the E2E config file for Shannon.
+	configFilePath := fmt.Sprintf(configPath, testProtocol)
+	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+	defer teardownFn()
 
 	if pathContainerPort == "" {
 		pathContainerPort = "3069"
@@ -137,7 +137,14 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
 
-	fmt.Printf("Starting %s load test with gateway URL: %s\n", testProtocol, gatewayURL)
+	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
+	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
+	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
+
+	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		fmt.Println("Running in CI environment - waiting for 1 minute before starting tests...")
+		<-time.After(1 * time.Minute)
+	}
 
 	// Get test cases based on protocol
 	testCases := getTestCases(testProtocol)
@@ -150,10 +157,12 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			testCases[i].params.blockNumber = "latest"
 		}
 
+		fmt.Printf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
+		fmt.Printf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
+		fmt.Printf("  📡 Block number: %s\n", testCases[i].params.blockNumber)
+
 		// Use t.Run for proper test reporting
 		t.Run(testCases[i].name, func(t *testing.T) {
-			fmt.Printf("Testing service: %s with block: %s\n", testCases[i].serviceID, testCases[i].params.blockNumber)
-
 			// Create results map with a mutex to protect concurrent access
 			results := make(map[jsonrpc.Method]*MethodMetrics)
 			var resultsMutex sync.Mutex

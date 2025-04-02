@@ -97,7 +97,8 @@ func runAttack(
 	attacker := vegeta.NewAttacker(
 		vegeta.Timeout(5*time.Second),
 		vegeta.KeepAlive(true),
-		vegeta.Workers(methodDef.workers),
+		vegeta.Workers(3),
+		vegeta.MaxWorkers(5),
 	)
 
 	// Track exactly how many requests we've successfully processed
@@ -212,36 +213,30 @@ func processResult(m *MethodMetrics, result *vegeta.Result) {
 	// Update status code counts
 	m.statusCodes[int(result.Code)]++
 
-	// Update error counts if there's an error
-	if result.Error != "" {
-		m.errors[result.Error]++
-	}
-
 	// Process JSON-RPC validation if we have a successful HTTP response
-	if result.Code >= 200 && result.Code < 300 && len(result.Body) > 0 {
-		var rpcResponse jsonrpc.Response
-		if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
-			// Failed to unmarshal as JSON-RPC
-			m.jsonRPCUnmarshalErrors++
-		} else {
-			// Successfully unmarshaled as JSON-RPC
-			m.jsonRPCResponses++
+	var rpcResponse jsonrpc.Response
+	if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
+		// Failed to unmarshal as JSON-RPC
+		m.jsonRPCUnmarshalErrors++
+	} else {
+		// Successfully unmarshaled as JSON-RPC
+		m.jsonRPCResponses++
 
-			// Check if Error field is nil (good)
-			if rpcResponse.Error != nil {
-				m.jsonRPCErrorField++
-			}
+		// Check if Error field is nil (good)
+		if rpcResponse.Error != nil {
+			m.jsonRPCErrorField++
+			m.errors[rpcResponse.Error.Message]++
+		}
 
-			// Check if Result field is not nil (good)
-			if rpcResponse.Result == nil {
-				m.jsonRPCNilResult++
-			}
+		// Check if Result field is not nil (good)
+		if rpcResponse.Result == nil {
+			m.jsonRPCNilResult++
+		}
 
-			// Validate the response
-			expectedID := jsonrpc.IDFromInt(1) // Expected ID from our request
-			if err := rpcResponse.Validate(expectedID); err != nil {
-				m.jsonRPCValidateErrors++
-			}
+		// Validate the response
+		expectedID := jsonrpc.IDFromInt(1) // Expected ID from our request
+		if err := rpcResponse.Validate(expectedID); err != nil {
+			m.jsonRPCValidateErrors++
 		}
 	}
 }
@@ -414,18 +409,30 @@ func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition)
 		fmt.Println(statusText)
 	}
 
-	// Log top errors in red
+	// Determine if the test passed based on our metrics
+	testPassed := m.successRate >= methodDef.successRate &&
+		m.p50 <= methodDef.maxP50Latency &&
+		m.p95 <= methodDef.maxP95Latency &&
+		m.p99 <= methodDef.maxP99Latency
+
+	// Choose error color based on test passing status
+	errorColor := "\x1b[33m" // Yellow for warnings (test passed despite errors)
+	if !testPassed {
+		errorColor = "\x1b[31m" // Red for critical errors (test failed)
+	}
+
+	// Log top errors with appropriate color
 	if len(m.errors) > 0 {
-		fmt.Printf("\x1b[31mTop errors:\x1b[0m\n")
+		fmt.Printf("%sTop errors:\x1b[0m\n", errorColor)
 		count := 0
 		for err, errCount := range m.errors {
 			if count < 5 {
-				fmt.Printf("  \x1b[31m%s\x1b[0m: %d\n", err, errCount)
+				fmt.Printf("  %s%s\x1b[0m: %d\n", errorColor, err, errCount)
 				count++
 			}
 		}
 		if len(m.errors) > 5 {
-			fmt.Printf("  ... and \x1b[31m%d\x1b[0m more error types\n", len(m.errors)-5)
+			fmt.Printf("  ... and %s%d\x1b[0m more error types\n", errorColor, len(m.errors)-5)
 		}
 	}
 
@@ -559,8 +566,14 @@ func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]met
 		padding := longestLen - len(string(method))
 		methodWithPadding := string(method) + strings.Repeat(" ", padding)
 
-		// Create a colored template - critically using explicit color functions
-		tmpl := fmt.Sprintf(`{{ blue "%s" }} {{ counters . }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`, methodWithPadding)
+		// Create a custom format for counters with padding for consistent spacing
+		// Format: current/total with padding to make 3 digits minimum
+		// This formats as "  1/300" or "010/300" for consistent width
+		customCounterFormat := `{{ printf "%3d/%3d" .Current .Total }}`
+
+		// Create a colored template with padded counters
+		tmpl := fmt.Sprintf(`{{ blue "%s" }} %s {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`,
+			methodWithPadding, customCounterFormat)
 
 		// Create the bar with the template and start it
 		bar := pb.ProgressBarTemplate(tmpl).New(def.totalRequests)

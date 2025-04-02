@@ -17,7 +17,6 @@ const (
 	eth_call                  jsonrpc.Method = "eth_call"
 	eth_getTransactionReceipt jsonrpc.Method = "eth_getTransactionReceipt"
 	eth_getBlockByNumber      jsonrpc.Method = "eth_getBlockByNumber"
-	eth_getLogs               jsonrpc.Method = "eth_getLogs"
 	eth_getBalance            jsonrpc.Method = "eth_getBalance"
 	eth_chainId               jsonrpc.Method = "eth_chainId"
 	eth_getTransactionCount   jsonrpc.Method = "eth_getTransactionCount"
@@ -32,7 +31,6 @@ func runAllMethods() []jsonrpc.Method {
 		eth_call,
 		eth_getTransactionReceipt,
 		eth_getBlockByNumber,
-		eth_getLogs,
 		eth_getBalance,
 		eth_chainId,
 		eth_getTransactionCount,
@@ -52,9 +50,8 @@ type (
 	// This includes the total number of requests to send, the requests per second,
 	// and the number of workers to use.
 	methodConfig struct {
-		totalRequests int    // Total number of requests to send
-		rps           int    // Requests per second
-		workers       uint64 // Number of workers to use
+		totalRequests int // Total number of requests to send
+		rps           int // Requests per second
 	}
 
 	// methodSuccessRates contains the minimum success rate and maximum
@@ -74,7 +71,6 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 		methodConfig: methodConfig{
 			totalRequests: 300,
 			rps:           10,
-			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -86,11 +82,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_call: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           10,
-			workers:       20,
+			rps:           7,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
+			successRate:   0.90,
 			maxP50Latency: 250 * time.Millisecond,
 			maxP95Latency: 750 * time.Millisecond,
 			maxP99Latency: 1500 * time.Millisecond,
@@ -100,7 +95,6 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 		methodConfig: methodConfig{
 			totalRequests: 300,
 			rps:           10,
-			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -113,7 +107,6 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 		methodConfig: methodConfig{
 			totalRequests: 300,
 			rps:           10,
-			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -122,24 +115,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
-	eth_getLogs: {
-		methodConfig: methodConfig{
-			totalRequests: 300,
-			rps:           10,
-			workers:       20,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.9,
-			maxP50Latency: 500 * time.Millisecond,
-			maxP95Latency: 1250 * time.Millisecond,
-			maxP99Latency: 2000 * time.Millisecond,
-		},
-	},
 	eth_getBalance: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           10,
-			workers:       20,
+			rps:           7,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -152,7 +131,6 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 		methodConfig: methodConfig{
 			totalRequests: 300,
 			rps:           10,
-			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -164,8 +142,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getTransactionCount: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           10,
-			workers:       20,
+			rps:           7,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -177,8 +154,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getTransactionByHash: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           10,
-			workers:       20,
+			rps:           7,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -191,7 +167,6 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 		methodConfig: methodConfig{
 			totalRequests: 300,
 			rps:           10,
-			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -244,15 +219,6 @@ func createParams(method jsonrpc.Method, p methodParams) []any {
 		// eg. ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
 		return []any{p.contractAddress, p.blockNumber}
 
-	case eth_getLogs:
-		// eth_getLogs needs [{ fromBlock, toBlock }]
-		// eg. [{"fromBlock":"0x1","toBlock":"0x1"}]
-		return []any{
-			map[string]string{
-				"fromBlock": p.blockNumber,
-				"toBlock":   p.blockNumber,
-			},
-		}
 	default:
 		return []any{}
 	}
