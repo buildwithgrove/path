@@ -94,6 +94,7 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)

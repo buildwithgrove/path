@@ -109,17 +109,19 @@ func (p *Protocol) AvailableEndpoints(
 	httpReq *http.Request,
 ) ([]protocol.EndpointAddr, error) {
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-
 	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
+	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
+	// owns and can send relays on behalf of.
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)

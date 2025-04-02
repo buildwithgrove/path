@@ -126,24 +126,28 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 //   - Sending relays to endpoint(s)
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
+	// Retrieve tje ;ost pf the available endpoints for the requested service.
 	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.serviceID, httpReq)
 	if err != nil {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
+	// Ensure at least one endpoint is available for the requested service.
 	if len(availableEndpoints) == 0 {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints available for service %s", rc.serviceID)
 	}
 
+	// Select one endpoint to be used for relaying the request.
 	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
 	if err != nil {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
+	// Prepare the request context for the selected endpoint.
 	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
-		// This will enable debugging of any potential issues.
+		// This will enable debugging of any potential issues (i.e. tracing)
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
