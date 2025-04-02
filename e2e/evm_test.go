@@ -157,7 +157,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	for i := range testCases {
 		// If archival is true then we will use a random historical block for the test.
 		if testCases[i].archival {
-			testCases[i].params.blockNumber = setTestBlockNumber(t, testCases[i].serviceID)
+			testCases[i].params.blockNumber = setTestBlockNumber(t, gatewayURL, testCases[i].serviceID)
 		} else {
 			testCases[i].params.blockNumber = "latest"
 		}
@@ -248,9 +248,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 /* -------------------- Get Test Block Number -------------------- */
 
 // setTestBlockNumber gets a block number for testing or fails the test
-func setTestBlockNumber(t *testing.T, serviceID protocol.ServiceID) string {
+func setTestBlockNumber(t *testing.T, gatewayURL string, serviceID protocol.ServiceID) string {
 	// Get current block height - fail test if this doesn't work
-	currentBlock, err := getCurrentBlockNumber(serviceID)
+	currentBlock, err := getCurrentBlockNumber(gatewayURL, serviceID)
 	if err != nil {
 		t.Fatalf("FATAL: Could not get current block height: %v", err)
 	}
@@ -260,7 +260,7 @@ func setTestBlockNumber(t *testing.T, serviceID protocol.ServiceID) string {
 }
 
 // getCurrentBlockNumber gets current block height with consensus from multiple requests
-func getCurrentBlockNumber(serviceID protocol.ServiceID) (uint64, error) {
+func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
 	// Track frequency of each block height seen
 	blockHeights := make(map[uint64]int)
 	maxAttempts, requiredAgreement := 5, 3
@@ -268,7 +268,7 @@ func getCurrentBlockNumber(serviceID protocol.ServiceID) (uint64, error) {
 
 	// Make multiple attempts to get consensus
 	for range maxAttempts {
-		blockNum, err := fetchBlockNumber(client, serviceID)
+		blockNum, err := fetchBlockNumber(client, gatewayURL, serviceID)
 		if err != nil {
 			continue
 		}
@@ -285,9 +285,9 @@ func getCurrentBlockNumber(serviceID protocol.ServiceID) (uint64, error) {
 }
 
 // fetchBlockNumber makes a single request to get the current block number
-func fetchBlockNumber(client *http.Client, serviceID protocol.ServiceID) (uint64, error) {
+func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
 	// Build and send request
-	req, err := buildBlockNumberRequest(serviceID)
+	req, err := buildBlockNumberRequest(gatewayURL, serviceID)
 	if err != nil {
 		return 0, err
 	}
@@ -325,7 +325,7 @@ func fetchBlockNumber(client *http.Client, serviceID protocol.ServiceID) (uint64
 }
 
 // Helper to build a block number request
-func buildBlockNumberRequest(serviceID protocol.ServiceID) (*http.Request, error) {
+func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*http.Request, error) {
 	blockNumberReq, err := buildJSONRPCReq(1, eth_blockNumber)
 	if err != nil {
 		return nil, err
@@ -369,8 +369,8 @@ func getBlockNumber(currentBlock uint64) string {
 	return fmt.Sprintf("0x%x", randomBlock)
 }
 
+// showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
 func showWaitBar() {
-
 	// Create a progress bar for the 1-minute wait
 	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(60)
 	waitBar.Set(pb.Bytes, false)
