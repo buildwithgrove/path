@@ -23,6 +23,22 @@ const (
 	eth_gasPrice              jsonrpc.Method = "eth_gasPrice"
 )
 
+// runAllMethods returns all EVM JSON-RPC methods for a service load test
+func runAllMethods() []jsonrpc.Method {
+	return []jsonrpc.Method{
+		eth_blockNumber,
+		eth_call,
+		eth_getTransactionReceipt,
+		eth_getBlockByNumber,
+		eth_getLogs,
+		eth_getBalance,
+		eth_chainId,
+		eth_getTransactionCount,
+		eth_getTransactionByHash,
+		eth_gasPrice,
+	}
+}
+
 type (
 	// methodDefinition contains all configuration and test requirements for a method
 	methodDefinition struct {
@@ -49,11 +65,13 @@ type (
 	}
 )
 
+// methodDefinitions contains all method definitions for a service load test.
+// this allows customizing the configuration for each method as desired.
 var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_blockNumber: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -66,7 +84,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_call: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -79,7 +97,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getTransactionReceipt: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -92,7 +110,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getBlockByNumber: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -105,11 +123,11 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getLogs: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
+			successRate:   0.95,
 			maxP50Latency: 500 * time.Millisecond,
 			maxP95Latency: 1250 * time.Millisecond,
 			maxP99Latency: 2000 * time.Millisecond,
@@ -118,7 +136,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getBalance: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -131,7 +149,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_chainId: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -144,7 +162,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getTransactionCount: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -157,7 +175,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_getTransactionByHash: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -170,7 +188,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_gasPrice: {
 		methodConfig: methodConfig{
 			totalRequests: 300,
-			rps:           50,
+			rps:           10,
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{

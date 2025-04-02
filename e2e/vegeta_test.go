@@ -148,7 +148,15 @@ func runAttack(
 	}
 
 	// Run the attack until we hit the total number of requests
-	for res := range attacker.Attack(targeter, vegeta.Rate{Freq: methodDef.rps, Per: time.Second}, maxDuration, string(method)) {
+	for res := range attacker.Attack(
+		targeter,
+		vegeta.Rate{
+			Freq: methodDef.rps,
+			Per:  time.Second,
+		},
+		maxDuration,
+		string(method),
+	) {
 		resultsChan <- res
 	}
 
@@ -326,7 +334,7 @@ func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition)
 	fmt.Println()
 
 	// Print metrics header with method name in blue
-	t.Logf("\x1b[1m\x1b[34m========= Test results for %s =========\x1b[0m", m.method)
+	fmt.Printf("\x1b[1m\x1b[34m========= Test results for %s =========\x1b[0m\n", m.method)
 
 	// Print success rate with color (green ≥99%, yellow ≥95%, red <95%)
 	successColor := "\x1b[31m" // Red by default
@@ -335,39 +343,38 @@ func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition)
 	} else if m.successRate >= 0.95 {
 		successColor = "\x1b[33m" // Yellow for ≥95%
 	}
-	t.Logf("HTTP Success Rate: %s%.2f%%\x1b[0m (%d/%d requests)",
+	fmt.Printf("HTTP Success Rate: %s%.2f%%\x1b[0m (%d/%d requests)\n",
 		successColor, m.successRate*100, m.success, m.requestCount)
 
 	// Print latencies (yellow if close to limit, green if well below)
 	p50Color := getLatencyColor(m.p50, methodDef.maxP50Latency)
 	p95Color := getLatencyColor(m.p95, methodDef.maxP95Latency)
 	p99Color := getLatencyColor(m.p99, methodDef.maxP99Latency)
-	t.Logf("Latency P50: %s%s\x1b[0m, P95: %s%s\x1b[0m, P99: %s%s\x1b[0m",
+	fmt.Printf("Latency P50: %s%s\x1b[0m, P95: %s%s\x1b[0m, P99: %s%s\x1b[0m\n",
 		p50Color, formatLatency(m.p50), p95Color, formatLatency(m.p95), p99Color, formatLatency(m.p99))
 
 	// Print JSON-RPC metrics with coloring
 	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors > 0 {
-		t.Logf("\x1b[1mJSON-RPC Metrics:\x1b[0m")
+		fmt.Printf("\x1b[1mJSON-RPC Metrics:\x1b[0m\n")
 
 		if m.jsonRPCResponses > 0 {
 			// Unmarshal success rate
 			color := getRateColor(m.jsonRPCSuccessRate, methodDef.successRate)
-			t.Logf("  Unmarshal Success: %s%.2f%%\x1b[0m (%d/%d responses)",
+			fmt.Printf("  Unmarshal Success: %s%.2f%%\x1b[0m (%d/%d responses)\n",
 				color, m.jsonRPCSuccessRate*100, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
 			// Validation success rate
 			color = getRateColor(m.jsonRPCValidateRate, methodDef.successRate)
-			t.Logf("  Validation Success: %s%.2f%%\x1b[0m (%d/%d responses)",
+			fmt.Printf("  Validation Success: %s%.2f%%\x1b[0m (%d/%d responses)\n",
 				color, m.jsonRPCValidateRate*100, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
 			// Non-nil result rate
 			color = getRateColor(m.jsonRPCResultRate, methodDef.successRate)
-			t.Logf("  Has Result: %s%.2f%%\x1b[0m (%d/%d responses)",
+			fmt.Printf("  Has Result: %s%.2f%%\x1b[0m (%d/%d responses)\n",
 				color, m.jsonRPCResultRate*100, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
 			// Error field absent rate
 			color = getRateColor(m.jsonRPCErrorFieldRate, methodDef.successRate)
-			t.Logf("  Does Not Have Error: %s%.2f%%\x1b[0m (%d/%d responses)",
+			fmt.Printf("  Does Not Have Error: %s%.2f%%\x1b[0m (%d/%d responses)\n",
 				color, m.jsonRPCErrorFieldRate*100, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
 		}
-
 	}
 
 	// Log status codes
@@ -382,27 +389,27 @@ func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition)
 			}
 			statusText += fmt.Sprintf("%s%d\x1b[0m:%d ", codeColor, code, count)
 		}
-		t.Log(statusText)
+		fmt.Println(statusText)
 	}
 
 	// Log top errors in red
 	if len(m.errors) > 0 {
-		t.Logf("\x1b[31mTop errors:\x1b[0m")
+		fmt.Printf("\x1b[31mTop errors:\x1b[0m\n")
 		count := 0
 		for err, errCount := range m.errors {
 			if count < 5 {
-				t.Logf("  \x1b[31m%s\x1b[0m: %d", err, errCount)
+				fmt.Printf("  \x1b[31m%s\x1b[0m: %d\n", err, errCount)
 				count++
 			}
 		}
 		if len(m.errors) > 5 {
-			t.Logf("  ... and \x1b[31m%d\x1b[0m more error types", len(m.errors)-5)
+			fmt.Printf("  ... and \x1b[31m%d\x1b[0m more error types\n", len(m.errors)-5)
 		}
 	}
 
 	// Perform all assertions
-	assertHTTPSuccessRate(t, c, m, methodDef.successRate)
-	assertJSONRPCRates(t, c, m, methodDef.successRate)
+	assertHTTPSuccessRate(c, m, methodDef.successRate)
+	assertJSONRPCRates(c, m, methodDef.successRate)
 	assertLatency(c, m, methodDef)
 }
 
@@ -427,14 +434,14 @@ func getLatencyColor(actual, maxAllowed time.Duration) string {
 }
 
 // assertHTTPSuccessRate checks if the HTTP success rate meets requirements
-func assertHTTPSuccessRate(t *testing.T, c *require.Assertions, m *MethodMetrics, requiredRate float64) {
+func assertHTTPSuccessRate(c *require.Assertions, m *MethodMetrics, requiredRate float64) {
 	msg := fmt.Sprintf("Method %s HTTP success rate %.2f%% should be >= %.2f%%",
 		m.method, m.successRate*100, requiredRate*100)
 	c.GreaterOrEqual(m.successRate, requiredRate, msg)
 }
 
 // assertJSONRPCRates checks if all JSON-RPC success rates meet requirements
-func assertJSONRPCRates(t *testing.T, c *require.Assertions, m *MethodMetrics, requiredRate float64) {
+func assertJSONRPCRates(c *require.Assertions, m *MethodMetrics, requiredRate float64) {
 	// Skip if we don't have any JSON-RPC responses
 	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors == 0 {
 		return
@@ -483,6 +490,8 @@ func assertLatency(c *require.Assertions, m *MethodMetrics, methodDef methodDefi
 		m.method, formatLatency(m.p99), formatLatency(methodDef.maxP99Latency))
 	c.LessOrEqual(m.p99, methodDef.maxP99Latency, msg)
 }
+
+/* -------------------- Progress Bars -------------------- */
 
 // progressBars holds and manages progress bars for all methods in a test
 type progressBars struct {
