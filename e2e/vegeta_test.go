@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -102,6 +103,12 @@ func runAttack(
 	// Track exactly how many requests we've successfully processed
 	processedCount := 0
 
+	// Log test start info if progress bars are disabled
+	if progressBar == nil {
+		fmt.Printf("Starting test for method %s (%d requests at %d RPS)...\n",
+			method, methodDef.totalRequests, methodDef.rps)
+	}
+
 	// Use channels to control exactly how many requests are processed
 	resultsChan := make(chan *vegeta.Result, methodDef.totalRequests)
 
@@ -121,17 +128,30 @@ func runAttack(
 				processResult(metrics, res)
 				processedCount++
 
-				// Update progress bar exactly (prevent overflow)
-				if progressBar.Current() < int64(methodDef.totalRequests) {
+				// Update progress bar if we have one
+				if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
 					progressBar.Increment()
+				}
+
+				// If progress bar is disabled, print periodic status updates
+				if progressBar == nil && processedCount%50 == 0 {
+					percent := float64(processedCount) / float64(methodDef.totalRequests) * 100
+					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
+						method, processedCount, methodDef.totalRequests, percent)
 				}
 			}
 		}
 
-		// Ensure the progress bar shows exactly 100% at the end
-		if progressBar.Current() < int64(methodDef.totalRequests) {
+		// Ensure the progress bar shows exactly 100% at the end if we have one
+		if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
 			remaining := int64(methodDef.totalRequests) - progressBar.Current()
 			progressBar.Add64(remaining)
+		}
+
+		// Final status update if progress bar is disabled
+		if progressBar == nil {
+			fmt.Printf("  %s: test completed (%d/%d requests)\n",
+				method, processedCount, methodDef.totalRequests)
 		}
 	}()
 
@@ -497,12 +517,22 @@ func assertLatency(c *require.Assertions, m *MethodMetrics, methodDef methodDefi
 
 // progressBars holds and manages progress bars for all methods in a test
 type progressBars struct {
-	bars map[jsonrpc.Method]*pb.ProgressBar
-	pool *pb.Pool
+	bars    map[jsonrpc.Method]*pb.ProgressBar
+	pool    *pb.Pool
+	enabled bool
 }
 
 // newProgressBars creates a set of progress bars for all methods in a test
 func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]methodDefinition) (*progressBars, error) {
+	// Check if we're running in CI or non-interactive environment
+	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		fmt.Println("Running in CI environment - progress bars disabled")
+		return &progressBars{
+			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			enabled: false,
+		}, nil
+	}
+
 	// Sort methods for consistent display order
 	sortedMethods := make([]jsonrpc.Method, len(methods))
 	copy(sortedMethods, methods)
@@ -545,25 +575,37 @@ func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]met
 		barList = append(barList, bar)
 	}
 
-	// Create a pool with all the bars
+	// Try to create a pool with all the bars
 	pool, err := pb.StartPool(barList...)
 	if err != nil {
-		return nil, err
+		// If we fail to create progress bars, fall back to simple output
+		fmt.Printf("Warning: Could not create progress bars: %v\n", err)
+		return &progressBars{
+			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			enabled: false,
+		}, nil
 	}
 
 	return &progressBars{
-		bars: bars,
-		pool: pool,
+		bars:    bars,
+		pool:    pool,
+		enabled: true,
 	}, nil
 }
 
 // finish completes all progress bars
 func (p *progressBars) finish() error {
+	if !p.enabled || p.pool == nil {
+		return nil
+	}
 	return p.pool.Stop()
 }
 
 // get returns the progress bar for a specific method
 func (p *progressBars) get(method jsonrpc.Method) *pb.ProgressBar {
+	if !p.enabled {
+		return nil
+	}
 	return p.bars[method]
 }
 
