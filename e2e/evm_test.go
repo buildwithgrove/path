@@ -18,6 +18,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
+	"github.com/cheggaaa/pb/v3"
 )
 
 /* -------------------- Test Configuration Initialization -------------------- */
@@ -141,9 +142,13 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
 	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
 
+	// In the CI environment, we need to wait for 2 minutes to allow the hydrator checks to complete.
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		fmt.Println("Running in CI environment - waiting for 2 minutes before starting tests to allow hydrator checks to complete...")
-		<-time.After(2 * time.Minute)
+		fmt.Println("⏰ Waiting for 2 minutes before starting tests to allow hydrator checks to complete...")
+		time.Sleep(2 * time.Minute)
+	} else {
+		fmt.Println("⏰ Waiting for 1 minute before starting tests to allow hydrator checks to complete...")
+		showWaitBar()
 	}
 
 	// Get test cases based on protocol
@@ -362,4 +367,21 @@ func getBlockNumber(currentBlock uint64) string {
 	randomBlock := minBlock + r.Uint64()%(maxBlock-minBlock+1)
 
 	return fmt.Sprintf("0x%x", randomBlock)
+}
+
+func showWaitBar() {
+
+	// Create a progress bar for the 1-minute wait
+	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(60)
+	waitBar.Set(pb.Bytes, false)
+	waitBar.SetMaxWidth(100)
+	waitBar.Start()
+
+	// Wait for 1 minute, updating the progress bar every second
+	for i := 0; i < 60; i++ {
+		waitBar.Increment()
+		time.Sleep(1 * time.Second)
+	}
+
+	waitBar.Finish()
 }
