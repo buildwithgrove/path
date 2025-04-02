@@ -87,6 +87,16 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		logContainer = logParsed
 	}
 
+	// Check if force rebuild is requested
+	forceRebuild := false
+	if os.Getenv("FORCE_REBUILD") != "" {
+		forceParsed, err := strconv.ParseBool(os.Getenv("FORCE_REBUILD"))
+		if err != nil {
+			t.Fatalf("could not parse FORCE_REBUILD environment variable: %s", err)
+		}
+		forceRebuild = forceParsed
+	}
+
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
 
@@ -105,17 +115,35 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	}
 	pool.MaxWait = time.Duration(maxPathHealthCheckWaitTimeMillisec) * time.Millisecond
 
-	// Build the image and log build output
-	buildOptions := docker.BuildImageOptions{
-		Name:           imageName,
-		ContextDir:     buildContextDir,
-		Dockerfile:     dockerfileName,
-		OutputStream:   os.Stdout,
-		SuppressOutput: false,
-		NoCache:        false,
+	// Check if the image already exists and we're not forcing a rebuild
+	imageExists := false
+	if !forceRebuild {
+		if _, err := pool.Client.InspectImage(imageName); err == nil {
+			imageExists = true
+			fmt.Println("🔄 Using existing Docker image, skipping build...")
+			fmt.Println("  💡 Tip: Set FORCE_REBUILD=true to rebuild the image if needed")
+		}
+	} else {
+		fmt.Println("🔄 Force rebuild requested, will build Docker image...")
 	}
-	if err := pool.Client.BuildImage(buildOptions); err != nil {
-		t.Fatalf("could not build path image: %s", err)
+
+	// Only build the image if it doesn't exist or force rebuild is set
+	if !imageExists || forceRebuild {
+		fmt.Println("🏗️ Building Docker image...")
+
+		// Build the image and log build output
+		buildOptions := docker.BuildImageOptions{
+			Name:           imageName,
+			ContextDir:     buildContextDir,
+			Dockerfile:     dockerfileName,
+			OutputStream:   os.Stdout,
+			SuppressOutput: false,
+			NoCache:        forceRebuild, // If force rebuilding, also disable cache
+		}
+		if err := pool.Client.BuildImage(buildOptions); err != nil {
+			t.Fatalf("could not build path image: %s", err)
+		}
+		fmt.Println("✅ Docker image built successfully!")
 	}
 
 	// Run the built image

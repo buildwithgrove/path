@@ -20,12 +20,32 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-/* -------------------- Gateway Configuration -------------------- */
+/* -------------------- Test Configuration Initialization -------------------- */
+
+// protocolStr is a type to determine whether to test PATH with Morse or Shannon
+type protocolStr string
+
+const (
+	morse   protocolStr = "morse"
+	shannon protocolStr = "shannon"
+)
+
+func (p protocolStr) isValid() bool {
+	return p == morse || p == shannon
+}
 
 var (
 	// Set default gateway URL
-	gatewayURL  = "http://localhost:%s/v1"
-	protocolStr string
+	// Uses port from test Docker container
+	// Defaults to port `3069`
+	gatewayURL = "http://localhost:%s/v1"
+
+	// Protocol string for the test
+	// eg. `morse` or `shannon`
+	testProtocol protocolStr
+	// Config path for protocol
+	// eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
+	configPath = "./.%s.config.yaml"
 )
 
 // init initializes the gateway URL with an optional override
@@ -33,34 +53,41 @@ func init() {
 	if gatewayURLOverride := os.Getenv("GATEWAY_URL"); gatewayURLOverride != "" {
 		gatewayURL = gatewayURLOverride
 	}
-	if protocolStr = os.Getenv("PROTOCOL"); protocolStr == "" {
-		panic("PROTOCOL environment variable is not set to morse or shannon")
+	if testProtocol = protocolStr(os.Getenv("TEST_PROTOCOL")); testProtocol == "" {
+		panic("TEST_PROTOCOL environment variable is not set")
+	}
+	if !testProtocol.isValid() {
+		panic("TEST_PROTOCOL environment variable is not set to `morse` or `shannon`")
 	}
 }
 
-/* -------------------- EVM Load Test Function -------------------- */
+/* -------------------- Get Test Cases for Protocol -------------------- */
 
-// Test_PATH_EVM_E2E runs an E2E load test against the EVM JSON-RPC endpoints
-func Test_PATH_EVM_E2E(t *testing.T) {
-	fmt.Println("Setting up PATH instance...")
+// testCase represents a single service load test configuration
+type testCase struct {
+	name      string
+	serviceID protocol.ServiceID // The service ID to test
+	archival  bool               // Whether to select a random historical block
+	methods   []jsonrpc.Method   // The methods to test for this service
+	params    methodParams       // Service-specific parameters
+}
 
-	// Start an instance of PATH using the E2E config file for Shannon.
-	configFilePath := fmt.Sprintf(".config.%s.yaml", protocolStr)
-	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
-	defer teardownFn()
+// getTestCases returns the appropriate test cases based on the protocol
+func getTestCases(protocolStr protocolStr) []testCase {
+	switch protocolStr {
+	case morse:
+		return getMorseTestCases()
+	case shannon:
+		return getShannonTestCases()
+	default:
+		// This shouldn't happen due to the init check, but just in case
+		panic(fmt.Sprintf("Unsupported protocol: %s", protocolStr))
+	}
+}
 
-	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
-
-	fmt.Printf("Starting %s load test with gateway URL: %s\n", protocolStr, gatewayURL)
-
-	// Define test cases by service
-	testCases := []struct {
-		name      string
-		serviceID protocol.ServiceID // The service ID to test
-		archival  bool               // Whether to select a random historical block
-		methods   []jsonrpc.Method   // The methods to test for this service
-		params    methodParams       // Service-specific parameters
-	}{
+// getMorseTestCases returns test cases for Morse protocol
+func getMorseTestCases() []testCase {
+	return []testCase{
 		{
 			name:      "F00C (Ethereum) Load Test",
 			serviceID: "F00C",
@@ -73,6 +100,41 @@ func Test_PATH_EVM_E2E(t *testing.T) {
 			},
 		},
 	}
+}
+
+// getShannonTestCases returns test cases for Shannon protocol
+func getShannonTestCases() []testCase {
+	return []testCase{
+		{
+			name:      "anvil (Ethereum) Load Test",
+			serviceID: "anvil",
+			methods:   runAllMethods(),
+			params: methodParams{
+				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+				transactionHash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
+				callData:        "0x18160ddd",
+			},
+		},
+	}
+}
+
+/* -------------------- EVM Load Test Function -------------------- */
+
+// Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
+func Test_PATH_E2E_EVM(t *testing.T) {
+	fmt.Println("Setting up PATH instance...")
+
+	// Start an instance of PATH using the E2E config file for Shannon.
+	configFilePath := fmt.Sprintf(configPath, testProtocol)
+	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+	defer teardownFn()
+
+	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
+
+	fmt.Printf("Starting %s load test with gateway URL: %s\n", testProtocol, gatewayURL)
+
+	// Get test cases based on protocol
+	testCases := getTestCases(testProtocol)
 
 	for i := range testCases {
 		// If archival is true then we will use a random historical block for the test.

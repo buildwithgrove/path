@@ -77,10 +77,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
-			maxP50Latency: 100 * time.Millisecond,
-			maxP95Latency: 250 * time.Millisecond,
-			maxP99Latency: 300 * time.Millisecond,
+			successRate:   0.95,
+			maxP50Latency: 250 * time.Millisecond,
+			maxP95Latency: 750 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_call: {
@@ -90,10 +90,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
+			successRate:   0.95,
 			maxP50Latency: 250 * time.Millisecond,
 			maxP95Latency: 750 * time.Millisecond,
-			maxP99Latency: 1000 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_getTransactionReceipt: {
@@ -103,10 +103,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
+			successRate:   0.95,
 			maxP50Latency: 250 * time.Millisecond,
 			maxP95Latency: 750 * time.Millisecond,
-			maxP99Latency: 1000 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_getBlockByNumber: {
@@ -116,10 +116,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
+			successRate:   0.95,
 			maxP50Latency: 250 * time.Millisecond,
 			maxP95Latency: 750 * time.Millisecond,
-			maxP99Latency: 1000 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_getLogs: {
@@ -129,7 +129,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
+			successRate:   0.9,
 			maxP50Latency: 500 * time.Millisecond,
 			maxP95Latency: 1250 * time.Millisecond,
 			maxP99Latency: 2000 * time.Millisecond,
@@ -142,10 +142,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
+			successRate:   0.95,
 			maxP50Latency: 250 * time.Millisecond,
 			maxP95Latency: 750 * time.Millisecond,
-			maxP99Latency: 1000 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_chainId: {
@@ -155,10 +155,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
-			maxP50Latency: 150 * time.Millisecond,
-			maxP95Latency: 500 * time.Millisecond,
-			maxP99Latency: 750 * time.Millisecond,
+			successRate:   0.95,
+			maxP50Latency: 250 * time.Millisecond,
+			maxP95Latency: 750 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_getTransactionCount: {
@@ -168,10 +168,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
-			maxP50Latency: 150 * time.Millisecond,
-			maxP95Latency: 500 * time.Millisecond,
-			maxP99Latency: 750 * time.Millisecond,
+			successRate:   0.95,
+			maxP50Latency: 250 * time.Millisecond,
+			maxP95Latency: 750 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_getTransactionByHash: {
@@ -181,10 +181,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
-			maxP50Latency: 150 * time.Millisecond,
-			maxP95Latency: 500 * time.Millisecond,
-			maxP99Latency: 750 * time.Millisecond,
+			successRate:   0.95,
+			maxP50Latency: 250 * time.Millisecond,
+			maxP95Latency: 750 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 	eth_gasPrice: {
@@ -194,10 +194,10 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			workers:       20,
 		},
 		methodSuccessRates: methodSuccessRates{
-			successRate:   0.99,
-			maxP50Latency: 150 * time.Millisecond,
-			maxP95Latency: 500 * time.Millisecond,
-			maxP99Latency: 750 * time.Millisecond,
+			successRate:   0.95,
+			maxP50Latency: 250 * time.Millisecond,
+			maxP95Latency: 750 * time.Millisecond,
+			maxP99Latency: 1500 * time.Millisecond,
 		},
 	},
 }

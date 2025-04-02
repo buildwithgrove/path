@@ -525,16 +525,15 @@ func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]met
 	for _, method := range sortedMethods {
 		def := methodDefs[method]
 
-		// Create a bar with default template
-		bar := pb.New(def.totalRequests)
-
-		// Store the method name and padding for template use
+		// Store the method name with padding for display
 		padding := longestLen - len(string(method))
 		methodWithPadding := string(method) + strings.Repeat(" ", padding)
-		bar.Set("prefix", methodWithPadding)
 
-		// Set a simple template that just uses the prefix
-		bar.SetTemplateString(`{{ string . "prefix" | blue }} {{ counters . }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ percent . | green }}`)
+		// Create a colored template - critically using explicit color functions
+		tmpl := fmt.Sprintf(`{{ blue "%s" }} {{ counters . }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`, methodWithPadding)
+
+		// Create the bar with the template and start it
+		bar := pb.ProgressBarTemplate(tmpl).New(def.totalRequests)
 
 		// Ensure we're not using byte formatting
 		bar.Set(pb.Bytes, false)
