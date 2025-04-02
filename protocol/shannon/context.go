@@ -33,8 +33,11 @@ type RelayRequestSigner interface {
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
-	fullNode           FullNode
-	serviceID          protocol.ServiceID
+	fullNode FullNode
+	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
+	serviceID protocol.ServiceID
+	// TODO_TECHDEBT(@adshmh): add logger to the request context.
+
 	relayRequestSigner RelayRequestSigner
 
 	// endpoints contains all the candidate endpoints available for processing a service request.
@@ -42,6 +45,8 @@ type requestContext struct {
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
+
+	// TODO_TECHDEBT(@adshmh): add endpointObservations to the request context.
 }
 
 // SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.

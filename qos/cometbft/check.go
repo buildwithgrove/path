@@ -14,13 +14,15 @@ import (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+// TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
+// to filter out checks for any endpoint which has acurrently valid QoS data point.
+func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
 	// a valid (i.e. not expired) QoS data point.
 
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, es, endpointAddr, withHealthCheck),
-		getEndpointCheck(es.logger, es, endpointAddr, withStatusCheck),
+		getEndpointCheck(es.logger, es, withHealthCheck),
+		getEndpointCheck(es.logger, es, withStatusCheck),
 	}
 }
 
@@ -28,14 +30,12 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 func getEndpointCheck(
 	logger polylog.Logger,
 	endpointStore *EndpointStore,
-	endpointAddr protocol.EndpointAddr,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        logger,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {

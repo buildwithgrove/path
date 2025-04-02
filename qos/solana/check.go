@@ -22,13 +22,12 @@ const (
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
 
-func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
-	// TODO_IMPROVE(@adshmh): skip any checks for which the endpoint already has
-	// a valid (i.e. not expired) QoS data point.
-
+// TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
+// to filter out checks for any endpoint which has acurrently valid QoS data point.
+func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	return []gateway.RequestQoSContext{
-		getEndpointCheck(es.logger, endpointAddr, es, withGetHealth),
-		getEndpointCheck(es.logger, endpointAddr, es, withGetEpochInfo),
+		getEndpointCheck(es.logger, es, withGetHealth),
+		getEndpointCheck(es.logger, es, withGetEpochInfo),
 		// TODO_MVP(@adshmh): Add a check for a `getBlock` request
 	}
 }
@@ -36,15 +35,13 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 // getEndpointCheck prepares a request context for a specific endpoint check.
 func getEndpointCheck(
 	logger polylog.Logger,
-	endpointAddr protocol.EndpointAddr,
 	endpointStore *EndpointStore,
 	options ...func(*requestContext),
 ) *requestContext {
 	requestCtx := requestContext{
-		logger:                  logger,
-		endpointStore:           endpointStore,
-		isValid:                 true,
-		preSelectedEndpointAddr: endpointAddr,
+		logger:        logger,
+		endpointStore: endpointStore,
+		isValid:       true,
 	}
 
 	for _, option := range options {
