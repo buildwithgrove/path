@@ -101,7 +101,7 @@ type Protocol struct {
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
-// Takes the HTTP request as an argument for Delegate mode to get permitted apps from the HTTP request's headers.
+// Takes the HTTP request as an argument for Delegated mode to get permitted apps from the HTTP request's headers.
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) AvailableEndpoints(
@@ -153,7 +153,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Retrieve the relay request signer for the current gateway mode.

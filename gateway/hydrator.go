@@ -170,7 +170,11 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 				for _, serviceRequestCtx := range requiredQoSChecks {
 					// Create a new protocol request context with a pre-selected endpoint for each request.
-					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
+					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
+					// avoid a race conditions related to concurrent access issues when running concurrent QoS checks.
+					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
+					// no need for specifying a specific app.
 					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
@@ -197,16 +201,11 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					if err != nil {
 						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
-						// in this iteration of QoS checks.
 						//
 						// TODO_FUTURE: consider retrying failed service requests
-						// as the failure may not be related to the quality of the endpoint.
-						logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
+						// e.g. protocol-level, qos-level observations.
+						gatewayRequestCtx.BroadcastAllObservations()
 					}
-
-					// publish all observations gathered through sending the synthetic service requests.
-					// e.g. protocol-level, qos-level observations.
-					gatewayRequestCtx.BroadcastAllObservations()
 				}
 			}
 		}()
