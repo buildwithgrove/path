@@ -142,8 +142,8 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
 
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		fmt.Println("Running in CI environment - waiting for 1 minute before starting tests...")
-		<-time.After(1 * time.Minute)
+		fmt.Println("Running in CI environment - waiting for 2 minutes before starting tests to allow hydrator checks to complete...")
+		<-time.After(2 * time.Minute)
 	}
 
 	// Get test cases based on protocol
