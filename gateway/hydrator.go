@@ -203,8 +203,9 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
 						//
 						// TODO_FUTURE: consider retrying failed service requests
-					// e.g. protocol-level, qos-level observations.
-					gatewayRequestCtx.BroadcastAllObservations()
+						// e.g. protocol-level, qos-level observations.
+						gatewayRequestCtx.BroadcastAllObservations()
+					}
 				}
 			}
 		}()
