@@ -124,10 +124,16 @@ func getShannonTestCases() []testCase {
 func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Println("Setting up PATH instance...")
 
-	// Start an instance of PATH using the E2E config file for Shannon.
-	configFilePath := fmt.Sprintf(configPath, testProtocol)
-	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
-	defer teardownFn()
+	var pathContainerPort string
+
+	// // Start an instance of PATH using the E2E config file for Shannon.
+	// configFilePath := fmt.Sprintf(configPath, testProtocol)
+	// pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+	// defer teardownFn()
+
+	if pathContainerPort == "" {
+		pathContainerPort = "3069"
+	}
 
 	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
 

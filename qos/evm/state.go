@@ -51,11 +51,6 @@ type evmArchivalState struct {
 	balance string
 	// balanceConsensus is a map of balances and the number of endpoints that reported them.
 	balanceConsensus map[string]int
-	// refreshAt is the time at which the archival state should be refreshed.
-	// If it has passed, the archival state should be refreshed by randomly selecting a new block number.
-	// TODO_IMPROVE(@commoddity): Implement a refresh mechanism to calculate a new archival block number
-	// and update the archival state when this time has passed.
-	refreshAt time.Time
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
