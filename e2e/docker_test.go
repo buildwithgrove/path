@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"testing"
 	"time"
@@ -34,15 +35,8 @@ const (
 	maxPathHealthCheckWaitTimeMillisec = 120000
 )
 
-var (
-	// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
-	// This allows a subdomain to be specified without modifying /etc/hosts.
-	// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
-	localdevMe = "localdev.me"
-
-	// eg. 3069/tcp
-	containerPortAndProtocol = internalPathPort + "/tcp"
-)
+// eg. 3069/tcp
+var containerPortAndProtocol = internalPathPort + "/tcp"
 
 // setupPathInstance starts an instance of PATH in a container, using Docker.
 // It returns:
@@ -83,6 +77,15 @@ func setupPathInstance(t *testing.T, configFilePath string) (containerPort strin
 // - Returns the dockertest pool, resource, and the container port.
 func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *dockertest.Resource, string) {
 	t.Helper()
+
+	logContainer := false
+	if os.Getenv("LOG") != "" {
+		logParsed, err := strconv.ParseBool(os.Getenv("LOG"))
+		if err != nil {
+			t.Fatalf("could not parse LOG environment variable: %s", err)
+		}
+		logContainer = logParsed
+	}
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
@@ -132,19 +135,21 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
-	// Print container logs in a goroutine to prevent blocking
-	go func() {
-		if err := pool.Client.Logs(docker.LogsOptions{
-			Container:    resource.Container.ID,
-			OutputStream: os.Stdout,
-			ErrorStream:  os.Stderr,
-			Stdout:       true,
-			Stderr:       true,
-			Follow:       true,
-		}); err != nil {
-			fmt.Printf("could not fetch logs for PATH container: %s", err)
-		}
-	}()
+	if logContainer {
+		// Print container logs in a goroutine to prevent blocking
+		go func() {
+			if err := pool.Client.Logs(docker.LogsOptions{
+				Container:    resource.Container.ID,
+				OutputStream: os.Stdout,
+				ErrorStream:  os.Stderr,
+				Stdout:       true,
+				Stderr:       true,
+				Follow:       true,
+			}); err != nil {
+				fmt.Printf("could not fetch logs for PATH container: %s", err)
+			}
+		}()
+	}
 
 	// Handle termination signals
 	c := make(chan os.Signal, 1)

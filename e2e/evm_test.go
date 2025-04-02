@@ -1,3 +1,5 @@
+//go:build e2e
+
 package e2e
 
 import (
@@ -18,23 +20,38 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-/* -------------------- Gateway URL -------------------- */
+/* -------------------- Gateway Configuration -------------------- */
 
-// Set default gateway URL
-var gatewayURL = "http://localhost:3069/v1"
+var (
+	// Set default gateway URL
+	gatewayURL  = "http://localhost:%s/v1"
+	protocolStr string
+)
 
 // init initializes the gateway URL with an optional override
 func init() {
 	if gatewayURLOverride := os.Getenv("GATEWAY_URL"); gatewayURLOverride != "" {
 		gatewayURL = gatewayURLOverride
 	}
+	if protocolStr = os.Getenv("PROTOCOL"); protocolStr == "" {
+		panic("PROTOCOL environment variable is not set to morse or shannon")
+	}
 }
 
 /* -------------------- EVM Load Test Function -------------------- */
 
-// Test_PATHLoad runs load tests against JSON-RPC endpoints
-func Test_PATHLoad(t *testing.T) {
-	fmt.Printf("Starting load test with gateway URL: %s\n", gatewayURL)
+// Test_PATH_EVM_E2E runs an E2E load test against the EVM JSON-RPC endpoints
+func Test_PATH_EVM_E2E(t *testing.T) {
+	fmt.Println("Setting up PATH instance...")
+
+	// Start an instance of PATH using the E2E config file for Shannon.
+	configFilePath := fmt.Sprintf(".config.%s.yaml", protocolStr)
+	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+	defer teardownFn()
+
+	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
+
+	fmt.Printf("Starting %s load test with gateway URL: %s\n", protocolStr, gatewayURL)
 
 	// Define test cases by service
 	testCases := []struct {
@@ -168,7 +185,7 @@ func getCurrentBlockNumber(serviceID protocol.ServiceID) (uint64, error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Make multiple attempts to get consensus
-	for i := 0; i < maxAttempts; i++ {
+	for range maxAttempts {
 		blockNum, err := fetchBlockNumber(client, serviceID)
 		if err != nil {
 			continue
