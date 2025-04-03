@@ -96,6 +96,8 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		s.perceivedBlockNumber = blockNumber
 
 		// Process archival data from the endpoint (if enabled)
+		// This contributes to consensus regarding the expected archival balance
+		// at a specific historical block number
 		if !s.archivalState.processEndpointArchivalData(endpoint) {
 			logger.Info().Msg("Skipping endpoint without archival balance")
 			continue
@@ -103,6 +105,9 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	}
 
 	// Update the archival state based on the perceived block number
+	// This handles:
+	// 1. Calculating a random archival block number if needed
+	// 2. Determining consensus on the expected balance at that block number
 	s.archivalState.updateArchivalState(s.perceivedBlockNumber)
 
 	return nil

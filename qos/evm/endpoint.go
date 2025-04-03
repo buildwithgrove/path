@@ -71,8 +71,8 @@ func (e *endpoint) validateChainID(chainID string) error {
 
 // validateBlockNumber checks if the perceived block number is valid.
 // The perceived block number:
-// - Valid if it is less than or equal to the last observed block number by this endpoint.
-// - Invalid if it is greater than the last observed block number by this endpoint.
+//   - Valid if it is less than or equal to the last observed block number by this endpoint.
+//   - Invalid if it is greater than the last observed block number by this endpoint.
 func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
 	_, err := e.getBlockNumber()
 	if err != nil {
@@ -98,6 +98,7 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 }
 
 // validateArchivalCheck validates that the endpoint has returned an archival balance for the perceived block number.
+
 // If the archival check is not enabled for the service, this will always return a nil error.
 func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
 	if !archivalState.archivalCheckConfig.Enabled {
@@ -115,6 +116,7 @@ func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
 }
 
 // getArchivalBalance returns the observed archival balance for the endpoint at the archival block height.
+// Returns an error if the endpoint hasn't yet returned an archival balance observation.
 func (e endpoint) getArchivalBalance() (string, error) {
 	if e.observedArchivalBalance == "" {
 		return "", errNoArchivalBalanceObs
@@ -124,6 +126,11 @@ func (e endpoint) getArchivalBalance() (string, error) {
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
 // It Returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+//
+// For archival balance observations:
+// - Only updates the archival balance if the balance was observed at the specified archival block height
+// - This ensures accurate historical balance validation at the specific block number
+//
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
@@ -155,6 +162,8 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 	return false
 }
 
+// parseBlockNumberResponse parses the block number response from a string to a uint64.
+// eg. "0x3f8627c" -> 66609788
 func parseBlockNumberResponse(response string) *uint64 {
 	parsed, err := strconv.ParseUint(response, 0, 64)
 	if err != nil {

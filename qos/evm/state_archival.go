@@ -94,6 +94,7 @@ func (a *archivalState) updateConsensusMap(balance string) {
 // This handles calculating the archival block number if needed and updating the
 // consensus-based archival balance.
 func (a *archivalState) updateArchivalState(perceivedBlockNumber uint64) {
+	// Skip further processing if archival checks are not enabled
 	if !a.isEnabled() {
 		return
 	}
@@ -113,11 +114,11 @@ func (a *archivalState) updateArchivalState(perceivedBlockNumber uint64) {
 	}
 }
 
-// calculateArchivalBlockNumber returns a random archival block number based on the perceived block number.
+// calculateArchivalBlockNumber determines a random archival block number based on the perceived block number.
 // The function applies the following logic:
-// - If perceived block is below threshold, returns block 0
-// - Otherwise, calculates a random block between min archival block and (perceived block - threshold)
-// - Ensures the returned block number is never below the contract start block
+//   - If perceived block is below threshold, returns block 0
+//   - Otherwise, calculates a random block between minArchivalBlock and (perceivedBlockNumber - threshold)
+//   - Ensures the returned block number is never below the contract start block
 func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64) string {
 	archivalThreshold := a.archivalCheckConfig.Threshold
 	minArchivalBlock := a.archivalCheckConfig.ContractStartBlock
@@ -141,7 +142,7 @@ func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64
 		}
 	}
 
-	// Store the calculated block number in the service state
+	// Store the calculated block number in the archival state
 	a.blockNumberHex = blockNumHex
 	return blockNumHex
 }
@@ -150,8 +151,9 @@ func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64
 // For example, if more than 5 endpoints report the same balance, the archival balance is updated to the consensus balance.
 func (a *archivalState) updateArchivalBalance(consensusThreshold int) {
 	for balance, count := range a.balanceConsensus {
+		// If we've reached the threshold, update the expected balance
 		if count >= consensusThreshold {
-			a.logger.Info().Msgf("Updating expected archival balance for block numbers%s to %s", a.blockNumberHex, balance)
+			a.logger.Info().Msgf("Updating expected archival balance for block number %s to %s", a.blockNumberHex, balance)
 			a.expectedBalance = balance
 			// Reset consensus map after consensus is reached.
 			a.balanceConsensus = make(map[string]int)
