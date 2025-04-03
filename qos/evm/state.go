@@ -36,6 +36,12 @@ type ServiceState struct {
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
 //
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
+//
+// It returns an error if:
+// - The endpoint has not returned an empty response to a `eth_getBalance` request.
+// - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
+// - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
+// - The endpoint has not returned an archival balance for the perceived block number.
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
@@ -44,22 +50,20 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 	if err := endpoint.validateEmptyResponse(); err != nil {
 		return err
 	}
-
 	// Ensure the chain ID is valid.
 	if err := endpoint.validateChainID(s.chainID); err != nil {
 		return err
 	}
-
 	// Ensure the service state's perceived block number is not ahead of the endpoint's block number.
 	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
 		return err
 	}
-
-	if err := endpoint.validateArchivalCheck(s.archivalState.getBalance()); err != nil {
+	// Ensure the endpoint has returned an archival balance for the perceived block number.
+	// If the service does not require an archival check, this will always return a nil error.
+	if err := endpoint.validateArchivalCheck(s.archivalState); err != nil {
 		return err
 	}
 
-	// The service state
 	return nil
 }
 

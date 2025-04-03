@@ -47,8 +47,8 @@ type endpoint struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
 	parsedBlockNumberResponse *uint64
 
-	// archivalStateData stores the result of processing the endpoint's response to an `eth_getBlockByNumber` request.
-	// archivalBlockNumber *uint64
+	// archivalBalance stores the result of processing the endpoint's response
+	// to an `eth_getBalance` request for a specific contract address at a specific block number.
 	archivalBalance string
 }
 
@@ -97,12 +97,18 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 	return *e.parsedBlockNumberResponse, nil
 }
 
-func (e *endpoint) validateArchivalCheck(archivalBalance string) error {
+// validateArchivalCheck validates that the endpoint has returned an archival balance for the perceived block number.
+// If the archival check is not enabled for the service, this will always return a nil error.
+func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
+	if !archivalState.archivalCheckConfig.Enabled {
+		return nil
+	}
+
 	if e.archivalBalance == "" {
 		return errNoArchivalBalanceObs
 	}
-	if e.archivalBalance != archivalBalance {
-		return fmt.Errorf(errInvalidArchivalBalanceObs, e.archivalBalance, archivalBalance)
+	if e.archivalBalance != archivalState.getBalance() {
+		return fmt.Errorf(errInvalidArchivalBalanceObs, e.archivalBalance, archivalState.getBalance())
 	}
 	return nil
 }

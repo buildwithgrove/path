@@ -42,7 +42,7 @@ func NewRequest(id int, method Method, params ...any) Request {
 	if len(params) > 0 {
 		jsonParams, err := json.Marshal(params)
 		if err == nil {
-			request.Params = NewParams(jsonParams)
+			request.Params = Params{rawMessage: jsonParams}
 		}
 	}
 

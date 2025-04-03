@@ -13,14 +13,25 @@ import (
 // TODO_TECHDEBT(@commoddity): settle of a final value for this.
 const archivalConsensusThreshold = 5
 
+// The archival check verifies that nodes can provide accurate historical blockchain data. Here's how it works:
+//   - Identify specific blockchain contracts that have been widely used since early in the chain's history.
+//   - The system selects a random historical block from the past (between when the contract was first deployed and what's considered "recent");
+//   - PATH queries all endpoints in session for the contract's balance with eth_getBalance at this historical block.
+//   - When <archivalConsensusThreshold> endpoints independently report the same balance value, this becomes our "source of truth" for that contract at that block.
+//   - Each endpoint is evaluated against this established truth - any endpoint that reports a different balance value is flagged as lacking proper archival data and will be filtered out by QoS.
 type archivalState struct {
 	// archivalCheckConfig contains all configurable values for an EVM archival check.
 	archivalCheckConfig EVMArchivalCheckConfig
 
 	// blockNumberHex is a randomly selected block number from which to check the balance of the contract.
+	//
 	// It is calculated using the `calculateArchivalBlockNumber` method, which selects a block from the range:
-	// earliest possible block = <archivalCheckConfig.ContractStartBlock>
-	// latest possible block = <perceivedBlockNumber> - <archivalCheckConfig.Threshold>
+	// 		- earliest possible block = <archivalCheckConfig.ContractStartBlock>
+	// 		- latest possible block = <perceivedBlockNumber> - <archivalCheckConfig.Threshold>
+	//
+	// eg. if perceivedBlockNumber = 100, archivalThreshold = 10, contractStartBlock = 10, then the block number will be between 10 and 90.
+	//
+	// Format will look like: `0x3f8627c`
 	blockNumberHex string
 
 	// balance is the balance of the contract at the block number specified in `blockNumberHex`.
@@ -36,6 +47,8 @@ type archivalState struct {
 	// When a single hex value with a count of <archivalConsensusThreshold> is reached, the balance
 	// is set as the expected archival balance source of truth for archival validation.
 	balanceConsensus map[string]int
+
+	// TODO_IMPROVE(@commoddity): set an expiry time for the archival state so that a new random block can be selected on an interval.
 }
 
 // initializeConsensusMap initializes the balance consensus map if it doesn't exist.
