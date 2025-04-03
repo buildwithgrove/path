@@ -26,14 +26,13 @@ import (
 /* -------------------- Vegeta Helper Functions -------------------- */
 
 // createRPCTarget creates a vegeta.Targeter for the specified RPC method
-func createRPCTarget(gatewayURL string, serviceID protocol.ServiceID, method jsonrpc.Method, params ...any) vegeta.Targeter {
+func createRPCTarget(
+	gatewayURL string,
+	serviceID protocol.ServiceID,
+	jsonrpcReq jsonrpc.Request,
+) vegeta.Targeter {
 	return func(tgt *vegeta.Target) error {
-		req, err := buildJSONRPCReq(1, method, params...)
-		if err != nil {
-			return err
-		}
-
-		body, err := json.Marshal(req)
+		body, err := json.Marshal(jsonrpcReq)
 		if err != nil {
 			return err
 		}
@@ -50,25 +49,6 @@ func createRPCTarget(gatewayURL string, serviceID protocol.ServiceID, method jso
 	}
 }
 
-// buildJSONRPCReq builds a JSON-RPC request for the given method and parameters
-func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) (jsonrpc.Request, error) {
-	request := jsonrpc.Request{
-		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(id),
-		Method:  method,
-	}
-
-	if len(params) > 0 {
-		jsonParams, err := json.Marshal(params)
-		if err != nil {
-			return jsonrpc.Request{}, err
-		}
-		request.Params = jsonrpc.NewParams(jsonParams)
-	}
-
-	return request, nil
-}
-
 // runAttack executes a load test for the given method
 func runAttack(
 	gatewayURL string,
@@ -76,7 +56,7 @@ func runAttack(
 	method jsonrpc.Method,
 	methodDef methodDefinition,
 	progressBar *pb.ProgressBar,
-	params ...any,
+	jsonrpcReq jsonrpc.Request,
 ) *MethodMetrics {
 	// Initialize metrics for the method
 	metrics := &MethodMetrics{
@@ -87,7 +67,7 @@ func runAttack(
 	}
 
 	// Create target for the method
-	target := createRPCTarget(gatewayURL, serviceID, method, params...)
+	target := createRPCTarget(gatewayURL, serviceID, jsonrpcReq)
 
 	// Calculate max duration as a safety to prevent infinite runs
 	// Allow 2x the theoretical time needed plus a 5 second buffer

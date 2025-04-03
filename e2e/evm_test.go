@@ -209,6 +209,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 				go func(method jsonrpc.Method, def methodDefinition, params []any) {
 					defer methodWg.Done()
 
+					// Create the JSON-RPC request
+					jsonrpcReq := jsonrpc.NewRequest(1, method, params...)
+
 					// Run the attack
 					metrics := runAttack(
 						gatewayURL,
@@ -216,7 +219,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 						method,
 						def,
 						progBars.get(method),
-						params...,
+						jsonrpcReq,
 					)
 
 					// Safely store the results
@@ -326,10 +329,7 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol
 
 // Helper to build a block number request
 func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*http.Request, error) {
-	blockNumberReq, err := buildJSONRPCReq(1, eth_blockNumber)
-	if err != nil {
-		return nil, err
-	}
+	blockNumberReq := jsonrpc.NewRequest(1, eth_blockNumber, nil)
 
 	blockNumberReqBytes, err := json.Marshal(blockNumberReq)
 	if err != nil {
