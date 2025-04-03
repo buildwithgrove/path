@@ -29,11 +29,6 @@ type endpoint struct {
 	app app
 }
 
-// IsValidForRelay checks if any of the required endpoint fields required for sending a relay are empty.
-func (e endpoint) IsValidForRelay() bool {
-	return e.address == "" || e.url == "" || len(e.session.Nodes) == 0 || e.app.IsEmpty()
-}
-
 func (e endpoint) Addr() protocol.EndpointAddr {
 	return protocol.EndpointAddr(e.address)
 }

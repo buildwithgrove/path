@@ -36,9 +36,12 @@ check_path_config: ## Verify that path configuration file exists
    		exit 1; \
    fi
 
+# Allow override of config path with default value
+CONFIG_PATH ?= ../local/path/.config.yaml
+
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ../local/path/.config.yaml)
+	(cd bin; ./path -config ${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###

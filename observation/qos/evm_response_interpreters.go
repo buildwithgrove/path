@@ -65,8 +65,8 @@ func getEVMResponseInterpreter(obs *EVMEndpointObservation) (evmResponseInterpre
 	case obs.GetBlockNumberResponse() != nil:
 		return responseInterpreters["block_number"], nil
 
-	// archival (eth_getBalance && eth_getBlockByNumber)
-	case obs.GetArchivalResponse() != nil:
+	// eth_getBalance (used for archival checks)
+	case obs.GetGetBalanceResponse() != nil:
 		return responseInterpreters["get_balance"], nil
 
 	// unrecognized response
@@ -129,15 +129,13 @@ func (i *blockNumberEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpoi
 // getBalanceEVMResponseInterpreter interprets eth_getBalance response observations.
 // It implements the evmResponseInterpreter interface to translate proto-generated
 // getBalance response types into standardized status codes and error types.
-//
-// DEV_NOTE: This interpreter is only used to apply observations for archival checks.
 type getBalanceEVMResponseInterpreter struct{}
 
 // extractValidityStatus extracts status information from getBalance response observations.
 // It interprets the getBalance response-specific proto type and translates it into
 // standardized HTTP status codes and error types for the rest of the system.
 func (i *getBalanceEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
-	response := obs.GetArchivalResponse()
+	response := obs.GetGetBalanceResponse()
 	validationErr := response.GetResponseValidationError()
 
 	if validationErr != 0 {

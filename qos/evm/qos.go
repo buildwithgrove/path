@@ -14,9 +14,18 @@ func NewQoSInstance(logger polylog.Logger, config ServiceConfig) *QoS {
 	)
 
 	serviceState := &ServiceState{
-		logger:              logger,
-		chainID:             evmChainID,
-		archivalCheckConfig: config.GetEVMArchivalCheckConfig(),
+		logger:  logger,
+		chainID: evmChainID,
+	}
+
+	if archivalCheckConfig, enabled := config.GetEVMArchivalCheckConfig(); enabled {
+		serviceState.archivalState = archivalState{
+			logger:              logger.With("state", "archival"),
+			archivalCheckConfig: archivalCheckConfig,
+			// Initialize the balance consensus map, which determines
+			// the balance at the perceived block number by consensus.
+			balanceConsensus: make(map[string]int),
+		}
 	}
 
 	evmEndpointStore := &EndpointStore{
