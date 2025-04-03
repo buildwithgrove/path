@@ -12,9 +12,8 @@ import (
 // responseToGetBalance provides the functionality required from a response by a requestContext instance.
 var _ response = responseToGetBalance{}
 
-// responseUnmarshallerGetBalance deserializes the provided payload
-// into a responseToGetBalance struct, adding any encountered errors
-// to the returned struct.
+// responseUnmarshallerGetBalance deserializes the provided JSONRPC payload into
+// a responseToGetBalance struct, adding any encountered errors to the returned struct.
 func responseUnmarshallerGetBalance(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
@@ -25,11 +24,11 @@ func responseUnmarshallerGetBalance(
 		return responseToGetBalance{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-			validationError: nil, // Valid JSON-RPC error response.
+			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 
-	resultBz, err := jsonrpcResp.GetResultAsBytes()
+	responseBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
 		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		return responseToGetBalance{
@@ -40,13 +39,13 @@ func responseUnmarshallerGetBalance(
 	}
 
 	var validationError *qosobservations.EVMResponseValidationError
-
 	var balanceResponse string
-	if err := json.Unmarshal(resultBz, &balanceResponse); err != nil {
+	if err := json.Unmarshal(responseBz, &balanceResponse); err != nil {
 		errValue := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 		validationError = &errValue
 	}
 
+	// Valid eth_getBalance response: no error and a valid balance.
 	return responseToGetBalance{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
@@ -55,8 +54,7 @@ func responseUnmarshallerGetBalance(
 	}, nil
 }
 
-// responseToGetBalance captures the fields expected in a
-// response to an `eth_getBalance` request.
+// responseToGetBalance captures the fields expected in a response to an `eth_getBalance` request.
 type responseToGetBalance struct {
 	logger polylog.Logger
 
@@ -84,6 +82,8 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 	}
 }
 
+// GetHTTPResponse returns the HTTP response corresponding to the JSON-RPC response.
+// Implements the response interface.
 func (r responseToGetBalance) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.getResponsePayload(),
@@ -91,12 +91,13 @@ func (r responseToGetBalance) GetHTTPResponse() httpResponse {
 	}
 }
 
+// getResponsePayload returns the JSON-RPC response payload as a byte slice.
 func (r responseToGetBalance) getResponsePayload() []byte {
-	bz, err := json.Marshal(r.jsonRPCResponse)
+	responseBz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
 		r.logger.Warn().Err(err).Msg("responseToGetBalance: Marshaling JSONRPC response failed.")
 	}
-	return bz
+	return responseBz
 }
 
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response.

@@ -32,8 +32,11 @@ func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gat
 		getEndpointCheck(es.logger, es, withBlockHeightCheck),
 	}
 
-	// If the service is configured to perform an archival check and has calculated an expected archival balance,
-	// add the archival check to the list of quality checks to perform on every hydrator run.
+	// If all of the following are true:
+	//  - Service is configured to perform an archival check
+	//  - Has calculated an expected archival balance (balance at a specific block number for a specific address for a particular chain)
+	// Then:
+	// - Add the archival check to the list of qos checks to perform on every hydrator run
 	if es.serviceState.shouldPerformArchivalCheck() {
 		qualityChecks = append(qualityChecks, getEndpointCheck(es.logger, es, withArchivalBlockCheck))
 	}
@@ -74,8 +77,10 @@ func withBlockHeightCheck(requestCtx *requestContext) {
 // withArchivalBlockCheck updates the request context to make an EVM JSON-RPC eth_getBalance request with a random archival block number.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
 func withArchivalBlockCheck(requestCtx *requestContext) {
-	// Get the archival block number from the endpoint store.
+	// Get the archival check configuration from the endpoint store.
+	// It contains the contract address whose balance is to be checked.
 	archivalCheckConfig := requestCtx.endpointStore.serviceState.archivalCheckConfig
+
 	// Get the current state of the archival check.
 	serviceArchivalState := requestCtx.endpointStore.serviceState.archivalState
 

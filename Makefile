@@ -68,6 +68,9 @@ path_help: ## Prints help commands if you cannot start path
 ###    Makefile imports     ###
 ###############################
 
+# TODO_IMPROVE(@commoddity): Add a target similar to "make docs_update_gov_params_page" in poktroll
+# that converts "config/service_qos.go" into markdown documentation.
+
 include ./makefiles/configs.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk

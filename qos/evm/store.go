@@ -77,7 +77,6 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.EndpointAddr) (pro
 	).Info().Msg("filtered endpoints")
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
-	// return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
 	return selectedEndpointAddr, nil
 }
