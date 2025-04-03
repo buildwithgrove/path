@@ -129,8 +129,6 @@ func (i *blockNumberEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpoi
 // getBalanceEVMResponseInterpreter interprets eth_getBalance response observations.
 // It implements the evmResponseInterpreter interface to translate proto-generated
 // getBalance response types into standardized status codes and error types.
-//
-// DEV_NOTE: This interpreter is only used to apply observations for archival checks.
 type getBalanceEVMResponseInterpreter struct{}
 
 // extractValidityStatus extracts status information from getBalance response observations.

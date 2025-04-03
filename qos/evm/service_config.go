@@ -5,6 +5,9 @@ import "github.com/buildwithgrove/path/protocol"
 // QoSTypeEVM is the QoS type for the EVM blockchain.
 const QoSType = "evm"
 
+// 128 is the default archival threshold for EVM-based chains.
+// This is an opinionated value that aligns with industry standard
+// practices for defining what constitutes an archival block.
 const defaultEVMArchivalThreshold = 128
 
 type ServiceConfig struct {
@@ -17,6 +20,13 @@ type ServiceConfig struct {
 }
 
 // EVMArchivalCheckConfig is the configuration for the archival check.
+//
+// The basic methodology is:
+//  1. Select a `ContractAddress` for the chain with a frequent transaction volume and large balance.
+//  2. Determine its starting block height (`ContractStartBlock`).
+//  3. Set a `Threshold` for how many blocks below the current block number are considered "archival" data.
+//
+// With all of this data, the QoS implementation can select a random block number to check using `eth_getBalance`.
 type EVMArchivalCheckConfig struct {
 	Enabled            bool   // Whether to require an archival check for the service.
 	Threshold          uint64 // The number of blocks below the current block number to be considered "archival" data

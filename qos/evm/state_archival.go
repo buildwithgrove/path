@@ -27,7 +27,14 @@ type archivalState struct {
 	// It is determined by reaching a consensus on the balance among `<archivalConsensusThreshold>` endpoints.
 	balance string
 
-	// balanceConsensus is a map of balances and the number of endpoints that reported them.
+	// balanceConsensus is a map where:
+	//   - key: hex balance value for the archival block number
+	//   - value: number of endpoints that reported the balance
+	//
+	// eg. {"0x1ce31607bc8f16a8c53d80": 5, "0x1ce31607bc8f16a8c53d81": 3}
+	//
+	// When a single hex value with a count of <archivalConsensusThreshold> is reached, the balance
+	// is set as the expected archival balance source of truth for archival validation.
 	balanceConsensus map[string]int
 }
 
