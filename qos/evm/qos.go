@@ -14,9 +14,11 @@ func NewQoSInstance(logger polylog.Logger, config ServiceConfig) *QoS {
 	)
 
 	serviceState := &ServiceState{
-		logger:              logger,
-		chainID:             evmChainID,
-		archivalCheckConfig: config.GetEVMArchivalCheckConfig(),
+		logger:  logger,
+		chainID: evmChainID,
+		archivalState: archivalState{
+			archivalCheckConfig: config.GetEVMArchivalCheckConfig(),
+		},
 	}
 
 	evmEndpointStore := &EndpointStore{

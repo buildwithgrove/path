@@ -23,6 +23,32 @@ type Request struct {
 	Params  Params  `json:"params,omitempty"`
 }
 
+// NewRequest constructs a new JSONRPC request from the given ID, method, and optional parameters.
+//
+// For example:
+// id - 1
+// method - eth_getBalance
+// params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
+//
+// The above request would be serialized as:
+// {"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}
+func NewRequest(id int, method Method, params ...any) Request {
+	request := Request{
+		JSONRPC: Version2,
+		ID:      IDFromInt(id),
+		Method:  method,
+	}
+
+	if len(params) > 0 {
+		jsonParams, err := json.Marshal(params)
+		if err == nil {
+			request.Params = NewParams(jsonParams)
+		}
+	}
+
+	return request
+}
+
 // MarshalJSON customizes the JSON serialization of a Request.
 // It returns a serialized version of the receiver with empty fields (e.g. ID, Params, etc) omitted
 func (r Request) MarshalJSON() ([]byte, error) {

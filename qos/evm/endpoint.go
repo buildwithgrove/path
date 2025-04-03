@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // The errors below list all the possible validation errors on an endpoint.
@@ -94,7 +93,7 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 	return *e.parsedBlockNumberResponse, nil
 }
 
-func (e *endpoint) validateArchivalCheck(archivalBalance string, endpointAddr protocol.EndpointAddr) error {
+func (e *endpoint) validateArchivalCheck(archivalBalance string) error {
 	if e.archivalBalance == "" {
 		return errNoArchivalBalanceObs
 	}
@@ -116,7 +115,7 @@ func (e endpoint) getArchivalBalance() (string, error) {
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
-func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, shouldPerformArchivalCheck bool) bool {
+func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, archivalBlockHeight string) bool {
 	if obs.GetEmptyResponse() != nil {
 		e.hasReturnedEmptyResponse = true
 		return true
@@ -134,8 +133,11 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 	}
 
 	if getBalanceResponse := obs.GetGetBalanceResponse(); getBalanceResponse != nil {
-		e.archivalBalance = getBalanceResponse.GetBalance()
-		return true
+		// Only update the archival balance if the balance was observed at the archival block height.
+		if balanceBlockHeight := getBalanceResponse.GetBlockNumber(); balanceBlockHeight == archivalBlockHeight {
+			e.archivalBalance = getBalanceResponse.GetBalance()
+			return true
+		}
 	}
 
 	return false

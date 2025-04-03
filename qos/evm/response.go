@@ -67,9 +67,6 @@ func unmarshalResponse(
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
-	// We intentionally skip checking whether the JSONRPC response indicates an error.
-	// This allows the method-specific handler to determine how to respond to the user.
-
 	// Unmarshal the JSONRPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {

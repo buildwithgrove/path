@@ -16,11 +16,12 @@ type ServiceConfig struct {
 	ArchivalCheckConfig EVMArchivalCheckConfig
 }
 
+// EVMArchivalCheckConfig is the configuration for the archival check.
 type EVMArchivalCheckConfig struct {
-	Enabled            bool
-	Threshold          uint64
-	ContractAddress    string
-	ContractStartBlock uint64
+	Enabled            bool   // Whether to require an archival check for the service.
+	Threshold          uint64 // The number of blocks below the current block number to be considered "archival" data
+	ContractAddress    string // The address of the contract to check for the archival balance.
+	ContractStartBlock uint64 // The start block of the contract address (ie. when it first had a balance)
 }
 
 func (c ServiceConfig) GetServiceID() protocol.ServiceID {
