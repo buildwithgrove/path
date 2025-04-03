@@ -7,20 +7,14 @@ import (
 	"github.com/buildwithgrove/path/qos/solana"
 )
 
-// TODO_DOCUMENT(@commoddity): Add a README to [path docs](https://path.grove.city/) for developers.
-// Consider a similar automated approach to "docs_update_gov_params_page"
-
-// NOTE: Service ID list last updated 2025/04/01
+// NOTE: Service ID list last updated 2025/04/01 (not a joke)
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
-// TODO_IMPROVE(@commoddity): Add archival check configurations for all EVM services.
-// This means setting the following fields:
-//   - Enabled
-//   - ContractAddress
-//   - ContractStartBlock
-// Currently the following EVM services have archival check configurations:
+// TODO_QOS(@commoddity): Add archival check configurations for all EVM services.
+// This includes hydrating the entire EVMArchivalCheckConfig struct.
+// See the following archival check configurations as reference:
 //   - F00C (Ethereum)
 //   - F021 (Polygon)
 //   - F01C (Oasys)
@@ -31,19 +25,25 @@ type ServiceConfig interface {
 	GetServiceQoSType() string
 }
 
+// qosServiceConfigs captures the list of blockchains that PATH supports QoS for.
 type qosServiceConfigs struct {
 	shannonServices []ServiceConfig
 	morseServices   []ServiceConfig
 }
 
-// GetServiceConfigs returns the service configs for the provided protocol.
+// GetServiceConfigs returns the service configs for the provided protocol supported by the Gateway.
 func (c qosServiceConfigs) GetServiceConfigs(config GatewayConfig) []ServiceConfig {
+	// Shannon configurations
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
 		return c.shannonServices
 	}
+
+	// Morse configurations
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {
 		return c.morseServices
 	}
+
+	// If no configuration is found, return an empty slice.
 	return nil
 }
 

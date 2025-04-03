@@ -32,6 +32,8 @@ func (id ID) String() string {
 	return fmt.Sprintf("%d", id.intID)
 }
 
+// Int returns ID as an int.
+// intID takes precedence over strId if both fields are set.
 func (id ID) Int() int {
 	if id.intID != 0 {
 		return id.intID

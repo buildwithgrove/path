@@ -56,18 +56,31 @@ var responseInterpreters = map[string]evmResponseInterpreter{
 //   - An error if the observation does not match any registered endpoint response type
 func getEVMResponseInterpreter(obs *EVMEndpointObservation) (evmResponseInterpreter, error) {
 	switch {
+
+	// eth_chainId
 	case obs.GetChainIdResponse() != nil:
 		return responseInterpreters["chain_id"], nil
+
+	// eth_blockNumber
 	case obs.GetBlockNumberResponse() != nil:
 		return responseInterpreters["block_number"], nil
+
+	// archival (eth_getBalance && eth_getBlockByNumber)
 	case obs.GetArchivalResponse() != nil:
 		return responseInterpreters["get_balance"], nil
+
+	// unrecognized response
 	case obs.GetUnrecognizedResponse() != nil:
 		return responseInterpreters["unrecognized"], nil
+
+	// empty response
 	case obs.GetEmptyResponse() != nil:
 		return responseInterpreters["empty"], nil
+
+	// no response
 	case obs.GetNoResponse() != nil:
 		return responseInterpreters["no_response"], nil
+
 	default:
 		return nil, errInvalidResponseType
 	}
@@ -116,6 +129,7 @@ func (i *blockNumberEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpoi
 // getBalanceEVMResponseInterpreter interprets eth_getBalance response observations.
 // It implements the evmResponseInterpreter interface to translate proto-generated
 // getBalance response types into standardized status codes and error types.
+//
 // DEV_NOTE: This interpreter is only used to apply observations for archival checks.
 type getBalanceEVMResponseInterpreter struct{}
 
