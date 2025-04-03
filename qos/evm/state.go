@@ -11,8 +11,8 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the EVM blockchain based on the endpoints' responses to
-// different requests.
+// ServiceState keeps the expected current state of the EVM blockchain based on
+// the endpoints' responses to different requests.
 type ServiceState struct {
 	logger polylog.Logger
 
@@ -38,17 +38,19 @@ type ServiceState struct {
 	archivalState evmArchivalState
 }
 
-// consensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
+// archivalConsensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
 // selected archival block number before it is considered to be the source of truth for the archival check.
-// TODO_IMPROVE(@commoddity): make this value configurable.
-const consensusThreshold = 5
+// TODO_TECHDEBT(@commoddity): make this value configurable.
+const archivalConsensusThreshold = 5
 
 // evmArchivalState contains the current state of the EVM archival check for the service.
 type evmArchivalState struct {
 	// blockNumberHex is a randomly selected block number from which to check the balance of the contract.
 	blockNumberHex string
+
 	// balance is the balance of the contract at the block number specified in `blockNumberHex`.
 	balance string
+
 	// balanceConsensus is a map of balances and the number of endpoints that reported them.
 	balanceConsensus map[string]int
 }
@@ -60,20 +62,29 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
+	// Ensure the response is not empty.
 	if err := endpoint.validateEmptyResponse(); err != nil {
 		return err
 	}
+
+	// Ensure the chain ID is valid.
 	if err := endpoint.validateChainID(s.chainID); err != nil {
 		return err
 	}
+
+	// Ensure the service state's perceived block number is not ahead of the endpoint's block number.
 	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
 		return err
 	}
+
+	// TODO_IN_THIS_PR(@commoddity): #PUC
 	if s.shouldPerformArchivalCheck() {
 		if err := endpoint.validateArchivalCheck(s.archivalState.balance, endpointAddr); err != nil {
 			return err
 		}
 	}
+
+	// The service state
 	return nil
 }
 
@@ -128,33 +139,43 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		s.assignArchivalBlockNumber()
 	}
 	if s.archivalState.balance == "" {
-		s.updateArchivalBalance(consensusThreshold)
+		s.updateArchivalBalance(archivalConsensusThreshold)
 	}
 
 	return nil
 }
 
 // assignArchivalBlockNumber returns a random archival block number based on the perceived block number.
+// The function applies the following logic:
+// - If perceived block is below threshold, returns block 0
+// - Otherwise, calculates a random block between min archival block and (perceived block - threshold)
+// - Ensures the returned block number is never below the contract start block
 func (s *ServiceState) assignArchivalBlockNumber() string {
 	archivalThreshold := s.archivalCheckConfig.Threshold
 	minArchivalBlock := s.archivalCheckConfig.ContractStartBlock
 
-	var result string
+	var blockNumHex string
+	// Case 1: Block number is below or equal to the archival threshold
 	if s.perceivedBlockNumber <= archivalThreshold {
-		result = blockNumberToHex(0)
+		blockNumHex = blockNumberToHex(0)
 	} else {
+		// Case 2: Block number is above the archival threshold
 		maxBlockNumber := s.perceivedBlockNumber - archivalThreshold
+
+		// Ensure we don't go below the minimum archival block
 		if maxBlockNumber < minArchivalBlock {
-			result = blockNumberToHex(minArchivalBlock)
+			blockNumHex = blockNumberToHex(minArchivalBlock)
 		} else {
+			// Generate a random block number within valid range
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			rangeSize := maxBlockNumber - minArchivalBlock + 1
-			result = blockNumberToHex(minArchivalBlock + (r.Uint64() % rangeSize))
+			blockNumHex = blockNumberToHex(minArchivalBlock + (r.Uint64() % rangeSize))
 		}
 	}
 
-	s.archivalState.blockNumberHex = result
-	return result
+	// Store the calculated block number in the service state
+	s.archivalState.blockNumberHex = blockNumHex
+	return blockNumHex
 }
 
 // updateArchivalBalance checks for consensus and updates the archival balance if it hasn't been set yet.
@@ -169,10 +190,9 @@ func (s *ServiceState) updateArchivalBalance(consensusThreshold int) {
 	}
 }
 
-// shouldPerformArchivalCheck returns a boolean indicating whether the archival check should be performs.
-// This depends on:
-//   - The archival check is enabled for the service
-//   - The archival block number to check the balance of has been set in the service state.
+// shouldPerformArchivalCheck returns true if all of the following conditions are met:
+//   - Archival check is enabled for the service
+//   - Archival block number to check the balance of has been set in the service state.
 func (s *ServiceState) shouldPerformArchivalCheck() bool {
 	if s.archivalCheckConfig.Enabled && s.getArchivalBlockNumberHex() != "" {
 		return true
@@ -184,6 +204,7 @@ func (s *ServiceState) getArchivalBlockNumberHex() string {
 	return s.archivalState.blockNumberHex
 }
 
+// blockNumberToHex converts a integer block number to its hexadecimal representation.
 func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
 }

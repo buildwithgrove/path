@@ -23,7 +23,7 @@ var (
 	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
 	errBlockNumberTooLow     = "endpoint has block height %d, perceived block height is %d"
 
-	// archival check errorss
+	// archival check errors
 	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not returned an archival balance response to a %q request", methodGetBalance)
 	errInvalidArchivalBalanceObs = "endpoint has archival balance %s, expected archival balance %s"
 )
@@ -66,6 +66,10 @@ func (e *endpoint) validateChainID(chainID string) error {
 	return nil
 }
 
+// validateBlockNumber checks if the perceived block number is valid.
+// The perceived block number:
+// - Valid if it is less than or equal to the last observed block number by this endpoint.
+// - Invalid if it is greater than the last observed block number by this endpoint.
 func (e *endpoint) validateBlockNumber(perceivedBlockNumber uint64) error {
 	_, err := e.getBlockNumber()
 	if err != nil {
