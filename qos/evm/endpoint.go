@@ -47,9 +47,9 @@ type endpoint struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
 	parsedBlockNumberResponse *uint64
 
-	// archivalBalance stores the result of processing the endpoint's response
+	// observedArchivalBalance stores the result of processing the endpoint's response
 	// to an `eth_getBalance` request for a specific contract address at a specific block number.
-	archivalBalance string
+	observedArchivalBalance string
 }
 
 func (e *endpoint) validateEmptyResponse() error {
@@ -104,20 +104,22 @@ func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
 		return nil
 	}
 
-	if e.archivalBalance == "" {
+	if e.observedArchivalBalance == "" {
 		return errNoArchivalBalanceObs
 	}
-	if e.archivalBalance != archivalState.getBalance() {
-		return fmt.Errorf(errInvalidArchivalBalanceObs, e.archivalBalance, archivalState.getBalance())
+	if e.observedArchivalBalance != archivalState.expectedBalance {
+		return fmt.Errorf(errInvalidArchivalBalanceObs, e.observedArchivalBalance, archivalState.expectedBalance)
 	}
+
 	return nil
 }
 
+// getArchivalBalance returns the observed archival balance for the endpoint at the archival block height.
 func (e endpoint) getArchivalBalance() (string, error) {
-	if e.archivalBalance == "" {
+	if e.observedArchivalBalance == "" {
 		return "", errNoArchivalBalanceObs
 	}
-	return e.archivalBalance, nil
+	return e.observedArchivalBalance, nil
 }
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
@@ -145,7 +147,7 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 	if getBalanceResponse := obs.GetGetBalanceResponse(); getBalanceResponse != nil {
 		// Only update the archival balance if the balance was observed at the archival block height.
 		if balanceBlockHeight := getBalanceResponse.GetBlockNumber(); balanceBlockHeight == archivalBlockHeight {
-			e.archivalBalance = getBalanceResponse.GetBalance()
+			e.observedArchivalBalance = getBalanceResponse.GetBalance()
 			return true
 		}
 	}

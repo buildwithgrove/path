@@ -5,12 +5,14 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // archivalConsensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
 // selected archival block number before it is considered to be the source of truth for the archival check.
-// TODO_TECHDEBT(@commoddity): settle of a final value for this.
+// TODO_TECHDEBT(@commoddity): settle on a final value for this.
 const archivalConsensusThreshold = 5
 
 // The archival check verifies that nodes can provide accurate historical blockchain data. Here's how it works:
@@ -20,6 +22,7 @@ const archivalConsensusThreshold = 5
 //   - When <archivalConsensusThreshold> endpoints independently report the same balance value, this becomes our "source of truth" for that contract at that block.
 //   - Each endpoint is evaluated against this established truth - any endpoint that reports a different balance value is flagged as lacking proper archival data and will be filtered out by QoS.
 type archivalState struct {
+	logger polylog.Logger
 	// archivalCheckConfig contains all configurable values for an EVM archival check.
 	archivalCheckConfig EVMArchivalCheckConfig
 
@@ -36,7 +39,7 @@ type archivalState struct {
 
 	// balance is the balance of the contract at the block number specified in `blockNumberHex`.
 	// It is determined by reaching a consensus on the balance among `<archivalConsensusThreshold>` endpoints.
-	balance string
+	expectedBalance string
 
 	// balanceConsensus is a map where:
 	//   - key: hex balance value for the archival block number
@@ -51,11 +54,29 @@ type archivalState struct {
 	// TODO_IMPROVE(@commoddity): set an expiry time for the archival state so that a new random block can be selected on an interval.
 }
 
-// initializeConsensusMap initializes the balance consensus map if it doesn't exist.
-func (a *archivalState) initializeConsensusMap() {
-	if a.balanceConsensus == nil {
-		a.balanceConsensus = make(map[string]int)
+func (a *archivalState) isEnabled() bool {
+	return a.archivalCheckConfig.Enabled
+}
+
+// processEndpointArchivalData processes all archival-related data from an endpoint
+// and updates the archival state accordingly.
+//
+// Returns true if the endpoint's archival data was processed successfully,
+// false if the endpoint should be skipped (e.g., missing archival balance).
+func (a *archivalState) processEndpointArchivalData(endpoint endpoint) bool {
+	if !a.isEnabled() {
+		return true
 	}
+
+	// Attempt to retrieve the archival balance from the endpoint
+	balance, err := endpoint.getArchivalBalance()
+	if err != nil {
+		return false
+	}
+
+	// Update the consensus map to determine the balance at the perceived block number
+	a.updateConsensusMap(balance)
+	return true
 }
 
 // updateConsensusMap updates the balance consensus map to determine
@@ -64,40 +85,32 @@ func (a *archivalState) initializeConsensusMap() {
 // Once <archivalConsensusThreshold> endpoints report the same balance,
 // the balance is set as the expected archival balance.
 func (a *archivalState) updateConsensusMap(balance string) {
-	if a.getBalance() == "" && balance != "" {
+	if a.expectedBalance == "" && balance != "" {
 		a.balanceConsensus[balance]++
 	}
 }
 
-// getBalance returns the current archival balance.
-func (a *archivalState) getBalance() string {
-	return a.balance
-}
-
-// getBlockNumberHex returns the current archival block number in hexadecimal format.
-func (a *archivalState) getBlockNumberHex() string {
-	return a.blockNumberHex
-}
-
-// getArchivalCheckRequest returns a JSONRPC request to check the balance of the contract at
-// the block number specified in `blockNumberHex`.
-//
-// It returns false if the archival check is not enabled for the service or if the block number has not been set.
-func (a *archivalState) getArchivalCheckRequest() (jsonrpc.Request, bool) {
-	if a.archivalCheckConfig.Enabled && a.getBlockNumberHex() != "" {
-		archivalCheckReq := jsonrpc.NewRequest(
-			idArchivalBlockCheck,
-			methodGetBalance,
-			// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
-			// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-			a.archivalCheckConfig.ContractAddress,
-			a.getBlockNumberHex(),
-		)
-
-		return archivalCheckReq, true
+// updateArchivalState updates the archival state based on the perceived block number.
+// This handles calculating the archival block number if needed and updating the
+// consensus-based archival balance.
+func (a *archivalState) updateArchivalState(perceivedBlockNumber uint64) {
+	if !a.isEnabled() {
+		return
 	}
 
-	return jsonrpc.Request{}, false
+	// If the archival block number is not yet set for the service, calculate it.
+	// This requires that the perceived block number is set to determine the latest possible block number.
+	if perceivedBlockNumber != 0 && a.blockNumberHex == "" {
+		a.logger.Info().Msg("Calculating archival block number")
+		a.calculateArchivalBlockNumber(perceivedBlockNumber)
+	}
+
+	// If the expected archival balance is not yet set for the service, set it.
+	// This utilizes the consensus map to determine a source of truth for the archival balance.
+	// If <archivalConsensusThreshold> endpoints report the same balance, it is considered the source of truth.
+	if a.expectedBalance == "" {
+		a.updateArchivalBalance(archivalConsensusThreshold)
+	}
 }
 
 // calculateArchivalBlockNumber returns a random archival block number based on the perceived block number.
@@ -138,7 +151,8 @@ func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64
 func (a *archivalState) updateArchivalBalance(consensusThreshold int) {
 	for balance, count := range a.balanceConsensus {
 		if count >= consensusThreshold {
-			a.balance = balance
+			a.logger.Info().Msgf("Updating expected archival balance for block numbers%s to %s", a.blockNumberHex, balance)
+			a.expectedBalance = balance
 			// Reset consensus map after consensus is reached.
 			a.balanceConsensus = make(map[string]int)
 			break
@@ -149,4 +163,26 @@ func (a *archivalState) updateArchivalBalance(consensusThreshold int) {
 // blockNumberToHex converts a integer block number to its hexadecimal representation.
 func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
+}
+
+// getArchivalCheckRequest returns a JSONRPC request to check the balance of:
+//   - the contract specified in `a.archivalCheckConfig.ContractAddress`
+//   - at the block number specified in `a.blockNumberHex`
+//
+// It returns false if the archival check is not enabled for the service or if the block number has not been set.
+func (a *archivalState) getArchivalCheckRequest() (jsonrpc.Request, bool) {
+	if a.archivalCheckConfig.Enabled && a.blockNumberHex != "" {
+		archivalCheckReq := jsonrpc.NewRequest(
+			idArchivalBlockCheck,
+			methodGetBalance,
+			// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
+			// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+			a.archivalCheckConfig.ContractAddress,
+			a.blockNumberHex,
+		)
+
+		return archivalCheckReq, true
+	}
+
+	return jsonrpc.Request{}, false
 }

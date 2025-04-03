@@ -73,9 +73,6 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	s.serviceStateLock.Lock()
 	defer s.serviceStateLock.Unlock()
 
-	// Initialize consensus map if it doesn't exist.
-	s.archivalState.initializeConsensusMap()
-
 	for endpointAddr, endpoint := range updatedEndpoints {
 		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
@@ -98,29 +95,15 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		// Update the perceived block number.
 		s.perceivedBlockNumber = blockNumber
 
-		// Attempt to retrieve the archival balance from the endpoint.
-		balance, err := endpoint.getArchivalBalance()
-		if err != nil {
-			logger.Info().Err(err).Msg("Skipping endpoint without archival balance")
+		// Process archival data from the endpoint (if enabled)
+		if !s.archivalState.processEndpointArchivalData(endpoint) {
+			logger.Info().Msg("Skipping endpoint without archival balance")
 			continue
 		}
-
-		// Update the consensus map to determine the balance at the perceived block number.
-		s.archivalState.updateConsensusMap(balance)
 	}
 
-	// If the archival block number is not yet set for the service, calculate it.
-	// This requires that the perceived block number is set in order to determine the latest possible block number.
-	if s.perceivedBlockNumber != 0 && s.archivalState.getBlockNumberHex() == "" {
-		s.archivalState.calculateArchivalBlockNumber(s.perceivedBlockNumber)
-	}
-
-	// If the expected archival balance is not yet set for the service, set it.
-	// This utilizes the consensus map to determine a source of truth for the archival balance.
-	// If <archivalConsensusThreshold> endpoints report the same balance, it is considered the source of truth.
-	if s.archivalState.getBalance() == "" {
-		s.archivalState.updateArchivalBalance(archivalConsensusThreshold)
-	}
+	// Update the archival state based on the perceived block number
+	s.archivalState.updateArchivalState(s.perceivedBlockNumber)
 
 	return nil
 }

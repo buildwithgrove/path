@@ -46,9 +46,13 @@ func (c ServiceConfig) GetEVMChainID() string {
 	return c.EVMChainID
 }
 
-func (c ServiceConfig) GetEVMArchivalCheckConfig() EVMArchivalCheckConfig {
+func (c ServiceConfig) GetEVMArchivalCheckConfig() (EVMArchivalCheckConfig, bool) {
+	if !c.ArchivalCheckConfig.Enabled {
+		return EVMArchivalCheckConfig{}, false
+	}
+
 	if c.ArchivalCheckConfig.Threshold == 0 {
 		c.ArchivalCheckConfig.Threshold = defaultEVMArchivalThreshold
 	}
-	return c.ArchivalCheckConfig
+	return c.ArchivalCheckConfig, true
 }
