@@ -214,9 +214,12 @@ message EVMGetBalanceResponse {
   // Used to determine whether the get balance request should be used to update archival state.
   string block_number = 3;
 
+  // The contract address for which the balance was checked.
+  string contract_address = 4;
+
   // Why the response failed QoS validation
   // If not set, the response is considered valid
-  optional EVMResponseValidationError response_validation_error = 4 [(metadata.semantic_meaning) = "Validity failure type"];
+  optional EVMResponseValidationError response_validation_error = 5 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation

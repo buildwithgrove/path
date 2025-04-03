@@ -10,16 +10,20 @@ import (
 
 // The errors below list all the possible validation errors on an endpoint.
 var (
+	// Shared error message templates
+	errNoObservationStr   = "endpoint has not had an observation of its response to a %q request"
+	errInvalidResponseStr = "endpoint returned an invalid response to a %q request"
+
 	// empty response errors
 	errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
 
 	// chainID check errors
-	errNoChainIDObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
-	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodChainID)
+	errNoChainIDObs      = fmt.Errorf(errNoObservationStr, methodChainID)
+	errInvalidChainIDObs = fmt.Errorf(errInvalidResponseStr, methodChainID)
 
 	// block number check errors
-	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errNoBlockNumberObs      = fmt.Errorf(errNoObservationStr, methodBlockNumber)
+	errInvalidBlockNumberObs = fmt.Errorf(errInvalidResponseStr, methodBlockNumber)
 	errBlockNumberTooLow     = "endpoint has block height %d, perceived block height is %d"
 
 	// archival check errors

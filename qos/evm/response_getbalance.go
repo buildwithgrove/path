@@ -50,13 +50,16 @@ func responseUnmarshallerGetBalance(
 		validationError = &errValue
 	}
 
+	// Extract the contract address and block number from the JSON-RPC request.
+	requestParams := getRequestParams(jsonrpcReq)
+
 	// Valid eth_getBalance response: no error and a valid balance.
 	return responseToGetBalance{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		balance:         balanceResponse,
-		// Extract the block number from the JSON-RPC request and attach it to the observation.
-		blockNumber:     getBlockNumberFromRequest(jsonrpcReq),
+		contractAddress: requestParams[0],
+		blockNumber:     requestParams[1],
 		validationError: validationError,
 	}, nil
 }
@@ -68,10 +71,12 @@ type responseToGetBalance struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// balance string
+	// the balance value returned in the response
 	balance string
 
-	// blockNumber string
+	// the contract address from the request params (first item in the params array)
+	contractAddress string
+	// the block number from the request params (second item in the params array)
 	blockNumber string
 
 	// validationError indicates why the response failed validation, if it did.
@@ -116,35 +121,27 @@ func (r responseToGetBalance) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
-// getBlockNumberFromRequest extracts the block number (hex string) from the JSONRPC request.
+// getRequestParams extracts the string params from the JSONRPC request.
 // For 'eth_getBalance', the block number is the second parameter in the params array.
 //
 // For example, for the JSON-RPC request:
 // `{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
-// the block number is "0x59E8A"
-//
-// Returns an empty string if the block number cannot be extracted.
-func getBlockNumberFromRequest(req jsonrpc.Request) string {
+// it will return the params array as `["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]`
+func getRequestParams(req jsonrpc.Request) [2]string {
 	if req.Params.IsEmpty() {
-		return ""
+		return [2]string{}
 	}
 
 	paramsBz, err := json.Marshal(req.Params)
 	if err != nil {
-		return ""
+		return [2]string{}
 	}
 
 	// eth_getBalance params are always an array of two strings
 	var paramsArray [2]string
 	if err := json.Unmarshal(paramsBz, &paramsArray); err != nil {
-		return ""
+		return [2]string{}
 	}
 
-	// Extract the block parameter (second item in array)
-	blockParam := paramsArray[1]
-	if blockParam == "" {
-		return ""
-	}
-
-	return blockParam
+	return paramsArray
 }
