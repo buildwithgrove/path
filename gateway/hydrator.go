@@ -206,11 +206,16 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					if err != nil {
 						// TODO_FUTURE: consider skipping the rest of the checks based on the error.
 						// e.g. if the endpoint is refusing connections it may be reasonable to skip it
+						// in this iteration of QoS checks.
 						//
 						// TODO_FUTURE: consider retrying failed service requests
-						// e.g. protocol-level, qos-level observations.
-						gatewayRequestCtx.BroadcastAllObservations()
+						// as the failure may not be related to the quality of the endpoint.
+						logger.Warn().Err(err).Msg("Failed to send a relay. Only protocol-level observations will be applied.")
 					}
+
+					// publish all observations gathered through sending the synthetic service requests.
+					// e.g. protocol-level, qos-level observations.
+					gatewayRequestCtx.BroadcastAllObservations()
 				}
 			}
 		}()
