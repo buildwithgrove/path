@@ -1,0 +1,39 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/jsonrpc.proto"; // Import basic JSONRPC messages.
+
+// RequestValidationError identifies the type of validation error encountered.
+enum RequestValidationError {
+  REQUEST_VALIDATION_ERROR_UNSPECIFIED = 0;
+  REQUEST_VALIDATION_ERROR_BODY_READ_FAILURE = 1;     // Error reading HTTP request body
+  REQUEST_VALIDATION_ERROR_UNMARSHALING_FAILURE = 2;  // Error parsing JSON-RPC request
+  REQUEST_VALIDATION_ERROR_INVALID_REQUEST = 3;       // Request format is incorrect
+  REQUEST_VALIDATION_ERROR_INVALID_METHOD = 4;        // Method is not supported
+  REQUEST_VALIDATION_ERROR_INVALID_PARAMS = 5;        // Parameters are incorrect
+}
+
+// TODO_IN_THIS_PR: Consider removing the http_status_code.
+
+// ValidationFailure contains details about a request validation failure
+message ValidationFailure {
+  RequestValidationError error_type = 1;
+  int32 http_status_code = 2;
+  string validation_error_details = 3;
+  
+  // Only set for validation failures on valid JSONRPC structures
+  // e.g. missing params field when required.
+  optional JsonRpcRequest jsonrpc_request = 4;
+}
+
+// TODO_IN_THIS_PR: use `oneof` below: either the request is set, or the validationerror
+// RequestObservation captures details about the original client request.
+message RequestObservation {
+  // Only set if validation was successful
+  optional JsonRpcRequest jsonrpc_request = 1;
+  
+  // Only set if validation failed
+  optional ValidationFailure validation_failure = 2;
+}

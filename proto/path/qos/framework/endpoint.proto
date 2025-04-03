@@ -1,0 +1,15 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/endpoint_query_result.proto";  // Import RequestObservation
+
+// EndpointObservation captures details about an endpoint query.
+message EndpointObservation {
+  // Address of the endpoint that handled the request
+  string endpoint_addr = 1;
+  
+  // Single result item extracted from this endpoint query.
+  EndpointQueryResult result = 2;
+}

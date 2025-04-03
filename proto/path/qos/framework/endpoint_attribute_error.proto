@@ -1,0 +1,30 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/endpoint_sanction.proto"; // import Sanction definitions
+
+// EndpointErrorKind identifies different kinds of endpoint data errors.
+enum EndpointErrorKind {
+  ENDPOINT_DATA_ERROR_KIND_UNSPECIFIED = 0;
+  ENDPOINT_DATA_ERROR_KIND_NO_INTERACTION = 1;     // No endpoint interaction occurred or no payload received
+  ENDPOINT_DATA_ERROR_KIND_EMPTY_PAYLOAD = 2;      // Empty payload from endpoint
+  ENDPOINT_DATA_ERROR_KIND_UNMARSHALING = 3;       // Could not parse endpoint payload
+  ENDPOINT_DATA_ERROR_KIND_INVALID_RESULT = 4;     // Payload result doesn't match expected value
+}
+
+// EndpointAttributeError contains error details for endpoint queries.
+// Maps to EndpointAttributeError in endpoint_attribute_error.go
+message EndpointAttributeError {
+  // Specifies the kind of endpoint eror observed.
+  // Example: Returned payload cannot be parsed into a JSONRPC response.
+  EndpointErrorKind error_kind = 1;
+
+  // Description set by the custom service implementation
+  string description = 2;
+  
+  // RecommendedSanction set by the custom service implementation
+  // Only set if the endpoint error has fetched it a sanction.
+  optional Sanction recommended_sanction = 3;
+}

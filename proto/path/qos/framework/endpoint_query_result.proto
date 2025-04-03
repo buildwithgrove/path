@@ -1,0 +1,13 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/endpoint_attribute.proto"; // import EndpointAttribute
+
+// EndpointQueryResult captures information extracted from a service endpoint query.
+// Maps to EndpointQueryResult in endpoint_query_result.go
+message EndpointQueryResult {
+  // The set of endpoint attributes
+  map<string, EndpointAttribute> endpoint_attributes = 1;
+}

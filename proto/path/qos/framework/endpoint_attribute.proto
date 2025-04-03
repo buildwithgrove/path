@@ -1,0 +1,20 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/endpoint_attribute_error.proto"; // import EndpointAttributeError
+
+// EndpointAttribute represents a single data item extracted from an endpoint response.
+// Maps to EndpointAttribute in endpoint_attribute.go
+message EndpointAttribute {
+  // We use oneof to represent the mutually exclusive types (string or int)
+  oneof value {
+    string string_value = 1;
+    int32 int_value = 2;
+  }
+  
+  // Error information if this attribute is associated with a failure
+  // Optional field
+  optional EndpointAttributeError error = 3;
+}

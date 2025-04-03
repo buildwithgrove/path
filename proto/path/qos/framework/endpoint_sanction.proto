@@ -1,0 +1,20 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "google/protobuf/timestamp.proto";
+
+// SanctionType identifies different types of endpoint sanctions.
+enum SanctionType {
+  SANCTION_TYPE_UNSPECIFIED = 0;
+  SANCTION_TYPE_TEMPORARY = 1;  // Time-limited exclusion
+  SANCTION_TYPE_PERMANENT = 2;  // Permanent exclusion
+}
+
+// Sanction represents a recommendation to limit endpoint usage.
+message Sanction {
+  SanctionType type = 1;            // Type of sanction
+  string reason = 2;                // Reason for the sanction 
+  google.protobuf.Timestamp expiry_timestamp = 3; 
+}

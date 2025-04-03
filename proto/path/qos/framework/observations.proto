@@ -1,0 +1,20 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/request.proto";  // Import RequestObservation
+import "path/qos/framework/endpoint.proto"; // Import EndpointObservation
+
+// Observations is the top-level container for all QoS observations for a request.
+message Observations {
+  // Service identification
+  string service_id = 1;
+  string service_description = 2; // e.g. EVM, Solana, CometBFT
+  
+  // Observation of the client request
+  RequestObservation request_observation = 3;
+  
+  // Observations from endpoint(s)
+  repeated EndpointObservation endpoint_observations = 4;
+}
