@@ -144,10 +144,10 @@ message EVMEndpointObservation {
     // * Chain IDs: https://chainlist.org
     EVMBlockNumberResponse block_number_response = 3;
 
-    // Response to `eth_getBlockByNumber` request.
+    // Response to `eth_getBalance` request made as part of an archival check.
     // See the EVMArchivalResponse message for more details.
     // References:
-    // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+    // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
     EVMArchivalResponse archival_response = 4;
 
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)

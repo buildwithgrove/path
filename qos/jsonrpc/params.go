@@ -70,14 +70,3 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 func (p Params) IsEmpty() bool {
 	return len(p.rawMessage) == 0
 }
-
-// Slice returns the params as a slice of any.
-// As the "params" field may be of any type, according to the JSON-RPC spec,
-// a type assertion must be used where this slice is required.
-func (p Params) Slice() ([]any, error) {
-	var params []any
-	if err := json.Unmarshal(p.rawMessage, &params); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal params as slice: %v", err)
-	}
-	return params, nil
-}
