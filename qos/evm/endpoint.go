@@ -133,11 +133,9 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 		return true
 	}
 
-	if shouldPerformArchivalCheck {
-		if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
-			e.archivalBalance = archivalResponse.GetBalance()
-			return true
-		}
+	if getBalanceResponse := obs.GetGetBalanceResponse(); getBalanceResponse != nil {
+		e.archivalBalance = getBalanceResponse.GetBalance()
+		return true
 	}
 
 	return false

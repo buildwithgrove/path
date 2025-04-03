@@ -14,6 +14,11 @@ var _ response = responseToGetBalance{}
 
 // responseUnmarshallerGetBalance deserializes the provided JSONRPC payload into
 // a responseToGetBalance struct, adding any encountered errors to the returned struct.
+//
+// The results from this method are used to update the endpoint's archival state
+// only if they are for the currently selected archival block number.
+//
+// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 func responseUnmarshallerGetBalance(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
@@ -50,6 +55,8 @@ func responseUnmarshallerGetBalance(
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		balance:         balanceResponse,
+		// Extract the block number from the JSON-RPC request and attach it to the observation.
+		blockNumber:     getBlockNumberFromRequest(jsonrpcReq),
 		validationError: validationError,
 	}, nil
 }
@@ -64,6 +71,9 @@ type responseToGetBalance struct {
 	// balance string
 	balance string
 
+	// blockNumber string
+	blockNumber string
+
 	// validationError indicates why the response failed validation, if it did.
 	validationError *qosobservations.EVMResponseValidationError
 }
@@ -72,10 +82,11 @@ type responseToGetBalance struct {
 // Implements the response interface.
 func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
-		ResponseObservation: &qosobservations.EVMEndpointObservation_ArchivalResponse{
-			ArchivalResponse: &qosobservations.EVMArchivalResponse{
+		ResponseObservation: &qosobservations.EVMEndpointObservation_GetBalanceResponse{
+			GetBalanceResponse: &qosobservations.EVMGetBalanceResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 				Balance:                 r.balance,
+				BlockNumber:             r.blockNumber,
 				ResponseValidationError: r.validationError,
 			},
 		},
@@ -103,4 +114,37 @@ func (r responseToGetBalance) getResponsePayload() []byte {
 // getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response.
 func (r responseToGetBalance) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
+// getBlockNumberFromRequest extracts the block number (hex string) from the JSONRPC request.
+// For 'eth_getBalance', the block number is the second parameter in the params array.
+//
+// For example, for the JSON-RPC request:
+// `{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
+// the block number is "0x59E8A"
+//
+// Returns an empty string if the block number cannot be extracted.
+func getBlockNumberFromRequest(req jsonrpc.Request) string {
+	if req.Params.IsEmpty() {
+		return ""
+	}
+
+	paramsBz, err := json.Marshal(req.Params)
+	if err != nil {
+		return ""
+	}
+
+	// eth_getBalance params are always an array of two strings
+	var paramsArray [2]string
+	if err := json.Unmarshal(paramsBz, &paramsArray); err != nil {
+		return ""
+	}
+
+	// Extract the block parameter (second item in array)
+	blockParam := paramsArray[1]
+	if blockParam == "" {
+		return ""
+	}
+
+	return blockParam
 }

@@ -144,11 +144,11 @@ message EVMEndpointObservation {
     // * Chain IDs: https://chainlist.org
     EVMBlockNumberResponse block_number_response = 3;
 
-    // Response to `eth_getBalance` request made as part of an archival check.
-    // See the EVMArchivalResponse message for more details.
+    // Response to `eth_getBalance` request, which may be used to update archival state.
+    // See the EVMGetBalanceResponse message for more details.
     // References:
     // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-    EVMArchivalResponse archival_response = 4;
+    EVMGetBalanceResponse get_balance_response = 4;
 
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
     EVMUnrecognizedResponse unrecognized_response = 5;
@@ -201,22 +201,22 @@ message EVMBlockNumberResponse {
   optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
-// EVMArchivalResponse stores the response to an `eth_getBlockByNumber` request.
-// DEV_NOTE: Archival responses are based on the ability to retrieve old block data.
-// For this reason, there is a direct 1:1 mapping from EVMArchivalResponse to eth_getBlockByNumber.
-// See the docs in path.grove.city for more details.
-// TODO(@olshansky): Update the link above once its live.
-// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-message EVMArchivalResponse {
+// EVMGetBalanceResponse stores the response to an `eth_getBalance` request.
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+message EVMGetBalanceResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
 
   // The balance value at the archival block number associated with the contract address specified.
   string balance = 2;
 
+  // The block number at which the balance was checked.
+  // Used to determine whether the get balance request should be used to update archival state.
+  string block_number = 3;
+
   // Why the response failed QoS validation
   // If not set, the response is considered valid
-  optional EVMResponseValidationError response_validation_error = 3 [(metadata.semantic_meaning) = "Validity failure type"];
+  optional EVMResponseValidationError response_validation_error = 4 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
 // EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
