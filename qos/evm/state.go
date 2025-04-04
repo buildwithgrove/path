@@ -30,7 +30,7 @@ type ServiceState struct {
 	perceivedBlockNumber uint64
 
 	// archivalState contains the current state of the EVM archival check for the service.
-	archivalState archivalState
+	archivalState *archivalState
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
@@ -45,6 +45,9 @@ type ServiceState struct {
 func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
+
+	// TODO_TECHDEBT(@commoddity): move the endpoint validation methods to the service state
+	// and pass them the endpoint rather than passing the service state to each endpoint method.
 
 	// Ensure the response is not empty.
 	if err := endpoint.validateEmptyResponse(); err != nil {
@@ -94,21 +97,19 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 		// Update the perceived block number.
 		s.perceivedBlockNumber = blockNumber
-
-		// Process archival data from the endpoint (if enabled)
-		// This contributes to consensus regarding the expected archival balance
-		// at a specific historical block number
-		if !s.archivalState.processEndpointArchivalData(endpoint) {
-			logger.Info().Msg("Skipping endpoint without archival balance")
-			continue
-		}
 	}
 
-	// Update the archival state based on the perceived block number
-	// This handles:
-	// 1. Calculating a random archival block number if needed
-	// 2. Determining consensus on the expected balance at that block number
-	s.archivalState.updateArchivalState(s.perceivedBlockNumber)
+	// If archival checks are enabled for the service, update the archival state.
+	if s.archivalState.isEnabled() {
+		// Update the archival state based on the perceived block number.
+		//
+		// This handles:
+		// 	1. Calculating an archival block number.
+		// 	2. Getting the expected balance at that block number.
+		//
+		// When the expected balance at the archival block number is known, this becomes a no-op.
+		s.archivalState.updateArchivalState(s.perceivedBlockNumber, updatedEndpoints)
+	}
 
 	return nil
 }

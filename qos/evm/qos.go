@@ -19,7 +19,7 @@ func NewQoSInstance(logger polylog.Logger, config ServiceConfig) *QoS {
 	}
 
 	if archivalCheckConfig, enabled := config.GetEVMArchivalCheckConfig(); enabled {
-		serviceState.archivalState = archivalState{
+		serviceState.archivalState = &archivalState{
 			logger:              logger.With("state", "archival"),
 			archivalCheckConfig: archivalCheckConfig,
 			// Initialize the balance consensus map, which determines
