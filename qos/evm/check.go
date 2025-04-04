@@ -82,7 +82,7 @@ func getArchivalCheckRequest(archivalState archivalState) (jsonrpc.Request, bool
 	// Pass params in this order: [<contract_address>, <block_number>]
 	// eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-	params, err := jsonrpc.BuildArrayParamsFromStrings([2]string{
+	params, err := jsonrpc.BuildParamsFromStringArray([2]string{
 		archivalState.archivalCheckConfig.ContractAddress,
 		archivalState.blockNumberHex,
 	})
