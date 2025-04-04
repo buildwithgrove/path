@@ -70,10 +70,16 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, nil),
 
 	// Anvil - Ethereum development/testing
-	evm.NewEVMServiceQoSConfig("anvil", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
-		"0x28C6c06298d514Db089934071355E5743bf21d60", // https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-		12_300_000, // Contract start block
-	)),
+	evm.NewEVMServiceQoSConfig(
+		"anvil",
+		defaultEVMChainID,
+		evm.NewEVMArchivalCheckConfig(
+			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+			"0x28C6c06298d514Db089934071355E5743bf21d60",
+			// Contract start block
+			12_300_000,
+		),
+	),
 
 	// Anvil WebSockets - Ethereum WebSockets development/testing
 	evm.NewEVMServiceQoSConfig("anvilws", defaultEVMChainID, nil),
@@ -125,10 +131,16 @@ var morseServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", nil),
 
 	// Ethereum (1)
-	evm.NewEVMServiceQoSConfig("F00C", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
-		"0x28C6c06298d514Db089934071355E5743bf21d60", // https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-		12_300_000, // ContractStartBlock
-	)),
+	evm.NewEVMServiceQoSConfig(
+		"F00C",
+		defaultEVMChainID,
+		evm.NewEVMArchivalCheckConfig(
+			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+			"0x28C6c06298d514Db089934071355E5743bf21d60",
+			// Contract start block
+			12_300_000,
+		),
+	),
 
 	// Ethereum Holesky Testnet (17000)
 	evm.NewEVMServiceQoSConfig("F00D", "0x4268", nil),
@@ -173,10 +185,16 @@ var morseServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("F01A", "0x505", nil),
 
 	// Oasys (248)
-	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
-		"0xf89d7b9c864f589bbF53a82105107622B35EaA40", // https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-		424_300, // ContractStartBlock
-	)),
+	evm.NewEVMServiceQoSConfig(
+		"F01C",
+		"0xf8",
+		evm.NewEVMArchivalCheckConfig(
+			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+			"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+			// Contract start block
+			424_300,
+		),
+	),
 
 	// Optimism (10)
 	evm.NewEVMServiceQoSConfig("F01D", "0xa", nil),
@@ -188,10 +206,16 @@ var morseServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("F01F", "0xcc", nil),
 
 	// Polygon (137)
-	evm.NewEVMServiceQoSConfig("F021", "0x89", evm.NewEVMArchivalCheckConfig(
-		"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-		5_000_000, // ContractStartBlock
-	)),
+	evm.NewEVMServiceQoSConfig(
+		"F021",
+		"0x89",
+		evm.NewEVMArchivalCheckConfig(
+			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+			"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+			// Contract start block
+			5_000_000,
+		),
+	),
 
 	// Polygon Amoy Testnet (80002)
 	evm.NewEVMServiceQoSConfig("F022", "0x13882", nil),
@@ -218,10 +242,16 @@ var morseServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
 
 	// XRPL EVM Testnet (1449000)
-	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc", // https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		368_266, // ContractStartBlock
-	)),
+	evm.NewEVMServiceQoSConfig(
+		"F036",
+		"0x161c28",
+		evm.NewEVMArchivalCheckConfig(
+			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+			"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+			// Contract start block
+			368_266,
+		),
+	),
 
 	// Sonic (146)
 	evm.NewEVMServiceQoSConfig("F02D", "0x92", nil),
