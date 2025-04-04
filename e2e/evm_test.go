@@ -107,12 +107,21 @@ func getMorseTestCases() []testCase {
 func getShannonTestCases() []testCase {
 	return []testCase{
 		{
-			name:      "anvil (Ethereum) Load Test",
+			name:      "anvil (local Ethereum) Load Test",
 			serviceID: "anvil",
-			methods:   runAllMethods(),
+			// anvil is an ephemeral test chain so we don't test
+			// `eth_getTransactionReceipt` and `eth_getTransactionByHash`
+			methods: []jsonrpc.Method{
+				eth_blockNumber,
+				eth_call,
+				eth_getBlockByNumber,
+				eth_getBalance,
+				eth_chainId,
+				eth_getTransactionCount,
+				eth_gasPrice,
+			},
 			serviceParams: serviceParameters{
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-				transactionHash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
 				callData:        "0x18160ddd",
 			},
 		},
@@ -236,12 +245,44 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			// Add space after progress bars
 			fmt.Println()
 
+			// TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
+			// properly supplied chains on Shannon to run E2E tests.
+			if testProtocol == shannon {
+				// Adjust latency expectations for Shannon protocol.
+				methodDefinitions = adjustLatencyForShannonTests(methodDefinitions)
+			}
+
 			// Validate results for each method
 			for _, method := range testCases[i].methods {
 				validateResults(t, results[method], methodDefinitions[method])
 			}
 		})
 	}
+}
+
+// TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
+// properly supplied chains on Shannon to run E2E tests.
+// adjustLatencyForShannonTests increases the latency expectations by 4x for Shannon tests
+// since there is currently only one supplier for anvil and it's a test blockchain.
+func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[jsonrpc.Method]methodDefinition {
+	// Create a new map to avoid modifying the original
+	adjustedDefs := make(map[jsonrpc.Method]methodDefinition, len(defs))
+
+	fmt.Println("⚠️  Adjusting latency expectations for Shannon tests by 4x")
+
+	// Copy and adjust each method definition
+	for method, def := range defs {
+		adjustedDef := def
+
+		// Multiply latency expectations by 4
+		adjustedDef.maxP50Latency = def.maxP50Latency * 4
+		adjustedDef.maxP95Latency = def.maxP95Latency * 4
+		adjustedDef.maxP99Latency = def.maxP99Latency * 4
+
+		adjustedDefs[method] = adjustedDef
+	}
+
+	return adjustedDefs
 }
 
 /* -------------------- Get Test Block Number -------------------- */
