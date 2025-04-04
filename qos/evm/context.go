@@ -61,7 +61,7 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	endpointStore *EndpointStore
+	endpointStore *endpointStore
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request

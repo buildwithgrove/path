@@ -23,8 +23,8 @@ var _ gateway.QoSService = &QoS{}
 //   - Endpoint validation and selection
 type QoS struct {
 	logger polylog.Logger
-	*EndpointStore
-	*ServiceState
+	*endpointStore
+	*serviceState
 	*evmRequestValidator
 }
 
@@ -43,7 +43,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		logger:        qos.logger,
-		endpointStore: qos.EndpointStore,
+		endpointStore: qos.endpointStore,
 	}, true
 }
 
@@ -59,7 +59,7 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return errors.New("ApplyObservations: received nil EVM observation")
 	}
 
-	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(evmObservations)
+	updatedEndpoints := q.endpointStore.UpdateEndpointsFromObservations(evmObservations)
 
-	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+	return q.serviceState.UpdateFromEndpoints(updatedEndpoints)
 }

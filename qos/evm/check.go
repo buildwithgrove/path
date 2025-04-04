@@ -18,11 +18,11 @@ const (
 // EndpointStore provides the endpoint check generator required by
 // the gateway package to augment endpoints' quality data,
 // using synthetic service requests.
-var _ gateway.QoSEndpointCheckGenerator = &EndpointStore{}
+var _ gateway.QoSEndpointCheckGenerator = &endpointStore{}
 
 // TODO_IMPROVE(@commoddity): implement QoS check expiry functionality and use protocol.EndpointAddr
 // to filter out checks for any endpoint which has acurrently valid QoS data point.
-func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
+func (es *endpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gateway.RequestQoSContext {
 	qualityChecks := []gateway.RequestQoSContext{
 		getEndpointCheck(es, getChainIDCheckRequest()),
 		getEndpointCheck(es, getBlockNumberCheckRequest()),
@@ -37,7 +37,7 @@ func (es *EndpointStore) GetRequiredQualityChecks(_ protocol.EndpointAddr) []gat
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
-func getEndpointCheck(endpointStore *EndpointStore, jsonrpcReq jsonrpc.Request) *requestContext {
+func getEndpointCheck(endpointStore *endpointStore, jsonrpcReq jsonrpc.Request) *requestContext {
 	return &requestContext{
 		logger:        endpointStore.logger,
 		endpointStore: endpointStore,
@@ -73,9 +73,9 @@ func getBlockNumberCheckRequest() jsonrpc.Request {
 // '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
 func getArchivalCheckRequest(archivalState archivalState) (jsonrpc.Request, bool) {
 	// Do not perform an archival check if:
-	// 	- The archival check is not enabled for the service.
 	// 	- The archival block number has not yet been set in the archival state.
-	if !archivalState.archivalCheckConfig.Enabled || archivalState.blockNumberHex == "" {
+	// 	- The archival check is not enabled for the service.
+	if archivalState.blockNumberHex == "" || archivalState.archivalCheckConfig.IsEmpty() {
 		return jsonrpc.Request{}, false
 	}
 
@@ -83,7 +83,7 @@ func getArchivalCheckRequest(archivalState archivalState) (jsonrpc.Request, bool
 	// eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 	params, err := jsonrpc.BuildParamsFromStringArray([2]string{
-		archivalState.archivalCheckConfig.ContractAddress,
+		archivalState.archivalCheckConfig.contractAddress,
 		archivalState.blockNumberHex,
 	})
 	if err != nil {
