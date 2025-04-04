@@ -10,11 +10,21 @@ const QoSType = "evm"
 // practices for defining what constitutes an archival block.
 const DefaultEVMArchivalThreshold = 128
 
+// defaultEVMBlockNumberSyncAllowance is the default sync allowance for EVM-based chains.
+// This number indicates how many blocks behind the perceived
+// block number the endpoint may be and still be considered valid.
+const defaultEVMBlockNumberSyncAllowance = 5
+
 type ServiceConfig struct {
 	// serviceID returns the ID of the service.
 	ServiceID protocol.ServiceID
-	// evmChainID returns the chain ID.
+	// EVMChainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
+	// See the following link for more details: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+	//
+	// Chain IDs Reference: https://chainlist.org/
 	EVMChainID string
+	// SyncAllowance is the number of blocks that the perceived block number is allowed to be behind the actual block number.
+	SyncAllowance uint64
 	// ArchivalCheckConfig is the configuration for the archival check.
 	ArchivalCheckConfig EVMArchivalCheckConfig
 }
@@ -42,11 +52,18 @@ func (c ServiceConfig) GetServiceQoSType() string {
 	return QoSType
 }
 
-func (c ServiceConfig) GetEVMChainID() string {
+func (c ServiceConfig) getEVMChainID() string {
 	return c.EVMChainID
 }
 
-func (c ServiceConfig) GetEVMArchivalCheckConfig() (EVMArchivalCheckConfig, bool) {
+func (c ServiceConfig) getSyncAllowance() uint64 {
+	if c.SyncAllowance == 0 {
+		c.SyncAllowance = defaultEVMBlockNumberSyncAllowance
+	}
+	return c.SyncAllowance
+}
+
+func (c ServiceConfig) getEVMArchivalCheckConfig() (EVMArchivalCheckConfig, bool) {
 	if !c.ArchivalCheckConfig.Enabled {
 		return EVMArchivalCheckConfig{}, false
 	}

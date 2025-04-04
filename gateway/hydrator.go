@@ -19,10 +19,12 @@ import (
 // EndpointHydrator provides the functionality required for health check.
 var _ health.Check = &EndpointHydrator{}
 
-const (
-	// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
-	componentNameHydrator = "endpoint-hydrator"
-)
+// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
+const componentNameHydrator = "endpoint-hydrator"
+
+// bootstrapInitialQoSDataChecks is the number of checks to run immediately after the hydrator starts.
+// This helps to identify and filter out invalid endpoints as soon as possible.
+const bootstrapInitialQoSDataChecks = 5
 
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
@@ -88,7 +90,7 @@ func (eph *EndpointHydrator) Start() error {
 		eph.waitForProtocolHealth()
 
 		// Bootstrap QoS data with initial checks before starting regular interval
-		eph.bootstrapInitialQoSData(5) // Run 5 initial checks
+		eph.bootstrapInitialQoSData() // Run 5 initial checks
 
 		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
@@ -105,32 +107,33 @@ func (eph *EndpointHydrator) Start() error {
 // This ensures that the hydrator only starts running once the underlying
 // protocol layer is ready.
 func (eph *EndpointHydrator) waitForProtocolHealth() {
-	logger := eph.Logger.With("component", "waitForProtocolHealth")
-	logger.Info().Msg("Waiting for protocol to become healthy before starting hydrator")
+	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
 
 	for !eph.Protocol.IsAlive() {
-		logger.Debug().Msg("Protocol not yet healthy, waiting...")
+		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
 		time.Sleep(1 * time.Second)
 	}
 
-	logger.Info().Msg("Protocol is now healthy, hydrator can proceed")
+	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 // bootstrapInitialQoSData runs a specified number of hydrator checks immediately
 // to quickly bootstrap QoS data on startup. This helps to identify and filter out
 // invalid endpoints as soon as possible. The hydrator's health status is only set
 // to true after all initial checks have completed successfully.
-func (eph *EndpointHydrator) bootstrapInitialQoSData(numChecks int) {
-	logger := eph.Logger.With("component", "bootstrapInitialQoSData", "num_checks", numChecks)
-	logger.Info().Msg("Bootstrapping QoS data with initial checks")
+func (eph *EndpointHydrator) bootstrapInitialQoSData() {
+	eph.Logger.Info().Msg("bootstrapInitialQoSData: bootstrapping QoS data with initial checks")
 
 	// Run initial checks
-	for range numChecks {
-		logger.Debug().Msg("Bootstrapping initial hydrator checks on startup")
+	for i := range bootstrapInitialQoSDataChecks {
+		eph.Logger.Info().Msgf("bootstrapInitialQoSData: hydrator run %d of %d checks on startup",
+			i+1,
+			bootstrapInitialQoSDataChecks,
+		)
 		eph.run()
 	}
 
-	logger.Info().Msg("Initial QoS data bootstrap completed")
+	eph.Logger.Info().Msg("bootstrapInitialQoSData: initial QoS data bootstrap completed")
 }
 
 func (eph *EndpointHydrator) run() {

@@ -24,21 +24,21 @@ var (
 type endpointCheckBlockNumber struct {
 	// parsedBlockNumberResponse stores the result of processing the endpoint's response to an `eth_blockNumber` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to an `eth_blockNumber` request.
-	blockNumber *uint64
-	expiresAt   time.Time
+	parsedBlockNumberResponse *uint64
+	expiresAt                 time.Time
 }
 
 // isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
-func (e *endpointCheckBlockNumber) isValid(serviceState *ServiceState) error {
-	if e.blockNumber == nil {
+func (e *endpointCheckBlockNumber) isValid(perceivedBlockNumber uint64, syncAllowance uint64) error {
+	if e.parsedBlockNumberResponse == nil {
 		return errNoBlockNumberObs
 	}
 
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
-	minAllowedBlockNumber := serviceState.perceivedBlockNumber - serviceState.serviceConfig.getSyncAllowance()
+	minAllowedBlockNumber := perceivedBlockNumber - syncAllowance
 
-	if *e.blockNumber < minAllowedBlockNumber {
+	if *e.parsedBlockNumberResponse < minAllowedBlockNumber {
 		return errInvalidBlockNumberObs
 	}
 

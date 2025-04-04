@@ -15,27 +15,32 @@ const methodGetBalance = jsonrpc.Method("eth_getBalance")
 const checkArchivalInterval = 20 * time.Minute
 
 var (
-	errNoArchivalBalanceObs = fmt.Errorf("endpoint has not returned an archival balance response to a %q request", methodGetBalance)
-	errInvalidArchivalObs   = fmt.Errorf("endpoint returned an invalid response to a %q request", methodGetBalance)
+	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not returned an archival balance response to a %q request", methodGetBalance)
+	errInvalidArchivalBalanceObs = "endpoint has archival balance %s, expected archival balance %s"
 )
 
 // endpointCheckBlockNumber is a check that ensures the endpoint's block height is greater than the perceived block height.
 // It is used to ensure that the endpoint is not behind the chain.
 type endpointCheckArchival struct {
-	// archivalBalance stores the result of processing the endpoint's response to an `eth_getBalance` request.
-	// It is empty if there has NOT been an observation of the endpoint's response to an `eth_getBalance` request.
-	archivalBalance string
-	expiresAt       time.Time
+	// observedArchivalBalance stores the result of processing the endpoint's response
+	// to an `eth_getBalance` request for a specific contract address at a specific block number.
+	observedArchivalBalance string
+	expiresAt               time.Time
 }
 
 // isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
-func (e *endpointCheckArchival) isValid(serviceState *ServiceState) error {
-	if e.archivalBalance == "" {
+func (e *endpointCheckArchival) isValid(archivalState archivalState) error {
+	if !archivalState.archivalCheckConfig.Enabled {
+		return nil
+	}
+
+	if e.observedArchivalBalance == "" {
 		return errNoArchivalBalanceObs
 	}
-	if e.archivalBalance != serviceState.archivalState.balance {
-		return fmt.Errorf(errInvalidArchivalObs.Error(), e.archivalBalance, serviceState.archivalState.balance)
+	if e.observedArchivalBalance != archivalState.expectedBalance {
+		return fmt.Errorf(errInvalidArchivalBalanceObs, e.observedArchivalBalance, archivalState.expectedBalance)
 	}
+
 	return nil
 }
 
@@ -72,7 +77,7 @@ func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.
 
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idArchivalBlockCheck),
+		ID:      jsonrpc.IDFromInt(idArchivalCheck),
 		Method:  jsonrpc.Method(methodGetBalance),
 		Params:  params,
 	}

@@ -29,11 +29,11 @@ type endpointCheckChainID struct {
 }
 
 // isValid returns an error if the endpoint's chain ID does not match the expected chain ID in the service state.
-func (e *endpointCheckChainID) isValid(serviceState *ServiceState) error {
+func (e *endpointCheckChainID) isValid(evmChainID string) error {
 	if e.chainID == nil {
 		return errNoChainIDObs
 	}
-	if *e.chainID != serviceState.serviceConfig.getEVMChainID() {
+	if *e.chainID != evmChainID {
 		return errInvalidChainIDObs
 	}
 	return nil

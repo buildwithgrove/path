@@ -18,7 +18,7 @@ func NewQoSInstance(logger polylog.Logger, config ServiceConfig) *QoS {
 		serviceConfig: config,
 	}
 
-	if archivalCheckConfig, enabled := config.GetEVMArchivalCheckConfig(); enabled {
+	if archivalCheckConfig, enabled := config.getEVMArchivalCheckConfig(); enabled {
 		serviceState.archivalState = archivalState{
 			logger:              logger.With("state", "archival"),
 			archivalCheckConfig: archivalCheckConfig,
