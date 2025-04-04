@@ -76,7 +76,7 @@ type EndpointHydrator struct {
 // to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be provided.")
+		return errors.New("an instance of Protocol must be provided")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
@@ -84,6 +84,13 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+		// Wait for the protocol to be healthy before starting hydrator
+		eph.waitForProtocolHealth()
+
+		// Bootstrap QoS data with initial checks before starting regular interval
+		eph.bootstrapInitialQoSData(5) // Run 5 initial checks
+
+		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,6 +99,38 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
+}
+
+// waitForProtocolHealth blocks until the Protocol reports as healthy.
+// This ensures that the hydrator only starts running once the underlying
+// protocol layer is ready.
+func (eph *EndpointHydrator) waitForProtocolHealth() {
+	logger := eph.Logger.With("component", "waitForProtocolHealth")
+	logger.Info().Msg("Waiting for protocol to become healthy before starting hydrator")
+
+	for !eph.Protocol.IsAlive() {
+		logger.Debug().Msg("Protocol not yet healthy, waiting...")
+		time.Sleep(1 * time.Second)
+	}
+
+	logger.Info().Msg("Protocol is now healthy, hydrator can proceed")
+}
+
+// bootstrapInitialQoSData runs a specified number of hydrator checks immediately
+// to quickly bootstrap QoS data on startup. This helps to identify and filter out
+// invalid endpoints as soon as possible. The hydrator's health status is only set
+// to true after all initial checks have completed successfully.
+func (eph *EndpointHydrator) bootstrapInitialQoSData(numChecks int) {
+	logger := eph.Logger.With("component", "bootstrapInitialQoSData", "num_checks", numChecks)
+	logger.Info().Msg("Bootstrapping QoS data with initial checks")
+
+	// Run initial checks
+	for range numChecks {
+		logger.Debug().Msg("Bootstrapping initial hydrator checks on startup")
+		eph.run()
+	}
+
+	logger.Info().Msg("Initial QoS data bootstrap completed")
 }
 
 func (eph *EndpointHydrator) run() {
