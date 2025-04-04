@@ -9,8 +9,4 @@ go_docs: ## Start Go documentation server
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
-	cd docusaurus && npm i && npm run start -- --port 4000
-
-.PHONY: gen_service_qos_docs
-gen_service_qos_docs: ## Generate service qos docs
-	./docusaurus/scripts/service_qos.sh ./config/service_qos.go ./docusaurus/docs/develop/path/qos.md
+	(cd docusaurus && yarn install && yarn start -- --port 4000)
