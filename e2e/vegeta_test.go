@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
-	"github.com/stretchr/testify/require"
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -325,7 +324,8 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 
 // validateResults performs assertions on test metrics
 func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition) {
-	c := require.New(t)
+	// Create a slice to collect all assertion failures
+	var failures []string
 
 	// Add a blank line before each test result for better readability
 	fmt.Println()
@@ -416,10 +416,108 @@ func validateResults(t *testing.T, m *MethodMetrics, methodDef methodDefinition)
 		}
 	}
 
-	// Perform all assertions
-	assertHTTPSuccessRate(c, m, methodDef.successRate)
-	assertJSONRPCRates(c, m, methodDef.successRate)
-	assertLatency(c, m, methodDef)
+	// Collect assertion failures
+	failures = append(failures, collectHTTPSuccessRateFailures(m, methodDef.successRate)...)
+	failures = append(failures, collectJSONRPCRatesFailures(m, methodDef.successRate)...)
+	failures = append(failures, collectLatencyFailures(m, methodDef)...)
+
+	// If there are failures, report them all at once at the end
+	if len(failures) > 0 {
+		fmt.Printf("\n\x1b[31m❌ Method %s has %d assertion failures:\x1b[0m\n", m.method, len(failures))
+		for i, failure := range failures {
+			fmt.Printf("   \x1b[31m%d. %s\x1b[0m\n", i+1, failure)
+		}
+		// Mark the test as failed but continue execution
+		t.Fail()
+	} else {
+		fmt.Printf("\n\x1b[32m✅ Method %s passed all assertions\x1b[0m\n", m.method)
+	}
+}
+
+// collectHTTPSuccessRateFailures checks HTTP success rate and returns failure message if not met
+func collectHTTPSuccessRateFailures(m *MethodMetrics, requiredRate float64) []string {
+	var failures []string
+
+	if m.successRate < requiredRate {
+		msg := fmt.Sprintf("HTTP success rate %.2f%% is below required %.2f%% (%d/%d requests)",
+			m.successRate*100, requiredRate*100, m.success, m.requestCount)
+		failures = append(failures, msg)
+	}
+
+	return failures
+}
+
+// collectJSONRPCRatesFailures checks all JSON-RPC success rates and returns failure messages
+func collectJSONRPCRatesFailures(m *MethodMetrics, requiredRate float64) []string {
+	var failures []string
+
+	// Skip if we don't have any JSON-RPC responses
+	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors == 0 {
+		return failures
+	}
+
+	// Check JSON-RPC unmarshal success rate
+	if m.jsonRPCSuccessRate < requiredRate {
+		msg := fmt.Sprintf("JSON-RPC unmarshal success rate %.2f%% is below required %.2f%% (%d/%d responses)",
+			m.jsonRPCSuccessRate*100, requiredRate*100, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
+		failures = append(failures, msg)
+	}
+
+	// Skip the rest if we don't have valid JSON-RPC responses
+	if m.jsonRPCResponses == 0 {
+		return failures
+	}
+
+	// Check Error field absence rate
+	if m.jsonRPCErrorFieldRate < requiredRate {
+		msg := fmt.Sprintf("JSON-RPC error field absence rate %.2f%% is below required %.2f%% (%d/%d responses)",
+			m.jsonRPCErrorFieldRate*100, requiredRate*100, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
+		failures = append(failures, msg)
+	}
+
+	// Check non-nil result rate
+	if m.jsonRPCResultRate < requiredRate {
+		msg := fmt.Sprintf("JSON-RPC non-nil result rate %.2f%% is below required %.2f%% (%d/%d responses)",
+			m.jsonRPCResultRate*100, requiredRate*100, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
+		failures = append(failures, msg)
+	}
+
+	// Check validation success rate
+	if m.jsonRPCValidateRate < requiredRate {
+		msg := fmt.Sprintf("JSON-RPC validation success rate %.2f%% is below required %.2f%% (%d/%d responses)",
+			m.jsonRPCValidateRate*100, requiredRate*100, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
+		failures = append(failures, msg)
+	}
+
+	return failures
+}
+
+// collectLatencyFailures checks latency metrics and returns failure messages
+func collectLatencyFailures(m *MethodMetrics, methodDef methodDefinition) []string {
+	var failures []string
+
+	// P50 latency check
+	if m.p50 > methodDef.maxP50Latency {
+		msg := fmt.Sprintf("P50 latency %s exceeds maximum allowed %s",
+			formatLatency(m.p50), formatLatency(methodDef.maxP50Latency))
+		failures = append(failures, msg)
+	}
+
+	// P95 latency check
+	if m.p95 > methodDef.maxP95Latency {
+		msg := fmt.Sprintf("P95 latency %s exceeds maximum allowed %s",
+			formatLatency(m.p95), formatLatency(methodDef.maxP95Latency))
+		failures = append(failures, msg)
+	}
+
+	// P99 latency check
+	if m.p99 > methodDef.maxP99Latency {
+		msg := fmt.Sprintf("P99 latency %s exceeds maximum allowed %s",
+			formatLatency(m.p99), formatLatency(methodDef.maxP99Latency))
+		failures = append(failures, msg)
+	}
+
+	return failures
 }
 
 // Helper function to get color for success rates
@@ -440,64 +538,6 @@ func getLatencyColor(actual, maxAllowed time.Duration) string {
 		return "\x1b[33m" // Yellow if close to limit (70-100%)
 	}
 	return "\x1b[31m" // Red if over limit
-}
-
-// assertHTTPSuccessRate checks if the HTTP success rate meets requirements
-func assertHTTPSuccessRate(c *require.Assertions, m *MethodMetrics, requiredRate float64) {
-	msg := fmt.Sprintf("Method %s HTTP success rate %.2f%% should be >= %.2f%%",
-		m.method, m.successRate*100, requiredRate*100)
-	c.GreaterOrEqual(m.successRate, requiredRate, msg)
-}
-
-// assertJSONRPCRates checks if all JSON-RPC success rates meet requirements
-func assertJSONRPCRates(c *require.Assertions, m *MethodMetrics, requiredRate float64) {
-	// Skip if we don't have any JSON-RPC responses
-	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors == 0 {
-		return
-	}
-
-	// Check JSON-RPC unmarshal success rate
-	msg := fmt.Sprintf("Method %s JSON-RPC unmarshal success rate %.2f%% should be >= %.2f%%",
-		m.method, m.jsonRPCSuccessRate*100, requiredRate*100)
-	c.GreaterOrEqual(m.jsonRPCSuccessRate, requiredRate, msg)
-
-	// Skip the rest if we don't have valid JSON-RPC responses
-	if m.jsonRPCResponses == 0 {
-		return
-	}
-
-	// Check Error field absence rate
-	msg = fmt.Sprintf("Method %s JSON-RPC error field absence rate %.2f%% should be >= %.2f%%",
-		m.method, m.jsonRPCErrorFieldRate*100, requiredRate*100)
-	c.GreaterOrEqual(m.jsonRPCErrorFieldRate, requiredRate, msg)
-
-	// Check non-nil result rate
-	msg = fmt.Sprintf("Method %s JSON-RPC non-nil result rate %.2f%% should be >= %.2f%%",
-		m.method, m.jsonRPCResultRate*100, requiredRate*100)
-	c.GreaterOrEqual(m.jsonRPCResultRate, requiredRate, msg)
-
-	// Check validation success rate
-	msg = fmt.Sprintf("Method %s JSON-RPC validation success rate %.2f%% should be >= %.2f%%",
-		m.method, m.jsonRPCValidateRate*100, requiredRate*100)
-	c.GreaterOrEqual(m.jsonRPCValidateRate, requiredRate, msg)
-}
-
-// assertLatency checks if the latency meets requirements
-func assertLatency(c *require.Assertions, m *MethodMetrics, methodDef methodDefinition) {
-	// P50 latency check
-	msg := fmt.Sprintf("Method %s P50 latency %s should be <= %s",
-		m.method, formatLatency(m.p50), formatLatency(methodDef.maxP50Latency))
-	c.LessOrEqual(m.p50, methodDef.maxP50Latency, msg)
-
-	// P95 latency check
-	msg = fmt.Sprintf("Method %s P95 latency %s should be <= %s",
-		m.method, formatLatency(m.p95), formatLatency(methodDef.maxP95Latency))
-	c.LessOrEqual(m.p95, methodDef.maxP95Latency, msg)
-
-	// P99 latency check
-	msg = fmt.Sprintf("Method %s P99 latency %s should be <= %s",
-		m.method, formatLatency(m.p99), formatLatency(methodDef.maxP99Latency))
-	c.LessOrEqual(m.p99, methodDef.maxP99Latency, msg)
 }
 
 /* -------------------- Progress Bars -------------------- */
@@ -607,19 +647,19 @@ func formatLatency(d time.Duration) string {
 	return fmt.Sprintf("%dms", d/time.Millisecond)
 }
 
-// // showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
-// func showWaitBar(secondsToWait int) {
-// 	// Create a progress bar for the 1-minute wait
-// 	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(secondsToWait)
-// 	waitBar.Set(pb.Bytes, false)
-// 	waitBar.SetMaxWidth(100)
-// 	waitBar.Start()
+// showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
+func showWaitBar(secondsToWait int) {
+	// Create a progress bar for the 1-minute wait
+	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(secondsToWait)
+	waitBar.Set(pb.Bytes, false)
+	waitBar.SetMaxWidth(100)
+	waitBar.Start()
 
-// 	// Wait for 1 minute, updating the progress bar every second
-// 	for i := 0; i < secondsToWait; i++ {
-// 		waitBar.Increment()
-// 		time.Sleep(1 * time.Second)
-// 	}
+	// Wait for 1 minute, updating the progress bar every second
+	for i := 0; i < secondsToWait; i++ {
+		waitBar.Increment()
+		time.Sleep(1 * time.Second)
+	}
 
-// 	waitBar.Finish()
-// }
+	waitBar.Finish()
+}
