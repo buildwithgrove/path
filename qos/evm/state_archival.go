@@ -143,10 +143,11 @@ func (a *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.Endp
 		// Check for consensus immediately after updating count
 		if count >= archivalConsensusThreshold {
 			a.expectedBalance = balance
-			a.logger.Info().Msgf("Updated expected archival balance for block number %s to %s",
-				a.blockNumberHex,
-				balance,
-			)
+			a.logger.Info().
+				Str("archival_block_number", a.blockNumberHex).
+				Str("contract_address", a.archivalCheckConfig.ContractAddress).
+				Str("expected_balance", balance).
+				Msg("Updated expected archival balance")
 
 			a.balanceConsensus = make(map[string]int) // Clear map as it's no longer needed.
 			return
