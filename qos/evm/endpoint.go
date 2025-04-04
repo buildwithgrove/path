@@ -38,9 +38,13 @@ func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
 		getEndpointCheck(es, e.checkBlockNumber.getRequest()),
 	}
 
+	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
 	if e.checkChainID.shouldRun() {
 		checks = append(checks, getEndpointCheck(es, e.checkChainID.getRequest()))
 	}
+
+	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
+	// Additionally, this check will only run if the serviceis configured to perform archival checks.
 	if e.checkArchival.shouldRun(es.serviceState.archivalState) {
 		checks = append(checks, getEndpointCheck(es, e.checkArchival.getRequest(es.serviceState.archivalState)))
 	}
