@@ -68,6 +68,12 @@ var shannonServices = []ServiceConfig{
 	evm.ServiceConfig{
 		ServiceID:  "anvil",           // Anvil (Ethereum development/testing)
 		EVMChainID: defaultEVMChainID, // (1)
+		ArchivalCheckConfig: evm.EVMArchivalCheckConfig{
+			Enabled: true,
+			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+			ContractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
+			ContractStartBlock: 12_300_000,
+		},
 	},
 	evm.ServiceConfig{
 		ServiceID:  "anvilws",         // Anvil WebSockets (Ethereum WebSockets development/testing)
