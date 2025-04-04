@@ -58,13 +58,13 @@ func (r Request) MarshalJSON() ([]byte, error) {
 //
 // JSON-RPC spec reference: https://www.jsonrpc.org/specification#parameter_structures
 
-// BuildArrayParamsFromString builds a Params object from a single string.
+// BuildParamsFromString builds a Params object from a single string.
 //
 // For example, for an `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60"]
 //
 // Used for eth_getTransactionReceipt and eth_getTransactionByHash
-func BuildArrayParamsFromString(stringParam string) (Params, error) {
+func BuildParamsFromString(stringParam string) (Params, error) {
 	if stringParam == "" {
 		return Params{}, fmt.Errorf("param is empty")
 	}
@@ -75,15 +75,13 @@ func BuildArrayParamsFromString(stringParam string) (Params, error) {
 	return Params{rawMessage: jsonParams}, nil
 }
 
-// BuildParamsFromStrings builds a Params object from an array of strings.
+// BuildParamsFromStringArray builds a Params object from an array of strings.
 //
 // For example, for an `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
 //
-// JSON-RPC array params must be passed in the order specified by the method.
-//
 // Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
-func BuildArrayParamsFromStrings(params [2]string) (Params, error) {
+func BuildParamsFromStringArray(params [2]string) (Params, error) {
 	for i, param := range params {
 		if param == "" {
 			return Params{}, fmt.Errorf("param at index %d is empty", i)
@@ -96,13 +94,13 @@ func BuildArrayParamsFromStrings(params [2]string) (Params, error) {
 	return Params{rawMessage: jsonParams}, nil
 }
 
-// BuildArrayParamsFromStringAndBool builds a Params object from a single string and a boolean.
+// BuildParamsFromStringAndBool builds a Params object from a single string and a boolean.
 //
 // For example, for an `eth_getBlockByNumber` request, the params would look like:
 // params - ["0xe71e1d", false]
 //
 // Used for eth_getBlockByNumber
-func BuildArrayParamsFromStringAndBool(stringParam string, boolParam bool) (Params, error) {
+func BuildParamsFromStringAndBool(stringParam string, boolParam bool) (Params, error) {
 	if stringParam == "" {
 		return Params{}, fmt.Errorf("string param is empty")
 	}
@@ -113,13 +111,13 @@ func BuildArrayParamsFromStringAndBool(stringParam string, boolParam bool) (Para
 	return Params{rawMessage: jsonParams}, nil
 }
 
-// BuildArrayParamsFromObjectAndString builds a Params object from a map and a string.
+// BuildParamsFromObjectAndString builds a Params object from a map and a string.
 //
 // For example, for an `eth_call` request, the params would look like:
 // params - [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
 //
 // Used for eth_call
-func BuildArrayParamsFromObjectAndString(objectParam map[string]string, stringParam string) (Params, error) {
+func BuildParamsFromObjectAndString(objectParam map[string]string, stringParam string) (Params, error) {
 	if stringParam == "" {
 		return Params{}, fmt.Errorf("string param is empty")
 	}
