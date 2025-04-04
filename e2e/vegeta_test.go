@@ -608,15 +608,15 @@ func formatLatency(d time.Duration) string {
 }
 
 // showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
-func showWaitBar() {
+func showWaitBar(secondsToWait int) {
 	// Create a progress bar for the 1-minute wait
-	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(60)
+	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(secondsToWait)
 	waitBar.Set(pb.Bytes, false)
 	waitBar.SetMaxWidth(100)
 	waitBar.Start()
 
 	// Wait for 1 minute, updating the progress bar every second
-	for i := 0; i < 60; i++ {
+	for i := 0; i < secondsToWait; i++ {
 		waitBar.Increment()
 		time.Sleep(1 * time.Second)
 	}

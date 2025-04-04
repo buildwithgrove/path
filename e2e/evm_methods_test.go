@@ -69,7 +69,7 @@ type (
 var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_blockNumber: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
+			totalRequests: 200,
 			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -81,8 +81,8 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_call: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
-			rps:           7,
+			totalRequests: 200,
+			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.90,
@@ -93,7 +93,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_getTransactionReceipt: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
+			totalRequests: 200,
 			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -105,7 +105,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_getBlockByNumber: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
+			totalRequests: 200,
 			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -117,8 +117,8 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_getBalance: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
-			rps:           7,
+			totalRequests: 200,
+			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -129,7 +129,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_chainId: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
+			totalRequests: 200,
 			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
@@ -141,8 +141,8 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_getTransactionCount: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
-			rps:           7,
+			totalRequests: 200,
+			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -153,8 +153,8 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_getTransactionByHash: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
-			rps:           7,
+			totalRequests: 200,
+			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
 			successRate:   0.95,
@@ -165,7 +165,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 	eth_gasPrice: {
 		methodConfig: methodConfig{
-			totalRequests: 100,
+			totalRequests: 200,
 			rps:           10,
 		},
 		methodSuccessRates: methodSuccessRates{
