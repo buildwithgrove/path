@@ -29,7 +29,7 @@ const maxErrMessageLen = 1000
 type evmRequestValidator struct {
 	logger        polylog.Logger
 	chainID       string
-	endpointStore *EndpointStore
+	endpointStore *endpointStore
 }
 
 // validateHTTPRequest validates an HTTP request, extracting and validating its EVM JSONRPC payload.

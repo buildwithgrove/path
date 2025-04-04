@@ -38,7 +38,7 @@ var (
 // As of PR #194, generates endpoint observations for responses to:
 //   - eth_chainId
 //   - eth_blockNumber
-//   - eth_getBalance (if rc. archivalBalanceCheck is true)
+//   - eth_getBalance
 //   - any empty response, regardless of method
 func unmarshalResponse(
 	logger polylog.Logger,

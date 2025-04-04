@@ -5,13 +5,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // archivalConsensusThreshold is the # of endpoints that must agree on the balance:
 //   - at the `archivalState.blockNumberHex`
-//   - for the contract specified in `EVMArchivalCheckConfig.ContractAddress`
+//   - for the contract specified in `archivalCheckConfig.ContractAddress`
 //
 // Once a consensus is reached, the balance is set in `expectedBalance`.
 const archivalConsensusThreshold = 5
@@ -19,7 +20,7 @@ const archivalConsensusThreshold = 5
 // The archival check verifies that nodes can provide accurate historical blockchain data.
 //
 // Here's how it works:
-//   - Uses a specific contract with frequent balance changes (e.g. USDC) - `EVMArchivalCheckConfig.ContractAddress`
+//   - Uses a specific contract with frequent balance changes (e.g. USDC) - `archivalCheckConfig.ContractAddress`
 //   - Selects a random historical block from the past for `blockNumberHex`.
 //   - >= 5 endpoints agree on the balance at `blockNumberHex`, `expectedBalance` is set.
 //   - When filtering valid endpoints their `observedArchivalBalance` is validated against `expectedBalance`.
@@ -27,7 +28,7 @@ type archivalState struct {
 	logger polylog.Logger
 
 	// archivalCheckConfig contains all configurable values for an EVM archival check.
-	archivalCheckConfig EVMArchivalCheckConfig
+	archivalCheckConfig evmArchivalCheckConfig
 
 	// balanceConsensus is a map where:
 	//   - key: hex balance value for the archival block number
@@ -51,7 +52,7 @@ type archivalState struct {
 
 	// expectedBalance is the agreed upon balance:
 	//   - at the block number specified in `blockNumberHex`
-	//   - for the contract specified in `EVMArchivalCheckConfig.ContractAddress`
+	//   - for the contract specified in `archivalCheckConfig.ContractAddress`
 	//
 	// It is set once >= 5 endpoints agree on the balance at `blockNumberHex`.
 	//
@@ -63,38 +64,42 @@ type archivalState struct {
 }
 
 // updateArchivalState updates the archival state, to determine the `archivalState.expectedBalance`.
-// once `archivalState.expectedBalance` is set, this method becomes a no-op.
-func (a *archivalState) updateArchivalState(
+// This is done by:
+//  1. Calculating an archival block number based on the perceived block number.
+//  2. Getting the expected balance at the computed archival block number.
+//
+// IMPORTANT: This function become a no-op once `archivalState.expectedBalance` is set.
+func (as *archivalState) updateArchivalState(
 	perceivedBlockNumber uint64,
 	updatedEndpoints map[protocol.EndpointAddr]endpoint,
 ) {
 	// If the expected archival balance is already set, there is no need to update the archival state.
-	if a.expectedBalance != "" {
+	if as.expectedBalance != "" {
 		return
 	}
 
 	// If the archival block number is not yet set for the service, calculate it.
-	if perceivedBlockNumber != 0 && a.blockNumberHex == "" {
-		a.calculateArchivalBlockNumber(perceivedBlockNumber)
+	if perceivedBlockNumber != 0 && as.blockNumberHex == "" {
+		as.calculateArchivalBlockNumber(perceivedBlockNumber)
 	}
 
 	// If the expected archival balance is not yet set for the service, set it.
-	if a.blockNumberHex != "" && a.expectedBalance == "" {
-		a.updateExpectedBalance(updatedEndpoints)
+	if as.blockNumberHex != "" && as.expectedBalance == "" {
+		as.updateExpectedBalance(updatedEndpoints)
 	}
 }
 
 // isEnabled returns true if archival checks are enabled for the service.
 // Not all EVM services will require archival checks (for example, if a service is expected to run pruned nodes).
-func (a *archivalState) isEnabled() bool {
-	return a.archivalCheckConfig.Enabled
+func (as *archivalState) isEnabled() bool {
+	return !as.archivalCheckConfig.IsEmpty()
 }
 
 // calculateArchivalBlockNumber determines a, archival block number based on the perceived block number.
 // See comment on `archivalState.blockNumberHex` in `archivalState` struct for more details on the calculation.
-func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64) {
-	archivalThreshold := a.archivalCheckConfig.Threshold
-	minArchivalBlock := a.archivalCheckConfig.ContractStartBlock
+func (as *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64) {
+	archivalThreshold := as.archivalCheckConfig.threshold
+	minArchivalBlock := as.archivalCheckConfig.contractStartBlock
 
 	var blockNumHex string
 	// Case 1: Block number is below or equal to the archival threshold
@@ -115,8 +120,8 @@ func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64
 		}
 	}
 
-	a.logger.Info().Msgf("Calculated archival block number: %s", blockNumHex)
-	a.blockNumberHex = blockNumHex
+	as.logger.Info().Msgf("Calculated archival block number: %s", blockNumHex)
+	as.blockNumberHex = blockNumHex
 }
 
 // blockNumberToHex converts a integer block number to its hexadecimal representation.
@@ -127,29 +132,29 @@ func blockNumberToHex(blockNumber uint64) string {
 
 // updateExpectedBalance checks for consensus and updates the expected balance in the archival state.
 // When >= 5 endpoints agree on the same balance, it is set as the expected archival balance.
-func (a *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.EndpointAddr]endpoint) {
+func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.EndpointAddr]endpoint) {
 	for _, endpoint := range updatedEndpoints {
 		// Get the observed balance at the archival block number from the endpoint observation.
 		balance, err := endpoint.getArchivalBalance()
 		if err != nil {
-			a.logger.Info().Err(err).Msg("Skipping endpoint with no observed archival balance")
+			as.logger.Info().Err(err).Msg("Skipping endpoint with no observed archival balance")
 			continue
 		}
 
 		// Update the balance consensus map.
-		count := a.balanceConsensus[balance] + 1
-		a.balanceConsensus[balance] = count
+		count := as.balanceConsensus[balance] + 1
+		as.balanceConsensus[balance] = count
 
 		// Check for consensus immediately after updating count
 		if count >= archivalConsensusThreshold {
-			a.expectedBalance = balance
-			a.logger.Info().
-				Str("archival_block_number", a.blockNumberHex).
-				Str("contract_address", a.archivalCheckConfig.ContractAddress).
+			as.expectedBalance = balance
+			as.logger.Info().
+				Str("archival_block_number", as.blockNumberHex).
+				Str("contract_address", as.archivalCheckConfig.contractAddress).
 				Str("expected_balance", balance).
 				Msg("Updated expected archival balance")
 
-			a.balanceConsensus = make(map[string]int) // Clear map as it's no longer needed.
+			as.balanceConsensus = make(map[string]int) // Clear map as it's no longer needed.
 			return
 		}
 	}
