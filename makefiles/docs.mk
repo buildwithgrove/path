@@ -9,4 +9,4 @@ go_docs: ## Start Go documentation server
 
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
-	(cd docusaurus && yarn install && yarn start -- --port 4000)
+	(cd docusaurus && yarn install && yarn start --port 4000)
