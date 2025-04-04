@@ -200,13 +200,13 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	// Methods that just need the transaction hash
 	// eg. ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
 	case eth_getTransactionReceipt, eth_getTransactionByHash:
-		params, _ := jsonrpc.BuildArrayParamsFromString(p.transactionHash)
+		params, _ := jsonrpc.BuildParamsFromString(p.transactionHash)
 		return params
 
 	// Methods that need [address, blockNumber]
 	// eg. ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
 	case eth_getBalance, eth_getTransactionCount:
-		params, _ := jsonrpc.BuildArrayParamsFromStrings([2]string{
+		params, _ := jsonrpc.BuildParamsFromStringArray([2]string{
 			p.contractAddress,
 			p.blockNumber,
 		})
@@ -215,7 +215,7 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	// eth_getBlockByNumber needs [blockNumber, <boolean>]
 	// eg. ["0xe71e1d", false]
 	case eth_getBlockByNumber:
-		params, _ := jsonrpc.BuildArrayParamsFromStringAndBool(
+		params, _ := jsonrpc.BuildParamsFromStringAndBool(
 			p.blockNumber,
 			false,
 		)
@@ -224,7 +224,7 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	// eth_call needs [{ to: address, data: calldata }, blockNumber]
 	// eg. [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
 	case eth_call:
-		params, _ := jsonrpc.BuildArrayParamsFromObjectAndString(
+		params, _ := jsonrpc.BuildParamsFromObjectAndString(
 			map[string]string{
 				"to":   p.contractAddress,
 				"data": p.callData,
