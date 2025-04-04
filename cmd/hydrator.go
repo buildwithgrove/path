@@ -50,10 +50,11 @@ func setupEndpointHydrator(
 	endpointHydrator := gateway.EndpointHydrator{
 		Logger: logger,
 
-		Protocol:                protocolInstance,
-		ActiveQoSServices:       hydratorQoSServices,
-		RunInterval:             hydratorConfig.RunInterval,
-		MaxEndpointCheckWorkers: hydratorConfig.MaxEndpointCheckWorkers,
+		Protocol:                      protocolInstance,
+		ActiveQoSServices:             hydratorQoSServices,
+		RunInterval:                   hydratorConfig.RunInterval,
+		MaxEndpointCheckWorkers:       hydratorConfig.MaxEndpointCheckWorkers,
+		BootstrapInitialQoSDataChecks: hydratorConfig.BootstrapInitialQoSDataChecks,
 	}
 
 	err := endpointHydrator.Start()
