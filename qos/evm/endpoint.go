@@ -31,7 +31,7 @@ func newEndpoint() endpoint {
 }
 
 // getChecks returns the list of checks that should be run for the endpoint on each hydrator run.
-func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
+func (e *endpoint) getChecks(es *endpointStore) []gateway.RequestQoSContext {
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
 		getEndpointCheck(es, e.checkBlockNumber.getRequest()),

@@ -30,7 +30,7 @@ type endpointCheckArchival struct {
 
 // isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
 func (e *endpointCheckArchival) isValid(archivalState archivalState) error {
-	if !archivalState.archivalCheckConfig.Enabled {
+	if !archivalState.isEnabled() {
 		return nil
 	}
 
@@ -49,7 +49,7 @@ func (e *endpointCheckArchival) shouldRun(archivalState archivalState) bool {
 	// Do not perform an archival check if:
 	// 	- The archival check is not enabled for the service.
 	// 	- The archival block number has not yet been set in the archival state.
-	if !archivalState.archivalCheckConfig.Enabled || archivalState.blockNumberHex == "" {
+	if !archivalState.isEnabled() || archivalState.blockNumberHex == "" {
 		return false
 	}
 
@@ -67,7 +67,7 @@ func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.
 	// eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
 	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 	params, err := jsonrpc.BuildParamsFromStringArray([2]string{
-		archivalState.archivalCheckConfig.ContractAddress,
+		archivalState.archivalCheckConfig.contractAddress,
 		archivalState.blockNumberHex,
 	})
 	if err != nil {

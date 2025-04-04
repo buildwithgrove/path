@@ -207,15 +207,14 @@ message EVMGetBalanceResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;
 
-  // The balance value at the archival block number associated with the contract address specified.
-  string balance = 2;
+  // The contract address for which the the balance is checked.
+  string contract_address = 2;
 
-  // The block number at which the balance was checked.
-  // Used to determine whether the get balance request should be used to update archival state.
+  // The block number at which the balance is checked.
   string block_number = 3;
 
-  // The contract address for which the balance was checked.
-  string contract_address = 4;
+  // The balance value at the block number for the address provided.
+  string balance = 4;
 
   // Why the response failed QoS validation
   // If not set, the response is considered valid

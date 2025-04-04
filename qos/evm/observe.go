@@ -11,7 +11,7 @@ import (
 
 // UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
-func (es *EndpointStore) UpdateEndpointsFromObservations(
+func (es *endpointStore) UpdateEndpointsFromObservations(
 	evmObservations *qosobservations.EVMRequestObservations,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()

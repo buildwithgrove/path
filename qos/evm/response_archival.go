@@ -57,9 +57,9 @@ func responseUnmarshallerGetBalance(
 	return responseToGetBalance{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
-		balance:         balanceResponse,
 		contractAddress: requestParams[0],
 		blockNumber:     requestParams[1],
+		balance:         balanceResponse,
 		validationError: validationError,
 	}, nil
 }
@@ -71,13 +71,14 @@ type responseToGetBalance struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// the balance value returned in the response
-	balance string
-
 	// the contract address from the request params (first item in the params array)
 	contractAddress string
+
 	// the block number from the request params (second item in the params array)
 	blockNumber string
+
+	// the balance value returned in the response
+	balance string
 
 	// validationError indicates why the response failed validation, if it did.
 	validationError *qosobservations.EVMResponseValidationError
@@ -90,8 +91,9 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 		ResponseObservation: &qosobservations.EVMEndpointObservation_GetBalanceResponse{
 			GetBalanceResponse: &qosobservations.EVMGetBalanceResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
-				Balance:                 r.balance,
+				ContractAddress:         r.contractAddress,
 				BlockNumber:             r.blockNumber,
+				Balance:                 r.balance,
 				ResponseValidationError: r.validationError,
 			},
 		},
@@ -122,11 +124,13 @@ func (r responseToGetBalance) getHTTPStatusCode() int {
 }
 
 // getRequestParams extracts the string params from the JSONRPC request.
-// For 'eth_getBalance', the block number is the second parameter in the params array.
+// For 'eth_getBalance', the params are contains ["contract_address", "block"number"] in that order.
 //
-// For example, for the JSON-RPC request:
-// `{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
-// it will return the params array as `["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]`
+// For example, the following JSON-RPC request:
+//
+//	`{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
+//
+// will return the following params array: `["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]`
 func getRequestParams(req jsonrpc.Request) [2]string {
 	if req.Params.IsEmpty() {
 		return [2]string{}

@@ -8,12 +8,13 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the EVM blockchain based on
+// serviceState keeps the expected current state of the EVM blockchain based on
 // the endpoints' responses to different requests.
-type ServiceState struct {
-	logger           polylog.Logger
+type serviceState struct {
+	logger polylog.Logger
+
 	serviceStateLock sync.RWMutex
-	serviceConfig    ServiceConfig
+	serviceConfig    EVMServiceQoSConfig
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -31,13 +32,13 @@ type ServiceState struct {
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
 //
 // It returns an error if:
-// - The endpoint has not returned an empty response to a `eth_getBalance` request.
+// - The endpoint has returned an empty response in the past.
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
-// - The endpoint has not returned an archival balance for the perceived block number.
-func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
-	s.serviceStateLock.RLock()
-	defer s.serviceStateLock.RUnlock()
+// - The endpoint's archival check is invalid, if enabled.
+func (ss *serviceState) ValidateEndpoint(endpoint endpoint) error {
+	ss.serviceStateLock.RLock()
+	defer ss.serviceStateLock.RUnlock()
 
 	// Ensure the endpoint has not returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
@@ -45,46 +46,40 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	}
 
 	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
-	evmChainID := s.serviceConfig.getEVMChainID()
+	evmChainID := ss.serviceConfig.getEVMChainID()
 	if err := endpoint.checkChainID.isValid(evmChainID); err != nil {
 		return err
 	}
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
-	perceivedBlockNumber := s.perceivedBlockNumber
-	syncAllowance := s.serviceConfig.getSyncAllowance()
+	perceivedBlockNumber := ss.perceivedBlockNumber
+	syncAllowance := ss.serviceConfig.getSyncAllowance()
 	if err := endpoint.checkBlockNumber.isValid(perceivedBlockNumber, syncAllowance); err != nil {
 		return err
 	}
 
 	// Ensure the endpoint has returned an archival balance for the perceived block number.
-	if err := endpoint.checkArchival.isValid(s.archivalState); err != nil {
+	if err := endpoint.checkArchival.isValid(ss.archivalState); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Validate returns an error if the endpoint is invalid.
-// e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
-func (s *ServiceState) Validate(endpoint endpoint) error {
-	return nil
-}
-
 // UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
-func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.serviceStateLock.Lock()
-	defer s.serviceStateLock.Unlock()
+func (ss *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
+	ss.serviceStateLock.Lock()
+	defer ss.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		logger := s.logger.With(
+		logger := ss.logger.With(
 			"endpoint_addr", endpointAddr,
-			"perceived_block_number", s.perceivedBlockNumber,
+			"perceived_block_number", ss.perceivedBlockNumber,
 		)
 
 		// Validate the endpoint's chain ID; do not update the perceived block number if the chain ID is invalid.
-		if err := endpoint.checkChainID.isValid(s.serviceConfig.getEVMChainID()); err != nil {
+		if err := endpoint.checkChainID.isValid(ss.serviceConfig.getEVMChainID()); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
@@ -97,19 +92,14 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		}
 
 		// Update the perceived block number.
-		s.perceivedBlockNumber = blockNumber
+		ss.perceivedBlockNumber = blockNumber
 	}
 
 	// If archival checks are enabled for the service, update the archival state.
-	if s.archivalState.isEnabled() {
+	if ss.archivalState.isEnabled() {
 		// Update the archival state based on the perceived block number.
-		//
-		// This handles:
-		// 	1. Calculating an archival block number.
-		// 	2. Getting the expected balance at that block number.
-		//
-		// When the expected balance at the archival block number is known, this becomes a no-op.
-		s.archivalState.updateArchivalState(s.perceivedBlockNumber, updatedEndpoints)
+		// Note that when the expected balance at the archival block number is known, this becomes a no-op.
+		ss.archivalState.updateArchivalState(ss.perceivedBlockNumber, updatedEndpoints)
 	}
 
 	return nil
