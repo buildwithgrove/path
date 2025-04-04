@@ -71,13 +71,14 @@ type responseToGetBalance struct {
 	// jsonRPCResponse stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonRPCResponse jsonrpc.Response
 
-	// the balance value returned in the response
-	balance string
-
 	// the contract address from the request params (first item in the params array)
 	contractAddress string
+
 	// the block number from the request params (second item in the params array)
 	blockNumber string
+
+	// the balance value returned in the response
+	balance string
 
 	// validationError indicates why the response failed validation, if it did.
 	validationError *qosobservations.EVMResponseValidationError
@@ -90,8 +91,9 @@ func (r responseToGetBalance) GetObservation() qosobservations.EVMEndpointObserv
 		ResponseObservation: &qosobservations.EVMEndpointObservation_GetBalanceResponse{
 			GetBalanceResponse: &qosobservations.EVMGetBalanceResponse{
 				HttpStatusCode:          int32(r.getHTTPStatusCode()),
-				Balance:                 r.balance,
+				ContractAddress:         r.contractAddress,
 				BlockNumber:             r.blockNumber,
+				Balance:                 r.balance,
 				ResponseValidationError: r.validationError,
 			},
 		},

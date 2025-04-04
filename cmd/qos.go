@@ -31,30 +31,30 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 
 		switch serviceConfig.GetServiceQoSType() {
 		case evm.QoSType:
-			evmServiceConfig, ok := serviceConfig.(evm.ServiceConfig)
+			evmServiceQoSConfig, ok := serviceConfig.(evm.EVMServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not an EVM service", serviceID)
 			}
 
-			evmQoS := evm.NewQoSInstance(logger, evmServiceConfig)
+			evmQoS := evm.NewQoSInstance(logger, evmServiceQoSConfig)
 			qosServices[serviceID] = evmQoS
 
 		case cometbft.QoSType:
-			cometBFTServiceConfig, ok := serviceConfig.(cometbft.ServiceConfig)
+			cometBFTServiceQoSConfig, ok := serviceConfig.(cometbft.CometBFTServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
 			}
 
-			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceConfig)
+			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceQoSConfig)
 			qosServices[serviceID] = cometBFTQoS
 
 		case solana.QoSType:
-			solanaServiceConfig, ok := serviceConfig.(solana.ServiceConfig)
+			solanaServiceQoSConfig, ok := serviceConfig.(solana.SolanaServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a Solana service", serviceID)
 			}
 
-			solanaQoS := solana.NewQoSInstance(logger, solanaServiceConfig)
+			solanaQoS := solana.NewQoSInstance(logger, solanaServiceQoSConfig)
 			qosServices[serviceID] = solanaQoS
 
 		default:

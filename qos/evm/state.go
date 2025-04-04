@@ -8,9 +8,9 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ServiceState keeps the expected current state of the EVM blockchain based on
+// serviceState keeps the expected current state of the EVM blockchain based on
 // the endpoints' responses to different requests.
-type ServiceState struct {
+type serviceState struct {
 	logger polylog.Logger
 
 	serviceStateLock sync.RWMutex
@@ -42,7 +42,7 @@ type ServiceState struct {
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint has not returned an archival balance for the perceived block number.
-func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
+func (s *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
@@ -72,7 +72,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 
 // UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
-func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
+func (s *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	s.serviceStateLock.Lock()
 	defer s.serviceStateLock.Unlock()
 

@@ -36,7 +36,7 @@ check_path_config: ## Verify that path configuration file exists
    		exit 1; \
    fi
 
-# Allow override of config path with default value
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
 
 .PHONY: path_run

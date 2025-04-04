@@ -5,8 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // archivalConsensusThreshold is the # of endpoints that must agree on the balance:
@@ -27,7 +28,7 @@ type archivalState struct {
 	logger polylog.Logger
 
 	// archivalCheckConfig contains all configurable values for an EVM archival check.
-	archivalCheckConfig EVMArchivalCheckConfig
+	archivalCheckConfig eVMArchivalCheckConfig
 
 	// balanceConsensus is a map where:
 	//   - key: hex balance value for the archival block number
@@ -87,14 +88,14 @@ func (a *archivalState) updateArchivalState(
 // isEnabled returns true if archival checks are enabled for the service.
 // Not all EVM services will require archival checks (for example, if a service is expected to run pruned nodes).
 func (a *archivalState) isEnabled() bool {
-	return a.archivalCheckConfig.Enabled
+	return !a.archivalCheckConfig.IsEmpty()
 }
 
 // calculateArchivalBlockNumber determines a, archival block number based on the perceived block number.
 // See comment on `archivalState.blockNumberHex` in `archivalState` struct for more details on the calculation.
 func (a *archivalState) calculateArchivalBlockNumber(perceivedBlockNumber uint64) {
-	archivalThreshold := a.archivalCheckConfig.Threshold
-	minArchivalBlock := a.archivalCheckConfig.ContractStartBlock
+	archivalThreshold := a.archivalCheckConfig.threshold
+	minArchivalBlock := a.archivalCheckConfig.contractStartBlock
 
 	var blockNumHex string
 	// Case 1: Block number is below or equal to the archival threshold
@@ -145,7 +146,7 @@ func (a *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.Endp
 			a.expectedBalance = balance
 			a.logger.Info().
 				Str("archival_block_number", a.blockNumberHex).
-				Str("contract_address", a.archivalCheckConfig.ContractAddress).
+				Str("contract_address", a.archivalCheckConfig.contractAddress).
 				Str("expected_balance", balance).
 				Msg("Updated expected archival balance")
 
