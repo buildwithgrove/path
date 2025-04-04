@@ -5,7 +5,7 @@ import (
 )
 
 // NewQoSInstance builds and returns an instance of the Solana QoS service.
-func NewQoSInstance(logger polylog.Logger, serviceConfig ServiceConfig) *QoS {
+func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig) *QoS {
 	logger = logger.With("qos_instance", "solana")
 
 	logger.Warn().Msgf("TODO_MVP(@commoddity): Use the Solana ServiceConfig for QoS")

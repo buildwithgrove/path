@@ -101,13 +101,17 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 
 // If the archival check is not enabled for the service, this will always return a nil error.
 func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
-	if !archivalState.archivalCheckConfig.Enabled {
+	// Return nil if the archival check is not enabled for the service.
+	if archivalState.archivalCheckConfig.IsEmpty() {
 		return nil
 	}
 
+	// No archival balance observation was made yet
 	if e.observedArchivalBalance == "" {
 		return errNoArchivalBalanceObs
 	}
+
+	// The archival balance observed does not match the expected archival balance
 	if e.observedArchivalBalance != archivalState.expectedBalance {
 		return fmt.Errorf(errInvalidArchivalBalanceObs, e.observedArchivalBalance, archivalState.expectedBalance)
 	}
