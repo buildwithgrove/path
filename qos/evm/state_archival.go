@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // archivalConsensusThreshold is the number of endpoints that must agree on the archival balance for the randomly
@@ -165,26 +163,4 @@ func (a *archivalState) updateArchivalBalance(consensusThreshold int) {
 // blockNumberToHex converts a integer block number to its hexadecimal representation.
 func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
-}
-
-// getArchivalCheckRequest returns a JSONRPC request to check the balance of:
-//   - the contract specified in `a.archivalCheckConfig.ContractAddress`
-//   - at the block number specified in `a.blockNumberHex`
-//
-// It returns false if the archival check is not enabled for the service or if the block number has not been set.
-func (a *archivalState) getArchivalCheckRequest() (jsonrpc.Request, bool) {
-	if a.archivalCheckConfig.Enabled && a.blockNumberHex != "" {
-		archivalCheckReq := jsonrpc.NewRequest(
-			idArchivalBlockCheck,
-			methodGetBalance,
-			// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
-			// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-			a.archivalCheckConfig.ContractAddress,
-			a.blockNumberHex,
-		)
-
-		return archivalCheckReq, true
-	}
-
-	return jsonrpc.Request{}, false
 }

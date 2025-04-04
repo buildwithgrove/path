@@ -100,7 +100,7 @@ func (e endpoint) getBlockNumber() (uint64, error) {
 // validateArchivalCheck validates that the endpoint has returned an archival balance for the perceived block number.
 
 // If the archival check is not enabled for the service, this will always return a nil error.
-func (e *endpoint) validateArchivalCheck(archivalState archivalState) error {
+func (e *endpoint) validateArchivalCheck(archivalState *archivalState) error {
 	if !archivalState.archivalCheckConfig.Enabled {
 		return nil
 	}

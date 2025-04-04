@@ -30,7 +30,7 @@ type ServiceState struct {
 	perceivedBlockNumber uint64
 
 	// archivalState contains the current state of the EVM archival check for the service.
-	archivalState archivalState
+	archivalState *archivalState
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
