@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
-	"github.com/cheggaaa/pb/v3"
 )
 
 /* -------------------- Test Configuration Initialization -------------------- */
@@ -66,11 +66,11 @@ func init() {
 
 // testCase represents a single service load test configuration
 type testCase struct {
-	name      string
-	serviceID protocol.ServiceID // The service ID to test
-	archival  bool               // Whether to select a random historical block
-	methods   []jsonrpc.Method   // The methods to test for this service
-	params    methodParams       // Service-specific parameters
+	name          string
+	serviceID     protocol.ServiceID // The service ID to test
+	archival      bool               // Whether to select a random historical block
+	methods       []jsonrpc.Method   // The methods to test for this service
+	serviceParams serviceParameters  // Service-specific parameters
 }
 
 // getTestCases returns the appropriate test cases based on the protocol
@@ -94,7 +94,7 @@ func getMorseTestCases() []testCase {
 			serviceID: "F00C",
 			methods:   runAllMethods(),
 			archival:  true, // F00C is an archival service so we should use a random historical block.
-			params: methodParams{
+			serviceParams: serviceParameters{
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 				transactionHash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
 				callData:        "0x18160ddd",
@@ -110,7 +110,7 @@ func getShannonTestCases() []testCase {
 			name:      "anvil (Ethereum) Load Test",
 			serviceID: "anvil",
 			methods:   runAllMethods(),
-			params: methodParams{
+			serviceParams: serviceParameters{
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 				transactionHash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
 				callData:        "0x18160ddd",
@@ -157,14 +157,14 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	for i := range testCases {
 		// If archival is true then we will use a random historical block for the test.
 		if testCases[i].archival {
-			testCases[i].params.blockNumber = setTestBlockNumber(t, gatewayURL, testCases[i].serviceID)
+			testCases[i].serviceParams.blockNumber = setTestBlockNumber(t, gatewayURL, testCases[i].serviceID)
 		} else {
-			testCases[i].params.blockNumber = "latest"
+			testCases[i].serviceParams.blockNumber = "latest"
 		}
 
 		fmt.Printf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
 		fmt.Printf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
-		fmt.Printf("  📡 Block number: %s\n", testCases[i].params.blockNumber)
+		fmt.Printf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
 
 		// Use t.Run for proper test reporting
 		t.Run(testCases[i].name, func(t *testing.T) {
@@ -202,15 +202,20 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 				// Get method configuration
 				methodDef := methodDefinitions[method]
 
-				// Create method-specific parameters
-				methodParams := createParams(method, testCases[i].params)
-
 				// Run the attack in a goroutine
-				go func(method jsonrpc.Method, def methodDefinition, params []any) {
+				go func(method jsonrpc.Method, def methodDefinition) {
 					defer methodWg.Done()
 
 					// Create the JSON-RPC request
-					jsonrpcReq := jsonrpc.NewRequest(1, method, params...)
+					jsonrpcReq := jsonrpc.Request{
+						JSONRPC: jsonrpc.Version2,
+						ID:      jsonrpc.IDFromInt(1),
+						Method:  method,
+						Params: createParams(
+							method,
+							testCases[i].serviceParams,
+						),
+					}
 
 					// Run the attack
 					metrics := runAttack(
@@ -226,7 +231,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 					resultsMutex.Lock()
 					results[method] = metrics
 					resultsMutex.Unlock()
-				}(method, methodDef, methodParams)
+				}(method, methodDef)
 			}
 
 			// Wait for all method tests to complete
@@ -329,7 +334,11 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol
 
 // Helper to build a block number request
 func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*http.Request, error) {
-	blockNumberReq := jsonrpc.NewRequest(1, eth_blockNumber, nil)
+	blockNumberReq := jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(1),
+		Method:  jsonrpc.Method(eth_blockNumber),
+	}
 
 	blockNumberReqBytes, err := json.Marshal(blockNumberReq)
 	if err != nil {
@@ -354,8 +363,8 @@ func getBlockNumber(currentBlock uint64) string {
 	maxBlock := currentBlock
 
 	// Ensure the block selected is for archival EVM data
-	if maxBlock > 128 {
-		maxBlock -= 128
+	if maxBlock > evm.DefaultEVMArchivalThreshold {
+		maxBlock -= evm.DefaultEVMArchivalThreshold
 	}
 
 	if minBlock >= maxBlock {
@@ -367,21 +376,4 @@ func getBlockNumber(currentBlock uint64) string {
 	randomBlock := minBlock + r.Uint64()%(maxBlock-minBlock+1)
 
 	return fmt.Sprintf("0x%x", randomBlock)
-}
-
-// showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
-func showWaitBar() {
-	// Create a progress bar for the 1-minute wait
-	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(60)
-	waitBar.Set(pb.Bytes, false)
-	waitBar.SetMaxWidth(100)
-	waitBar.Start()
-
-	// Wait for 1 minute, updating the progress bar every second
-	for i := 0; i < 60; i++ {
-		waitBar.Increment()
-		time.Sleep(1 * time.Second)
-	}
-
-	waitBar.Finish()
 }

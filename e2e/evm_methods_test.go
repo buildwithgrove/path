@@ -177,49 +177,63 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	},
 }
 
-// methodParams holds service-specific parameter data for all methods
-type methodParams struct {
-	// Common parameters
-	blockNumber     string
+// serviceParameters holds service-specific test data for all methods.
+// to allow testing specific requests that require parameters.
+type serviceParameters struct {
+	// Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
+	blockNumber string
+	// Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
 	contractAddress string
+	// Used for eth_getTransactionReceipt and eth_getTransactionByHash
 	transactionHash string
-	callData        string
+	// Used for eth_call
+	callData string
 }
 
 // createParams builds RPC params for each method using the provided service parameters
-func createParams(method jsonrpc.Method, p methodParams) []any {
+func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	switch method {
+	// Methods with empty params
 	case eth_blockNumber, eth_chainId, eth_gasPrice:
-		// Methods with empty params
-		return []any{}
+		return jsonrpc.Params{}
 
+	// Methods that just need the transaction hash
+	// eg. ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
+	case eth_getTransactionReceipt, eth_getTransactionByHash:
+		params, _ := jsonrpc.BuildArrayParamsFromString(p.transactionHash)
+		return params
+
+	// Methods that need [address, blockNumber]
+	// eg. ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
+	case eth_getBalance, eth_getTransactionCount:
+		params, _ := jsonrpc.BuildArrayParamsFromStrings([2]string{
+			p.contractAddress,
+			p.blockNumber,
+		})
+		return params
+
+	// eth_getBlockByNumber needs [blockNumber, <boolean>]
+	// eg. ["0xe71e1d", false]
+	case eth_getBlockByNumber:
+		params, _ := jsonrpc.BuildArrayParamsFromStringAndBool(
+			p.blockNumber,
+			false,
+		)
+		return params
+
+	// eth_call needs [{ to: address, data: calldata }, blockNumber]
+	// eg. [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
 	case eth_call:
-		// eth_call needs [{ to: address, data: calldata }, blockNumber]
-		// eg. [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
-		return []any{
+		params, _ := jsonrpc.BuildArrayParamsFromObjectAndString(
 			map[string]string{
 				"to":   p.contractAddress,
 				"data": p.callData,
 			},
 			p.blockNumber,
-		}
-
-	case eth_getBlockByNumber:
-		// eth_getBlockByNumber needs [blockNumber, <boolean>]
-		// eg. ["0x1", false]
-		return []any{p.blockNumber, false}
-
-	case eth_getTransactionReceipt, eth_getTransactionByHash:
-		// Methods that just need the transaction hash
-		// eg. ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
-		return []any{p.transactionHash}
-
-	case eth_getBalance, eth_getTransactionCount:
-		// Methods that need [address, blockNumber]
-		// eg. ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
-		return []any{p.contractAddress, p.blockNumber}
+		)
+		return params
 
 	default:
-		return []any{}
+		return jsonrpc.Params{}
 	}
 }

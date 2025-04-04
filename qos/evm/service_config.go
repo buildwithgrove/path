@@ -5,10 +5,10 @@ import "github.com/buildwithgrove/path/protocol"
 // QoSTypeEVM is the QoS type for the EVM blockchain.
 const QoSType = "evm"
 
-// 128 is the default archival threshold for EVM-based chains.
+// DefaultEVMArchivalThreshold is the default archival threshold for EVM-based chains.
 // This is an opinionated value that aligns with industry standard
 // practices for defining what constitutes an archival block.
-const defaultEVMArchivalThreshold = 128
+const DefaultEVMArchivalThreshold = 128
 
 type ServiceConfig struct {
 	// serviceID returns the ID of the service.
@@ -52,7 +52,7 @@ func (c ServiceConfig) GetEVMArchivalCheckConfig() (EVMArchivalCheckConfig, bool
 	}
 
 	if c.ArchivalCheckConfig.Threshold == 0 {
-		c.ArchivalCheckConfig.Threshold = defaultEVMArchivalThreshold
+		c.ArchivalCheckConfig.Threshold = DefaultEVMArchivalThreshold
 	}
 	return c.ArchivalCheckConfig, true
 }
