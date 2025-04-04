@@ -30,8 +30,7 @@ func newEndpoint() endpoint {
 	}
 }
 
-// getChecks returns the list of checks that should be run for the endpoint.
-// The pre-selected endpoint address is assigned to the request context in this method.
+// getChecks returns the list of checks that should be run for the endpoint on each hydrator run.
 func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
