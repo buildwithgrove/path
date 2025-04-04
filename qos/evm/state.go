@@ -46,6 +46,9 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
+	// TODO_TECHDEBT(@commoddity): move the endpoint validation methods to the service state
+	// and pass them the endpoint rather than passing the service state to each endpoint method.
+
 	// Ensure the response is not empty.
 	if err := endpoint.validateEmptyResponse(); err != nil {
 		return err
