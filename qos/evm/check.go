@@ -71,7 +71,7 @@ func getBlockNumberCheckRequest() jsonrpc.Request {
 //
 // eg.
 // '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
-func getArchivalCheckRequest(archivalState *archivalState) (jsonrpc.Request, bool) {
+func getArchivalCheckRequest(archivalState archivalState) (jsonrpc.Request, bool) {
 	// Do not perform an archival check if:
 	// 	- The archival check is not enabled for the service.
 	// 	- The archival block number has not yet been set in the archival state.
