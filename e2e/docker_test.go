@@ -120,7 +120,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	if !forceRebuild {
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
-			fmt.Println("🔄 Using existing Docker image, skipping build...")
+			fmt.Println("🐳 Using existing Docker image, skipping build...")
 			fmt.Println("  💡 Tip: Set FORCE_REBUILD=true to rebuild the image if needed")
 		}
 	} else {
@@ -129,7 +129,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 
 	// Only build the image if it doesn't exist or force rebuild is set
 	if !imageExists || forceRebuild {
-		fmt.Println("🏗️ Building Docker image...")
+		fmt.Println("🏗️  Building Docker image...")
 
 		// Build the image and log build output
 		buildOptions := docker.BuildImageOptions{
@@ -143,8 +143,10 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		if err := pool.Client.BuildImage(buildOptions); err != nil {
 			t.Fatalf("could not build path image: %s", err)
 		}
-		fmt.Println("✅ Docker image built successfully!")
+		fmt.Println("🐳 Docker image built successfully!")
 	}
+
+	fmt.Println("🌿 Starting PATH test container...")
 
 	// Run the built image
 	runOpts := &dockertest.RunOptions{
@@ -195,6 +197,9 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
+	fmt.Println("  ✅ PATH test container started successfully!")
+	fmt.Println("🏥 Performing health check on PATH test container...")
+
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
 
@@ -218,6 +223,8 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	if err = pool.Retry(retryConnectFn); err != nil {
 		t.Fatalf("could not connect to docker: %s", err)
 	}
+
+	fmt.Println("  ✅ PATH test container is healthy and ready for tests!")
 
 	<-poolRetryChan
 
