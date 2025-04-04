@@ -57,9 +57,9 @@ func responseUnmarshallerGetBalance(
 	return responseToGetBalance{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
-		balance:         balanceResponse,
 		contractAddress: requestParams[0],
 		blockNumber:     requestParams[1],
+		balance:         balanceResponse,
 		validationError: validationError,
 	}, nil
 }
@@ -124,11 +124,13 @@ func (r responseToGetBalance) getHTTPStatusCode() int {
 }
 
 // getRequestParams extracts the string params from the JSONRPC request.
-// For 'eth_getBalance', the block number is the second parameter in the params array.
+// For 'eth_getBalance', the params are contains ["contract_address", "block"number"] in that order.
 //
-// For example, for the JSON-RPC request:
-// `{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
-// it will return the params array as `["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]`
+// For example, the following JSON-RPC request:
+//
+//	`{"jsonrpc": "2.0", "method": "eth_getBalance", "params": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]}`
+//
+// will return the following params array: `["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "0x59E8A"]`
 func getRequestParams(req jsonrpc.Request) [2]string {
 	if req.Params.IsEmpty() {
 		return [2]string{}

@@ -38,13 +38,13 @@ type serviceState struct {
 // ValidateEndpoint returns an error if the supplied endpoint is not valid based on the perceived state of the EVM blockchain.
 //
 // It returns an error if:
-// - The endpoint has not returned an empty response to a `eth_getBalance` request.
+// - The endpoint has returned an empty response in the past.
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
-// - The endpoint has not returned an archival balance for the perceived block number.
-func (s *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
-	s.serviceStateLock.RLock()
-	defer s.serviceStateLock.RUnlock()
+// - The endpoint's archival check is invalid, if enabled.
+func (ss *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
+	ss.serviceStateLock.RLock()
+	defer ss.serviceStateLock.RUnlock()
 
 	// TODO_TECHDEBT(@commoddity): move the endpoint validation methods to the service state
 	// and pass them the endpoint rather than passing the service state to each endpoint method.
@@ -53,17 +53,20 @@ func (s *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 	if err := endpoint.validateEmptyResponse(); err != nil {
 		return err
 	}
+
 	// Ensure the chain ID is valid.
-	if err := endpoint.validateChainID(s.chainID); err != nil {
+	if err := endpoint.validateChainID(ss.chainID); err != nil {
 		return err
 	}
+
 	// Ensure the service state's perceived block number is not ahead of the endpoint's block number.
-	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
+	if err := endpoint.validateBlockNumber(ss.perceivedBlockNumber); err != nil {
 		return err
 	}
+
 	// Ensure the endpoint has returned an archival balance for the perceived block number.
 	// If the service does not require an archival check, this will always return a nil error.
-	if err := endpoint.validateArchivalCheck(s.archivalState); err != nil {
+	if err := endpoint.validateArchivalCheck(ss.archivalState); err != nil {
 		return err
 	}
 
@@ -72,18 +75,18 @@ func (s *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol
 
 // UpdateFromEndpoints updates the service state using estimation(s) derived from the set of updated endpoints.
 // This only includes the set of endpoints for which an observation was received.
-func (s *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
-	s.serviceStateLock.Lock()
-	defer s.serviceStateLock.Unlock()
+func (ss *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
+	ss.serviceStateLock.Lock()
+	defer ss.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		logger := s.logger.With(
+		logger := ss.logger.With(
 			"endpoint_addr", endpointAddr,
-			"perceived_block_number", s.perceivedBlockNumber,
+			"perceived_block_number", ss.perceivedBlockNumber,
 		)
 
 		// Validate the endpoint's chain ID; do not update the perceived block number if the chain ID is invalid.
-		if err := endpoint.validateChainID(s.chainID); err != nil {
+		if err := endpoint.validateChainID(ss.chainID); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
@@ -96,19 +99,14 @@ func (s *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		}
 
 		// Update the perceived block number.
-		s.perceivedBlockNumber = blockNumber
+		ss.perceivedBlockNumber = blockNumber
 	}
 
 	// If archival checks are enabled for the service, update the archival state.
-	if s.archivalState.isEnabled() {
+	if ss.archivalState.isEnabled() {
 		// Update the archival state based on the perceived block number.
-		//
-		// This handles:
-		// 	1. Calculating an archival block number.
-		// 	2. Getting the expected balance at that block number.
-		//
-		// When the expected balance at the archival block number is known, this becomes a no-op.
-		s.archivalState.updateArchivalState(s.perceivedBlockNumber, updatedEndpoints)
+		// Note that when the expected balance at the archival block number is known, this becomes a no-op.
+		ss.archivalState.updateArchivalState(ss.perceivedBlockNumber, updatedEndpoints)
 	}
 
 	return nil
