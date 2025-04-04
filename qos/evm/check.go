@@ -22,13 +22,6 @@ const (
 	idArchivalCheck
 )
 
-// check is an interface for the checks applied to an endpoint.
-type evmQualityCheck interface {
-	isValid(serviceState *ServiceState) error
-	shouldRun() bool
-	setRequestContext(*requestContext)
-}
-
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
@@ -48,15 +41,13 @@ func (es *EndpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 // getEndpointCheck prepares a request context for a specific endpoint check.
 // The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
 // It is called in the individual `check_*.go` files to build the request context.
-func getEndpointCheck(es *EndpointStore, check evmQualityCheck) *requestContext {
-	requestCtx := requestContext{
-		logger:        es.logger,
-		endpointStore: es,
+// getEndpointCheck prepares a request context for a specific endpoint check.
+func getEndpointCheck(endpointStore *EndpointStore, jsonrpcReq jsonrpc.Request) *requestContext {
+	return &requestContext{
+		logger:        endpointStore.logger,
+		endpointStore: endpointStore,
+		jsonrpcReq:    jsonrpcReq,
 	}
-
-	check.setRequestContext(&requestCtx)
-
-	return &requestCtx
 }
 
 func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) jsonrpc.Request {

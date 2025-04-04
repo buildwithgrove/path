@@ -7,8 +7,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-var _ evmQualityCheck = &endpointCheckBlockNumber{}
-
 // methodBlockNumber is the JSON-RPC method for getting the latest block number.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 const methodBlockNumber = jsonrpc.Method("eth_blockNumber")
@@ -52,8 +50,12 @@ func (e *endpointCheckBlockNumber) shouldRun() bool {
 	return e.expiresAt.IsZero() || e.expiresAt.Before(time.Now())
 }
 
-// setRequestContext updates the request context to make an EVM JSON-RPC eth_blockNumber request.
+// getRequest returns a JSONRPC request to check the block number.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}'
-func (e *endpointCheckBlockNumber) setRequestContext(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idBlockNumberCheck, methodBlockNumber)
+func (e *endpointCheckBlockNumber) getRequest() jsonrpc.Request {
+	return jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
+		Method:  jsonrpc.Method(methodBlockNumber),
+	}
 }

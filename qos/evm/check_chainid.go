@@ -7,8 +7,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-var _ evmQualityCheck = &endpointCheckChainID{}
-
 // methodChainID is the JSON-RPC method for getting the chain ID.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 const methodChainID = jsonrpc.Method("eth_chainId")
@@ -46,8 +44,12 @@ func (e *endpointCheckChainID) shouldRun() bool {
 	return e.expiresAt.IsZero() || e.expiresAt.Before(time.Now())
 }
 
-// setRequestContext updates the request context to make an EVM JSON-RPC eth_chainId request.
+// getRequest returns a JSONRPC request to check the chain ID.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}'
-func (e *endpointCheckChainID) setRequestContext(requestCtx *requestContext) {
-	requestCtx.jsonrpcReq = buildJSONRPCReq(idChainIDCheck, methodChainID)
+func (e *endpointCheckChainID) getRequest() jsonrpc.Request {
+	return jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idChainIDCheck),
+		Method:  jsonrpc.Method(methodChainID),
+	}
 }

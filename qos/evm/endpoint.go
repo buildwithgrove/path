@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -8,23 +9,24 @@ import (
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 )
 
+var errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of empty responses")
+
 // endpoint captures the details required to validate an EVM endpoint.
 // It contains all checks that should be run for the endpoint to validate
 // it is providing a valid response to service requests.
 type endpoint struct {
-	checkEmptyResponse *endpointCheckEmptyResponse
-	checkChainID       *endpointCheckChainID
-	checkBlockNumber   *endpointCheckBlockNumber
-	checkArchival      *endpointCheckArchival
+	hasReturnedEmptyResponse bool
+	checkChainID             endpointCheckChainID
+	checkBlockNumber         endpointCheckBlockNumber
+	checkArchival            endpointCheckArchival
 }
 
 // newEndpoint initializes a new endpoint with the checks that should be run for the endpoint.
 func newEndpoint() endpoint {
 	return endpoint{
-		checkEmptyResponse: &endpointCheckEmptyResponse{},
-		checkChainID:       &endpointCheckChainID{},
-		checkBlockNumber:   &endpointCheckBlockNumber{},
-		checkArchival:      &endpointCheckArchival{},
+		checkChainID:     endpointCheckChainID{},
+		checkBlockNumber: endpointCheckBlockNumber{},
+		checkArchival:    endpointCheckArchival{},
 	}
 }
 
@@ -33,17 +35,14 @@ func newEndpoint() endpoint {
 func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
 	var checks []gateway.RequestQoSContext
 
-	if e.checkEmptyResponse.shouldRun() {
-		checks = append(checks, getEndpointCheck(es, e.checkEmptyResponse))
-	}
 	if e.checkChainID.shouldRun() {
-		checks = append(checks, getEndpointCheck(es, e.checkChainID))
+		checks = append(checks, getEndpointCheck(es, e.checkChainID.getRequest()))
 	}
 	if e.checkBlockNumber.shouldRun() {
-		checks = append(checks, getEndpointCheck(es, e.checkBlockNumber))
+		checks = append(checks, getEndpointCheck(es, e.checkBlockNumber.getRequest()))
 	}
-	if e.checkArchival.shouldRun() {
-		checks = append(checks, getEndpointCheck(es, e.checkArchival))
+	if e.checkArchival.shouldRun(es.serviceState.archivalState) {
+		checks = append(checks, getEndpointCheck(es, e.checkArchival.getRequest(es.serviceState.archivalState)))
 	}
 
 	return checks
@@ -52,8 +51,8 @@ func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
 // Validate returns an error if the endpoint is invalid.
 // e.g. an endpoint without an observation of its response to an `eth_chainId` request is not considered valid.
 func (e endpoint) Validate(serviceState *ServiceState) error {
-	if err := e.checkEmptyResponse.isValid(serviceState); err != nil {
-		return err
+	if e.hasReturnedEmptyResponse {
+		return errHasReturnedEmptyResponse
 	}
 	if err := e.checkChainID.isValid(serviceState); err != nil {
 		return err
@@ -105,16 +104,14 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 
 // applyEmptyResponseObservation updates the empty response check if a valid observation is provided.
 func (e *endpoint) applyEmptyResponseObservation() {
-	e.checkEmptyResponse = &endpointCheckEmptyResponse{
-		hasReturnedEmptyResponse: true, // An empty response is always invalid.
-	}
+	e.hasReturnedEmptyResponse = true
 }
 
 // applyChainIDObservation updates the chain ID check if a valid observation is provided.
 func (e *endpoint) applyChainIDObservation(chainIDResponse *qosobservations.EVMChainIDResponse) {
 	observedChainID := chainIDResponse.GetChainIdResponse()
 
-	e.checkChainID = &endpointCheckChainID{
+	e.checkChainID = endpointCheckChainID{
 		chainID:   &observedChainID,
 		expiresAt: time.Now().Add(checkChainIDInterval),
 	}
@@ -122,7 +119,7 @@ func (e *endpoint) applyChainIDObservation(chainIDResponse *qosobservations.EVMC
 
 // applyBlockNumberObservation updates the block number check if a valid observation is provided.
 func (e *endpoint) applyBlockNumberObservation(blockNumberResponse *qosobservations.EVMBlockNumberResponse) {
-	e.checkBlockNumber = &endpointCheckBlockNumber{
+	e.checkBlockNumber = endpointCheckBlockNumber{
 		blockNumber: parseBlockNumberResponse(blockNumberResponse.GetBlockNumberResponse()),
 		expiresAt:   time.Now().Add(checkBlockNumberInterval),
 	}
@@ -146,7 +143,7 @@ func parseBlockNumberResponse(response string) *uint64 {
 
 // applyArchivalObservation updates the archival check if a valid observation is provided.
 func (e *endpoint) applyArchivalObservation(archivalResponse *qosobservations.EVMArchivalResponse) {
-	e.checkArchival = &endpointCheckArchival{
+	e.checkArchival = endpointCheckArchival{
 		archivalBalance: archivalResponse.GetBalance(),
 		expiresAt:       time.Now().Add(checkArchivalInterval),
 	}

@@ -7,8 +7,6 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-var _ evmQualityCheck = &endpointCheckArchival{}
-
 // methodGetBalance is the JSON-RPC method for getting the balance of an account at a specific block number.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 const methodGetBalance = jsonrpc.Method("eth_getBalance")
@@ -42,29 +40,40 @@ func (e *endpointCheckArchival) isValid(serviceState *ServiceState) error {
 }
 
 // shouldRun returns true if the check is not yet initialized or has expired.
-func (e *endpointCheckArchival) shouldRun() bool {
+func (e *endpointCheckArchival) shouldRun(archivalState archivalState) bool {
+	// Do not perform an archival check if:
+	// 	- The archival check is not enabled for the service.
+	// 	- The archival block number has not yet been set in the archival state.
+	if !archivalState.archivalCheckConfig.Enabled || archivalState.blockNumberHex == "" {
+		return false
+	}
+
 	return e.expiresAt.IsZero() || e.expiresAt.Before(time.Now())
 }
 
-// setRequestContext updates the request context to make an EVM JSON-RPC eth_getBalance request with a random archival block number.
-// eg. '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
-func (e *endpointCheckArchival) setRequestContext(requestCtx *requestContext) {
-	// Get the archival block number from the endpoint store.
-	archivalCheckConfig := requestCtx.endpointStore.serviceState.serviceConfig.getArchivalCheckConfig()
-	// Get the current state of the archival check.
-	serviceArchivalState := requestCtx.endpointStore.serviceState.archivalState
+// getRequest returns a JSONRPC request to check the balance of:
+//   - the contract specified in `a.archivalCheckConfig.ContractAddress`
+//   - at the block number specified in `a.blockNumberHex`
+//
+// eg.
+// '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
+func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.Request {
+	// Pass params in this order: [<contract_address>, <block_number>]
+	// eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
+	// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
+	params, err := jsonrpc.BuildParamsFromStringArray([2]string{
+		archivalState.archivalCheckConfig.ContractAddress,
+		archivalState.blockNumberHex,
+	})
+	if err != nil {
+		archivalState.logger.Error().Msgf("failed to build archival check request params: %v", err)
+		return jsonrpc.Request{}
+	}
 
-	requestCtx.jsonrpcReq = buildJSONRPCReq(
-		idArchivalCheck,
-		methodGetBalance,
-		// Pass params in this order, eg. "params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]
-		// Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-		archivalCheckConfig.ContractAddress,
-		serviceArchivalState.blockNumberHex,
-	)
-
-	// Set the archival balance check flag to true.
-	// This is used to ensure that only hydrator requests for the archival block number are used
-	// to update QoS data on whether endpoints are able to service archival requests.
-	requestCtx.archivalBalanceCheck = true
+	return jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idArchivalBlockCheck),
+		Method:  jsonrpc.Method(methodGetBalance),
+		Params:  params,
+	}
 }
