@@ -11,7 +11,7 @@ import (
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 const methodGetBalance = jsonrpc.Method("eth_getBalance")
 
-// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking archival status.
+// TODO_IN_THIS_PR(@commoddity): determine an appropriate interval for checking archival status.
 const checkArchivalInterval = 20 * time.Minute
 
 var (
@@ -60,7 +60,7 @@ func (e *endpointCheckArchival) shouldRun(archivalState archivalState) bool {
 //   - the contract specified in `a.archivalCheckConfig.ContractAddress`
 //   - at the block number specified in `a.blockNumberHex`
 //
-// eg.
+// For example:
 // '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]}'
 func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.Request {
 	// Pass params in this order: [<contract_address>, <block_number>]

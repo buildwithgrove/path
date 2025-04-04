@@ -16,16 +16,16 @@ var errHasReturnedEmptyResponse = errors.New("endpoint is invalid: history of em
 // it is providing a valid response to service requests.
 type endpoint struct {
 	hasReturnedEmptyResponse bool
-	checkChainID             endpointCheckChainID
 	checkBlockNumber         endpointCheckBlockNumber
+	checkChainID             endpointCheckChainID
 	checkArchival            endpointCheckArchival
 }
 
 // newEndpoint initializes a new endpoint with the checks that should be run for the endpoint.
 func newEndpoint() endpoint {
 	return endpoint{
-		checkChainID:     endpointCheckChainID{},
 		checkBlockNumber: endpointCheckBlockNumber{},
+		checkChainID:     endpointCheckChainID{},
 		checkArchival:    endpointCheckArchival{},
 	}
 }
@@ -33,13 +33,13 @@ func newEndpoint() endpoint {
 // getChecks returns the list of checks that should be run for the endpoint.
 // The pre-selected endpoint address is assigned to the request context in this method.
 func (e *endpoint) getChecks(es *EndpointStore) []gateway.RequestQoSContext {
-	var checks []gateway.RequestQoSContext
+	var checks = []gateway.RequestQoSContext{
+		// Block number check should always run
+		getEndpointCheck(es, e.checkBlockNumber.getRequest()),
+	}
 
 	if e.checkChainID.shouldRun() {
 		checks = append(checks, getEndpointCheck(es, e.checkChainID.getRequest()))
-	}
-	if e.checkBlockNumber.shouldRun() {
-		checks = append(checks, getEndpointCheck(es, e.checkBlockNumber.getRequest()))
 	}
 	if e.checkArchival.shouldRun(es.serviceState.archivalState) {
 		checks = append(checks, getEndpointCheck(es, e.checkArchival.getRequest(es.serviceState.archivalState)))
@@ -108,7 +108,6 @@ func (e *endpoint) applyChainIDObservation(chainIDResponse *qosobservations.EVMC
 func (e *endpoint) applyBlockNumberObservation(blockNumberResponse *qosobservations.EVMBlockNumberResponse) {
 	e.checkBlockNumber = endpointCheckBlockNumber{
 		parsedBlockNumberResponse: parseBlockNumberResponse(blockNumberResponse.GetBlockNumberResponse()),
-		expiresAt:                 time.Now().Add(checkBlockNumberInterval),
 	}
 }
 

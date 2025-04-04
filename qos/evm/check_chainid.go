@@ -11,8 +11,8 @@ import (
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 const methodChainID = jsonrpc.Method("eth_chainId")
 
-// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the chain ID.
-const checkChainIDInterval = 60 * time.Minute
+// TODO_IN_THIS_PR(@commoddity): determine an appropriate interval for checking the chain ID.
+const checkChainIDInterval = 20 * time.Minute
 
 var (
 	errNoChainIDObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodChainID)
