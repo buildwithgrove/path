@@ -15,7 +15,7 @@ var (
 	// defaultMaxEndpointCheckWorkers specifies the maximum number of workers that will be used to concurrently check endpoints.
 	defaultMaxEndpointCheckWorkers = 100
 
-	// defaultBootstrapInitialQoSDataChecks specifies the number of checks to run immediately after the hydrator starts.
+	// defaultBootstrapInitialQoSDataChecks specifies the number of rounds of checks to run immediately on PATH startup.
 	defaultBootstrapInitialQoSDataChecks = 5
 )
 
@@ -34,7 +34,7 @@ type EndpointHydratorConfig struct {
 	// Maximum number of concurrent endpoint check workers for performance tuning
 	MaxEndpointCheckWorkers int `yaml:"max_endpoint_check_workers"`
 
-	// BootstrapInitialQoSDataChecks specifies the number of rounds of checks to run immediately after the hydrator starts.
+	// BootstrapInitialQoSDataChecks specifies the number of rounds of checks to run immediately on PATH startup.
 	// This helps to identify and filter out invalid endpoints as soon as possible.
 	BootstrapInitialQoSDataChecks int `yaml:"bootstrap_initial_qos_data_checks"`
 }

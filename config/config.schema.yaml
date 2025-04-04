@@ -227,7 +227,7 @@ properties:
         type: integer
         default: 100
       bootstrap_initial_qos_data_checks:
-        description: "Number of rounds of checks to run immediately after the hydrator starts."
+        description: "Number of rounds of checks to run immediately on PATH startup."
         type: integer
         default: 5
       service_ids:

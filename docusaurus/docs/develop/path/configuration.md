@@ -280,11 +280,12 @@ For a full list of currently supported QoS service implementations, please refer
 
 #### Hydrator Field Descriptions <!-- omit in toc -->
 
-| Field                        | Type          | Required | Default   | Description                                                                          |
-| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
-| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
-| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
-| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
+| Field                               | Type          | Required | Default   | Description                                                                          |
+| ----------------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
+| `service_ids`                       | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
+| `run_interval_ms`                   | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
+| `max_endpoint_check_workers`        | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
+| `bootstrap_initial_qos_data_checks` | integer       | No       | 5         | Number of rounds of checks to run immediately on PATH startup.                       |
 
 
 ---

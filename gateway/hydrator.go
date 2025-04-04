@@ -57,7 +57,7 @@ type EndpointHydrator struct {
 	RunInterval time.Duration
 	// MaxEndpointCheckWorkers is the maximum number of workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int
-	// BootstrapInitialQoSDataChecks is the number of checks to run immediately after the hydrator starts.
+	// BootstrapInitialQoSDataChecks is the number of rounds of checks to run immediately on PATH startup.
 	// This helps to identify and filter out invalid endpoints as soon as possible.
 	BootstrapInitialQoSDataChecks int
 
@@ -89,12 +89,20 @@ func (eph *EndpointHydrator) Start() error {
 		eph.waitForProtocolHealth()
 
 		// Bootstrap QoS data with initial checks before starting regular interval
-		eph.bootstrapInitialQoSData() // Run 5 initial checks
+		eph.bootstrapInitialQoSData()
 
 		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
-			eph.run()
+			// run the hydrator and get the successful service checks
+			successfulServiceChecks := eph.run()
+
+			// update the hydrator's health status
+			eph.healthStatusMutex.Lock()
+			eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
+			eph.healthStatusMutex.Unlock()
+
+			// wait for the next interval
 			<-ticker.C
 		}
 	}()
@@ -129,13 +137,13 @@ func (eph *EndpointHydrator) bootstrapInitialQoSData() {
 			i+1,
 			eph.BootstrapInitialQoSDataChecks,
 		)
-		eph.run()
+		_ = eph.run()
 	}
 
 	eph.Logger.Info().Msg("bootstrapInitialQoSData: initial QoS data bootstrap completed")
 }
 
-func (eph *EndpointHydrator) run() {
+func (eph *EndpointHydrator) run() sync.Map {
 	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
 	logger.Info().Msg("Running Endpoint Hydrator")
 
@@ -165,10 +173,7 @@ func (eph *EndpointHydrator) run() {
 	}
 	wg.Wait()
 
-	eph.healthStatusMutex.Lock()
-	defer eph.healthStatusMutex.Unlock()
-
-	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
+	return successfulServiceChecks
 }
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
