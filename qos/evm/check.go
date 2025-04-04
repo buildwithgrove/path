@@ -1,8 +1,6 @@
 package evm
 
 import (
-	"encoding/json"
-
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -48,21 +46,4 @@ func getEndpointCheck(endpointStore *EndpointStore, jsonrpcReq jsonrpc.Request) 
 		endpointStore: endpointStore,
 		jsonrpcReq:    jsonrpcReq,
 	}
-}
-
-func buildJSONRPCReq(id int, method jsonrpc.Method, params ...any) jsonrpc.Request {
-	request := jsonrpc.Request{
-		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(id),
-		Method:  method,
-	}
-
-	if len(params) > 0 {
-		jsonParams, err := json.Marshal(params)
-		if err == nil {
-			request.Params = jsonrpc.NewParams(jsonParams)
-		}
-	}
-
-	return request
 }

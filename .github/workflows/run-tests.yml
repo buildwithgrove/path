@@ -2,7 +2,8 @@ name: Path tests
 
 on:
   push:
-    branches: [main]
+    # TODO_IN_THIS_PR(@commoddity): remove this
+    branches: [main, evm-load-test]
   pull_request:
     branches: [main]
 
@@ -81,7 +82,7 @@ jobs:
         run: ./e2e/scripts/update_morse_config_from_secrets.sh
 
       - name: Run Morse E2E Tests
-        run: make test_e2e_morse_relay
+        run: make test_e2e_evm_morse
 
   e2e-testing-shannon:
     name: Run Shannon E2E Tests
@@ -104,4 +105,5 @@ jobs:
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
       - name: Run Shannon E2E Tests
-        run: make test_e2e_shannon_relay
+        run: make test_e2e_evm_shannon
+

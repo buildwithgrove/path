@@ -76,7 +76,7 @@ type EndpointHydrator struct {
 // to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be provided.")
+		return errors.New("an instance of Protocol must be provided")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
@@ -84,6 +84,13 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+		// Wait for the protocol to be healthy before starting hydrator
+		eph.waitForProtocolHealth()
+
+		// Bootstrap QoS data with initial checks before starting regular interval
+		eph.bootstrapInitialQoSData(5) // Run 5 initial checks
+
+		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,6 +99,38 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
+}
+
+// waitForProtocolHealth blocks until the Protocol reports as healthy.
+// This ensures that the hydrator only starts running once the underlying
+// protocol layer is ready.
+func (eph *EndpointHydrator) waitForProtocolHealth() {
+	logger := eph.Logger.With("component", "waitForProtocolHealth")
+	logger.Info().Msg("Waiting for protocol to become healthy before starting hydrator")
+
+	for !eph.Protocol.IsAlive() {
+		logger.Debug().Msg("Protocol not yet healthy, waiting...")
+		time.Sleep(1 * time.Second)
+	}
+
+	logger.Info().Msg("Protocol is now healthy, hydrator can proceed")
+}
+
+// bootstrapInitialQoSData runs a specified number of hydrator checks immediately
+// to quickly bootstrap QoS data on startup. This helps to identify and filter out
+// invalid endpoints as soon as possible. The hydrator's health status is only set
+// to true after all initial checks have completed successfully.
+func (eph *EndpointHydrator) bootstrapInitialQoSData(numChecks int) {
+	logger := eph.Logger.With("component", "bootstrapInitialQoSData", "num_checks", numChecks)
+	logger.Info().Msg("Bootstrapping QoS data with initial checks")
+
+	// Run initial checks
+	for range numChecks {
+		logger.Debug().Msg("Bootstrapping initial hydrator checks on startup")
+		eph.run()
+	}
+
+	logger.Info().Msg("Initial QoS data bootstrap completed")
 }
 
 func (eph *EndpointHydrator) run() {
@@ -133,58 +172,67 @@ func (eph *EndpointHydrator) run() {
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With("service_id", string(serviceID))
 
-	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator, which means there is
-	// no need for specifying a specific app.
+	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
+	// This implies there is no need to specifying a specific app.
+	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	availableEndpoints, err := eph.Protocol.AvailableEndpoints(serviceID, nil)
 	if err != nil {
 		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Ensure there is at least one endpoint available for the service.
 	if len(availableEndpoints) == 0 {
 		return fmt.Errorf("performChecks: no endpoints available for service %s when running hydrator checks", serviceID)
 	}
 
 	logger = logger.With("number_of_endpoints", len(availableEndpoints))
 
-	jobs := make(chan protocol.EndpointAddr, len(availableEndpoints))
+	// Prepare a channel that will keep track of all the parallel async job to perform QoS checks on every endpoint.
+	endpointCheckChan := make(chan protocol.EndpointAddr, len(availableEndpoints))
 
 	var wgEndpoints sync.WaitGroup
-	for i := 0; i < eph.MaxEndpointCheckWorkers; i++ {
+	for range eph.MaxEndpointCheckWorkers {
 		wgEndpoints.Add(1)
 
 		go func() {
 			defer wgEndpoints.Done()
 
-			for endpointAddr := range jobs {
+			for endpointAddr := range endpointCheckChan {
 				// Creating a new locally scoped logger
 				endpointLogger := logger.With("endpoint_addr", string(endpointAddr))
-				endpointLogger.Info().Msg("running checks against the endpoint")
+				endpointLogger.Info().Msg("About to run QoS checks against the current endpoint and service")
 
 				// Retrieve all the required QoS checks for the endpoint.
 				requiredQoSChecks := serviceQoS.GetRequiredQualityChecks(endpointAddr)
 				if len(requiredQoSChecks) == 0 {
-					endpointLogger.Warn().Msg("service QoS returned 0 required checks")
+					endpointLogger.Warn().Msg("No required QoS checks for endpoint and service. Skipping checks...")
 					continue
 				}
 
+				// Iterate over every required QoS check for the endpoint and service.
 				for _, serviceRequestCtx := range requiredQoSChecks {
 					// Create a new protocol request context with a pre-selected endpoint for each request.
-					// This is to avoid race conditions or concurrent access problems when running concurrent QoS checks.
+					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
+					// avoid race conditions related to concurrent access issues when running concurrent QoS checks.
+					//
+
+					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
+					// which means there is no need for specifying a specific app.
+					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
 					}
 
-					// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
-					// Mark the request as Synthetic using the following steps:
-					// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
-					//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
-					//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
+					// Prepare a request context to submit a synthetic relay request to the endpoint on behalf of the gateway for QoS purposes.
 					gatewayRequestCtx := requestContext{
-						logger: logger,
-
+						logger: endpointLogger,
+						// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
+						// Mark the request as Synthetic using the following steps:
+						// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
+						//	2. Define a `hydratorObserver` function in this file: it should at-least set the request type as `Synthetic`
+						//	3. Set the `hydratorObserver` function in the `gatewayRequestContext` below.
 						gatewayObservations: getSyntheticRequestGatewayObservations(),
 						serviceID:           serviceID,
 						serviceQoS:          serviceQoS,
@@ -214,10 +262,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 	// Kick off the workers above for every unique endpoint.
 	for _, endpointAddr := range availableEndpoints {
-		jobs <- endpointAddr
+		endpointCheckChan <- endpointAddr
 	}
 
-	close(jobs)
+	close(endpointCheckChan)
 
 	// Wait for all workers to finish processing the endpoints.
 	wgEndpoints.Wait()

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"testing"
 	"time"
@@ -34,15 +35,8 @@ const (
 	maxPathHealthCheckWaitTimeMillisec = 120000
 )
 
-var (
-	// localdev.me is a hosted domain that resolves to 127.0.0.1 (localhost).
-	// This allows a subdomain to be specified without modifying /etc/hosts.
-	// It is hosted by AWS. See https://codeengineered.com/blog/2022/localdev-me/
-	localdevMe = "localdev.me"
-
-	// eg. 3069/tcp
-	containerPortAndProtocol = internalPathPort + "/tcp"
-)
+// eg. 3069/tcp
+var containerPortAndProtocol = internalPathPort + "/tcp"
 
 // setupPathInstance starts an instance of PATH in a container, using Docker.
 // It returns:
@@ -84,6 +78,25 @@ func setupPathInstance(t *testing.T, configFilePath string) (containerPort strin
 func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *dockertest.Resource, string) {
 	t.Helper()
 
+	logContainer := false
+	if os.Getenv("LOG") != "" {
+		logParsed, err := strconv.ParseBool(os.Getenv("LOG"))
+		if err != nil {
+			t.Fatalf("could not parse LOG environment variable: %s", err)
+		}
+		logContainer = logParsed
+	}
+
+	// Check if force rebuild is requested
+	forceRebuild := false
+	if os.Getenv("FORCE_REBUILD") != "" {
+		forceParsed, err := strconv.ParseBool(os.Getenv("FORCE_REBUILD"))
+		if err != nil {
+			t.Fatalf("could not parse FORCE_REBUILD environment variable: %s", err)
+		}
+		forceRebuild = forceParsed
+	}
+
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
 
@@ -102,18 +115,38 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	}
 	pool.MaxWait = time.Duration(maxPathHealthCheckWaitTimeMillisec) * time.Millisecond
 
-	// Build the image and log build output
-	buildOptions := docker.BuildImageOptions{
-		Name:           imageName,
-		ContextDir:     buildContextDir,
-		Dockerfile:     dockerfileName,
-		OutputStream:   os.Stdout,
-		SuppressOutput: false,
-		NoCache:        false,
+	// Check if the image already exists and we're not forcing a rebuild
+	imageExists := false
+	if !forceRebuild {
+		if _, err := pool.Client.InspectImage(imageName); err == nil {
+			imageExists = true
+			fmt.Println("🐳 Using existing Docker image, skipping build...")
+			fmt.Println("  💡 Tip: Set FORCE_REBUILD=true to rebuild the image if needed")
+		}
+	} else {
+		fmt.Println("🔄 Force rebuild requested, will build Docker image...")
 	}
-	if err := pool.Client.BuildImage(buildOptions); err != nil {
-		t.Fatalf("could not build path image: %s", err)
+
+	// Only build the image if it doesn't exist or force rebuild is set
+	if !imageExists || forceRebuild {
+		fmt.Println("🏗️  Building Docker image...")
+
+		// Build the image and log build output
+		buildOptions := docker.BuildImageOptions{
+			Name:           imageName,
+			ContextDir:     buildContextDir,
+			Dockerfile:     dockerfileName,
+			OutputStream:   os.Stdout,
+			SuppressOutput: false,
+			NoCache:        forceRebuild, // If force rebuilding, also disable cache
+		}
+		if err := pool.Client.BuildImage(buildOptions); err != nil {
+			t.Fatalf("could not build path image: %s", err)
+		}
+		fmt.Println("🐳 Docker image built successfully!")
 	}
+
+	fmt.Println("🌿 Starting PATH test container...")
 
 	// Run the built image
 	runOpts := &dockertest.RunOptions{
@@ -132,19 +165,21 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
-	// Print container logs in a goroutine to prevent blocking
-	go func() {
-		if err := pool.Client.Logs(docker.LogsOptions{
-			Container:    resource.Container.ID,
-			OutputStream: os.Stdout,
-			ErrorStream:  os.Stderr,
-			Stdout:       true,
-			Stderr:       true,
-			Follow:       true,
-		}); err != nil {
-			fmt.Printf("could not fetch logs for PATH container: %s", err)
-		}
-	}()
+	if logContainer {
+		// Print container logs in a goroutine to prevent blocking
+		go func() {
+			if err := pool.Client.Logs(docker.LogsOptions{
+				Container:    resource.Container.ID,
+				OutputStream: os.Stdout,
+				ErrorStream:  os.Stderr,
+				Stdout:       true,
+				Stderr:       true,
+				Follow:       true,
+			}); err != nil {
+				fmt.Printf("could not fetch logs for PATH container: %s", err)
+			}
+		}()
+	}
 
 	// Handle termination signals
 	c := make(chan os.Signal, 1)
@@ -161,6 +196,9 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	if err := resource.Expire(containerExpirySeconds); err != nil {
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
+
+	fmt.Println("  ✅ PATH test container started successfully!")
+	fmt.Println("🏥 Performing health check on PATH test container...")
 
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
@@ -185,6 +223,8 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 	if err = pool.Retry(retryConnectFn); err != nil {
 		t.Fatalf("could not connect to docker: %s", err)
 	}
+
+	fmt.Println("  ✅ PATH test container is healthy and ready for tests!")
 
 	<-poolRetryChan
 

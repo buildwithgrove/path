@@ -67,11 +67,16 @@ func (e endpoint) Validate(serviceState *ServiceState) error {
 }
 
 // ApplyObservation updates the data stored regarding the endpoint using the supplied observation.
-// It returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+// It Returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+//
+// For archival balance observations:
+// - Only updates the archival balance if the balance was observed at the specified archival block height
+// - This ensures accurate historical balance validation at the specific block number
+//
 // TODO_TECHDEBT(@adshmh): add a method to distinguish the following two scenarios:
 //   - an endpoint that returned in invalid response.
 //   - an endpoint with no/incomplete observations.
-func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, shouldPerformArchivalCheck bool) bool {
+func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation, archivalBlockHeight string) bool {
 	// If emptyResponse is not nil, the observation is for an empty response check.
 	if obs.GetEmptyResponse() != nil {
 		e.applyEmptyResponseObservation()
@@ -90,11 +95,10 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.EVMEndpointObservation,
 		return true
 	}
 
-	// shouldPerformArchivalCheck is true if the observation is for an archival check.
-	if shouldPerformArchivalCheck {
-		// If archivalResponse is not nil, the observation is for an archival check.
-		if archivalResponse := obs.GetArchivalResponse(); archivalResponse != nil {
-			e.applyArchivalObservation(archivalResponse)
+	if getBalanceResponse := obs.GetGetBalanceResponse(); getBalanceResponse != nil {
+		// Only update the archival balance if the balance was observed at the archival block height.
+		if balanceBlockHeight := getBalanceResponse.GetBlockNumber(); balanceBlockHeight == archivalBlockHeight {
+			e.applyArchivalObservation(getBalanceResponse)
 			return true
 		}
 	}
@@ -125,8 +129,8 @@ func (e *endpoint) applyBlockNumberObservation(blockNumberResponse *qosobservati
 	}
 }
 
-// parseBlockNumberResponse parses the block number response from the endpoint.
-// It returns a pointer to the parsed block number, or a pointer to a zero value if the response is invalid.
+// parseBlockNumberResponse parses the block number response from a string to a uint64.
+// eg. "0x3f8627c" -> 66609788
 func parseBlockNumberResponse(response string) *uint64 {
 	// base 0: use the string's prefix to determine its base.
 	parsed, err := strconv.ParseUint(response, 0, 64)
@@ -142,7 +146,7 @@ func parseBlockNumberResponse(response string) *uint64 {
 }
 
 // applyArchivalObservation updates the archival check if a valid observation is provided.
-func (e *endpoint) applyArchivalObservation(archivalResponse *qosobservations.EVMArchivalResponse) {
+func (e *endpoint) applyArchivalObservation(archivalResponse *qosobservations.EVMGetBalanceResponse) {
 	e.checkArchival = endpointCheckArchival{
 		archivalBalance: archivalResponse.GetBalance(),
 		expiresAt:       time.Now().Add(checkArchivalInterval),

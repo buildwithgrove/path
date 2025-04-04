@@ -94,6 +94,7 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
@@ -126,7 +127,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: endpoint not found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Return new request context for the pre-selected endpoint

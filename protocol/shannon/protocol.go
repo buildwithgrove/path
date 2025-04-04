@@ -101,7 +101,7 @@ type Protocol struct {
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
-// Takes the HTTP request as an argument for Delegate mode to get permitted apps from the HTTP request's headers.
+// Takes the HTTP request as an argument for Delegated mode to get permitted apps from the HTTP request's headers.
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) AvailableEndpoints(
@@ -109,17 +109,19 @@ func (p *Protocol) AvailableEndpoints(
 	httpReq *http.Request,
 ) ([]protocol.EndpointAddr, error) {
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-
 	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
+	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
+	// owns and can send relays on behalf of.
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
@@ -153,7 +155,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: endpoint not found for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Retrieve the relay request signer for the current gateway mode.

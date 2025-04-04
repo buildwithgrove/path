@@ -22,7 +22,26 @@ var (
 	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
 )
 
-// requestContext is responsible for performing the steps necessary to complete a service request.
+// Gateway requestContext is responsible for performing the steps necessary to complete a service request.
+//
+// It contains two main contexts:
+//
+//  1. Protocol context
+//
+//     - Supplies the list of available endpoints for the requested service to the QoS ctx.
+//
+//     - Builds the Protocol ctx for the selected endpoint once it has been selected.
+//
+//     - Sends the relay request to the selected endpoint using the protocol-specific implementation.
+//
+//  2. QoS context
+//
+//     - Receives the list of available endpoints for the requested service from the Protocol instance.
+//
+//     - Selects a valid endpoint from among them based on the service-specific QoS implementation.
+//
+//     - Updates its internal store based on observations made during the handling of the request.
+//
 // As of PR #72, it is limited in scope to HTTP service requests.
 type requestContext struct {
 	logger polylog.Logger
@@ -122,28 +141,37 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 }
 
 // BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
+// This includes:
+// 1. Getting this list of available endpoints for the requested service from the Protocol instance.
+// 1. Using the QoS ctx to select an endpoint based on the service-specific QoS implementation.
+// 2. Building the Protocol ctx for the selected endpoint.
+//
 // The constructed Protocol instance will be used for:
-//   - Sending relays to endpoint(s)
+//   - Sending a relay to the selected endpoint
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
+	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.serviceID, httpReq)
 	if err != nil {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
+	// Ensure at least one endpoint is available for the requested service.
 	if len(availableEndpoints) == 0 {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints available for service %s", rc.serviceID)
 	}
 
+	// Use the QoS ctx to select one endpoint to be used for relaying the request.
 	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
 	if err != nil {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
+	// Prepare the Protocol ctx for the selected endpoint.
 	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
-		// This will enable debugging of any potential issues.
+		// This will enable debugging of any potential issues (i.e. tracing)
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
