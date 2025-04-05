@@ -8,25 +8,24 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// The relayer package's Endpoint interface is fulfilled by the endpoint struct below, which allows
-// all code outside this package to uniquely identify any Morse endpoint, e.g. for the purpose of selecting
-// the best endpoint when sending a relay.
+// The relayer package's Endpoint interface is fulfilled by the endpoint struct below, which:
+// - Allows all code outside this package to uniquely identify any Morse endpoint
+// - Enables selecting the best endpoint when sending a relay
 var _ protocol.Endpoint = endpoint{}
 
-// endpoint is used to convert a Morse endpoint, i.e. an entity that can serve relay requests,
-// to the Endpoint defined in the relayer package.
-// endpoint contains the address and URL of a Morse endpoint.
-// The address is used to uniquely identify the endpoint, and the URL is used for sending relay.
+// endpoint is used to convert a Morse endpoint to an Endpoint defined in the relayer package.
+// An endpoint is considered to be an entity that can serve relay requests.
 type endpoint struct {
+	// Uniquely identifies the endpoint (i.e. onchain address).
 	address string
-	url     string
 
-	// session holds the session to which the endpoint belongs for the purpose of sending relays.
-	// this is used for sending relays to the endpoint.
+	// URL of where to send the relay.
+	url string
+
+	// session to which the endpoint belongs for the purpose of sending relays.
 	session provider.Session
 
-	// app holds the app corresponding to the session to which the endpoint belongs.
-	// this is used for sending relays to the endpoint.
+	// app corresponding to the session to which the endpoint belongs and where to send relays
 	app app
 }
 

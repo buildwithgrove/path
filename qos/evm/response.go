@@ -24,26 +24,27 @@ var (
 	// Any new response struct needs to be added to the following list.
 	_ response = &responseToChainID{}
 	_ response = &responseToBlockNumber{}
+	_ response = &responseToGetBalance{}
 	_ response = &responseGeneric{}
 
 	methodResponseMappings = map[jsonrpc.Method]responseUnmarshaller{
 		methodChainID:     responseUnmarshallerChainID,
 		methodBlockNumber: responseUnmarshallerBlockNumber,
+		methodGetBalance:  responseUnmarshallerGetBalance,
 	}
 )
 
 // unmarshalResponse converts raw endpoint bytes into a JSONRPC response struct.
-// As of PR #164, generates endpoint observations for responses to:
+// As of PR #194, generates endpoint observations for responses to:
 //   - eth_chainId
 //   - eth_blockNumber
+//   - eth_getBalance
 //   - any empty response, regardless of method
 func unmarshalResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
-) (
-	response, error,
-) {
+) (response, error) {
 	// Create a specialized response for empty endpoint response.
 	if len(data) == 0 {
 		return responseEmpty{
@@ -65,9 +66,6 @@ func unmarshalResponse(
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
-
-	// We intentionally skip checking whether the JSONRPC response indicates an error.
-	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Unmarshal the JSONRPC response into a method-specific response.
 	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]

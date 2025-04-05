@@ -37,6 +37,7 @@ type evmResponseInterpreter interface {
 var responseInterpreters = map[string]evmResponseInterpreter{
 	"chain_id":     &chainIDEVMResponseInterpreter{},
 	"block_number": &blockNumberEVMResponseInterpreter{},
+	"get_balance":  &getBalanceEVMResponseInterpreter{},
 	"unrecognized": &unrecognizedEVMResponseInterpreter{},
 	"empty":        &emptyEVMResponseInterpreter{},
 	"no_response":  &noEVMResponseInterpreter{},
@@ -55,16 +56,31 @@ var responseInterpreters = map[string]evmResponseInterpreter{
 //   - An error if the observation does not match any registered endpoint response type
 func getEVMResponseInterpreter(obs *EVMEndpointObservation) (evmResponseInterpreter, error) {
 	switch {
+
+	// eth_chainId
 	case obs.GetChainIdResponse() != nil:
 		return responseInterpreters["chain_id"], nil
+
+	// eth_blockNumber
 	case obs.GetBlockNumberResponse() != nil:
 		return responseInterpreters["block_number"], nil
+
+	// eth_getBalance (used for archival checks)
+	case obs.GetGetBalanceResponse() != nil:
+		return responseInterpreters["get_balance"], nil
+
+	// unrecognized response
 	case obs.GetUnrecognizedResponse() != nil:
 		return responseInterpreters["unrecognized"], nil
+
+	// empty response
 	case obs.GetEmptyResponse() != nil:
 		return responseInterpreters["empty"], nil
+
+	// no response
 	case obs.GetNoResponse() != nil:
 		return responseInterpreters["no_response"], nil
+
 	default:
 		return nil, errInvalidResponseType
 	}
@@ -100,6 +116,26 @@ type blockNumberEVMResponseInterpreter struct{}
 // HTTP status codes and error types for the rest of the system.
 func (i *blockNumberEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
 	response := obs.GetBlockNumberResponse()
+	validationErr := response.GetResponseValidationError()
+
+	if validationErr != 0 {
+		errType := EVMResponseValidationError(validationErr)
+		return int(response.GetHttpStatusCode()), &errType
+	}
+
+	return int(response.GetHttpStatusCode()), nil
+}
+
+// getBalanceEVMResponseInterpreter interprets eth_getBalance response observations.
+// It implements the evmResponseInterpreter interface to translate proto-generated
+// getBalance response types into standardized status codes and error types.
+type getBalanceEVMResponseInterpreter struct{}
+
+// extractValidityStatus extracts status information from getBalance response observations.
+// It interprets the getBalance response-specific proto type and translates it into
+// standardized HTTP status codes and error types for the rest of the system.
+func (i *getBalanceEVMResponseInterpreter) extractValidityStatus(obs *EVMEndpointObservation) (int, *EVMResponseValidationError) {
+	response := obs.GetGetBalanceResponse()
 	validationErr := response.GetResponseValidationError()
 
 	if validationErr != 0 {

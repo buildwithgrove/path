@@ -61,7 +61,7 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	endpointStore *EndpointStore
+	endpointStore *endpointStore
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
@@ -135,7 +135,6 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 		}
 
 		return responseNoneObj.GetHTTPResponse()
-
 	}
 
 	// return the last endpoint response reported to the context.
