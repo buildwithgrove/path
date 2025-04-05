@@ -85,7 +85,7 @@ func (c evmServiceQoSConfig) GetServiceID() protocol.ServiceID {
 
 // GetServiceQoSType returns the QoS type of the service.
 // Implements the ServiceQoSConfig interface.
-func (_ evmServiceQoSConfig) GetServiceQoSType() string {
+func (evmServiceQoSConfig) GetServiceQoSType() string {
 	return QoSType
 }
 

@@ -151,16 +151,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
 	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
 
-	// In the CI environment, we need to wait for 2 minutes to allow the hydrator checks to complete.
-	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		fmt.Println("⏰ Waiting for 2 minutes before starting tests to allow several rounds of hydrator checks to complete...")
-		time.Sleep(2 * time.Minute)
-	} else {
-		secondsToWait := 40
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
-		showWaitBar(secondsToWait)
-	}
-
 	// Get test cases based on protocol
 	testCases := getTestCases(testProtocol)
 
