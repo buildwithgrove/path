@@ -29,7 +29,7 @@ const maxErrMessageLen = 1000
 type evmRequestValidator struct {
 	logger        polylog.Logger
 	chainID       string
-	endpointStore *EndpointStore
+	endpointStore *endpointStore
 }
 
 // validateHTTPRequest validates an HTTP request, extracting and validating its EVM JSONRPC payload.
@@ -92,7 +92,6 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 
 	// Create the observations object with the request unmarshaling failure observation
 	observations := createRequestUnmarshalingFailureObservation(id, erv.chainID, err)
-
 	// Create the JSON-RPC error response
 	response := newErrResponseInvalidRequest(err, id)
 

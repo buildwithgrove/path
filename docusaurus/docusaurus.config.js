@@ -95,6 +95,12 @@ const config = {
             sidebarId: "operateSidebar",
             label: "⚙️ Operate",
           },
+          {
+            type: "docSidebar",
+            position: "left",
+            sidebarId: "learnSidebar",
+            label: "🧑‍🎓️ Learn",
+          },
         ],
       },
       footer: {

@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // Method is the method specified by a JSONRPC request.
@@ -50,4 +51,27 @@ func (r Request) MarshalJSON() ([]byte, error) {
 
 	// Marshal and return the serializable version of the request
 	return json.Marshal(out)
+}
+
+// BuildParamsFromStrings builds a Params object from an array of strings.
+//
+// For example, for an `eth_getBalance` request, the params would look like:
+// params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
+//
+// JSON-RPC array params must be passed in the order specified by the method.
+// Reference: https://www.jsonrpc.org/specification#parameter_structures
+//
+// TODO_FUTURE(@commoddity): other helper methods may be required to build
+// params for different JSON-RPC methods, eg. ["<string>", <bool>]
+func BuildParamsFromStringArray(params [2]string) (Params, error) {
+	for i, param := range params {
+		if param == "" {
+			return Params{}, fmt.Errorf("param at index %d is empty", i)
+		}
+	}
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
 }
