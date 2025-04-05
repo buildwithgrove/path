@@ -3,7 +3,6 @@ package jsonrpc
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 )
 
 // TODO_TECHDEBT(@commoddity): handle all possible ID values based on JSONRPC spec.
@@ -30,17 +29,6 @@ func (id ID) String() string {
 	}
 
 	return fmt.Sprintf("%d", id.intID)
-}
-
-func (id ID) Int() int {
-	if id.intID != 0 {
-		return id.intID
-	}
-	parsed, err := strconv.Atoi(id.strID)
-	if err != nil {
-		return 0
-	}
-	return parsed
 }
 
 func (id ID) IsEmpty() bool {

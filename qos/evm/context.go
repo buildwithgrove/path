@@ -72,11 +72,6 @@ type requestContext struct {
 	// enhancing to support batch JSONRPC requests will involve the
 	// modification of this field's type.
 	endpointResponses []endpointResponse
-
-	// archivalBalanceCheck is a flag to indicate if the request context is for an archival balance check.
-	// This is used to ensure that only hydrator requests for the archival block number are used
-	// to update QoS data on whether endpoints are able to service archival requests.
-	archivalBalanceCheck bool
 }
 
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
@@ -110,7 +105,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := rc.unmarshalResponse(responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{

@@ -48,6 +48,14 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	case ErrMisconfigured:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_MISCONFIGURED,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	case ErrTLSCertificateVerificationFailed:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_TLS_CERTIFICATE_VERIFICATION_FAILED,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	case ErrNonJSONResponse:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 	}
 
 	// If the error doesn't match any of our defined errors, log it and return a generic internal error.
