@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"encoding/json"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -53,6 +55,15 @@ func getChainIDCheckRequest() jsonrpc.Request {
 		ID:      jsonrpc.IDFromInt(idChainIDCheck),
 		Method:  jsonrpc.Method(methodChainID),
 	}
+
+	if len(params) > 0 {
+		jsonParams, err := json.Marshal(params)
+		if err == nil {
+			request.Params = jsonrpc.NewParams(jsonParams)
+		}
+	}
+
+	return request
 }
 
 // getBlockNumberCheckRequest returns a JSONRPC request to check the block number.

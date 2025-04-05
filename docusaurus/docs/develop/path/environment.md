@@ -1,6 +1,6 @@
 ---
-sidebar_position: 3
-title: Environment Setup
+sidebar_position: 2
+title: Environment
 description: Quick reference to setup your environment
 ---
 
@@ -8,8 +8,8 @@ This guide provides a quick reference for setting up and running a local `PATH` 
 
 It is a pre-requisite for the following protocol-specific guides:
 
-- [**Shannon Protocol Guide**](./cheat_sheet_shannon.md): For the new Shannon protocol (Beta TestNet as of 11/2025)
-- [**Morse Protocol Guide**](./cheat_sheet_morse.md): For the original Morse protocol (MainNet as of 2020)
+- [**Shannon Protocol Guide**](./cheatsheet_shannon.md): For the new Shannon protocol (Beta TestNet as of 11/2025)
+- [**Morse Protocol Guide**](./cheatsheet_morse.md): For the original Morse protocol (MainNet as of 2020)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -17,14 +17,21 @@ It is a pre-requisite for the following protocol-specific guides:
 - [Prerequisites](#prerequisites)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Install Required Tools](#2-install-required-tools)
-- [3. Setup Envoy Proxy](#3-setup-envoy-proxy)
-- [4. Choose Your Protocol](#4-choose-your-protocol)
+- [3. Choose Your Protocol](#3-choose-your-protocol)
 - [Additional Resources](#additional-resources)
 
 ## Development Environment
 
-PATH uses a Kubernetes-based local development environment. We use Kind (Kubernetes in Docker)
-for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
+<div align="center">
+  <a href="https://docs.tilt.dev/">
+    <img src="https://blog.tilt.dev/assets/img/blog-default-preview.png" alt="Tilt logo" width="200"/>
+  <p><b>Tilt Documentation</b></p>
+  </a>
+</div>
+
+PATH's development mode uses a Kubernetes-based local development environment with Tilt.
+
+We use Kind (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
 image building process compared to Docker Desktop's Kubernetes cluster.
 
 ## Prerequisites
@@ -62,38 +69,23 @@ To install all dependencies automatically:
 make install_deps
 ```
 
-:::
+:::warning
 
-## 3. Setup Envoy Proxy
+This script currently only works on Linux. MacOS version coming soon.
 
-Setup all the configurations to enable authorization, service aliasing, and rate limiting:
-
-```bash
-make init_envoy
-```
-
-This will generate four configuration files:
-
-- `.allowed-services.lua`
-- `.envoy.yaml`
-- `.ratelimit.yaml`
-- `.gateway-endpoints.yaml`
-
-:::tip
-
-For a quick initial setup, choose **Option 2 (no authorization)** when prompted.
 
 :::
 
-## 4. Choose Your Protocol
+## 3. Choose Your Protocol
 
-| Protocol | Version | Status   | Network | Documentation                                      |
-| -------- | ------- | -------- | ------- | -------------------------------------------------- |
-| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Guide](./cheat_sheet_shannon.md) |
-| Morse    | v0      | Original | MainNet | [Morse Protocol Guide](./cheat_sheet_morse.md)     |
+| Protocol | Version | Status   | Network | Documentation                                                |
+| -------- | ------- | -------- | ------- | ------------------------------------------------------------ |
+| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Quickstart Guide](./cheatsheet_shannon.md) |
+| Morse    | v0      | Original | MainNet | [Morse Protocol Quickstart Guide](./cheatsheet_morse.md)     |
 
 ## Additional Resources
 
-- [PATH Walkthrough](introduction.md) - Detailed explanation of PATH architecture
-- [PATH Config Docs](path_config.md) - Detailed configuration guide
-- [Envoy Config Docs](../envoy/envoy_config.md) - Envoy proxy configuration guide
+- [PATH Configuration Files](./configuration.md) - Detailed configuration instructions
+- [PATH Helm Chart](../helm/path.md) - Full documentation for the PATH Helm chart
+- [GUARD Helm Chart](../helm/guard.md) - Full documentation for the GUARD Helm chart
+- [WATCH Helm Chart](../helm/watch.md) - Full documentation for the WATCH Helm chart

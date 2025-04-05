@@ -26,6 +26,10 @@ type Params struct {
 	rawMessage json.RawMessage
 }
 
+func NewParams(rawMessage json.RawMessage) Params {
+	return Params{rawMessage: rawMessage}
+}
+
 // Custom marshaler allows Params to be serialized while keeping rawMessage private.
 // This is needed because Go's default JSON marshaler only processes public fields, but we want to keep rawMessage private
 // to enforce JSON-RPC 2.0 validation during unmarshaling.
@@ -65,4 +69,15 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 // The JSON marshaler uses this to completely omit the params field from the JSON output when empty.
 func (p Params) IsEmpty() bool {
 	return len(p.rawMessage) == 0
+}
+
+// Slice returns the params as a slice of any.
+// As the "params" field may be of any type, according to the JSON-RPC spec,
+// a type assertion must be used where this slice is required.
+func (p Params) Slice() ([]any, error) {
+	var params []any
+	if err := json.Unmarshal(p.rawMessage, &params); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal params as slice: %v", err)
+	}
+	return params, nil
 }

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 title: Shannon Cheat Sheet
 description: Quick reference guide for setting up PATH with Shannon protocol
 ---
@@ -15,15 +15,22 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 - [2. Configure PATH for Shannon](#2-configure-path-for-shannon)
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
   - [2.2 Verify Configuration](#22-verify-configuration)
-- [3. Start PATH](#3-start-path)
+- [3. Run PATH in development mode](#3-run-path-in-development-mode)
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
+- [What's Next?](#whats-next)
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](./env_setup.md) guide.
+1. Prepare your environment by following the instructions in the [**environment setup**](./environment.md) guide.
 2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/poktrolld_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
+
+:::tip
+
+You can use the `make install_deps` command to install the dependencies for the PATH stack, including the `poktrolld` CLI.
+
+:::
 
 ## 1. Setup Shannon Protocol Accounts (Gateway & Application)
 
@@ -34,7 +41,7 @@ Before starting, you'll need to create and configure:
 
 ### 1.1 Gateway and Application Account Creation
 
-We strongly recommend following the [**Gateway cheat sheets**](https://dev.poktroll.com/operate/quickstart/gateway_cheatsheet) for setting up your accounts.
+We strongly recommend following the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for setting up your accounts.
 
 However, a quick copy-pasta tl;dr is provided here for convenience:
 
@@ -128,7 +135,7 @@ poktrolld keys show -a application
 
 ### 2.1 Generate Shannon Config
 
-Run the following command to generate a Shannon config at `local/path/config/.config.yaml`:
+Run the following command to generate a Shannon config at `local/path/.config.yaml`:
 
 ```bash
 make shannon_populate_config
@@ -142,13 +149,6 @@ To override the keyring backend, you can export the `POKTROLL_TEST_KEYRING_BACKE
 To override the poktrolld home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
 :::
 
-Note that running `make shannon_populate_config` is equivalent to running the following commands:
-
-```bash
-make prepare_morse_e2e_config # Generate ./e2e/.shannon.config.yaml
-make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
-```
-
 :::warning Private Key Export
 
 1. **Ignore instructions** that prompt you to update the file manually.
@@ -161,7 +161,7 @@ make copy_morse_e2e_config_to_local # Copy to ./local/path/.config.yaml
 Check your config file:
 
 ```bash
-cat local/path/config/.config.yaml
+cat local/path/.config.yaml
 ```
 
 It should look similar to the following with the `gateway_config` filled out.
@@ -186,16 +186,16 @@ hydrator_config:
 ```
 
 :::important Gateway Configuration
+
 Ensure that `gateway_config` is filled out correctly before continuing.
+
 :::
 
-## 3. Start PATH
-
-Make sure to have followed the entire [**environment setup**](./env_setup.md) guide before proceeding.
+## 3. Run PATH in development mode
 
 ## 3.1 Start PATH
 
-Run the entire stack (PATH, Envoy, Auth Server) by running:
+Run PATH in local development mode in Tilt by running:
 
 ```bash
 make path_up
@@ -210,15 +210,14 @@ make path_down
 
 ### 3.1 Monitor PATH
 
-Visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
+![Tilt Dashboard](../../../static/img/path-in-tilt-console.png)
 
-Wait for initialization logs:
+Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
 
-```json
-{"level":"info","message":"Starting PATH gateway with Shannon protocol"}
-{"level":"info","message":"Starting the cache update process."}
-{"level":"info","package":"router","message":"PATH gateway running on port 3069"}
-```
+
+![Tilt Console](../../../static/img/path-in-tilt.png)
+
+_PATH Running in Tilt_
 
 ## 4. Test Relays
 
@@ -228,32 +227,13 @@ The makefile helpers in `makefiles/test_requests.mk` can make iterating on these
 
 :::
 
-Send a relay using **static key authorization** (`make test_request__endpoint_url_path_mode__static_key_service_id_header`):
+Send a test relay (`make test_request__service_id_header_shannon`):
 
 ```bash
-curl http://localhost:3070/v1/endpoint_1_static_key \
-    -X POST \
-    -H "authorization: api_key_1" \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-Send a relay **without authorization** (`make test_request__endpoint_url_path_mode__no_auth__service_id_header`):
-
-```bash
-curl http://localhost:3070/v1/endpoint_3_no_auth \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-If you launched **PATH in standalone mode (no Envoy Proxy)**, you can test a relay like so (`make test_request_path_only`):
-
-```bash
-curl http://localhost:3069/v1/ \
-    -X POST \
-    -H "target-service-id: anvil" \
-    -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+curl http://localhost:3070/v1 \
+  -H "Target-Service-Id: anvil" \
+  -H "Authorization: test_api_key" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 :::warning Retries
@@ -261,3 +241,8 @@ curl http://localhost:3069/v1/ \
 If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::
+
+
+## What's Next?
+
+Now that you have PATH running, take a look at the [Configuration](./configuration.md) guide to learn more about the different configuration options available.
