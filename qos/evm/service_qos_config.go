@@ -10,11 +10,6 @@ const QoSType = "evm"
 // practices for defining what constitutes an archival block.
 const DefaultEVMArchivalThreshold = 128
 
-// defaultEVMBlockNumberSyncAllowance is the default sync allowance for EVM-based chains.
-// This number indicates how many blocks behind the perceived
-// block number the endpoint may be and still be considered valid.
-const defaultEVMBlockNumberSyncAllowance = 5
-
 // ServiceQoSConfig defines the base interface for service QoS configurations.
 // This avoids circular dependency with the config package.
 type ServiceQoSConfig interface {
@@ -91,7 +86,7 @@ func (c evmServiceQoSConfig) GetServiceID() protocol.ServiceID {
 
 // GetServiceQoSType returns the QoS type of the service.
 // Implements the ServiceQoSConfig interface.
-func (_ evmServiceQoSConfig) GetServiceQoSType() string {
+func (evmServiceQoSConfig) GetServiceQoSType() string {
 	return QoSType
 }
 
