@@ -15,27 +15,6 @@ import (
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &endpointStore{}
 
-// TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
-// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used
-// to validate endpoints.
-//
-// EndpointStoreConfig captures the modifiable settings of the EndpointStore.
-// This will enable `EndpointStore` to be used as part of QoS for other EVM-based
-// blockchains which may have different desired QoS properties.
-// e.g. different blockchains QoS instances could have different tolerance levels
-// for deviation from the current block height.
-type EndpointStoreConfig struct {
-	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
-	// SyncAllowance specifies the maximum number of blocks an endpoint
-	// can be behind, compared to the blockchain's perceived block height,
-	// before being filtered out.
-	SyncAllowance uint64
-
-	// ChainID is the ID used by the corresponding blockchain.
-	// It is used to verify responses to service requests with `eth_chainId` method.
-	ChainID string
-}
-
 // endpointStore maintains QoS data on the set of available endpoints
 // for an EVM-based blockchain service.
 // It performs several tasks, most notable:
