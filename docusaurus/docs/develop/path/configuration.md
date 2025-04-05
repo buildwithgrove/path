@@ -270,11 +270,11 @@ hydrator_config:
 
 :::info
 
-For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](./qos.md).
+For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](../../learn/qos/supported_services.md).
 
 :::warning
 
-⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](./qos.md); if an invalid ID is provided, the gateway will error.
+⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](../../learn/qos/supported_services.md); if an invalid ID is provided, the gateway will error.
 
 :::
 

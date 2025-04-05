@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 6
 title: HTTP Status Codes
 description: Opinionated Approach to HTTP Status Codes
 ---
