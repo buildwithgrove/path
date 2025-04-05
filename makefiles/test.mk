@@ -9,20 +9,10 @@ test_all: test_unit test_e2e_shannon_relay test_e2e_morse_relay
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
 
-.PHONY: test_e2e_morse_relay
-test_e2e_morse_relay: morse_e2e_config_warning ## Run an E2E Morse relay test
-	go test -v ./e2e/... -tags=e2e -count=1 -run Test_MorseRelay
+.PHONY: test_e2e_evm_morse
+test_e2e_evm_morse: morse_e2e_config_warning ## Run an E2E Morse relay test
+	(cd ./e2e && TEST_PROTOCOL=morse go test -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
-.PHONY: test_e2e_shannon_relay_iterate
-test_e2e_shannon_relay_iterate: ## Iterate on E2E shannon relay tests
-	@echo "go build -o bin/path ./cmd"
-	@echo "# ⚠️ UPDATE ./local/path/.config.yaml ⚠️"
-	@echo "./bin/path -config ./local/path/.config.yaml"
-	@echo "curl http://anvil.localhost:3069/v1/abcd1234 -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}'"
-
-.PHONY: test_e2e_shannon_relay
-test_e2e_shannon_relay: shannon_e2e_config_warning ## Run an E2E Shannon relay test
-	@echo "#####################################################################################################################################################"
-	@echo "README: If you are intending to iterate on E2E tests, stop this and run the following for instructions instead: 'make test_e2e_shannon_relay_iterate'"
-	@echo "#####################################################################################################################################################"
-	go test -v ./e2e/... -tags=e2e -count=1 -run Test_ShannonRelay
+.PHONY: test_e2e_evm_shannon
+test_e2e_evm_shannon: shannon_e2e_config_warning ## Run an E2E Shannon relay test
+	(cd ./e2e && TEST_PROTOCOL=shannon go test -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
