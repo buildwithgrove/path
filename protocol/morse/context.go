@@ -41,7 +41,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// TODO_IMPROVE(@adshmh): use the same pattern for hydrated loggers in any packages with large number of logger fields.
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
-	if rc.selectedEndpoint == nil {
+	if rc.selectedEndpoint.IsEmpty() {
 		// Internal error: no endpoint selected, record an observation but no sanctions
 		// as no endpoint was contacted
 		hydratedLogger.Error().Msg("no endpoint has been selected.")
