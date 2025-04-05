@@ -14,13 +14,7 @@ type serviceState struct {
 	logger polylog.Logger
 
 	serviceStateLock sync.RWMutex
-
-	// chainID is the expected value of the `Result` field in any endpoint's response to an `eth_chainId` request.
-	//
-	// See the following link for more details: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
-	//
-	// Chain IDs Reference: https://chainlist.org/
-	chainID string
+	serviceConfig    EVMServiceQoSConfig
 
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `eth_blockNumber` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
@@ -42,31 +36,30 @@ type serviceState struct {
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint's archival check is invalid, if enabled.
-func (ss *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protocol.EndpointAddr) error {
+func (ss *serviceState) ValidateEndpoint(endpoint endpoint) error {
 	ss.serviceStateLock.RLock()
 	defer ss.serviceStateLock.RUnlock()
 
-	// TODO_TECHDEBT(@commoddity): move the endpoint validation methods to the service state
-	// and pass them the endpoint rather than passing the service state to each endpoint method.
+	// Ensure the endpoint has not returned an empty response.
+	if endpoint.hasReturnedEmptyResponse {
+		return errHasReturnedEmptyResponse
+	}
 
-	// Ensure the response is not empty.
-	if err := endpoint.validateEmptyResponse(); err != nil {
+	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
+	evmChainID := ss.serviceConfig.getEVMChainID()
+	if err := endpoint.checkChainID.isValid(evmChainID); err != nil {
 		return err
 	}
 
-	// Ensure the chain ID is valid.
-	if err := endpoint.validateChainID(ss.chainID); err != nil {
-		return err
-	}
-
-	// Ensure the service state's perceived block number is not ahead of the endpoint's block number.
-	if err := endpoint.validateBlockNumber(ss.perceivedBlockNumber); err != nil {
+	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
+	perceivedBlockNumber := ss.perceivedBlockNumber
+	syncAllowance := ss.serviceConfig.getSyncAllowance()
+	if err := endpoint.checkBlockNumber.isValid(perceivedBlockNumber, syncAllowance); err != nil {
 		return err
 	}
 
 	// Ensure the endpoint has returned an archival balance for the perceived block number.
-	// If the service does not require an archival check, this will always return a nil error.
-	if err := endpoint.validateArchivalCheck(ss.archivalState); err != nil {
+	if err := endpoint.checkArchival.isValid(ss.archivalState); err != nil {
 		return err
 	}
 
@@ -86,7 +79,7 @@ func (ss *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		)
 
 		// Validate the endpoint's chain ID; do not update the perceived block number if the chain ID is invalid.
-		if err := endpoint.validateChainID(ss.chainID); err != nil {
+		if err := endpoint.checkChainID.isValid(ss.serviceConfig.getEVMChainID()); err != nil {
 			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
 			continue
 		}
