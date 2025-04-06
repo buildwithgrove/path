@@ -307,22 +307,24 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 // TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
 // properly supplied chains on Shannon to run E2E tests.
-// adjustLatencyForShannonTests increases the latency expectations by 4x for Shannon tests
-// since there is currently only one supplier for anvil and it's a test blockchain.
+// adjustLatencyForShannonTests increases the latency expectations by 2x for Shannon tests
+// since there is currently only one supplier for `anvil` and it's a test blockchain.
 func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[jsonrpc.Method]methodDefinition {
 	// Create a new map to avoid modifying the original
 	adjustedDefs := make(map[jsonrpc.Method]methodDefinition, len(defs))
 
-	fmt.Println("⚠️  Adjusting latency expectations for Shannon tests by 4x")
+	const multiplier = 2
+
+	fmt.Printf("⚠️  Adjusting latency expectations for Shannon tests by %dx to account for `anvil` test chain\n", multiplier)
 
 	// Copy and adjust each method definition
 	for method, def := range defs {
 		adjustedDef := def
 
 		// Multiply latency expectations by 4
-		adjustedDef.maxP50Latency = def.maxP50Latency * 4
-		adjustedDef.maxP95Latency = def.maxP95Latency * 4
-		adjustedDef.maxP99Latency = def.maxP99Latency * 4
+		adjustedDef.maxP50Latency = def.maxP50Latency * multiplier
+		adjustedDef.maxP95Latency = def.maxP95Latency * multiplier
+		adjustedDef.maxP99Latency = def.maxP99Latency * multiplier
 
 		adjustedDefs[method] = adjustedDef
 	}
