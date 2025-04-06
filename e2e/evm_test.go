@@ -169,7 +169,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// It can be overridden by setting the `SKIP_DOCKER_TEST` environment variable to `true`,
 	// for example, if wanting to test a manually run instance of PATH using the built binary.
 	if !skipDockerTest {
-		fmt.Println("🚀 Starting PATH instance in Docker...")
 		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
 		defer teardownFn()
 
