@@ -22,6 +22,10 @@ var _ health.Check = &EndpointHydrator{}
 // componentNameHydrator is the name used when reporting the status of the endpoint hydrator
 const componentNameHydrator = "endpoint-hydrator"
 
+// bootstrapInitialQoSDataChecks is the number of checks to run immediately after the hydrator starts.
+// This helps to identify and filter out invalid endpoints as soon as possible.
+const bootstrapInitialQoSDataChecks = 5
+
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
 //
@@ -89,7 +93,7 @@ func (eph *EndpointHydrator) Start() error {
 		eph.waitForProtocolHealth()
 
 		// Bootstrap QoS data with initial checks before starting regular interval
-		eph.bootstrapInitialQoSData()
+		eph.bootstrapInitialQoSData() // Run 5 initial checks
 
 		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
@@ -99,7 +103,7 @@ func (eph *EndpointHydrator) Start() error {
 
 			// update the hydrator's health status
 			eph.healthStatusMutex.Lock()
-			eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
+			eph.isHealthy = eph.getHealthStatus(successfulServiceChecks)
 			eph.healthStatusMutex.Unlock()
 
 			// wait for the next interval
@@ -132,18 +136,18 @@ func (eph *EndpointHydrator) bootstrapInitialQoSData() {
 	eph.Logger.Info().Msg("bootstrapInitialQoSData: bootstrapping QoS data with initial checks")
 
 	// Run initial checks
-	for i := range eph.BootstrapInitialQoSDataChecks {
+	for i := range bootstrapInitialQoSDataChecks {
 		eph.Logger.Info().Msgf("bootstrapInitialQoSData: hydrator run %d of %d checks on startup",
 			i+1,
-			eph.BootstrapInitialQoSDataChecks,
+			bootstrapInitialQoSDataChecks,
 		)
-		_ = eph.run()
+		eph.run()
 	}
 
 	eph.Logger.Info().Msg("bootstrapInitialQoSData: initial QoS data bootstrap completed")
 }
 
-func (eph *EndpointHydrator) run() sync.Map {
+func (eph *EndpointHydrator) run() *sync.Map {
 	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
 	logger.Info().Msg("Running Endpoint Hydrator")
 
@@ -152,7 +156,7 @@ func (eph *EndpointHydrator) run() sync.Map {
 	var wg sync.WaitGroup
 	// A sync.Map is optimized for the use case here,
 	// i.e. each map entry is written only once.
-	var successfulServiceChecks sync.Map
+	successfulServiceChecks := &sync.Map{}
 
 	for svcID, svcQoS := range eph.ActiveQoSServices {
 		wg.Add(1)
