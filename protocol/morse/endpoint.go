@@ -29,10 +29,6 @@ type endpoint struct {
 	app app
 }
 
-func (e endpoint) IsEmpty() bool {
-	return e.address == "" || e.url == "" || len(e.session.Nodes) == 0 || e.app.IsEmpty()
-}
-
 func (e endpoint) Addr() protocol.EndpointAddr {
 	return protocol.EndpointAddr(e.address)
 }
