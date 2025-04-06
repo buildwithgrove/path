@@ -3,7 +3,7 @@ name: Path tests
 on:
   push:
     # TODO_IN_THIS_PR(@commoddity): remove this
-    branches: [main, evm-load-test]
+    branches: [main, evm-load-test, evm-qos-expiry-implementation]
   pull_request:
     branches: [main]
 
