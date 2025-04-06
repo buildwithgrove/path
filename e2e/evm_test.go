@@ -47,18 +47,39 @@ var (
 	// Config path for protocol
 	// eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configPath = "./.%s.config.yaml"
+
+	// skipDockerTest is a flag to determine whether to skip using Docker for the test.
+	// By default it is true, but may be disabled for local manual testing, for example
+	// if wanting to test a manually run instance of PATH using the built binary.
+	skipDockerTest = true
 )
 
 // init initializes the gateway URL with an optional override
+
+const (
+	// Required environment variables
+	envTestProtocolOverride = "TEST_PROTOCOL"
+
+	// Optional environment variables
+	envGatewayURLOverride     = "GATEWAY_URL"
+	envSkipDockerTestOverride = "SKIP_DOCKER_TEST"
+)
+
 func init() {
-	if gatewayURLOverride := os.Getenv("GATEWAY_URL"); gatewayURLOverride != "" {
-		gatewayURL = gatewayURLOverride
-	}
-	if testProtocol = protocolStr(os.Getenv("TEST_PROTOCOL")); testProtocol == "" {
-		panic("TEST_PROTOCOL environment variable is not set")
+	// Required environment variables
+	if testProtocol = protocolStr(os.Getenv(envTestProtocolOverride)); testProtocol == "" {
+		panic(fmt.Sprintf("%s environment variable is not set", envTestProtocolOverride))
 	}
 	if !testProtocol.isValid() {
-		panic("TEST_PROTOCOL environment variable is not set to `morse` or `shannon`")
+		panic(fmt.Sprintf("%s environment variable is not set to `morse` or `shannon`", envTestProtocolOverride))
+	}
+
+	// Optional environment variables
+	if gatewayURLOverride := os.Getenv(envGatewayURLOverride); gatewayURLOverride != "" {
+		gatewayURL = gatewayURLOverride
+	}
+	if skipDockerTest = os.Getenv(envSkipDockerTestOverride) == "true"; skipDockerTest {
+		skipDockerTest = true
 	}
 }
 
@@ -132,30 +153,45 @@ func getShannonTestCases() []testCase {
 
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
 func Test_PATH_E2E_EVM(t *testing.T) {
-	fmt.Println("Setting up PATH instance...")
+	fmt.Println("🚀 Setting up PATH instance...")
 
-	var pathContainerPort string
-
-	// Start an instance of PATH using the E2E config file for Shannon.
+	// Config YAML file, eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configFilePath := fmt.Sprintf(configPath, testProtocol)
-	pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
-	defer teardownFn()
 
-	if pathContainerPort == "" {
-		pathContainerPort = "3069"
+	// Default port for PATH instance
+	// If using Docker, the port will be dynamically assigned
+	// and overridden by the value returned from `setupPathInstance`.
+	port := "3069"
+
+	// If `useDockerTest` is true, we will start an instance of PATH in Docker using `dockertest`.
+	// This is configured in the file `docker_test.go` and is the default behavior.
+	//
+	// It can be overridden by setting the `SKIP_DOCKER_TEST` environment variable to `true`,
+	// for example, if wanting to test a manually run instance of PATH using the built binary.
+	if !skipDockerTest {
+		fmt.Println("🚀 Starting PATH instance in Docker...")
+		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+		defer teardownFn()
+
+		port = pathContainerPort
 	}
 
-	gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
+	// eg. `http://localhost:30771/v1`
+	gatewayURL = fmt.Sprintf(gatewayURL, port)
 
 	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
 	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
 
-	// In the CI environment, we need to wait for 2 minutes to allow the hydrator checks to complete.
+	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
+	// 		See: https://github.com/buildwithgrove/path/pull/202
+	//
+	// In the CI environment, we need to wait for 2 minutes to allow several rounds of hydrator checks to complete.
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 		fmt.Println("⏰ Waiting for 2 minutes before starting tests to allow several rounds of hydrator checks to complete...")
 		time.Sleep(2 * time.Minute)
 	} else {
+		// In the local environment, we wait for 40 seconds to allow several rounds of hydrator checks to complete.
 		secondsToWait := 40
 		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
 		showWaitBar(secondsToWait)
