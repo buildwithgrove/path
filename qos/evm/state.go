@@ -69,14 +69,7 @@ func (ss *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protoco
 	if err := endpoint.validateArchivalCheck(ss.archivalState); err != nil {
 		return err
 	}
-	if err := endpoint.validateBlockNumber(s.perceivedBlockNumber); err != nil {
-		return err
-	}
-	if s.shouldPerformArchivalCheck() {
-		if err := endpoint.validateArchivalCheck(s.archivalState.balance, endpointAddr); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -85,11 +78,6 @@ func (ss *serviceState) ValidateEndpoint(endpoint endpoint, endpointAddr protoco
 func (ss *serviceState) UpdateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	ss.serviceStateLock.Lock()
 	defer ss.serviceStateLock.Unlock()
-
-	// Initialize consensus map if it doesn't exist.
-	if s.archivalState.balanceConsensus == nil {
-		s.archivalState.balanceConsensus = make(map[string]int)
-	}
 
 	for endpointAddr, endpoint := range updatedEndpoints {
 		logger := ss.logger.With(

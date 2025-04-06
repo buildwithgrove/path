@@ -48,8 +48,8 @@ func unmarshalResponse(
 	// Create a specialized response for empty endpoint response.
 	if len(data) == 0 {
 		return responseEmpty{
-			logger:     rc.logger,
-			jsonrpcReq: rc.jsonrpcReq,
+			logger:     logger,
+			jsonrpcReq: jsonrpcReq,
 		}, nil
 	}
 
@@ -59,20 +59,20 @@ func unmarshalResponse(
 	if err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
-		return getGenericJSONRPCErrResponse(rc.logger, rc.jsonrpcReq.ID, data, err), err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
 	// Validate the JSONRPC response.
-	if err := jsonrpcResponse.Validate(rc.jsonrpcReq.ID); err != nil {
-		return getGenericJSONRPCErrResponse(rc.logger, rc.jsonrpcReq.ID, data, err), err
+	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
 	// Unmarshal the JSONRPC response into a method-specific response.
-	unmarshaller, found := methodResponseMappings[rc.jsonrpcReq.Method]
+	unmarshaller, found := methodResponseMappings[jsonrpcReq.Method]
 	if found {
-		return unmarshaller(rc.logger, rc.jsonrpcReq, jsonrpcResponse)
+		return unmarshaller(logger, jsonrpcReq, jsonrpcResponse)
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return responseUnmarshallerGeneric(rc.logger, rc.jsonrpcReq, data)
+	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
 }
