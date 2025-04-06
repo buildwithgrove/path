@@ -103,7 +103,7 @@ func (eph *EndpointHydrator) Start() error {
 
 			// update the hydrator's health status
 			eph.healthStatusMutex.Lock()
-			eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
+			eph.isHealthy = eph.getHealthStatus(successfulServiceChecks)
 			eph.healthStatusMutex.Unlock()
 
 			// wait for the next interval
@@ -147,7 +147,7 @@ func (eph *EndpointHydrator) bootstrapInitialQoSData() {
 	eph.Logger.Info().Msg("bootstrapInitialQoSData: initial QoS data bootstrap completed")
 }
 
-func (eph *EndpointHydrator) run() sync.Map {
+func (eph *EndpointHydrator) run() *sync.Map {
 	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
 	logger.Info().Msg("Running Endpoint Hydrator")
 
@@ -156,7 +156,7 @@ func (eph *EndpointHydrator) run() sync.Map {
 	var wg sync.WaitGroup
 	// A sync.Map is optimized for the use case here,
 	// i.e. each map entry is written only once.
-	var successfulServiceChecks sync.Map
+	successfulServiceChecks := &sync.Map{}
 
 	for svcID, svcQoS := range eph.ActiveQoSServices {
 		wg.Add(1)
