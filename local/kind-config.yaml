@@ -10,6 +10,12 @@ nodes:
     - containerPort: 30070 
       hostPort: 3070
       protocol: TCP
+    # WATCH (Grafana)
+    # For usage instructions see:
+    #   https://github.com/buildwithgrove/helm-charts/blob/main/charts/watch/docs/accessing-grafana.md
+    - containerPort: 80
+      hostPort: 3000
+      protocol: TCP
 containerdConfigPatches:
   # Ensure kind can pull images from GitHub Container Registry
   - |
