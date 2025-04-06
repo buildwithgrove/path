@@ -48,10 +48,10 @@ var (
 	// eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configPath = "./.%s.config.yaml"
 
-	// useDockerTest is a flag to determine whether to use Docker for the test.
+	// skipDockerTest is a flag to determine whether to skip using Docker for the test.
 	// By default it is true, but may be disabled for local manual testing, for example
 	// if wanting to test a manually run instance of PATH using the built binary.
-	useDockerTest = true
+	skipDockerTest = true
 )
 
 // init initializes the gateway URL with an optional override
@@ -78,8 +78,8 @@ func init() {
 	if gatewayURLOverride := os.Getenv(envGatewayURLOverride); gatewayURLOverride != "" {
 		gatewayURL = gatewayURLOverride
 	}
-	if useDockerTest = os.Getenv(envSkipDockerTestOverride) == "true"; useDockerTest {
-		useDockerTest = false
+	if skipDockerTest = os.Getenv(envSkipDockerTestOverride) == "true"; skipDockerTest {
+		skipDockerTest = true
 	}
 }
 
@@ -168,7 +168,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	//
 	// It can be overridden by setting the `SKIP_DOCKER_TEST` environment variable to `true`,
 	// for example, if wanting to test a manually run instance of PATH using the built binary.
-	if useDockerTest {
+	if !skipDockerTest {
 		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
 		defer teardownFn()
 
