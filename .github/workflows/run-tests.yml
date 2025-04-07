@@ -1,19 +1,15 @@
-name: PATH Lint & Test
+name: Path tests
 
 on:
   push:
-    branches: [main]
+    # TODO_IN_THIS_PR(@commoddity): remove this
+    branches: [main, bootstrap-hydrator-results]
   pull_request:
     branches: [main]
 
 jobs:
-
-  # --------------------------------------------- #
-  # Phase 1. Lint, Unit Test & Build Docker Image #
-  # --------------------------------------------- #
-
-  run-linter:
-    name: Run linter
+  linter:
+    name: Run golangci-lint
     runs-on: "ubuntu-22.04"
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +18,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.22.3"
 
       - name: Setup Git Authentication
         run: |
@@ -34,7 +30,7 @@ jobs:
           version: latest
           args: --timeout 10m --verbose
 
-  run-unit-tests:
+  unit-testing:
     name: Run unit tests
     runs-on: "ubuntu-22.04"
     steps:
@@ -42,7 +38,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.22.3"
 
       - name: Setup Git Authentication
         run: |
@@ -51,70 +47,29 @@ jobs:
       - name: Run unit tests
         run: CGO_ENABLED=0 go test ./... -short
 
-  build-and-test-docker-image:
-    name: Build & test Docker image
+  test-docker-build:
+    name: Verify Docker image builds successfully
     runs-on: "ubuntu-22.04"
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
-      - name: Build and export Docker image
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v2
         with:
           build-args: |
-            IMAGE_TAG=path-image
+            IMAGE_TAG=test
             GITHUB_TOKEN=${{ github.token }}
           push: false
           load: true
-          tags: path-image
-          
-      - name: Test the image works
-        run: |
-          docker image ls -a
-          docker inspect path-image || exit 1
-          
-      - name: Export image to TAR file
-        run: |
-          docker save path-image -o ${{ runner.temp }}/path-image.tar
-          
-      - name: Upload artifact for use by E2E tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: path-image
-          path: ${{ runner.temp }}/path-image.tar
-          retention-days: 1
+          tags: test-build
 
-  # ------------------------------------ #
-  # Phase 2. E2E Tests - Morse & Shannon #
-  # ------------------------------------ #
-
-  run-e2e-tests-morse:
-    name: Run E2E tests - Morse
+  e2e-testing-morse:
+    name: Run Morse E2E Tests
     runs-on: "ubuntu-22.04"
-    needs:
-      - run-linter
-      - run-unit-tests
-      - build-and-test-docker-image
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
-          
-      - name: Download Docker image artifact from previous job
-        uses: actions/download-artifact@v4
-        with:
-          name: path-image
-          path: ${{ runner.temp }}
-          
-      - name: Load Docker image
-        run: |
-          docker load --input ${{ runner.temp }}/path-image.tar
-          docker image ls -a
+          go-version: "1.22.3"
 
       - name: copy Morse E2E config
         run: make prepare_morse_e2e_config
@@ -129,31 +84,16 @@ jobs:
       - name: Run Morse E2E Tests
         run: make test_e2e_evm_morse
 
-  run-e2e-tests-shannon:
-    name: Run E2E tests - Shannon
+  e2e-testing-shannon:
+    name: Run Shannon E2E Tests
     runs-on: "ubuntu-22.04"
-    needs:
-      - run-linter
-      - run-unit-tests
-      - build-and-test-docker-image
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
-          
-      - name: Download Docker image artifact from previous job
-        uses: actions/download-artifact@v4
-        with:
-          name: path-image
-          path: ${{ runner.temp }}
-          
-      - name: Load Docker image
-        run: |
-          docker load --input ${{ runner.temp }}/path-image.tar
-          docker image ls -a
+          go-version: "1.22.3"
 
       - name: copy Shannon E2E config
         run: make prepare_shannon_e2e_config
@@ -166,3 +106,4 @@ jobs:
 
       - name: Run Shannon E2E Tests
         run: make test_e2e_evm_shannon
+
