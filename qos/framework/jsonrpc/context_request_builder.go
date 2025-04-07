@@ -30,9 +30,7 @@ const maxErrMessageLen = 1000
 // requestBuilder handles the construction of requestQoSContext objects
 type requestBuilder struct {
 	Logger polylog.Logger
-	ServiceID ServiceID
-	EndpointCallProcessor  endpointCallProcessor
-	EndpointSelector endpointSelector
+	ServiceName ServiceName
 
 	context *requestQoSContext
 }
@@ -56,6 +54,8 @@ func (rb *requestBuilder) ParseHTTPRequest(httpReq *http.Request) *requestBuilde
 		// Handle read error (internal server error)
 		rb.Logger.Error().Err(err).Msg("Failed to read request body")
 
+		rb.context = newRequestErrorContextInternalError(err)
+		return rb
 		// Create error response for read failure
 		errResp := newErrResponseInternalReadError(err)
 

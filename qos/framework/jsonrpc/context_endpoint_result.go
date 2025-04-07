@@ -15,69 +15,69 @@ type EndpointQueryResultContext struct {
 	// It is read only: this is not the context for updating service state.
 	*ReadonlyServiceState
 
-	// The endpoint query for which results are being built.
-	endpointQuery *endpointQuery
-
 	// Custom result builders, supplied by the QoS Definition.
 	jsonrpcMethodResultBuilders map[string]EndpointQueryResultBuilder
 
 	// Response is the parsed JSON-RPC response received from the endpoint.
 	response *jsonrpc.JsonRpcResponse
-
-	// The result data that will be returned to the caller (requestContext)
-	result *EndpointQueryResult
 }
 
-// buildResult uses the supplied method builder to build and return the EndpointResult.
+// buildResult uses the supplied method builder to build the EndpointResult for the supplied endpointQuery.
 // A default builder is used if no matches were found for the request method.
-func (ctx *EndpointResultContext) buildResult() *EndpointQueryResult {
-	if parsingFailureResult, shouldContinue := ctx.parseEndpointPayload(); !shouldContinue {
-		return parsingFailureResult
+// Returns the endpointQuery augmented with the endpoint result.
+func (ctx *EndpointResultContext) buildEndpointQueryResult(endpointQuery *endpointQuery) *endpointQuery {
+	parsedEndpointQuery, shouldContinue := ctx.parseEndpointPayload(endpointQuery)
+	if !shouldContinue {
+		// parsing the request failed: stop the request processing flow.
+		// Return a failure result for building the client's response and observations.
+		return parsedEndpointQuery
 	}
 
-	builder, found := ctx.jsonrpcMethodResultBuilders[ctx.endpointQuery.request.Method]
-
+	// Use the custom endpoint query result builder, if one is found matching the JSONRPC request's method.
+	builder, found := ctx.jsonrpcMethodResultBuilders[parsedEndpointQuery.request.Method]
 	if !found {
-		// Use default processor for unrecognized methods
+		// Use default processor for methods not specified by the custom QoS service definition.
 		builder = defaultResultBuilder
 	}
 
-	// Process the result using service-specific processor with context
-	ctx.result.ResultData = builder(ctx)
-	return ctx.result
+	// Process the result using service-specific processor with the context
+	parsedEndpointQuery.result = builder(ctx)
+
+	// Return the updated endpoint query.
+	return parsedEndpointQuery
 }
 
 // TODO_IN_THIS_PR: define/allow customization of sanctions for endpoint errors: e.g. malformed response.
 //
 // parseEndpointPayload parses the payload from an endpoint and handles empty responses and parse errors.
 // It returns the result and a boolean indicating whether processing should continue (true) or stop (false).
-func (ctx *EndpointResultContext) parseEndpointPayload() (*EndpointQueryResult, bool) {
+func (ctx *EndpointResultContext) parseEndpointPayload(endpointQuery *endpointQuery) (*endpointQuery, bool) {
 	// Check for empty response
-	if len(call.ReceivedData) == 0 {
-		result := buildResultForEmptyResponse(eq)
-		return result, false
+	if len(endpointQuery.receivedData) == 0 {
+		endpointQuery.result = buildResultForEmptyResponse(endpointQuery)
+		return endpointQuery, false
 	}
 
 	// Parse JSONRPC response
 	var jsonrpcResp jsonrpc.JsonRpcResponse
-	if err := json.Unmarshal(eq.receivedData, &jsonrpcResp); err != nil {
-		result := buildResultForErrorUnmarshalingEndpointReturnedData(call, err)
-		return result, false
+	if err := json.Unmarshal(endpointQuery.receivedData, &jsonrpcResp); err != nil {
+		endpointQuery.result = buildResultForErrorUnmarshalingEndpointReturnedData(endpointQuery, err)
+		return endpointQuery, false
 	}
 
 	// Validate the JSONRPC response
 	if err := jsonrpcResp.Validate(eq.request.ID); err != nil {
 		// TODO_IN_THIS_PR: define a separate method for JSONRPC response validation errors.
-		result := buildResultForErrorUnmarshalingEndpointReturnedData(eq, err)
-		return result, false
+		endpointQuery.result = buildResultForErrorUnmarshalingEndpointReturnedData(endpointQuery, err)
+		return endpointQuery, false
 	}
 
 	// Store the parsed result
-	ctx.parsedResponse = jsonrpcResp
+	endpointQuery.parsedResponse = jsonrpcResp
 
 	// Return true to signal that parsing was successful.
 	// Processing will continue to the next step.
-	return nil, true
+	return endpointQuery, true
 }
 
 // Success creates a success result with the given value.
