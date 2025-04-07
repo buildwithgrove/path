@@ -1,14 +1,17 @@
-name: Path tests
+name: PATH Lint & Test
 
 on:
   push:
-    # TODO_IN_THIS_PR(@commoddity): remove this
-    branches: [main, evm-load-test]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  # Phase 1. Lint & Unit Test - Run linter
+
+  # --------------------------------------------- #
+  # Phase 1. Lint, Unit Test & Build Docker Image #
+  # --------------------------------------------- #
+
   run-linter:
     name: Run linter
     runs-on: "ubuntu-22.04"
@@ -31,7 +34,6 @@ jobs:
           version: latest
           args: --timeout 10m --verbose
 
-  # Phase 1. Lint & Unit Test - Run unit tests
   run-unit-tests:
     name: Run unit tests
     runs-on: "ubuntu-22.04"
@@ -49,15 +51,9 @@ jobs:
       - name: Run unit tests
         run: CGO_ENABLED=0 go test ./... -short
 
-  # Phase 2. Build & test Docker image
-  # Build the Docker image once, validate it works,
-  # and export it as an artifact for both E2E tests.
   build-and-test-docker-image:
     name: Build & test Docker image
     runs-on: "ubuntu-22.04"
-    needs:
-      - run-linter
-      - run-unit-tests
     steps:
       - uses: actions/checkout@v4
       
@@ -83,14 +79,17 @@ jobs:
         run: |
           docker save path-image -o ${{ runner.temp }}/path-image.tar
           
-      - name: Upload artifact
+      - name: Upload artifact for use by E2E tests
         uses: actions/upload-artifact@v4
         with:
           name: path-image
           path: ${{ runner.temp }}/path-image.tar
           retention-days: 1
 
-  # Phase 3. E2E Test - Morse
+  # ------------------------------------ #
+  # Phase 2. E2E Tests - Morse & Shannon #
+  # ------------------------------------ #
+
   run-e2e-tests-morse:
     name: Run E2E tests - Morse
     runs-on: "ubuntu-22.04"
@@ -106,7 +105,7 @@ jobs:
         with:
           go-version: "1.23"
           
-      - name: Download Docker image artifact
+      - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
         with:
           name: path-image
@@ -130,7 +129,6 @@ jobs:
       - name: Run Morse E2E Tests
         run: make test_e2e_evm_morse
 
-  # Phase 3. E2E Test - Shannon
   run-e2e-tests-shannon:
     name: Run E2E tests - Shannon
     runs-on: "ubuntu-22.04"
@@ -146,7 +144,7 @@ jobs:
         with:
           go-version: "1.23"
           
-      - name: Download Docker image artifact
+      - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
         with:
           name: path-image
