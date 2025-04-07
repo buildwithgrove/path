@@ -13,7 +13,7 @@ import (
 
 // EndpointStore provides the endpoint selection capability required
 // by the protocol package for handling a service request.
-var _ protocol.EndpointSelector = &EndpointStore{}
+var _ protocol.EndpointSelector = &endpointStore{}
 
 // TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
 // The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used
@@ -36,17 +36,17 @@ type EndpointStoreConfig struct {
 	ChainID string
 }
 
-// EndpointStore maintains QoS data on the set of available endpoints
+// endpointStore maintains QoS data on the set of available endpoints
 // for an EVM-based blockchain service.
 // It performs several tasks, most notable:
 //
 //	1- Endpoint selection based on the quality data available
 //	2- Application of endpoints' observations to update the data on endpoints.
-type EndpointStore struct {
+type endpointStore struct {
 	logger polylog.Logger
 
 	// ServiceState is the current perceived state of the EVM blockchain.
-	serviceState *ServiceState
+	serviceState *serviceState
 
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]endpoint
@@ -55,7 +55,7 @@ type EndpointStore struct {
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
-func (es *EndpointStore) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
+func (es *endpointStore) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	logger := es.logger.With("method", "Select")
 	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
 
@@ -77,14 +77,13 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.EndpointAddr) (pro
 	).Info().Msg("filtered endpoints")
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
-	// return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
 	return selectedEndpointAddr, nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
 // according to previously processed observations.
-func (es *EndpointStore) filterValidEndpoints(availableEndpoints []protocol.EndpointAddr) ([]protocol.EndpointAddr, error) {
+func (es *endpointStore) filterValidEndpoints(availableEndpoints []protocol.EndpointAddr) ([]protocol.EndpointAddr, error) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 

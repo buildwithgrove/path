@@ -49,6 +49,8 @@ func NewProtocol(
 	fullNode FullNode,
 	config GatewayConfig,
 ) (*Protocol, error) {
+	shannonLogger := logger.With("protocol", "shannon")
+
 	// Derive the address of apps owned by the gateway operator using the supplied apps' private keys.
 	// This only applies to Centralized gateway mode and needs to be done during initialization to ensure it is possible to send relays in Centralized mode.
 	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(config.OwnedAppsPrivateKeysHex)
@@ -62,7 +64,7 @@ func NewProtocol(
 	}
 
 	return &Protocol{
-		Logger: logger,
+		logger: shannonLogger,
 
 		FullNode: fullNode,
 
@@ -78,7 +80,7 @@ func NewProtocol(
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 	FullNode
 
 	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
@@ -99,19 +101,27 @@ type Protocol struct {
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
+// Takes the HTTP request as an argument for Delegated mode to get permitted apps from the HTTP request's headers.
+//
 // Implements the gateway.Protocol interface.
-func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
+func (p *Protocol) AvailableEndpoints(
+	serviceID protocol.ServiceID,
+	httpReq *http.Request,
+) ([]protocol.EndpointAddr, error) {
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
+	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
+	// owns and can send relays on behalf of.
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
+	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
@@ -121,32 +131,40 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 }
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
-// This method is used only in the hydrator to enforce performing QoS checks on a specific pre-selected endpoint.
+// Takes the HTTP request as an argument for Delegate mode to get permitted apps from the HTTP request's headers.
+//
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
-	preSelectedEndpointAddr protocol.EndpointAddr,
+	selectedEndpointAddr protocol.EndpointAddr,
+	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, nil)
+	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
+	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
+	// that can service RPC requests for the given service ID for the given apps.
 	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
-	selectedEndpoint, ok := endpoints[preSelectedEndpointAddr]
+	// Select the endpoint that matches the pre-selected address.
+	// This ensures QoS checks are performed on the selected endpoint.
+	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: no pre-selected endpoint found for service %s and endpoint address %s", serviceID, preSelectedEndpointAddr)
+		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
+	// Retrieve the relay request signer for the current gateway mode.
 	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
 	}
 
+	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		fullNode:           p.FullNode,
 		selectedEndpoint:   &selectedEndpoint,
@@ -190,7 +208,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	serviceID protocol.ServiceID,
 	permittedApps []*apptypes.Application,
 ) (map[protocol.EndpointAddr]endpoint, error) {
-	logger := p.Logger.With("service", serviceID)
+	logger := p.logger.With("service", serviceID)
 
 	var endpoints = make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range permittedApps {

@@ -30,7 +30,7 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 func (p *Protocol) getGatewayModePermittedApps(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
-	req *http.Request,
+	httpReq *http.Request,
 ) ([]*apptypes.Application, error) {
 	switch p.gatewayMode {
 
@@ -38,7 +38,7 @@ func (p *Protocol) getGatewayModePermittedApps(
 		return p.getCentralizedGatewayModeApps(ctx, serviceID)
 
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeApps(ctx, req)
+		return p.getDelegatedGatewayModeApps(ctx, httpReq)
 
 		// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 		//case protocol.GatewayModePermissionless:

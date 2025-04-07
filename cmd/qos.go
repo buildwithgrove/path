@@ -31,29 +31,34 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 
 		switch serviceConfig.GetServiceQoSType() {
 		case evm.QoSType:
-			evmServiceConfig, ok := serviceConfig.(evm.ServiceConfig)
-			if !ok { // this should never happen
-				return nil, fmt.Errorf("error building QoS instances: service ID %q is not an EVM service", serviceID)
+			evmServiceQoSConfig, ok := serviceConfig.(evm.EVMServiceQoSConfig)
+			if !ok {
+				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not an EVM service", serviceID)
 			}
 
-			evmQoS := evm.NewQoSInstance(logger, evmServiceConfig)
+			evmQoS := evm.NewQoSInstance(logger, evmServiceQoSConfig)
 			qosServices[serviceID] = evmQoS
 
 		case cometbft.QoSType:
-			cometBFTServiceConfig, ok := serviceConfig.(cometbft.ServiceConfig)
-			if !ok { // this should never happen
-				return nil, fmt.Errorf("error building QoS instances: service ID %q is not a CometBFT service", serviceID)
+			cometBFTServiceQoSConfig, ok := serviceConfig.(cometbft.CometBFTServiceQoSConfig)
+			if !ok {
+				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
 			}
 
-			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceConfig)
+			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceQoSConfig)
 			qosServices[serviceID] = cometBFTQoS
 
 		case solana.QoSType:
-			solanaQoS := solana.NewQoSInstance(logger)
+			solanaServiceQoSConfig, ok := serviceConfig.(solana.SolanaServiceQoSConfig)
+			if !ok {
+				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a Solana service", serviceID)
+			}
+
+			solanaQoS := solana.NewQoSInstance(logger, solanaServiceQoSConfig)
 			qosServices[serviceID] = solanaQoS
 
-		default: // this should never happen
-			return nil, fmt.Errorf("error building QoS instances: service ID %q not supported by PATH", serviceID)
+		default:
+			return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
 	}
 

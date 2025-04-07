@@ -13,14 +13,20 @@ import (
 // Protocol defines the core functionality of a protocol from the perspective of a gateway.
 // The gateway expects a protocol to build and return a request context for a particular service ID.
 type Protocol interface {
-	// AvailableEndpoints returns the list of available endpoints matching both the service ID and the operation mode of the request context.
+	// AvailableEndpoints returns the list of available endpoints matching both the service ID
+	//
+	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
+	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	AvailableEndpoints(protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
 
-	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing only a single possible endpoint.
-	// This method is used to build a request context for the hydrator and enforces performing QoS checks on a single endpoint.
-	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr) (ProtocolRequestContext, error)
+	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
+	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
+	//
+	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
+	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
+	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
 
-	// SupportedGamewayModes returns the Gateway modes supported by the protocol instance.
+	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
 	SupportedGatewayModes() []protocol.GatewayMode
 

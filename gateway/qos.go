@@ -8,9 +8,8 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// RequestQoSContext represents the interactions of
-// the gateway with the QoS instance corresponding
-// to the service specified by a service request.
+// RequestQoSContext represents the interactions of the gateway with the QoS instance
+// corresponding to the service specified by a service request.
 //
 // A RequestQoSContext can be built in various ways such as:
 //   - 1. Building a new context by parsing an organic request from an end-user

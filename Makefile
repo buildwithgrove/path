@@ -36,9 +36,12 @@ check_path_config: ## Verify that path configuration file exists
    		exit 1; \
    fi
 
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
+CONFIG_PATH ?= ../local/path/.config.yaml
+
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ../local/path/.config.yaml)
+	(cd bin; ./path -config ${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###
@@ -68,10 +71,12 @@ path_help: ## Prints help commands if you cannot start path
 ###    Makefile imports     ###
 ###############################
 
+# TODO_IMPROVE(@commoddity): Add a target similar to "make docs_update_gov_params_page" in poktroll
+# that converts "config/service_qos.go" into markdown documentation.
+
 include ./makefiles/configs.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk
-include ./makefiles/guard.mk
 include ./makefiles/localnet.mk
 include ./makefiles/morse_configs.mk
 include ./makefiles/shannon_configs.mk

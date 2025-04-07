@@ -11,7 +11,7 @@ import (
 
 // UpdateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
 // It returns the set of created/updated endpoints.
-func (es *EndpointStore) UpdateEndpointsFromObservations(
+func (es *endpointStore) UpdateEndpointsFromObservations(
 	evmObservations *qosobservations.EVMRequestObservations,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
@@ -45,7 +45,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		// e.g. when the first observation(s) are received for an endpoint.
 		storedEndpoint := es.endpoints[endpointAddr]
 
-		isMutated := storedEndpoint.ApplyObservation(observation, es.serviceState.shouldPerformArchivalCheck())
+		isMutated := storedEndpoint.ApplyObservation(observation, es.serviceState.archivalState.blockNumberHex)
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
 		if !isMutated {
 			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
