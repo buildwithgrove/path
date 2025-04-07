@@ -27,28 +27,12 @@ type requestContext struct {
 	serviceID                protocol.ServiceID
 	logger                   polylog.Logger
 
-	// endpoints contains all the candidate endpoints available for processing a service request.
-	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 
 	// endpointObservations captures observations about endpoints used during request handling
 	endpointObservations []*protocolobservations.MorseEndpointObservation
-}
-
-// AvailableEndpoints returns the list of available endpoints for the current request context.
-// Satisfies the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
-	if len(rc.endpoints) == 0 {
-		return nil, fmt.Errorf("AvailableEndpoints: no endpoints found for service %s", rc.serviceID)
-	}
-
-	endpoints := make([]protocol.Endpoint, 0, len(rc.endpoints))
-	for _, endpoint := range rc.endpoints {
-		endpoints = append(endpoints, endpoint)
-	}
-	return endpoints, nil
 }
 
 // HandleServiceRequest handles incoming service request.
@@ -131,33 +115,6 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 // Satisfies the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) HandleWebsocketRequest(_ polylog.Logger, _ *http.Request, _ http.ResponseWriter) error {
 	return fmt.Errorf("HandleWebsocketRequest: Morse does not support WebSocket connections")
-}
-
-// SelectEndpoint selects an endpoint from the available endpoints using the provided EndpointSelector.
-// The selected endpoint will be used for subsequent service requests.
-// Satisfies the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
-	endpoints := make([]protocol.Endpoint, 0, len(rc.endpoints))
-	for _, endpoint := range rc.endpoints {
-		endpoints = append(endpoints, endpoint)
-	}
-
-	if len(endpoints) == 0 {
-		return NewNoEndpointsError(string(rc.serviceID))
-	}
-
-	selectedEndpointAddr, err := selector.Select(endpoints)
-	if err != nil {
-		return NewEndpointSelectionError(string(rc.serviceID), err)
-	}
-
-	selectedEndpoint, found := rc.endpoints[selectedEndpointAddr]
-	if !found {
-		return NewEndpointNotFoundError(string(selectedEndpointAddr), string(rc.serviceID))
-	}
-
-	rc.selectedEndpoint = &selectedEndpoint
-	return nil
 }
 
 // GetObservations returns the observations that have been collected during the protocol request processing.

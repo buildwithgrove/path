@@ -27,9 +27,7 @@ func responseUnmarshallerBlockNumber(
 		return responseToBlockNumber{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
-
-			// DEV_NOTE: A valid JSONRPC error response is considered a valid response.
-			valid: true,
+			validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
 		}, nil
 	}
 
@@ -43,24 +41,24 @@ func responseUnmarshallerBlockNumber(
 		}, err
 	}
 
-	var result string
-	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
+	var (
+		result          string
+		validationError *qosobservations.EVMResponseValidationError
+	)
 
+	// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
+	// e.g. a response that fails parsing as a number is not valid.
 	err = json.Unmarshal(resultBz, &result)
 	if err != nil {
-		validationError = qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+		errValue := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+		validationError = &errValue
 	}
 
 	return responseToBlockNumber{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		result:          result,
-
-		// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
-		// e.g. a response that fails parsing as a number is not valid.
-		valid: err == nil,
-
-		validationError: &validationError,
+		validationError: validationError,
 	}, err
 }
 
@@ -75,13 +73,11 @@ type responseToBlockNumber struct {
 	// result stores the result field of a response to a `eth_blockNumber` request.
 	result string
 
-	// valid is set to true if the endpoint response is deemed valid.
+	// Why the response has failed validation.
+	// Only set if the response is invalid.
 	// As of PR #152, a response is valid if either of the following holds:
 	//	- It is a valid JSONRPC error response
 	//	- It is a valid JSONRPC response with any string value in `result` field.
-	valid bool
-
-	// Why the response has failed validation.
 	// Used when generating observations.
 	validationError *qosobservations.EVMResponseValidationError
 }
@@ -93,15 +89,25 @@ func (r responseToBlockNumber) GetObservation() qosobservations.EVMEndpointObser
 	return qosobservations.EVMEndpointObservation{
 		ResponseObservation: &qosobservations.EVMEndpointObservation_BlockNumberResponse{
 			BlockNumberResponse: &qosobservations.EVMBlockNumberResponse{
+				HttpStatusCode:          int32(r.getHTTPStatusCode()),
 				BlockNumberResponse:     r.result,
-				Valid:                   r.valid,
 				ResponseValidationError: r.validationError,
 			},
 		},
 	}
 }
 
-func (r responseToBlockNumber) GetResponsePayload() []byte {
+// GetHTTPResponse builds and returns the httpResponse matching the responseToBlockNumber instance.
+// Implements the response interface.
+func (r responseToBlockNumber) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.getResponsePayload(),
+		httpStatusCode:  r.getHTTPStatusCode(),
+	}
+}
+
+// getResponsePayload returns the raw byte slice payload to be returned as the response to the JSONRPC request.
+func (r responseToBlockNumber) getResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSONRPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
@@ -109,4 +115,10 @@ func (r responseToBlockNumber) GetResponsePayload() []byte {
 		r.logger.Warn().Err(err).Msg("responseToBlockNumber: Marshaling JSONRPC response failed.")
 	}
 	return bz
+}
+
+// getHTTPStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
+func (r responseToBlockNumber) getHTTPStatusCode() int {
+	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }

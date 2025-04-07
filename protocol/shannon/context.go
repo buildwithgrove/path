@@ -33,42 +33,18 @@ type RelayRequestSigner interface {
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
-	fullNode           FullNode
-	serviceID          protocol.ServiceID
+	fullNode FullNode
+	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
+	serviceID protocol.ServiceID
+	// TODO_TECHDEBT(@adshmh): add logger to the request context.
+
 	relayRequestSigner RelayRequestSigner
 
-	// endpoints contains all the candidate endpoints available for processing a service request.
-	endpoints map[protocol.EndpointAddr]endpoint
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
-}
 
-// SelectEndpoint satisfies the gateway package's ProtocolRequestContext interface.
-// It uses the supplied selector to select an endpoint from the request context's set of candidate endpoints
-// for handling a service request.
-func (rc *requestContext) SelectEndpoint(selector protocol.EndpointSelector) error {
-	// Convert the map of endpoints to a list for easier business logic.
-	var endpoints []protocol.Endpoint
-	for _, endpoint := range rc.endpoints {
-		endpoints = append(endpoints, endpoint)
-	}
-	if len(endpoints) == 0 {
-		return fmt.Errorf("selectEndpoint: No endpoints found to select from on service %s", rc.serviceID)
-	}
-
-	selectedEndpointAddr, err := selector.Select(endpoints)
-	if err != nil {
-		return fmt.Errorf("selectEndpoint: selector returned an error for service %s: %w", rc.serviceID, err)
-	}
-
-	selectedEndpoint, found := rc.endpoints[selectedEndpointAddr]
-	if !found {
-		return fmt.Errorf("selectEndpoint: endpoint address %q does not match any available endpoints on service %s", selectedEndpointAddr, rc.serviceID)
-	}
-
-	rc.selectedEndpoint = &selectedEndpoint
-	return nil
+	// TODO_TECHDEBT(@adshmh): add endpointObservations to the request context.
 }
 
 // HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
@@ -142,19 +118,6 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	wsLogger.Info().Msg("websocket connection established")
 
 	return nil
-}
-
-// AvailableEndpoints returns the list of endpoints available under the request context, which is populated by the protocol instance
-// at the time of creating the request context.
-// It implements the gateway.ProtocolRequestContext interface.
-func (rc *requestContext) AvailableEndpoints() ([]protocol.Endpoint, error) {
-	var availableEndpoints []protocol.Endpoint
-
-	for _, endpoint := range rc.endpoints {
-		availableEndpoints = append(availableEndpoints, endpoint)
-	}
-
-	return availableEndpoints, nil
 }
 
 // TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.

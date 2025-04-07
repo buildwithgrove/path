@@ -1,0 +1,8 @@
+{
+  "label": "Quality of Service",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation related to how Quality of Service is implemented"
+  }
+}
