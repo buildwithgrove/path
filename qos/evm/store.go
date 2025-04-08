@@ -25,19 +25,6 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
-// getEndpoint returns the endpoint for the given endpoint address.
-// If the endpoint is not found, a new endpoint is created and added to the store.
-// This can happen if processing the endpoint's observations for the first time.
-func (es *endpointStore) getEndpoint(endpointAddr protocol.EndpointAddr) endpoint {
-	// It is a valid scenario for an endpoint to not be present in the store.
-	// e.g. when the first observation(s) are received for an endpoint.
-	if _, found := es.endpoints[endpointAddr]; !found {
-		es.endpoints[endpointAddr] = endpoint{}
-	}
-
-	return es.endpoints[endpointAddr]
-}
-
 // updateEndpointsFromObservations creates/updates endpoint entries in the store based
 // on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(
@@ -68,7 +55,9 @@ func (es *endpointStore) updateEndpointsFromObservations(
 		logger := logger.With("endpoint_addr", endpointAddr)
 		logger.Info().Msg("processing observation for endpoint.")
 
-		storedEndpoint := es.getEndpoint(endpointAddr)
+		// It is a valid scenario for an endpoint to not be present in the store.
+		// e.g. when the first observation(s) are received for an endpoint.
+		storedEndpoint := es.endpoints[endpointAddr]
 
 		endpointWasMutated := applyObservation(
 			&storedEndpoint,

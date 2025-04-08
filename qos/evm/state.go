@@ -51,7 +51,7 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	ss.endpointStore.endpointsMu.RLock()
 	defer ss.endpointStore.endpointsMu.RUnlock()
 
-	endpoint := ss.endpointStore.getEndpoint(endpointAddr)
+	endpoint := ss.endpointStore.endpoints[endpointAddr]
 
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
