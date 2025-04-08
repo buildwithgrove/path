@@ -40,7 +40,9 @@ func (es *endpointStore) updateEndpointsFromObservations(
 		logger := logger.With("endpoint_addr", endpointAddr)
 		logger.Info().Msg("processing observation for endpoint.")
 
-		storedEndpoint := es.getEndpoint(endpointAddr)
+		// It is a valid scenario for an endpoint to not be present in the store.
+		// e.g. when the first observation(s) are received for an endpoint.
+		storedEndpoint := es.endpoints[endpointAddr]
 
 		endpointWasMutated := applyObservation(
 			&storedEndpoint,

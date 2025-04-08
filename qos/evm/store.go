@@ -46,7 +46,7 @@ func (es *endpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	endpoint := es.getEndpoint(endpointAddr)
+	endpoint := es.endpoints[endpointAddr]
 
 	var checks = []gateway.RequestQoSContext{
 		// Block number check should always run
@@ -68,19 +68,6 @@ func (es *endpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 	}
 
 	return checks
-}
-
-// getEndpoint returns the endpoint for the given endpoint address.
-// If the endpoint is not found, a new endpoint is created and added to the store.
-// This can happen if processing the endpoint's observations for the first time.
-func (es *endpointStore) getEndpoint(endpointAddr protocol.EndpointAddr) endpoint {
-	// It is a valid scenario for an endpoint to not be present in the store.
-	// e.g. when the first observation(s) are received for an endpoint.
-	if _, found := es.endpoints[endpointAddr]; !found {
-		es.endpoints[endpointAddr] = endpoint{}
-	}
-
-	return es.endpoints[endpointAddr]
 }
 
 // getEndpointCheck prepares a request context for a specific endpoint check.
