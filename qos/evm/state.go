@@ -1,12 +1,17 @@
 package evm
 
 import (
+	"errors"
+	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // serviceState keeps the expected current state of the EVM blockchain
@@ -16,6 +21,9 @@ type serviceState struct {
 
 	serviceStateLock sync.RWMutex
 	serviceConfig    EVMServiceQoSConfig
+
+	// endpointStore maintains the set of available endpoints and their quality data
+	endpointStore *endpointStore
 
 	// perceivedBlockNumber is the perceived current block number
 	// based on endpoints' responses to `eth_blockNumber` requests.
@@ -30,9 +38,139 @@ type serviceState struct {
 	archivalState archivalState
 }
 
-// TODO_FUTURE: add an endpoint ranking method which can be used to
-// assign a rank/score to a valid endpoint to guide endpoint selection.
-//
+/* -------------------- QoS Endpoint Check Generator -------------------- */
+
+// serviceState provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
+
+// GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
+// It is called in the `gateway/hydrator.go` file on each run of the hydrator.
+func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+	ss.endpointStore.endpointsMu.RLock()
+	defer ss.endpointStore.endpointsMu.RUnlock()
+
+	endpoint := ss.endpointStore.getEndpoint(endpointAddr)
+
+	var checks = []gateway.RequestQoSContext{
+		// Block number check should always run
+		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequest()),
+	}
+
+	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
+	if ss.shouldChainIDCheckRun(endpoint.checkChainID) {
+		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequest()))
+	}
+
+	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
+	// Additionally, this check will only run if the serviceis configured to perform archival checks.
+	if ss.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
+		checks = append(
+			checks,
+			ss.getEndpointCheck(endpoint.checkArchival.getRequest(ss.archivalState)),
+		)
+	}
+
+	return checks
+}
+
+// getEndpointCheck prepares a request context for a specific endpoint check.
+// The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
+// It is called in the individual `check_*.go` files to build the request context.
+// getEndpointCheck prepares a request context for a specific endpoint check.
+func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestContext {
+	return &requestContext{
+		logger:       ss.logger,
+		serviceState: ss,
+		jsonrpcReq:   jsonrpcReq,
+	}
+}
+
+// shouldChainIDCheckRun returns true if the chain ID check is not yet initialized or has expired.
+func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
+	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
+}
+
+/* -------------------- QoS Endpoint Selector -------------------- */
+
+// serviceState provides the endpoint selection capability required
+// by the protocol package for handling a service request.
+var _ protocol.EndpointSelector = &serviceState{}
+
+// Select returns an endpoint address matching an entry from the list of available endpoints.
+// available endpoints are filtered based on their validity first.
+// A random endpoint is then returned from the filtered list of valid endpoints.
+func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
+	logger := ss.logger.With("method", "Select")
+	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
+
+	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
+	if err != nil {
+		logger.Warn().Err(err).Msg("error filtering endpoints")
+		return protocol.EndpointAddr(""), err
+	}
+
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Error().Msg("all endpoints failed validation; selecting a random endpoint.")
+		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
+		return randomAvailableEndpointAddr, nil
+	}
+
+	logger.With(
+		"total_endpoints", len(availableEndpoints),
+		"endpoints_after_filtering", len(filteredEndpointsAddr),
+	).Info().Msg("filtered endpoints")
+
+	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
+	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
+	return selectedEndpointAddr, nil
+}
+
+// filterValidEndpoints returns the subset of available endpoints that are valid
+// according to previously processed observations.
+func (ss *serviceState) filterValidEndpoints(availableEndpoints []protocol.EndpointAddr) ([]protocol.EndpointAddr, error) {
+	ss.endpointStore.endpointsMu.RLock()
+	defer ss.endpointStore.endpointsMu.RUnlock()
+
+	logger := ss.logger.With("method", "filterValidEndpoints").With("qos_instance", "evm")
+
+	if len(availableEndpoints) == 0 {
+		return nil, errors.New("received empty list of endpoints to select from")
+	}
+
+	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
+
+	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
+	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
+	var filteredEndpointsAddr []protocol.EndpointAddr
+	for _, availableEndpointAddr := range availableEndpoints {
+		logger := logger.With("endpoint_addr", availableEndpointAddr)
+		logger.Info().Msg("processing endpoint")
+
+		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
+		if !found {
+			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", availableEndpointAddr))
+			continue
+		}
+
+		if err := ss.validateEndpoint(endpoint); err != nil {
+			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
+			continue
+		}
+
+		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
+		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", availableEndpointAddr))
+	}
+
+	return filteredEndpointsAddr, nil
+}
+
+/* -------------------- QoS Endpoint Validator -------------------- */
+
+// serviceState implements the logic required to validate an endpoint
+// against the perceived state of the EVM blockchain.
+
 // ValidateEndpoint returns an error if the supplied endpoint is not
 // valid based on the perceived state of the EVM blockchain.
 //
@@ -96,11 +234,6 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 		return errInvalidChainIDObs
 	}
 	return nil
-}
-
-// shouldChainIDCheckRun returns true if the chain ID check is not yet initialized or has expired.
-func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
-	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
 }
 
 // updateFromEndpoints updates the service state using estimation(s) derived from the set of updated

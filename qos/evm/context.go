@@ -61,7 +61,7 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	endpointStore *endpointStore
+	serviceState *serviceState
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
@@ -183,5 +183,5 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
-	return rc.endpointStore.Select(allEndpoints)
+	return rc.serviceState.Select(allEndpoints)
 }
