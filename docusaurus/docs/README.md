@@ -15,7 +15,8 @@ slug: /
 ## Overview
 
 **PATH (Path API & Toolkit Harness)** is an open source framework to enable access
-to a permissionless network of API providers with enterprise-grade SLAs.
+to a permissionless network of API providers of open source services and data
+sources without sacrificing enterprise-grade SLAs.
 
 It provides all the necessary tools for you to deploy your own API Gateway without
 needing to maintain the backend services.
@@ -29,7 +30,7 @@ An easy way to think about **PATH** and **Pocket Network** is:
 
 ## Where do I get started?
 
-To get started, allocate 1-3 hours of time and start with the [PATH Introduction](develop/path/introduction.md).
+To get started, allocate 1-3 hours of time and start with the [PATH Introduction](develop/path/1_introduction.md).
 
 It will go through all the details of how PATH works, how to configure it, and how to run it locally.
 

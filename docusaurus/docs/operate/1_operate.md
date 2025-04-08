@@ -14,7 +14,7 @@ We have not streamlined the documentation to deploy `PATH` in production yet.
 
 - [**See this notion doc**](https://www.notion.so/buildwithgrove/Setting-up-a-PATH-instance-on-Vultr-170a36edfff680799f35f543864ba866?pvs=4) if
   you are a Grove employee or a close partner.
-- See the [**Developer Guide**](../develop/path/introduction.md) in the meantime.
+- See the [**Developer Guide**](../develop/path/1_introduction.md) in the meantime.
 
 ## Technical Support
 
