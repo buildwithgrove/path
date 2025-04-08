@@ -5,7 +5,8 @@ const (
 	_ requestErrorKind = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.
 	requestErrKindInternalErrReadyHTTPBody
 	requestErrKindJSONRPCParsingErr
-	requestErrKindRequestValidationErr 
+	requestErrKindJSONRPCInvalidVersion
+	requestErrKindJSONRPCMissingMethod
 )
 
 type requestError struct {

@@ -12,12 +12,22 @@ import (
 //
 // buildObservations builds and returns request observations of of the requestDetails struct.
 func (rd *requestDetails) buildObservations() *qosobservations.RequestObservation {
+	// build a JSONRPC request observation, if one was parsed.
+	var jsonrpcRequestObs *qosobservations.JsonrpcRequest
+	if rd.request != nil {
+		jsonrpcRequestObs = rd.request.GetObservation(),
+	}
 
-	// Only set if validation was successful
-	JsonrpcRequest *JsonRpcRequest
-	// Only set if validation failed
-	ValidationFailure *ValidationFailure
-		ErrorType              RequestValidationError
-		ValidationErrorDetails
-		ErrorResponse *jsonrpc.Response
+	// build request failure observation, if the request parsing failed.
+	var validationErrorObs *qosobservations.ValidationError
+	if rd.requestError != nil {
+		validationErrorObs = rd.requestError.buildObservations()
+	}
+
+	return &qosobservations.RequestObservation {
+		// Only set if validation was successful
+		JsonrpcRequest: jsonrpcRequestObs,
+		// Only set if validation failed
+		ValidationError: validationErrorObs,
+	}
 }
