@@ -3,12 +3,6 @@ sidebar_position: 1
 title: Operator Introduction
 ---
 
-:::warning
-
-🚧 This documentation is still under construction 🚧
-
-:::
-
 ## Current Status of `PATH` in production
 
 1. The team at Grove has deployed `PATH` pointing to [Shannon Beta TestNet](https://dev.poktroll.com/explore/tools#beta-testnet) and load testing is active as of **01/2025**.
@@ -20,7 +14,7 @@ We have not streamlined the documentation to deploy `PATH` in production yet.
 
 - [**See this notion doc**](https://www.notion.so/buildwithgrove/Setting-up-a-PATH-instance-on-Vultr-170a36edfff680799f35f543864ba866?pvs=4) if
   you are a Grove employee or a close partner.
-- See the [**Developer Guide**](../develop/path/introduction.md) in the meantime.
+- See the [**Developer Guide**](../develop/path/1_introduction.md) in the meantime.
 
 ## Technical Support
 

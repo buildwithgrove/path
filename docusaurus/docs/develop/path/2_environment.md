@@ -1,26 +1,27 @@
 ---
 sidebar_position: 2
-title: Environment
-description: Quick reference to setup your environment
+title: Environment Setup
+description: Pre-requisite to setup your local environment
 ---
 
-This guide provides a quick reference for setting up and running a local `PATH` instance in **Tilt**.
+This guide provides instructions required to setup your environment for local development.
+locally in a development environment.
 
-It is a pre-requisite for the following protocol-specific guides:
+It is a pre-requisite for both the:
 
-- [**Shannon Protocol Guide**](./cheatsheet_shannon.md): For the new Shannon protocol (Beta TestNet as of 11/2025)
-- [**Morse Protocol Guide**](./cheatsheet_morse.md): For the original Morse protocol (MainNet as of 2020)
+- [**Shannon Protocol Guide**](./cheatsheet_shannon.md): Pocket Network v1 (Private MainNet as of 04/2025)
+- [**Morse Protocol Guide**](./cheatsheet_morse.md): For the original Morse protocol (Public MainNet as of 2020)
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Development Environment](#development-environment)
-- [Prerequisites](#prerequisites)
+- [Development Environment Details](#development-environment-details)
+- [Technical Pre-Requisites \& Setup](#technical-pre-requisites--setup)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Install Required Tools](#2-install-required-tools)
 - [3. Choose Your Protocol](#3-choose-your-protocol)
 - [Additional Resources](#additional-resources)
 
-## Development Environment
+## Development Environment Details
 
 <div align="center">
   <a href="https://docs.tilt.dev/">
@@ -29,12 +30,12 @@ It is a pre-requisite for the following protocol-specific guides:
   </a>
 </div>
 
-PATH's development mode uses a Kubernetes-based local development environment with Tilt.
+**PATH**'s development mode uses a Kubernetes-based local development environment with [Tilt](https://tilt.dev/).
 
-We use Kind (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
+We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
 image building process compared to Docker Desktop's Kubernetes cluster.
 
-## Prerequisites
+## Technical Pre-Requisites & Setup
 
 ### 1. Clone the Repository
 
@@ -72,7 +73,6 @@ make install_deps
 :::warning
 
 This script currently only works on Linux. MacOS version coming soon.
-
 
 :::
 
