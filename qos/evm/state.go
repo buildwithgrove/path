@@ -14,8 +14,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// serviceState keeps the expected current state of the EVM blockchain
+// The serviceState struct maintains the expected current state of the EVM blockchain
 // based on the endpoints' responses to different requests.
+//
+// It has three main responsibilities:
+//  1. Generate QoS endpoint checks for the hydrator
+//  2. Select a valid endpoint for a service request
+//  3. Update the service state from endpoint observations
 type serviceState struct {
 	logger polylog.Logger
 
@@ -92,7 +97,7 @@ func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
 	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
 }
 
-/* -------------------- QoS Endpoint Selector -------------------- */
+/* -------------------- QoS Valid Endpoint Selector -------------------- */
 
 // serviceState provides the endpoint selection capability required
 // by the protocol package for handling a service request.
@@ -166,12 +171,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints []protocol.Endpo
 	return filteredEndpointsAddr, nil
 }
 
-/* -------------------- QoS Endpoint Validator -------------------- */
-
-// serviceState implements the logic required to validate an endpoint
-// against the perceived state of the EVM blockchain.
-
-// ValidateEndpoint returns an error if the supplied endpoint is not
+// validateEndpoint returns an error if the supplied endpoint is not
 // valid based on the perceived state of the EVM blockchain.
 //
 // It returns an error if:
@@ -235,6 +235,8 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 	}
 	return nil
 }
+
+/* -------------------- QoS Endpoint State Updater -------------------- */
 
 // updateFromEndpoints updates the service state using estimation(s) derived from the set of updated
 // endpoints. This only includes the set of endpoints for which an observation was received.
