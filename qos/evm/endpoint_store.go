@@ -25,6 +25,16 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
+// endpoint captures the details required to validate an EVM endpoint.
+// It contains all checks that should be run for the endpoint to validate
+// it is providing a valid response to service requests.
+type endpoint struct {
+	hasReturnedEmptyResponse bool
+	checkBlockNumber         endpointCheckBlockNumber
+	checkChainID             endpointCheckChainID
+	checkArchival            endpointCheckArchival
+}
+
 // updateEndpointsFromObservations creates/updates endpoint entries in the store based
 // on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(

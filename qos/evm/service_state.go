@@ -69,7 +69,7 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	}
 
 	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
-	// Additionally, this check will only run if the serviceis configured to perform archival checks.
+	// Additionally, this check will only run if the service is configured to perform archival checks.
 	if ss.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
 		checks = append(
 			checks,
@@ -185,7 +185,7 @@ func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
 
 	// Ensure the endpoint has not returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
-		return errHasReturnedEmptyResponse
+		return fmt.Errorf("endpoint is invalid: history of empty responses")
 	}
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.

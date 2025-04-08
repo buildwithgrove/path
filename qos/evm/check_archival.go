@@ -7,7 +7,7 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const idArchivalCheck endpointCheckID = 1003
+const idArchivalCheck = 1003
 
 // methodGetBalance is the JSON-RPC method for getting the balance of an account at a specific block number.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
@@ -51,7 +51,7 @@ func (e *endpointCheckArchival) getRequest(archivalState archivalState) jsonrpc.
 
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(int(idArchivalCheck)),
+		ID:      jsonrpc.IDFromInt(idArchivalCheck),
 		Method:  jsonrpc.Method(methodGetBalance),
 		Params:  params,
 	}
