@@ -25,16 +25,6 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
-// endpoint captures the details required to validate an EVM endpoint.
-// It contains all checks that should be run for the endpoint to validate
-// it is providing a valid response to service requests.
-type endpoint struct {
-	hasReturnedEmptyResponse bool
-	checkBlockNumber         endpointCheckBlockNumber
-	checkChainID             endpointCheckChainID
-	checkArchival            endpointCheckArchival
-}
-
 // updateEndpointsFromObservations creates/updates endpoint entries in the store based
 // on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(
@@ -103,6 +93,11 @@ func applyObservation(
 	observation *qosobservations.EVMEndpointObservation,
 	archivalBlockHeight string,
 ) (endpointWasMutated bool) {
+	// Record the latency of the observation.
+	if observedLatency := observation.GetLatency(); observedLatency != 0 {
+		endpoint.recordLatency(observedLatency)
+	}
+
 	// If emptyResponse is not nil, the observation is for an empty response check.
 	if observation.GetEmptyResponse() != nil {
 		applyEmptyResponseObservation(endpoint)
@@ -111,15 +106,15 @@ func applyObservation(
 	}
 
 	// If blockNumberResponse is not nil, the observation is for a blockNumber check.
-	if observation.GetBlockNumberResponse() != nil {
-		applyBlockNumberObservation(endpoint, observation.GetBlockNumberResponse())
+	if blockNumberResponse := observation.GetBlockNumberResponse(); blockNumberResponse != nil {
+		applyBlockNumberObservation(endpoint, blockNumberResponse)
 		endpointWasMutated = true
 		return
 	}
 
 	// If chainIDResponse is not nil, the observation is for a chainID check.
-	if observation.GetChainIdResponse() != nil {
-		applyChainIDObservation(endpoint, observation.GetChainIdResponse())
+	if chainIDResponse := observation.GetChainIdResponse(); chainIDResponse != nil {
+		applyChainIDObservation(endpoint, chainIDResponse)
 		endpointWasMutated = true
 		return
 	}

@@ -55,6 +55,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		selectedEndpointAddr = rc.selectedEndpoint.Addr()
 	}
 
+	latencyStart := time.Now()
+
 	response, err := rc.sendRelay(payload)
 	if err != nil {
 		return protocol.Response{EndpointAddr: selectedEndpointAddr},
@@ -62,6 +64,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
+
+	latency := time.Since(latencyStart)
 
 	// The Payload field of the response received from the endpoint, i.e. the relay miner,
 	// is a serialized http.Response struct. It needs to be deserialized into an HTTP Response struct
@@ -73,6 +77,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
+
+	relayResponse.Latency = latency
 
 	relayResponse.EndpointAddr = selectedEndpointAddr
 	return relayResponse, nil

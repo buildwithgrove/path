@@ -72,6 +72,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		return protocol.Response{}, NewEndpointNotInSessionError(string(rc.selectedEndpoint.Addr()))
 	}
 
+	latencyStart := time.Now()
+
 	output, err := rc.sendRelay(
 		hydratedLogger,
 		morseEndpoint,
@@ -81,6 +83,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		0, // SDK to use the default timeout.
 		payload,
 	)
+
+	latency := time.Since(latencyStart)
 
 	// TODO_FUTURE(@adshmh): evaluate tracking successful cases (err == nil).
 	// Example: measuring endpoint response times.
@@ -107,6 +111,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          []byte(output.Response),
 		HTTPStatusCode: output.StatusCode,
+		Latency:        latency,
 	}, err
 }
 

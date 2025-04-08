@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -49,6 +50,7 @@ type endpointResponse struct {
 	protocol.EndpointAddr
 	response
 	unmarshalErr error
+	latency      time.Duration
 }
 
 // requestContext implements the functionality for EVM-based blockchain services.
@@ -98,7 +100,11 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
-func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
+func (rc *requestContext) UpdateWithResponse(
+	endpointAddr protocol.EndpointAddr,
+	responseBz []byte,
+	latency time.Duration,
+) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
@@ -110,6 +116,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 			EndpointAddr: endpointAddr,
 			response:     response,
 			unmarshalErr: err,
+			latency:      latency,
 		},
 	)
 }
@@ -158,6 +165,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		for idx, endpointResponse := range rc.endpointResponses {
 			obs := endpointResponse.response.GetObservation()
 			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+			obs.Latency = int64(endpointResponse.latency)
 			observations[idx] = &obs
 		}
 	}

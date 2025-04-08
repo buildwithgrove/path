@@ -132,36 +132,39 @@ message EVMEndpointObservation {
   // Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
   string endpoint_addr = 1;
 
+  // Latency of the response from the endpoint
+  int64 latency = 2;
+
   // Details of the response received from the endpoint
   oneof response_observation {
     // Response to `eth_chainId` request
     // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
-    EVMChainIDResponse chain_id_response = 2;
+    EVMChainIDResponse chain_id_response = 3;
 
     // Response to `eth_blockNumber` request
     // References:
     // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
     // * Chain IDs: https://chainlist.org
-    EVMBlockNumberResponse block_number_response = 3;
+    EVMBlockNumberResponse block_number_response = 4;
 
     // Response to `eth_getBalance` request, which may be used to update archival state.
     // See the EVMGetBalanceResponse message for more details.
     // References:
     // * https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
-    EVMGetBalanceResponse get_balance_response = 4;
+    EVMGetBalanceResponse get_balance_response = 5;
 
     // Responses not used in endpoint validation (e.g., JSONRPC ID field from `eth_call`)
-    EVMUnrecognizedResponse unrecognized_response = 5;
+    EVMUnrecognizedResponse unrecognized_response = 6;
 
     // EVMEmptyResponse indicates an endpoint returned no data.
     // Used to:
     //   - Disqualify endpoints that return empty responses
     //   - Track metrics for empty response patterns
-    EVMEmptyResponse empty_response = 6;
+    EVMEmptyResponse empty_response = 7;
 
     // EVMNoResponse indicates no response was received from any endpoint.
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
-    EVMNoResponse no_response = 7;
+    EVMNoResponse no_response = 8;
   }
   // TODO_MVP(@commoddity): add observations for archival checks.
 }

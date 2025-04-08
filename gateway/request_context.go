@@ -212,7 +212,11 @@ func (rc *requestContext) HandleRelayRequest() error {
 	//
 	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
 	// e.g. for handling JSONRPC batch requests.
-	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	rc.qosCtx.UpdateWithResponse(
+		endpointResponse.EndpointAddr,
+		endpointResponse.Bytes,
+		endpointResponse.Latency,
+	)
 
 	return nil
 }
