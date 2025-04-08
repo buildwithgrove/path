@@ -15,7 +15,7 @@ import (
 // TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
 // Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
 // Benefits: Decouples the qos package from HTTP-specific error handling.
-
+//
 // QoS represents a service that processes JSONRPC requests and applies QoS policies based on data returned by endpoints.
 type QoS struct {
 	// Logger for diagnostics
@@ -30,30 +30,26 @@ type QoS struct {
 // ParseHTTPRequest handles parsing an HTTP request and validating its content
 // It returns a RequestQoSContext and a boolean indicating if processing should continue
 func (s *QoSService) ParseHTTPRequest(
-	ctx context.Context,
+	_ context.Context,
 	httpReq *http.Request,
 ) (*requestContext, bool) {
-	requestCtx := requestContext {
-		logger: s.logger,
-		journal: &requestJournal{
+	// isRequestValid signals whether the request processing flow should continue.
+	requestDetails := buildRequestDetailsFromHTTP(s.logger, httpReq)
 
+	// initialize a context for processing the HTTP request.
+	requestCtx := &requestContext{
+		logger: logger,
+		// initialize the request journal to track all data on the request.
+		journal: &requestJournal{
+			requestDetails: requestDetails,
 		},
 	}
-	
-	// Parse the HTTP request
-	builder.ParseHTTPRequest(httpReq)
-	
-	// Validate the JSONRPC request
-	builder.ValidateRequest()
-	
-	// Build and return the final context
-	reqContext, shouldContinue := builder.Build()
-	return reqContext, shouldContinue
+
+	return requestCtx, requestDetails.isValid()
 }
 
 // TODO_IN_THIS_PR: implement this method
 // func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool)
-
 
 func (s *QoSService) ApplyObservations(observations *qosobservations.Observations) error
 ) {

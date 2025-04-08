@@ -13,13 +13,7 @@ type requestJournal struct {
 	// Service identification
 	serviceName string
 
-	// The client's JSONRPC request
-	request *jsonrpc.Request
-
-	// Error response to return if a request parsing error occurred:
-	// - error reading HTTP request's body.
-	// - error parsing the request's payload into a jsonrpc.Request struct.
-	errorResponse *jsonrpc.Response
+	requestDetails *requestDetails	
 
 	// All endpoint interactions that occurred during processing.
 	endpointQueries []*endpointQuery

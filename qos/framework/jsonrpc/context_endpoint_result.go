@@ -6,6 +6,8 @@ package jsonrpc
 // For example if the result field cannot be parsed into a number in a response to an `eth_blockNumber` request.
 type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
 
+// TODO_IN_THIS_PR: add hydratedLoggers.
+//
 // TODO_FUTURE(@adshmh): Support overriding the JSONRPC response through the EndpointQueryResultContext, IFF there is a use case for it.
 //
 // EndpointQueryResultContext provides context for processing a result with the service state.
