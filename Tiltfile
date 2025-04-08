@@ -97,11 +97,11 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Build the Go binary locally
+# Build the Go binary with proper settings for Alpine
 local_resource(
     'path-binary',
-    'go build -o bin/path ./cmd',
-    deps=['./cmd', './pkg', './**/*.go'],  # Adjust these paths based on your project structure
+    'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd',  # Ensure proper compilation flags
+    deps=['./cmd', './**/*.go'],  # Adjust these paths based on your project structure
     ignore=['**/node_modules', '.git'],
 )
 
@@ -109,11 +109,11 @@ local_resource(
 docker_build_with_restart(
     "path",
     context=".",
-    dockerfile="Dockerfile.dev",  # Simplified Dockerfile for development
-    entrypoint="/app/path",
+    dockerfile="Dockerfile.dev",
+    entrypoint=["/app/path"],  # Use array syntax for entrypoint
     live_update=[
-        sync("bin/path", "/app/path"),  # Sync the locally built binary to the container
-        # run("/app/path")
+        sync("bin/path", "/app/path"),
+        run("chmod +x /app/path"),  # Ensure executable permissions
     ],
 )
 
