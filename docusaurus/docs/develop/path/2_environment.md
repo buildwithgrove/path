@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Environment Setup
+title: Environment Setup (< 10 min)
 description: Pre-requisite to setup your local environment
 ---
 
@@ -9,8 +9,8 @@ locally in a development environment.
 
 It is a pre-requisite for both the:
 
-- [**Shannon Protocol Guide**](./cheatsheet_shannon.md): Pocket Network v1 (Private MainNet as of 04/2025)
-- [**Morse Protocol Guide**](./cheatsheet_morse.md): For the original Morse protocol (Public MainNet as of 2020)
+- [**Shannon Protocol Guide**](3_cheatsheet_shannon.md): Pocket Network v1 (Private MainNet as of 04/2025)
+- [**Morse Protocol Guide**](4_cheatsheet_morse.md): For the original Morse protocol (Public MainNet as of 2020)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -18,8 +18,7 @@ It is a pre-requisite for both the:
 - [Technical Pre-Requisites \& Setup](#technical-pre-requisites--setup)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Install Required Tools](#2-install-required-tools)
-- [3. Choose Your Protocol](#3-choose-your-protocol)
-- [Additional Resources](#additional-resources)
+  - [3. Choose Your Protocol](#3-choose-your-protocol)
 
 ## Development Environment Details
 
@@ -46,6 +45,16 @@ cd ./path
 
 ### 2. Install Required Tools
 
+:::tip
+
+To install all dependencies automatically on a Linux system:
+
+```bash
+make install_deps
+```
+
+:::
+
 The following tools are required to start a local PATH instance:
 
 **Local Deployment Tools:**
@@ -62,30 +71,11 @@ The following tools are required to start a local PATH instance:
 
 - **[Uber Mockgen](https://github.com/uber-go/mock)**: Mock interface generator for testing
 
-:::tip
+### 3. Choose Your Protocol
 
-To install all dependencies automatically:
+Pick one of these protocols and follow the respective guide.
 
-```bash
-make install_deps
-```
-
-:::warning
-
-This script currently only works on Linux. MacOS version coming soon.
-
-:::
-
-## 3. Choose Your Protocol
-
-| Protocol | Version | Status   | Network | Documentation                                                |
-| -------- | ------- | -------- | ------- | ------------------------------------------------------------ |
-| Shannon  | v1      | Beta     | TestNet | [Shannon Protocol Quickstart Guide](./cheatsheet_shannon.md) |
-| Morse    | v0      | Original | MainNet | [Morse Protocol Quickstart Guide](./cheatsheet_morse.md)     |
-
-## Additional Resources
-
-- [PATH Configuration Files](./configuration.md) - Detailed configuration instructions
-- [PATH Helm Chart](../helm/path.md) - Full documentation for the PATH Helm chart
-- [GUARD Helm Chart](../helm/guard.md) - Full documentation for the GUARD Helm chart
-- [WATCH Helm Chart](../helm/watch.md) - Full documentation for the WATCH Helm chart
+| Protocol | Version (aka) | Status (04/2025)       | Network | Documentation                                     |
+| -------- | ------------- | ---------------------- | ------- | ------------------------------------------------- |
+| Shannon  | v1            | Beta & Private MainNet | TestNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
+| Morse    | v0            | MainNet (2020)         | MainNet | [Morse Protocol Guide](4_cheatsheet_morse.md)     |
