@@ -97,17 +97,26 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Build an image with a PATH binary
+# Build the Go binary locally
+local_resource(
+    'path-binary',
+    'go build -o bin/path ./cmd',
+    deps=['./cmd', './pkg', './**/*.go'],  # Adjust these paths based on your project structure
+    ignore=['**/node_modules', '.git'],
+)
+
+# Build an image with the PATH binary
 docker_build_with_restart(
     "path",
     context=".",
-    dockerfile="Dockerfile",
+    dockerfile="Dockerfile.dev",  # Simplified Dockerfile for development
     entrypoint="/app/path",
     live_update=[
-        sync("bin/path", "/app/path"),
-        run("/app/path")
+        sync("bin/path", "/app/path"),  # Sync the locally built binary to the container
+        # run("/app/path")
     ],
 )
+
 
 # Tilt will run the Helm Chart with the following flags by default.
 #

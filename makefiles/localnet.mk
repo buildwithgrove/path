@@ -39,6 +39,7 @@ dev_up: check_kind
 		kubectl config use-context kind-path-localnet; \
 		kubectl create namespace path; \
 		kubectl create namespace monitoring; \
+		kubectl create namespace middleware; \
 		kubectl config set-context --current --namespace=path; \
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 	else \

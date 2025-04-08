@@ -1,0 +1,18 @@
+FROM alpine:3.19
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set working directory and prepare directories
+WORKDIR /app
+RUN mkdir -p /app/config && \
+    apk add --no-cache ca-certificates tzdata && \
+    chown -R appuser:appgroup /app
+
+# This will be overridden by the sync in live_update
+COPY bin/path /app/path
+RUN chmod +x /app/path
+
+USER appuser
+
+CMD ["/app/path"]

@@ -65,6 +65,8 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
 	for ownedAppAddr := range p.ownedAppsAddr {
+		logger.Debug().Msgf("Centralized GatewayMode: checking app %s owned by the gateway", ownedAppAddr)
+
 		onchainApp, err := p.FullNode.GetApp(ctx, ownedAppAddr)
 		if err != nil {
 			return nil, fmt.Errorf("Centralized GatewayMode: error getting onchain data for app %s owned by the gateway: %w", ownedAppAddr, err)
