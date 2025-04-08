@@ -43,6 +43,9 @@ type endpointStore struct {
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (es *endpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
+
 	endpoint := es.getEndpoint(endpointAddr)
 
 	var checks = []gateway.RequestQoSContext{
@@ -71,9 +74,6 @@ func (es *endpointStore) GetRequiredQualityChecks(endpointAddr protocol.Endpoint
 // If the endpoint is not found, a new endpoint is created and added to the store.
 // This can happen if processing the endpoint's observations for the first time.
 func (es *endpointStore) getEndpoint(endpointAddr protocol.EndpointAddr) endpoint {
-	es.endpointsMu.RLock()
-	defer es.endpointsMu.RUnlock()
-
 	// It is a valid scenario for an endpoint to not be present in the store.
 	// e.g. when the first observation(s) are received for an endpoint.
 	if _, found := es.endpoints[endpointAddr]; !found {
