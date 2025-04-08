@@ -31,8 +31,10 @@ const (
 	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_MISCONFIGURED                       MorseEndpointErrorType = 4
 	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_TLS_CERTIFICATE_VERIFICATION_FAILED MorseEndpointErrorType = 5
 	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INVALID_RESPONSE                    MorseEndpointErrorType = 6
-	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE                   MorseEndpointErrorType = 7
-	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL                            MorseEndpointErrorType = 8 // Added for internal gateway errors
+	// This error indicates that the endpoint returned invalid data in its response and was rejected by the SDK.
+	// This is important because the `protocol` package should not attempt to parse the response contents.
+	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE MorseEndpointErrorType = 7
+	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL          MorseEndpointErrorType = 8 // Added for internal gateway errors
 )
 
 // Enum value maps for MorseEndpointErrorType.
