@@ -12,27 +12,19 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
+// Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
+// Benefits: Decouples the qos package from HTTP-specific error handling.
+
 // QoS represents a service that processes JSONRPC requests and applies QoS policies based on data returned by endpoints.
 type QoS struct {
 	// Logger for diagnostics
 	logger polylog.Logger
 
-	// Service identification
-	serviceID ServiceID
-	
-	endpointCallProcessor  endpointCallProcessor
-	endpointSelector endpointSelector
-	serviceState serviceState
+	serviceState *serviceState
 
-	// TODO_MVP(@adshmh): Enable custom service QoS implementations to provide 
-	// a list of allowed methods which the requestValidator needs to enforce.
-}
-
-// Stored all the fields required for identification of the service.
-// Used when interpreting observations.
-type ServiceID struct {
-	ID string
-	Description string
+	// The definitoin of QoS behavior, supplied by the custom QoS service.
+	qosDefinition QoSDefinition
 }
 
 // ParseHTTPRequest handles parsing an HTTP request and validating its content
@@ -40,10 +32,12 @@ type ServiceID struct {
 func (s *QoSService) ParseHTTPRequest(
 	ctx context.Context,
 	httpReq *http.Request,
-) (*requestQoSContext, bool) {
-	builder := requestContextBuilder{
-		Logger: s.Logger,
-		ServiceID: s.ServiceID,
+) (*requestContext, bool) {
+	requestCtx := requestContext {
+		logger: s.logger,
+		journal: &requestJournal{
+
+		},
 	}
 	
 	// Parse the HTTP request
@@ -69,4 +63,35 @@ func (s *QoSService) ApplyObservations(observations *qosobservations.Observation
 	jsonrpcSvcObservations := observations.GetJsonrpc()
 	endpointResults := extractEndpointResultsFromObservations(jsonrpcSvcObservations)
 	return s.serviceState.UpdateFromEndpointResults(endpointResults)
+}
+
+// buildEndpointQueryResultContext creates a context for processing endpoint queries
+// The context provides:
+// - Read-only access to current service state
+// - Mapping of JSONRPC methods to their corresponding result builders.
+func (q *QoS) buildEndpointQueryResultContext() *EndpointQueryResultContext {
+	// instantiate a result context to process an endpointQuery.
+	return &EndpointQueryResultContext{
+		// Service State (read-only)
+		// Allows the custom QoS service to base the query results on current state if needed.
+		ReadonlyServiceState:        q.serviceState,
+
+		// Map of JSONRPC request method to the corresponding query result builders.
+		jsonrpcMethodResultBuilders:  q.qosDefinition.ResultBuilders,
+	}
+}
+
+// buildEndpointSelectionContext creates a context for endpoint validation and selection 
+// The context provides:
+// - Read-only access to current service state and endpoint store
+// - Custom endpoint selector logic from QoS service definition
+func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
+	return &EndpointSelectionContext{
+		// Service State (read-only)
+		// Allows the custom QoS service to base the validation/selection of endpoints on current state.
+		// Includes the endpoint store in read-only mode.
+		*ReadonlyServiceState: rc.serviceState,
+		// The endpoint selector logic defined by the custom QoS service defintion.
+		customSelector:        q.qosDefinition.EndpointSelector,
+	}
 }

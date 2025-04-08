@@ -22,7 +22,7 @@ type QoSDefinition struct {
 	ServiceInfo ServiceInfo
 
 	// ResultBuilders maps JSONRPC methods to custom result processing logic
-	ResultBuilders map[string]EndpointResultBuilder
+	ResultBuilders map[string]EndpointQueryResultBuilder
 
 	// StateUpdater defines how endpoint results affect service state
 	StateUpdater StateUpdater
@@ -30,8 +30,10 @@ type QoSDefinition struct {
 	// EndpointSelector defines custom endpoint selection logic
 	EndpointSelector EndpointSelector
 
-	// Optional: do request validation on a parsed JSONRPC request.
-	RequestValidator RequestValidator
+	// TODO_MVP(@adshmh): Enable custom service QoS implementations to provide a list of allowed methods which the requestValidator needs to enforce:
+	// - Uncomment the following line.
+	// - Use the supplied request validator in the framework.
+	// RequestValidator RequestValidator
 
 	// TODO_FUTURE(@adshmh): Add additional configuration options:
 	// - InitialState: Starting values for service state
@@ -42,8 +44,8 @@ type QoSDefinition struct {
 	// - MetricsCollection: Settings for performance metrics
 }
 
-// EndpointResultBuilder processes a response and extracts relevant data
-type EndpointResultBuilder func(ctx *EndpointResultContext) *ResultData
+// EndpointQueryResultBuilder processes a response and extracts the relevant result.
+type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
 
 // StateUpdater updates service state based on endpoint results
 type StateUpdater func(ctx *StateUpdateContext) map[string]string

@@ -4,7 +4,7 @@ package jsonrpc
 // Instantiated by: RequestQoSContext.
 // Used in EndpointQueryResultContext.
 type endpointQuery struct {
-	// request is the JSONRPC request that was sent
+	// request is the JSONRPC request that was sent.
 	request *jsonrpc.Request
 
 	// endpointAddr identifies the endpoint

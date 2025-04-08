@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
+// TODO_IN_THIS_PR: move endpoint_store under service_state.
 
 // TODO_IN_THIS_PR: Add a Consensus type as a StateParamValue type (and find better names):
 //	e.g. ReadonlyServiceState.GetConsensusValue(key string) Consensus (map[string]int) ==> for Archival checks (and maybe blockNumber)
