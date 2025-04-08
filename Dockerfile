@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.23-alpine3.19 AS builder
+FROM golang:1.23-alpine3.19 AS builder
 RUN apk add --no-cache git make build-base
 
 WORKDIR /go/src/github.com/buildwithgrove/path
@@ -10,16 +10,10 @@ RUN go mod download
 # Copy the rest of the files
 COPY . .
 
-# Build the application with platform-specific optimizations
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-RUN GOOS=$(echo $TARGETPLATFORM | cut -d/ -f1) \
-    GOARCH=$(echo $TARGETPLATFORM | cut -d/ -f2) \
-    CGO_ENABLED=0 \
-    GOARM=7 \
-    go build -ldflags="-w -s" -o /go/bin/path ./cmd
+# Build the application
+RUN go build -o /go/bin/path ./cmd
 
-FROM --platform=$TARGETPLATFORM alpine:3.19
+FROM alpine:3.19
 WORKDIR /app
 
 ARG IMAGE_TAG
