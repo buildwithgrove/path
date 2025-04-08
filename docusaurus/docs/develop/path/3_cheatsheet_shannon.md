@@ -4,7 +4,9 @@ title: Shannon Cheat Sheet
 description: Quick reference guide for setting up PATH with Shannon protocol
 ---
 
-This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestNet as of 01/2025.
+This guide covers setting up `PATH` with the **Shannon** protocol.
+
+Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -24,7 +26,7 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 ## 0. Prerequisites
 
 1. Prepare your environment by following the instructions in the [**environment setup**](2_environment.md) guide.
-2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/pocketd_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
+2. Install the [**`pocketd` CLI**](https://dev.poktroll.com/tools/user_guide/pocketd_cli) to interact with [Pocket Network's Shannon Upgrade](https://dev.poktroll.com).
 
 :::tip
 
