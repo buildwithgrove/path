@@ -19,12 +19,3 @@ type endpoint struct {
 	checkChainID             endpointCheckChainID
 	checkArchival            endpointCheckArchival
 }
-
-// newEndpoint initializes a new endpoint with the checks that should be run for the endpoint.
-func newEndpoint() endpoint {
-	return endpoint{
-		checkBlockNumber: endpointCheckBlockNumber{},
-		checkChainID:     endpointCheckChainID{},
-		checkArchival:    endpointCheckArchival{},
-	}
-}

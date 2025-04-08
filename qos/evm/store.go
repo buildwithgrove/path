@@ -77,7 +77,7 @@ func (es *endpointStore) getEndpoint(endpointAddr protocol.EndpointAddr) endpoin
 	// It is a valid scenario for an endpoint to not be present in the store.
 	// e.g. when the first observation(s) are received for an endpoint.
 	if _, found := es.endpoints[endpointAddr]; !found {
-		es.endpoints[endpointAddr] = newEndpoint()
+		es.endpoints[endpointAddr] = endpoint{}
 	}
 
 	return es.endpoints[endpointAddr]
