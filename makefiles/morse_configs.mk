@@ -38,7 +38,7 @@ prepare_morse_e2e_config: ## Setup Morse E2E test configuration file from exampl
 	fi
 
 .PHONY: copy_morse_e2e_config_to_local
-copy_morse_e2e_config_to_local: ## Copy Morse E2E config to local/path/config directory
+copy_morse_e2e_config_to_local: ## Copy Morse E2E config to local/path/ directory
 	$(call check_config_exists,./e2e/.morse.config.yaml,prepare_morse_e2e_config)
 	$(call warn_file_exists,./local/path/.config.yaml)
 	@cp ./e2e/.morse.config.yaml ./local/path/.config.yaml

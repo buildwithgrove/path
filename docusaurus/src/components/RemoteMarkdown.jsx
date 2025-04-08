@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import remarkMermaidPlugin from 'remark-mermaid-plugin';
+import remarkGfm from 'remark-gfm';
 
 // RemoteMarkdown allows embedding remote markdown documents into the docs.
 const RemoteMarkdown = ({ src }) => {
@@ -13,7 +15,10 @@ const RemoteMarkdown = ({ src }) => {
             .catch((error) => console.error('Error fetching markdown:', error));
     }, [src]);
 
-    return <ReactMarkdown rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>;
+    return <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+        remarkPlugins={[remarkGfm, remarkMermaidPlugin]}
+    >{content}</ReactMarkdown>;
 };
 
 export default RemoteMarkdown;
