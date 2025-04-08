@@ -27,7 +27,7 @@ local_config = read_yaml(local_config_path, default={})
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
 helm_repo(
-    "buildwithgrove", 
+    "buildwithgrove",
     "https://buildwithgrove.github.io/helm-charts/",
     labels=["configuration"],
 )
@@ -67,7 +67,7 @@ local_resource(
     labels=["configuration"],
 )
 
-# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource 
+# Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource
 # to ensure it is reachable from outside the cluster at "localhost:3070".
 #
 # For more context, see the comments at:
@@ -142,7 +142,7 @@ if read_yaml(valuesFile, default=None) != None:
     flags.append("--reset-values") # Ensure that values are overridden by the .values.yaml file.
     flags.append("--values")
     flags.append(valuesFile)
-    
+
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
@@ -199,7 +199,7 @@ local_resource(
 # Uses a `local_resource` to display logs for the `grafana`, `kube-state-metrics`, and `prometheus-node-exporter` pods.
 local_resource(
     "watch",
-    cmd="echo 'Following WATCH logs...'", 
+    cmd="echo 'Following WATCH logs...'",
     serve_cmd="kubectl logs -l app.kubernetes.io/name=grafana -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
     labels=["path"],
     resource_deps=["path"]

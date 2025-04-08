@@ -37,9 +37,9 @@ prepare_shannon_e2e_config: ## Setup Shannon E2E test configuration file from ex
 		echo "################################################################"; \
 	fi
 
-.PHONY: install_poktrolld
-install_poktrolld: ## Installs the poktrolld binary
-	./local/scripts/install_poktrolld_cli.sh
+.PHONY: install_pocketd
+install_pocketd: ## Installs the pocketd binary
+	./local/scripts/install_pocketd_cli.sh
 
 .PHONY: shannon_populate_config
 shannon_populate_config: ## Populates the shannon config file with the correct values

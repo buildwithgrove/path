@@ -23,12 +23,12 @@ This guide covers setting up `PATH` with the **Shannon** protocol. In Beta TestN
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](./environment.md) guide.
-2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/poktrolld_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
+1. Prepare your environment by following the instructions in the [**environment setup**](2_environment.md) guide.
+2. Install the [**Poktroll CLI**](https://dev.poktroll.com/operate/user_guide/pocketd_cli) to interact with [Pocket's Shannon Network](https://dev.poktroll.com).
 
 :::tip
 
-You can use the `make install_deps` command to install the dependencies for the PATH stack, including the `poktrolld` CLI.
+You can use the `make install_deps` command to install the dependencies for the PATH stack, including the `pocketd` CLI.
 
 :::
 
@@ -70,8 +70,8 @@ EOF
 **Create gateway and application accounts in your keyring**
 
 ```bash
-poktrolld keys add gateway
-poktrolld keys add application
+pocketd keys add gateway
+pocketd keys add application
 ```
 
 Fund the accounts by visiting the tools & faucets [here](https://dev.poktroll.com/explore/tools).
@@ -79,14 +79,14 @@ Fund the accounts by visiting the tools & faucets [here](https://dev.poktroll.co
 For **Grove employees only**, you can manually fund the accounts:
 
 ```bash
-pkd_beta_tx tx bank send faucet_beta $(poktrolld keys show -a application) 6900000000042upokt
-pkd_beta_tx tx bank send faucet_beta $(poktrolld keys show -a gateway) 6900000000042upokt
+pkd_beta_tx tx bank send faucet_beta $(pocketd keys show -a application) 6900000000042upokt
+pkd_beta_tx tx bank send faucet_beta $(pocketd keys show -a gateway) 6900000000042upokt
 ```
 
 **Stake the gateway:**
 
 ```bash
-poktrolld tx gateway stake-gateway \
+pocketd tx gateway stake-gateway \
  --config=/tmp/stake_gateway_config.yaml \
  --from=gateway --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
@@ -96,7 +96,7 @@ poktrolld tx gateway stake-gateway \
 **Stake the application:**
 
 ```bash
-poktrolld tx application stake-application \
+pocketd tx application stake-application \
  --config=/tmp/stake_app_config.yaml \
  --from=application --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
@@ -106,7 +106,7 @@ poktrolld tx application stake-application \
 **Delegate from the application to the gateway:**
 
 ```bash
-poktrolld tx application delegate-to-gateway $(poktrolld keys show -a gateway) \
+pocketd tx application delegate-to-gateway $(pocketd keys show -a gateway) \
  --from=application --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
  --yes
@@ -122,13 +122,13 @@ You can validate it like so:
 
 ```bash
 # All accounts
-poktrolld keys list
+pocketd keys list
 
 # Gateway only
-poktrolld keys show -a gateway
+pocketd keys show -a gateway
 
 # Application only
-poktrolld keys show -a application
+pocketd keys show -a application
 ```
 
 ## 2. Configure PATH for Shannon
@@ -142,11 +142,11 @@ make shannon_populate_config
 ```
 
 :::important Command configuration
-This command relies on `poktrolld` command line interface to export the Gateway and Application address from your keyring backend.
+This command relies on `pocketd` command line interface to export the Gateway and Application address from your keyring backend.
 
 To override the keyring backend, you can export the `POKTROLL_TEST_KEYRING_BACKEND` environment variable (default 'test').
 
-To override the poktrolld home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
+To override the pocketd home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
 :::
 
 :::warning Private Key Export
@@ -201,7 +201,6 @@ Run PATH in local development mode in Tilt by running:
 make path_up
 ```
 
-
 You can stop the PATH stack by running:
 
 ```bash
@@ -213,7 +212,6 @@ make path_down
 ![Tilt Dashboard](../../../static/img/path-in-tilt-console.png)
 
 Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
-
 
 ![Tilt Console](../../../static/img/path-in-tilt.png)
 
@@ -241,7 +239,6 @@ curl http://localhost:3070/v1 \
 If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::
-
 
 ## What's Next?
 
