@@ -14,7 +14,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.1.1
-	github.com/pokt-network/shannon-sdk v0.0.0-20241120182248-2b3d4ad6e3f2
+	github.com/pokt-network/shannon-sdk v0.0.0-20250328031800-20e08e50fe82
 	github.com/prometheus/client_golang v1.20.1
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
