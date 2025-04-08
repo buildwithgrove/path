@@ -40,9 +40,9 @@ if [[ -f "$CONFIG_FILE" ]]; then
     fi
 fi
 
-# Wrapper function for poktrolld with overridden flags
+# Wrapper function for pocketd with overridden flags
 pkd() {
-    poktrolld --keyring-backend="${POKTROLL_TEST_KEYRING_BACKEND:-test}" --home="${POKTROLL_HOME_PROD:-${HOME}/.poktroll}" "$@"
+    pocketd --keyring-backend="${POKTROLL_TEST_KEYRING_BACKEND:-test}" --home="${POKTROLL_HOME_PROD:-${HOME}/.poktroll}" "$@"
 }
 
 # Function to check if a command exists on the system
@@ -100,7 +100,7 @@ gateway_private_key_hex=$(pkd keys export ${GATEWAY_NAME} --unsafe --unarmored-h
 application_private_key_hex=$(pkd keys export ${APPLICATION_NAME} --unsafe --unarmored-hex)
 
 # Write new configuration file with updated values
-cat > "$CONFIG_FILE" <<EOF
+cat >"$CONFIG_FILE" <<EOF
 shannon_config:
     full_node_config:
         rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
