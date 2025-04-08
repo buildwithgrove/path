@@ -10,8 +10,12 @@ enum MorseEndpointErrorType {
   MORSE_ENDPOINT_ERROR_TIMEOUT = 2;
   MORSE_ENDPOINT_ERROR_MAXED_OUT = 3;
   MORSE_ENDPOINT_ERROR_MISCONFIGURED = 4;
-  MORSE_ENDPOINT_ERROR_INVALID_RESPONSE = 5;
-  MORSE_ENDPOINT_ERROR_INTERNAL = 6;  // Added for internal gateway errors
+  MORSE_ENDPOINT_ERROR_TLS_CERTIFICATE_VERIFICATION_FAILED = 5;
+  MORSE_ENDPOINT_ERROR_INVALID_RESPONSE = 6;
+  // This error indicates that the endpoint returned invalid data in its response and was rejected by the SDK.
+  // This is important because the `protocol` package should not attempt to parse the response contents.
+  MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE = 7;
+  MORSE_ENDPOINT_ERROR_INTERNAL = 8;  // Added for internal gateway errors
 }
 
 // TODO_DOCUMENT(@adshmh): Document the sanction system in the Morse protocol implementation:
