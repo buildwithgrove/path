@@ -157,7 +157,7 @@ const (
 	// 1.5 = standard setting, moderately favors lower latency
 	// 2.0 = strongly favors lower latency
 	// TODO_IN_THIS_PR(@commoddity): make `latencyPower` configurable in config YAML
-	latencyPower = 1.2
+	latencyPower = 1.5
 
 	// minLatencyMs prevents division by zero and excessive weighting
 	// Any latency below this value will be capped to this minimum
