@@ -2,6 +2,8 @@ package evm
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
@@ -34,6 +36,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 	evmEndpointStore := &endpointStore{
 		logger:       logger,
 		serviceState: serviceState,
+		endpoints:    make(map[protocol.EndpointAddr]endpoint),
 	}
 
 	evmRequestValidator := &evmRequestValidator{

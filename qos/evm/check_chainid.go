@@ -7,6 +7,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+const idChainIDCheck endpointCheckID = 1001
+
 // methodChainID is the JSON-RPC method for getting the chain ID.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 const methodChainID = jsonrpc.Method("eth_chainId")
@@ -28,28 +30,12 @@ type endpointCheckChainID struct {
 	expiresAt time.Time
 }
 
-// isValid returns an error if the endpoint's chain ID does not match the expected chain ID in the service state.
-func (e *endpointCheckChainID) isValid(evmChainID string) error {
-	if e.chainID == nil {
-		return errNoChainIDObs
-	}
-	if *e.chainID != evmChainID {
-		return errInvalidChainIDObs
-	}
-	return nil
-}
-
-// shouldRun returns true if the check is not yet initialized or has expired.
-func (e *endpointCheckChainID) shouldRun() bool {
-	return e.expiresAt.IsZero() || e.expiresAt.Before(time.Now())
-}
-
 // getRequest returns a JSONRPC request to check the chain ID.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}'
 func (e *endpointCheckChainID) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idChainIDCheck),
+		ID:      jsonrpc.IDFromInt(int(idChainIDCheck)),
 		Method:  jsonrpc.Method(methodChainID),
 	}
 }

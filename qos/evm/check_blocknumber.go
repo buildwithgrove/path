@@ -6,6 +6,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+const idBlockNumberCheck endpointCheckID = 1002
+
 // methodBlockNumber is the JSON-RPC method for getting the latest block number.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 const methodBlockNumber = jsonrpc.Method("eth_blockNumber")
@@ -28,29 +30,23 @@ type endpointCheckBlockNumber struct {
 	parsedBlockNumberResponse *uint64
 }
 
-// isValid returns an error if the endpoint's block height is less than the perceived block height minus the sync allowance.
-func (e *endpointCheckBlockNumber) isValid(perceivedBlockNumber uint64, syncAllowance uint64) error {
-	if e.parsedBlockNumberResponse == nil {
-		return errNoBlockNumberObs
-	}
-
-	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
-	// then the endpoint is behind the chain and should be filtered out.
-	minAllowedBlockNumber := perceivedBlockNumber - syncAllowance
-
-	if *e.parsedBlockNumberResponse < minAllowedBlockNumber {
-		return errInvalidBlockNumberObs
-	}
-
-	return nil
-}
-
 // getRequest returns a JSONRPC request to check the block number.
 // eg. '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber"}'
 func (e *endpointCheckBlockNumber) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
+		ID:      jsonrpc.IDFromInt(int(idBlockNumberCheck)),
 		Method:  jsonrpc.Method(methodBlockNumber),
 	}
+}
+
+// getBlockNumber returns the parsed block number value for the endpoint.
+func (e *endpointCheckBlockNumber) getBlockNumber() (uint64, error) {
+	if e.parsedBlockNumberResponse == nil {
+		return 0, errNoBlockNumberObs
+	}
+	if *e.parsedBlockNumberResponse == 0 {
+		return 0, errInvalidBlockNumberObs
+	}
+	return *e.parsedBlockNumberResponse, nil
 }
