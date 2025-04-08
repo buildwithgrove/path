@@ -1,28 +1,47 @@
+---
+sidebar_position: 1
+title: PATH by Grove
+id: home-doc
+slug: /
+---
+
 <div align="center">
-<h1>PATH<br/>Path API & Toolkit Harness</h1>
+<h1>PATH API & Toolkit Harness</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 
 </div>
 <br/>
 
-:::warning
-
-🚧 This documentation is still under construction 🚧
-
-:::
-
 ## Overview
 
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network.
+**PATH (Path API & Toolkit Harness)** is an open source framework to enable access
+to a permissionless network of API providers with enterprise-grade SLAs.
 
-It provides various tools and libraries to streamline the integration and
-interaction with decentralized protocols.
+It provides all the necessary tools for you to deploy your own API Gateway without
+needing to maintain the backend services.
 
-## Getting Started
+An easy way to think about **PATH** and **Pocket Network** is:
 
-Start by going through the [PATH Introduction](develop/path/introduction.md).
-to learn how PATH works, how to configure it and how to run it locally.
+- **Pocket Network** is a permissionless network of API providers for open source services and data sources
+- **PATH** is a framework to build a Gateway that ensures high quality of service atop of Pocket Network
+
+![PATH USP](../static/img/path-usp.png)
+
+## Where do I get started?
+
+To get started, allocate 1-3 hours of time and start with the [PATH Introduction](develop/path/introduction.md).
+
+It will go through all the details of how PATH works, how to configure it, and how to run it locally.
+
+## TODO
+
+This documentation is an active work in progress and there's a lot more we want to add:
+
+- [ ] Video tutorial walkthrough
+- [ ] Deployment instructions
+- [ ] Billing integrations
+- [ ] ETL Pipelines
+- [ ] [Add your request here](https://github.com/buildwithgrove/path/issues/new/choose)
 
 ## Is PATH for me?
 
@@ -104,7 +123,7 @@ If you're a Web2 Gateway Provider, you can use this table to understand you pref
 
 | Mode                         | Your Backend Infrastructure | Your Gateway Frontend | Your Gateway uses PATH | Customer uses Grove's Portal | Traffic Settled on Pocket Network | Description / Example                                                                                                         |
 | ---------------------------- | --------------------------- | --------------------- | ---------------------- | ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 1. Dependent (Step Aside)    | ❌                           | ❌                     | ❌                      | ✅                            | ✅                                 | Customers go to Grove's Portal for direct access                                                                              |
-| 2. Grove Hybrid (Frontend)   | ❌                           | ✅                     | ❌                      | ❌                            | ✅                                 | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
-| 3. PATH Hybrid (Full Stack)  | ❌                           | ✅                     | ✅                      | ❌                            | ✅                                 | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
-| 4. Independent (On Your Own) | ✅                           | ✅                     | ✅                      | ❌                            | ❌                                 | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |
+| 1. Dependent (Step Aside)    | ❌                          | ❌                    | ❌                     | ✅                           | ✅                                | Customers go to Grove's Portal for direct access                                                                              |
+| 2. Grove Hybrid (Frontend)   | ❌                          | ✅                    | ❌                     | ❌                           | ✅                                | Customers go to your frontend but use Grove's Portal API backend behind the scenes                                            |
+| 3. PATH Hybrid (Full Stack)  | ❌                          | ✅                    | ✅                     | ❌                           | ✅                                | Customers go to your frontend but use PATH's features (e.g. Quality-of Service) and settle traffic on Pocket network directly |
+| 4. Independent (On Your Own) | ✅                          | ✅                    | ✅                     | ❌                           | ❌                                | Customers go to your frontend and dependent on your gateway and infrastructure across the whole stack                         |

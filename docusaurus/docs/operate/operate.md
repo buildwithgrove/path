@@ -3,12 +3,6 @@ sidebar_position: 1
 title: Operator Introduction
 ---
 
-:::warning
-
-🚧 This documentation is still under construction 🚧
-
-:::
-
 ## Current Status of `PATH` in production
 
 1. The team at Grove has deployed `PATH` pointing to [Shannon Beta TestNet](https://dev.poktroll.com/explore/tools#beta-testnet) and load testing is active as of **01/2025**.
