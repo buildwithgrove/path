@@ -33,6 +33,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 
 	logger = logger.With(
 		"qos_instance", "evm",
+		"service_id", config.GetServiceID(),
 		"evm_chain_id", evmChainID,
 	)
 

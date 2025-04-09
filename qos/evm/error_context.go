@@ -3,6 +3,7 @@ package evm
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -87,7 +88,11 @@ func (ec *errorContext) GetServicePayload() protocol.Payload {
 // UpdateWithResponse should never be called.
 // Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
+func (ec *errorContext) UpdateWithResponse(
+	endpointAddr protocol.EndpointAddr,
+	endpointSerializedResponse []byte,
+	_ time.Duration,
+) {
 	ec.logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),
