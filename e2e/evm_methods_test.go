@@ -183,7 +183,16 @@ type serviceParameters struct {
 	// Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
 	blockNumber string
 	// Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
+	//
+	// `contractAddress` address should match the `evmArchivalCheckConfig.contractAddress`
+	// value in `config/service_qos_config.go`
 	contractAddress string
+	// The minimum block number to use for the test; this is to ensure we are not
+	// trying to fetch a block where the  contract address has no balance or transactions.
+	//
+	// `contractStartBlock` should match the `evmArchivalCheckConfig.contractStartBlock`
+	// value in `config/service_qos_config.go`
+	contractStartBlock uint64
 	// Used for eth_getTransactionReceipt and eth_getTransactionByHash
 	transactionHash string
 	// Used for eth_call

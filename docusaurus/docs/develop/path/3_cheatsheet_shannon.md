@@ -1,10 +1,10 @@
 ---
 sidebar_position: 3
-title: Shannon Cheat Sheet
-description: Quick reference guide for setting up PATH with Shannon protocol
+title: Shannon Cheat Sheet (30-60 min)
+description: Introductory guide for setting up PATH w/ Shannon
 ---
 
-This guide covers setting up `PATH` with the **Shannon** protocol.
+This guide covers setting up `PATH` with Pocket Network's **Shannon** protocol.
 
 Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 
@@ -21,12 +21,13 @@ Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
-- [What's Next?](#whats-next)
+  - [Test Relay with `curl`](#test-relay-with-curl)
+  - [Test Relay with `make`](#test-relay-with-make)
 
 ## 0. Prerequisites
 
 1. Prepare your environment by following the instructions in the [**environment setup**](2_environment.md) guide.
-2. Install the [**`pocketd` CLI**](https://dev.poktroll.com/tools/user_guide/pocketd_cli) to interact with [Pocket Network's Shannon Upgrade](https://dev.poktroll.com).
+2. Install the [**`pocketd` CLI**](https://dev.poktroll.com/tools/user_guide/pocketd_cli) to interact with [Pocket Network's Shannon Network](https://dev.poktroll.com).
 
 :::tip
 
@@ -38,18 +39,19 @@ You can use the `make install_deps` command to install the dependencies for the 
 
 Before starting, you'll need to create and configure:
 
-1. An onchain [**Gateway**](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways): An onchain actor that **facilitates** _(i.e. proxies)_ relays to ensure Quality of Service (QoS)
-2. An onchain [**Application**](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications): An onchain actor that **pays** _(i.e. the API key holder)_ for relays
+1. **An onchain [Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways)**: An onchain actor that **facilitates** _(i.e. proxies)_ relays to ensure Quality of Service (QoS)
+2. **An onchain [Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications)**: An onchain actor that **pays** _(i.e. the API key holder)_ for relays
 
 ### 1.1 Gateway and Application Account Creation
 
-We strongly recommend following the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for setting up your accounts.
+We **strongly** recommend following the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for setting up your accounts and getting a thorough understanding of all the elements.
 
-However, a quick copy-pasta tl;dr is provided here for convenience:
+But, if this is your first time going through the docs, you can follow the copy-pasta instructions
+below to get a feel for the end-to-end process.
 
 <details>
 
- <summary>tl;dr Use at your own risk copy-pasta commands</summary>
+<summary>tl;dr Copy-pasta to stake onchain Application & Gateway</summary>
 
 **Prepare a gateway stake config:**
 
@@ -65,32 +67,36 @@ EOF
 cat <<EOF > /tmp/stake_app_config.yaml
 stake_amount: 100000000upokt
 service_ids:
-- "F00C"
+- "anvil"
 EOF
 ```
 
-**Create gateway and application accounts in your keyring**
+**Create gateway and application accounts in your keyring:**
 
 ```bash
 pocketd keys add gateway
 pocketd keys add application
 ```
 
-Fund the accounts by visiting the tools & faucets [here](https://dev.poktroll.com/explore/tools).
+Fund the accounts by finding a link to the faucet [here](https://dev.poktroll.com/category/explorers-faucets-wallets-and-more).
 
-For **Grove employees only**, you can manually fund the accounts:
+:::tip Grove employees only
+
+You can manually fund the accounts using the `pkd_beta_tx` helper by following the instructions [in this notion doc](https://www.notion.so/buildwithgrove/Shannon-Alpha-Beta-Environment-rc-helpers-152a36edfff680019314d468fad88864?pvs=4):
 
 ```bash
-pkd_beta_tx tx bank send faucet_beta $(pocketd keys show -a application) 6900000000042upokt
-pkd_beta_tx tx bank send faucet_beta $(pocketd keys show -a gateway) 6900000000042upokt
+pkd_beta_tx bank send faucet_beta $(pkd keys show -a application) 6900000000042upokt
+pkd_beta_tx bank send faucet_beta $(pkd keys show -a gateway) 6900000000042upokt
 ```
+
+:::
 
 **Stake the gateway:**
 
 ```bash
 pocketd tx gateway stake-gateway \
  --config=/tmp/stake_gateway_config.yaml \
- --from=gateway --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+ --from=gateway --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
  --yes
 ```
@@ -100,7 +106,7 @@ pocketd tx gateway stake-gateway \
 ```bash
 pocketd tx application stake-application \
  --config=/tmp/stake_app_config.yaml \
- --from=application --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+ --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
  --yes
 ```
@@ -109,7 +115,7 @@ pocketd tx application stake-application \
 
 ```bash
 pocketd tx application delegate-to-gateway $(pocketd keys show -a gateway) \
- --from=application --gas=auto --gas-prices=1upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+ --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
  --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
  --yes
 ```
@@ -144,17 +150,13 @@ make shannon_populate_config
 ```
 
 :::important Command configuration
-This command relies on `pocketd` command line interface to export the Gateway and Application address from your keyring backend.
 
-To override the keyring backend, you can export the `POKTROLL_TEST_KEYRING_BACKEND` environment variable (default 'test').
+This command relies on `pocketd` command line interface to export the **Gateway** and **Application** address from your keyring backend.
 
-To override the pocketd home directory, you can export the `POKTROLL_HOME_PROD` environment variable (default '$HOME').
-:::
+You can set the following environment variables to override the default values:
 
-:::warning Private Key Export
-
-1. **Ignore instructions** that prompt you to update the file manually.
-2. **Select `y`** to export the private keys for the script to work
+- `POCKETD_HOME`: Path to the `pocketd` home directory (default `$HOME/.pocketd`)
+- `POCKETD_KEYRING_BACKEND`: Keyring backend to use (default `test`)
 
 :::
 
@@ -175,7 +177,6 @@ shannon_config:
     grpc_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
     lazy_mode: true
-
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: pokt1... # Your gateway address
@@ -187,9 +188,16 @@ hydrator_config:
     - "anvil"
 ```
 
-:::important Gateway Configuration
+:::important Gateway Configuration Validation
 
-Ensure that `gateway_config` is filled out correctly before continuing.
+1. Do a manual sanity check of the addresses to ensure everything looks correct before continuing.
+2. The configuration about is set up for `anvil`, so ensure your application is staked for the same service id. You can verify this by running:
+
+   ```bash
+   pocketd query application show-application \
+     $(pkd keys show -a application) \
+     --node=https://shannon-testnet-grove-rpc.beta.poktroll.com
+   ```
 
 :::
 
@@ -211,37 +219,62 @@ make path_down
 
 ### 3.1 Monitor PATH
 
-![Tilt Dashboard](../../../static/img/path-in-tilt-console.png)
+:::warning Grab a ☕
+It could take a few minutes for `path`, `guard` and `watch` to start up the first time.
+:::
 
-Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
+You should see an output similar to the following relatively quickly (~30 seconds):
 
-![Tilt Console](../../../static/img/path-in-tilt.png)
+![Tilt Output in Console](../../../static/img/path-in-tilt-console.png)
 
-_PATH Running in Tilt_
+Once you see the above log, visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
+
+![Tilt Dashboard in Browser](../../../static/img/path-in-tilt.png)
 
 ## 4. Test Relays
 
-:::tip
+:::warning Anvil Node & Request Retries
 
-The makefile helpers in `makefiles/test_requests.mk` can make iterating on these requests easier.
+_tl;dr Retry the requests below if the first one fails._
+
+The instructions above were written to get you to access an [**anvil**](https://book.getfoundry.sh/anvil/) node accessible on Pocket Network.
+
+Since `anvil` is an Ethereum node used for testing, there is a chance it may not be available.
+
+We recommend you try the instructions below a few times to ensure you can get a successful relay. Otherwise, reach out to the community on Discord.
 
 :::
 
-Send a test relay (`make test_request__service_id_header_shannon`):
+### Test Relay with `curl`
+
+Send a test relay to check the height of
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: anvil" \
-  -H "Authorization: test_api_key" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+ -H "Target-Service-Id: anvil" \
+ -H "Authorization: test_api_key" \
+ -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-:::warning Retries
+And you should expect to see a response similar to the following:
 
-If a requests fail, retry a few times as you may hit unresponsive nodes
+```json
+{"id":1,"jsonrpc":"2.0","result":"0x2f01a"}%
+```
 
-:::
+### Test Relay with `make`
 
-## What's Next?
+For your convenience, we have provided a few makefile helpers to test relays with `curl` and `jq`.
+You can find that in the `makefiles/test_requests.mk` file.
 
-Now that you have PATH running, take a look at the [Configuration](./configuration.md) guide to learn more about the different configuration options available.
+For example, to mimic the `curl` command above, you can simply run:
+
+```bash
+make test_request__service_id_header_shannon
+```
+
+To see all available helpers, simply run:
+
+```bash
+make help
+```
