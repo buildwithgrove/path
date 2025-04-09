@@ -21,6 +21,16 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
+// Import color constants from vegeta_test.go - these are available because they're in the same package
+var (
+	// ANSI color codes
+	_ = RED    // "\x1b[31m"
+	_ = GREEN  // "\x1b[32m"
+	_ = YELLOW // "\x1b[33m"
+	_ = BLUE   // "\x1b[34m"
+	_ = RESET  // "\x1b[0m"
+)
+
 /* -------------------- Test Configuration Initialization -------------------- */
 
 // protocolStr is a type to determine whether to test PATH with Morse or Shannon
@@ -217,7 +227,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// eg. `http://localhost:30771/v1`
-	gatewayURL = fmt.Sprintf(gatewayURL, port)
+	if strings.Contains(gatewayURL, "%s") {
+		gatewayURL = fmt.Sprintf(gatewayURL, port)
+	}
 
 	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
@@ -239,6 +251,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// Get test cases based on protocol
 	testCases := getTestCases(testProtocol)
 
+	// Initialize map to store service summaries
+	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
+
 	for i := range testCases {
 		// If archival is true then we will use a random historical block for the test.
 		if testCases[i].archival {
@@ -256,11 +271,19 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		fmt.Printf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
 		fmt.Printf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
 
+		// Initialize service summary
+		serviceSummaries[testCases[i].serviceID] = &serviceSummary{
+			serviceID:    testCases[i].serviceID,
+			methodErrors: make(map[jsonrpc.Method]map[string]int),
+			methodCount:  len(testCases[i].methods),
+			totalErrors:  0,
+		}
+
 		// Use t.Run for proper test reporting
 		serviceTestFailed := false
 		t.Run(testCases[i].name, func(t *testing.T) {
 			// Create results map with a mutex to protect concurrent access
-			results := make(map[jsonrpc.Method]*MethodMetrics)
+			results := make(map[jsonrpc.Method]*methodMetrics)
 			var resultsMutex sync.Mutex
 
 			// Validate that all methods have a definition
@@ -343,27 +366,87 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 				methodDefinitions = adjustLatencyForShannonTests(methodDefinitions)
 			}
 
-			// Validate results for each method
+			// Calculate service summary metrics
+			summary := serviceSummaries[testCases[i].serviceID]
+
+			var totalLatency time.Duration
+			var totalP90Latency time.Duration
+			var totalSuccessRate float64
+			var methodsWithResults int
+
+			// Validate results for each method and collect summary data
 			for _, method := range testCases[i].methods {
-				validateResults(t, results[method], methodDefinitions[method])
+				methodMetrics := results[method]
+
+				// Skip methods with no data
+				if methodMetrics == nil || len(methodMetrics.results) == 0 {
+					continue
+				}
+
+				validateResults(t, methodMetrics, methodDefinitions[method])
+
 				// If the test has failed after validation, set the service failure flag
 				if t.Failed() {
 					serviceTestFailed = true
 				}
+
+				// Extract latencies for P90 calculation
+				var latencies []time.Duration
+				for _, res := range methodMetrics.results {
+					latencies = append(latencies, res.Latency)
+				}
+
+				// Calculate P90 for this method
+				p90 := calculateP90(latencies)
+				avgLatency := calculateAvgLatency(latencies)
+
+				// Add to summary totals
+				totalLatency += avgLatency
+				totalP90Latency += p90
+				totalSuccessRate += methodMetrics.successRate
+				methodsWithResults++
+
+				// Collect errors for the summary
+				if len(methodMetrics.errors) > 0 {
+					// Initialize method errors map if not already created
+					if summary.methodErrors[method] == nil {
+						summary.methodErrors[method] = make(map[string]int)
+					}
+
+					// Copy errors to summary
+					for errMsg, count := range methodMetrics.errors {
+						summary.methodErrors[method][errMsg] = count
+						summary.totalErrors += count
+					}
+				}
+			}
+
+			// Calculate averages if we have methods with results
+			if methodsWithResults > 0 {
+				summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
+				summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
+				summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
 			}
 		})
 
 		// If this service test failed, fail the overall test immediately
 		if serviceTestFailed {
-			fmt.Printf("\n\x1b[31m❌ TEST FAILED: Service %s failed assertions\x1b[0m\n", testCases[i].serviceID)
+			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, testCases[i].serviceID, RESET)
+
+			// Print summary before failing
+			printServiceSummaries(serviceSummaries)
+
 			t.FailNow() // This will exit the test immediately
 		} else {
-			fmt.Printf("\n\x1b[32m✅ Service %s test passed\x1b[0m\n", testCases[i].serviceID)
+			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, testCases[i].serviceID, RESET)
 		}
 	}
 
 	// If execution reaches here, all services have passed
-	fmt.Printf("\n\x1b[32m✅ OVERALL TEST PASSED: All %d services passed\x1b[0m\n", len(testCases))
+	fmt.Printf("\n%s✅ OVERALL TEST PASSED: All %d services passed%s\n", GREEN, len(testCases), RESET)
+
+	// Print summary after all tests are complete
+	printServiceSummaries(serviceSummaries)
 }
 
 // TODO_MVP(@commoddity): This is a temporary solution and will be removed
@@ -377,7 +460,7 @@ func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[
 
 	const multiplier = 2
 
-	fmt.Printf("⚠️  Adjusting latency expectations for Shannon tests by %dx to account for `anvil` test chain\n", multiplier)
+	fmt.Printf("%s⚠️  Adjusting latency expectations for Shannon tests by %dx to account for `anvil` test chain%s\n", YELLOW, multiplier, RESET)
 
 	// Copy and adjust each method definition
 	for method, def := range defs {
