@@ -16,7 +16,8 @@ proto_gen_observation: ## Generate observation protobuf artifacts
 		./proto/path/*.proto \
 		./proto/path/metadata/*.proto \
 		./proto/path/protocol/*.proto \
-		./proto/path/qos/*.proto
+		./proto/path/qos/*.proto \
+		./proto/path/qos/framework/*.proto
 
 .PHONY: proto_clean
 proto_clean: ## Delete existing protobuf artifacts (i.e. .pb.go files)

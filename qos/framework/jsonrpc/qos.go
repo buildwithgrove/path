@@ -55,12 +55,17 @@ func (s *QoSService) ParseHTTPRequest(
 
 func (s *QoSService) ApplyObservations(observations *qosobservations.Observations) error
 ) {
-//	-> Framework updates the endpoints + state as part of ApplyObservations
-//	-> custom ResultBuilders return the set of attributes for the endpoint.
-//	--> + expiryTime to drop endpoint attributes after expiry.
 	jsonrpcSvcObservations := observations.GetJsonrpc()
-	endpointResults := extractEndpointResultsFromObservations(jsonrpcSvcObservations)
-	return s.serviceState.UpdateFromEndpointResults(endpointResults)
+	endpointQueries := extractEndpointQueriesFromObservations(jsonrpcSvcObservations)
+
+	// update the stored endpoints
+	updatedEndpoints := s.serviceState.updateStoredEndpoints(endpointQueries)
+
+	// instantiate a state update context.
+	stateUpdateCtx := s.buildServiceStateUpdateContext()
+
+	// update the service state through the context, using stored endpoints.
+	return stateUpdateCtx.updateFromEndpoints(updatedEndpoints)
 }
 
 // buildEndpointQueryResultContext creates a context for processing endpoint queries
@@ -88,7 +93,7 @@ func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
 		// Service State (read-only)
 		// Allows the custom QoS service to base the validation/selection of endpoints on current state.
 		// Includes the endpoint store in read-only mode.
-		*ReadonlyServiceState: rc.serviceState,
+		*ReadonlyServiceState: q.serviceState,
 		// The endpoint selector logic defined by the custom QoS service defintion.
 		customSelector:        q.qosDefinition.EndpointSelector,
 	}
@@ -96,5 +101,10 @@ func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
 
 // TODO_IN_THIS_PR: implement this method.
 func (q *QoS) buildServiceStateUpdateContext() *ServiceStateUpdateContext {
+	return &ServiceStateUpdateContext {
+		ServiceState: q.ServiceState,
+		// the custom service's State Updater function.
+		stateUpdater: q.qosDefinition.StateUpdater,
+	}
 
 }

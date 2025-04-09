@@ -48,7 +48,7 @@ type QoSDefinition struct {
 type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
 
 // StateUpdater updates service state based on endpoint results
-type StateUpdater func(ctx *StateUpdateContext) map[string]string
+type StateUpdater func(ctx *StateUpdateContext) *StateParameterUpdateSet
 
 // EndpointSelector chooses an endpoint for a request based on service state
 type EndpointSelector func(ctx *EndpointSelectionContext) (protocol.EndpointAddr, error)

@@ -3,24 +3,19 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
-import "path/qos/evm.proto";
-import "path/qos/solana.proto";
-import "path/qos/cometbft.proto";
+import "path/qos/framework/observations.proto"; // Import JSONRPC Framework observations
 
 // Observations contains QoS measurements for a single service request.
-// Currently supports:
-// - Solana blockchain service
-// - EVM blockchains service
+// Currently only supports JSONRPC-based service observations.
 message Observations {
   // service_observations contains QoS measurements specific to the service type
   oneof service_observations {
-    // solana contains QoS measurements for a single Solana blockchain request
-    SolanaRequestObservations solana = 1;
+    // jsonrpc contains QoS measurements for a JSON-RPC based service request
+    path.qos.framework.Observations jsonrpc_service = 1;
 
-    // evm contains QoS measurements for a single EVM blockchain request
-    EVMRequestObservations evm = 2;
-
-    // cometbft contains QoS measurements for a single CometBFT blockchain request
-    CometBFTRequestObservations cometbft = 3;
+    // Additional service types can be added here in the future
+    // For example:
+    // RESTObservations rest = 2;
+    // GraphQLObservations graphql = 3;
   }
 }

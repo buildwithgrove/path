@@ -1,50 +1,58 @@
-package jsonrpc
-
-import (
-
-)
+package framework
 
 // StateUpdateContext provides context and helper methods for updating service state.
 type StateUpdateContext struct {
-	// The result data observations
-	Results []*ResultData
-	
 	// Current service state (read-only copy)
-	currentState map[string]string
-	
-	// New state being built
-	newState map[string]string
+	// Provides direct access to the read-only state
+	*ServiceState
+
+	// custom state updater function to be called from the context.
+	stateUpdater StateUpdater
+
+	// updated endpoints on which the state update should be based.
+	updatedEndpoints []*Endpoint
+
+	// tracks the set of params set for update through the context.
+	paramsToUpdate *StateParameterUpdateSet 
 }
 
-// CopyCurrentState creates a copy of the current state as the starting point.
-func (ctx *StateUpdateContext) CopyCurrentState() {
-	ctx.newState = make(map[string]string, len(ctx.currentState))
-	for k, v := range ctx.currentState {
-		ctx.newState[k] = v
+func (ctx *StateUpdateContext) updateFromEndpoints(updatedEndpoints) error {
+	// get the list of params to update by calling the custom state updater.
+	paramsToUpdate := ctx.stateUpdater(ctx)
+
+	// Update the state parameters through the service state.
+	return ctx.ServiceState.updateParameters(paramsToUpdate)
+}
+
+func (ctx *StateUpdateContext) GetUpdatedEndpoints() []*Endpoint {
+	return ctx.updatedEndpoints
+}
+
+func (ctx *StateUpdateContext) SetIntParam(paramName string, value int) {
+	param := &StateParameter{
+		intValue: &value,
 	}
+
+	ctx.paramsToUpdate.Set(paramName, param)
 }
 
-// SetValue sets a value in the new state.
-func (ctx *StateUpdateContext) SetValue(key, value string) *StateUpdateContext {
-	ctx.newState[key] = value
-	return ctx
+func (ctx *StateUpdateContext) SetStrParam(paramName, value string) {
+	param := &StateParameter{
+		strValue: &value,
+	}
+
+	ctx.paramsToUpdate.Set(paramName, param)
 }
 
-// DeleteValue removes a value from the new state.
-func (ctx *StateUpdateContext) DeleteValue(key string) *StateUpdateContext {
-	delete(ctx.newState, key)
-	return ctx
+func (ctx *StateUpdateContext) SetConsensusParam(paramName string, consensusValues map[string]int) {
+	param := &StateParameter{
+		consensValues: consensusValues,
+	}
+
+	ctx.paramsToUpdate.Set(paramName, param)
 }
 
-// GetValue gets a value from the current state.
-func (ctx *StateUpdateContext) GetValue(key string) (string, bool) {
-	value, exists := ctx.currentState[key]
-	return value, exists
+// Return the set of updated state parameters.
+func (ctx *StateUpdateContext) BuildStateParameterUpdateSet() StateParameterUpdateSet {
+	return ctx.paramsToUpdate
 }
-
-// GetState returns the new state map.
-func (ctx *StateUpdateContext) GetState() map[string]string {
-	return ctx.newState
-}
-
-

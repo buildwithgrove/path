@@ -13,6 +13,17 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]Endpoint
 }
 
+func (es *endpointStore) updateStoredEndpoints(endpointQueries []*endpointQuery) []Endpoint {
+	es.endpointsMu.Lock()
+	defer es.endpointsMu.Unlock()
+
+	endpoints := make([]Endpoint, len(endpointQueries))
+	for index, endpointQuery := range endpointQueries {
+		endpoint := es.endpoints[endpointQuery.endpointAddr]
+		if 
+	}
+}
+
 // storeEndpoint stores or updates an endpoint in the store.
 func (es *endpointStore) storeEndpoint(addr protocol.EndpointAddr, endpoint Endpoint) {
 	es.endpointsMu.Lock()
