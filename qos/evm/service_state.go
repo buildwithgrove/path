@@ -107,44 +107,41 @@ var _ protocol.EndpointSelector = &serviceState{}
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // The endpoints are filtered based on their validity and weighted based on latency.
 func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select")
-	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("selecting endpoint from available options")
+	logger := ss.logger.With(
+		"method", "Select",
+		"total_endpoints", len(availableEndpoints),
+	)
+	logger.Info().Msg("selecting endpoint from available options")
 
 	if len(availableEndpoints) == 0 {
-		return "", errors.New("received empty list of endpoints to select from")
+		return "", errors.New("received empty list of endpoints from protocol")
 	}
 
 	// Select the best endpoint based on filtering and ranking
-	selectedEndpoint := ss.filterAndRankEndpoints(availableEndpoints)
-	if selectedEndpoint != "" {
-		return selectedEndpoint, nil
+	selectedValidEndpoint, err := ss.selectValidEndpointByWeight(availableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("all endpoints failed validation; selecting a random endpoint")
+		return availableEndpoints[rand.Intn(len(availableEndpoints))], nil
 	}
 
-	// If no valid endpoint found, select a random one as fallback
-	logger.Warn().Msg("no valid endpoints found; using fallback endpoint")
-	return availableEndpoints[rand.Intn(len(availableEndpoints))], nil
+	return selectedValidEndpoint, nil
 }
 
-// filterAndRankEndpoints filters valid endpoints and selects one based on latency ranking.
+// selectValidEndpointByWeight filters valid endpoints and selects one based on latency ranking.
 // Returns the selected endpoint, or empty string if no valid endpoints found.
-func (ss *serviceState) filterAndRankEndpoints(availableEndpoints []protocol.EndpointAddr) protocol.EndpointAddr {
+func (ss *serviceState) selectValidEndpointByWeight(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
 	// Acquire lock once for the entire operation
 	ss.endpointStore.endpointsMu.RLock()
 	defer ss.endpointStore.endpointsMu.RUnlock()
 
-	logger := ss.logger.With("method", "filterAndRankEndpoints")
-
 	// Get valid endpoints with their weights based on latency
-	endpointWeights := ss.getWeightedValidEndpoints(availableEndpoints)
-
-	// If no valid endpoints found, return empty string
-	if len(endpointWeights) == 0 {
-		logger.Warn().Msg("no valid endpoints found")
-		return ""
+	validEndpointsWithWeights := ss.getValidEndpointsWithWeights(availableEndpoints)
+	if len(validEndpointsWithWeights) == 0 {
+		return "", errors.New("no valid endpoints found")
 	}
 
-	// Select an endpoint using weighted probability based on latency
-	return ss.selectEndpointByLatency(endpointWeights)
+	// Select a valid endpoint using weighted probability based on latency
+	return ss.selectValidEndpointByLatency(validEndpointsWithWeights), nil
 }
 
 /* -------------------- QoS Latency Weight Calculation -------------------- */
@@ -156,6 +153,7 @@ const (
 	// 1.0 = linear inverse relationship (1/latency)
 	// 1.5 = standard setting, moderately favors lower latency
 	// 2.0 = strongly favors lower latency
+	//
 	// TODO_IN_THIS_PR(@commoddity): make `latencyPower` configurable in config YAML
 	latencyPower = 1.5
 
@@ -164,30 +162,30 @@ const (
 	minLatencyMs = 1.0
 )
 
-// getWeightedValidEndpoints returns a map of valid endpoints to their weights.
+// getValidEndpointsWithWeights returns a map of valid endpoints to their weights.
 // Endpoints with lower latency receive higher weights.
-func (ss *serviceState) getWeightedValidEndpoints(endpoints []protocol.EndpointAddr) map[protocol.EndpointAddr]float64 {
-	endpointsWithWeights := make(map[protocol.EndpointAddr]float64)
+func (ss *serviceState) getValidEndpointsWithWeights(availableEndpoints []protocol.EndpointAddr) map[protocol.EndpointAddr]float64 {
+	validEndpointsWithWeights := make(map[protocol.EndpointAddr]float64)
 
 	// Process each endpoint - filtering and weight calculation in one pass
-	for _, addr := range endpoints {
+	for _, addr := range availableEndpoints {
 		endpoint, found := ss.endpointStore.endpoints[addr]
 		if !found {
 			ss.logger.Debug().Msgf("endpoint %s not found in store", addr)
 			continue
 		}
 
-		// Endpoint validation happens in service_state.go
+		// validate endpoint passes all QoS checks
 		if err := ss.validateEndpoint(endpoint); err != nil {
 			ss.logger.Debug().Err(err).Msgf("endpoint %s failed validation", addr)
 			continue
 		}
 
 		// Calculate and store the weight for valid endpoints
-		endpointsWithWeights[addr] = ss.calculateLatencyWeight(endpoint, addr)
+		validEndpointsWithWeights[addr] = ss.calculateLatencyWeight(endpoint, addr)
 	}
 
-	return endpointsWithWeights
+	return validEndpointsWithWeights
 }
 
 // calculateLatencyWeight converts an endpoint's latency to a selection weight.
@@ -209,34 +207,34 @@ func (ss *serviceState) calculateLatencyWeight(endpoint endpoint, addr protocol.
 	return weight
 }
 
-// selectEndpointByLatency picks an endpoint based on weighted probability.
+// selectValidEndpointByLatency picks an endpoint based on weighted probability.
 // Endpoints with lower latency (higher weights) have higher probability of selection.
-func (ss *serviceState) selectEndpointByLatency(endpointWeights map[protocol.EndpointAddr]float64) protocol.EndpointAddr {
+func (ss *serviceState) selectValidEndpointByLatency(validEndpointsWithWeights map[protocol.EndpointAddr]float64) protocol.EndpointAddr {
 	// Short circuit for empty or single-entry maps
-	if len(endpointWeights) == 0 {
+	if len(validEndpointsWithWeights) == 0 {
 		return ""
 	}
 
-	if len(endpointWeights) == 1 {
-		for addr := range endpointWeights {
+	if len(validEndpointsWithWeights) == 1 {
+		for addr := range validEndpointsWithWeights {
 			return addr
 		}
 	}
 
 	// Calculate total weight for probability distribution
-	totalWeight := sumWeights(endpointWeights)
+	totalWeight := sumWeights(validEndpointsWithWeights)
 
 	// Log probability distribution
-	ss.logWeightDistribution(endpointWeights, totalWeight)
+	ss.logWeightDistribution(validEndpointsWithWeights, totalWeight)
 
 	// Select an endpoint using weighted probability
-	selected := ss.weightedRandomSelection(endpointWeights, totalWeight)
+	selected := ss.weightedRandomSelection(validEndpointsWithWeights, totalWeight)
 	if selected != "" {
 		return selected
 	}
 
 	// Fallback to any endpoint if selection fails
-	for addr := range endpointWeights {
+	for addr := range validEndpointsWithWeights {
 		ss.logger.Warn().Msg("weighted selection fallback used")
 		return addr
 	}
