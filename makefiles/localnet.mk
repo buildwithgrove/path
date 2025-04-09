@@ -49,11 +49,11 @@ dev_up: check_kind
 .PHONY: dev_down
 # Internal helper: Tears down kind cluster
 dev_down:
-	@echo "Tearing down local environment..."
+# @echo "Tearing down local environment..."
 	@tilt down
-	@kind delete cluster --name path-localnet
-	@if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
-		kubectl config delete-context kind-path-localnet; \
-	else \
-		echo "Context kind-path-localnet not found in kubeconfig. Skipping deletion."; \
-	fi
+# @kind delete cluster --name path-localnet
+# @if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
+# 	kubectl config delete-context kind-path-localnet; \
+# else \
+# 	echo "Context kind-path-localnet not found in kubeconfig. Skipping deletion."; \
+# fi

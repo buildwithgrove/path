@@ -1,7 +1,7 @@
-FROM alpine:3.19
+FROM golang:1.23.0
 
 # Add runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
+RUN apt-get -q update && apt-get install -qyy curl jq less ca-certificates tzdata
 
 # Set working directory and prepare directories
 WORKDIR /app
@@ -12,4 +12,4 @@ COPY bin/path /app/path
 RUN chmod +x /app/path
 
 # Command to run
-CMD ["/app/path"]
+# CMD ["/app/path"]

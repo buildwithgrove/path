@@ -4,7 +4,7 @@ load("ext://helm_resource", "helm_resource", "helm_repo")
 load("ext://configmap", "configmap_create")
 
 # A list of directories where changes trigger a hot-reload of PATH.
-# Note: this list needs to be updated each time a new package is added to the repo.
+# IMPORTANT_DEV_NOTE: this list needs to be updated each time a new package is added to the repo.
 hot_reload_dirs = [
     "./local/path/.config.yaml",
     "./local/guard",
@@ -18,11 +18,61 @@ hot_reload_dirs = [
     "./relayer",
     "./request",
     "./router",
+    "./protocol",
+    "./metrics",
+    "./observation",
+    "./proto",
+    "./websockets",
 ]
+
+# merge_dicts updates the base dictionary with the updates dictionary.
+def merge_dicts(base, updates):
+    for k, v in updates.items():
+        if k in base and type(base[k]) == "dict" and type(v) == "dict":
+            # Assume nested dict and merge
+            for vk, vv in v.items():
+                base[k][vk] = vv
+        else:
+            # Replace or set the value
+            base[k] = v
 
 # Load the existing config file, if it exists, or use an empty dict as fallback
 local_config_path = "local_config.yaml"
-local_config = read_yaml(local_config_path, default={})
+local_config_defaults = {
+    "hot-reloading": True,
+    "path": {
+        "count": 1,
+        "delve": {
+            "enabled": False
+        }
+    },
+    "observability": {
+        "enabled": True,
+        "grafana": {
+            "defaultDashboardsEnabled": False
+        }
+    },
+    # DEV_NOTE: to use a local copy of Helm charts, set BOTH of the following:
+    #   1. enabled: true
+    #   2. path: {PATH_TO_LOCAL_HELM_CHART}
+    "helm_chart_local_repo": {
+        "enabled": False,
+        "path": "../helm-charts"
+    }
+}
+
+# Initial empty config
+local_config = {}
+# Load the existing config file, if it exists, or use an empty dict as fallback
+local_config_file = read_yaml(local_config_path, default={})
+# Merge defaults into the local_config first
+merge_dicts(local_config, local_config_defaults)
+# Then merge file contents over defaults
+merge_dicts(local_config, local_config_file)
+# Check if there are differences or if the file doesn't exist
+if (local_config_file != local_config) or (not os.path.exists(local_config_path)):
+    print("Updating " + local_config_path + " with defaults")
+    local("cat - > " + local_config_path, stdin=encode_yaml(local_config))
 
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
@@ -75,7 +125,7 @@ local_resource(
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
-    resource_deps=["path"],
+    resource_deps=["path-stack"],
     labels=["configuration"],
 )
 
@@ -97,24 +147,48 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
+# if local_config["hot-reloading"]:
 # Build the Go binary with proper settings for Alpine
 local_resource(
     'path-binary',
-    'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd',  # Ensure proper compilation flags
-    deps=['./cmd', './**/*.go'],  # Adjust these paths based on your project structure
+    '''
+    echo "Building Go binary..."
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd
+    ''',
+    deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
+    labels=["hot-reloading"],
+)
+
+# Make sure path-binary runs before the Docker build
+local_resource(
+    "path-trigger",
+    """
+    echo "Triggering Docker build after binary build"
+    touch .tilt-build-trigger
+    """,
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    labels=["hot-reloading"],
 )
 
 # Build an image with the PATH binary
 docker_build_with_restart(
-    "path",
+    "path-image",
     context=".",
-    dockerfile="Dockerfile.dev",
-    entrypoint=["/app/path"],  # Use array syntax for entrypoint
-    live_update=[
-        sync("bin/path", "/app/path"),
-        run("chmod +x /app/path"),  # Ensure executable permissions
-    ],
+    # dockerfile="Dockerfile.dev",
+    dockerfile_contents="""FROM golang:1.23.0
+RUN apt-get -q update && apt-get install -qyy curl jq less
+RUN mkdir -p /app/config
+COPY bin/path /app/path
+RUN chmod +x /app/path
+WORKDIR /app
+""",
+    # only=["/app/path"],
+    entrypoint=["/app/path"],
+    live_update=[sync("bin/path", "/app/path")],
+    trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
 
@@ -155,9 +229,9 @@ if read_yaml(valuesFile, default=None) != None:
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
-    "path",
+    "path",  # Changed from "path-helm" to "path-stack"
     chart_prefix + "path",
-    image_deps=["path"],
+    image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],
     links=[
         link(
@@ -170,7 +244,8 @@ helm_resource(
     # Run the following commands to view the pprof data:
     #   $ make debug_goroutines
     port_forwards=["6060:6060"],
-    resource_deps=["path-config-updater"]
+    resource_deps=["path-config-updater"],
+    labels=["path"],
 )
 update_settings(
     k8s_upsert_timeout_secs=90,
@@ -185,31 +260,32 @@ update_settings(
 # --------------------------------------------------------------------------- #
 
 # 1.PATH Logs
-# Uses a `k8s_resource` to displays logs for the `path` pod.
+# Uses a `k8s_resource` to display logs for the `path` pod.
 k8s_resource(
     workload="path",
-    new_name="path",
-    labels=["path"],
+    new_name="path-stack",
     port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
+    labels=["path"],
+    resource_deps=["path"]
 )
 
-# 2. GUARD  Logs
+# 2. GUARD Logs
 # Uses a `local_resource` to display logs for the `envoy` and `gateway-helm` pods.
 local_resource(
-    "guard",
+    "guard-logs",
     cmd="echo 'Following GUARD logs...'",
-    serve_cmd="kubectl logs -l app.kubernetes.io/name=envoy -l app.kubernetes.io/name=gateway-helm --follow",
-    labels=["path"],
+    serve_cmd="kubectl logs -l 'app.kubernetes.io/name in (envoy,gateway-helm)' --follow",
+    labels=["k8s_logs"],
     resource_deps=["path"]
 )
 
 # 3. WATCH (Observability) Logs
 # Uses a `local_resource` to display logs for the `grafana`, `kube-state-metrics`, and `prometheus-node-exporter` pods.
 local_resource(
-    "watch",
+    "watch-logs",
     cmd="echo 'Following WATCH logs...'",
-    serve_cmd="kubectl logs -l app.kubernetes.io/name=grafana -l app.kubernetes.io/name=kube-state-metrics -l app.kubernetes.io/name=prometheus-node-exporter --follow",
-    labels=["path"],
+    serve_cmd="kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow",
+    labels=["k8s_logs"],
     resource_deps=["path"]
 )
