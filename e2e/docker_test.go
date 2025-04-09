@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"syscall"
 	"testing"
 	"time"
@@ -18,6 +17,8 @@ import (
 )
 
 /* -------------------- Dockertest Ephemeral PATH Container Setup -------------------- */
+
+// These variables reference the testOptions struct defined in evm_test.go
 
 const (
 	imageName            = "path-image"
@@ -44,11 +45,15 @@ var containerPortAndProtocol = internalPathPort + "/tcp"
 // by the ephemeral PATH container.
 // 2. "cleanup", a function that needs to be called to clean up the PATH container.
 // It is the responsibility of the test function to call this cleanup function.
-func setupPathInstance(t *testing.T, configFilePath string) (containerPort string, cleanupFn func()) {
+func setupPathInstance(
+	t *testing.T,
+	configFilePath string,
+	dockerOpts dockerOptions,
+) (containerPort string, cleanupFn func()) {
 	t.Helper()
 
 	// Initialize the ephemeral PATH Docker container
-	pool, resource, containerPort := setupPathDocker(t, configFilePath)
+	pool, resource, containerPort := setupPathDocker(t, configFilePath, dockerOpts)
 
 	cleanupFn = func() {
 		// Cleanup the ephemeral PATH Docker container
@@ -75,27 +80,16 @@ func setupPathInstance(t *testing.T, configFilePath string) (containerPort strin
 // - Performs a health check to ensure the container is ready for requests.
 //
 // - Returns the dockertest pool, resource, and the container port.
-func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *dockertest.Resource, string) {
+func setupPathDocker(
+	t *testing.T,
+	configFilePath string,
+	dockerOpts dockerOptions,
+) (*dockertest.Pool, *dockertest.Resource, string) {
 	t.Helper()
 
-	logContainer := false
-	if os.Getenv("LOG") != "" {
-		logParsed, err := strconv.ParseBool(os.Getenv("LOG"))
-		if err != nil {
-			t.Fatalf("could not parse LOG environment variable: %s", err)
-		}
-		logContainer = logParsed
-	}
-
-	// Check if force rebuild is requested
-	forceRebuild := false
-	if os.Getenv("FORCE_REBUILD") != "" {
-		forceParsed, err := strconv.ParseBool(os.Getenv("FORCE_REBUILD"))
-		if err != nil {
-			t.Fatalf("could not parse FORCE_REBUILD environment variable: %s", err)
-		}
-		forceRebuild = forceParsed
-	}
+	// Get docker options from the global test options
+	logContainer := dockerOpts.logOutput
+	forceRebuild := dockerOpts.forceRebuild
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
@@ -121,7 +115,7 @@ func setupPathDocker(t *testing.T, configFilePath string) (*dockertest.Pool, *do
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
 			fmt.Println("🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 Tip: Set FORCE_REBUILD=true to rebuild the image if needed")
+			fmt.Println("  💡 Tip: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed")
 		}
 	} else {
 		fmt.Println("🔄 Force rebuild requested, will build Docker image...")
