@@ -116,9 +116,24 @@ func getMorseTestCases() []testCase {
 			methods:   runAllMethods(),
 			archival:  true, // F00C is an archival service so we should use a random historical block.
 			serviceParams: serviceParameters{
-				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-				transactionHash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
-				callData:        "0x18160ddd",
+				// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+				contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
+				contractStartBlock: 12_300_000,
+				transactionHash:    "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
+				callData:           "0x18160ddd",
+			},
+		},
+		{
+			name:      "F021 (Polygon) Load Test",
+			serviceID: "F021",
+			methods:   runAllMethods(),
+			archival:  true, // F021 is an archival service so we should use a random historical block.
+			serviceParams: serviceParameters{
+				// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+				contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+				contractStartBlock: 5_000_000,
+				transactionHash:    "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4",
+				callData:           "0x18160ddd",
 			},
 		},
 	}
@@ -188,7 +203,12 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	for i := range testCases {
 		// If archival is true then we will use a random historical block for the test.
 		if testCases[i].archival {
-			testCases[i].serviceParams.blockNumber = setTestBlockNumber(t, gatewayURL, testCases[i].serviceID)
+			testCases[i].serviceParams.blockNumber = setTestBlockNumber(
+				t,
+				gatewayURL,
+				testCases[i].serviceID,
+				testCases[i].serviceParams.contractStartBlock,
+			)
 		} else {
 			testCases[i].serviceParams.blockNumber = "latest"
 		}
@@ -291,10 +311,11 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 }
 
-// TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
-// properly supplied chains on Shannon to run E2E tests.
-// adjustLatencyForShannonTests increases the latency expectations by 2x for Shannon tests
-// since there is currently only one supplier for `anvil` and it's a test blockchain.
+// TODO_MVP(@commoddity): This is a temporary solution and will be removed
+// once we have properly supplied chains on Shannon to run E2E tests.
+//
+// adjustLatencyForShannonTests increases the latency expectations by 2x for Shannon tests since there is
+// currently only one supplier for `anvil` and it's a test blockchain which is slower than an actual chain.
 func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[jsonrpc.Method]methodDefinition {
 	// Create a new map to avoid modifying the original
 	adjustedDefs := make(map[jsonrpc.Method]methodDefinition, len(defs))
@@ -321,7 +342,12 @@ func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[
 /* -------------------- Get Test Block Number -------------------- */
 
 // setTestBlockNumber gets a block number for testing or fails the test
-func setTestBlockNumber(t *testing.T, gatewayURL string, serviceID protocol.ServiceID) string {
+func setTestBlockNumber(
+	t *testing.T,
+	gatewayURL string,
+	serviceID protocol.ServiceID,
+	contractStartBlock uint64,
+) string {
 	// Get current block height - fail test if this doesn't work
 	currentBlock, err := getCurrentBlockNumber(gatewayURL, serviceID)
 	if err != nil {
@@ -329,7 +355,7 @@ func setTestBlockNumber(t *testing.T, gatewayURL string, serviceID protocol.Serv
 	}
 
 	// Get random historical block number
-	return getBlockNumber(currentBlock)
+	return calculateArchivalBlockNumber(currentBlock, contractStartBlock)
 }
 
 // getCurrentBlockNumber gets current block height with consensus from multiple requests
@@ -421,24 +447,29 @@ func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*
 	return req, nil
 }
 
-// getBlockNumber selects a random block number in a safe range
-func getBlockNumber(currentBlock uint64) string {
-	// Define safe range with fallbacks
-	minBlock := uint64(100)
-	maxBlock := currentBlock
+func calculateArchivalBlockNumber(currentBlock, contractStartBlock uint64) string {
+	var blockNumHex string
+	// Case 1: Block number is below or equal to the archival threshold
+	if currentBlock <= evm.DefaultEVMArchivalThreshold {
+		blockNumHex = blockNumberToHex(1)
+	} else {
+		// Case 2: Block number is above the archival threshold
+		maxBlockNumber := currentBlock - evm.DefaultEVMArchivalThreshold
 
-	// Ensure the block selected is for archival EVM data
-	if maxBlock > evm.DefaultEVMArchivalThreshold {
-		maxBlock -= evm.DefaultEVMArchivalThreshold
+		// Ensure we don't go below the minimum archival block
+		if maxBlockNumber < contractStartBlock {
+			blockNumHex = blockNumberToHex(contractStartBlock)
+		} else {
+			// Generate a random block number within valid range
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			rangeSize := maxBlockNumber - contractStartBlock + 1
+			blockNumHex = blockNumberToHex(contractStartBlock + (r.Uint64() % rangeSize))
+		}
 	}
 
-	if minBlock >= maxBlock {
-		minBlock, maxBlock = 100, 1100 // Fallback
-	}
+	return blockNumHex
+}
 
-	// Generate random block number
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomBlock := minBlock + r.Uint64()%(maxBlock-minBlock+1)
-
-	return fmt.Sprintf("0x%x", randomBlock)
+func blockNumberToHex(blockNumber uint64) string {
+	return fmt.Sprintf("0x%x", blockNumber)
 }
