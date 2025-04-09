@@ -22,14 +22,14 @@ In order to utilize automated QoS checks, the `Service ID` field must be specifi
 
 For example, for a Morse PATH gateway, to enable QoS checks for the Ethereum & Polygon services, the following configuration would be added to the `.config.yaml` file:
 
-```yaml 
+```yaml
 hydrator_config:
   service_ids:
     - "F00C"
     - "F021"
 ```
 
-💡 *For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/configuration.md).*
+💡 *For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configuration.md).*
 
 :::
 
