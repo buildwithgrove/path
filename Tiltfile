@@ -177,7 +177,6 @@ local_resource(
 docker_build_with_restart(
     "path-image",
     context=".",
-    # dockerfile="Dockerfile.dev",
     dockerfile_contents="""FROM golang:1.23.0
 RUN apt-get -q update && apt-get install -qyy curl jq less
 RUN mkdir -p /app/config
