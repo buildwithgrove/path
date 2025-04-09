@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
-title: Morse Cheat Sheet
-description: Quick reference guide for setting up PATH with Morse protocol
+title: Morse Cheat Sheet (30-60 min)
+description: Introductory guide for setting up PATH w/ Shannon
 ---
 
 This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as of 01/2025.
@@ -18,7 +18,6 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
-- [What's Next?](#whats-next)
 - [Additional Notes](#additional-notes)
 
 ## 0. Prerequisites
@@ -154,7 +153,6 @@ make path_down
 
 Once you see the above log, you may visit [localhost:10350](<http://localhost:10350/r/(all)/overview>) to view the Tilt dashboard.
 
-
 ![Tilt Console](../../../static/img/path-in-tilt.png)
 
 _PATH Running in Tilt_
@@ -181,11 +179,6 @@ curl http://localhost:3070/v1 \
 If a requests fail, retry a few times as you may hit unresponsive nodes
 
 :::
-
-
-## What's Next?
-
-Now that you have PATH running, take a look at the [Configuration](./configuration.md) guide to learn more about the different configuration options available.
 
 ## Additional Notes
 
