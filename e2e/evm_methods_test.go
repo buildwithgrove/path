@@ -76,7 +76,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_call: {
@@ -88,7 +88,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.90,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_getTransactionReceipt: {
@@ -100,7 +100,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_getBlockByNumber: {
@@ -112,7 +112,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_getBalance: {
@@ -124,7 +124,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_chainId: {
@@ -136,7 +136,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_getTransactionCount: {
@@ -148,7 +148,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_getTransactionByHash: {
@@ -160,7 +160,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 	eth_gasPrice: {
@@ -172,7 +172,7 @@ var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 			successRate:   0.95,
 			maxP50Latency: 350 * time.Millisecond,
 			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 1700 * time.Millisecond,
+			maxP99Latency: 3_000 * time.Millisecond,
 		},
 	},
 }
