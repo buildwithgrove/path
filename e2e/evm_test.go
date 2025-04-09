@@ -21,17 +21,67 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-// Import color constants from vegeta_test.go - these are available because they're in the same package
-var (
-	// ANSI color codes
-	_ = RED    // "\x1b[31m"
-	_ = GREEN  // "\x1b[32m"
-	_ = YELLOW // "\x1b[33m"
-	_ = BLUE   // "\x1b[34m"
-	_ = RESET  // "\x1b[0m"
+/* -------------------- Test Configuration Initialization -------------------- */
+
+// Global test options
+var opts testOptions
+
+// init initializes the test options
+func init() {
+	opts = gatherTestOptions()
+}
+
+// Environment variable names
+const (
+	// Required environment variables
+	envTestProtocol = "TEST_PROTOCOL"
+
+	// Optional environment variables
+	envGatewayURLOverride = "GATEWAY_URL_OVERRIDE"
+	envDockerLog          = "DOCKER_LOG"
+	envDockerForceRebuild = "DOCKER_FORCE_REBUILD"
 )
 
-/* -------------------- Test Configuration Initialization -------------------- */
+// testOptions contains all configuration options for the E2E tests
+type (
+	testOptions struct {
+		// Protocol to use for testing (morse or shannon)
+		// Required environment variable: TEST_PROTOCOL
+		testProtocol protocolStr
+
+		// URL for accessing the gateway
+		// If not set, default is "http://localhost:%s/v1" where %s is the port of the Docker container
+		// If set via GATEWAY_URL_OVERRIDE, the Docker container won't be used and
+		// the test will run against the provided URL directly
+		gatewayURL string
+
+		// Whether the gateway URL was explicitly set via GATEWAY_URL_OVERRIDE
+		// This also indicates that no Docker container should be started
+		//
+		// If GATEWAY_URL_OVERRIDE is set, we'll use the provided URL directly and skip starting a Docker container,
+		// assuming PATH is already running externally at the provided URL.
+		gatewayURLOverridden bool
+
+		// Docker-related configuration options
+		docker dockerOptions
+
+		// Config file path template
+		// Format: "./.%s.config.yaml" where %s is the protocol name
+		configPathTemplate string
+	}
+	// dockerOptions contains configuration for the Docker test container
+	dockerOptions struct {
+		// Whether to log docker container output
+		// Default: false
+		// Can be enabled with DOCKER_LOG=true
+		logOutput bool
+
+		// Whether to force rebuild of the docker image
+		// Default: false
+		// Can be enabled with DOCKER_FORCE_REBUILD=true
+		forceRebuild bool
+	}
+)
 
 // protocolStr is a type to determine whether to test PATH with Morse or Shannon
 type protocolStr string
@@ -45,52 +95,43 @@ func (p protocolStr) isValid() bool {
 	return p == morse || p == shannon
 }
 
-var (
-	// Set default gateway URL
-	// Uses port from test Docker container
-	// Defaults to port `3069`
-	gatewayURL = "http://localhost:%s/v1"
-
-	// Protocol string for the test
-	// eg. `morse` or `shannon`
-	testProtocol protocolStr
-	// Config path for protocol
-	// eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
-	configPath = "./.%s.config.yaml"
-
-	// skipDockerTest is a flag to determine whether to skip using Docker for the test.
-	// By default it is true, but may be disabled for local manual testing, for example
-	// if wanting to test a manually run instance of PATH using the built binary.
-	skipDockerTest = true
-)
-
-// init initializes the gateway URL with an optional override
-
-const (
-	// Required environment variables
-	envTestProtocolOverride = "TEST_PROTOCOL"
-
-	// Optional environment variables
-	envGatewayURLOverride     = "GATEWAY_URL"
-	envSkipDockerTestOverride = "SKIP_DOCKER_TEST"
-)
-
-func init() {
-	// Required environment variables
-	if testProtocol = protocolStr(os.Getenv(envTestProtocolOverride)); testProtocol == "" {
-		panic(fmt.Sprintf("%s environment variable is not set", envTestProtocolOverride))
+// gatherTestOptions collects all test configuration options from environment variables
+func gatherTestOptions() testOptions {
+	// Default values
+	options := testOptions{
+		gatewayURL:         "http://localhost:%s/v1", // eg. `http://localhost:3069/v1`
+		configPathTemplate: "./.%s.config.yaml",      // eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	}
-	if !testProtocol.isValid() {
-		panic(fmt.Sprintf("%s environment variable is not set to `morse` or `shannon`", envTestProtocolOverride))
+
+	// Required environment variables
+	if testProtocol := protocolStr(os.Getenv(envTestProtocol)); testProtocol == "" {
+		panic(fmt.Sprintf("%s environment variable is not set", envTestProtocol))
+	} else if !testProtocol.isValid() {
+		panic(fmt.Sprintf("%s environment variable is not set to `morse` or `shannon`", envTestProtocol))
+	} else {
+		options.testProtocol = testProtocol
 	}
 
 	// Optional environment variables
 	if gatewayURLOverride := os.Getenv(envGatewayURLOverride); gatewayURLOverride != "" {
-		gatewayURL = gatewayURLOverride
+		options.gatewayURL = gatewayURLOverride
+		options.gatewayURLOverridden = true
 	}
-	if skipDockerTest = os.Getenv(envSkipDockerTestOverride) == "true"; skipDockerTest {
-		skipDockerTest = true
+
+	// Docker configuration
+	if logValue := os.Getenv(envDockerLog); logValue != "" {
+		if logParsed, err := strconv.ParseBool(logValue); err == nil {
+			options.docker.logOutput = logParsed
+		}
 	}
+
+	if rebuildValue := os.Getenv(envDockerForceRebuild); rebuildValue != "" {
+		if rebuildParsed, err := strconv.ParseBool(rebuildValue); err == nil {
+			options.docker.forceRebuild = rebuildParsed
+		}
+	}
+
+	return options
 }
 
 /* -------------------- Get Test Cases for Protocol -------------------- */
@@ -207,33 +248,31 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Println("🚀 Setting up PATH instance...")
 
 	// Config YAML file, eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
-	configFilePath := fmt.Sprintf(configPath, testProtocol)
+	configFilePath := fmt.Sprintf(opts.configPathTemplate, opts.testProtocol)
 
 	// Default port for PATH instance
 	// If using Docker, the port will be dynamically assigned
 	// and overridden by the value returned from `setupPathInstance`.
 	port := "3069"
 
-	// If `useDockerTest` is true, we will start an instance of PATH in Docker using `dockertest`.
+	// If GATEWAY_URL_OVERRIDE is not set, we will start an instance of PATH in Docker using `dockertest`.
 	// This is configured in the file `docker_test.go` and is the default behavior.
 	//
-	// It can be overridden by setting the `SKIP_DOCKER_TEST` environment variable to `true`,
-	// for example, if wanting to test a manually run instance of PATH using the built binary.
-	if !skipDockerTest {
-		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath)
+	// If GATEWAY_URL_OVERRIDE is set, we'll use the provided URL directly and skip starting a Docker container,
+	// assuming PATH is already running externally at the provided URL.
+	if !opts.gatewayURLOverridden {
+		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, opts.docker)
 		defer teardownFn()
 
 		port = pathContainerPort
-	}
 
-	// eg. `http://localhost:30771/v1`
-	if strings.Contains(gatewayURL, "%s") {
-		gatewayURL = fmt.Sprintf(gatewayURL, port)
+		// Format the gateway URL with the dynamically assigned port
+		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, port)
 	}
 
 	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
-	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
-	fmt.Printf("  📡 Test protocol: %s\n", testProtocol)
+	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
+	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
 
 	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
 	// 		See: https://github.com/buildwithgrove/path/pull/202
@@ -249,7 +288,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// Get test cases based on protocol
-	testCases := getTestCases(testProtocol)
+	testCases := getTestCases(opts.testProtocol)
 
 	// Initialize map to store service summaries
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
@@ -259,7 +298,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		if testCases[i].archival {
 			testCases[i].serviceParams.blockNumber = setTestBlockNumber(
 				t,
-				gatewayURL,
+				opts.gatewayURL,
 				testCases[i].serviceID,
 				testCases[i].serviceParams.contractStartBlock,
 			)
@@ -333,7 +372,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 					// Run the attack
 					metrics := runAttack(
-						gatewayURL,
+						opts.gatewayURL,
 						testCases[i].serviceID,
 						method,
 						def,
@@ -361,7 +400,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 			// TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
 			// properly supplied chains on Shannon to run E2E tests.
-			if testProtocol == shannon {
+			if opts.testProtocol == shannon {
 				// Adjust latency expectations for Shannon protocol.
 				methodDefinitions = adjustLatencyForShannonTests(methodDefinitions)
 			}
