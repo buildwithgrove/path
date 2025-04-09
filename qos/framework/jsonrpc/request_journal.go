@@ -1,5 +1,10 @@
 package jsonrpc
 
+// TODO_IN_THIS_PR: verify the EmptyResponse and NoResponse scenarios:
+// - EmptyResponse is an EndpointQueryResult, because the endpoint did return an empty payload.
+// - NoReponse is a requestError: e.g. there may have been ZERO ENDPOINTS available at the PROTOCOL-LEVEL.
+//   - It is an INTERNAL error: like failing to read HTTP request's body.
+
 const (
 	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
 	// The default timeout when sending a request to an EVM blockchain endpoint.
@@ -16,7 +21,8 @@ type requestJournal struct {
 	requestDetails *requestDetails	
 
 	// All endpoint interactions that occurred during processing.
-	endpointQueries []*endpointQuery
+	// These are all expected to be processed: i.e. have a non-nil result pointer and a client JSONRPC response.
+	processedEndpointQueries []*endpointQuery
 }
 
 func (rj *requestJournal) buildEndpointQuery(endpointAddr protocol.EndpointAddr, receivedData []byte) *endpointQuery {
@@ -55,47 +61,27 @@ func (rj *requestJournal) getServicePayload() protocol.Payload {
 	}
 }
 
-func (rj *requestJournal) getHTTPResponse() gateway.HTTPResponse {
-	if rj.JSONRPCErrorResponse != nil {
-		return buildHTTPResponse(rj.Logger, rj.JSONRPCErrorResponse)
-	}
-
-	return buildHTTPResponse(rj.Logger, rj.getJSONRPCResponse())
-}
-
-func (rj *requestJournal) getObservations() qosobservations.Observations {
-	/*
-		// Service identification
-		ServiceName:
-		ServiceDescription:
-
-		// Observation of the client request
-		RequestObservation *RequestObservation
-		// Observations from endpoint(s)
-		EndpointObservations []*EndpointObservation
-
-		return qosobservations.Observations {
-			RequestObservations: rc. resut???? .GetObservation(),
-			EndpointObservations: rc.EndpointCallsProcessor.GetObservations(),
-		// TODO_IN_THIS_PR: Implement this method in observations.go.
-		// Return basic observations for now
-			ServiceId:          p.ServiceID,
-			ServiceDescription: p.ServiceDescription,
-			RequestObservation: p.RequestObservation,
-		}
-	*/
-}
-
 // TODO_FUTURE(@adshmh): A retry mechanism would require support from this struct to determine if the most recent endpoint query has been successful.
 //
-// getJSONRPCResponse simply returns the result associated with the most recently reported endpointQuery.
-func (rj *requestJournal) getJSONRPCResponse() *jsonrpc.Response {
-	// Check if we received any endpoint results
-	if len(rc.processedResults) == 0 {
-		// If no results were processed, handle it as a protocol error
-		return buildResultForNoResponse(rc.Request)
+// getHTTPResponse returns the client's HTTP response:
+// - Uses the request error if set
+// - Uses the most recent endpoint query if the request has no errors set.
+func (rj *requestJournal) getHTTPResponse() gateway.HTTPResponse {
+	// For failed requests, return the preset JSONRPC error response.
+	// - Invalid request: e.g. malformed payload from client.
+	// - Internal error: error reading HTTP request's body
+	// - Internal error: Protocol-level error, e.g. selected endpoint timed out.
+	if requestErrorJSONRPCResponse := rj.requestDetails.getRequestErrorJSONRPCResponse(); requestErrorJSONRPCResponse != nil {
+		return buildHTTPResponse(rj.Logger, requestErrorJSONRPCResponse)
 	}
 
-	// Return the latest result.
-	return rc.processedResults[len(rc.processedResults)-1]
+	// TODO_IMPROVE(@adshmh): find a refactor:
+	// Goal: guarantee that valid request -> at least 1 endpoint query.
+	// Constraint: Such a refactor should keep the requestJournal as a data container.
+	//
+	// Use the most recently reported endpoint query.
+	// There MUST be an entry if the request has no error set.
+	selectedQuery := rj.processedEndpointQueries[len(rj.processedEndpointQueries)-1]
+	jsonrpcResponse := selectedQuery.result.clientJSONRPCResponse
+	return buildHTTPResponse(rj.Logger, jsonrpcResponse)
 }

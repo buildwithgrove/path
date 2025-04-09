@@ -30,8 +30,23 @@ type  requestDetails struct {
 	requestError *requestError
 }
 
-func (rd *requestDetails) isValid() bool {
-	return rd.requestError == nil
+func (rd *requestDetails) getRequestErrorJSONRPCResponse() *jsonrpc.Response {
+	if rd.requestError == nil {
+		return nil
+	}
+
+	return rd.requestError.getJSONRPCResponse()
+}
+
+func (rd *requestDetails) setProtocolLevelError() {
+	// request already marked as failed.
+	// skip setting an error.
+	if rd.requestError != nil {
+		return
+	}
+
+	// set the request as failed with protocol-level error.
+	rd.requestError = buildRequestErrorForInternalErrProtocolErr(rd.request.ID)
 }
 
 // buildRequestContextFromHTTPRequest builds and returns a context for processing the HTTP request:

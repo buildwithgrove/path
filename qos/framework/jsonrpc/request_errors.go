@@ -23,12 +23,33 @@ type requestError struct {
 	jsonrpcErrorResponse jsonrpc.Response
 }
 
+func (re *requestError) getJSONRPCResponse() *jsonrpc.Response {
+	return &re.jsonrpcErrorResponse
+}
+
 func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
 	return &requestError {
 		errorKind: requestErrKindInternalErrReadyHTTPBody,
 		errorDetails: fmt.Sprintf("error reading HTTP request body: %v", err),
 		// Create JSONRPC error response for read failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseInternalReadError(err),
+	}
+}
+
+// TODO_TECHDEBT(@adshmh): Report the protocol-level error to the QoS system to use here.
+// Use these steps:
+// - Update gateway.RequestQoSContext interface: add a ReportProtocolError(error) method.
+// - Update requestContext: add ReportProtocolError to pass the error to the requestCtx.journal.request object.
+//
+// Protocol-level error: e.g. endpoint timeout has occurred.
+// This is an internal error, causing a valid request to fail.
+// The exact error is not known here: see the TODO_TECHDEBT above.
+func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestError {
+	return &requestError {
+		errorKind: requestErrKindInternalErrProtocolError,
+		errorDetails: "error handling the request due to protocol-level error.",
+		// Create JSONRPC error response for protocol error.
+		jsonrpcErrorResponse: newJSONRPCErrResponseInternalProtocolError(requestID),
 	}
 }
 

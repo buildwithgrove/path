@@ -33,7 +33,6 @@ func (s *QoSService) ParseHTTPRequest(
 	_ context.Context,
 	httpReq *http.Request,
 ) (*requestContext, bool) {
-	// isRequestValid signals whether the request processing flow should continue.
 	requestDetails := buildRequestDetailsFromHTTP(s.logger, httpReq)
 
 	// initialize a context for processing the HTTP request.
@@ -44,8 +43,11 @@ func (s *QoSService) ParseHTTPRequest(
 			requestDetails: requestDetails,
 		},
 	}
+	
+	// check if the request processing flow should continue.
+	shouldContinue := requestDetails.getRequestErrorJSONRPCResponse() != nil
 
-	return requestCtx, requestDetails.isValid()
+	rturn requestCtx, shouldContinue
 }
 
 // TODO_IN_THIS_PR: implement this method
@@ -90,4 +92,9 @@ func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
 		// The endpoint selector logic defined by the custom QoS service defintion.
 		customSelector:        q.qosDefinition.EndpointSelector,
 	}
+}
+
+// TODO_IN_THIS_PR: implement this method.
+func (q *QoS) buildServiceStateUpdateContext() *ServiceStateUpdateContext {
+
 }

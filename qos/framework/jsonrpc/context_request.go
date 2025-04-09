@@ -90,12 +90,19 @@ func (rc *requestQoSContext) UpdateWithResponse(endpointAddr protocol.EndpointAd
 // GetHTTPResponse builds the HTTP response that should be returned for a JSONRPC service request.
 // Implements the gateway.RequestQoSContext interface.
 func (rc requestQoSContext) GetHTTPResponse() gateway.HTTPResponse {
+	// check if a protocol-level error has occurred.
+	rc.checkForProtocolLevelError()
+
+	// use the request journal to build the client's HTTP response.
 	return rc.journal.getHTTPResponse()
 }
 
 // GetObservations uses the request's journal to build and return all observations.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
+	// check if a protocol-level error has occurred.
+	rc.checkForProtocolLevelError()
+
 	// Use the request journal to generate the observations.
 	return rc.journal.getObservations()
 }
@@ -107,4 +114,12 @@ func (rc *requestQoSContext) GetEndpointSelector() protocol.EndpointSelector {
 	return selectorCtx.buildSelectorForRequest(rc.journal)
 }
 
-
+// Declares the request as failed with protocol-level error if no data from any endpoints has been reported to the request context.
+func (rc *requestContext) checkForProtocolLevelError() {
+	// TODO_IMPROVE(@adshmh): consider using the journal directly for setting protocol failure error.
+	//
+	// Assume protocol-level error if no endpoint responses have been received yet.
+	if len(rc.journal.processedEndpointQueries) == 0 {
+		rc.journal.requestDetails.setProtocolLevelError()
+	}
+}

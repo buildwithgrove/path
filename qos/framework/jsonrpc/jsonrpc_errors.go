@@ -90,6 +90,20 @@ func newErrResponseInternalError(requestID jsonrpc.ID) jsonrpc.Response {
 	)
 }
 
+func newJSONRPCErrResponseInternalProtocolError(requestID jsonrpc.ID) jsonrpc.Response {
+	return jsonrpc.GetErrorResponse(
+		requestID,
+		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		"internal error: protocol-level error has occurred", // Error Message
+		map[string]string{
+			"error_type": "protocol",
+			// Custom extension - not part of the official JSON-RPC spec
+			// Marks the error as retryable to allow clients to safely retry their request
+			"retryable": "true",
+		},
+	)
+}
+
 // newErrResponseMarshalError creates a JSON-RPC error response for marshaling errors.
 // This response:
 // - Preserves the original request ID if available
