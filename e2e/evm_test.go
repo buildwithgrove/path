@@ -136,6 +136,32 @@ func getMorseTestCases() []testCase {
 				callData:           "0x18160ddd",
 			},
 		},
+		{
+			name:      "F01C (Oasys) Load Test",
+			serviceID: "F01C",
+			methods:   runAllMethods(),
+			archival:  true, // F01C is an archival service so we should use a random historical block.
+			serviceParams: serviceParameters{
+				// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+				contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+				contractStartBlock: 424_300,
+				transactionHash:    "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee",
+				callData:           "0x18160ddd",
+			},
+		},
+		{
+			name:      "F036 (XRPL EVM Testnet) Load Test",
+			serviceID: "F036",
+			methods:   runAllMethods(),
+			archival:  true, // F036 is an archival service so we should use a random historical block.
+			serviceParams: serviceParameters{
+				// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+				contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+				contractStartBlock: 368_266,
+				transactionHash:    "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058",
+				callData:           "0x18160ddd",
+			},
+		},
 	}
 }
 
@@ -200,15 +226,14 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
 	// 		See: https://github.com/buildwithgrove/path/pull/202
 	//
-	// In the CI environment, we need to wait for 2 minutes to allow several rounds of hydrator checks to complete.
+	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
+	// ie.for returning empty responses, etc.
+	secondsToWait := 80
+	fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		fmt.Println("⏰ Waiting for 2 minutes before starting tests to allow several rounds of hydrator checks to complete...")
-		time.Sleep(2 * time.Minute)
+		time.Sleep(time.Duration(secondsToWait*2) * time.Second) // Wait for double the default time in CI
 	} else {
-		// In the local environment, we wait for 40 seconds to allow several rounds of hydrator checks to complete.
-		secondsToWait := 40
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
-		showWaitBar(secondsToWait)
+		showWaitBar(secondsToWait) // In local environment, show progress bar to indicate we're waiting.
 	}
 
 	// Get test cases based on protocol
@@ -232,6 +257,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		fmt.Printf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
 
 		// Use t.Run for proper test reporting
+		serviceTestFailed := false
 		t.Run(testCases[i].name, func(t *testing.T) {
 			// Create results map with a mutex to protect concurrent access
 			results := make(map[jsonrpc.Method]*MethodMetrics)
@@ -320,9 +346,24 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			// Validate results for each method
 			for _, method := range testCases[i].methods {
 				validateResults(t, results[method], methodDefinitions[method])
+				// If the test has failed after validation, set the service failure flag
+				if t.Failed() {
+					serviceTestFailed = true
+				}
 			}
 		})
+
+		// If this service test failed, fail the overall test immediately
+		if serviceTestFailed {
+			fmt.Printf("\n\x1b[31m❌ TEST FAILED: Service %s failed assertions\x1b[0m\n", testCases[i].serviceID)
+			t.FailNow() // This will exit the test immediately
+		} else {
+			fmt.Printf("\n\x1b[32m✅ Service %s test passed\x1b[0m\n", testCases[i].serviceID)
+		}
 	}
+
+	// If execution reaches here, all services have passed
+	fmt.Printf("\n\x1b[32m✅ OVERALL TEST PASSED: All %d services passed\x1b[0m\n", len(testCases))
 }
 
 // TODO_MVP(@commoddity): This is a temporary solution and will be removed

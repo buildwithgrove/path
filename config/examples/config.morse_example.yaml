@@ -38,7 +38,10 @@ morse_config:
 # Enable endpoint hydrator to run QoS checks against endpoints of service F00C
 hydrator_config:
   service_ids:
-    - "F00C"
+    - F00C # Ethereum
+    - F021 # Polygon
+    - F01C # Oasys
+    - F036 # XRPL EVM Testnet
 
 # Optional logger configuration
 logger_config:
