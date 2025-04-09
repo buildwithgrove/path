@@ -3,11 +3,34 @@ package path.qos.framework;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
 
-import "path/qos/framework/endpoint_attribute.proto"; // import EndpointAttribute
+import "google/protobuf/timestamp.proto";
+import "path/qos/framework/endpoint_error.proto";  // Import endpoint error definitions.
 
-// EndpointQueryResult captures information extracted from a service endpoint query.
+// EndpointQueryResult captures data extracted from a service endpoint query.
 // Maps to EndpointQueryResult in endpoint_query_result.go
 message EndpointQueryResult {
   // The set of endpoint attributes
   map<string, EndpointAttribute> endpoint_attributes = 1;
 }
+
+// EndpointQueryResult captures data extracted from an endpoint query.
+// - Stores one or more string/integer values.
+// - Contains error/sanction information on endpoint error.
+message EndpointQueryResult {
+  // HTTP response returned to the client.
+  int32 client_http_response = 1;
+
+  // The set of values/attributes extracted from the endpoint query 
+  // and the endpoint's parsed JSONRPC response
+  map<string, string> string_values = 2;
+  map<string, int64> int_values = 3;
+
+  // Captures the queried endpoint's error
+  // Only set if the query result indicates an endpoint error
+  optional EndpointError error = 5;
+
+  // The time at which the query result is expired
+  google.protobuf.Timestamp expiry_time = 6;
+}
+
+

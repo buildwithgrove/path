@@ -8,15 +8,13 @@ import "path/qos/framework/endpoint_sanction.proto"; // import Sanction definiti
 // EndpointErrorKind identifies different kinds of endpoint data errors.
 enum EndpointErrorKind {
   ENDPOINT_DATA_ERROR_KIND_UNSPECIFIED = 0;
-  ENDPOINT_DATA_ERROR_KIND_NO_INTERACTION = 1;     // No endpoint interaction occurred or no payload received
   ENDPOINT_DATA_ERROR_KIND_EMPTY_PAYLOAD = 2;      // Empty payload from endpoint
   ENDPOINT_DATA_ERROR_KIND_UNMARSHALING = 3;       // Could not parse endpoint payload
   ENDPOINT_DATA_ERROR_KIND_INVALID_RESULT = 4;     // Payload result doesn't match expected value
 }
 
-// EndpointAttributeError contains error details for endpoint queries.
-// Maps to EndpointAttributeError in endpoint_attribute_error.go
-message EndpointAttributeError {
+// EndpointError contains error details for endpoint queries.
+message EndpointError {
   // Specifies the kind of endpoint eror observed.
   // Example: Returned payload cannot be parsed into a JSONRPC response.
   EndpointErrorKind error_kind = 1;
