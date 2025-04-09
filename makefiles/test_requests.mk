@@ -10,8 +10,9 @@
 debug_relayminer_supplier_info_msg: ## Displays debugging guidance for Anvil supplier issues
 	@echo "#######################################################################################################################################"
 	@echo "INFO: If a request did not succeed, look into debugging the Anvil supplier by reviewing:"
-	@echo "  https://www.notion.so/buildwithgrove/PATH-Shannon-Beta-Critical-Relay-Miner-Infrastructure-for-PATH-Supplier-Anvil-E2E-17da36edfff680da98f2ff01705be00b"
+	@echo "https://www.notion.so/buildwithgrove/PATH-Shannon-Beta-Critical-Relay-Miner-Infrastructure-for-PATH-Supplier-Anvil-E2E-17da36edfff680da98f2ff01705be00b"
 	@echo "########################################################################################################################################"
+	@echo ""
 
 .PHONY: check_path_up_with_envoy
 check_path_up_with_envoy: ## Checks if PATH with Envoy is running at localhost:3070
@@ -49,20 +50,20 @@ check_path_up_without_envoy: ## Checks if standalone PATH (without GUARD) is run
 # - **Service ID**: passed as the subdomain or in the 'Target-Service-Id' header
 
 .PHONY: test_request__service_id_subdomain
-test_request__service_id_subdomain: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
+test_request__service_id_subdomain: check_path_up_with_envoy debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed as the subdomain
 	curl http://anvil.localhost:3070/v1 \
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request__service_id_header_shannon
-test_request__service_id_header_shannon: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+test_request__service_id_header_shannon: check_path_up_with_envoy debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
 	curl http://localhost:3070/v1 \
 		-H "Target-Service-Id: anvil" \
 		-H "Authorization: test_api_key" \
 		-d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 .PHONY: test_request__service_id_header_morse
-test_request__service_id_header_morse: check_path_up_with_envoy debug_anvil_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
+test_request__service_id_header_morse: check_path_up_with_envoy debug_relayminer_supplier_info_msg ## Test request with API key auth and the service ID passed in the Target-Service-Id header
 	curl http://localhost:3070/v1 \
 		-H "Target-Service-Id: polygon" \
 		-H "Authorization: test_api_key" \
