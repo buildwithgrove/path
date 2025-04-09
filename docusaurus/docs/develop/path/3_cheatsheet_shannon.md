@@ -21,6 +21,8 @@ Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 - [3.1 Start PATH](#31-start-path)
   - [3.1 Monitor PATH](#31-monitor-path)
 - [4. Test Relays](#4-test-relays)
+  - [Test Relay with `curl`](#test-relay-with-curl)
+  - [Test Relay with `make`](#test-relay-with-make)
 
 ## 0. Prerequisites
 
@@ -44,7 +46,8 @@ Before starting, you'll need to create and configure:
 
 We **strongly** recommend following the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for setting up your accounts and getting a thorough understanding of all the elements.
 
-If you're in a rush, however, you can try following these copy-pasta commands for convenience:
+But, if this is your first time going through the docs, you can follow the copy-pasta instructions
+below to get a feel for the end-to-end process.
 
 <details>
 
@@ -64,7 +67,7 @@ EOF
 cat <<EOF > /tmp/stake_app_config.yaml
 stake_amount: 100000000upokt
 service_ids:
-- "F00C"
+- "anvil"
 EOF
 ```
 
@@ -147,6 +150,7 @@ make shannon_populate_config
 ```
 
 :::important Command configuration
+
 This command relies on `pocketd` command line interface to export the **Gateway** and **Application** address from your keyring backend.
 
 You can set the following environment variables to override the default values:
@@ -184,9 +188,16 @@ hydrator_config:
     - "anvil"
 ```
 
-:::warning Gateway Configuration
+:::important Gateway Configuration Validation
 
-Do a manual sanity check to ensure that `gateway_config` is filled out correctly before continuing.
+1. Do a manual sanity check of the addresses to ensure everything looks correct before continuing.
+2. The configuration about is set up for `anvil`, so ensure your application is staked for the same service id. You can verify this by running:
+
+   ```bash
+   pocketd query application show-application \
+     $(pkd keys show -a application) \
+     --node=https://shannon-testnet-grove-rpc.beta.poktroll.com
+   ```
 
 :::
 
@@ -222,23 +233,48 @@ Once you see the above log, visit [localhost:10350](<http://localhost:10350/r/(a
 
 ## 4. Test Relays
 
-:::tip
+:::warning Anvil Node & Request Retries
 
-The makefile helpers in `makefiles/test_requests.mk` can make iterating on these requests easier.
+_tl;dr Retry the requests below if the first one fails._
+
+The instructions above were written to get you to access an [**anvil**](https://book.getfoundry.sh/anvil/) node accessible on Pocket Network.
+
+Since `anvil` is an Ethereum node used for testing, there is a chance it may not be available.
+
+We recommend you try the instructions below a few times to ensure you can get a successful relay. Otherwise, reach out to the community on Discord.
 
 :::
 
-Send a test relay (`make test_request__service_id_header_shannon`):
+### Test Relay with `curl`
+
+Send a test relay to check the height of
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: anvil" \
-  -H "Authorization: test_api_key" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+ -H "Target-Service-Id: anvil" \
+ -H "Authorization: test_api_key" \
+ -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-:::warning Retries
+And you should expect to see a response similar to the following:
 
-If a requests fail, retry a few times as you may hit unresponsive nodes
+```json
+{"id":1,"jsonrpc":"2.0","result":"0x2f01a"}%
+```
 
-:::
+### Test Relay with `make`
+
+For your convenience, we have provided a few makefile helpers to test relays with `curl` and `jq`.
+You can find that in the `makefiles/test_requests.mk` file.
+
+For example, to mimic the `curl` command above, you can simply run:
+
+```bash
+make test_request__service_id_header_shannon
+```
+
+To see all available helpers, simply run:
+
+```bash
+make help
+```
