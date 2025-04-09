@@ -6,13 +6,6 @@ option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
 import "google/protobuf/timestamp.proto";
 import "path/qos/framework/endpoint_error.proto";  // Import endpoint error definitions.
 
-// EndpointQueryResult captures data extracted from a service endpoint query.
-// Maps to EndpointQueryResult in endpoint_query_result.go
-message EndpointQueryResult {
-  // The set of endpoint attributes
-  map<string, EndpointAttribute> endpoint_attributes = 1;
-}
-
 // EndpointQueryResult captures data extracted from an endpoint query.
 // - Stores one or more string/integer values.
 // - Contains error/sanction information on endpoint error.

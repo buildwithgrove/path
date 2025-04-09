@@ -9,9 +9,12 @@ import (
 // getObservations returns the set of observations for the requestJournal.
 // This includes:
 // - Successful requests
-// - Failed requests: internal error
-// - Failed requests: invalid request
-// - Failed requests: protcol error, i.e. no endpoint data received.
+// - Failed requests, due to:
+//    - internal error:
+//      - error reading HTTP request's body.
+//      - any protocol-level error: e.g. endpoint timed out.
+//    - invalid request
+//
 // requestJournal is the top-level struct in the chain of observation generators.
 func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// initialize the observations to include:
@@ -31,8 +34,9 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 		return observations
 	}
 
-	endpointObservations := make([]*qosobservations.EndpointObservation, len(rj.endpointQueries))
-	for index, endpointQuery := range rj.endpointQueries {
+	// Add one endpoint observation entry per processed enpoint query stored in the journal.
+	endpointObservations := make([]*qosobservations.EndpointObservation, len(rj.processedEndpointQueries))
+	for index, endpointQuery := range rj.processedEndpointQueries {
 		endpointObservations[index] = endpointQuery.buildObservation()
 	}
 
@@ -40,5 +44,15 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 	return observations
 }
 
-func extractEndpointQueryResults(observations *observations.Observations) []*EndpointQueryResult
+// TODO_IN_THIS_PR: check the observations have the correct service name.
+func (rj *requestJournal) extractEndpointQueriesFromObservations(observations *observations.Observations) []*endpointQuery {
+	// fetch endpoint observations
+	endpointObservations := observations.GetEndpointObservations()
 
+	endpointQueries := make(*endpointQuery, len(endpointObservations))
+	for index, endpointObservation := range endpointObservations {
+		endpointQueries[index] = extractEndpointQueryFromObservation(endpointObservation)
+	}
+
+	return endpointQueries
+}

@@ -19,15 +19,18 @@ func (rd *requestDetails) buildObservations() *qosobservations.RequestObservatio
 	}
 
 	// build request failure observation, if the request parsing failed.
-	var validationErrorObs *qosobservations.ValidationError
+	var errorObs *qosobservations.RequestError
 	if rd.requestError != nil {
-		validationErrorObs = rd.requestError.buildObservations()
+		errorObs = rd.requestError.buildObservations()
 	}
 
 	return &qosobservations.RequestObservation {
 		// Only set if validation was successful
 		JsonrpcRequest: jsonrpcRequestObs,
-		// Only set if validation failed
-		ValidationError: validationErrorObs,
+		// Only set if the request failed for any reason.
+		// A valid request can still fail due to a gateway internal error, e.g.:
+		// - error reading HTTP request's body.
+		// - protocol-level error: e.g. selected endpoint timed out.
+		RequestError: errorObs,
 	}
 }

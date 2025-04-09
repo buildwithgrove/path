@@ -15,6 +15,12 @@ type EndpointQueryResult struct {
 	// It can be used, e.g. to retrieve the JSONRPC request and its method.
 	*endpointQuery
 
+	// TODO_IN_THIS_PR: verify this is set by all result builders.
+
+	// The JSONRPC response to be returned to the client.
+	// MUST be set.
+	clientResponse *jsonrpc.Response
+
 	// The set of values/attributes extracted from the endpoint query and the endpoint's parsed JSONRPC response.
 	// e.g. for a Solana `getEpochInfo` request, the custom service could derive two endpoint attributes as follows:
 	// - "BlockHeight": 0x1234
@@ -40,13 +46,4 @@ type EndpointQueryResult struct {
 	// TODO_FUTURE(@adshmh): add a JSONRPCErrorResponse to allow a result builder to supply its custom JSONRPC response.
 }
 
-// EndpointError contains error details for endpoint queries.
-// An EndpointError is always associated with an Endpoint Attribute struct.
-type EndpointError struct {
-	// Description is set by the custom service implementation
-	Description string
 
-	// RecommendedSanction is set by the custom service implementation
-	// It is under ResultError to clarify the reason a sanction was recommended.
-	RecommendedSanction *Sanction
-}

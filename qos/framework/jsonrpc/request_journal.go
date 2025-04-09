@@ -21,7 +21,7 @@ type requestJournal struct {
 	requestDetails *requestDetails	
 
 	// All endpoint interactions that occurred during processing.
-	// These are all expected to be processed: i.e. have a non-nil result pointer and a client JSONRPC response.
+	// These are expected to be processed: i.e. have a non-nil result pointer and a client JSONRPC response.
 	processedEndpointQueries []*endpointQuery
 }
 

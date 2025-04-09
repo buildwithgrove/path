@@ -9,12 +9,11 @@ import "path/qos/framework/endpoint.proto"; // Import EndpointObservation
 // Observations is the top-level container for all QoS observations for a request.
 message Observations {
   // Service identification
-  string service_id = 1;
-  string service_description = 2; // e.g. EVM, Solana, CometBFT
-  
+  string service_name = 1; // e.g. EVM, Solana, CometBFT
+
   // Observation of the client request
-  RequestObservation request_observation = 3;
+  RequestObservation request_observation = 2;
   
   // Observations from endpoint(s)
-  repeated EndpointObservation endpoint_observations = 4;
+  repeated EndpointObservation endpoint_observations = 3;
 }

@@ -5,23 +5,25 @@ option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
 
 import "path/qos/framework/jsonrpc.proto"; // Import basic JSONRPC messages.
 
-// RequestValidationError identifies the type of validation error encountered.
-enum RequestValidationError {
-  REQUEST_VALIDATION_ERROR_UNSPECIFIED = 0;
-  REQUEST_VALIDATION_ERROR_BODY_READ_FAILURE = 1;     // Error reading HTTP request body
-  REQUEST_VALIDATION_ERROR_UNMARSHALING_FAILURE = 2;  // Error parsing JSON-RPC request
-  REQUEST_VALIDATION_ERROR_INVALID_REQUEST = 3;       // Request format is incorrect
-  REQUEST_VALIDATION_ERROR_INVALID_METHOD = 4;        // Method is not supported
-  REQUEST_VALIDATION_ERROR_INVALID_PARAMS = 5;        // Parameters are incorrect
+// RequestErrorKind identifies the type of validation error encountered.
+enum RequestErrorKind {
+  REQUEST_ERROR_UNSPECIFIED = 0;
+  REQUEST_ERROR_INTERNAL_BODY_READ_FAILURE = 1;     // Error reading HTTP request body
+  REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR = 2;     // Protocol error: e.g. endpoint timed out.
+  REQUEST_ERROR_VALIDATION_UNMARSHALING_FAILURE = 3;  // Error parsing JSON-RPC request
+  REQUEST_ERROR_VALIDATION_INVALID_VERSION = 4;       // JSONRPC request has invalid version.
+  REQUEST_ERROR_VALIDATION_MISSING_METHOD = 5;        // JSONRPC request does not specify method.
+  REQUEST_ERROR_VALIDATION_INVALID_PARAMS = 6;        // Parameters are incorrect
 }
 
 // TODO_IN_THIS_PR: Consider removing the http_status_code.
 
-// ValidationFailure contains details about a request validation failure
-message ValidationFailure {
-  RequestValidationError error_type = 1;
+// RequestError contains details about a request error
+message RequestError {
+  RequestErrorKind error_kind = 1;
+  // HTTP status code returned to the client.
   int32 http_status_code = 2;
-  string validation_error_details = 3;
+  string error_details = 3;
   
   // Only set for validation failures on valid JSONRPC structures
   // e.g. missing params field when required.
@@ -34,6 +36,6 @@ message RequestObservation {
   // Only set if validation was successful
   optional JsonRpcRequest jsonrpc_request = 1;
   
-  // Only set if validation failed
-  optional ValidationFailure validation_failure = 2;
+  // Only set if the request failed
+  optional RequestError request_error = 2;
 }
