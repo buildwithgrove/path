@@ -163,7 +163,8 @@ const (
 )
 
 // getValidEndpointsWithWeights returns a map of valid endpoints to their weights.
-// Endpoints with lower latency receive higher weights.
+//  1. Endpoints that fail QoS check validation are filtered out.
+//  2. Valid endpoints receive a weight based on their latency.
 func (ss *serviceState) getValidEndpointsWithWeights(availableEndpoints []protocol.EndpointAddr) map[protocol.EndpointAddr]float64 {
 	validEndpointsWithWeights := make(map[protocol.EndpointAddr]float64)
 
@@ -188,14 +189,17 @@ func (ss *serviceState) getValidEndpointsWithWeights(availableEndpoints []protoc
 	return validEndpointsWithWeights
 }
 
-// calculateLatencyWeight converts an endpoint's latency to a selection weight.
-// Lower latency produces higher weight, making the endpoint more likely to be selected.
+// calculateLatencyWeight converts an endpoint's latency into a weight.
+// Lower latency = higher weight = better chance of selection, while still
+// allowing higher latency endpoints to be selected.
 func (ss *serviceState) calculateLatencyWeight(endpoint endpoint, addr protocol.EndpointAddr) float64 {
 	// Get latency with minimum threshold to prevent division by zero
 	latency := max(endpoint.averageLatencyMs, minLatencyMs)
 
 	// Weight = 1 / (latency ^ latencyPower)
-	// Higher power = more aggressive favoring of lower latency
+	// The `latencyPower` parameter controls how much weight is given to latency differences.
+	// Higher values make the weight more sensitive to latency differences,
+	// meaning faster endpoints are more likely to be selected.
 	weight := 1.0 / math.Pow(latency, latencyPower)
 
 	ss.logger.Debug().
@@ -207,8 +211,12 @@ func (ss *serviceState) calculateLatencyWeight(endpoint endpoint, addr protocol.
 	return weight
 }
 
-// selectValidEndpointByLatency picks an endpoint based on weighted probability.
-// Endpoints with lower latency (higher weights) have higher probability of selection.
+// selectValidEndpointByLatency chooses an endpoint based on response time.
+//
+// How it works:
+//   - If there's only one endpoint, it's automatically chosen
+//   - Otherwise, we use a weighted lottery where faster endpoints
+//     have better chances of being picked
 func (ss *serviceState) selectValidEndpointByLatency(validEndpointsWithWeights map[protocol.EndpointAddr]float64) protocol.EndpointAddr {
 	// Short circuit for empty or single-entry maps
 	if len(validEndpointsWithWeights) == 0 {
@@ -223,9 +231,6 @@ func (ss *serviceState) selectValidEndpointByLatency(validEndpointsWithWeights m
 
 	// Calculate total weight for probability distribution
 	totalWeight := sumWeights(validEndpointsWithWeights)
-
-	// Log probability distribution
-	ss.logWeightDistribution(validEndpointsWithWeights, totalWeight)
 
 	// Select an endpoint using weighted probability
 	selected := ss.weightedRandomSelection(validEndpointsWithWeights, totalWeight)
@@ -243,6 +248,11 @@ func (ss *serviceState) selectValidEndpointByLatency(validEndpointsWithWeights m
 }
 
 // sumWeights calculates the total of all weights in the map.
+// This function simply adds up all the individual endpoint weights to get the total sum.
+// The total weight is essential for:
+// 1. Calculating the probability percentage of each endpoint being selected
+// 2. Setting the upper bound for the random selection in weightedRandomSelection
+// 3. Normalizing the weights so they can be interpreted as probabilities
 func sumWeights(weights map[protocol.EndpointAddr]float64) float64 {
 	var total float64
 	for _, weight := range weights {
@@ -251,21 +261,16 @@ func sumWeights(weights map[protocol.EndpointAddr]float64) float64 {
 	return total
 }
 
-// logWeightDistribution logs the probability distribution of all endpoints.
-func (ss *serviceState) logWeightDistribution(weights map[protocol.EndpointAddr]float64, totalWeight float64) {
-	for addr, weight := range weights {
-		probability := (weight / totalWeight) * 100
-
-		ss.logger.Debug().
-			Str("endpoint_addr", string(addr)).
-			Float64("weight", weight).
-			Float64("probability", probability).
-			Msg("endpoint weight distribution")
-	}
-}
-
-// weightedRandomSelection implements the weighted probability selection algorithm.
-// Returns the selected endpoint or empty string if selection fails.
+// weightedRandomSelection picks an endpoint based on its weight.
+// It works like a weighted lottery:
+// 1. Generate a random number
+// 2. Pick the endpoint whose weight range contains that number
+//
+// Faster endpoints (with lower latency) get larger weight ranges,
+// making them more likely to be chosen, but slower endpoints
+// still have some chance of selection.
+//
+// This helps spread the load while favoring better-performing endpoints.
 func (ss *serviceState) weightedRandomSelection(weights map[protocol.EndpointAddr]float64, totalWeight float64) protocol.EndpointAddr {
 	// Generate a random number between 0 and totalWeight
 	r := rand.Float64() * totalWeight
