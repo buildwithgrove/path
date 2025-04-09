@@ -138,11 +138,12 @@ func gatherTestOptions() testOptions {
 
 // testCase represents a single service load test configuration
 type testCase struct {
-	name          string
-	serviceID     protocol.ServiceID // The service ID to test
-	archival      bool               // Whether to select a random historical block
-	methods       []jsonrpc.Method   // The methods to test for this service
-	serviceParams serviceParameters  // Service-specific parameters
+	name              string
+	serviceID         protocol.ServiceID // The service ID to test
+	archival          bool               // Whether to select a random historical block
+	methods           []jsonrpc.Method   // The methods to test for this service
+	serviceParams     serviceParameters  // Service-specific parameters
+	latencyMultiplier int                // Multiplier for latency expectations
 }
 
 // getTestCases returns the appropriate test cases based on the protocol
@@ -237,6 +238,9 @@ func getShannonTestCases() []testCase {
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 				callData:        "0x18160ddd",
 			},
+			// TODO_MVP(@commoddity): This is a temporary solution to account for
+			// the fact that anvil is slower due to being a test/development chain.
+			latencyMultiplier: 2,
 		},
 	}
 }
@@ -398,11 +402,12 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			// Add space after progress bars
 			fmt.Println()
 
-			// TODO_MVP(@commoddity): This is a temporary solution and will be removed once we have
-			// properly supplied chains on Shannon to run E2E tests.
-			if opts.testProtocol == shannon {
-				// Adjust latency expectations for Shannon protocol.
-				methodDefinitions = adjustLatencyForShannonTests(methodDefinitions)
+			// Adjust latency expectations for slow chain if latency multiplier is set.
+			if testCases[i].latencyMultiplier != 0 {
+				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
+					YELLOW, testCases[i].name, testCases[i].latencyMultiplier, RESET,
+				)
+				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, testCases[i].latencyMultiplier)
 			}
 
 			// Calculate service summary metrics
@@ -482,33 +487,26 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// If execution reaches here, all services have passed
-	fmt.Printf("\n%s✅ OVERALL TEST PASSED: All %d services passed%s\n", GREEN, len(testCases), RESET)
+	fmt.Printf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
 
 	// Print summary after all tests are complete
 	printServiceSummaries(serviceSummaries)
 }
 
-// TODO_MVP(@commoddity): This is a temporary solution and will be removed
-// once we have properly supplied chains on Shannon to run E2E tests.
+// TODO_MVP(@commoddity): This is a temporary solution.
 //
-// adjustLatencyForShannonTests increases the latency expectations by 2x for Shannon tests since there is
-// currently only one supplier for `anvil` and it's a test blockchain which is slower than an actual chain.
-func adjustLatencyForShannonTests(defs map[jsonrpc.Method]methodDefinition) map[jsonrpc.Method]methodDefinition {
+// adjustLatencyForTestCase increases the latency expectations by the multiplier
+// for all methods in the test case to account for a slower than average chain.
+func adjustLatencyForTestCase(defs map[jsonrpc.Method]methodDefinition, multiplier int) map[jsonrpc.Method]methodDefinition {
 	// Create a new map to avoid modifying the original
 	adjustedDefs := make(map[jsonrpc.Method]methodDefinition, len(defs))
 
-	const multiplier = 2
-
-	fmt.Printf("%s⚠️  Adjusting latency expectations for Shannon tests by %dx to account for `anvil` test chain%s\n", YELLOW, multiplier, RESET)
-
-	// Copy and adjust each method definition
 	for method, def := range defs {
 		adjustedDef := def
 
-		// Multiply latency expectations by 4
-		adjustedDef.maxP50Latency = def.maxP50Latency * multiplier
-		adjustedDef.maxP95Latency = def.maxP95Latency * multiplier
-		adjustedDef.maxP99Latency = def.maxP99Latency * multiplier
+		adjustedDef.maxP50Latency = def.maxP50Latency * time.Duration(multiplier)
+		adjustedDef.maxP95Latency = def.maxP95Latency * time.Duration(multiplier)
+		adjustedDef.maxP99Latency = def.maxP99Latency * time.Duration(multiplier)
 
 		adjustedDefs[method] = adjustedDef
 	}
