@@ -85,3 +85,53 @@ include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
+
+
+
+
+
+ 3937  make claudesync_push
+ 4030  claudesync project init --new --name path_docs --description "PATH documentation" --local-path .
+ 4033  claudesync project init --new --name path_docs --description "PATH documentation" --local-path ./docusaurus/
+ 4034  claudesync push
+ 4037  claudesync category ls
+ 4038  claudesync config category add --description markdown_files --patterns "*.md" markdown
+ 4042  claudesync config category list
+ 4043  claudesync config category ls
+ 4044  claudesync push --category markdown
+
+
+
+# Docusaurus project files
+docusaurus/*.js
+docusaurus/*.json
+docusaurus/*.lock
+docusaurus/node_modules
+docusaurus/scripts
+docusaurus/src
+docusaurus/static
+docusaurus/yarn.lock
+
+# Non-relevant markdown files
+*.md
+# Keep important markdown files
+!docusaurus/docs/**/*.md
+!docusaurus/README.md
+!README.md
+!**/README.md
+
+# Generated files
+docusaurus/.docusaurus
+docusaurus/.cache-loader
+docusaurus/build
+
+# Misc
+.DS_Store
+.env*
+.idea
+.vscode
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
