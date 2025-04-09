@@ -14,7 +14,7 @@ RUN go mod download && go mod verify
 # Set build flags for faster compilation
 ENV CGO_ENABLED=0
 ENV GOOS=linux
-ENV GOARCH=arm64
+ENV GOARCH=amd64
 ENV GO111MODULE=on
 
 # Copy the entire codebase in one layer
