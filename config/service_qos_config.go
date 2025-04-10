@@ -7,7 +7,7 @@ import (
 	"github.com/buildwithgrove/path/qos/solana"
 )
 
-// NOTE: Service ID list last updated 2025/04/01 (not a joke)
+// NOTE: Service ID list last updated 2025/04/10
 
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
@@ -96,7 +96,7 @@ var shannonServices = []ServiceQoSConfig{
 	solana.NewSolanaServiceQoSConfig("solana"),
 }
 
-// morseServices is the list of QoS service configs for the Shannon protocol.
+// morseServices is the list of QoS service configs for the Morse protocol.
 var morseServices = []ServiceQoSConfig{
 	// *** EVM Services ***
 
@@ -184,6 +184,9 @@ var morseServices = []ServiceQoSConfig{
 	// Moonriver (1285)
 	evm.NewEVMServiceQoSConfig("F01A", "0x505", nil),
 
+	// Near
+	evm.NewEVMServiceQoSConfig("F01B", "0x18d", nil),
+
 	// Oasys (248)
 	evm.NewEVMServiceQoSConfig(
 		"F01C",
@@ -220,8 +223,14 @@ var morseServices = []ServiceQoSConfig{
 	// Polygon Amoy Testnet (80002)
 	evm.NewEVMServiceQoSConfig("F022", "0x13882", nil),
 
+	// Radix
+	evm.NewEVMServiceQoSConfig("F023", "0x1337", nil),
+
 	// Scroll (534992)
 	evm.NewEVMServiceQoSConfig("F024", "0x82750", nil),
+
+	// Sui
+	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),
 
 	// Taiko (167000)
 	evm.NewEVMServiceQoSConfig("F027", "0x28c58", nil),
@@ -240,18 +249,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// XRPL EVM Devnet (1440002)
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
-
-	// XRPL EVM Testnet (1449000)
-	evm.NewEVMServiceQoSConfig(
-		"F036",
-		"0x161c28",
-		evm.NewEVMArchivalCheckConfig(
-			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-			"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-			// Contract start block
-			368_266,
-		),
-	),
 
 	// Sonic (146)
 	evm.NewEVMServiceQoSConfig("F02D", "0x92", nil),
@@ -277,8 +274,30 @@ var morseServices = []ServiceQoSConfig{
 	// Berachain (80094)
 	evm.NewEVMServiceQoSConfig("F035", "0x138de", nil),
 
-	// *** Solana Services ***
+	// XRPL EVM Testnet (1449000)
+	evm.NewEVMServiceQoSConfig(
+		"F036",
+		"0x161c28",
+		evm.NewEVMArchivalCheckConfig(
+			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+			"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+			// Contract start block
+			368_266,
+		),
+	),
 
+	// *** CometBFT Services ***
+	cometbft.NewCometBFTServiceQoSConfig("F000", "pocket"),
+	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
+	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
+	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),
+	cometbft.NewCometBFTServiceQoSConfig("A0CD", "celestia-testnet-consensus-archival"),
+	cometbft.NewCometBFTServiceQoSConfig("F020", "osmosis"),
+
+	// *** Solana Services ***
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana"),
+	solana.NewSolanaServiceQoSConfig("F025"),
 }
+
+// Configuration now aligned with the service_ids list provided

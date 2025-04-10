@@ -8,9 +8,9 @@ description: Simple Load Testing Tool
 
 Easy to use make targets are provided in the test requests [Makefile](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
 
-`make test_request__relay_util_100`
+`make test_request__shannon_relay_util_1000`
 
-`make test_request__relay_util_1000`
+`make test_request__shannon_relay_util_10000`
 
 These targets send the given number of requests to `localhost:3069` for the `anvil` service on Shannon.
 

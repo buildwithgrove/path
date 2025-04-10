@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 title: EVM Archival Checks
 description: Description of how we implement EVM Archival checks
 ---
