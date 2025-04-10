@@ -1,9 +1,18 @@
+
+.PHONY: install_pocketd
+install_pocketd: ## Installs the pocketd binary
+	./local/scripts/install_pocketd_cli.sh
+
+.PHONY: shannon_populate_config
+shannon_populate_config: ## Populates the shannon config file with the correct values
+	./local/scripts/shannon_populate_config.sh
+
 .PHONY: shannon_e2e_config_warning
-shannon_e2e_config_warning: ## Checks for required Shannon E2E config file
+shannon_e2e_config_warning: ## Checks for required Shannon E2E test config files
 	$(call check_config_exists,./e2e/.shannon.config.yaml,prepare_shannon_e2e_config)
 
 .PHONY: prepare_shannon_e2e_config
-prepare_shannon_e2e_config: ## Setup Shannon E2E test configuration file from example template
+prepare_shannon_e2e_config: ## Setup Shannon E2E test config file from the example template
 	@if [ ! -f ./e2e/.shannon.config.yaml ]; then \
 		cp ./config/examples/config.shannon_example.yaml ./e2e/.shannon.config.yaml; \
 		echo "################################################################"; \
@@ -36,11 +45,3 @@ prepare_shannon_e2e_config: ## Setup Shannon E2E test configuration file from ex
 		echo "	make prepare_shannon_e2e_config"; \
 		echo "################################################################"; \
 	fi
-
-.PHONY: install_pocketd
-install_pocketd: ## Installs the pocketd binary
-	./local/scripts/install_pocketd_cli.sh
-
-.PHONY: shannon_populate_config
-shannon_populate_config: ## Populates the shannon config file with the correct values
-	./local/scripts/shannon_populate_config.sh

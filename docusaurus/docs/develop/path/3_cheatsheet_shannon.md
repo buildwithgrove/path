@@ -31,7 +31,7 @@ Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 
 :::tip
 
-You can use the `make install_deps` command to install the dependencies for the PATH stack, including the `pocketd` CLI.
+You can use the `make install_deps` command to install the dependencies for the PATH stack, **including** the `pocketd` CLI.
 
 :::
 

@@ -9,10 +9,7 @@ CONFIG_FILES := \
 	./local/path/.config.yaml \
 	./e2e/.shannon.config.yaml \
 	./e2e/.morse.config.yaml \
-	./local/path/envoy/.envoy.yaml \
-	./local/path/envoy/.ratelimit.yaml \
-	./local/path/envoy/.allowed-services.lua \
-	./local/path/envoy/.gateway-endpoints.yaml
+	./local/path/envoy/.envoy.yaml
 
 # Helper function to check if a config file exists
 define check_config_exists

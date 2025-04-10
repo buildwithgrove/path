@@ -282,3 +282,6 @@ var morseServices = []ServiceQoSConfig{
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana"),
 }
+
+// TODO_IN_THIS_PR: Align with the configs in 1Password
+// TODO_IN_THIS_PR: Remove public dispatchers from the configs

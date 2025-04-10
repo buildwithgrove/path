@@ -270,11 +270,11 @@ hydrator_config:
 
 :::info
 
-For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](../../learn/qos/supported_services.md).
+For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](../../learn/qos/3_supported_services.md).
 
 :::warning
 
-⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](../../learn/qos/supported_services.md); if an invalid ID is provided, the gateway will error.
+⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](../../learn/qos/3_supported_services.md); if an invalid ID is provided, the gateway will error.
 
 :::
 
@@ -411,7 +411,7 @@ guard:
         - test_api_key_1
         - test_api_key_2
         - test_api_key_3
-  services:  
+  services:
     - serviceId: F021
       aliases:
         - polygon
@@ -432,7 +432,7 @@ The above `.values.yaml` files will allow the following requests to PATH:
 # API key: test_api_key_1
 curl http://localhost:3070/v1 \
   -H "Target-Service-Id: F021" \
-  -H "Authorization: test_api_key_1" \ 
+  -H "Authorization: test_api_key_1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 
 # Request to the "polygon" service using an alias

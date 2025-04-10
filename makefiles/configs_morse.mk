@@ -1,9 +1,9 @@
 .PHONY: morse_e2e_config_warning
-morse_e2e_config_warning: ## Checks for required Morse E2E config file
+morse_e2e_config_warning: ## Checks for required Morse E2E test config files
 	$(call check_config_exists,./e2e/.morse.config.yaml,prepare_morse_e2e_config)
 
 .PHONY: prepare_morse_e2e_config
-prepare_morse_e2e_config: ## Setup Morse E2E test configuration file from example template
+prepare_morse_e2e_config: ## Setup Morse E2E test config file from the example template
 	@if [ ! -f ./e2e/.morse.config.yaml ]; then \
 		cp ./config/examples/config.morse_example.yaml ./e2e/.morse.config.yaml; \
 		echo "################################################################"; \

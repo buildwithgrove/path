@@ -38,8 +38,10 @@ localnet_config.yaml-e
 !.config.morse_example_testnet.yaml
 # Morse E2E config
 .morse.config.yaml
+.config.morse.yaml
 # Shannon E2E config
 .shannon.config.yaml
+.config.shannon.yaml
 
 # Env
 .env

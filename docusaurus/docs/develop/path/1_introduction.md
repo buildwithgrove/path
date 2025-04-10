@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Quick Introduction
+title: Quick Introduction (1 min)
 description: Quick intro & where to get started
 ---
 

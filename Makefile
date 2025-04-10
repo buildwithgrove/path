@@ -36,7 +36,8 @@ check_path_config: ## Verify that path configuration file exists
    		exit 1; \
    fi
 
-# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
+# The PATH config value can be set via the CONFIG_PATH env variable.
+# Defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
 
 .PHONY: path_run
@@ -52,7 +53,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
 .PHONY: path_up
-path_up: check_path_config dev_up ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 	tilt up
 
 .PHONY: path_down
@@ -71,15 +72,12 @@ path_help: ## Prints help commands if you cannot start path
 ###    Makefile imports     ###
 ###############################
 
-# TODO_IMPROVE(@commoddity): Add a target similar to "make docs_update_gov_params_page" in poktroll
-# that converts "config/service_qos.go" into markdown documentation.
-
 include ./makefiles/configs.mk
+include ./makefiles/configs_morse.mk
+include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
-include ./makefiles/morse_configs.mk
-include ./makefiles/shannon_configs.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk
