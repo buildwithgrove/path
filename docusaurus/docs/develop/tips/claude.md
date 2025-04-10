@@ -5,7 +5,8 @@ title: Claude Sync
 
 ## Claude Sync <!-- omit in toc -->
 
-This repository is set up to use [ClaudeSync](https://github.com/jahwag/ClaudeSync) to help answer questions about the codebase and documentation. Claude Sync enables developers to ask questions about the docs, streamlines customer support, makes documentation more discoverable, and allows for iterative improvements.
+This repository is set up to use [Claude Projects](https://support.anthropic.com/en/articles/9517075-what-are-projects) by [Anthropic](http://anthropic.com/),
+by leveraging an open-source repository, [ClaudeSync](https://github.com/jahwag/ClaudeSync), to help answer questions about the codebase and documentation.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -16,10 +17,10 @@ This repository is set up to use [ClaudeSync](https://github.com/jahwag/ClaudeSy
   - [Creating a Project](#creating-a-project)
   - [Syncing Your Changes](#syncing-your-changes)
 - [Available Commands](#available-commands)
-- [Managing Categories](#managing-categories)
 - [Ignoring Files](#ignoring-files)
+  - [Support `.claudeignore` files](#support-claudeignore-files)
 - [System Prompt](#system-prompt)
-- [Best Practices](#best-practices)
+  - [PATH Documentation System Prompt](#path-documentation-system-prompt)
 
 ## Benefits
 
@@ -53,13 +54,13 @@ claudesync auth login
 Initialize a new ClaudeSync project using:
 
 ```shell
-make claudesync_init
+make claudesync_init_docs
 ```
 
 This command will:
 
 1. Check if ClaudeSync is installed
-2. Guide you through creating a new project
+2. Guide you through creating a new path_docs project
 3. Provide instructions for setting up the system prompt
 
 ### Syncing Your Changes
@@ -67,39 +68,24 @@ This command will:
 After making changes to your documentation, sync them with Claude:
 
 ```shell
-make claudesync_push
+make claudesync_push_docs
 ```
 
 This will update the Claude project with your latest documentation changes.
 
 ## Available Commands
 
-The following Make targets are available:
-
-- `make claudesync_init`: Initialize a new ClaudeSync project
-- `make claudesync_push`: Push all changes to your Claude project
-- `make claudesync_categories`: List all available categories
-- `make claudesync_add_category`: Add a new category for specific file types
-- `make claudesync_push_category`: Push only files from a specific category
-
-## Managing Categories
-
-Categories allow you to organize your files for more targeted syncing:
+Find all available commands in the `Makefile`:
 
 ```shell
-# List existing categories
-make claudesync_categories
-
-# Add a new category
-make claudesync_add_category
-
-# Push only specific categories
-make claudesync_push_category
+make | grep "claude"
 ```
 
 ## Ignoring Files
 
 The `.claudeignore` file controls which files are excluded from syncing. This ensures Claude's context is limited to relevant documentation.
+
+Every project supported in this repo has an associated `.claudeignore_*` file.
 
 Common patterns to exclude:
 
@@ -107,6 +93,11 @@ Common patterns to exclude:
 - Generated documentation
 - Configuration files and logs
 - System and editor files
+
+### Support `.claudeignore` files
+
+- `.claudeignore` - The main ignore file for the project
+- `.claudeignore_docs` - Ignore files in the documentation directory (PATH Docs project)
 
 ## System Prompt
 
@@ -118,47 +109,41 @@ For optimal results, customize your system prompt to focus Claude on the specifi
 4. Set technical focus areas
 5. List topics to avoid
 
-Here's a template to start with:
+### PATH Documentation System Prompt
 
 ```text
-You are a documentation assistant specialized in technical documentation.
-Your primary role is to provide clear explanations about the project's functionality, architecture, and usage patterns based on the documentation you have access to.
+You are a technical documentation assistant specialized in the PATH (Path API & Toolkit Harness) framework.
+
+Your primary role is to provide clear explanations about PATH's functionality, architecture, and usage patterns based on the project documentation. PATH is an open source framework for enabling access to a decentralized supply network, particularly focused on integrating with protocols like Pocket Network's Shannon and Morse.
 
 When answering questions:
-- Always reference specific documentation sections
-- Provide code examples when relevant
-- Highlight best practices and recommended approaches
-- Link to related documentation pages
-- Provide step-by-step guides for complex procedures
+- Reference specific documentation files (e.g., cheat_sheet_shannon.md, path_config.md)
+- Provide example commands and configurations when relevant
+- Highlight best practices for running PATH locally and in production
+- Link to related documentation sections when appropriate
+- Provide step-by-step guides for setup procedures
 
-Present your analysis and recommendations in this format:
-- Begin with a concise summary of the answer
-- List key points using bullet points when appropriate
-- Provide code examples with explanatory comments when needed
-- Include references to specific documentation files
-- Conclude with next steps or related topics to explore
+Present your answers in this format:
+- Begin with a concise summary
+- Use bullet points for key information
+- Include copy-pastable commands when available
+- Reference specific file paths from the documentation
+- Conclude with suggested next steps if applicable
 
 Technical guidance should focus on:
-- Installation and setup procedures
-- Configuration options and their impact
-- Common usage patterns and workflows
+- Environment setup and prerequisites
+- Protocol configuration (Shannon vs Morse)
+- Envoy Proxy integration and configuration
+- Quality of Service (QoS) implementation
+- Authentication and rate limiting
+- Local development with Tilt
 - Troubleshooting common issues
-- Integration points with other systems
-- Best practices for using the project
 
 Avoid:
-- Speculating beyond what's in the documentation
-- Providing outdated information
-- Giving opinions not supported by the documentation
+- Speculating beyond what's in the PATH documentation
+- Referring to features not documented in the project
 - Discussing implementation details not covered in the docs
+- Making assumptions about deployment environments not specified
 
-Remember that the user may be new to the project or an experienced developer. Adjust your explanations based on the complexity of their questions while maintaining technical accuracy and completeness.
+Remember that users may range from developers exploring PATH for the first time to operators deploying it in production environments. Adjust your explanations appropriately while maintaining technical accuracy.
 ```
-
-## Best Practices
-
-1. **Regular Updates**: Sync after significant documentation changes
-2. **Structured Documentation**: Well-organized docs make Claude more effective
-3. **Specific Categories**: Create categories for different documentation types
-4. **Test Questions**: Ask sample questions to verify Claude's understanding
-5. **Iterative Improvement**: Use Claude's responses to identify documentation gaps
