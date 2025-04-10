@@ -6,7 +6,6 @@ description: PATH configuration details
 
 The following documentation describes how to configure a local PATH deployment running in development mode in Tilt.
 
-
 :::warning IN PROGRESS
 
 For production deployments of PATH, the Operate documentation is currently under construction.
@@ -21,8 +20,8 @@ A PATH deployment is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅        | configures the PATH **gateway**               |
-| `.values.yaml` | ❌        | configures the PATH **Helm chart deployment** |
+| `.config.yaml` | ✅       | configures the PATH **gateway**               |
+| `.values.yaml` | ❌       | configures the PATH **Helm chart deployment** |
 
 :::
 
@@ -255,11 +254,9 @@ shannon_config:
 
 #### `hydrator_config` (optional)
 
-
 Configures the QoS hydrator to run synthetic Quality of Service (QoS) checks against endpoints of the provided service IDs.
 
 For example, to enable QoS checks for the Ethereum & Polygon services, the following configuration must be added to the `.config.yaml` file:
-
 
 ```yaml
 hydrator_config:
@@ -286,7 +283,6 @@ For a full list of currently supported QoS service implementations, please refer
 | `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
 | `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
 
-
 ---
 
 #### `router_config` (optional)
@@ -297,7 +293,7 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 | Field                   | Type    | Required | Default           | Description                                     |
 | ----------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
-| `port`                  | integer | No       | 3069              | Port number on which the gateway server listens |
+| `port`                  | integer | No       | 3070              | Port number on which the gateway server listens |
 | `max_request_body_size` | integer | No       | 1MB               | Maximum request size in bytes                   |
 | `read_timeout`          | string  | No       | "5000ms" (5s)     | Time limit for reading request data             |
 | `write_timeout`         | string  | No       | "10000ms" (10s)   | Time limit for writing response data            |
@@ -333,22 +329,22 @@ However, it is is highly recommended to override the default values in the `.val
 By default PATH is configured as follows:
 
 **1. Services**
-   | Protocol  | Service ID | Aliases                      |
-   | --------- | ---------- | ---------------------------- |
-   | `shannon` | `anvil`    | -                            |
-   | `morse`   | `F00C`     | `eth`, `eth-mainnet`         |
-   | `morse`   | `F021`     | `polygon`, `polygon-mainnet` |
+| Protocol | Service ID | Aliases |
+| --------- | ---------- | ---------------------------- |
+| `shannon` | `anvil` | - |
+| `morse` | `F00C` | `eth`, `eth-mainnet` |
+| `morse` | `F021` | `polygon`, `polygon-mainnet` |
 
 **2. API Keys:**
-   - `test_api_key`
 
+- `test_api_key`
 
 :::tip
 
 If you wish to customize the default values, you can copy the template file to the local directory and modify it.
 
 ```bash
-make copy_values_yaml
+make configs_copy_values_yaml
 ```
 
 :::

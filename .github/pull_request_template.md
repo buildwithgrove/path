@@ -1,4 +1,4 @@
-## Summary
+# Summary
 
 < One line summary>
 
@@ -24,11 +24,10 @@ Select one or more from the following:
 
 ## QoS Checklist
 
-- [ ] 1. `make path_up` or `make path_run`
+- [ ] 1. `make path_up`
 - [ ] 2. Run one of the following:
-  - For `path_run` with `anvil` on `Shannon`: `make test_request__relay_util_1000`
-  - For `path_up` with `anvil` on `Shannon`: `make test_request__envoy_relay_util_100`
-  - For `path_up` with `F00C` on `Morse`: `make test_request__relay_util_100_F00C_via_envoy`
+  - For `Shannon` with `anvil`: `make test_request__envoy_relay_util_100`
+  - For `Morse` with `F00C`: `make test_request__morse_relay_util_100`
 - [ ] 3. Visit [PATH Relay Grafana Dashboard](http://localhost:3000/d/relays/path-service-requests) to view results
 
 ## Sanity Checklist

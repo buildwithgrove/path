@@ -24,14 +24,15 @@ path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
 .PHONY: check_path_config
-check_path_config: ## Verify that path configuration file exists
+## Verify that path configuration file exists
+check_path_config:
 	@if [ ! -f ./local/path/.config.yaml ]; then \
 		echo "################################################################"; \
    		echo "Error: Missing config file at ./local/path/.config.yaml"; \
    		echo ""; \
    		echo "Initialize using either:"; \
-   		echo "  make prepare_shannon_e2e_config"; \
-   		echo "  make prepare_morse_e2e_config "; \
+   		echo "  make shannon_prepare_e2e_config"; \
+   		echo "  make morse_prepare_e2e_config "; \
    		echo "################################################################"; \
    		exit 1; \
    fi
@@ -39,10 +40,6 @@ check_path_config: ## Verify that path configuration file exists
 # The PATH config value can be set via the CONFIG_PATH env variable.
 # Defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
-
-.PHONY: path_run
-path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###

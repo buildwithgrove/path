@@ -9,7 +9,7 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 ## Table of Contents <!-- omit in toc -->
 
 - [0. Prerequisites](#0-prerequisites)
-- [1. \[Optional\] Setup Morse Protocol Accounts](#1-optional-setup-morse-protocol-accounts)
+- [1. Setup Morse Protocol Accounts](#1-setup-morse-protocol-accounts)
   - [1.1 AAT Generation](#11-aat-generation)
 - [2. Configure PATH](#2-configure-path)
   - [2.1 Generate Morse Config](#21-generate-morse-config)
@@ -18,7 +18,9 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
   - [3.1 Start PATH](#31-start-path)
   - [3.2 Monitor PATH](#32-monitor-path)
 - [4. Test Relays](#4-test-relays)
-- [Test Relay with make](#test-relay-with-make)
+  - [Test Relay with `curl`](#test-relay-with-curl)
+  - [Test Relay with `make`](#test-relay-with-make)
+  - [Load Testing with `relay-util`](#load-testing-with-relay-util)
 - [Additional Notes](#additional-notes)
 
 ## 0. Prerequisites
@@ -30,9 +32,9 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 You can use the `make install_deps` command to install the dependencies for the PATH stack, **excluding** the Pocket CLI.
 :::
 
-## 1. [Optional] Setup Morse Protocol Accounts
+## 1. Setup Morse Protocol Accounts
 
-:::danger MAKE SURE TO READ ME
+:::danger THIS SECTION IS OPTIONAL - README!
 
 If you are setting up PATH on Morse, you can most likely **SKIP THIS SECTION**.
 
@@ -117,10 +119,10 @@ Run the following commands to generate a Morse config at `local/path/.config.yam
 
 ```bash
 # Generate ./e2e/.morse.config.yaml
-make prepare_morse_e2e_config
+make morse_prepare_e2e_config
 
 # Copy to ./local/path/.config.yaml
-make copy_morse_e2e_config_to_local
+make morse_copy_e2e_config_to_local
 
 # IMPORTANT: In the next, step, update ./local/path/.config.yaml
 ```
@@ -129,9 +131,9 @@ make copy_morse_e2e_config_to_local
 
 You'll need to manually update these fields in the config file:
 
-- `url`
-- `relay_signing_key`
-- `signed_aats`
+- **`url`** - A URL to a full Morse node (e.g. `https://pocket-rpc.liquify.com"`)
+- **`relay_signing_key`** - The private ed25519 key associated with `CLIENT_PRIV` when you ran `pocket-core create-aat <ADDR_APP> <CLIENT_PUB>` above
+- **`signed_aats`** - The output of `pocket-core create-aat ...` above
 
 Check your updated config:
 
@@ -156,6 +158,12 @@ signed_aats:
 
 :::important Configuration Validation
 Do a manual sanity check of the configuration to ensure everything looks correct before continuing.
+:::
+
+:::tip Grove Employees
+
+If you are an employee of Grove, look for `PATH - Morse - Test - E2E Config` in 1Password and use that file here.
+
 :::
 
 ## 3. Run PATH in development mode
@@ -192,22 +200,34 @@ Once you see the above log, you may visit [localhost:10350](<http://localhost:10
 
 ## 4. Test Relays
 
-Send a test relay to check the blockchain height:
+:::warning Anvil Node & Request Retries
+
+_tl;dr Retry the requests below if the first one fails._
+
+The instructions above were written to get you to access an `F00C` (Ethereum MainNet) node accessible on Pocket Network.
+
+Since `F00C` requires a production onchain stake, there is a chance it may not be available.
+
+We recommend you try the instructions below a few times to ensure you can get a successful relay. Otherwise, reach out to the community on Discord.
+
+:::
+
+### Test Relay with `curl`
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: polygon" \
+  -H "Target-Service-Id: F00C" \
   -H "Authorization: test_api_key" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-You should expect to see a response similar to the following:
+And you should expect to see a response similar to the following:
 
 ```json
 {"id":1,"jsonrpc":"2.0","result":"0x2f01a"}%
 ```
 
-## Test Relay with make
+### Test Relay with `make`
 
 For your convenience, we have provided makefile helpers to test relays with `curl` and `jq`.
 You can find these in the `makefiles/test_requests.mk` file.
@@ -219,7 +239,7 @@ If requests fail, retry a few times as you may hit unresponsive nodes.
 :::
 
 ```bash
-make test_request__service_id_header_morse
+make test_request__morse_service_id_header
 ```
 
 To see all available helpers, run:
@@ -227,6 +247,22 @@ To see all available helpers, run:
 ```bash
 make help
 ```
+
+### Load Testing with `relay-util`
+
+You can use the `relay-util` tool to load test your relays.
+
+The following will send 100 requests to the `F00C` node and give you performance metrics.
+
+```bash
+make test_request__shannon_relay_util_100
+```
+
+:::note TODO: Screenshots
+
+Add a screenshot of the output.
+
+:::
 
 ## Additional Notes
 

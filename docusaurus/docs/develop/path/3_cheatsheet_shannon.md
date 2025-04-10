@@ -18,11 +18,12 @@ Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
   - [2.2 Verify Configuration](#22-verify-configuration)
 - [3. Run PATH in development mode](#3-run-path-in-development-mode)
-- [3.1 Start PATH](#31-start-path)
-  - [3.1 Monitor PATH](#31-monitor-path)
+  - [3.1 Start PATH](#31-start-path)
+  - [3.2 Monitor PATH](#32-monitor-path)
 - [4. Test Relays](#4-test-relays)
   - [Test Relay with `curl`](#test-relay-with-curl)
   - [Test Relay with `make`](#test-relay-with-make)
+  - [Load Testing with `relay-util`](#load-testing-with-relay-util)
 
 ## 0. Prerequisites
 
@@ -203,7 +204,7 @@ hydrator_config:
 
 ## 3. Run PATH in development mode
 
-## 3.1 Start PATH
+### 3.1 Start PATH
 
 Run PATH in local development mode in Tilt by running:
 
@@ -217,7 +218,7 @@ You can stop the PATH stack by running:
 make path_down
 ```
 
-### 3.1 Monitor PATH
+### 3.2 Monitor PATH
 
 :::warning Grab a ☕
 It could take a few minutes for `path`, `guard` and `watch` to start up the first time.
@@ -270,7 +271,7 @@ You can find that in the `makefiles/test_requests.mk` file.
 For example, to mimic the `curl` command above, you can simply run:
 
 ```bash
-make test_request__service_id_header_shannon
+make test_request__shannon_service_id_header
 ```
 
 To see all available helpers, simply run:
@@ -278,3 +279,19 @@ To see all available helpers, simply run:
 ```bash
 make help
 ```
+
+### Load Testing with `relay-util`
+
+You can use the `relay-util` tool to load test your relays.
+
+The following will send 100 requests to the `anvil` node and give you performance metrics.
+
+```bash
+make test_request__shannon_relay_util_100
+```
+
+:::note TODO: Screenshots
+
+Add a screenshot of the output.
+
+:::

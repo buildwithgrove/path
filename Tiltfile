@@ -227,7 +227,7 @@ if read_yaml(valuesFile, default=None) != None:
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
-    "path",  # Changed from "path-helm" to "path-stack"
+    "path",
     chart_prefix + "path",
     image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],
@@ -290,7 +290,7 @@ local_resource(
     cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
     serve_cmd='''
     echo "Waiting for WATCH pods to be fully ready..."
-    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running && 
+    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
           kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
       sleep 5
     done
