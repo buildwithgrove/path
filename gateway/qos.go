@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
@@ -28,7 +29,7 @@ type RequestQoSContext interface {
 	// payload returned by a specific endpoint in response to the service
 	// payload produced (through the `GetServicePayload` method) by the
 	// request QoS context instance
-	UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte)
+	UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte, latency time.Duration)
 
 	// GetHTTPResponse returns the user-facing HTTP response.
 	// The received response will depend on the state of the service request context,

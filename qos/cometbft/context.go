@@ -2,6 +2,7 @@ package cometbft
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -82,7 +83,7 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 // UpdateWithResponse stores (appends) the response from an endpoint in the request context.
 // CRITICAL: NOT safe for concurrent use.
 // Implements gateway.RequestQoSContext interface.
-func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
+func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte, _ time.Duration) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
