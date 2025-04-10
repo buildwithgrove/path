@@ -35,5 +35,4 @@ check_env_vars() {
     done
 }
 
-
 update_morse_config_from_env "$@"
