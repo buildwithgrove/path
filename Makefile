@@ -79,3 +79,4 @@ include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
+include ./makefiles/claude.mk
