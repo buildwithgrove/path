@@ -23,33 +23,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: "0" # Per https://github.com/ignite/cli/issues/1674#issuecomment-1144619147
+          fetch-depth: "0" # This ensures all tags are fetched
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.23.0"
 
-      - name: install ignite
+      - name: Build release binaries
         run: |
-          make ignite_install
+          mkdir -p release
+          VERSION=$(git describe --tags --always)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-      - name: Install CI dependencies
-        run: make install_ci_deps
+          # Build for multiple platforms
+          PLATFORMS="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64"
+          for platform in $PLATFORMS; do
+            os=$(echo $platform | cut -d/ -f1)
+            arch=$(echo $platform | cut -d/ -f2)
+            echo "Building for $os/$arch..."
+            output_name="path_${VERSION}_${os}_${arch}"
 
-      # This is commented out because proto generated code is now tracked in the
-      # repo so this step is skipped.
-      # TODO_IMPROVE(@okdas): Have a step that regenerates the proto files and ensures
-      # if they are up to date. See https://github.com/pokt-network/poktroll/pull/544#issuecomment-2123063491
-      # - name: Generate protobufs
-      #   run: make proto_regen
+            if [ "$os" = "windows" ]; then
+              output_name="${output_name}.exe"
+            fi
 
-      - name: Build and extract binaries for container build
-        run: |
-          make ignite_update_ldflags
-          make ignite_release
-          make ignite_release_extract_binaries
-          make cosmovisor_cross_compile
+            GOOS=$os GOARCH=$arch go build -ldflags="-X main.Version=${VERSION} -X main.Date=${DATE}" -o release/$output_name ./cmd
+
+            if [ "$os" != "windows" ]; then
+              tar -czf release/${output_name}.tar.gz -C release $output_name
+              rm release/$output_name
+            else
+              zip -j release/${output_name}.zip release/${output_name}
+              rm release/${output_name}.exe
+            fi
+          done
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -62,10 +70,8 @@ jobs:
         env:
           DOCKER_METADATA_PR_HEAD_SHA: "true"
         with:
-          # TODO_MAINNET_MIGRATION(@okdas): Remove poktrolld
           images: |
-            ghcr.io/pokt-network/pocketd
-            ghcr.io/pokt-network/poktrolld
+            ghcr.io/buildwithgrove/path
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -81,10 +87,8 @@ jobs:
         env:
           DOCKER_METADATA_PR_HEAD_SHA: "true"
         with:
-          # TODO_MAINNET_MIGRATION(@okdas): Remove poktrolld
           images: |
-            ghcr.io/pokt-network/pocketd
-            ghcr.io/pokt-network/poktrolld
+            ghcr.io/buildwithgrove/path
           tags: |
             type=raw,value=main-prod
             type=sha,suffix=-main-prod
@@ -103,10 +107,8 @@ jobs:
         env:
           DOCKER_METADATA_PR_HEAD_SHA: "true"
         with:
-          # TODO_MAINNET_MIGRATION(@okdas): Remove poktrolld
           images: |
-            ghcr.io/pokt-network/pocketd
-            ghcr.io/pokt-network/poktrolld
+            ghcr.io/buildwithgrove/path
           tags: |
             type=raw,value=${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
             type=sha,suffix=-${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
@@ -117,6 +119,21 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create a minimal Dockerfile for the release
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile.release << EOF
+          FROM golang:1.23-alpine AS builder
+          WORKDIR /app
+          COPY release/path_*_linux_amd64.tar.gz .
+          RUN tar -xzf path_*_linux_amd64.tar.gz
+
+          FROM alpine:latest
+          WORKDIR /app
+          COPY --from=builder /app/path_*_linux_amd64 /app/path
+          ENTRYPOINT ["/app/path"]
+          EOF
 
       # For version tag pushes
       - name: Build and push Docker image for tag events
@@ -167,3 +184,4 @@ jobs:
         with:
           files: |
             release/*
+          generate_release_notes: true
