@@ -30,15 +30,16 @@ check_docker:
 ### Localnet config targets ###
 ###############################
 
-.PHONY: dev_up
-# Internal helper: Spins up Kind cluster if it doesn't already exist
-dev_up: check_kind
+.PHONY: k8s_prepare_local_env
+# Internal helper for path localnet: creates a kind cluster and namespaces if they don't already exist
+k8s_prepare_local_env: check_kind
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
 		kubectl config use-context kind-path-localnet; \
 		kubectl create namespace path; \
 		kubectl create namespace monitoring; \
+		kubectl create namespace middleware; \
 		kubectl config set-context --current --namespace=path; \
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 	else \
@@ -48,11 +49,11 @@ dev_up: check_kind
 .PHONY: dev_down
 # Internal helper: Tears down kind cluster
 dev_down:
-	@echo "Tearing down local environment..."
+# @echo "Tearing down local environment..."
 	@tilt down
-	@kind delete cluster --name path-localnet
-	@if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
-		kubectl config delete-context kind-path-localnet; \
-	else \
-		echo "Context kind-path-localnet not found in kubeconfig. Skipping deletion."; \
-	fi
+# @kind delete cluster --name path-localnet
+# @if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
+# 	kubectl config delete-context kind-path-localnet; \
+# else \
+# 	echo "Context kind-path-localnet not found in kubeconfig. Skipping deletion."; \
+# fi

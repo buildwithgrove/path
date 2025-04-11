@@ -1,11 +1,11 @@
 ---
 sidebar_position: 1
-title: Introduction
-description: Introduction to PATH
+title: Quick Introduction (1 min)
+description: Quick intro & where to get started
 ---
 
 <div align="center">
-<h1>PATH<br/>Path API & Toolkit Harness</h1>
+<h1>PATH API & Toolkit Harness</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 
 </div>
@@ -22,40 +22,24 @@ description: Introduction to PATH
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
 ![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path-gateway&revision=true&showAppName=true)
 
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network. It provides various tools and libraries
-to streamline the integration and interaction with decentralized protocols.
+**PATH (Path API & Toolkit Harness)** is an open source framework to enable access
+to a permissionless network of API providers of open source services and data
+sources without sacrificing enterprise-grade SLAs.
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Path Releases](#path-releases)
-  - [Resources](#resources)
 - [Where to start?](#where-to-start)
 - [Special Thanks](#special-thanks)
 - [License](#license)
-
-## Path Releases
-
-PATH releases provide a Docker image to quickly bootstrap your Path gateway without building your own image.
-
-### Resources
-
-- [**Container Registry**](https://github.com/buildwithgrove/path/pkgs/container/path): Find all PATH Docker images
-- [**Releases**](https://github.com/buildwithgrove/path/releases): Find the latest release and release notes
-- [**Package Versions**](https://github.com/buildwithgrove/path/pkgs/container/path/versions): Find all available versions of the PATH Docker image
-
-```sh
-docker pull ghcr.io/buildwithgrove/path
-```
 
 ## Where to start?
 
 If you're unsure of where to start, we recommend the following:
 
-1. [**Environment Setup**](./environment.md): Prepare your environment for running PATH
-2. [**Configuration Files**](./configuration.md): Explore other PATH configuration files
-3. [**Shannon Cheat Sheet**](./cheatsheet_shannon.md): Get up and running with a Gateway to Shannon
-4. [**Morse Cheat Sheet**](./cheatsheet_morse.md): Get up and running with a Gateway to Morse if you're feeling adventurous
+1. [**Environment Setup**](2_environment.md): Prepare your environment for running PATH
+2. [**Configuration Files**](6_configurations_helm.md): Explore other PATH configuration files
+3. [**Shannon Cheat Sheet**](3_cheatsheet_shannon.md): Get up and running with a Gateway to Shannon
+4. [**Morse Cheat Sheet**](4_cheatsheet_morse.md): Get up and running with a Gateway to Morse if you're feeling adventurous
 
 ## Special Thanks
 

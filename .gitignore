@@ -17,6 +17,17 @@ bin
 # Do not allow a multi-moduled projected
 go.work.sum
 
+# Localnet config
+localnet_config.yaml
+# NB: The helper sed command to update `localnet_config` was updated
+# so its universal across Linux & macOS. Though it work, it creates this
+# extra file. If you are reading this and can think of a way to improve
+# `docusaurus/docs/infrastructure/localnet.md`, please do!
+# Ref: https://stackoverflow.com/questions/4247068/sed-command-with-i-option-failing-on-mac-but-works-on-linux
+localnet_config.yaml-e
+# Used for hot-reloading
+.tilt-build-trigger
+
 # Config
 .*.yaml
 .config.yaml
@@ -27,8 +38,10 @@ go.work.sum
 !.config.morse_example_testnet.yaml
 # Morse E2E config
 .morse.config.yaml
+.config.morse.yaml
 # Shannon E2E config
 .shannon.config.yaml
+.config.shannon.yaml
 
 # Env
 .env
@@ -56,6 +69,8 @@ install.log
 
 # Claudesync
 .claudesync/
+.claudeignore
 
 # Config Backup files
 *.backup
+
