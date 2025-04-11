@@ -1,10 +1,12 @@
 ---
-sidebar_position: 8
+sidebar_position: 2
 title: Troubleshooting & FAQ
 description: Tips & Tricks for Troubleshooting with FAQ
 ---
 
 ## Table of Contents <!-- omit in toc -->
+
+- [How can I profile (`pprof`) PATH's runtime?](#how-can-i-profile-pprof-paths-runtime)
 
 ## How can I profile (`pprof`) PATH's runtime?
 
