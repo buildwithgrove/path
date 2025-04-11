@@ -278,19 +278,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
 	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
 
-	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
-	// 		See: https://github.com/buildwithgrove/path/pull/202
-	//
-	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
-	// ie.for returning empty responses, etc.
-	secondsToWait := 80
-	fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
-	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		time.Sleep(time.Duration(secondsToWait*2) * time.Second) // Wait for double the default time in CI
-	} else {
-		showWaitBar(secondsToWait) // In local environment, show progress bar to indicate we're waiting.
-	}
-
 	// Get test cases based on protocol
 	testCases := getTestCases(opts.testProtocol)
 
