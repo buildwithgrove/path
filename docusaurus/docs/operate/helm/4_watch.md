@@ -1,12 +1,12 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: WATCH Helm Chart
 description: WATCH Helm Chart
 ---
 
 This document provides detailed information about WATCH (Workload Analysis and Telemetry for Comprehensive Health), which provides the observability layer for PATH.
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [WATCH Helm Chart](#watch-helm-chart)
 - [Architecture](#architecture)

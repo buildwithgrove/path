@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-title: Configurations
+title: PATH Config File (`.config.yaml`)
 description: PATH Configurations
 ---
 
@@ -17,23 +17,13 @@ A `PATH` stack is configured via two files:
 
 ## Table of Contents <!-- omit in toc -->
 
-- [PATH Config File (`.config.yaml`)](#path-config-file-configyaml)
-  - [Config File Validation](#config-file-validation)
-  - [Config File Location (Local Development)](#config-file-location-local-development)
-  - [`shannon_config` (required)](#shannon_config-required)
-  - [`morse_config` (required)](#morse_config-required)
-  - [`hydrator_config` (optional but recommended)](#hydrator_config-optional-but-recommended)
-  - [`router_config` (optional)](#router_config-optional)
-  - [`logger_config` (optional)](#logger_config-optional)
-- [Helm Values Config File (`.values.yaml`)](#helm-values-config-file-valuesyaml)
-  - [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
-  - [GUARD Configuration](#guard-configuration)
-    - [`auth.apiKey` Section](#authapikey-section)
-    - [`services` Section](#services-section)
-    - [Example `.values.yaml` File](#example-valuesyaml-file)
-  - [Example Requests](#example-requests)
-
-## PATH Config File (`.config.yaml`)
+- [Config File Validation](#config-file-validation)
+- [Config File Location (Local Development)](#config-file-location-local-development)
+- [`shannon_config` (required)](#shannon_config-required)
+- [`morse_config` (required)](#morse_config-required)
+- [`hydrator_config` (optional but recommended)](#hydrator_config-optional-but-recommended)
+- [`router_config` (optional)](#router_config-optional)
+- [`logger_config` (optional)](#logger_config-optional)
 
 All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
 
@@ -104,7 +94,7 @@ logger_config:
 
 </details>
 
-### Config File Validation
+## Config File Validation
 
 :::tip VSCode Validation
 
@@ -116,7 +106,7 @@ If you are using VSCode, we recommend using the [YAML Language Support](https://
 
 :::
 
-### Config File Location (Local Development)
+## Config File Location (Local Development)
 
 In development mode, the config file must be located at:
 
@@ -124,7 +114,7 @@ In development mode, the config file must be located at:
 ./local/path/.config.yaml
 ```
 
-### Protocol Selection <!-- omit in toc -->
+## Protocol Selection <!-- omit in toc -->
 
 The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
 
@@ -133,13 +123,17 @@ The config file **MUST contain EXACTLY one** of the following top-level protocol
 
 ---
 
-:::warning TODO_TECHDEBT
+<!--
 
-Auto generate this file based on config.schema.yaml
+:::warning TODO_MVP(@commoddity): Auto-generate this file.
+
+Update this file so it is auto-generated based on config.schema.yaml
 
 :::
 
-### `shannon_config` (required)
+-->
+
+## `shannon_config` (required)
 
 Configuration for the Shannon protocol gateway.
 
@@ -199,7 +193,7 @@ shannon_config:
 
 ---
 
-### `morse_config` (required)
+## `morse_config` (required)
 
 Configuration for the Morse protocol gateway.
 
@@ -243,13 +237,13 @@ morse_config:
 
 ---
 
-### `hydrator_config` (optional but recommended)
+## `hydrator_config` (optional but recommended)
 
 :::info
 
-For a full list of supported QoS service implementations, refer to the [QoS Documentation](../../learn/qos/3_supported_services.md).
+For a full list of supported QoS service implementations, refer to the [QoS Documentation](../../learn/qos/1_supported_services.md).
 
-⚠️ Any ID provided here **MUST** match a `Service ID` from the [QoS Documentation](../../learn/qos/3_supported_services.md). An invalid ID will cause the gateway to error ⚠️
+⚠️ Any ID provided here **MUST** match a `Service ID` from the [QoS Documentation](../../learn/qos/1_supported_services.md). An invalid ID will cause the gateway to error ⚠️
 
 :::
 
@@ -272,7 +266,7 @@ hydrator_config:
 
 ---
 
-### `router_config` (optional)
+## `router_config` (optional)
 
 **Enables configuring how incoming requests are handled.**
 
@@ -288,7 +282,7 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 ---
 
-### `logger_config` (optional)
+## `logger_config` (optional)
 
 Controls the logging behavior of the PATH gateway.
 
@@ -300,133 +294,3 @@ logger_config:
 | Field   | Type   | Required | Default | Description                                                           |
 | ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
 | `level` | string | No       | "info"  | Minimum log level. Valid values are: "debug", "info", "warn", "error" |
-
-## Helm Values Config File (`.values.yaml`)
-
-The `.values.yaml` file is used to configure a PATH deployment by overriding the default values in the Helm chart.
-
-:::info DEFAULT VALUES
-
-**Using the `.values.yaml` file is optional; PATH will run with default values if the file is not present.**
-
-However, it is is highly recommended to override the default values in the `.values.yaml` file to customize the local PATH deployment to your needs.
-
-By default PATH is configured as follows:
-
-**1. Services**
-| Protocol | Service ID | Aliases |
-| --------- | ---------- | ---------------------------- |
-| `shannon` | `anvil` | - |
-| `morse` | `F00C` | `eth`, `eth-mainnet` |
-| `morse` | `F021` | `polygon`, `polygon-mainnet` |
-
-**2. API Keys:**
-
-- `test_api_key`
-
-:::tip
-
-If you wish to customize the default values, you can copy the template file to the local directory and modify it.
-
-```bash
-make configs_copy_values_yaml
-```
-
-:::
-
-:::info
-
-For the full list of configurable values in the PATH Helm Chart, see the [Helm Values Documentation](../helm/3_values.md).
-
-:::
-
-### Helm Values File Location (Local Development)
-
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.values.yaml
-```
-
-Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
-
-### GUARD Configuration
-
-#### `auth.apiKey` Section
-
-This section configures the list of allowed API keys for the PATH gateway. Any request without a valid API key will be rejected.
-
-The API key is specified per-request as the `Authorization` header.
-
-**By default a single default API key value of `test_api_key` is provided. This should be overridden in the `.values.yaml` file.**
-
-_See Envoy Gateway's [API Key Authentication documentation](https://gateway.envoyproxy.io/latest/tasks/security/apikey-auth/) for more information._
-
-| Field     | Type          | Required | Default        | Description                                       |
-| --------- | ------------- | -------- | -------------- | ------------------------------------------------- |
-| `enabled` | boolean       | Yes      | true           | Whether to enforce API key authentication         |
-| `apiKeys` | array[string] | Yes      | [test_api_key] | List of API keys authorized to access the gateway |
-
-#### `services` Section
-
-This section configures the list of services that are allowed to access the PATH gateway.
-
-Each service must be assigned a unique `serviceId` and may have multiple `aliases` which map to the same service.
-
-The service ID is specified per-request as the `Target-Service-Id` header; either the `serviceId` or any of the `aliases` will be accepted. **See examples below for more details.**
-
-| Field                  | Type          | Required | Default | Description                           |
-| ---------------------- | ------------- | -------- | ------- | ------------------------------------- |
-| `services`             | array[object] | Yes      | -       | List of services                      |
-| `services[].serviceId` | string        | Yes      | -       | The unique identifier for the service |
-| `services[].aliases`   | array[string] | Yes      | -       | List of aliases for the service       |
-
-#### Example `.values.yaml` File
-
-```yaml
-guard:
-  auth:
-    apiKey:
-      enabled: true
-      apiKeys:
-        - test_api_key_1
-        - test_api_key_2
-        - test_api_key_3
-  services:
-    - serviceId: F021
-      aliases:
-        - polygon
-    - serviceId: F00C
-      aliases:
-        - eth
-    - serviceId: F000
-      aliases:
-        - pocket
-```
-
-### Example Requests
-
-The above `.values.yaml` files will allow the following requests to PATH:
-
-```bash
-# Request to the "polygon" service using the service ID
-# API key: test_api_key_1
-curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: F021" \
-  -H "Authorization: test_api_key_1" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-# Request to the "polygon" service using an alias
-# API key: test_api_key_2
-curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: polygon" \
-  -H "Authorization: test_api_key_2" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-
-# Request to the "eth" service using an alias
-# API key: test_api_key_3
-curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: eth" \
-  -H "Authorization: test_api_key_3" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```

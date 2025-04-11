@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: GUARD Helm Chart
 description: GUARD Helm Chart
 ---
