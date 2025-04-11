@@ -1,20 +1,35 @@
-// evm package provides the support required for interacting
-// with an EVM blockchain through the gateway.
 package evm
 
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// updateEndpointsFromObservations creates/updates endpoint entries in the store based on the supplied observations.
-// It returns the set of created/updated endpoints.
+// endpointStore maintains QoS data on the set of available endpoints
+// for an EVM-based blockchain service.
+//
+// It performs two key tasks:
+//  1. Storing the set of endpoints and their quality data.
+//  2. Application of endpoints' observations to update the data on endpoints.
+type endpointStore struct {
+	logger polylog.Logger
+
+	endpointsMu sync.RWMutex
+	endpoints   map[protocol.EndpointAddr]endpoint
+}
+
+// updateEndpointsFromObservations creates/updates endpoint entries in the store based
+// on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(
 	evmObservations *qosobservations.EVMRequestObservations,
+	archivalBlockHeight string,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
@@ -47,7 +62,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 		endpointWasMutated := applyObservation(
 			&storedEndpoint,
 			observation,
-			es.serviceState.archivalState.blockNumberHex,
+			archivalBlockHeight,
 		)
 
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
