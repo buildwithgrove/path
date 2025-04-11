@@ -14,16 +14,22 @@ description: PATH Helm Chart
   </a>
 </div>
 
-A full PATH deployment is packaged as a Helm chart, with 3 main components:
-- [PATH (PATH API and Tooling Harness)](1_path.md)
-  - The Gateway component of PATH.
-  - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/path)
-- [GUARD (Gateway Utilities for Authentication, Routing & Defense)](2_guard.md)
-  - The authentication, routing and security layer for the gateway built using Envoy Gateway.
-  - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/guard)
-- [WATCH (Workload Analytics and Telemetry for Comprehensive Health)](4_watch.md)
-  - The observability layer for the gateway, including Prometheus, Grafana, and Alertmanager.
-  - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/watch)
+A full PATH deployment is packaged as a single Helm chart, with 3 main components.
+
+1. [PATH (PATH API and Tooling Harness)](1_path.md)
+
+   - The Gateway component of PATH.
+   - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/path)
+
+2. [GUARD (Gateway Utilities for Authentication, Routing & Defense)](2_guard.md)
+
+   - The authentication, routing and security layer for the gateway built using Envoy Gateway.
+   - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/guard)
+
+3. [WATCH (Workload Analytics and Telemetry for Comprehensive Health)](3_watch.md)
+
+   - The observability layer for the gateway, including Prometheus, Grafana, and Alertmanager.
+   - [GitHub Repository](https://github.com/buildwithgrove/helm-charts/charts/watch)
 
 ## Table of Contents <!-- omit in toc -->
 

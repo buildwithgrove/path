@@ -69,6 +69,8 @@ install.log
 
 # Claudesync
 .claudesync/
+.claudeignore
 
 # Config Backup files
 *.backup
+
