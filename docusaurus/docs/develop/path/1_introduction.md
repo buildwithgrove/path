@@ -37,7 +37,7 @@ sources without sacrificing enterprise-grade SLAs.
 If you're unsure of where to start, we recommend the following:
 
 1. [**Environment Setup**](2_environment.md): Prepare your environment for running PATH
-2. [**Configuration Files**](5_configuration.md): Explore other PATH configuration files
+2. [**Configuration Files**](5_configurations.md): Explore other PATH configuration files
 3. [**Shannon Cheat Sheet**](3_cheatsheet_shannon.md): Get up and running with a Gateway to Shannon
 4. [**Morse Cheat Sheet**](4_cheatsheet_morse.md): Get up and running with a Gateway to Morse if you're feeling adventurous
 

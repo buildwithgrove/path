@@ -29,7 +29,7 @@ hydrator_config:
     - "F021"
 ```
 
-💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configuration.md)._
+💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configurations.md)._
 
 :::
 

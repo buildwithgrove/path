@@ -1,42 +1,32 @@
 ---
 sidebar_position: 5
-title: Configuration
-description: PATH configuration details
+title: Configurations
+description: PATH Configurations
 ---
-
-The following documentation describes how to configure a local PATH deployment running in development mode in Tilt.
-
-:::warning IN PROGRESS
-
-For production deployments of PATH, the Operate documentation is currently under construction.
-
-:::
-
-<!-- TODO_IMPROVE(@commoddity): add a link to Operate docs for production configuration. -->
 
 :::info CONFIGURATION FILES
 
-A PATH deployment is configured via two files:
+A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | configures the PATH **gateway**               |
-| `.values.yaml` | ❌       | configures the PATH **Helm chart deployment** |
+| `.config.yaml` | ✅       | PATH **gateway** configurations               |
+| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
 - [PATH Config File (`.config.yaml`)](#path-config-file-configyaml)
-  - [Config File Location](#config-file-location)
-  - [Config File Fields](#config-file-fields)
-    - [`morse_config`](#morse_config)
-    - [`shannon_config`](#shannon_config)
-    - [`hydrator_config` (optional)](#hydrator_config-optional)
-    - [`router_config` (optional)](#router_config-optional)
-    - [`logger_config` (optional)](#logger_config-optional)
+  - [Config File Validation](#config-file-validation)
+  - [Config File Location (Local Development)](#config-file-location-local-development)
+  - [`shannon_config` (required)](#shannon_config-required)
+  - [`morse_config` (required)](#morse_config-required)
+  - [`hydrator_config` (optional but recommended)](#hydrator_config-optional-but-recommended)
+  - [`router_config` (optional)](#router_config-optional)
+  - [`logger_config` (optional)](#logger_config-optional)
 - [Helm Values Config File (`.values.yaml`)](#helm-values-config-file-valuesyaml)
-  - [Config File Location](#config-file-location-1)
+  - [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
   - [GUARD Configuration](#guard-configuration)
     - [`auth.apiKey` Section](#authapikey-section)
     - [`services` Section](#services-section)
@@ -45,9 +35,9 @@ A PATH deployment is configured via two files:
 
 ## PATH Config File (`.config.yaml`)
 
-All configuration for the PATH gateway is defined in a single YAML file named `.config.yaml`.
+All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
 
-Exactly one of `shannon_config` or `morse_config` **must** be provided. This field determines the protocol that the gateway will use.
+Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This field determines the protocol that the gateway will use.
 
 <details>
 
@@ -114,13 +104,7 @@ logger_config:
 
 </details>
 
-### Config File Location
-
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.config.yaml
-```
+### Config File Validation
 
 :::tip VSCode Validation
 
@@ -132,11 +116,15 @@ If you are using VSCode, we recommend using the [YAML Language Support](https://
 
 :::
 
-### Config File Fields
+### Config File Location (Local Development)
 
-This is a comprehensive outline and explanation of each YAML field in the configuration file.
+In development mode, the config file must be located at:
 
-#### Protocol Section <!-- omit in toc -->
+```bash
+./local/path/.config.yaml
+```
+
+### Protocol Selection <!-- omit in toc -->
 
 The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
 
@@ -145,62 +133,24 @@ The config file **MUST contain EXACTLY one** of the following top-level protocol
 
 ---
 
-#### `morse_config`
+:::warning TODO_TECHDEBT
 
-Configuration for the Morse protocol gateway.
+Auto generate this file based on config.schema.yaml
 
-```yaml
-morse_config:
-  full_node_config:
-    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
-    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
-    http_config: # Optional
-      retries: 3 # Default: 3
-      timeout: "5000ms" # Default: "5000ms"
+:::
 
-  signed_aats: # Required
-    "<40-char-app-address>": # Application address (hex)
-      client_public_key: "<64-char-hex>" # Client public key
-      application_public_key: "<64-char-hex>" # Application public key
-      application_signature: "<128-char-hex>" # Application signature
-```
-
-#### Morse Field Descriptions <!-- omit in toc -->
-
-**`full_node_config`**
-
-| Field               | Type   | Required | Default | Description                                              |
-| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
-| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
-| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
-
-**`full_node_config.http_config`**
-
-| Field     | Type    | Required | Default  | Description                           |
-| --------- | ------- | -------- | -------- | ------------------------------------- |
-| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
-| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
-
-**`signed_aats`**
-
-| Field                    | Type   | Required | Default | Description                                     |
-| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
-| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
-| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
-| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
-
----
-
-#### `shannon_config`
+### `shannon_config` (required)
 
 Configuration for the Shannon protocol gateway.
 
 ```yaml
 shannon_config:
   full_node_config:
-    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com" # Required: Shannon node RPC URL
+    lazy_mode: true # TODO_TECHDEBT: Add description and support for other modes. Use true for now.
+    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
     grpc_config: # Required
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
+
       # Optional backoff and keepalive configs...
       insecure: false # Optional: whether to use insecure connection
       backoff_base_delay: "1s" # Optional: initial backoff delay duration
@@ -208,7 +158,6 @@ shannon_config:
       min_connect_timeout: "20s" # Optional: minimum timeout for connection attempts
       keep_alive_time: "20s" # Optional: frequency of keepalive pings
       keep_alive_timeout: "20s" # Optional: timeout for keepalive pings
-    lazy_mode: true
 
   gateway_config: # Required
     gateway_mode: "centralized" # Required: centralized, delegated, or permissionless
@@ -218,8 +167,6 @@ shannon_config:
       - "<64-char-hex>" # Application private key
       - "<64-char-hex>" # Additional application private keys...
 ```
-
-#### Shannon Field Descriptions <!-- omit in toc -->
 
 **`full_node_config`**
 
@@ -252,30 +199,70 @@ shannon_config:
 
 ---
 
-#### `hydrator_config` (optional)
+### `morse_config` (required)
+
+Configuration for the Morse protocol gateway.
+
+```yaml
+morse_config:
+  full_node_config:
+    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
+    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
+    http_config: # Optional
+      retries: 3 # Default: 3
+      timeout: "5000ms" # Default: "5000ms"
+
+  signed_aats: # Required
+    "<40-char-app-address>": # Application address (hex)
+      client_public_key: "<64-char-hex>" # Client public key
+      application_public_key: "<64-char-hex>" # Application public key
+      application_signature: "<128-char-hex>" # Application signature
+```
+
+**`full_node_config`**
+
+| Field               | Type   | Required | Default | Description                                              |
+| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
+| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
+| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
+
+**`full_node_config.http_config`**
+
+| Field     | Type    | Required | Default  | Description                           |
+| --------- | ------- | -------- | -------- | ------------------------------------- |
+| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
+| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
+
+**`signed_aats`**
+
+| Field                    | Type   | Required | Default | Description                                     |
+| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
+| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
+| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
+| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
+
+---
+
+### `hydrator_config` (optional but recommended)
+
+:::info
+
+For a full list of supported QoS service implementations, refer to the [QoS Documentation](../../learn/qos/3_supported_services.md).
+
+⚠️ Any ID provided here **MUST** match a `Service ID` from the [QoS Documentation](../../learn/qos/3_supported_services.md). An invalid ID will cause the gateway to error ⚠️
+
+:::
 
 Configures the QoS hydrator to run synthetic Quality of Service (QoS) checks against endpoints of the provided service IDs.
 
-For example, to enable QoS checks for the Ethereum & Polygon services, the following configuration must be added to the `.config.yaml` file:
+For example, to enable QoS checks for `anvil` and `F00C`, the following configuration must be added to the `.config.yaml` file:
 
 ```yaml
 hydrator_config:
   service_ids:
+    - "anvil"
     - "F00C"
-    - "F021"
 ```
-
-:::info
-
-For a full list of currently supported QoS service implementations, please refer to the [QoS Documentation](../../learn/qos/3_supported_services.md).
-
-:::warning
-
-⚠️ Any ID provided here must match a `Service ID` from the [QoS Documentation](../../learn/qos/3_supported_services.md); if an invalid ID is provided, the gateway will error.
-
-:::
-
-#### Hydrator Field Descriptions <!-- omit in toc -->
 
 | Field                        | Type          | Required | Default   | Description                                                                          |
 | ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
@@ -285,7 +272,7 @@ For a full list of currently supported QoS service implementations, please refer
 
 ---
 
-#### `router_config` (optional)
+### `router_config` (optional)
 
 **Enables configuring how incoming requests are handled.**
 
@@ -301,7 +288,7 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 ---
 
-#### `logger_config` (optional)
+### `logger_config` (optional)
 
 Controls the logging behavior of the PATH gateway.
 
@@ -313,8 +300,6 @@ logger_config:
 | Field   | Type   | Required | Default | Description                                                           |
 | ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
 | `level` | string | No       | "info"  | Minimum log level. Valid values are: "debug", "info", "warn", "error" |
-
-<br/>
 
 ## Helm Values Config File (`.values.yaml`)
 
@@ -351,11 +336,11 @@ make configs_copy_values_yaml
 
 :::info
 
-For the full list of configurable values in the PATH Helm Chart, see the [Helm Values Documentation](../helm/values.md).
+For the full list of configurable values in the PATH Helm Chart, see the [Helm Values Documentation](../helm/3_values.md).
 
 :::
 
-### Config File Location
+### Helm Values File Location (Local Development)
 
 In development mode, the config file must be located at:
 
@@ -363,7 +348,7 @@ In development mode, the config file must be located at:
 ./local/path/.values.yaml
 ```
 
-Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH gateway with the new values.
+Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
 
 ### GUARD Configuration
 
