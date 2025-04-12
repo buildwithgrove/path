@@ -21,43 +21,18 @@ jobs:
   release-artifacts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: "0" # This ensures all tags are fetched
+          fetch-depth: 0 # Ensures all tags are fetched
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.23.0"
 
-      - name: Build release binaries
-        run: |
-          mkdir -p release
-          VERSION=$(git describe --tags --always)
-          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-          # Build for multiple platforms
-          PLATFORMS="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64"
-          for platform in $PLATFORMS; do
-            os=$(echo $platform | cut -d/ -f1)
-            arch=$(echo $platform | cut -d/ -f2)
-            echo "Building for $os/$arch..."
-            output_name="path_${VERSION}_${os}_${arch}"
-
-            if [ "$os" = "windows" ]; then
-              output_name="${output_name}.exe"
-            fi
-
-            GOOS=$os GOARCH=$arch go build -ldflags="-X main.Version=${VERSION} -X main.Date=${DATE}" -o release/$output_name ./cmd
-
-            if [ "$os" != "windows" ]; then
-              tar -czf release/${output_name}.tar.gz -C release $output_name
-              rm release/$output_name
-            else
-              zip -j release/${output_name}.zip release/${output_name}
-              rm release/${output_name}.exe
-            fi
-          done
+      - name: Build release binaries (via Makefile)
+        run: make release
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -113,15 +88,14 @@ jobs:
             type=raw,value=${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
             type=sha,suffix=-${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
 
-      - name: Login to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Create a minimal Dockerfile for the release
-      - name: Create Dockerfile
+      - name: Create minimal Dockerfile for release
         run: |
           cat > Dockerfile.release << EOF
           FROM golang:1.23-alpine AS builder
@@ -178,7 +152,7 @@ jobs:
           context: .
 
       # Only publish GitHub releases for tag events
-      - name: Add release and publish binaries
+      - name: Create GitHub release and upload artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:

@@ -11,6 +11,17 @@ BINARY_NAME ?= path
 # Delete tag locally: git tag -d v1.2.3
 # Delete tag remotely: git push --delete origin v1.2.3
 
+.PHONY: install_act
+install_act: ## Install act for local GitHub Actions testing
+	@echo "Installing act..."
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		brew install act; \
+	elif [ "$$(uname)" = "Linux" ]; then \
+		curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash; \
+	else \
+		echo "Please install act manually: https://github.com/nektos/act#installation"; \
+	fi
+
 .PHONY: release_tag_bug_fix
 release_tag_bug_fix: ## Tag a new bug fix release (e.g. v1.0.1 -> v1.0.2)
 	@$(eval LATEST_TAG=$(shell git tag --sort=-v:refname | head -n 1))
@@ -31,12 +42,12 @@ release_tag_minor_release: ## Tag a new minor release (e.g. v1.0.0 -> v1.1.0)
 	@echo "  git push origin $(NEW_TAG)"
 	@echo "This will trigger the release workflow automatically"
 
-.PHONY: build
-build: ## Build the binary for local development
+.PHONY: path_build
+path_build: ## Build the PATH binary for local development
 	go build -ldflags="-X main.Version=$(VERSION) -X main.Date=$(DATE)" -o bin/$(BINARY_NAME) ./cmd
 
-.PHONY: release
-release: ## Build release binaries for all supported platforms
+.PHONY: path_build_release
+path_build_release: ## Build release binaries for all supported platforms
 	@mkdir -p release
 	@for platform in $(PLATFORMS); do \
 		os=$$(echo $$platform | cut -d/ -f1); \
@@ -55,23 +66,12 @@ release: ## Build release binaries for all supported platforms
 	done
 	@echo "Release binaries built in the 'release' directory"
 
-.PHONY: release_publish
-release_publish: release_tag_bug_fix ## Tag and prepare for release
+.PHONY: path_release_publish
+path_release_publish: release_tag_bug_fix ## Tag and prepare for release
 	@echo "To publish the release, push the tag with: git push origin $$(git tag --sort=-v:refname | head -n 1)"
 
-.PHONY: test_workflow
-test_workflow: ## Test the GitHub workflow locally
+.PHONY: path_release_publish_test
+path_release_publish_test: ## Test the release workflow locally using act
 	@command -v act >/dev/null 2>&1 || { echo "Please install act first. See: https://github.com/nektos/act"; exit 1; }
-	@echo "Testing workflow with workflow_dispatch event..."
-	@act workflow_dispatch -v
-
-.PHONY: install_act
-install_act: ## Install act for local GitHub Actions testing
-	@echo "Installing act..."
-	@if [ "$$(uname)" = "Darwin" ]; then \
-		brew install act; \
-	elif [ "$$(uname)" = "Linux" ]; then \
-		curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash; \
-	else \
-		echo "Please install act manually: https://github.com/nektos/act#installation"; \
-	fi
+	@echo "Testing release workflow specifically..."
+	@act -W .github/workflows/release-artifacts.yml workflow_dispatch -P custom_tag=test-release -v
