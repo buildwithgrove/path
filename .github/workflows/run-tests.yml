@@ -117,7 +117,7 @@ jobs:
           docker image ls -a
 
       - name: copy Morse E2E config
-        run: make prepare_morse_e2e_config
+        run: make morse_prepare_e2e_config
 
       - name: update Morse E2E config from secrets
         env:
@@ -156,7 +156,7 @@ jobs:
           docker image ls -a
 
       - name: copy Shannon E2E config
-        run: make prepare_shannon_e2e_config
+        run: make shannon_prepare_e2e_config
 
       - name: update Shannon E2E config from secrets
         env:

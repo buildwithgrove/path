@@ -34,11 +34,10 @@ localnet_config.yaml-e
 .config.*.yaml
 # Morse E2E config
 .morse.config.yaml
+.config.morse.yaml
 # Shannon E2E config
 .shannon.config.yaml
-# Exclude Example Configs
-!.config.shannon_example.yaml
-!.config.morse_example.yaml
+.config.shannon.yaml
 
 # Env
 .env
@@ -66,6 +65,8 @@ install.log
 
 # Claudesync
 .claudesync/
+.claudeignore
 
 # Config Backup files
 *.backup
+
