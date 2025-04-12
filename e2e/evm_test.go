@@ -283,11 +283,13 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	//
 	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
 	// ie.for returning empty responses, etc.
-	secondsToWait := 80
-	fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
+	secondsToWait := 30
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		time.Sleep(time.Duration(secondsToWait*2) * time.Second) // Wait for double the default time in CI
+		secondsToWait = secondsToWait * 2
+		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
+		<-time.After(time.Duration(secondsToWait) * time.Second) // Wait for double the default time in CI
 	} else {
+		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
 		showWaitBar(secondsToWait) // In local environment, show progress bar to indicate we're waiting.
 	}
 
