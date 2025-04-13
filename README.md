@@ -6,7 +6,7 @@
 <br/>
 
 ![Static Badge](https://img.shields.io/badge/Maintained_by-Grove-green)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/main-build.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/buildwithgrove/path/build-and-push.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/buildwithgrove/path)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/buildwithgrove/path)
 ![GitHub Release](https://img.shields.io/github/v/release/buildwithgrove/path)

@@ -53,7 +53,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          push: true # Push image to registry
+          push: ${{ !env.ACT && true || false }} # Only push when not running in act
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64 # Support multiple architectures

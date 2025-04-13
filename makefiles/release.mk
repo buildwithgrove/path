@@ -16,17 +16,26 @@ GH_WORKFLOWS := .github/workflows
 # Output directories
 RELEASE_DIR := release
 BIN_DIR := bin
+# Architecture detection for M-series Macs
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),arm64)
+  # Check if running on macOS
+  ifeq ($(shell uname),Darwin)
+    ACT_ARCH_FLAG := --container-architecture linux/amd64
+  endif
+endif
 
 #############################################
 ##             Build commands              ##
 #############################################
-.PHONY: build
-build: ## Build the binary for local development
+
+.PHONY: path_build
+path_build: ## Build the binary for local development
 	@mkdir -p $(BIN_DIR)
 	go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd
 
-.PHONY: release
-release: ## Build release binaries for all supported platforms
+.PHONY: path_release
+path_release: ## Build release binaries for all supported platforms
 	@mkdir -p $(RELEASE_DIR)
 	@for platform in $(PLATFORMS); do \
 		os=$$(echo $$platform | cut -d/ -f1); \
@@ -42,6 +51,7 @@ release: ## Build release binaries for all supported platforms
 #############################################
 ##          Versioning commands            ##
 #############################################
+
 .PHONY: release_tag
 release_tag: ## Tag a new release with specified type (bug, minor, major)
 	@echo "What type of release? [bug/minor/major]"
@@ -76,33 +86,57 @@ check_act:
 		exit 1; \
 	fi;
 
+.PHONY: check_secrets
+# Internal helper: Check if .secrets file exists with valid GITHUB_TOKEN
+check_secrets:
+	@if [ ! -f .secrets ]; then \
+		echo "❌ .secrets file not found!"; \
+		echo "Please create a .secrets file with your GitHub token:"; \
+		echo "GITHUB_TOKEN=your_github_token"; \
+		exit 1; \
+	fi
+	@if ! grep -q "GITHUB_TOKEN=" .secrets; then \
+		echo "❌ GITHUB_TOKEN not found in .secrets file!"; \
+		echo "Please add GITHUB_TOKEN to your .secrets file:"; \
+		echo "GITHUB_TOKEN=your_github_token"; \
+		echo "You can create a token at: https://github.com/settings/tokens"; \
+		exit 1; \
+	fi
+	@if grep -q "GITHUB_TOKEN=$$" .secrets || grep -q "GITHUB_TOKEN=\"\"" .secrets || grep -q "GITHUB_TOKEN=''" .secrets; then \
+		echo "❌ GITHUB_TOKEN is empty in .secrets file!"; \
+		echo "Please set a valid GitHub token:"; \
+		echo "GITHUB_TOKEN=your_github_token"; \
+		echo "You can create a token at: https://github.com/settings/tokens"; \
+		exit 1; \
+	fi
+
 .PHONY: install_act
 install_act: ## Install act for local GitHub Actions testing
 	@echo "Installing act..."
-	@if [ "$(uname)" = "Darwin" ]; then \
+	@if [ "$$(uname)" = "Darwin" ]; then \
 		brew install act; \
 	else \
 		curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash; \
 	fi
 	@echo "✅ act installed successfully"
 
-.PHONY: test_workflow_ci
-test_workflow_ci: check_act ## Test the CI workflow (Build and push to ghcr.io)
-	@echo "Testing CI workflow (Build and push to ghcr.io)..."
-	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch -v
+.PHONY: test_workflow_build_and_push
+test_workflow_build_and_push: check_act check_secrets ## Test the build and push GitHub workflow
+	@echo "Testing build and push workflow...""
+	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch $(ACT_ARCH_FLAG) -v --secret-file .secrets
 
 .PHONY: test_workflow_release
-test_workflow_release: check_act ## Test the release workflow
+test_workflow_release: check_act check_secrets ## Test the release GitHub workflow
 	@echo "Testing release workflow with custom tag 'test-release'..."
-	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release -v
+	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release $(ACT_ARCH_FLAG) -v --secret-file .secrets
 
 .PHONY: test_workflows_all
-test_workflows_all: check_act ## Test all GitHub Actions workflows
+test_workflows_all: check_act check_secrets ## Test all GitHub Actions workflows
 	@echo "Testing all workflows..."
-	@echo "1. Testing CI workflow..."
-	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch -v
+	@echo "1. Testing build and push workflow..."
+	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch $(ACT_ARCH_FLAG) -v
 	@echo "2. Testing release workflow..."
-	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release -v
+	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release $(ACT_ARCH_FLAG) -v --secret-file .secrets
 
 # Set default target to help
 .DEFAULT_GOAL := help

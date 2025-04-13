@@ -5,123 +5,122 @@ title: PATH Release Management
 
 ## GitHub Workflow Testing and Release Instructions
 
-This document outlines how to test and use the GitHub workflow for building and releasing artifacts for the `buildwithgrove/path` repository.
+This document outlines how to test and use the GitHub workflow for building and releasing artifacts for the Path project.
 
 ## Table of Contents
 
 - [GitHub Workflow Testing and Release Instructions](#github-workflow-testing-and-release-instructions)
 - [Table of Contents](#table-of-contents)
+- [Building and Releasing](#building-and-releasing)
+  - [Local Development Build](#local-development-build)
+  - [Creating Release Artifacts](#creating-release-artifacts)
+- [Versioning and Tagging](#versioning-and-tagging)
+  - [Creating a New Release Tag](#creating-a-new-release-tag)
 - [Testing Workflows Locally](#testing-workflows-locally)
   - [Prerequisites](#prerequisites)
-  - [Running the Workflow Locally](#running-the-workflow-locally)
-- [Creating and Publishing Releases](#creating-and-publishing-releases)
-  - [Versioning](#versioning)
-  - [Creating a New Release](#creating-a-new-release)
-  - [Manual Workflow Dispatch](#manual-workflow-dispatch)
+  - [Setting Up Secrets](#setting-up-secrets)
+  - [Testing Specific Workflows](#testing-specific-workflows)
 - [Available Make Commands](#available-make-commands)
 
-## Testing Workflows Locally
+## Building and Releasing
 
-Before pushing your workflow to GitHub, you can test it locally using the `act` tool.
+### Local Development Build
 
-### Prerequisites
-
-1. Install Docker (required for act)
-2. Install act:
-   - **macOS**: `brew install act`
-   - **Linux**: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
-   - **Windows**: `choco install act-cli`
-
-### Running the Workflow Locally
-
-To test the workflow locally:
-
-1. Navigate to your repository root directory
-2. Run one of the following commands:
+To build the binary for local development:
 
 ```bash
-# Test with default event (push)
-act
-
-# Test with a specific event
-act workflow_dispatch
-
-# Test with workflow_dispatch and input parameters
-act workflow_dispatch -P custom_tag=test
-
-# Test with tag event
-act push -e .github/workflows/test-payload.json
+make path_build
 ```
 
-You can create a test payload file (.github/workflows/test-payload.json) with the following content to simulate a tag push:
+This will create the binary in the `bin` directory.
 
-```json
-{
-  "ref": "refs/tags/v0.1.0"
-}
-```
+### Creating Release Artifacts
 
-## Creating and Publishing Releases
-
-### Versioning
-
-We follow semantic versioning (MAJOR.MINOR.PATCH):
-
-- MAJOR: breaking changes
-- MINOR: new features (no breaking changes)
-- PATCH: bug fixes
-
-### Creating a New Release
-
-You can use the provided make targets to create a new release:
+To build release binaries for all supported platforms:
 
 ```bash
-# For bug fixes (v1.0.0 -> v1.0.1)
-make release_tag_bug_fix
-
-# For minor releases (v1.0.0 -> v1.1.0)
-make release_tag_minor_release
-
-# For major releases (manual)
-git tag v2.0.0
+make path_release
 ```
 
-After tagging, push the tag to GitHub:
+This command builds binaries for the following platforms:
+
+- linux/amd64
+- linux/arm64
+- darwin/amd64
+- darwin/arm64
+
+The release artifacts will be created in the `release` directory as compressed `tar.gz` files.
+
+## Versioning and Tagging
+
+We follow semantic versioning: `MAJOR.MINOR.PATCH`
+
+### Creating a New Release Tag
+
+You can create a new release tag using the following command:
+
+```bash
+make release_tag
+```
+
+This will:
+
+1. Prompt you to specify the type of release: `bug`, `minor`, or `major`
+2. Generate the appropriate new version number based on the latest existing tag
+3. Create a new git tag with the version number
+
+After creating the tag, push it to GitHub:
 
 ```bash
 git push origin <tag_name>
 ```
 
-This will automatically trigger the GitHub Action workflow to: 1. Build the binary for multiple platforms 2. Create a GitHub release 3. Upload the built artifacts to the release
+This will trigger the release workflow to build and publish the release artifacts.
 
-### Manual Workflow Dispatch
+## Testing Workflows Locally
 
-You can also manually trigger the workflow from GitHub: 1. Go to the Actions tab in your repository 2. Select the Release artifacts workflow 3. Click Run workflow 4. (Optional) Enter a custom tag suffix 5. Click Run workflow
+Before pushing your changes to GitHub, you can test the workflows locally using the `act` tool.
+
+### Prerequisites
+
+Install the `act` tool for local GitHub Actions testing:
+
+```bash
+make install_act
+```
+
+This will install `act` using Homebrew on macOS or the installation script on Linux.
+
+### Setting Up Secrets
+
+Create a `.secrets` file in the repository root with your GitHub token:
+
+```bash
+GITHUB_TOKEN=your_github_token
+```
+
+You can create a token at: [github.com/settings/tokens](ttps://github.com/settings/tokens)
+
+### Testing Specific Workflows
+
+To test the build and push workflow:
+
+```bash
+make test_workflow_build_and_push
+```
+
+To test the release workflow:
+
+```bash
+make test_workflow_release
+```
+
+To test all workflows:
+
+```bash
+make test_workflows_all
+```
 
 ## Available Make Commands
 
-```bash
-# Tag a new bug fix release
-make release_tag_bug_fix
-
-# Tag a new minor release
-make release_tag_minor_release
-
-# Build for local development
-make build
-
-# Build release binaries for all supported platforms
-make release
-
-# Build and publish a release (tags a new bug fix release)
-make release_publish
-
-# Test the GitHub workflow locally using 'act'
-make test_workflow
-```
-
-Troubleshooting
-
-If you encounter issues with the workflow: 1. Check the GitHub Actions logs for detailed error messages 2. Verify your local environment matches the GitHub Actions environment 3. Run the workflow locally with act -v for verbose output
-
-For more help, check the GitHub Actions documentation or open an issue in the repository.
+For more information about each command, run `make help`.
