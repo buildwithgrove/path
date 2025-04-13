@@ -92,7 +92,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64 # Support multiple architectures
-          file: Dockerfile.release
+          file: Dockerfile
           # GitHub Actions cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
