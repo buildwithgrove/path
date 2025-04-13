@@ -1,18 +1,18 @@
 name: Release Artifacts
 
+# Triggers: Version tags, main branch pushes, or manual dispatch with optional custom tag
 on:
   push:
-    tags:
-      - "v*.*.*"
-    branches:
-      - "main"
-  workflow_dispatch:
+    tags: ["v*.*.*"] # Semantic version tags
+    branches: ["main"] # Main branch updates
+  workflow_dispatch: # Manual trigger
     inputs:
       custom_tag:
         description: "Optional custom tag for the image"
         type: string
         required: false
 
+# Prevent multiple workflow runs from conflicting
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
@@ -21,39 +21,47 @@ jobs:
   release-artifacts:
     runs-on: ubuntu-latest
     steps:
+      # Checkout with full history for proper versioning
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Full history for proper versioning
 
+      # Set up Go environment for building binaries
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.23.0"
+          go-version: "1.23.0" # Specific Go version for reproducibility
 
+      # Build release binaries using project's Makefile
       - name: Build release binaries
         run: make release
 
+      # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Configure Docker metadata with conditional tagging strategy
       - name: Configure Docker metadata and tags
         id: meta
         uses: docker/metadata-action@v5
         env:
-          DOCKER_METADATA_PR_HEAD_SHA: "true"
+          DOCKER_METADATA_PR_HEAD_SHA: "true" # Include PR SHA in metadata
         with:
           images: ghcr.io/buildwithgrove/path
           tags: |
-            # For tag events (v*.*.*)
+            # For version tags (v*.*.*)
             type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=raw,value=prod,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            # For main branch
+
+            # For main branch - production from main
             type=raw,value=main-prod,enable=${{ github.ref == 'refs/heads/main' }}
-            # For custom tags from workflow_dispatch
+
+            # For manual triggers with optional custom tag suffix
             type=raw,value=${{ github.ref_name }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
+      # Authenticate to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -61,6 +69,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Create a minimal Dockerfile for the release
       - name: Create release Dockerfile
         run: |
           cat > Dockerfile.release << EOF
@@ -75,21 +84,24 @@ jobs:
           ENTRYPOINT ["/app/path"]
           EOF
 
+      # Build and push the release Docker image
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          push: true
+          push: true # Push image to registry
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64 # Support multiple architectures
           file: Dockerfile.release
+          # GitHub Actions cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
 
+      # Create a GitHub release for version tags with release notes and binary artifacts
       - name: Create GitHub release for tags
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*
-          generate_release_notes: true
+          files: release/* # Include all built binaries
+          generate_release_notes: true # Auto-generate notes from commits

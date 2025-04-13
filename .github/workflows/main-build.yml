@@ -1,40 +1,47 @@
 name: Build image and push to ghcr.io
 
+# Triggers: After successful path tests or manual dispatch
 on:
   workflow_run:
     workflows: ["Path tests"]
-    types:
-      - completed
-    branches:
-      - main
-  workflow_dispatch: # Added to enable manual trigger via GitHub UI
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # Manual trigger via GitHub UI
 
 jobs:
   build-and-push:
-    runs-on: "ubuntu-22.04"
+    runs-on: ubuntu-latest # Using latest instead of specific version for better maintenance
+    # Only run if manually triggered or if the dependent workflow succeeded
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
     steps:
+      # Checkout repository for access to code and configuration
       - name: Checkout project
         uses: actions/checkout@v4
 
+      # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3 # Updated to v3 for latest features
 
-      - name: Docker Metadata action
+      # Configure Docker image metadata and tagging strategy
+      - name: Configure Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         env:
-          DOCKER_METADATA_PR_HEAD_SHA: "true"
+          DOCKER_METADATA_PR_HEAD_SHA: "true" # Include PR SHA in metadata
         with:
-          images: |
-            ghcr.io/buildwithgrove/path
+          images: ghcr.io/buildwithgrove/path
           tags: |
+            # Semantic versioning tags for releases
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            # Release candidate tags
             type=ref,event=tag,suffix=-rc
             type=sha,format=short,suffix=-rc
+            # Latest tag for main branch
             type=ref,event=branch,pattern=latest
 
+      # Authenticate to GitHub Container Registry
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -42,14 +49,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      # Build and push the Docker image with specified configuration
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          push: true
+          push: true # Push image to registry
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64 # Support multiple architectures
           file: Dockerfile
+          # GitHub Actions cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
