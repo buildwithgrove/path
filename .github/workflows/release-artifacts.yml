@@ -29,7 +29,6 @@ jobs:
 
       # Set up Go environment for building binaries
       - name: Set up Go
-        if: ${{ !env.ACT }}
         uses: actions/setup-go@v4
         with:
           go-version: "1.23.0" # Specific Go version for reproducibility
@@ -64,6 +63,7 @@ jobs:
 
       # Authenticate to GitHub Container Registry
       - name: Log in to GitHub Container Registry
+        if: ${{ !env.ACT }} # Skip in act environment
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -89,10 +89,10 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          push: true # Push image to registry
+          push: ${{ !env.ACT && true || false }} # Only push when not in act
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64 # Support multiple architectures
+          platforms: ${{ env.ACT && 'linux/amd64' || 'linux/amd64,linux/arm64' }} # Single arch for act
           file: Dockerfile.release
           # GitHub Actions cache for faster builds
           cache-from: type=gha
@@ -101,7 +101,7 @@ jobs:
 
       # Create a GitHub release for version tags with release notes and binary artifacts
       - name: Create GitHub release for tags
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ !env.ACT && startsWith(github.ref, 'refs/tags/v') }} # Skip in act environment
         uses: softprops/action-gh-release@v2
         with:
           files: release/* # Include all built binaries
