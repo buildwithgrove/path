@@ -1,4 +1,4 @@
-name: Release artifacts
+name: Release Artifacts
 
 on:
   push:
@@ -9,12 +9,12 @@ on:
   workflow_dispatch:
     inputs:
       custom_tag:
-        description: "Optional custom tag to add to the image (will be prefixed with branch name)"
+        description: "Optional custom tag for the image"
         type: string
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -24,69 +24,35 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ensures all tags are fetched
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.23.0"
 
-      - name: Build release binaries (via Makefile)
+      - name: Build release binaries
         run: make release
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # For version tag pushes
-      - name: Docker Metadata action for tag events
-        id: meta-tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Configure Docker metadata and tags
+        id: meta
         uses: docker/metadata-action@v5
         env:
           DOCKER_METADATA_PR_HEAD_SHA: "true"
         with:
-          images: |
-            ghcr.io/buildwithgrove/path
+          images: ghcr.io/buildwithgrove/path
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=tag,suffix=-prod
-            type=sha,suffix=-prod
-            type=sha,format=long,suffix=-prod
-
-      # For main branch pushes
-      - name: Docker Metadata action for main branch pushes
-        id: meta-main
-        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
-        uses: docker/metadata-action@v5
-        env:
-          DOCKER_METADATA_PR_HEAD_SHA: "true"
-        with:
-          images: |
-            ghcr.io/buildwithgrove/path
-          tags: |
-            type=raw,value=main-prod
-            type=sha,suffix=-main-prod
-            type=sha,format=long,suffix=-main-prod
-
-      # For manual workflow triggers
-      - name: Extract branch name
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-
-      - name: Docker Metadata action for manual workflow_dispatch
-        id: meta-manual
-        if: github.event_name == 'workflow_dispatch'
-        uses: docker/metadata-action@v5
-        env:
-          DOCKER_METADATA_PR_HEAD_SHA: "true"
-        with:
-          images: |
-            ghcr.io/buildwithgrove/path
-          tags: |
-            type=raw,value=${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
-            type=sha,suffix=-${{ env.BRANCH_NAME }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }}
+            # For tag events (v*.*.*)
+            type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=prod,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            # For main branch
+            type=raw,value=main-prod,enable=${{ github.ref == 'refs/heads/main' }}
+            # For custom tags from workflow_dispatch
+            type=raw,value=${{ github.ref_name }}-prod${{ github.inputs.custom_tag != '' && format('-{0}', github.inputs.custom_tag) || '' }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -95,7 +61,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create minimal Dockerfile for release
+      - name: Create release Dockerfile
         run: |
           cat > Dockerfile.release << EOF
           FROM golang:1.23-alpine AS builder
@@ -109,53 +75,21 @@ jobs:
           ENTRYPOINT ["/app/path"]
           EOF
 
-      # For version tag pushes
-      - name: Build and push Docker image for tag events
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.meta-tag.outputs.tags }}
-          labels: ${{ steps.meta-tag.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           file: Dockerfile.release
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
 
-      # For main branch pushes
-      - name: Build and push Docker image for main branch
-        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ steps.meta-main.outputs.tags }}
-          labels: ${{ steps.meta-main.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
-          file: Dockerfile.release
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          context: .
-
-      # For manual workflow triggers
-      - name: Build and push Docker image for manual workflow_dispatch
-        if: github.event_name == 'workflow_dispatch'
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ steps.meta-manual.outputs.tags }}
-          labels: ${{ steps.meta-manual.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
-          file: Dockerfile.release
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          context: .
-
-      # Only publish GitHub releases for tag events
-      - name: Create GitHub release and upload artifacts
+      - name: Create GitHub release for tags
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/*
+          files: release/*
           generate_release_notes: true
