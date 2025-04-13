@@ -1,6 +1,6 @@
-#####################
+######################
 ### Claude targets ###
-#####################
+######################
 
 .PHONY: claudesync_check
 # Internal helper: Checks if claudesync is installed locally

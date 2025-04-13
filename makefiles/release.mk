@@ -52,8 +52,8 @@ path_release: ## Build release binaries for all supported platforms
 ##          Versioning commands            ##
 #############################################
 
-.PHONY: release_tag
-release_tag: ## Tag a new release with specified type (bug, minor, major)
+.PHONY: path_release_tag
+path_release_tag: ## Tag a new release with specified type (bug, minor, major)
 	@echo "What type of release? [bug/minor/major]"
 	@read TYPE && \
 	LATEST_TAG=$$(git tag --sort=-v:refname | head -n 1) && \
@@ -120,23 +120,20 @@ install_act: ## Install act for local GitHub Actions testing
 	fi
 	@echo "✅ act installed successfully"
 
-.PHONY: test_workflow_build_and_push
-test_workflow_build_and_push: check_act check_secrets ## Test the build and push GitHub workflow
-	@echo "Testing build and push workflow...""
+.PHONY: workflow_test_build_and_push
+workflow_test_build_and_push: check_act check_secrets ## Test the build and push GitHub workflow
+	@echo "Testing build and push workflow..."
 	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch $(ACT_ARCH_FLAG) -v --secret-file .secrets
 
-.PHONY: test_workflow_release
-test_workflow_release: check_act check_secrets ## Test the release GitHub workflow
+.PHONY: workflow_test_release
+workflow_test_release: check_act check_secrets ## Test the release GitHub workflow
 	@echo "Testing release workflow with custom tag 'test-release'..."
 	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release $(ACT_ARCH_FLAG) -v --secret-file .secrets
 
-.PHONY: test_workflows_all
-test_workflows_all: check_act check_secrets ## Test all GitHub Actions workflows
+.PHONY: workflow_test_all
+workflow_test_all: check_act check_secrets ## Test all GitHub Actions workflows
 	@echo "Testing all workflows..."
 	@echo "1. Testing build and push workflow..."
 	@act -W $(GH_WORKFLOWS)/build-and-push.yml workflow_dispatch $(ACT_ARCH_FLAG) -v
 	@echo "2. Testing release workflow..."
 	@act -W $(GH_WORKFLOWS)/release-artifacts.yml workflow_dispatch -P custom_tag=test-release $(ACT_ARCH_FLAG) -v --secret-file .secrets
-
-# Set default target to help
-.DEFAULT_GOAL := help

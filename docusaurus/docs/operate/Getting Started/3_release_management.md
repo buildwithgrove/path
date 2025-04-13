@@ -60,7 +60,7 @@ We follow semantic versioning: `MAJOR.MINOR.PATCH`
 You can create a new release tag using the following command:
 
 ```bash
-make release_tag
+make path_release_tag
 ```
 
 This will:
@@ -106,19 +106,19 @@ You can create a token at: [github.com/settings/tokens](ttps://github.com/settin
 To test the build and push workflow:
 
 ```bash
-make test_workflow_build_and_push
+make workflow_test_build_and_push
 ```
 
 To test the release workflow:
 
 ```bash
-make test_workflow_release
+make workflow_test_release
 ```
 
 To test all workflows:
 
 ```bash
-make test_workflows_all
+make workflow_test_all
 ```
 
 ## Available Make Commands

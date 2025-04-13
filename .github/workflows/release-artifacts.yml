@@ -25,17 +25,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Full history for proper versioning
+          fetch-depth: "0" # Per https://github.com/ignite/cli/issues/1674#issuecomment-1144619147
 
       # Set up Go environment for building binaries
       - name: Set up Go
+        if: ${{ !env.ACT }}
         uses: actions/setup-go@v4
         with:
           go-version: "1.23.0" # Specific Go version for reproducibility
 
       # Build release binaries using project's Makefile
       - name: Build release binaries
-        run: make release
+        run: make path_release
 
       # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
@@ -92,7 +93,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64 # Support multiple architectures
-          file: Dockerfile
+          file: Dockerfile.release
           # GitHub Actions cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max

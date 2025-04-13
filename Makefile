@@ -69,7 +69,7 @@ include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/release.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
-include ./makefiles/claude.mk
-include ./makefiles/release.mk
+include ./makefiles/claudesync.mk
