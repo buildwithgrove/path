@@ -1,5 +1,6 @@
 ---
 sidebar_position: 5
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 title: Configuration
 description: PATH configuration details
 ---
@@ -23,11 +24,26 @@ A PATH deployment is configured via two files:
 | -------------- | -------- | --------------------------------------------- |
 | `.config.yaml` | ✅        | configures the PATH **gateway**               |
 | `.values.yaml` | ❌        | configures the PATH **Helm chart deployment** |
+========
+title: PATH Config File (`.config.yaml`)
+description: PATH Configurations
+---
+
+:::info CONFIGURATION FILES
+
+A `PATH` stack is configured via two files:
+
+| File           | Required | Description                                   |
+| -------------- | -------- | --------------------------------------------- |
+| `.config.yaml` | ✅        | PATH **gateway** configurations               |
+| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
 :::
 
 ## Table of Contents <!-- omit in toc -->
 
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 - [PATH Config File (`.config.yaml`)](#path-config-file-configyaml)
   - [Config File Location](#config-file-location)
   - [Config File Fields](#config-file-fields)
@@ -49,6 +65,19 @@ A PATH deployment is configured via two files:
 All configuration for the PATH gateway is defined in a single YAML file named `.config.yaml`.
 
 Exactly one of `shannon_config` or `morse_config` **must** be provided. This field determines the protocol that the gateway will use.
+========
+- [Config File Validation](#config-file-validation)
+- [Config File Location (Local Development)](#config-file-location-local-development)
+- [`shannon_config` (required)](#shannon_config-required)
+- [`morse_config` (required)](#morse_config-required)
+- [`hydrator_config` (optional but recommended)](#hydrator_config-optional-but-recommended)
+- [`router_config` (optional)](#router_config-optional)
+- [`logger_config` (optional)](#logger_config-optional)
+
+All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
+
+Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This field determines the protocol that the gateway will use.
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
 <details>
 
@@ -83,6 +112,7 @@ logger_config:
 </details>
 
 <details>
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 
 <summary>Example **Morse** Config (click to expand)</summary>
 
@@ -149,8 +179,13 @@ The config file **MUST contain EXACTLY one** of the following top-level protocol
 #### `morse_config`
 
 Configuration for the Morse protocol gateway.
+========
+
+<summary>Example **Morse** Config (click to expand)</summary>
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
 ```yaml
+# (Required) Morse Protocol Configuration
 morse_config:
   full_node_config:
     url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
@@ -164,44 +199,79 @@ morse_config:
       client_public_key: "<64-char-hex>" # Client public key
       application_public_key: "<64-char-hex>" # Application public key
       application_signature: "<128-char-hex>" # Application signature
+
+# (Optional) Quality of Service (QoS) Configuration
+hydrator_config:
+  service_ids:
+    - "F00C"
+    - "F021"
+
+# (Optional) Logger Configuration
+logger_config:
+  level: "info" # Valid values: debug, info, warn, error
 ```
 
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 #### Morse Field Descriptions <!-- omit in toc -->
+========
+</details>
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
-**`full_node_config`**
+## Config File Validation
 
-| Field               | Type   | Required | Default | Description                                              |
-| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
-| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
-| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
+:::tip VSCode Validation
 
-**`full_node_config.http_config`**
+If you are using VSCode, we recommend using the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension for in-editor validation of the `.config.yaml` file. Enable it by ensuring the following annotation is present at the top of your config file:
 
-| Field     | Type    | Required | Default  | Description                           |
-| --------- | ------- | -------- | -------- | ------------------------------------- |
-| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
-| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+```
 
-**`signed_aats`**
+:::
 
-| Field                    | Type   | Required | Default | Description                                     |
-| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
-| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
-| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
-| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
+## Config File Location (Local Development)
+
+In development mode, the config file must be located at:
+
+```bash
+./local/path/.config.yaml
+```
+
+## Protocol Selection <!-- omit in toc -->
+
+The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
+
+- `morse_config`
+- `shannon_config`
 
 ---
 
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 #### `shannon_config`
+========
+<!--
+
+:::warning TODO_MVP(@commoddity): Auto-generate this file.
+
+Update this file so it is auto-generated based on config.schema.yaml
+
+:::
+
+-->
+
+## `shannon_config` (required)
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
 Configuration for the Shannon protocol gateway.
 
 ```yaml
 shannon_config:
   full_node_config:
-    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com" # Required: Shannon node RPC URL
+    lazy_mode: true # TODO_TECHDEBT: Add description and support for other modes. Use true for now.
+    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
     grpc_config: # Required
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
+
       # Optional backoff and keepalive configs...
       insecure: false # Optional: whether to use insecure connection
       backoff_base_delay: "1s" # Optional: initial backoff delay duration
@@ -209,7 +279,6 @@ shannon_config:
       min_connect_timeout: "20s" # Optional: minimum timeout for connection attempts
       keep_alive_time: "20s" # Optional: frequency of keepalive pings
       keep_alive_timeout: "20s" # Optional: timeout for keepalive pings
-    lazy_mode: true
 
   gateway_config: # Required
     gateway_mode: "centralized" # Required: centralized, delegated, or permissionless
@@ -220,8 +289,11 @@ shannon_config:
       - "<64-char-hex>" # Additional application private keys...
 ```
 
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 #### Shannon Field Descriptions <!-- omit in toc -->
 
+========
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 **`full_node_config`**
 
 | Field         | Type    | Required | Default | Description                                                     |
@@ -253,6 +325,7 @@ shannon_config:
 
 ---
 
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 #### `hydrator_config` (optional)
 
 
@@ -280,17 +353,97 @@ For a full list of currently supported QoS service implementations, please refer
 
 #### Hydrator Field Descriptions <!-- omit in toc -->
 
-| Field                               | Type          | Required | Default   | Description                                                                          |
-| ----------------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
-| `service_ids`                       | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
-| `run_interval_ms`                   | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
-| `max_endpoint_check_workers`        | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
-| `bootstrap_initial_qos_data_checks` | integer       | No       | 5         | Number of rounds of checks to run immediately on PATH startup.                       |
-
+| Field                        | Type          | Required | Default   | Description                                                                          |
+| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
+| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
 
 ---
 
 #### `router_config` (optional)
+========
+## `morse_config` (required)
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
+
+Configuration for the Morse protocol gateway.
+
+```yaml
+morse_config:
+  full_node_config:
+    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
+    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
+    http_config: # Optional
+      retries: 3 # Default: 3
+      timeout: "5000ms" # Default: "5000ms"
+
+  signed_aats: # Required
+    "<40-char-app-address>": # Application address (hex)
+      client_public_key: "<64-char-hex>" # Client public key
+      application_public_key: "<64-char-hex>" # Application public key
+      application_signature: "<128-char-hex>" # Application signature
+```
+
+**`full_node_config`**
+
+| Field               | Type   | Required | Default | Description                                              |
+| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
+| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
+| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
+
+**`full_node_config.http_config`**
+
+| Field     | Type    | Required | Default  | Description                           |
+| --------- | ------- | -------- | -------- | ------------------------------------- |
+| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
+| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
+
+**`signed_aats`**
+
+| Field                    | Type   | Required | Default | Description                                     |
+| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
+| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
+| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
+| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
+
+---
+
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
+#### `logger_config` (optional)
+
+Controls the logging behavior of the PATH gateway.
+
+========
+## `hydrator_config` (optional but recommended)
+
+:::info
+
+For a full list of supported QoS service implementations, refer to the [QoS Documentation](../../learn/qos/1_supported_services.md).
+
+⚠️ Any ID provided here **MUST** match a `Service ID` from the [QoS Documentation](../../learn/qos/1_supported_services.md). An invalid ID will cause the gateway to error ⚠️
+
+:::
+
+Configures the QoS hydrator to run synthetic Quality of Service (QoS) checks against endpoints of the provided service IDs.
+
+For example, to enable QoS checks for `anvil` and `F00C`, the following configuration must be added to the `.config.yaml` file:
+
+```yaml
+hydrator_config:
+  service_ids:
+    - "anvil"
+    - "F00C"
+```
+
+| Field                        | Type          | Required | Default   | Description                                                                          |
+| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
+| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
+
+---
+
+## `router_config` (optional)
 
 **Enables configuring how incoming requests are handled.**
 
@@ -298,7 +451,7 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 | Field                   | Type    | Required | Default           | Description                                     |
 | ----------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
-| `port`                  | integer | No       | 3069              | Port number on which the gateway server listens |
+| `port`                  | integer | No       | 3070              | Port number on which the gateway server listens |
 | `max_request_body_size` | integer | No       | 1MB               | Maximum request size in bytes                   |
 | `read_timeout`          | string  | No       | "5000ms" (5s)     | Time limit for reading request data             |
 | `write_timeout`         | string  | No       | "10000ms" (10s)   | Time limit for writing response data            |
@@ -306,10 +459,11 @@ In particular, allows specifying server parameters for how the gateway handles i
 
 ---
 
-#### `logger_config` (optional)
+## `logger_config` (optional)
 
 Controls the logging behavior of the PATH gateway.
 
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 ```yaml
 logger_config:
   level: "warn"
@@ -318,6 +472,7 @@ logger_config:
 | Field   | Type   | Required | Default | Description                                                           |
 | ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
 | `level` | string | No       | "info"  | Minimum log level. Valid values are: "debug", "info", "warn", "error" |
+<<<<<<<< HEAD:docusaurus/docs/develop/path/5_configuration.md
 
 <br/>
 
@@ -450,3 +605,5 @@ curl http://localhost:3070/v1 \
   -H "Authorization: test_api_key_3" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
+========
+>>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md

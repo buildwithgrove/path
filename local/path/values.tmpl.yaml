@@ -14,7 +14,7 @@
 # https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
 
 # 🚨 IMPORTANT: To use this file 🚨
-# 1. Run `make copy_values_yaml` to create the .gitignored `.values.yaml` file if not already present.
+# 1. Run `make configs_copy_values_yaml` to create the .gitignored `.values.yaml` file if not already present.
 # 2. Make any changes to the `local/path/.values.yaml` file, then save. Tilt will
 #    automatically pick up the changes and restart PATH & GUARD with the updated values.
 
@@ -27,7 +27,7 @@ guard:
   #
   # 1. Each service must have a unique service ID.
   # 2. Each service can have a list of aliases that can be used to route requests to the service.
-  services:  
+  services:
     - serviceId: F00C
       aliases:
         - eth

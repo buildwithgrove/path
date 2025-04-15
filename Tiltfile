@@ -190,6 +190,36 @@ WORKDIR /app
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
+# Make sure path-binary runs before the Docker build
+local_resource(
+    "path-trigger",
+    """
+    echo "Triggering Docker build after binary build"
+    touch .tilt-build-trigger
+    """,
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    labels=["hot-reloading"],
+)
+
+# Build an image with the PATH binary
+docker_build_with_restart(
+    "path-image",
+    context=".",
+    dockerfile_contents="""FROM golang:1.23.0
+RUN apt-get -q update && apt-get install -qyy curl jq less
+RUN mkdir -p /app/config
+COPY bin/path /app/path
+RUN chmod +x /app/path
+WORKDIR /app
+""",
+    # only=["/app/path"],
+    entrypoint=["/app/path"],
+    live_update=[sync("bin/path", "/app/path")],
+    trigger='.tilt-build-trigger',  # Rebuild when this file changes
+)
+
 
 # Tilt will run the Helm Chart with the following flags by default.
 #
@@ -265,26 +295,44 @@ k8s_resource(
     new_name="path-stack",
     port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
-    labels=["path"],
-    resource_deps=["path"]
+    labels=["path"]
 )
 
-# 2. GUARD Logs
-# Uses a `local_resource` to display logs for the `envoy` and `gateway-helm` pods.
+# 2. GUARD Logs - Waits for container readiness before following logs
 local_resource(
     "guard-logs",
-    cmd="echo 'Following GUARD logs...'",
-    serve_cmd="kubectl logs -l 'app.kubernetes.io/name in (envoy,gateway-helm)' --follow",
+    cmd="echo 'Preparing to follow GUARD logs when pods are ready...'",
+    serve_cmd='''
+    echo "Waiting for GUARD pods to be fully ready..."
+    until kubectl get pods -l 'app.kubernetes.io/name in (envoy,gateway-helm)' -o jsonpath='{.items[*].status.containerStatuses[*].ready}' 2>/dev/null | grep -q true; do
+      echo "GUARD pods not ready yet..."; sleep 5
+    done
+    echo "GUARD pods ready, stabilizing..."; sleep 10
+    echo "Following GUARD logs..."
+    kubectl logs -l 'app.kubernetes.io/name in (envoy,gateway-helm)' --follow
+    ''',
     labels=["k8s_logs"],
-    resource_deps=["path"]
+    resource_deps=["path-stack"]
 )
 
-# 3. WATCH (Observability) Logs
-# Uses a `local_resource` to display logs for the `grafana`, `kube-state-metrics`, and `prometheus-node-exporter` pods.
+# 3. WATCH Logs - Waits for container readiness before following logs
 local_resource(
     "watch-logs",
-    cmd="echo 'Following WATCH logs...'",
-    serve_cmd="kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow",
+    cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
+    serve_cmd='''
+    echo "Waiting for WATCH pods to be fully ready..."
+    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
+          kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
+      sleep 5
+    done
+    echo "Checking other components..."
+    until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
+      sleep 5
+    done
+    echo "All pods ready, stabilizing..."; sleep 20
+    echo "Following WATCH logs..."
+    kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
+    ''',
     labels=["k8s_logs"],
-    resource_deps=["path"]
+    resource_deps=["path-stack"]
 )
