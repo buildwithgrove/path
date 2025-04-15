@@ -21,6 +21,17 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
+/* Example Usage
+
+	`make test_e2e_evm_morse`                           - Run all EVM tests for Morse
+	`make test_e2e_evm_shannon`                         - Run all EVM tests for Shannon
+	`make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
+	`make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true` - Force a rebuild of the Docker image for the EVM tests
+	`make test_e2e_evm_morse DOCKER_LOG=true`           - Log the output of the Docker container for the EVM tests
+
+For full information on the test options, see `opts_test.go`
+*/
+
 /* -------------------- Test Configuration Initialization -------------------- */
 
 // Global test options
@@ -29,109 +40,6 @@ var opts testOptions
 // init initializes the test options
 func init() {
 	opts = gatherTestOptions()
-}
-
-// Environment variable names
-const (
-	// Required environment variables
-	envTestProtocol = "TEST_PROTOCOL"
-
-	// Optional environment variables
-	envGatewayURLOverride = "GATEWAY_URL_OVERRIDE"
-	envDockerLog          = "DOCKER_LOG"
-	envDockerForceRebuild = "DOCKER_FORCE_REBUILD"
-)
-
-// testOptions contains all configuration options for the E2E tests
-type (
-	testOptions struct {
-		// Protocol to use for testing (morse or shannon)
-		// Required environment variable: TEST_PROTOCOL
-		testProtocol protocolStr
-
-		// URL for accessing the gateway
-		// If not set, default is "http://localhost:%s/v1" where %s is the port of the Docker container
-		// If set via GATEWAY_URL_OVERRIDE, the Docker container won't be used and
-		// the test will run against the provided URL directly
-		gatewayURL string
-
-		// Whether the gateway URL was explicitly set via GATEWAY_URL_OVERRIDE
-		// This also indicates that no Docker container should be started
-		//
-		// If GATEWAY_URL_OVERRIDE is set, we'll use the provided URL directly and skip starting a Docker container,
-		// assuming PATH is already running externally at the provided URL.
-		gatewayURLOverridden bool
-
-		// Docker-related configuration options
-		docker dockerOptions
-
-		// Config file path template
-		// Format: "./.%s.config.yaml" where %s is the protocol name
-		configPathTemplate string
-	}
-	// dockerOptions contains configuration for the Docker test container
-	dockerOptions struct {
-		// Whether to log docker container output
-		// Default: false
-		// Can be enabled with DOCKER_LOG=true
-		logOutput bool
-
-		// Whether to force rebuild of the docker image
-		// Default: false
-		// Can be enabled with DOCKER_FORCE_REBUILD=true
-		forceRebuild bool
-	}
-)
-
-// protocolStr is a type to determine whether to test PATH with Morse or Shannon
-type protocolStr string
-
-const (
-	morse   protocolStr = "morse"
-	shannon protocolStr = "shannon"
-)
-
-func (p protocolStr) isValid() bool {
-	return p == morse || p == shannon
-}
-
-// gatherTestOptions collects all test configuration options from environment variables
-func gatherTestOptions() testOptions {
-	// Default values
-	options := testOptions{
-		gatewayURL:         "http://localhost:%s/v1", // eg. `http://localhost:3069/v1`
-		configPathTemplate: "./.%s.config.yaml",      // eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
-	}
-
-	// Required environment variables
-	if testProtocol := protocolStr(os.Getenv(envTestProtocol)); testProtocol == "" {
-		panic(fmt.Sprintf("%s environment variable is not set", envTestProtocol))
-	} else if !testProtocol.isValid() {
-		panic(fmt.Sprintf("%s environment variable is not set to `morse` or `shannon`", envTestProtocol))
-	} else {
-		options.testProtocol = testProtocol
-	}
-
-	// Optional environment variables
-	if gatewayURLOverride := os.Getenv(envGatewayURLOverride); gatewayURLOverride != "" {
-		options.gatewayURL = gatewayURLOverride
-		options.gatewayURLOverridden = true
-	}
-
-	// Docker configuration
-	if logValue := os.Getenv(envDockerLog); logValue != "" {
-		if logParsed, err := strconv.ParseBool(logValue); err == nil {
-			options.docker.logOutput = logParsed
-		}
-	}
-
-	if rebuildValue := os.Getenv(envDockerForceRebuild); rebuildValue != "" {
-		if rebuildParsed, err := strconv.ParseBool(rebuildValue); err == nil {
-			options.docker.forceRebuild = rebuildParsed
-		}
-	}
-
-	return options
 }
 
 /* -------------------- Get Test Cases for Protocol -------------------- */
@@ -147,21 +55,36 @@ type testCase struct {
 }
 
 // getTestCases returns the appropriate test cases based on the protocol
-func getTestCases(protocolStr protocolStr) []testCase {
+func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride protocol.ServiceID) []testCase {
+	// Get the appropriate test cases based on the protocol
+	var testCases []testCase
 	switch protocolStr {
 	case morse:
-		return getMorseTestCases()
+		testCases = morseTestCases
 	case shannon:
-		return getShannonTestCases()
+		testCases = shannonTestCases
 	default:
 		// This shouldn't happen due to the init check, but just in case
-		panic(fmt.Sprintf("Unsupported protocol: %s", protocolStr))
+		t.Fatalf("Unsupported protocol: %s", protocolStr)
 	}
+
+	// If a service ID override is provided, filter for that specific test case.
+	if serviceIDOverride != "" {
+		var filteredTestCases []testCase
+		for _, tc := range testCases {
+			if tc.serviceID == serviceIDOverride {
+				filteredTestCases = append(filteredTestCases, tc)
+				return filteredTestCases
+			}
+		}
+		panic(fmt.Sprintf("Service ID override %s not found", serviceIDOverride))
+	}
+
+	return testCases
 }
 
-// getMorseTestCases returns test cases for Morse protocol
-func getMorseTestCases() []testCase {
-	return []testCase{
+var (
+	morseTestCases = []testCase{
 		{
 			name:      "F00C (Ethereum) Load Test",
 			serviceID: "F00C",
@@ -215,11 +138,8 @@ func getMorseTestCases() []testCase {
 			},
 		},
 	}
-}
 
-// getShannonTestCases returns test cases for Shannon protocol
-func getShannonTestCases() []testCase {
-	return []testCase{
+	shannonTestCases = []testCase{
 		{
 			name:      "anvil (local Ethereum) Load Test",
 			serviceID: "anvil",
@@ -243,7 +163,7 @@ func getShannonTestCases() []testCase {
 			latencyMultiplier: 2,
 		},
 	}
-}
+)
 
 /* -------------------- EVM Load Test Function -------------------- */
 
@@ -277,12 +197,17 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
 	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
 	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
+	if opts.serviceIDOverride != "" {
+		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+	} else {
+		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
+	}
 
 	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
 	// 		See: https://github.com/buildwithgrove/path/pull/202
 	//
 	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
-	// ie.for returning empty responses, etc.
+	// 		ie. for returning empty responses, etc.
 	secondsToWait := 30
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 		secondsToWait = secondsToWait * 2
@@ -294,7 +219,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// Get test cases based on protocol
-	testCases := getTestCases(opts.testProtocol)
+	testCases := getTestCases(t, opts.testProtocol, opts.serviceIDOverride)
 
 	// Initialize map to store service summaries
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
