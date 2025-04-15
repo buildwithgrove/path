@@ -63,11 +63,6 @@ func NewEndpointNotFoundError(endpointAddr, serviceID string) error {
 	return fmt.Errorf("%w: endpoint address %q does not match any available endpoints on service %s", ErrEndpointNotFound, endpointAddr, serviceID)
 }
 
-// NewEndpointNotInSessionError creates a formatted error for when an endpoint is not in a session
-func NewEndpointNotInSessionError(endpointAddr string) error {
-	return fmt.Errorf("%w: %s", ErrEndpointNotInSession, endpointAddr)
-}
-
 // NewNullRelayResponseError creates a formatted error for null relay responses with details
 // about what specific part of the response was null or invalid
 func NewNullRelayResponseError(detail string) error {
