@@ -2,11 +2,9 @@ package evm
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/buildwithgrove/path/gateway"
-	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
@@ -77,6 +75,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 // ParseHTTPRequest builds a request context from an HTTP request.
 // Returns (requestContext, true) if the request is valid JSONRPC
 // Returns (errorContext, false) if the request is not valid JSONRPC.
+//
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
 	return qos.evmRequestValidator.validateHTTPRequest(req)
@@ -85,30 +84,10 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
 // WebSocket connection requests do not have a body, so we don't need to parse it.
 //
-// This method implements the gateway.QoSService interface.
+// Implements gateway.QoSService interface.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		logger:       qos.logger,
 		serviceState: qos.serviceState,
 	}, true
-}
-
-// ApplyObservations updates endpoint storage and blockchain state from observations.
-// Implements gateway.QoSService interface.
-func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
-	if observations == nil {
-		return errors.New("ApplyObservations: received nil")
-	}
-
-	evmObservations := observations.GetEvm()
-	if evmObservations == nil {
-		return errors.New("ApplyObservations: received nil EVM observation")
-	}
-
-	updatedEndpoints := q.endpointStore.updateEndpointsFromObservations(
-		evmObservations,
-		q.serviceState.archivalState.blockNumberHex,
-	)
-
-	return q.serviceState.updateFromEndpoints(updatedEndpoints)
 }
