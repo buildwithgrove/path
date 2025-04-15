@@ -1,0 +1,8 @@
+{
+  "label": "Helm Charts",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "PATH Helm Chart Documentation."
+  }
+}
