@@ -3,6 +3,7 @@ package solana
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -90,7 +91,7 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
-func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
+func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte, _ time.Duration) {
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest

@@ -3,7 +3,7 @@
 #########################
 
 .PHONY: test_all ## Run all tests
-test_all: test_unit test_e2e_shannon_relay test_e2e_morse_relay
+test_all: test_unit test_e2e_evm_shannon test_e2e_evm_morse
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests

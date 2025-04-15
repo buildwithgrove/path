@@ -93,6 +93,11 @@ func applyObservation(
 	observation *qosobservations.EVMEndpointObservation,
 	archivalBlockHeight string,
 ) (endpointWasMutated bool) {
+	// Record the latency of the observation.
+	if observedLatency := observation.GetLatency(); observedLatency != 0 {
+		endpoint.recordLatency(observedLatency)
+	}
+
 	// If emptyResponse is not nil, the observation is for an empty response check.
 	if observation.GetEmptyResponse() != nil {
 		applyEmptyResponseObservation(endpoint)
@@ -101,15 +106,15 @@ func applyObservation(
 	}
 
 	// If blockNumberResponse is not nil, the observation is for a blockNumber check.
-	if observation.GetBlockNumberResponse() != nil {
-		applyBlockNumberObservation(endpoint, observation.GetBlockNumberResponse())
+	if blockNumberResponse := observation.GetBlockNumberResponse(); blockNumberResponse != nil {
+		applyBlockNumberObservation(endpoint, blockNumberResponse)
 		endpointWasMutated = true
 		return
 	}
 
 	// If chainIDResponse is not nil, the observation is for a chainID check.
-	if observation.GetChainIdResponse() != nil {
-		applyChainIDObservation(endpoint, observation.GetChainIdResponse())
+	if chainIDResponse := observation.GetChainIdResponse(); chainIDResponse != nil {
+		applyChainIDObservation(endpoint, chainIDResponse)
 		endpointWasMutated = true
 		return
 	}

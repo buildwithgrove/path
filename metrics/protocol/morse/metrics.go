@@ -14,6 +14,7 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Morse protocol
+	// TODO: Make sure this is doing what we expect to.
 	relaysTotalMetric       = "morse_relays_total"
 	relaysErrorsTotalMetric = "morse_relay_errors_total"
 )
