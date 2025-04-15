@@ -7,7 +7,7 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const idChainIDCheck endpointCheckID = 1001
+const idChainIDCheck = 1001
 
 // methodChainID is the JSON-RPC method for getting the chain ID.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
@@ -35,7 +35,7 @@ type endpointCheckChainID struct {
 func (e *endpointCheckChainID) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(int(idChainIDCheck)),
+		ID:      jsonrpc.IDFromInt(idChainIDCheck),
 		Method:  jsonrpc.Method(methodChainID),
 	}
 }
