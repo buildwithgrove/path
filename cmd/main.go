@@ -75,6 +75,11 @@ func main() {
 
 	setupPprofServer(context.TODO(), logger, pprofAddr)
 
+	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
+	if err != nil {
+		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
+	}
+
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
 		Logger: logger,
@@ -82,6 +87,7 @@ func main() {
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
 		MetricsReporter:   metricsReporter,
+		DataReporter:      dataReporter,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service

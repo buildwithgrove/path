@@ -1,0 +1,32 @@
+package main
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/data"
+)
+
+// setupHTTPDataReporter initializes and starts the HTTP data reporter.
+func setupHTTPDataReporter(
+	logger polylog.Logger,
+	config config.HTTPDataReporterConfig,
+) (*data.DataReporterHTTP, error) {
+	if config.TargetURL == "" {
+		logger.Warn().Msg("Target URL not specified for the HTTP data reporter: request data will not be reported.")
+		return nil, nil
+	}
+
+	// Error parsing the specified target URL.
+	if _, err := url.Parse(config.TargetURL); err != nil {
+		return nil, fmt.Errorf("Error processing the HTTP Data Reporter's target URL: %v", err)
+	}
+
+	return &data.DataReporterHTTP{
+		Logger:           logger,
+		DataProcessorURL: config.TargetURL,
+	}, nil
+}
