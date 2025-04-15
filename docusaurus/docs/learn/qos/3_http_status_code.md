@@ -1,9 +1,5 @@
 ---
-<<<<<<<< HEAD:docusaurus/docs/learn/qos/2_http_status_code.md
-sidebar_position: 2
-========
 sidebar_position: 3
->>>>>>>> origin/main:docusaurus/docs/learn/qos/3_http_status_code.md
 title: HTTP Status Codes
 description: Opinionated Approach to HTTP Status Codes
 ---
