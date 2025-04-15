@@ -190,6 +190,36 @@ WORKDIR /app
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
+# Make sure path-binary runs before the Docker build
+local_resource(
+    "path-trigger",
+    """
+    echo "Triggering Docker build after binary build"
+    touch .tilt-build-trigger
+    """,
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    labels=["hot-reloading"],
+)
+
+# Build an image with the PATH binary
+docker_build_with_restart(
+    "path-image",
+    context=".",
+    dockerfile_contents="""FROM golang:1.23.0
+RUN apt-get -q update && apt-get install -qyy curl jq less
+RUN mkdir -p /app/config
+COPY bin/path /app/path
+RUN chmod +x /app/path
+WORKDIR /app
+""",
+    # only=["/app/path"],
+    entrypoint=["/app/path"],
+    live_update=[sync("bin/path", "/app/path")],
+    trigger='.tilt-build-trigger',  # Rebuild when this file changes
+)
+
 
 # Tilt will run the Helm Chart with the following flags by default.
 #
@@ -228,7 +258,7 @@ if read_yaml(valuesFile, default=None) != None:
 helm_resource(
     "path",  # Changed from "path-helm" to "path-stack"
     chart_prefix + "path",
-    image_deps=["path-image"], 
+    image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],
     links=[
         link(
@@ -289,7 +319,7 @@ local_resource(
     cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
     serve_cmd='''
     echo "Waiting for WATCH pods to be fully ready..."
-    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running && 
+    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
           kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
       sleep 5
     done

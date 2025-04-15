@@ -6,17 +6,20 @@ description: Simple Load Testing Tool
 
 :::tip
 
-Easy to use make targets are provided in the test requests [Makefile](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
+Easy to use make targets are provided in the [test requests Makefile](https://github.com/buildwithgrove/path/blob/main/makefiles/test_requests.mk).
 
-`make test_request__relay_util_100`
+You can run the following commands if you have a local PATH instance running pointing to Morse or Shannon.
 
-`make test_request__relay_util_1000`
-
-These targets send the given number of requests to `localhost:3069` for the `anvil` service on Shannon.
-
-**For additional configuration options, see the docs below.**
+```bash
+test_request__shannon_relay_util_100
+test_request__morse_relay_util_100
+```
 
 :::
+
+The documentation below is taken from the [relay-util repo](https://github.com/commoddity/relay-util).
+
+---
 
 import RemoteMarkdown from '@site/src/components/RemoteMarkdown';
 
