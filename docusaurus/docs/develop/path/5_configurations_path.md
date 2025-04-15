@@ -35,8 +35,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅        | PATH **gateway** configurations               |
+| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
 >>>>>>>> origin/main:docusaurus/docs/develop/path/5_configurations_path.md
 
 :::
@@ -358,7 +358,6 @@ For a full list of currently supported QoS service implementations, please refer
 | `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
 | `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
 | `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
-
 
 ---
 

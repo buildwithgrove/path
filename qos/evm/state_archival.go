@@ -135,7 +135,7 @@ func blockNumberToHex(blockNumber uint64) string {
 func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.EndpointAddr]endpoint) {
 	for _, endpoint := range updatedEndpoints {
 		// Get the observed balance at the archival block number from the endpoint observation.
-		balance, err := endpoint.getArchivalBalance()
+		balance, err := endpoint.checkArchival.getArchivalBalance()
 		if err != nil {
 			as.logger.Info().Err(err).Msg("Skipping endpoint with no observed archival balance")
 			continue
@@ -158,4 +158,33 @@ func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.End
 			return
 		}
 	}
+}
+
+// isArchivalBalanceValid returns an error if the endpoint's observed
+// archival balance does not match the expected archival balance.
+func (as *archivalState) isArchivalBalanceValid(check endpointCheckArchival) error {
+	if !as.isEnabled() {
+		return nil
+	}
+
+	if check.observedArchivalBalance == "" {
+		return errNoArchivalBalanceObs
+	}
+	if check.observedArchivalBalance != as.expectedBalance {
+		return fmt.Errorf(errInvalidArchivalBalanceObs, check.observedArchivalBalance, as.expectedBalance)
+	}
+
+	return nil
+}
+
+// shouldArchivalCheckRun returns true if the archival check is not yet initialized or has expired.
+func (as *archivalState) shouldArchivalCheckRun(check endpointCheckArchival) bool {
+	// Do not perform an archival check if:
+	// 	- The archival check is not enabled for the service.
+	// 	- The archival block number has not yet been set in the archival state.
+	if !as.isEnabled() || as.blockNumberHex == "" {
+		return false
+	}
+
+	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
 }
