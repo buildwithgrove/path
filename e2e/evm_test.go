@@ -203,18 +203,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
 	}
 
-	// TODO_NEXT: This arbitrary wait is a temporary hacky solution and will be removed once PR #202 is merged:
-	// 		See: https://github.com/buildwithgrove/path/pull/202
+	// TODO_NEXT: This arbitrary wait is somewhat hacky and may need to be revisited in the future.
 	//
 	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
-	// 		ie. for returning empty responses, etc.
+	// 		ie. for returning empty or invalid responses, etc.
 	secondsToWait := 30
+	fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		secondsToWait = secondsToWait * 2
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
-		<-time.After(time.Duration(secondsToWait) * time.Second) // Wait for double the default time in CI
+		<-time.After(time.Duration(secondsToWait) * time.Second) // In CI, do not use wait bar as CI logs do not support it.
 	} else {
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
 		showWaitBar(secondsToWait) // In local environment, show progress bar to indicate we're waiting.
 	}
 
