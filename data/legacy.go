@@ -150,7 +150,7 @@ func setLegacyFieldsFromQoSObservations(
 	return legacyRecord
 }
 
-const qosEVMErrorTypeStr = "QOS_EVM_"
+const qosEVMErrorTypeStr = "QOS_EVM"
 
 func setLegacyFieldsFromQoSEVMObservations(
 	logger polylog.Logger,
@@ -167,6 +167,12 @@ func setLegacyFieldsFromQoSEVMObservations(
 	// Extract the JSONRPC request's method.
 	jsonrpcRequestMethod, _ := evmInterpreter.GetRequestMethod()
 	legacyRecord.ChainMethod = jsonrpcRequestMethod
+
+	// ErrorType is already set at gateway or protocol level.
+	// Skip updating the error fields to preserve the original error.
+	if legacyRecord.ErrorType != "" {
+		return legacyRecord
+	}
 
 	_, requestErr, err := evmInterpreter.GetRequestStatus()
 	// Could not extract request error details, skip the rest of the updates.
@@ -228,6 +234,9 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	// Use the most recent entry in the endpoint observations.
 	endpointObservation := endpointObservations[len(endpointObservations)-1]
 
+	// Update error fields if an endpoint error has occurred.
+	legacyRecord = setLegacyErrFieldsFromMorseEndpointError(legacyRecord, endpointObservation)
+
 	legacyRecord.ProtocolAppPublicKey = endpointObservation.AppPublicKey
 
 	// Set endpoint query/response timestamps
@@ -248,6 +257,36 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	}
 	// Set the endpoint domain field: empty value if parsing the URL above failed.
 	legacyRecord.NodeDomain = endpointDomain
+
+	return legacyRecord
+}
+
+func setLegacyErrFieldsFromMorseEndpointError(
+	legacyRecord *legacyRecord,
+	endpointObservation *protocolobservation.MorseEndpointObservation,
+) *legacyRecord {
+
+	endpointErr := endpointObservation.ErrorType
+	// No endpoint error has occurred: no error processing required.
+	if endpointErr == nil {
+		return legacyRecord
+	}
+
+	// Update ErrorType using the observed endpoint error.
+	legacyRecord.ErrorType = endpointErr.String()
+
+	// Build the endpoint error details, including any sanctions.
+	var errMsg string
+	if errDetails := endpointObservation.GetErrorDetails(); errDetails != "" {
+		errMsg = fmt.Sprintf("error details: %s", errDetails)
+	}
+
+	// Add the sanction details to the error message.
+	if endpointSanction := endpointObservation.RecommendedSanction; endpointSanction != nil {
+		errMsg = fmt.Sprintf("%s, sanction: %s", errMsg, endpointSanction.String())
+	}
+
+	legacyRecord.ErrorMessage = errMsg
 
 	return legacyRecord
 }

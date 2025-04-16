@@ -53,10 +53,31 @@ func main() {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
 
+	// setup metrics reporter, to be used by Gateway anD Hydrator.
+	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
+	if err != nil {
+		log.Fatalf("failed to start metrics server: %v", err)
+	}
+
+	setupPprofServer(context.TODO(), logger, pprofAddr)
+
+	// setup data reporter, to be used by Gateway anD Hydrator.
+	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
+	if err != nil {
+		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
+	}
+
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
+	hydrator, err := setupEndpointHydrator(
+		logger,
+		protocol,
+		qosInstances,
+		metricsReporter,
+		dataReporter,
+		config.HydratorConfig,
+	)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
@@ -66,18 +87,6 @@ func main() {
 		Logger: logger,
 
 		QoSServices: qosInstances,
-	}
-
-	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
-	if err != nil {
-		log.Fatalf("failed to start metrics server: %v", err)
-	}
-
-	setupPprofServer(context.TODO(), logger, pprofAddr)
-
-	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
-	if err != nil {
-		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
 	}
 
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.

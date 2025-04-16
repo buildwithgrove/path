@@ -198,6 +198,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
 						protocolCtx:         hydratorRequestCtx,
+						// metrics reporter for exporting metrics on hydrator service requests.
+						metricsReporter: eph.MetricsReporter,
+						// data reporter for exporting data on hydrator service requests to the data pipeline.
+						dataReporter: eph.DataReporter,
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()
