@@ -18,6 +18,7 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -52,6 +53,10 @@ type Gateway struct {
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
+
+	// Max request processing time.
+	// Prevents empty responses due to WriteTimeout setting of the HTTP server.
+	RequestProcessingTimeout time.Duration
 }
 
 // HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
@@ -66,6 +71,11 @@ type Gateway struct {
 // - Extract generic processing into common method
 // - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+	// Request processing deadline context
+	deadline := time.Now().Add(g.RequestProcessingTimeout)
+	ctxWithDeadline, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
@@ -74,8 +84,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
-		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
+		context:             ctxWithDeadline,
 	}
 
 	defer func() {
@@ -113,8 +122,9 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
@@ -141,7 +151,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // handleWebsocketRequest handles WebSocket connection requests
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
+	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {
 		return
 	}

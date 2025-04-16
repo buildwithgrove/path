@@ -9,9 +9,6 @@ import (
 const (
 	defaultPort               = 3069
 	defaultMaxRequestBodySize = 1 << 20 // 1 MB
-	defaultReadTimeout        = 5_000 * time.Millisecond
-	defaultWriteTimeout       = 10_000 * time.Millisecond
-	defaultIdleTimeout        = 120_000 * time.Millisecond
 )
 
 /* --------------------------------- Router Config Struct -------------------------------- */

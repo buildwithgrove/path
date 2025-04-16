@@ -29,7 +29,7 @@ type FullNode interface {
 	// GetSession returns the latest session matching the supplied service+app combination.
 	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
-	GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
 	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
@@ -105,21 +105,33 @@ type Protocol struct {
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) AvailableEndpoints(
+	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) ([]protocol.EndpointAddr, error) {
+	// hydrate the logger.
+	logger := p.logger.With("service", serviceID)
+
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
+	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("error getting the permitted apps list: relay request will fail.")
 		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}
 
+	logger = logger.With("number_of_permitted_apps", len(permittedApps))
+	logger.Debug().Msg("fetched the set of permitted apps.")
+
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
+	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
 	if err != nil {
+		logger.Error().Err(err).Msg("error getting the set of available endpoints: relay request will fail.")
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
+
+	logger = logger.With("number_of_unique_endpoints", len(endpoints))
+	logger.Debug().Msg("Successfully fetched the set of available endpoints for the selected apps.")
 
 	// Convert the list of endpoints to a list of endpoint addresses
 	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
@@ -135,6 +147,7 @@ func (p *Protocol) AvailableEndpoints(
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
+	ctx context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
@@ -146,7 +159,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
-	endpoints, err := p.getAppsUniqueEndpoints(serviceID, permittedApps)
+	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
@@ -205,23 +218,31 @@ func (p *Protocol) IsAlive() bool {
 // If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
 func (p *Protocol) getAppsUniqueEndpoints(
+	ctx context.Context,
 	serviceID protocol.ServiceID,
 	permittedApps []*apptypes.Application,
 ) (map[protocol.EndpointAddr]endpoint, error) {
-	logger := p.logger.With("service", serviceID)
+	logger := p.logger.With(
+		"service", serviceID,
+		"num_permitted_apps", len(permittedApps),
+	)
 
-	var endpoints = make(map[protocol.EndpointAddr]endpoint)
+	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, app := range permittedApps {
-		logger = logger.With("permitted_app_address", app.Address)
+		// Using a single iteration scope for this logger.
+		// Avoids adding all apps in the loop to the logger's fields.
+		logger := logger.With("permitted_app_address", app.Address)
 		logger.Debug().Msg("getAppsUniqueEndpoints: processing app.")
 
-		session, err := p.FullNode.GetSession(serviceID, app.Address)
+		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
 		if err != nil {
+			logger.Warn().Err(err).Msg("Internal error: error getting a session for the app. Service request will fail.")
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
 		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
+			logger.Warn().Err(err).Msg("Internal error: error getting all endpoints for app and session. Service request will fail.")
 			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
 		}
 
@@ -233,8 +254,11 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	}
 
 	if len(endpoints) == 0 {
+		logger.Warn().Msg("Internal error: no endpoints available for permitted apps. Service request will fail.")
 		return nil, fmt.Errorf("getAppsUniqueEndpoints: no endpoints found for service %s", serviceID)
 	}
+
+	logger.With("num_endpoints", len(endpoints)).Debug().Msg("Successfully fetched endpoints for permitted apps.")
 
 	return endpoints, nil
 }

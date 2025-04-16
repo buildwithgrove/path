@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -17,14 +18,16 @@ type Protocol interface {
 	//
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
-	AvailableEndpoints(protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
+	// Context may contain a deadline that protocol should respect on best-effort basis.
+	AvailableEndpoints(context.Context, protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
 
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
 	//
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
-	BuildRequestContextForEndpoint(protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
+	// Context may contain a deadline that protocol should respect on best-effort basis.
+	BuildRequestContextForEndpoint(context.Context, protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
