@@ -35,9 +35,6 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 	logger = logger.With("selected_app_addr", selectedAppAddr)
 	logger.Debug().Msg("fetching the app with the selected address")
 
-	// TODO_TECHDEBT(@adshmh): Pass a context with deadline to the protocol.
-	// This is necessary to ensure the HTTP handling goroutine does not timeout waiting for the protocol.
-	//
 	selectedApp, err := p.FullNode.GetApp(ctx, selectedAppAddr)
 	if err != nil {
 		logger.Error().Err(err).Msg("error fetching the selected app: relay request will fail.")
