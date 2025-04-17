@@ -210,7 +210,8 @@ properties:
       idle_timeout:
         description: "Idle timeout duration for the router."
         type: string
-
+  # TODO_IN_THIS_PR: add the HTTPDataReporter section.
+  #
   # Hydrator Configuration (optional)
   hydrator_config:
     description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."

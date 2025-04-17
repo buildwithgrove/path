@@ -17,7 +17,7 @@ import (
 // TODO_MVP(@adshmh): Remove once the data pipeline has been updated.
 //
 
-// legacyRecord contains all the fields required by the legact data pipeline.
+// legacyRecord contains all the fields required by the legacy data pipeline.
 type legacyRecord struct {
 	RequestID              string  `json:"request_id"`            // Request's ID
 	Region                 string  `json:"region"`                // Region where the gateway serving the request is located (Grove legacy metadata)
@@ -34,7 +34,7 @@ type legacyRecord struct {
 	NodeQueryTimestamp     string  `json:"node_send_ts"`         // TIMESTAMP of when the request was sent to the endpoint.
 	NodeReceiveTimestamp   string  `json:"node_receive_ts"`      // TIMESTAMP of when the endpoint's response was received.
 	RequestStartTimestamp  string  `json:"relay_start_ts"`       // TIMESTAMP of when the request was received.
-	RequestReturnTimestamp string  `json:"relay_return_ts"`      // TIMESTAMP of when the a response was returned to the client.
+	RequestReturnTimestamp string  `json:"relay_return_ts"`      // TIMESTAMP of when a response was returned to the client.
 	RequestRoundTripTime   float64 `json:"relay_roundtrip_time"` // Request processing time, in seconds.
 	PortalTripTime         float64 `json:"portal_trip_time"`     // In seconds: Total request processing time - time spent waiting for the endpoint.
 	NodeTripTime           float64 `json:"node_trip_time"`       // In seconds: Total time spent waiting for the endpoint to respond.
@@ -45,7 +45,7 @@ type legacyRecord struct {
 	NodeDomain             string  `json:"pokt_node_domain"`     // URL domain of the endpoint that served the request.
 
 	// internal fields used for tracking protocol and QoS data.
-	endpointTripTime float64 // endpint response timestamp - endpoint query time, in seconds.
+	endpointTripTime float64 // endpoint response timestamp - endpoint query time, in seconds.
 
 }
 
