@@ -61,7 +61,7 @@ func main() {
 
 	setupPprofServer(context.TODO(), logger, pprofAddr)
 
-	// setup data reporter, to be used by Gateway anD Hydrator.
+	// setup data reporter, to be used by Gateway and Hydrator.
 	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
 	if err != nil {
 		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)

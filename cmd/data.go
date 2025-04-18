@@ -8,13 +8,14 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/data"
+	"github.com/buildwithgrove/path/gateway"
 )
 
 // setupHTTPDataReporter initializes and starts the HTTP data reporter.
 func setupHTTPDataReporter(
 	logger polylog.Logger,
 	config config.HTTPDataReporterConfig,
-) (*data.DataReporterHTTP, error) {
+) (gateway.RequestResponseReporter, error) {
 	if config.TargetURL == "" {
 		logger.Warn().Msg("Target URL not specified for the HTTP data reporter: request data will not be reported.")
 		return nil, nil
