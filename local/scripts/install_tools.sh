@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script installs Docker, Kind, Kubectl, Helm, Tilt, and Relay Util if they are not already installed.
+# This script installs Docker, Kind, Kubectl, Helm, and Tilt if they are not already installed.
 # It detects the OS and architecture to download the correct binaries.
 
 set -e
@@ -197,25 +197,6 @@ install_tilt() {
     tilt version
 }
 
-# Function to install Relay Util if not present
-install_relay_util() {
-    if command_exists relay-util; then
-        log "INFO" "🚚 Relay Util already installed."
-        return
-    fi
-    
-    if ! command_exists go; then
-        log "WARNING" "🚨 Go is not installed. In order to install Relay Util, please install Go from https://go.dev/doc/install"
-        return
-    fi
-    
-    log "INFO" "🚚 Installing Relay Util..."
-    
-    go install github.com/commoddity/relay-util/v2@latest
-    
-    log "SUCCESS" "✅ Relay Util installed successfully."
-}
-
 # Function to prompt user for confirmation
 prompt_user() {
     local message="$1"
@@ -239,7 +220,7 @@ detect_system
 # Check for missing dependencies
 MISSING_DEPS=()
 
-for cmd in docker kind kubectl helm tilt relay-util; do
+for cmd in docker kind kubectl helm tilt; do
     if ! command_exists "$cmd"; then
         case "$cmd" in
             docker) MISSING_DEPS+=("🐳 Docker: Container engine for running applications in containers") ;;
@@ -247,7 +228,6 @@ for cmd in docker kind kubectl helm tilt relay-util; do
             kubectl) MISSING_DEPS+=("🔧 kubectl: CLI tool for controlling Kubernetes clusters") ;;
             helm) MISSING_DEPS+=("⛵ Helm: Package manager for Kubernetes") ;;
             tilt) MISSING_DEPS+=("🚀 Tilt: Tool for development on Kubernetes") ;;
-            relay-util) MISSING_DEPS+=("🚚 Relay Util: Simple load-testing tool for relays") ;;
         esac
     fi
 done
@@ -275,6 +255,5 @@ install_kind
 install_kubectl
 install_helm
 install_tilt
-install_relay_util
 
 log "SUCCESS" "✅ Installation script completed."
