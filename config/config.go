@@ -20,10 +20,11 @@ type GatewayConfig struct {
 	MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
 	ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
 
-	Router          RouterConfig           `yaml:"router_config"`
-	Logger          LoggerConfig           `yaml:"logger_config"`
-	HydratorConfig  EndpointHydratorConfig `yaml:"hydrator_config"`
-	MessagingConfig MessagingConfig        `yaml:"messaging_config"`
+	Router             RouterConfig           `yaml:"router_config"`
+	Logger             LoggerConfig           `yaml:"logger_config"`
+	HydratorConfig     EndpointHydratorConfig `yaml:"hydrator_config"`
+	MessagingConfig    MessagingConfig        `yaml:"messaging_config"`
+	DataReporterConfig HTTPDataReporterConfig `yaml:"data_reporter_config"`
 }
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path

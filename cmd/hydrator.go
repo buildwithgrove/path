@@ -19,6 +19,8 @@ func setupEndpointHydrator(
 	logger polylog.Logger,
 	protocolInstance gateway.Protocol,
 	qosServices map[protocol.ServiceID]gateway.QoSService,
+	metricsReporter gateway.RequestResponseReporter,
+	dataReporter gateway.RequestResponseReporter,
 	hydratorConfig config.EndpointHydratorConfig,
 ) (*gateway.EndpointHydrator, error) {
 	if logger == nil {
@@ -54,6 +56,8 @@ func setupEndpointHydrator(
 		ActiveQoSServices:       hydratorQoSServices,
 		RunInterval:             hydratorConfig.RunInterval,
 		MaxEndpointCheckWorkers: hydratorConfig.MaxEndpointCheckWorkers,
+		MetricsReporter:         metricsReporter,
+		DataReporter:            dataReporter,
 	}
 
 	err := endpointHydrator.Start()

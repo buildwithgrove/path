@@ -75,7 +75,7 @@ type requestContext struct {
 	// httpObservations stores the observations related to the HTTP request.
 	httpObservations observation.HTTPRequestObservations
 	// gatewayObservations stores gateway related observations.
-	gatewayObservations observation.GatewayObservations
+	gatewayObservations *observation.GatewayObservations
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -329,7 +329,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 
 		observations := &observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
-			Gateway:     &rc.gatewayObservations,
+			Gateway:     rc.gatewayObservations,
 			Protocol:    &protocolObservations,
 			Qos:         &qosObservations,
 		}

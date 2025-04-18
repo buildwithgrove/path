@@ -61,6 +61,7 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 	return &requestContext{
 		logger:        erv.logger,
 		chainID:       erv.chainID,
+		requestPayloadLength: uint(len(body)),
 		jsonrpcReq:    jsonrpcReq,
 		endpointStore: erv.endpointStore,
 	}, true

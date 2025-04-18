@@ -29,7 +29,7 @@ func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 		"service_id", string(rc.serviceID),
 	)
 
-	if rc.selectedEndpoint.address == "" {
+	if rc.selectedEndpoint == nil {
 		return hydratedLogger
 	}
 
