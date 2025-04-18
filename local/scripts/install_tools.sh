@@ -1,113 +1,280 @@
 #!/usr/bin/env bash
 
-# This script installs Docker, Kind, Helm, and Tilt if they are not already installed.
-# It logs each step and provides a basic explanation of how functions work via comments.
+# This script installs Docker, Kind, Kubectl, Helm, Tilt, and Relay Util if they are not already installed.
+# It detects the OS and architecture to download the correct binaries.
+
+set -e
+
+# Terminal colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+RESET='\033[0m'
+
+# Function to log messages to file and console
+log() {
+    local level="$1"
+    local message="$2"
+    local color="$RESET"
+    
+    case "$level" in
+        "INFO") color="$BLUE" ;;
+        "SUCCESS") color="$GREEN" ;;
+        "WARNING") color="$YELLOW" ;;
+        "ERROR") color="$RED" ;;
+    esac
+    
+    echo -e "${color}${message}${RESET}"
+}
 
 # Function to check if a command exists on the system
-# This function takes a single argument (the command name), checks if it's available, and returns 0 if found, 1 if not.
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to detect system architecture and OS
+detect_system() {
+    # Detect OS type
+    OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    # Detect architecture
+    ARCH="$(uname -m)"
+    
+    # Normalize architecture naming
+    case "$ARCH" in
+        x86_64) ARCH="amd64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+    esac
+    
+    # Set system type
+    if [ "$OS" = "darwin" ] && [ "$ARCH" = "amd64" ]; then
+        SYSTEM="mac_x86"
+    elif [ "$OS" = "darwin" ] && [ "$ARCH" = "arm64" ]; then
+        SYSTEM="mac_arm"
+    elif [ "$OS" = "linux" ] && [ "$ARCH" = "amd64" ]; then
+        SYSTEM="linux_x86"
+    elif [ "$OS" = "linux" ] && [ "$ARCH" = "arm64" ]; then
+        SYSTEM="linux_arm"
+    else
+        SYSTEM="unknown"
+        log "WARNING" "Unsupported system: $OS $ARCH"
+    fi
+    
+    log "INFO" "Detected system: $OS $ARCH (System type: $SYSTEM)"
+}
+
 # Function to install Docker if not present
-# This function checks if Docker is installed. If not, it downloads and runs the official installation script.
 install_docker() {
     if command_exists docker; then
-        echo "$(date) - Docker already installed." >>install.log
-    else
-        echo "$(date) - Installing Docker..." >>install.log
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-        rm -f get-docker.sh
-        echo "$(date) - Docker installation complete." >>install.log
+        log "INFO" "🐳 Docker already installed."
+        docker --version
+        return
     fi
+    
+    log "INFO" "🐳 Installing Docker..."
+    
+    case "$SYSTEM" in
+        mac_x86|mac_arm)
+            if ! command_exists brew; then
+                log "WARNING" "🚨 Docker not found and Homebrew is missing. Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
+                return 1
+            fi
+            brew install --cask docker
+            ;;
+        linux_x86|linux_arm)
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            rm get-docker.sh
+            if [ -e "/var/run/docker.sock" ]; then
+                sudo chmod 666 /var/run/docker.sock
+            fi
+            # Check if Docker daemon is running
+            if ! pgrep -x dockerd >/dev/null; then
+                log "WARNING" "Docker daemon not running. Attempting to start dockerd..."
+                sudo systemctl start docker || sudo dockerd &
+                sleep 3
+                if ! pgrep -x dockerd >/dev/null; then
+                    log "ERROR" "Docker daemon did not start correctly"
+                    return 1
+                fi
+                log "SUCCESS" "✅ Docker daemon started successfully."
+            fi
+            ;;
+        *)
+            log "ERROR" "Unsupported system for Docker installation"
+            return 1
+            ;;
+    esac
+    
+    log "SUCCESS" "✅ Docker installed successfully."
+    docker --version
 }
 
 # Function to install Kind if not present
-# This function checks if Kind is installed. If not, it downloads the binary and moves it to /usr/local/bin.
 install_kind() {
     if command_exists kind; then
-        echo "$(date) - Kind already installed." >>install.log
-    else
-        echo "$(date) - Installing Kind..." >>install.log
-        KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4)
-        curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
-        chmod +x kind
-        mv kind /usr/local/bin/kind
-        echo "$(date) - Kind installation complete." >>install.log
+        log "INFO" "🌀 Kind already installed."
+        kind --version
+        return
     fi
+    
+    log "INFO" "🌀 Installing Kind..."
+    
+    # Try to get the latest version
+    KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4)
+    if [ -z "$KIND_VERSION" ]; then
+        KIND_VERSION="v0.27.0"  # Fallback to a known version
+    fi
+    
+    # Create the binary name based on OS and architecture
+    BINARY_NAME="kind-${OS}-${ARCH}"
+    KIND_URL="https://kind.sigs.k8s.io/dl/${KIND_VERSION}/${BINARY_NAME}"
+    
+    curl -Lo /tmp/kind "$KIND_URL"
+    chmod +x /tmp/kind
+    sudo mv /tmp/kind /usr/local/bin/kind
+    
+    log "SUCCESS" "✅ Kind installed successfully."
+    kind --version
 }
 
 # Function to install kubectl if not present
 install_kubectl() {
     if command_exists kubectl; then
-        echo "$(date) - kubectl already installed." >>install.log
-    else
-        echo "$(date) - Installing kubectl..." >>install.log
-        KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-        curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        mv kubectl /usr/local/bin/kubectl
-        echo "$(date) - kubectl installation complete." >>install.log
+        log "INFO" "🔧 kubectl already installed."
+        kubectl version --client
+        return
     fi
+    
+    log "INFO" "🔧 Installing kubectl..."
+    
+    # Get stable kubectl version
+    KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+    if [ -z "$KUBECTL_VERSION" ]; then
+        KUBECTL_VERSION="latest"
+    fi
+    
+    curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/${OS}/${ARCH}/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/kubectl
+    
+    log "SUCCESS" "✅ kubectl installed successfully."
+    kubectl version --client
 }
 
 # Function to install Helm if not present
-# This function checks if Helm is installed. If not, it uses the Helm install script to get the latest version.
 install_helm() {
     if command_exists helm; then
-        echo "$(date) - Helm already installed." >>install.log
-    else
-        echo "$(date) - Installing Helm..." >>install.log
-        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-        echo "$(date) - Helm installation complete." >>install.log
+        log "INFO" "⛵ Helm already installed."
+        helm version --short
+        return
     fi
+    
+    log "INFO" "⛵ Installing Helm..."
+    
+    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    
+    log "SUCCESS" "✅ Helm installed successfully."
+    helm version --short
 }
 
 # Function to install Tilt if not present
-# This function checks if Tilt is installed. If not, it runs the Tilt install script.
 install_tilt() {
     if command_exists tilt; then
-        echo "$(date) - Tilt already installed." >>install.log
-    else
-        echo "$(date) - Installing Tilt..." >>install.log
-        curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
-        echo "$(date) - Tilt installation complete." >>install.log
+        log "INFO" "🚀 Tilt already installed."
+        tilt version
+        return
     fi
-}
-
-# Function to install Graphviz if not present
-# This function checks if Graphviz is installed. If not, it installs it using the package manager.
-install_graphviz() {
-    if command_exists dot; then
-        echo "$(date) - Graphviz already installed." >>install.log
-    else
-        echo "$(date) - Visit this link to install Graphviz manually: https://graphviz.org"
-        echo "$(date) - This is optional and only needed for debugging purposes."
-    fi
+    
+    log "INFO" "🚀 Installing Tilt..."
+    
+    # Create ~/.local/bin if it doesn't exist
+    mkdir -p "$HOME/.local/bin"
+    
+    curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
+    
+    log "SUCCESS" "✅ Tilt installed successfully."
+    tilt version
 }
 
 # Function to install Relay Util if not present
-# This function checks if Relay Util is installed. If not, it installs it using the package manager.
 install_relay_util() {
     if command_exists relay-util; then
-        echo "$(date) - Relay Util already installed." >>install.log
+        log "INFO" "🚚 Relay Util already installed."
+        return
+    fi
+    
+    if ! command_exists go; then
+        log "WARNING" "🚨 Go is not installed. In order to install Relay Util, please install Go from https://go.dev/doc/install"
+        return
+    fi
+    
+    log "INFO" "🚚 Installing Relay Util..."
+    
+    go install github.com/commoddity/relay-util/v2@latest
+    
+    log "SUCCESS" "✅ Relay Util installed successfully."
+}
+
+# Function to prompt user for confirmation
+prompt_user() {
+    local message="$1"
+    echo -e "${BLUE}${message}${RESET}"
+    echo -n "> "
+    read -r answer
+    answer=$(echo "$answer" | tr '[:upper:]' '[:lower:]')
+    if [[ "$answer" =~ ^(y|yes)$ ]]; then
+        return 0
     else
-        echo "$(date) - Installing Relay Util..." >>install.log
-        go install github.com/commoddity/relay-util/v2@latest
-        echo "$(date) - Relay Util installation complete." >>install.log
+        return 1
     fi
 }
 
 # Main execution starts here
-echo "$(date) - Starting installation script..." >>install.log
+log "INFO" "🔍 Starting installation script..."
 
+# Detect system architecture and OS
+detect_system
+
+# Check for missing dependencies
+MISSING_DEPS=()
+
+for cmd in docker kind kubectl helm tilt relay-util; do
+    if ! command_exists "$cmd"; then
+        case "$cmd" in
+            docker) MISSING_DEPS+=("🐳 Docker: Container engine for running applications in containers") ;;
+            kind) MISSING_DEPS+=("🌀 Kind: Tool for running local Kubernetes clusters using Docker") ;;
+            kubectl) MISSING_DEPS+=("🔧 kubectl: CLI tool for controlling Kubernetes clusters") ;;
+            helm) MISSING_DEPS+=("⛵ Helm: Package manager for Kubernetes") ;;
+            tilt) MISSING_DEPS+=("🚀 Tilt: Tool for development on Kubernetes") ;;
+            relay-util) MISSING_DEPS+=("🚚 Relay Util: Simple load-testing tool for relays") ;;
+        esac
+    fi
+done
+
+if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
+    log "SUCCESS" "✅ All dependencies are installed."
+    exit 0
+fi
+
+# Display missing dependencies
+log "WARNING" "🚨 The following required dependencies are missing:"
+for dep in "${MISSING_DEPS[@]}"; do
+    echo -e "${YELLOW}${dep}${RESET}"
+done
+
+# Prompt user to install
+if ! prompt_user "❔ Would you like to install these dependencies? (y/n):"; then
+    log "WARNING" "Installation aborted by user"
+    exit 1
+fi
+
+# Install missing dependencies
 install_docker
 install_kind
 install_kubectl
 install_helm
 install_tilt
-install_graphviz
 install_relay_util
 
-echo "$(date) - Installation script completed." >>install.log
+log "SUCCESS" "✅ Installation script completed."
