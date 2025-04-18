@@ -14,9 +14,57 @@ The E2E test suite primarily focuses on ensuring:
 - The system maintains high availability and reliability under load
 - Response metrics meet predefined success criteria
 
-## Test Architecture
+## Running Tests
 
-The tests use a load testing approach where multiple concurrent requests are sent to PATH, which then forwards them to the configured blockchain services. The system captures detailed metrics on response times, success rates, and error types to verify performance meets requirements.
+:::important E2E 
+
+As the E2E tests send actual relay requests, they require a valid configuration file that:
+- is configured for the protocol being tested
+- contains valid configuration for the services being tested
+
+These files must be located in the `./e2e` directory and be named after the protocol:
+- `.morse.config.yaml` for Morse
+- `.shannon.config.yaml` for Shannon
+
+For instructions on how to create these configuration files, see the [PATH Configuration File documentation](./5_configurations_path.md).
+
+:::tip
+
+Make targets are available for each protocol to copy example configuration files to the `./e2e` directory:
+
+- `make morse_prepare_e2e_config`
+- `make shannon_prepare_e2e_config`
+
+Once copied, you will need to update the configuration with valid values before running the tests.
+
+:::
+
+### Make Targets
+
+Tests can be executed using Make targets defined in the project:
+
+```bash
+# Run all tests (unit and E2E)
+make test_all
+
+# Run only E2E tests for Shannon
+make test_e2e_evm_shannon
+
+# Run only E2E tests for Morse
+make test_e2e_evm_morse
+
+# Run E2E tests for a specific service
+make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
+
+# Force Docker rebuild
+make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
+
+# Enable Docker logs
+make test_e2e_evm_morse DOCKER_LOG=true
+
+# Wait for hydrator checks
+make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
+```
 
 ### Vegeta Load Testing
 
@@ -56,33 +104,6 @@ The E2E tests can be configured through several environment variables:
 | DOCKER_FORCE_REBUILD | Force rebuild of Docker image. By default the Docker image is built only if not found locally. However, a rebuild may be forced with this flag. Useful if testing local development changes                | false                    | No       |
 | SERVICE_ID_OVERRIDE  | Test only a specific service ID                                                                                                                                                                            | All services             | No       |
 | WAIT_FOR_HYDRATOR    | Seconds to wait for hydrator checks                                                                                                                                                                        | 0                        | No       |
-
-## Running Tests
-
-Tests can be executed using Make targets defined in the project:
-
-```bash
-# Run all tests (unit and E2E)
-make test_all
-
-# Run only E2E tests for Shannon
-make test_e2e_evm_shannon
-
-# Run only E2E tests for Morse
-make test_e2e_evm_morse
-
-# Run E2E tests for a specific service
-make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
-
-# Force Docker rebuild
-make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
-
-# Enable Docker logs
-make test_e2e_evm_morse DOCKER_LOG=true
-
-# Wait for hydrator checks
-make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
-```
 
 ## Test Metrics and Validation
 
