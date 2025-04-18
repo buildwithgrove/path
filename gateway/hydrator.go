@@ -3,6 +3,7 @@
 package gateway
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -136,7 +137,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specifying a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	availableEndpoints, err := eph.Protocol.AvailableEndpoints(serviceID, nil)
+	availableEndpoints, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
 	if err != nil {
 		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
 	}
@@ -180,7 +181,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
 					// which means there is no need for specifying a specific app.
 					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
+					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
@@ -200,6 +201,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
 						protocolCtx:         hydratorRequestCtx,
+						context:             context.TODO(),
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()

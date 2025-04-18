@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -32,6 +33,12 @@ const (
 	//  /1a2b3c4d/path/segment -> /path/segment
 	//  /1a2b3c4d/path -> /path
 	reqHeaderEndpointID = "endpoint-id"
+
+	// Reserve time for system overhead, i.e. time spent on non-business logic operations.
+	// Examples:
+	// - time required to read the HTTP request's body.
+	// - time required to write the prepared HTTP response.
+	systemOverheadAllowance = 5 * time.Second
 )
 
 type (
@@ -152,9 +159,25 @@ func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc 
 }
 
 /* --------------------------------- Handlers -------------------------------- */
-
-// handleServiceRequest sets the request ID and HTTP details in the request context
-// from the HTTP request and passes it to the gateway handler, which processes the request.
+// handleServiceRequest:
+// 1. Creates timeout context before WriteTimeout expires
+// 2. Prevents empty responses on long operations
+// 3. Forwards request to gateway handler
 func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) {
-	r.gateway.HandleServiceRequest(req.Context(), req, w)
+	// Reserve time for system overhead
+	processingTimeout := r.config.WriteTimeout - systemOverheadAllowance
+
+	if processingTimeout <= 0 {
+		// Use original context if timeout calculation invalid
+		r.gateway.HandleServiceRequest(req.Context(), req, w)
+		return
+	}
+
+	// Apply timeout to business logic operations
+	// DEV_NOTE: Assumes request body read time is negligible.
+	// If body read is slow, little time remains for business logic since WriteTimeout resets after body read:
+	// https://pkg.go.dev/net/http#Server (ReadTimeout/WriteTimeout)
+	reqCtx, cancel := context.WithTimeout(req.Context(), processingTimeout)
+	defer cancel()
+	r.gateway.HandleServiceRequest(reqCtx, req, w)
 }

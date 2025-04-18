@@ -9,9 +9,6 @@ import (
 const (
 	defaultPort               = 3069
 	defaultMaxRequestBodySize = 1 << 20 // 1 MB
-	defaultReadTimeout        = 5_000 * time.Millisecond
-	defaultWriteTimeout       = 10_000 * time.Millisecond
-	defaultIdleTimeout        = 120_000 * time.Millisecond
 )
 
 /* --------------------------------- Router Config Struct -------------------------------- */
@@ -37,12 +34,12 @@ func (c *RouterConfig) hydrateRouterDefaults() {
 		c.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 	if c.ReadTimeout == 0 {
-		c.ReadTimeout = defaultReadTimeout
+		c.ReadTimeout = defaultHTTPServerReadTimeout
 	}
 	if c.WriteTimeout == 0 {
-		c.WriteTimeout = defaultWriteTimeout
+		c.WriteTimeout = defaultHTTPServerWriteTimeout
 	}
 	if c.IdleTimeout == 0 {
-		c.IdleTimeout = defaultIdleTimeout
+		c.IdleTimeout = defaultHTTPServerIdleTimeout
 	}
 }

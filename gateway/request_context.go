@@ -76,6 +76,11 @@ type requestContext struct {
 	httpObservations observation.HTTPRequestObservations
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations observation.GatewayObservations
+
+	// Enforces request completion deadline.
+	// Passed to potentially long-running operations like protocol interactions.
+	// Prevents HTTP handler timeouts that would return empty responses to clients.
+	context context.Context
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -87,9 +92,9 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 
 	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
 	// Extract the service ID and find the target service's corresponding QoS instance.
-	serviceID, serviceQoS, err := rc.httpRequestParser.GetQoSService(context.TODO(), httpReq)
+	serviceID, serviceQoS, err := rc.httpRequestParser.GetQoSService(rc.context, httpReq)
 	if err != nil {
-		rc.presetFailureHTTPResponse = rc.httpRequestParser.GetHTTPErrorResponse(context.TODO(), err)
+		rc.presetFailureHTTPResponse = rc.httpRequestParser.GetHTTPErrorResponse(rc.context, err)
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
 		return errHTTPRequestRejectedByParser
 	}
@@ -101,7 +106,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 }
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
-func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *http.Request) error {
+func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http (L7) level.
 	// Required steps:
 	//  	1. Update QoSService interface to parse custom struct with []byte payload
@@ -110,7 +115,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 	//
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
-	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(ctx, httpReq)
+	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(rc.context, httpReq)
 	rc.qosCtx = qosCtx
 
 	if !isValid {
@@ -124,10 +129,10 @@ func (rc *requestContext) BuildQoSContextFromHTTP(ctx context.Context, httpReq *
 // BuildQoSContextFromWebsocket builds the QoS context instance using the supplied WebSocket request.
 // This method does not need to parse the HTTP request's payload as the WebSocket request does not have a body,
 // so it will only return an error if called for a service that does not support WebSocket connections.
-func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsReq *http.Request) error {
+func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) error {
 	// Create the QoS request context using the WebSocket request.
 	// This method will reject the request if it is for a service that does not support WebSocket connections.
-	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(ctx)
+	qosCtx, isValid := rc.serviceQoS.ParseWebsocketRequest(rc.context)
 	rc.qosCtx = qosCtx
 
 	// Only reject the request if the service QoS does not support WebSocket connections.
@@ -151,7 +156,7 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(ctx context.Context, wsRe
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	// Retrieve the list of available endpoints for the requested service.
-	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.serviceID, httpReq)
+	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
@@ -168,7 +173,7 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	}
 
 	// Prepare the Protocol ctx for the selected endpoint.
-	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.serviceID, selectedEndpointAddr, httpReq)
+	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues (i.e. tracing)

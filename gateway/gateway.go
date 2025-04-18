@@ -74,8 +74,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
-		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
+		context:             ctx,
 	}
 
 	defer func() {
@@ -113,8 +112,9 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
@@ -141,7 +141,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // handleWebsocketRequest handles WebSocket connection requests
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
+	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {
 		return
 	}
