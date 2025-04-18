@@ -37,9 +37,12 @@ check_path_config:
    		exit 1; \
    fi
 
-# The PATH config value can be set via the CONFIG_PATH env variable.
-# Defaults to ./local/path/.config.yaml
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
+
+.PHONY: path_run
+path_run: path_build check_path_config ## Run the path binary as a standalone binary
+	(cd bin; ./path -config ${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###
