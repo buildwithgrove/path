@@ -152,7 +152,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
 ) (gateway.ProtocolRequestContext, error) {
-	permittedApps, err := p.getGatewayModePermittedApps(context.TODO(), serviceID, httpReq)
+	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
 	}

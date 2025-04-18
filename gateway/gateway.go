@@ -18,7 +18,6 @@ package gateway
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -53,10 +52,6 @@ type Gateway struct {
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
-
-	// Max request processing time.
-	// Prevents empty responses due to WriteTimeout setting of the HTTP server.
-	RequestProcessingTimeout time.Duration
 }
 
 // HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
@@ -71,11 +66,6 @@ type Gateway struct {
 // - Extract generic processing into common method
 // - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
-	// Request processing deadline context
-	deadline := time.Now().Add(g.RequestProcessingTimeout)
-	ctxWithDeadline, cancel := context.WithDeadline(context.Background(), deadline)
-	defer cancel()
-
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
@@ -84,7 +74,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		context:             ctxWithDeadline,
+		context:             ctx,
 	}
 
 	defer func() {

@@ -34,12 +34,12 @@ func (c *RouterConfig) hydrateRouterDefaults() {
 		c.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 	if c.ReadTimeout == 0 {
-		c.ReadTimeout = defaultReadTimeout
+		c.ReadTimeout = defaultHTTPServerReadTimeout
 	}
 	if c.WriteTimeout == 0 {
-		c.WriteTimeout = defaultWriteTimeout
+		c.WriteTimeout = defaultHTTPServerWriteTimeout
 	}
 	if c.IdleTimeout == 0 {
-		c.IdleTimeout = defaultIdleTimeout
+		c.IdleTimeout = defaultHTTPServerIdleTimeout
 	}
 }

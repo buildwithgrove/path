@@ -82,9 +82,6 @@ func main() {
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
 		MetricsReporter:   metricsReporter,
-
-		// Set a request processing timeout based on HTTP handler's WriteTimeout setting.
-		RequestProcessingTimeout: configpkg.RequestProcessingTimeout,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
