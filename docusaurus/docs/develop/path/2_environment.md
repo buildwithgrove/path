@@ -17,7 +17,9 @@ It is a pre-requisite for both the:
 - [Development Environment Details](#development-environment-details)
 - [Technical Pre-Requisites \& Setup](#technical-pre-requisites--setup)
   - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Install Required Tools](#2-install-required-tools)
+  - [2. Install Required Tools (Linux \& MacOS)](#2-install-required-tools-linux--macos)
+    - [Install `pocketd` CLI](#install-pocketd-cli)
+    - [Install Required Local Tools](#install-required-local-tools)
   - [3. Choose Your Protocol](#3-choose-your-protocol)
 
 ## Development Environment Details
@@ -43,33 +45,47 @@ git clone https://github.com/buildwithgrove/path.git
 cd ./path
 ```
 
-### 2. Install Required Tools
+### 2. Install Required Tools (Linux & MacOS)
 
-:::tip
+#### Install `pocketd` CLI
 
-To install all dependencies automatically on a Linux system:
+To install the [`pocketd` CLI](https://dev.poktroll.com/category/pocketd-cli) on Linux or MacOS, run:
 
 ```bash
-make install_deps
+curl -sSL https://raw.githubusercontent.com/pokt-network/poktroll/main/scripts/install.sh | bash
 ```
 
-:::
+#### Install Required Local Tools
 
-The following tools are required to start a local PATH instance:
+To install all required local development tools on Linux or MacOS, run:
 
-**Local Deployment Tools:**
+```bash
+make install_tools
+```
+
+The above script will install the following tools which are required to start a PATH instance locally in development mode:
 
 - [**Docker**](https://docs.docker.com/get-docker/): Container runtime
 - [**Kind**](https://kind.sigs.k8s.io/#installation-and-usage): Local Kubernetes cluster
 - [**kubectl**](https://kubernetes.io/docs/tasks/tools/#kubectl): CLI for interacting with Kubernetes
 - [**Helm**](https://helm.sh/docs/intro/install/): Package manager for Kubernetes
 - [**Tilt**](https://docs.tilt.dev/install.html): Local Kubernetes development environment
-- [**Graphviz**](https://graphviz.org) (Debug only): Required for generating profiling & debugging performance
-- [**Relay Util**](https://github.com/commoddity/relay-util): (Load testing tool): Used to send configurable batches of relays concurrently
 
-**Development Tools:**
+:::tip
 
-- **[Uber Mockgen](https://github.com/uber-go/mock)**: Mock interface generator for testing
+The following optional tools may be helpful for your development workflow but are not required to start a PATH instance locally in development mode:
+
+- [**Relay Util**](https://github.com/commoddity/relay-util): An easy to use load testing tool for sending configurable batches of relays concurrently
+- [**Graphviz**](https://graphviz.org): Required for generating profiling & debugging performance
+- [**Uber Mockgen**](https://github.com/uber-go/mock): Mock interface generator for testing
+
+They may be installed with:
+
+```bash
+make install_optional_tools
+```
+
+:::
 
 ### 3. Choose Your Protocol
 
