@@ -22,10 +22,6 @@ var _ health.Check = &EndpointHydrator{}
 // componentNameHydrator is the name used when reporting the status of the endpoint hydrator
 const componentNameHydrator = "endpoint-hydrator"
 
-// bootstrapInitialQoSDataChecks is the number of checks to run immediately after the hydrator starts.
-// This helps to identify and filter out invalid endpoints as soon as possible.
-const bootstrapInitialQoSDataChecks = 5
-
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
 //
@@ -61,9 +57,6 @@ type EndpointHydrator struct {
 	RunInterval time.Duration
 	// MaxEndpointCheckWorkers is the maximum number of workers that will be used to concurrently check endpoints.
 	MaxEndpointCheckWorkers int
-	// BootstrapInitialQoSDataChecks is the number of rounds of checks to run immediately on PATH startup.
-	// This helps to identify and filter out invalid endpoints as soon as possible.
-	BootstrapInitialQoSDataChecks int
 
 	// TODO_FUTURE: a more sophisticated health status indicator
 	// may eventually be needed, e.g. one that checks whether any
@@ -92,21 +85,9 @@ func (eph *EndpointHydrator) Start() error {
 		// Wait for the protocol to be healthy before starting hydrator
 		eph.waitForProtocolHealth()
 
-		// Bootstrap QoS data with initial checks before starting regular interval
-		eph.bootstrapInitialQoSData() // Run 5 initial checks
-
-		// Start regular interval checks
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
-			// run the hydrator and get the successful service checks
-			successfulServiceChecks := eph.run()
-
-			// update the hydrator's health status
-			eph.healthStatusMutex.Lock()
-			eph.isHealthy = eph.getHealthStatus(successfulServiceChecks)
-			eph.healthStatusMutex.Unlock()
-
-			// wait for the next interval
+			eph.run()
 			<-ticker.C
 		}
 	}()
@@ -128,26 +109,7 @@ func (eph *EndpointHydrator) waitForProtocolHealth() {
 	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
-// bootstrapInitialQoSData runs a specified number of hydrator checks immediately
-// to quickly bootstrap QoS data on startup. This helps to identify and filter out
-// invalid endpoints as soon as possible. The hydrator's health status is only set
-// to true after all initial checks have completed successfully.
-func (eph *EndpointHydrator) bootstrapInitialQoSData() {
-	eph.Logger.Info().Msg("bootstrapInitialQoSData: bootstrapping QoS data with initial checks")
-
-	// Run initial checks
-	for i := range bootstrapInitialQoSDataChecks {
-		eph.Logger.Info().Msgf("bootstrapInitialQoSData: hydrator run %d of %d checks on startup",
-			i+1,
-			bootstrapInitialQoSDataChecks,
-		)
-		eph.run()
-	}
-
-	eph.Logger.Info().Msg("bootstrapInitialQoSData: initial QoS data bootstrap completed")
-}
-
-func (eph *EndpointHydrator) run() *sync.Map {
+func (eph *EndpointHydrator) run() {
 	logger := eph.Logger.With("services_count", len(eph.ActiveQoSServices))
 	logger.Info().Msg("Running Endpoint Hydrator")
 
@@ -156,7 +118,7 @@ func (eph *EndpointHydrator) run() *sync.Map {
 	var wg sync.WaitGroup
 	// A sync.Map is optimized for the use case here,
 	// i.e. each map entry is written only once.
-	successfulServiceChecks := &sync.Map{}
+	var successfulServiceChecks sync.Map
 
 	for svcID, svcQoS := range eph.ActiveQoSServices {
 		wg.Add(1)
@@ -177,7 +139,10 @@ func (eph *EndpointHydrator) run() *sync.Map {
 	}
 	wg.Wait()
 
-	return successfulServiceChecks
+	eph.healthStatusMutex.Lock()
+	defer eph.healthStatusMutex.Unlock()
+
+	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
 }
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {

@@ -817,7 +817,7 @@ func showWaitBar(secondsToWait int) {
 	// Wait for 1 minute, updating the progress bar every second
 	for i := 0; i < secondsToWait; i++ {
 		waitBar.Increment()
-		time.Sleep(1 * time.Second)
+		<-time.After(1 * time.Second)
 	}
 
 	waitBar.Finish()
