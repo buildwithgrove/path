@@ -28,7 +28,7 @@ import (
 	`make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
 	`make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true` - Force a rebuild of the Docker image for the EVM tests
 	`make test_e2e_evm_morse DOCKER_LOG=true`           - Log the output of the Docker container for the EVM tests
-
+	`make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30`      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
 For full information on the test options, see `opts_test.go`
 */
 
@@ -207,12 +207,13 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	//
 	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
 	// 		ie. for returning empty or invalid responses, etc.
-	secondsToWait := 30
-	fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", secondsToWait)
-	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		<-time.After(time.Duration(secondsToWait) * time.Second) // In CI, do not use wait bar as CI logs do not support it.
-	} else {
-		showWaitBar(secondsToWait) // In local environment, show progress bar to indicate we're waiting.
+	if opts.waitForHydrator > 0 {
+		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
+		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+			<-time.After(time.Duration(opts.waitForHydrator) * time.Second) // In CI, do not use wait bar as CI logs do not support it.
+		} else {
+			showWaitBar(opts.waitForHydrator) // In local environment, show progress bar to indicate we're waiting.
+		}
 	}
 
 	// Get test cases based on protocol
