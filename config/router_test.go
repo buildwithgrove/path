@@ -61,9 +61,9 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 			want: RouterConfig{
 				Port:               defaultPort,
 				MaxRequestBodySize: defaultMaxRequestBodySize,
-				ReadTimeout:        defaultReadTimeout,
-				WriteTimeout:       defaultWriteTimeout,
-				IdleTimeout:        defaultIdleTimeout,
+				ReadTimeout:        defaultHTTPServerReadTimeout,
+				WriteTimeout:       defaultHTTPServerWriteTimeout,
+				IdleTimeout:        defaultHTTPServerIdleTimeout,
 			},
 		},
 		{
@@ -74,9 +74,9 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 			want: RouterConfig{
 				Port:               8080,
 				MaxRequestBodySize: defaultMaxRequestBodySize,
-				ReadTimeout:        defaultReadTimeout,
-				WriteTimeout:       defaultWriteTimeout,
-				IdleTimeout:        defaultIdleTimeout,
+				ReadTimeout:        defaultHTTPServerReadTimeout,
+				WriteTimeout:       defaultHTTPServerWriteTimeout,
+				IdleTimeout:        defaultHTTPServerIdleTimeout,
 			},
 		},
 	}
