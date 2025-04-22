@@ -47,9 +47,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
-					ReadTimeout:        defaultReadTimeout,
-					WriteTimeout:       defaultWriteTimeout,
-					IdleTimeout:        defaultIdleTimeout,
+					ReadTimeout:        defaultHTTPServerReadTimeout,
+					WriteTimeout:       defaultHTTPServerWriteTimeout,
+					IdleTimeout:        defaultHTTPServerIdleTimeout,
 				},
 				HydratorConfig: EndpointHydratorConfig{
 					ServiceIDs: []protocol.ServiceID{"F00C"},
@@ -84,9 +84,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
-					ReadTimeout:        defaultReadTimeout,
-					WriteTimeout:       defaultWriteTimeout,
-					IdleTimeout:        defaultIdleTimeout,
+					ReadTimeout:        defaultHTTPServerReadTimeout,
+					WriteTimeout:       defaultHTTPServerWriteTimeout,
+					IdleTimeout:        defaultHTTPServerIdleTimeout,
 				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
@@ -216,9 +216,9 @@ logger_config:
 				Router: RouterConfig{
 					Port:               defaultPort,
 					MaxRequestBodySize: defaultMaxRequestBodySize,
-					ReadTimeout:        defaultReadTimeout,
-					WriteTimeout:       defaultWriteTimeout,
-					IdleTimeout:        defaultIdleTimeout,
+					ReadTimeout:        defaultHTTPServerReadTimeout,
+					WriteTimeout:       defaultHTTPServerWriteTimeout,
+					IdleTimeout:        defaultHTTPServerIdleTimeout,
 				},
 				Logger: LoggerConfig{
 					Level: "debug",
