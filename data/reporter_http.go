@@ -66,11 +66,33 @@ func (drh *DataReporterHTTP) sendRecordOverHTTP(serializedDataRecord []byte) err
 	return nil
 }
 
-// TODO_IN_THIS_PR: hydrate the logger with observations fields.
+// hydrateLogger enhances the logger with observation data:
+// - Starts with component and service info
+// - Adds gateway data if available
+// - Adds auth data if available
 func (drh *DataReporterHTTP) hydrateLogger(observations *observation.RequestResponseObservations) polylog.Logger {
+	// Base logger with component and service ID
 	logger := drh.Logger.With(
 		"component", "DataReporterHTTP",
+		"service_id", observations.ServiceId,
 	)
 
+	gatewayObservations := observations.GetGateway()
+	// Skip if no gateway observations
+	if gatewayObservations == nil {
+		return logger
+	}
+
+	// Add request type (user/hydrator)
+	logger = logger.With("request_type", gatewayObservations.GetRequestType().String())
+
+	requestAuth := gatewayObservations.GetRequestAuth()
+	// Skip if no auth data
+	if requestAuth == nil {
+		return logger
+	}
+
+	// Add request ID for tracing
+	logger = logger.With("request_id", requestAuth.GetRequestId())
 	return logger
 }
