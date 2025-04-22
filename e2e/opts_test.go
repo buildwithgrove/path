@@ -10,11 +10,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// NOTE: The types and constants in this file are also referenced in evm_test.go.
-// Since they are in the same package, this causes linter warnings but not Go compilation errors.
-// This file contains all the configuration options and their documentation,
-// while evm_test.go only keeps a reference to the global options variable.
-
 /* -------------------- Test Configuration Options -------------------- */
 
 // Environment variable names

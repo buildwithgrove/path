@@ -47,8 +47,7 @@ type (
 	}
 
 	// methodConfig contains the configuration for a method to be tested.
-	// This includes the total number of requests to send, the requests per second,
-	// and the number of workers to use.
+	// This includes the total number of requests to send & the requests per second.
 	methodConfig struct {
 		totalRequests int // Total number of requests to send
 		rps           int // Requests per second
