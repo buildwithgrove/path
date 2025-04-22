@@ -56,17 +56,25 @@ make test_e2e_evm_morse
 # Run E2E tests for a specific service
 make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
 
+# Run E2E tests against a PATH binary running locally without Docker
+make test_e2e_evm_morse GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
+
 # Force Docker rebuild
 make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
 
 # Enable Docker logs
 make test_e2e_evm_morse DOCKER_LOG=true
 
-# Wait for hydrator checks
+# Wait 30 seconds for hydrator checks
 make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
 ```
 
 ### Vegeta Load Testing
+
+<div align="center">
+<img src="./img/9000.png" alt="Vegeta" width="200"/>
+</div>
+<br/>
 
 PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta), a powerful HTTP load testing tool and library. Vegeta was chosen for its:
 
@@ -74,8 +82,6 @@ PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta), a powerful
 - Detailed metrics collection and reporting
 - Support for custom targeting and attack configurations
 - Ability to measure precise latency distributions (p50, p95, p99)
-
-Vegeta runs "attacks" which send requests at a specified rate over a defined period, capturing comprehensive metrics on each response. These metrics help validate that PATH meets both functional requirements and performance SLAs.
 
 ### CI Workflows
 
