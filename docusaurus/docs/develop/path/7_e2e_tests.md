@@ -72,9 +72,8 @@ make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
 ### Vegeta Load Testing
 
 <div align="center">
-<img src="./img/9000.png" alt="Vegeta" width="200"/>
+![Vegeta](../../../static/img/9000.png)
 </div>
-<br/>
 
 PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta), a powerful HTTP load testing tool and library. Vegeta was chosen for its:
 
