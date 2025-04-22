@@ -8,7 +8,7 @@ const QoSType = "evm"
 // 128 is the default archival threshold for EVM-based chains.
 // This is an opinionated value that aligns with industry standard
 // practices for defining what constitutes an archival block.
-const defaultEVMArchivalThreshold = 128
+const DefaultEVMArchivalThreshold = 128
 
 // ServiceQoSConfig defines the base interface for service QoS configurations.
 // This avoids circular dependency with the config package.
@@ -62,7 +62,7 @@ func NewEVMArchivalCheckConfig(
 	contractStartBlock uint64,
 ) *evmArchivalCheckConfig {
 	return &evmArchivalCheckConfig{
-		threshold:          defaultEVMArchivalThreshold,
+		threshold:          DefaultEVMArchivalThreshold,
 		contractAddress:    contractAddress,
 		contractStartBlock: contractStartBlock,
 	}
