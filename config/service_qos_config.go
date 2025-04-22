@@ -278,7 +278,6 @@ var morseServices = []ServiceQoSConfig{
 	),
 
 	// *** CometBFT Services ***
-	cometbft.NewCometBFTServiceQoSConfig("F000", "pocket"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),

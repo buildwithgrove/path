@@ -10,11 +10,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// NOTE: The types and constants in this file are also referenced in evm_test.go.
-// Since they are in the same package, this causes linter warnings but not Go compilation errors.
-// This file contains all the configuration options and their documentation,
-// while evm_test.go only keeps a reference to the global options variable.
-
 /* -------------------- Test Configuration Options -------------------- */
 
 // Environment variable names
@@ -27,6 +22,7 @@ const (
 	envServiceIDOverride  = "SERVICE_ID_OVERRIDE"
 	envDockerLog          = "DOCKER_LOG"
 	envDockerForceRebuild = "DOCKER_FORCE_REBUILD"
+	envWaitForHydrator    = "WAIT_FOR_HYDRATOR"
 )
 
 // protocolStr is a type to determine whether to test PATH with Morse or Shannon
@@ -65,6 +61,11 @@ type (
 		// If not set, the test will run for all service IDs for the protocol
 		serviceIDOverride protocol.ServiceID
 
+		// Wait time in seconds for hydrator checks to complete
+		// If not set, default is 0 (no wait)
+		// Can be set via WAIT_FOR_HYDRATOR env var
+		waitForHydrator int
+
 		// Docker-related configuration options
 		docker dockerOptions
 
@@ -92,6 +93,7 @@ func gatherTestOptions() testOptions {
 	options := testOptions{
 		gatewayURL:         "http://localhost:%s/v1", // eg. `http://localhost:3069/v1`
 		configPathTemplate: "./.%s.config.yaml",      // eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
+		waitForHydrator:    0,                        // Default: no wait
 	}
 
 	// Required environment variables
@@ -112,6 +114,13 @@ func gatherTestOptions() testOptions {
 	// Optional environment variable to override the service ID to test
 	if serviceIDOverride := os.Getenv(envServiceIDOverride); serviceIDOverride != "" {
 		options.serviceIDOverride = protocol.ServiceID(serviceIDOverride)
+	}
+
+	// Optional environment variable for hydrator wait time
+	if waitTimeStr := os.Getenv(envWaitForHydrator); waitTimeStr != "" {
+		if waitTime, err := strconv.Atoi(waitTimeStr); err == nil {
+			options.waitForHydrator = waitTime
+		}
 	}
 
 	// Docker configuration

@@ -33,10 +33,11 @@ type RelayRequestSigner interface {
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
+	logger polylog.Logger
+
 	fullNode FullNode
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
 	serviceID protocol.ServiceID
-	// TODO_TECHDEBT(@adshmh): add logger to the request context.
 
 	relayRequestSigner RelayRequestSigner
 
@@ -55,23 +56,35 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		selectedEndpointAddr = rc.selectedEndpoint.Addr()
 	}
 
+	// get a logger, hydrated with the selected endpoint.
+	logger := rc.getHydratedLogger()
+
+	// start the latency timer, which records only the time taken to send the relay request.
 	latencyStart := time.Now()
 
 	response, err := rc.sendRelay(payload)
 	if err != nil {
+		logger.Warn().Err(err).Msg("error sending a relay. Service request will fail.")
+
 		return protocol.Response{EndpointAddr: selectedEndpointAddr},
 			fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
 
+	// record the time taken to send the relay request.
 	latency := time.Since(latencyStart)
+
+	logger = logger.With("endpoint_response_payload_len", len(response.Payload))
+	logger.Debug().Msg("Received a response from the selected endpoint.")
 
 	// The Payload field of the response received from the endpoint, i.e. the relay miner,
 	// is a serialized http.Response struct. It needs to be deserialized into an HTTP Response struct
 	// to access the Service's response body, status code, etc.
 	relayResponse, err := deserializeRelayResponse(response.Payload)
 	if err != nil {
+		logger.Warn().Err(err).Msg("error deserializing endpoint response. Service request will fail.")
+
 		return protocol.Response{EndpointAddr: selectedEndpointAddr},
 			fmt.Errorf("relay: error unmarshaling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
 				rc.serviceID, selectedEndpointAddr, err,
@@ -81,6 +94,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	relayResponse.Latency = latency
 
 	relayResponse.EndpointAddr = selectedEndpointAddr
+
+	logger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
 	return relayResponse, nil
 }
 
@@ -231,4 +246,32 @@ func buildUnsignedRelayRequest(
 	}
 
 	return relayRequest, nil
+}
+
+func (rc *requestContext) getHydratedLogger() polylog.Logger {
+	logger := rc.logger.With(
+		"service_id", rc.serviceID,
+	)
+
+	// No endpoint specified on the request context.
+	// This should never happen.
+	if rc.selectedEndpoint == nil {
+		return logger
+	}
+
+	logger = logger.With(
+		"selected_endpoint_supplier", rc.selectedEndpoint.supplier,
+		"selected_endpoint_url", rc.selectedEndpoint.url,
+	)
+
+	sessionHeader := rc.selectedEndpoint.session.GetHeader()
+	if sessionHeader == nil {
+		return logger
+	}
+
+	logger = logger.With(
+		"seleced_endpoint_app", sessionHeader.ApplicationAddress,
+	)
+
+	return logger
 }

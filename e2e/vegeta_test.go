@@ -63,7 +63,12 @@ func createRPCTarget(
 	}
 }
 
-// runAttack executes a load test for the given method
+// runAttack executes a load test for the given method, which will execute
+// `methodDef.totalRequests` requests at a rate of `methodDef.rps` requests per second.
+//
+// DEV_NOTE: The term "attack" derives from the Vegeta load testing tool
+// and refers to a single request sent to the gateway. "It's over 9000!"
+// Docs: https://github.com/tsenart/vegeta
 func runAttack(
 	gatewayURL string,
 	serviceID protocol.ServiceID,
@@ -806,15 +811,15 @@ func (p *progressBars) get(method jsonrpc.Method) *pb.ProgressBar {
 	return p.bars[method]
 }
 
-// showWaitBar shows a progress bar for the 1-minute wait for hydrator checks to complete
+// showWaitBar shows a progress bar for the optional for hydrator checks to complete
 func showWaitBar(secondsToWait int) {
-	// Create a progress bar for the 1-minute wait
+	// Create a progress bar for the optional wait time
 	waitBar := pb.ProgressBarTemplate(`{{ blue "Waiting" }} {{ printf "%2d/%2d" .Current .Total }} {{ bar . "[" "=" ">" " " "]" | blue }} {{ green (percent .) }}`).New(secondsToWait)
 	waitBar.Set(pb.Bytes, false)
 	waitBar.SetMaxWidth(100)
 	waitBar.Start()
 
-	// Wait for 1 minute, updating the progress bar every second
+	// Wait for specified seconds, updating the progress bar every second
 	for i := 0; i < secondsToWait; i++ {
 		waitBar.Increment()
 		<-time.After(1 * time.Second)

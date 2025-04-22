@@ -11,7 +11,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
-	"github.com/buildwithgrove/path/config"
+	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/request"
@@ -28,7 +28,7 @@ func main() {
 		log.Fatalf("failed to get config path: %v", err)
 	}
 
-	config, err := config.LoadGatewayConfigFromYAML(configPath)
+	config, err := configpkg.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -147,7 +147,7 @@ func getConfigPath(defaultConfigPath string) (string, error) {
 // - If `shannon_config` is set it returns a Shannon protocol instance.
 // - If `morse_config` is set it returns a Morse protocol instance.
 // - If neither is set, it returns an error.
-func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Protocol, error) {
+func getProtocol(logger polylog.Logger, config configpkg.GatewayConfig) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
 		return getShannonProtocol(logger, shannonConfig)
 	}

@@ -20,20 +20,38 @@ import (
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 
 // getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeApps(_ context.Context, httpReq *http.Request) ([]*apptypes.Application, error) {
+func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *http.Request) ([]*apptypes.Application, error) {
+	logger := p.logger.With(
+		"gateway_mode", p.gatewayMode,
+		"gateway_addr", p.gatewayAddr,
+	)
+
 	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
+		logger.Error().Err(err).Msg("error extracting the selected app from the HTTP request: relay request will fail.")
 		return nil, fmt.Errorf("delegated GatewayMode: error getting the selected app from the HTTP request: %w", err)
 	}
 
-	selectedApp, err := p.FullNode.GetApp(context.TODO(), selectedAppAddr)
+	logger = logger.With("selected_app_addr", selectedAppAddr)
+	logger.Debug().Msg("fetching the app with the selected address")
+
+	selectedApp, err := p.FullNode.GetApp(ctx, selectedAppAddr)
 	if err != nil {
+		logger.Error().Err(err).Msg("error fetching the selected app: relay request will fail.")
 		return nil, fmt.Errorf("delegated GatewayMode: error getting the selected app %s data from the SDK: %w", selectedAppAddr, err)
 	}
 
+	// log successful app fetch message.
+	logger = logger.With("fetched_app_addr", selectedApp.Address)
+	logger.Debug().Msg("fetched the app with the selected address")
+
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
+		logger.Error().Msg("gateway does not have delegation for the selected app: relay request will fail.")
 		return nil, fmt.Errorf("delegated GatewayMode: app with address %s does not delegate to gateway address: %s", selectedApp.Address, p.gatewayAddr)
 	}
+
+	// log success message.
+	logger.Debug().Msg("successfully verified the gateway has delegation for the selected app.")
 
 	return []*apptypes.Application{selectedApp}, nil
 }
