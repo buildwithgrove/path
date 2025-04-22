@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // QoS implements gateway.QoSService by providing:

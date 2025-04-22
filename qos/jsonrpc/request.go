@@ -77,7 +77,7 @@ func BuildParamsFromString(stringParam string) (Params, error) {
 
 // BuildParamsFromStringArray builds a Params object from an array of strings.
 //
-// For example, for an `eth_getBalance` request, the params would look like:
+// For example, for an `eth_getBalance` request, the params would look like:å
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
 //
 // Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
