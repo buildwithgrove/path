@@ -1,29 +1,58 @@
 package evm
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 )
+
+// QoS implements gateway.QoSService by providing:
+//  1. QoSRequestParser - Builds EVM-specific RequestQoSContext objects from HTTP requests
+//  2. EndpointSelector - Selects endpoints for service requests
+var _ gateway.QoSService = &QoS{}
+
+// QoS implements ServiceQoS for EVM-based chains.
+// It handles chain-specific:
+//   - Request parsing
+//   - Response building
+//   - Endpoint validation and selection
+type QoS struct {
+	logger polylog.Logger
+	*serviceState
+	*evmRequestValidator
+}
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
 func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
-	evmChainID := config.GetEVMChainID()
+	evmChainID := config.getEVMChainID()
 
 	logger = logger.With(
 		"qos_instance", "evm",
 		"evm_chain_id", evmChainID,
 	)
 
-	serviceState := &serviceState{
-		logger:  logger,
-		chainID: evmChainID,
+	store := &endpointStore{
+		logger: logger,
+		// Initialize the endpoint store with an empty map.
+		endpoints: make(map[protocol.EndpointAddr]endpoint),
 	}
 
-	// TODO_CONSIDERATION(@olshansk): Archival checks are currently optional to enable iteration and optionality.
-	// In the future, evaluate whether it should be mandatory for all EVM services.
-	if config.ArchivalCheckEnabled() {
+	serviceState := &serviceState{
+		logger:        logger,
+		serviceConfig: config,
+		endpointStore: store,
+	}
+
+	// TODO_CONSIDERATION(@olshansk): Archival checks are currently optional to enable iteration
+	// and optionality. In the future, evaluate whether it should be mandatory for all EVM services.
+	if config.archivalCheckEnabled() {
 		serviceState.archivalState = archivalState{
 			logger:              logger.With("state", "archival"),
-			archivalCheckConfig: config.GetEVMArchivalCheckConfig(),
+			archivalCheckConfig: config.getEVMArchivalCheckConfig(),
 			// Initialize the balance consensus map.
 			// It keeps track and maps a balance (at the configured address and contract)
 			// to the number of occurrences seen across all endpoints.
@@ -31,21 +60,35 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 		}
 	}
 
-	evmEndpointStore := &endpointStore{
-		logger:       logger,
-		serviceState: serviceState,
-	}
-
 	evmRequestValidator := &evmRequestValidator{
-		logger:        logger,
-		chainID:       evmChainID,
-		endpointStore: evmEndpointStore,
+		logger:       logger,
+		chainID:      evmChainID,
+		serviceState: serviceState,
 	}
 
 	return &QoS{
 		logger:              logger,
 		serviceState:        serviceState,
-		endpointStore:       evmEndpointStore,
 		evmRequestValidator: evmRequestValidator,
 	}
+}
+
+// ParseHTTPRequest builds a request context from an HTTP request.
+// Returns (requestContext, true) if the request is valid JSONRPC
+// Returns (errorContext, false) if the request is not valid JSONRPC.
+//
+// Implements gateway.QoSService interface.
+func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	return qos.evmRequestValidator.validateHTTPRequest(req)
+}
+
+// ParseWebsocketRequest builds a request context from the provided WebSocket request.
+// WebSocket connection requests do not have a body, so we don't need to parse it.
+//
+// Implements gateway.QoSService interface.
+func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
+	return &requestContext{
+		logger:       qos.logger,
+		serviceState: qos.serviceState,
+	}, true
 }

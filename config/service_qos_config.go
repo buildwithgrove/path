@@ -70,16 +70,7 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, nil),
 
 	// Anvil - Ethereum development/testing
-	evm.NewEVMServiceQoSConfig(
-		"anvil",
-		defaultEVMChainID,
-		evm.NewEVMArchivalCheckConfig(
-			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-			"0x28C6c06298d514Db089934071355E5743bf21d60",
-			// Contract start block
-			12_300_000,
-		),
-	),
+	evm.NewEVMServiceQoSConfig("anvil", defaultEVMChainID, nil),
 
 	// Anvil WebSockets - Ethereum WebSockets development/testing
 	evm.NewEVMServiceQoSConfig("anvilws", defaultEVMChainID, nil),
@@ -287,7 +278,6 @@ var morseServices = []ServiceQoSConfig{
 	),
 
 	// *** CometBFT Services ***
-	cometbft.NewCometBFTServiceQoSConfig("F000", "pocket"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
 	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),

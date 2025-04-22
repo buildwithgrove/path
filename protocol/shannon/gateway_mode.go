@@ -32,6 +32,11 @@ func (p *Protocol) getGatewayModePermittedApps(
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) ([]*apptypes.Application, error) {
+	p.logger.With(
+		"service_ID", serviceID,
+		"gateway_mode", p.gatewayMode,
+	).Debug().Msg("fetching permitted apps under the current gateway mode.")
+
 	switch p.gatewayMode {
 
 	case protocol.GatewayModeCentralized:
@@ -40,9 +45,9 @@ func (p *Protocol) getGatewayModePermittedApps(
 	case protocol.GatewayModeDelegated:
 		return p.getDelegatedGatewayModeApps(ctx, httpReq)
 
-		// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
-		//case protocol.GatewayModePermissionless:
-		//	return getPermissionlessGatewayModeApps(p.ownedAppsAddr), nil
+	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
+	//case protocol.GatewayModePermissionless:
+	//	return getPermissionlessGatewayModeApps(p.ownedAppsAddr), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", p.gatewayMode)

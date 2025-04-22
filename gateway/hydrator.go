@@ -3,6 +3,7 @@
 package gateway
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -19,10 +20,8 @@ import (
 // EndpointHydrator provides the functionality required for health check.
 var _ health.Check = &EndpointHydrator{}
 
-const (
-	// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
-	componentNameHydrator = "endpoint-hydrator"
-)
+// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
+const componentNameHydrator = "endpoint-hydrator"
 
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
@@ -76,7 +75,7 @@ type EndpointHydrator struct {
 // to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be provided.")
+		return errors.New("an instance of Protocol must be provided")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
@@ -84,6 +83,9 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+		// Wait for the protocol to be healthy before starting hydrator
+		eph.waitForProtocolHealth()
+
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,6 +94,20 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
+}
+
+// waitForProtocolHealth blocks until the Protocol reports as healthy.
+// This ensures that the hydrator only starts running once the underlying
+// protocol layer is ready.
+func (eph *EndpointHydrator) waitForProtocolHealth() {
+	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
+
+	for !eph.Protocol.IsAlive() {
+		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
+		time.Sleep(1 * time.Second)
+	}
+
+	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 func (eph *EndpointHydrator) run() {
@@ -136,7 +152,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specifying a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	availableEndpoints, err := eph.Protocol.AvailableEndpoints(serviceID, nil)
+	availableEndpoints, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
 	if err != nil {
 		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
 	}
@@ -180,7 +196,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
 					// which means there is no need for specifying a specific app.
 					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(serviceID, endpointAddr, nil)
+					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
@@ -200,6 +216,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
 						protocolCtx:         hydratorRequestCtx,
+						context:             context.TODO(),
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()
