@@ -13,7 +13,7 @@ const idChainIDCheck endpointCheckID = 1001
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 const methodChainID = jsonrpc.Method("eth_chainId")
 
-// TODO_IN_THIS_PR(@commoddity): determine an appropriate interval for checking the chain ID.
+// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the chain ID.
 const checkChainIDInterval = 20 * time.Minute
 
 var (

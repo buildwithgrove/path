@@ -13,7 +13,7 @@ const idArchivalCheck endpointCheckID = 1003
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 const methodGetBalance = jsonrpc.Method("eth_getBalance")
 
-// TODO_IN_THIS_PR(@commoddity): determine an appropriate interval for checking archival status.
+// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking archival status.
 const checkArchivalInterval = 20 * time.Minute
 
 var (

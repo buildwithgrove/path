@@ -2,8 +2,7 @@ name: PATH Lint & Test
 
 on:
   push:
-    # TODO_IN_THIS_PR(@commoddity): remove this
-    branches: [main, bootstrap-hydrator-results]
+    branches: [main]
   pull_request:
     branches: [main]
 
