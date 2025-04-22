@@ -210,8 +210,7 @@ properties:
       idle_timeout:
         description: "Idle timeout duration for the router."
         type: string
-  # TODO_IN_THIS_PR: add the HTTPDataReporter section.
-  #
+
   # Hydrator Configuration (optional)
   hydrator_config:
     description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."
@@ -232,3 +231,16 @@ properties:
         type: array
         items:
           type: string
+
+  # Data Reporter Configuration (optional)
+  data_reporter_config:
+    description: "Configuration for the HTTP data reporter, which is used to send data to an external data pipeline."
+    type: object
+    additionalProperties: false
+    required:
+      - target_url
+    properties:
+      target_url:
+        description: "The URL where the data will be reported to."
+        type: string
+        pattern: "^(http|https)://.*$"

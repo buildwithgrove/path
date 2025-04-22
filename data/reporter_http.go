@@ -22,7 +22,8 @@ var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
 type DataReporterHTTP struct {
 	Logger polylog.Logger
 
-	// IN_THIS_PR: make configurable.
+	// The URL of the Data Pipeline's HTTP server.
+	// e.g. Fluentd HTTP input plugin on localhost:8686.
 	DataProcessorURL string
 }
 
