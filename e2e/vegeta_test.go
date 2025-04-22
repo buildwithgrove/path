@@ -63,7 +63,12 @@ func createRPCTarget(
 	}
 }
 
-// runAttack executes a load test for the given method
+// runAttack executes a load test for the given method, which will execute
+// `methodDef.totalRequests` requests at a rate of `methodDef.rps` requests per second.
+//
+// DEV_NOTE: The term "attack" derives from the Vegeta load testing tool
+// and refers to a single request sent to the gateway. "It's over 9000!"
+// Docs: https://github.com/tsenart/vegeta
 func runAttack(
 	gatewayURL string,
 	serviceID protocol.ServiceID,

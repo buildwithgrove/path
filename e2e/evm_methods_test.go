@@ -63,6 +63,8 @@ type (
 	}
 )
 
+// TODO_FUTURE(@commoddity): allow reading this configuration from a YAML file
+//
 // methodDefinitions contains all method definitions for a service load test.
 // this allows customizing the configuration for each method as desired.
 var methodDefinitions = map[jsonrpc.Method]methodDefinition{
