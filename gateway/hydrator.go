@@ -19,10 +19,8 @@ import (
 // EndpointHydrator provides the functionality required for health check.
 var _ health.Check = &EndpointHydrator{}
 
-const (
-	// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
-	componentNameHydrator = "endpoint-hydrator"
-)
+// componentNameHydrator is the name used when reporting the status of the endpoint hydrator
+const componentNameHydrator = "endpoint-hydrator"
 
 // Please see the following link for details on the use of `Hydrator` word in the name.
 // https://stackoverflow.com/questions/6991135/what-does-it-mean-to-hydrate-an-object
@@ -76,7 +74,7 @@ type EndpointHydrator struct {
 // to start generating and sending endpoint check requests.
 func (eph *EndpointHydrator) Start() error {
 	if eph.Protocol == nil {
-		return errors.New("an instance of Protocol must be provided.")
+		return errors.New("an instance of Protocol must be provided")
 	}
 
 	if len(eph.ActiveQoSServices) == 0 {
@@ -84,6 +82,9 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
+		// Wait for the protocol to be healthy before starting hydrator
+		eph.waitForProtocolHealth()
+
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,6 +93,20 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
+}
+
+// waitForProtocolHealth blocks until the Protocol reports as healthy.
+// This ensures that the hydrator only starts running once the underlying
+// protocol layer is ready.
+func (eph *EndpointHydrator) waitForProtocolHealth() {
+	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
+
+	for !eph.Protocol.IsAlive() {
+		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
+		time.Sleep(1 * time.Second)
+	}
+
+	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 func (eph *EndpointHydrator) run() {
