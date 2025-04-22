@@ -80,6 +80,9 @@ func BuildParamsFromString(stringParam string) (Params, error) {
 // For example, for an `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
 //
+// JSON-RPC array params must be passed in the order specified by the method.
+// Reference: https://www.jsonrpc.org/specification#parameter_structures
+//
 // Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
 func BuildParamsFromStringArray(params [2]string) (Params, error) {
 	for i, param := range params {
