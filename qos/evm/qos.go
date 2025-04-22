@@ -2,11 +2,13 @@ package evm
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
 func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
-	evmChainID := config.GetEVMChainID()
+	evmChainID := config.getEVMChainID()
 
 	logger = logger.With(
 		"qos_instance", "evm",
@@ -14,16 +16,16 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 	)
 
 	serviceState := &serviceState{
-		logger:  logger,
-		chainID: evmChainID,
+		logger:        logger,
+		serviceConfig: config,
 	}
 
 	// TODO_CONSIDERATION(@olshansk): Archival checks are currently optional to enable iteration and optionality.
 	// In the future, evaluate whether it should be mandatory for all EVM services.
-	if config.ArchivalCheckEnabled() {
+	if config.archivalCheckEnabled() {
 		serviceState.archivalState = archivalState{
 			logger:              logger.With("state", "archival"),
-			archivalCheckConfig: config.GetEVMArchivalCheckConfig(),
+			archivalCheckConfig: config.getEVMArchivalCheckConfig(),
 			// Initialize the balance consensus map.
 			// It keeps track and maps a balance (at the configured address and contract)
 			// to the number of occurrences seen across all endpoints.
@@ -34,6 +36,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 	evmEndpointStore := &endpointStore{
 		logger:       logger,
 		serviceState: serviceState,
+		endpoints:    make(map[protocol.EndpointAddr]endpoint),
 	}
 
 	evmRequestValidator := &evmRequestValidator{
