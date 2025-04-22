@@ -190,37 +190,6 @@ WORKDIR /app
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
-# Make sure path-binary runs before the Docker build
-local_resource(
-    "path-trigger",
-    """
-    echo "Triggering Docker build after binary build"
-    touch .tilt-build-trigger
-    """,
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_MANUAL,
-    labels=["hot-reloading"],
-)
-
-# Build an image with the PATH binary
-docker_build_with_restart(
-    "path-image",
-    context=".",
-    dockerfile_contents="""FROM golang:1.23.0
-RUN apt-get -q update && apt-get install -qyy curl jq less
-RUN mkdir -p /app/config
-COPY bin/path /app/path
-RUN chmod +x /app/path
-WORKDIR /app
-""",
-    # only=["/app/path"],
-    entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
-    trigger='.tilt-build-trigger',  # Rebuild when this file changes
-)
-
-
 # Tilt will run the Helm Chart with the following flags by default.
 #
 # For example:
@@ -258,7 +227,7 @@ if read_yaml(valuesFile, default=None) != None:
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
-    "path",  # Changed from "path-helm" to "path-stack"
+    "path",
     chart_prefix + "path",
     image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],

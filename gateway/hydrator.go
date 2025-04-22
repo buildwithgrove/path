@@ -84,9 +84,6 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
-		// Wait for the protocol to be healthy before starting hydrator
-		eph.waitForProtocolHealth()
-
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -95,20 +92,6 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
-}
-
-// waitForProtocolHealth blocks until the Protocol reports as healthy.
-// This ensures that the hydrator only starts running once the underlying
-// protocol layer is ready.
-func (eph *EndpointHydrator) waitForProtocolHealth() {
-	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
-
-	for !eph.Protocol.IsAlive() {
-		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
-		time.Sleep(1 * time.Second)
-	}
-
-	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 func (eph *EndpointHydrator) run() {
