@@ -12,11 +12,9 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const (
-	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
-	// The default timeout when sending a request to an EVM blockchain endpoint.
-	defaultServiceRequestTimeoutMillisec = 10000
-)
+// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
+// The default timeout when sending a request to an EVM blockchain endpoint.
+const defaultServiceRequestTimeoutMillisec = 10000
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
@@ -34,8 +32,8 @@ var _ gateway.RequestQoSContext = &requestContext{}
 //
 // response defines the functionality required from a parsed endpoint response, which all response types must implement.
 // It provides methods to:
-// 1. Generate observations for endpoint quality tracking
-// 2. Format HTTP responses to send back to clients
+//  1. Generate observations for endpoint quality tracking
+//  2. Format HTTP responses to send back to clients
 type response interface {
 	// GetObservation returns an observation of the endpoint's response
 	// for quality metrics tracking, including HTTP status code.
@@ -61,7 +59,7 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	endpointStore *endpointStore
+	serviceState *serviceState
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
 	jsonrpcReq jsonrpc.Request
@@ -183,5 +181,5 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 // Select returns the address of an endpoint using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
-	return rc.endpointStore.Select(allEndpoints)
+	return rc.serviceState.Select(allEndpoints)
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const idBlockNumberCheck endpointCheckID = 1002
+const idBlockNumberCheck = 1002
 
 // methodBlockNumber is the JSON-RPC method for getting the latest block number.
 // Reference: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
@@ -35,7 +35,7 @@ type endpointCheckBlockNumber struct {
 func (e *endpointCheckBlockNumber) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
-		ID:      jsonrpc.IDFromInt(int(idBlockNumberCheck)),
+		ID:      jsonrpc.IDFromInt(idBlockNumberCheck),
 		Method:  jsonrpc.Method(methodBlockNumber),
 	}
 }
