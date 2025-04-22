@@ -91,9 +91,13 @@ func (lfn *LazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.
 
 // GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
 // It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
+func (lfn *LazyFullNode) GetSession(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
 	session, err := lfn.sessionClient.GetSession(
-		context.Background(),
+		ctx,
 		appAddr,
 		string(serviceID),
 		0,
