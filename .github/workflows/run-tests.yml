@@ -140,11 +140,11 @@ jobs:
       - run-linter
       - run-unit-tests
       - build-and-test-docker-image
+    # TODO_MVP(@commoddity): Remove the following line to re-enable Shannon E2E tests when `anvil` test chain issue is resolved
+    if: false 
     strategy:
       matrix:
-        # TODO_MVP(@commoddity): Re-enable Shannon E2E tests when `anvil` test chain issue is resolved
-        service_id: []
-        # service_id: [anvil]
+        service_id: [anvil]
     steps:
       - uses: actions/checkout@v4
 
