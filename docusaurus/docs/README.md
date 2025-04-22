@@ -1,35 +1,48 @@
+---
+sidebar_position: 1
+title: PATH by Grove
+id: home-doc
+slug: /
+---
+
 <div align="center">
-<h1>PATH<br/>Path API & Toolkit Harness</h1>
+<h1>PATH API & Toolkit Harness</h1>
 <img src="https://storage.googleapis.com/grove-brand-assets/Presskit/Logo%20Joined-2.png" alt="Grove logo" width="500"/>
 
 </div>
 <br/>
 
-:::warning
-
-🚧 This documentation is still under construction 🚧
-
-:::
-
 ## Overview
 
-**PATH** (Path API & Toolkit Harness) is an open source framework for enabling
-access to a decentralized supply network.
+**PATH (Path API & Toolkit Harness)** is an open source framework to enable access
+to a permissionless network of API providers of open source services and data
+sources without sacrificing enterprise-grade SLAs.
 
-It provides various tools and libraries to streamline the integration and
-interaction with decentralized protocols.
+It provides all the necessary tools for you to deploy your own API Gateway without
+needing to maintain the backend services.
 
-## Getting Started
+An easy way to think about **PATH** and **Pocket Network** is:
 
-### PATH
+- **Pocket Network** is a permissionless network of API providers for open source services and data sources
+- **PATH** is a framework to build a Gateway that ensures high quality of service atop of Pocket Network
 
-Start by going through the [PATH Walkthrough](develop/path/introduction.md).
-to learn how PATH works, how to configure it and how to run it locally.
+![PATH USP](../static/img/path-usp.png)
 
-### Envoy
+## Where do I get started?
 
-Start by going through the [Envoy Walkthrough](./develop/envoy/walkthrough.md).
-to learn how our Envoy integration works, how to configure it and how to run it locally.
+To get started, allocate 1-3 hours of time and start with the [PATH Introduction](develop/path/1_introduction.md).
+
+It will go through all the details of how PATH works, how to configure it, and how to run it locally.
+
+## TODO
+
+This documentation is an active work in progress and there's a lot more we want to add:
+
+- [ ] Video tutorial walkthrough
+- [ ] Deployment instructions
+- [ ] Billing integrations
+- [ ] ETL Pipelines
+- [ ] [Add your request here](https://github.com/buildwithgrove/path/issues/new/choose)
 
 ## Is PATH for me?
 

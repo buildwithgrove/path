@@ -10,3 +10,7 @@ go_docs: ## Start Go documentation server
 .PHONY: docusaurus_start
 docusaurus_start: ## Start docusaurus server
 	(cd docusaurus && yarn install && yarn start --port 4000)
+
+.PHONY: gen_service_qos_docs
+gen_service_qos_docs: ## Generate service QoS documentation
+	./docusaurus/scripts/service_qos_doc_generator.sh ./config/service_qos_config.go ./docusaurus/docs/learn/qos/3_supported_services.md
