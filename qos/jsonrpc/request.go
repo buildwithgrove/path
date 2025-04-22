@@ -53,7 +53,29 @@ func (r Request) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// BuildParamsFromStrings builds a Params object from an array of strings.
+// The following functions build Params objects from various input types.
+// These are individually defined in order to allow type-safe param construction.
+//
+// JSON-RPC spec reference: https://www.jsonrpc.org/specification#parameter_structures
+
+// BuildParamsFromString builds a Params object from a single string.
+//
+// For example, for an `eth_getBalance` request, the params would look like:
+// params - ["0x28C6c06298d514Db089934071355E5743bf21d60"]
+//
+// Used for eth_getTransactionReceipt and eth_getTransactionByHash
+func BuildParamsFromString(stringParam string) (Params, error) {
+	if stringParam == "" {
+		return Params{}, fmt.Errorf("param is empty")
+	}
+	jsonParams, err := json.Marshal([1]string{stringParam})
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
+}
+
+// BuildParamsFromStringArray builds a Params object from an array of strings.
 //
 // For example, for an `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
@@ -61,8 +83,7 @@ func (r Request) MarshalJSON() ([]byte, error) {
 // JSON-RPC array params must be passed in the order specified by the method.
 // Reference: https://www.jsonrpc.org/specification#parameter_structures
 //
-// TODO_FUTURE(@commoddity): other helper methods may be required to build
-// params for different JSON-RPC methods, eg. ["<string>", <bool>]
+// Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
 func BuildParamsFromStringArray(params [2]string) (Params, error) {
 	for i, param := range params {
 		if param == "" {
@@ -70,6 +91,40 @@ func BuildParamsFromStringArray(params [2]string) (Params, error) {
 		}
 	}
 	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
+}
+
+// BuildParamsFromStringAndBool builds a Params object from a single string and a boolean.
+//
+// For example, for an `eth_getBlockByNumber` request, the params would look like:
+// params - ["0xe71e1d", false]
+//
+// Used for eth_getBlockByNumber
+func BuildParamsFromStringAndBool(stringParam string, boolParam bool) (Params, error) {
+	if stringParam == "" {
+		return Params{}, fmt.Errorf("string param is empty")
+	}
+	jsonParams, err := json.Marshal([2]any{stringParam, boolParam})
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
+}
+
+// BuildParamsFromObjectAndString builds a Params object from a map and a string.
+//
+// For example, for an `eth_call` request, the params would look like:
+// params - [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
+//
+// Used for eth_call
+func BuildParamsFromObjectAndString(objectParam map[string]string, stringParam string) (Params, error) {
+	if stringParam == "" {
+		return Params{}, fmt.Errorf("string param is empty")
+	}
+	jsonParams, err := json.Marshal([2]any{objectParam, stringParam})
 	if err != nil {
 		return Params{}, err
 	}

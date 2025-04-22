@@ -8,33 +8,21 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+// TODO_TECHDEBT(@commoddity, @adshmh): endpoint store should live in the serviceState struct and not the other way around.
 
 // EndpointStore provides the endpoint selection capability required
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &endpointStore{}
 
-// TODO_MVP(@adshmh): rename the EndpointStoreConfig struct below and use it in the `State` struct.
-// The `EndpointStore` will only maintain data on the endpoints instead of how this data should be used
-// to validate endpoints.
-//
-// EndpointStoreConfig captures the modifiable settings of the EndpointStore.
-// This will enable `EndpointStore` to be used as part of QoS for other EVM-based
-// blockchains which may have different desired QoS properties.
-// e.g. different blockchains QoS instances could have different tolerance levels
-// for deviation from the current block height.
-type EndpointStoreConfig struct {
-	// TODO_TECHDEBT: apply the sync allowance when validating an endpoint's block height.
-	// SyncAllowance specifies the maximum number of blocks an endpoint
-	// can be behind, compared to the blockchain's perceived block height,
-	// before being filtered out.
-	SyncAllowance uint64
-
-	// ChainID is the ID used by the corresponding blockchain.
-	// It is used to verify responses to service requests with `eth_chainId` method.
-	ChainID string
-}
+// endpointStore provides the endpoint check generator required by
+// the gateway package to augment endpoints' quality data,
+// using synthetic service requests.
+var _ gateway.QoSEndpointCheckGenerator = &endpointStore{}
 
 // endpointStore maintains QoS data on the set of available endpoints
 // for an EVM-based blockchain service.
@@ -52,6 +40,48 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
+// GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
+// It is called in the `gateway/hydrator.go` file on each run of the hydrator.
+func (es *endpointStore) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
+
+	endpoint := es.endpoints[endpointAddr]
+
+	var checks = []gateway.RequestQoSContext{
+		// Block number check should always run
+		es.getEndpointCheck(endpoint.checkBlockNumber.getRequest()),
+	}
+
+	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
+	if es.serviceState.shouldChainIDCheckRun(endpoint.checkChainID) {
+		checks = append(checks, es.getEndpointCheck(endpoint.checkChainID.getRequest()))
+	}
+
+	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
+	// Additionally, this check will only run if the serviceis configured to perform archival checks.
+	if es.serviceState.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
+		checks = append(
+			checks,
+			es.getEndpointCheck(endpoint.checkArchival.getRequest(es.serviceState.archivalState)),
+		)
+	}
+
+	return checks
+}
+
+// getEndpointCheck prepares a request context for a specific endpoint check.
+// The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
+// It is called in the individual `check_*.go` files to build the request context.
+// getEndpointCheck prepares a request context for a specific endpoint check.
+func (es *endpointStore) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestContext {
+	return &requestContext{
+		logger:        es.logger,
+		endpointStore: es,
+		jsonrpcReq:    jsonrpcReq,
+	}
+}
+
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
@@ -66,7 +96,7 @@ func (es *endpointStore) Select(availableEndpoints []protocol.EndpointAddr) (pro
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Warn().Msg("all endpoints failed validation; selecting a random endpoint.")
+		logger.Error().Msg("all endpoints failed validation; selecting a random endpoint.")
 		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpointAddr, nil
 	}
@@ -108,7 +138,7 @@ func (es *endpointStore) filterValidEndpoints(availableEndpoints []protocol.Endp
 			continue
 		}
 
-		if err := es.serviceState.ValidateEndpoint(endpoint, availableEndpointAddr); err != nil {
+		if err := es.serviceState.validateEndpoint(endpoint); err != nil {
 			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
 			continue
 		}

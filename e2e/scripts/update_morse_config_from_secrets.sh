@@ -18,6 +18,8 @@ update_morse_config_from_env() {
 	return 1
     fi
 
+    # Update the PATH Shannon config to reflect secrets on GitHub.
+    # Also set the hydrator config to run 20 checks to ensure invalid endpoints are sanctioned.
     yq -i '
 	.morse_config.full_node_config.relay_signing_key = env(MORSE_GATEWAY_SIGNING_KEY) |
 	.morse_config.full_node_config.url = env(MORSE_FULLNODE_URL) |
@@ -34,6 +36,5 @@ check_env_vars() {
         fi
     done
 }
-
 
 update_morse_config_from_env "$@"

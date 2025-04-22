@@ -59,7 +59,7 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return errors.New("ApplyObservations: received nil EVM observation")
 	}
 
-	updatedEndpoints := q.endpointStore.UpdateEndpointsFromObservations(evmObservations)
+	updatedEndpoints := q.endpointStore.updateEndpointsFromObservations(evmObservations)
 
-	return q.serviceState.UpdateFromEndpoints(updatedEndpoints)
+	return q.serviceState.updateFromEndpoints(updatedEndpoints)
 }
