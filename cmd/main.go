@@ -53,7 +53,7 @@ func main() {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
 
-	// setup metrics reporter, to be used by Gateway anD Hydrator.
+	// setup metrics reporter, to be used by Gateway and Hydrator.
 	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
 	if err != nil {
 		log.Fatalf("failed to start metrics server: %v", err)
