@@ -59,6 +59,9 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
+	// The length of the request payload.
+	requestPayloadLength uint
+
 	serviceState *serviceState
 
 	// TODO_TECHDEBT(@adshmh): support batch JSONRPC requests
@@ -168,6 +171,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 			Evm: &qosobservations.EVMRequestObservations{
 				JsonrpcRequest:       rc.jsonrpcReq.GetObservation(),
 				ChainId:              rc.chainID,
+				RequestPayloadLength: uint32(rc.requestPayloadLength),
 				EndpointObservations: observations,
 			},
 		},
