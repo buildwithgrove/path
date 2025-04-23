@@ -1,4 +1,4 @@
-name: PATH Lint & Test
+name: PATH E2E Tests
 
 on:
   push:
@@ -7,59 +7,19 @@ on:
     branches: [main]
 
 jobs:
-
   # --------------------------------------------- #
-  # Phase 1. Lint, Unit Test & Build Docker Image #
+  # Phase 1. Build Docker Image
   # --------------------------------------------- #
-
-  run-linter:
-    name: Run linter
-    runs-on: "ubuntu-22.04"
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.23"
-
-      - name: Setup Git Authentication
-        run: |
-          git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout 10m --verbose
-
-  run-unit-tests:
-    name: Run unit tests
-    runs-on: "ubuntu-22.04"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.23"
-
-      - name: Setup Git Authentication
-        run: |
-          git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
-      - name: Run unit tests
-        run: CGO_ENABLED=0 go test ./... -short
 
   build-and-test-docker-image:
     name: Build & test Docker image
     runs-on: "ubuntu-22.04"
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Build and export Docker image
         uses: docker/build-push-action@v6
         with:
@@ -69,16 +29,16 @@ jobs:
           push: false
           load: true
           tags: path-image
-          
+
       - name: Test the image works
         run: |
           docker image ls -a
           docker inspect path-image || exit 1
-          
+
       - name: Export image to TAR file
         run: |
           docker save path-image -o ${{ runner.temp }}/path-image.tar
-          
+
       - name: Upload artifact for use by E2E tests
         uses: actions/upload-artifact@v4
         with:
@@ -108,13 +68,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.23"
-          
+
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
         with:
           name: path-image
           path: ${{ runner.temp }}
-          
+
       - name: Load Docker image
         run: |
           docker load --input ${{ runner.temp }}/path-image.tar
@@ -141,7 +101,7 @@ jobs:
       - run-unit-tests
       - build-and-test-docker-image
     # TODO_MVP(@commoddity): Remove the following line to re-enable Shannon E2E tests when `anvil` test chain issue is resolved
-    if: false 
+    if: false
     strategy:
       matrix:
         service_id: [anvil]
@@ -152,13 +112,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.23"
-          
+
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
         with:
           name: path-image
           path: ${{ runner.temp }}
-          
+
       - name: Load Docker image
         run: |
           docker load --input ${{ runner.temp }}/path-image.tar

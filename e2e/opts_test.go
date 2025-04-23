@@ -1,5 +1,7 @@
 //go:build e2e
 
+/* -------------------- Test Configuration Options -------------------- */
+
 package e2e
 
 import (
@@ -10,12 +12,11 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-/* -------------------- Test Configuration Options -------------------- */
+// -------------------- Environment Variable Names --------------------
 
-// Environment variable names
+// Required environment variables
 const (
-	// Required environment variables
-	envTestProtocol = "TEST_PROTOCOL"
+	envTestProtocol = "TEST_PROTOCOL" // must be set to "morse" or "shannon"
 
 	// Optional environment variables
 	envGatewayURLOverride = "GATEWAY_URL_OVERRIDE"
@@ -25,7 +26,9 @@ const (
 	envWaitForHydrator    = "WAIT_FOR_HYDRATOR"
 )
 
-// protocolStr is a type to determine whether to test PATH with Morse or Shannon
+// -------------------- Protocol String Type --------------------
+
+// protocolStr determines whether to test PATH with Morse or Shannon
 type protocolStr string
 
 const (
@@ -33,103 +36,105 @@ const (
 	shannon protocolStr = "shannon"
 )
 
+// isValid returns true if the protocol is either morse or shannon
 func (p protocolStr) isValid() bool {
 	return p == morse || p == shannon
 }
 
+// -------------------- Test Options Structs --------------------
+
 // testOptions contains all configuration options for the E2E tests
-type (
-	testOptions struct {
-		// Protocol to use for testing (morse or shannon)
-		// Required environment variable: TEST_PROTOCOL
-		testProtocol protocolStr
+type testOptions struct {
+	// Protocol to use for testing ("morse" or "shannon")
+	//   - Required: set via TEST_PROTOCOL
+	testProtocol protocolStr
 
-		// URL for accessing the gateway
-		// If not set, default is "http://localhost:%s/v1" where %s is the port of the Docker container
-		// If set via GATEWAY_URL_OVERRIDE, the Docker container won't be used and
-		// the test will run against the provided URL directly
-		gatewayURL string
+	// URL for accessing the gateway
+	//   - Default: "http://localhost:%s/v1" (%s = Docker container port)
+	//   - If set via GATEWAY_URL_OVERRIDE, Docker is skipped and test runs against the provided URL directly
+	gatewayURL string
 
-		// Whether the gateway URL was explicitly set via GATEWAY_URL_OVERRIDE
-		// This also indicates that no Docker container should be started
-		//
-		// If GATEWAY_URL_OVERRIDE is set, we'll use the provided URL directly and skip starting a Docker container,
-		// assuming PATH is already running externally at the provided URL.
-		gatewayURLOverridden bool
+	// True if gatewayURL was set via GATEWAY_URL_OVERRIDE (i.e., Docker is skipped)
+	gatewayURLOverridden bool
 
-		// The specific service ID override to test
-		// If not set, the test will run for all service IDs for the protocol
-		serviceIDOverride protocol.ServiceID
+	// Service ID override to test
+	//   - If empty, test runs for all service IDs for the protocol
+	serviceIDOverride protocol.ServiceID
 
-		// Wait time in seconds for hydrator checks to complete
-		// If not set, default is 0 (no wait)
-		// Can be set via WAIT_FOR_HYDRATOR env var
-		waitForHydrator int
+	// Wait time in seconds for hydrator checks to complete
+	//   - Default: 0 (no wait)
+	//   - Set via WAIT_FOR_HYDRATOR
+	waitForHydrator int
 
-		// Docker-related configuration options
-		docker dockerOptions
+	// Docker-related configuration options
+	docker dockerOptions
 
-		// Config file path template
-		// Format: "./.%s.config.yaml" where %s is the protocol name
-		configPathTemplate string
-	}
-	// dockerOptions contains configuration for the Docker test container
-	dockerOptions struct {
-		// Whether to log docker container output
-		// Default: false
-		// Can be enabled with DOCKER_LOG=true
-		logOutput bool
+	// Config file path template
+	//   - Format: "./.%s.config.yaml" (%s = protocol name)
+	configPathTemplate string
+}
 
-		// Whether to force rebuild of the docker image
-		// Default: false
-		// Can be enabled with DOCKER_FORCE_REBUILD=true
-		forceRebuild bool
-	}
-)
+// dockerOptions contains configuration for the Docker test container
+type dockerOptions struct {
+	// Log docker container output
+	//   - Default: false
+	//   - Enable with DOCKER_LOG=true
+	logOutput bool
+
+	// Force rebuild of the docker image
+	//   - Default: false
+	//   - Enable with DOCKER_FORCE_REBUILD=true
+	forceRebuild bool
+}
+
+// -------------------- Gather Test Options --------------------
 
 // gatherTestOptions collects all test configuration options from environment variables
 func gatherTestOptions() testOptions {
-	// Default values
+	// Set default values
 	options := testOptions{
-		gatewayURL:         "http://localhost:%s/v1", // eg. `http://localhost:3069/v1`
-		configPathTemplate: "./.%s.config.yaml",      // eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
-		waitForHydrator:    0,                        // Default: no wait
+		gatewayURL:         "http://localhost:%s/v1", // e.g., "http://localhost:3069/v1"
+		configPathTemplate: "./.%s.config.yaml",      // e.g., "./.morse.config.yaml"
+		waitForHydrator:    0,
 	}
 
-	// Required environment variables
-	if testProtocol := protocolStr(os.Getenv(envTestProtocol)); testProtocol == "" {
+	// --- Required: TEST_PROTOCOL ---
+	testProtocol := protocolStr(os.Getenv(envTestProtocol))
+	switch {
+	case testProtocol == "":
 		panic(fmt.Sprintf("%s environment variable is not set", envTestProtocol))
-	} else if !testProtocol.isValid() {
+	case !testProtocol.isValid():
 		panic(fmt.Sprintf("%s environment variable is not set to `morse` or `shannon`", envTestProtocol))
-	} else {
+	default:
 		options.testProtocol = testProtocol
 	}
 
-	// Optional environment variables
+	// --- Optional: GATEWAY_URL_OVERRIDE ---
 	if gatewayURLOverride := os.Getenv(envGatewayURLOverride); gatewayURLOverride != "" {
 		options.gatewayURL = gatewayURLOverride
 		options.gatewayURLOverridden = true
 	}
 
-	// Optional environment variable to override the service ID to test
+	// --- Optional: SERVICE_ID_OVERRIDE ---
 	if serviceIDOverride := os.Getenv(envServiceIDOverride); serviceIDOverride != "" {
 		options.serviceIDOverride = protocol.ServiceID(serviceIDOverride)
 	}
 
-	// Optional environment variable for hydrator wait time
+	// --- Optional: WAIT_FOR_HYDRATOR ---
 	if waitTimeStr := os.Getenv(envWaitForHydrator); waitTimeStr != "" {
 		if waitTime, err := strconv.Atoi(waitTimeStr); err == nil {
 			options.waitForHydrator = waitTime
 		}
 	}
 
-	// Docker configuration
+	// --- Docker: DOCKER_LOG ---
 	if logValue := os.Getenv(envDockerLog); logValue != "" {
 		if logParsed, err := strconv.ParseBool(logValue); err == nil {
 			options.docker.logOutput = logParsed
 		}
 	}
 
+	// --- Docker: DOCKER_FORCE_REBUILD ---
 	if rebuildValue := os.Getenv(envDockerForceRebuild); rebuildValue != "" {
 		if rebuildParsed, err := strconv.ParseBool(rebuildValue); err == nil {
 			options.docker.forceRebuild = rebuildParsed

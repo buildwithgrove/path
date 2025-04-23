@@ -232,6 +232,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		t.Logf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
 		t.Logf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
 		t.Logf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
+		t.Log("\n")
 
 		// Initialize service summary
 		serviceSummaries[testCases[i].serviceID] = &serviceSummary{
@@ -319,11 +320,11 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			}
 
 			// Add space after progress bars
-			t.Log()
+			fmt.Println()
 
 			// Adjust latency expectations for slow chain if latency multiplier is set.
 			if testCases[i].latencyMultiplier != 0 {
-				t.Logf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
+				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
 					YELLOW, testCases[i].name, testCases[i].latencyMultiplier, RESET,
 				)
 				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, testCases[i].latencyMultiplier)
