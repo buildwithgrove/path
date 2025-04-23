@@ -1,7 +1,10 @@
 package morse
 
 import (
+	"time"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
@@ -66,4 +69,75 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 
 	return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
 		protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED
+}
+
+// builds a Morse endpoint success observation to include:
+// - endpoint details: address, url, app
+// - endpoint query and response timestamps.
+func buildEndpointSuccessObservation(
+	endpoint endpoint,
+	endpointQueryTimestamp time.Time,
+	endpointResponseTimestamp time.Time,
+) *protocolobservations.MorseEndpointObservation {
+	// initialize an observation with endpoint details: URL, app, etc.
+	endpointObs := buildEndpointObservation(endpoint)
+
+	// Update the observation with endpoint query and response timestamps.
+	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
+	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+
+	return endpointObs
+}
+
+// builds a Morse endpoint error observation to include:
+// - endpoint details: address, url, app, query/response timestamps.
+// - the encountered error
+// - any sanctions resulting from the error.
+func buildEndpointErrorObservation(
+	endpoint endpoint,
+	endpointQueryTimestamp time.Time,
+	endpointResponseTimestamp time.Time,
+	errorType protocolobservations.MorseEndpointErrorType,
+	errorDetails string,
+	sanctionType protocolobservations.MorseSanctionType,
+) *protocolobservations.MorseEndpointObservation {
+	// initialize an observation with endpoint details: URL, app, etc.
+	endpointObs := buildEndpointObservation(endpoint)
+
+	// Update the observation with endpoint query/response timestamps.
+	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
+	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+
+	// Update the observation with error details and any resulting sanctions
+	endpointObs.ErrorType = &errorType
+	endpointObs.ErrorDetails = &errorDetails
+	endpointObs.RecommendedSanction = &sanctionType
+
+	return endpointObs
+}
+
+// builds a Morse endpoint observation to include:
+// - endpoint details: address, url, app
+// - session details: key, height
+func buildEndpointObservation(
+	endpoint endpoint,
+) *protocolobservations.MorseEndpointObservation {
+	return &protocolobservations.MorseEndpointObservation{
+		AppAddress:       endpoint.app.Addr(),
+		AppPublicKey:     endpoint.app.publicKey,
+		SessionKey:       endpoint.session.Key,
+		SessionServiceId: endpoint.session.Header.Chain,
+		SessionHeight:    int32(endpoint.session.Header.SessionHeight),
+		EndpointAddr:     endpoint.address,
+		EndpointUrl:      endpoint.url,
+	}
+}
+
+// builds and returns a request error observation for the supplied internal error.
+func buildInternalRequestProcessingErrorObservation(internalErr error) *protocolobservations.MorseRequestError {
+	return &protocolobservations.MorseRequestError{
+		ErrorType: protocolobservations.MorseRequestErrorType_MORSE_REQUEST_ERROR_INTERNAL,
+		// Use the error message as the request error details.
+		ErrorDetails: internalErr.Error(),
+	}
 }

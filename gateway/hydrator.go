@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/health"
-	"github.com/buildwithgrove/path/observation"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -216,7 +214,11 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
 						protocolCtx:         hydratorRequestCtx,
-						context:             context.TODO(),
+						// metrics reporter for exporting metrics on hydrator service requests.
+						metricsReporter: eph.MetricsReporter,
+						// data reporter for exporting data on hydrator service requests to the data pipeline.
+						dataReporter: eph.DataReporter,
+						context:      context.TODO(),
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()
@@ -285,13 +287,4 @@ func (eph *EndpointHydrator) getHealthStatus(successfulServiceChecks *sync.Map) 
 	}
 
 	return true
-}
-
-// getSyntheticRequestGatewayObservations returns the gateway-level observations for a synthetic request.
-// Example: request originated from the hydrator.
-func getSyntheticRequestGatewayObservations() observation.GatewayObservations {
-	return observation.GatewayObservations{
-		RequestType:  observation.RequestType_REQUEST_TYPE_SYNTHETIC,
-		ReceivedTime: timestamppb.Now(),
-	}
 }

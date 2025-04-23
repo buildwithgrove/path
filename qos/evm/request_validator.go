@@ -59,10 +59,11 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 
 	// Request is valid, return a fully initialized requestContext
 	return &requestContext{
-		logger:       erv.logger,
-		chainID:      erv.chainID,
-		jsonrpcReq:   jsonrpcReq,
-		serviceState: erv.serviceState,
+		logger:               erv.logger,
+		chainID:              erv.chainID,
+		requestPayloadLength: uint(len(body)),
+		jsonrpcReq:           jsonrpcReq,
+		serviceState:         erv.serviceState,
 	}, true
 }
 
