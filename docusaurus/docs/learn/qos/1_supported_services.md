@@ -48,8 +48,8 @@ hydrator_config:
 | Ethereum - ETH Mainnet                                     | eth                      | EVM              |                          |                           |
 | Anvil - Ethereum development/testing                       | anvil                    | EVM              | 31337                    |                           |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws                  | EVM              | 31337                    |                           |
-| CometBFT - Pocket Beta Testnet                             | pocket-beta-rpc          | CometBFT         | pocket-beta              |                           |
-| CometBFT - Cosmos Hub                                      | cometbft                 | CometBFT         | cosmoshub-4              |                           |
+| Pocket Beta Testnet                                        | pocket-beta-rpc          | CometBFT         | pocket-beta              |                           |
+| Cosmos Hub                                                 | cometbft                 | CometBFT         | cosmoshub-4              |                           |
 | Solana                                                     | solana                   | Solana           |                          |                           |
 
 ## Morse Protocol Services

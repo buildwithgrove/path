@@ -78,10 +78,10 @@ var shannonServices = []ServiceQoSConfig{
 
 	// *** CometBFT Services ***
 
-	// CometBFT - Pocket Beta Testnet
+	// Pocket Beta Testnet
 	cometbft.NewCometBFTServiceQoSConfig("pocket-beta-rpc", "pocket-beta"),
 
-	// CometBFT - Cosmos Hub
+	// Cosmos Hub
 	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
 
 	// *** Solana Services ***
