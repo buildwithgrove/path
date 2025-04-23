@@ -23,19 +23,7 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
-.PHONY: check_path_config
-## Verify that path configuration file exists
-check_path_config:
-	@if [ ! -f ./local/path/.config.yaml ]; then \
-		echo "################################################################"; \
-   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
-   		echo ""; \
-   		echo "Initialize using either:"; \
-   		echo "  make shannon_prepare_e2e_config"; \
-   		echo "  make morse_prepare_e2e_config "; \
-   		echo "################################################################"; \
-   		exit 1; \
-   fi
+
 
 # The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
@@ -53,11 +41,12 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
 .PHONY: path_up
-path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	tilt up
+path_up: check_path_config check_docker ## Brings up local Tilt development environment in Docker 
+	docker compose -f local/docker-compose.yml up -d --build
 
 .PHONY: path_down
-path_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_down: ## Tears down local Tilt development environment in Docker
+	docker compose -f local/docker-compose.yml down
 
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path
@@ -66,6 +55,29 @@ path_help: ## Prints help commands if you cannot start path
 	@echo "	make path_down";
 	@echo "	make path_up";
 	@echo "################################################################";
+
+.PHONY: check_path_config
+## Verify that path configuration file exists
+check_path_config:
+	@if [ ! -f ./local/path/.config.yaml ]; then \
+		echo "################################################################"; \
+   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
+   		echo ""; \
+   		echo "Initialize using either:"; \
+   		echo "  make shannon_prepare_e2e_config"; \
+   		echo "  make morse_prepare_e2e_config "; \
+   		echo "################################################################"; \
+   		exit 1; \
+   fi
+
+.PHONY: check_docker
+# Internal helper: Check if Docker is installed locally
+check_docker:
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "Docker is not installed. Make sure you review README.md before continuing"; \
+		exit 1; \
+	fi;
+
 
 
 ###############################
@@ -77,7 +89,6 @@ include ./makefiles/configs_morse.mk
 include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk
-include ./makefiles/localnet.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
 include ./makefiles/proto.mk

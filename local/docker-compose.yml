@@ -1,0 +1,44 @@
+services:
+  path-dev:
+    container_name: path-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    network_mode: "host"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ..:/app
+    environment:
+      - GOFLAGS=-buildvcs=false
+    command: >
+      bash -c "
+        # Delete existing cluster if any
+        kind delete cluster --name path-localnet 2>/dev/null || true
+        
+        # Create cluster with our config - the kind-config.yaml already has the correct ports
+        echo 'Creating new cluster...'
+        kind create cluster --name path-localnet --config ./local/kind-config.yaml
+        
+        # Wait for API server to be ready
+        echo 'Waiting for API server...'
+        for i in {1..30}; do
+          if kubectl --context kind-path-localnet cluster-info >/dev/null 2>&1; then
+            echo 'API server is ready'
+            break
+          fi
+          echo 'Waiting for API server to be ready...'
+          sleep 2
+        done
+        
+        # Setup namespaces and config
+        kubectl config use-context kind-path-localnet
+        kubectl create namespace path 2>/dev/null || true
+        kubectl create namespace monitoring 2>/dev/null || true
+        kubectl create namespace middleware 2>/dev/null || true
+        kubectl config set-context --current --namespace=path
+        kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path
+        
+        # Now run the main target
+        echo 'Starting PATH on port 3070 ...'
+        cd /app && tilt up
+      "
