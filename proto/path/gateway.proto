@@ -7,6 +7,7 @@ package path;
 option go_package = "github.com/buildwithgrove/path/observation";
 
 import "google/protobuf/timestamp.proto";
+import "path/auth.proto"; // import RequestAuth message.
 
 // RequestType captures the origin of the request.
 // As of PR #72, it is one of:
@@ -21,11 +22,8 @@ enum RequestType {
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
 // Examples include the geographic region of the request, the request type, etc.
 message GatewayObservations {
-
-  // The geographic region where the gateway serving the request was located.
-  // DEV_NOTE: It aligns with typical cloud regions (e.g. us-east) but kept as a string for simplicity.
-    // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
-  string region = 1;
+  // request_auth stores any fields related to the identification/authentication of the request.
+  RequestAuth request_auth = 1;
 
   // Specifies the request type.
   // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).

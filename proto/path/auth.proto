@@ -1,0 +1,26 @@
+// To generate the Go code from this proto file, run: `make proto_generate`
+// See `proto.mk` for more details.
+
+syntax = "proto3";
+package path;
+
+option go_package = "github.com/buildwithgrove/path/observation";
+
+// RequestAuth captures all fields related to the authentication of the request.
+// These are all external to PATH, i.e. reported to PATH by the authentication layer.
+// Used in generating observations for the data pipeline.
+message RequestAuth {
+  // Unique identifier for the request.
+  // Used by the data pipeline.
+  string request_id = 1;
+
+  // The geographic region where the gateway serving the request was located.
+  // DEV_NOTE: It aligns with typical cloud regions (e.g. us-east) but kept as a string for simplicity.
+    // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
+  string region = 2;
+
+  // The ID of the Grove portal account behind the service request
+  string portal_account_id = 3;
+  // The ID of the Grove portal application authenticating the service request.
+  string portal_application_id = 4;
+}

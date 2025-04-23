@@ -138,11 +138,10 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
-		logger:                   ctxLogger,
-		fullNode:                 p.fullNode,
-		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		selectedEndpoint:         &selectedEndpoint,
-		serviceID:                serviceID,
+		logger:           ctxLogger,
+		fullNode:         p.fullNode,
+		selectedEndpoint: &selectedEndpoint,
+		serviceID:        serviceID,
 	}, nil
 }
 

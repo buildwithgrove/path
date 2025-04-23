@@ -3,6 +3,14 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
+import "google/protobuf/timestamp.proto";
+
+// MorseRequestErrorType enumerates possible relay request errors.
+enum MorseRequestErrorType {
+  MORSE_REQUEST_ERROR_UNSPECIFIED = 0;
+  MORSE_REQUEST_ERROR_INTERNAL = 1; // Internal error: e.g. no endpoint selected for serving the request.
+}
+
 // MorseEndpointErrorType enumerates possible relay errors when interacting with Morse endpoints
 enum MorseEndpointErrorType {
   MORSE_ENDPOINT_ERROR_UNSPECIFIED = 0;
@@ -38,36 +46,63 @@ enum MorseSanctionType {
 message MorseRequestObservations {
   // Service ID (i.e. chain ID) for which the observation was made
   string service_id = 1;
-  
+
+  // Error encountered processing the request, if any.
+  optional MorseRequestError request_error = 2;
+
+  // Tracks endpoint observation(s).
+  // Only set if the request did not encounter any errors, e.g. an internal error.
   // Multiple observations possible if:
   // - Original endpoint returns invalid response
   // - Retry mechanism activates
-  repeated MorseEndpointObservation endpoint_observations = 2;
+  repeated MorseEndpointObservation endpoint_observations = 3;
+}
+
+// MorseRequestError stores details of any errors encountered processing the request.
+message MorseRequestError {
+	// Type of request error, e.g. internal
+	MorseRequestErrorType error_type = 1;
+	// Details of the request error.
+	string error_details = 2;
 }
 
 // MorseEndpointObservation stores a single observation from an endpoint
 message MorseEndpointObservation {
   // Address of the endpoint handling the request
   string endpoint_addr = 1;
-  
+  // URL of the endpoint handling the request
+  string endpoint_url = 2;
+
   // Application address that signed the associated relay
-  string app_address = 2;
-  
+  string app_address = 3;
+  // Public key of the application that signed the associated relay
+  string app_public_key = 4;
+
   // Session information when available
-  string session_key = 3;
-  string session_service_id = 4;
-  int32 session_height = 5; // session start height
+  string session_key = 5;
+  string session_service_id = 6;
+  int32 session_height = 7; // session start height
+
+  // Timestamp marking the sending of the request to the endpoint.
+  google.protobuf.Timestamp endpoint_query_timestamp = 8;
   
+  // Timestamp marking the reception of the endpoint's response.
+  // Only set if the endpoint did not timeout.
+  optional google.protobuf.Timestamp endpoint_response_timestamp = 9;
+
   // Error type if relay to this endpoint failed
-  optional MorseEndpointErrorType error_type = 6;
+  optional MorseEndpointErrorType error_type = 10;
   
   // Additional error details when available
-  optional string error_details = 7;
+  optional string error_details = 11;
   
   // Recommended sanction type based on the error
-  optional MorseSanctionType recommended_sanction = 8;
+  optional MorseSanctionType recommended_sanction = 12;
 }
 
+// TODO_MVP(@adshmh): Assess if a list of observations (vs. just a list of endpoint observarions) is needed per service request.
+// Drop the MorseObservationsList if it is not yet required.
+// 
 // MorseObservationsList is a wrapper message that enables embedding lists of
 // Morse observations in other protocol buffers.
 message MorseObservationsList {
