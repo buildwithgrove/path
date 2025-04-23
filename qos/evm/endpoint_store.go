@@ -158,6 +158,8 @@ func parseBlockNumberResponse(response string) *uint64 {
 func applyChainIDObservation(endpoint *endpoint, chainIDResponse *qosobservations.EVMChainIDResponse) {
 	observedChainID := chainIDResponse.GetChainIdResponse()
 
+	fmt.Println("DEBUG - observedChainID", observedChainID)
+
 	endpoint.checkChainID = endpointCheckChainID{
 		chainID:   &observedChainID,
 		expiresAt: time.Now().Add(checkChainIDInterval),

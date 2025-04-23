@@ -66,16 +66,18 @@ const (
 // shannonServices is the list of QoS service configs for the Shannon protocol.
 var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services ***
+
 	// Ethereum - ETH Mainnet
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, nil),
 
 	// Anvil - Ethereum development/testing
-	evm.NewEVMServiceQoSConfig("anvil", defaultEVMChainID, nil),
+	evm.NewEVMServiceQoSConfig("anvil", "0x7a69", nil),
 
 	// Anvil WebSockets - Ethereum WebSockets development/testing
-	evm.NewEVMServiceQoSConfig("anvilws", defaultEVMChainID, nil),
+	evm.NewEVMServiceQoSConfig("anvilws", "0x7a69", nil),
 
 	// *** CometBFT Services ***
+
 	// CometBFT - Pocket Beta Testnet
 	cometbft.NewCometBFTServiceQoSConfig("pocket-beta-rpc", "pocket-beta"),
 
@@ -83,6 +85,7 @@ var shannonServices = []ServiceQoSConfig{
 	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
 
 	// *** Solana Services ***
+
 	// Solana
 	solana.NewSolanaServiceQoSConfig("solana"),
 }
@@ -91,37 +94,37 @@ var shannonServices = []ServiceQoSConfig{
 var morseServices = []ServiceQoSConfig{
 	// *** EVM Services ***
 
-	// Arbitrum One (42161)
+	// Arbitrum One
 	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", nil),
 
-	// Arbitrum Sepolia Testnet (421614)
+	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F002", "0x66EEE", nil),
 
-	// Avalanche (43114)
+	// Avalanche
 	evm.NewEVMServiceQoSConfig("F003", "0xa86a", nil),
 
-	// Avalanche-DFK (53935)
+	// Avalanche-DFK
 	evm.NewEVMServiceQoSConfig("F004", "0xd2af", nil),
 
-	// Base (8453)
+	// Base
 	evm.NewEVMServiceQoSConfig("F005", "0x2105", nil),
 
-	// Base Sepolia Testnet (84660)
+	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F006", "0x14a34", nil),
 
-	// Blast (81649)
+	// Blast
 	evm.NewEVMServiceQoSConfig("F008", "0x13e31", nil),
 
-	// BNB Smart Chain (56)
+	// BNB Smart Chain
 	evm.NewEVMServiceQoSConfig("F009", "0x38", nil),
 
-	// Boba (288)
+	// Boba
 	evm.NewEVMServiceQoSConfig("F00A", "0x120", nil),
 
-	// Celo (42220)
+	// Celo
 	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", nil),
 
-	// Ethereum (1)
+	// Ethereum
 	evm.NewEVMServiceQoSConfig(
 		"F00C",
 		defaultEVMChainID,
@@ -133,52 +136,52 @@ var morseServices = []ServiceQoSConfig{
 		),
 	),
 
-	// Ethereum Holesky Testnet (17000)
+	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("F00D", "0x4268", nil),
 
-	// Ethereum Sepolia Testnet (11155111)
+	// Ethereum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F00E", "0xaa36a7", nil),
 
-	// Evmos (9001)
+	// Evmos
 	evm.NewEVMServiceQoSConfig("F00F", "0x2329", nil),
 
-	// Fantom (250)
+	// Fantom
 	evm.NewEVMServiceQoSConfig("F010", "0xfa", nil),
 
-	// Fraxtal (252)
+	// Fraxtal
 	evm.NewEVMServiceQoSConfig("F011", "0xfc", nil),
 
-	// Fuse (122)
+	// Fuse
 	evm.NewEVMServiceQoSConfig("F012", "0x7a", nil),
 
-	// Gnosis (100)
+	// Gnosis
 	evm.NewEVMServiceQoSConfig("F013", "0x64", nil),
 
-	// Harmony-0 (1666600000)
+	// Harmony-0
 	evm.NewEVMServiceQoSConfig("F014", "0x63564c40", nil),
 
-	// IoTeX (4681)
+	// IoTeX
 	evm.NewEVMServiceQoSConfig("F015", "0x1251", nil),
 
-	// Kaia (8217)
+	// Kaia
 	evm.NewEVMServiceQoSConfig("F016", "0x2019", nil),
 
-	// Kava (2222)
+	// Kava
 	evm.NewEVMServiceQoSConfig("F017", "0x8ae", nil),
 
-	// Metis (1088)
+	// Metis
 	evm.NewEVMServiceQoSConfig("F018", "0x440", nil),
 
-	// Moonbeam (1284)
+	// Moonbeam
 	evm.NewEVMServiceQoSConfig("F019", "0x504", nil),
 
-	// Moonriver (1285)
+	// Moonriver
 	evm.NewEVMServiceQoSConfig("F01A", "0x505", nil),
 
 	// Near
 	evm.NewEVMServiceQoSConfig("F01B", "0x18d", nil),
 
-	// Oasys (248)
+	// Oasys
 	evm.NewEVMServiceQoSConfig(
 		"F01C",
 		"0xf8",
@@ -190,16 +193,16 @@ var morseServices = []ServiceQoSConfig{
 		),
 	),
 
-	// Optimism (10)
+	// Optimism
 	evm.NewEVMServiceQoSConfig("F01D", "0xa", nil),
 
-	// Optimism Sepolia Testnet (11155420)
+	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", nil),
 
-	// opBNB (204)
+	// opBNB
 	evm.NewEVMServiceQoSConfig("F01F", "0xcc", nil),
 
-	// Polygon (137)
+	// Polygon
 	evm.NewEVMServiceQoSConfig(
 		"F021",
 		"0x89",
@@ -211,61 +214,61 @@ var morseServices = []ServiceQoSConfig{
 		),
 	),
 
-	// Polygon Amoy Testnet (80002)
+	// Polygon Amoy Testnet
 	evm.NewEVMServiceQoSConfig("F022", "0x13882", nil),
 
 	// Radix
 	evm.NewEVMServiceQoSConfig("F023", "0x1337", nil),
 
-	// Scroll (534992)
+	// Scroll
 	evm.NewEVMServiceQoSConfig("F024", "0x82750", nil),
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),
 
-	// Taiko (167000)
+	// Taiko
 	evm.NewEVMServiceQoSConfig("F027", "0x28c58", nil),
 
-	// Taiko Hekla Testnet (167009)
+	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("F028", "0x28c61", nil),
 
-	// Polygon zkEVM (1101)
+	// Polygon zkEVM
 	evm.NewEVMServiceQoSConfig("F029", "0x44d", nil),
 
-	// zkLink (812564)
+	// zkLink
 	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", nil),
 
-	// zkSync (324)
+	// zkSync
 	evm.NewEVMServiceQoSConfig("F02B", "0x144", nil),
 
-	// XRPL EVM Devnet (1440002)
+	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
 
-	// Sonic (146)
+	// Sonic
 	evm.NewEVMServiceQoSConfig("F02D", "0x92", nil),
 
-	// TRON (728426128)
+	// TRON
 	evm.NewEVMServiceQoSConfig("F02E", "0x2b6653dc", nil),
 
-	// Linea (59144)
+	// Linea
 	evm.NewEVMServiceQoSConfig("F030", "0xe708", nil),
 
-	// Berachain Testnet (80084)
+	// Berachain Testnet
 	evm.NewEVMServiceQoSConfig("F031", "0x138d4", nil),
 
-	// Ink (57073)
+	// Ink
 	evm.NewEVMServiceQoSConfig("F032", "0xdef1", nil),
 
-	// Mantle (5000)
+	// Mantle
 	evm.NewEVMServiceQoSConfig("F033", "0x1388", nil),
 
-	// Sei (1329)
+	// Sei
 	evm.NewEVMServiceQoSConfig("F034", "0x531", nil),
 
-	// Berachain (80094)
+	// Berachain
 	evm.NewEVMServiceQoSConfig("F035", "0x138de", nil),
 
-	// XRPL EVM Testnet (1449000)
+	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig(
 		"F036",
 		"0x161c28",
@@ -278,16 +281,24 @@ var morseServices = []ServiceQoSConfig{
 	),
 
 	// *** CometBFT Services ***
+
+	// Celestia Archival
 	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
+
+	// Celestia Consensus Archival
 	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
+
+	// Celestia Testnet DA Archival
 	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),
+
+	// Celestia Testnet Consensus Archival
 	cometbft.NewCometBFTServiceQoSConfig("A0CD", "celestia-testnet-consensus-archival"),
+
+	// Osmosis
 	cometbft.NewCometBFTServiceQoSConfig("F020", "osmosis"),
 
 	// *** Solana Services ***
+
 	// Solana
-	solana.NewSolanaServiceQoSConfig("solana"),
 	solana.NewSolanaServiceQoSConfig("F025"),
 }
-
-// Configuration now aligned with the service_ids list provided
