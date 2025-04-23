@@ -71,16 +71,16 @@ type (
 var (
 	// defaultMethodConfig contains the default configuration for a method.
 	defaultMethodConfig = methodConfig{
-		totalRequests: 10,
-		rps:           1,
+		totalRequests: 100,
+		rps:           10,
 	}
 
 	// defaultMethodSuccessRates contains the default success rates and latency requirements for a method.
 	defaultMethodSuccessRates = methodSuccessRates{
 		successRate:   0.95,
-		maxP50Latency: 3_500 * time.Millisecond,
-		maxP95Latency: 9_000 * time.Millisecond,
-		maxP99Latency: 30_000 * time.Millisecond,
+		maxP50Latency: 1_000 * time.Millisecond, //
+		maxP95Latency: 5_000 * time.Millisecond,
+		maxP99Latency: 10_000 * time.Millisecond,
 	}
 )
 

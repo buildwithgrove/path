@@ -78,113 +78,126 @@ func runAttack(
 	progressBar *pb.ProgressBar,
 	jsonrpcReq jsonrpc.Request,
 ) *methodMetrics {
-	// Initialize metrics for the method
-	metrics := &methodMetrics{
-		method:      method,
-		statusCodes: make(map[int]int),
-		errors:      make(map[string]int),
-		results:     make([]*vegeta.Result, 0, methodDef.totalRequests),
-	}
-
-	// Create target for the method
+	metrics := initMethodMetrics(method, methodDef.totalRequests)
 	target := createRPCTarget(gatewayURL, serviceID, jsonrpcReq)
-
-	// Calculate max duration as a safety to prevent infinite runs
-	// Allow 2x the theoretical time needed plus a 5 second buffer
 	maxDuration := time.Duration(2*methodDef.totalRequests/methodDef.rps)*time.Second + 5*time.Second
+	attacker := createVegetaAttacker()
 
-	// Create an attacker
-	attacker := vegeta.NewAttacker(
-		vegeta.Timeout(5*time.Second),
-		vegeta.KeepAlive(true),
-		vegeta.Workers(3),
-		vegeta.MaxWorkers(5),
-	)
-
-	// Track exactly how many requests we've successfully processed
-	processedCount := 0
-
-	// Log test start info if progress bars are disabled
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d RPS)...\n",
 			method, methodDef.totalRequests, methodDef.rps)
 	}
 
-	// Use channels to control exactly how many requests are processed
 	resultsChan := make(chan *vegeta.Result, methodDef.totalRequests)
-
-	// Start collection goroutine
 	var resultsWg sync.WaitGroup
+	processedCount := 0
+	startResultsCollector(&resultsWg, resultsChan, metrics, method, methodDef, progressBar, &processedCount)
+
+	requestSlots := methodDef.totalRequests
+	targeter := makeTargeter(&requestSlots, target)
+	attackCh := attacker.Attack(
+		targeter,
+		vegeta.Rate{Freq: methodDef.rps, Per: time.Second},
+		maxDuration,
+		string(method),
+	)
+	runVegetaAttackLoop(ctx, attackCh, resultsChan)
+
+	close(resultsChan)
+	resultsWg.Wait()
+
+	calculateSuccessRate(metrics)
+	calculatePercentiles(metrics)
+	return metrics
+}
+
+// initMethodMetrics
+// • Initializes methodMetrics struct for a method
+func initMethodMetrics(method jsonrpc.Method, totalRequests int) *methodMetrics {
+	return &methodMetrics{
+		method:      method,
+		statusCodes: make(map[int]int),
+		errors:      make(map[string]int),
+		results:     make([]*vegeta.Result, 0, totalRequests),
+	}
+}
+
+// createVegetaAttacker
+// • Sets up a vegeta attacker with fixed options
+func createVegetaAttacker() *vegeta.Attacker {
+	return vegeta.NewAttacker(
+		vegeta.Timeout(5*time.Second),
+		vegeta.KeepAlive(true),
+		vegeta.Workers(3),
+		vegeta.MaxWorkers(5),
+	)
+}
+
+// startResultsCollector
+// • Launches a goroutine to process results, update progress bar, print status
+func startResultsCollector(
+	resultsWg *sync.WaitGroup,
+	resultsChan <-chan *vegeta.Result,
+	metrics *methodMetrics,
+	method jsonrpc.Method,
+	methodDef methodDefinition,
+	progressBar *pb.ProgressBar,
+	processedCount *int,
+) {
 	resultsWg.Add(1)
 	go func() {
 		defer resultsWg.Done()
 		for res := range resultsChan {
-			// Skip "no targets to attack" errors
 			if res.Error == "no targets to attack" {
 				continue
 			}
-
-			// Only process up to the exact request count
-			if processedCount < methodDef.totalRequests {
+			if *processedCount < methodDef.totalRequests {
 				processResult(metrics, res)
-				processedCount++
-
-				// Update progress bar if we have one
+				(*processedCount)++
 				if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
 					progressBar.Increment()
 				}
-
-				// If progress bar is disabled, print periodic status updates
-				if progressBar == nil && processedCount%50 == 0 {
-					percent := float64(processedCount) / float64(methodDef.totalRequests) * 100
+				if progressBar == nil && *processedCount%50 == 0 {
+					percent := float64(*processedCount) / float64(methodDef.totalRequests) * 100
 					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
-						method, processedCount, methodDef.totalRequests, percent)
+						method, *processedCount, methodDef.totalRequests, percent)
 				}
 			}
 		}
-
-		// Ensure the progress bar shows exactly 100% at the end if we have one
 		if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
 			remaining := int64(methodDef.totalRequests) - progressBar.Current()
 			progressBar.Add64(remaining)
 		}
-
-		// Final status update if progress bar is disabled
 		if progressBar == nil {
 			fmt.Printf("  %s: test completed (%d/%d requests)\n",
-				method, processedCount, methodDef.totalRequests)
+				method, *processedCount, methodDef.totalRequests)
 		}
 	}()
+}
 
-	// Create exactly the number of request slots we want to process
-	requestSlots := methodDef.totalRequests
-
-	// Use a targeting function that limits the number of requests
-	targeter := func(tgt *vegeta.Target) error {
-		// Atomically decrement the counter, and if it's <= 0, return no targets
-		if requestSlots <= 0 {
+// makeTargeter
+// • Returns a vegeta.Targeter that enforces the request limit
+func makeTargeter(requestSlots *int, target vegeta.Targeter) vegeta.Targeter {
+	return func(tgt *vegeta.Target) error {
+		if *requestSlots <= 0 {
 			return vegeta.ErrNoTargets
 		}
-		requestSlots--
-
+		(*requestSlots)--
 		return target(tgt)
 	}
+}
 
-	// Run the attack until we hit the total number of requests
-	attackCh := attacker.Attack(
-		targeter,
-		vegeta.Rate{
-			Freq: methodDef.rps,
-			Per:  time.Second,
-		},
-		maxDuration,
-		string(method),
-	)
+// runVegetaAttackLoop
+// • Runs the attack loop, sending results to the channel and handling cancellation
+func runVegetaAttackLoop(
+	ctx context.Context,
+	attackCh <-chan *vegeta.Result,
+	resultsChan chan<- *vegeta.Result,
+) {
 attackLoop:
 	for {
 		select {
 		case <-ctx.Done():
-			// Graceful cancellation: stop processing further results
 			break attackLoop
 		case res, ok := <-attackCh:
 			if !ok {
@@ -193,15 +206,6 @@ attackLoop:
 			resultsChan <- res
 		}
 	}
-
-	close(resultsChan)
-	resultsWg.Wait()
-
-	// Calculate success rate and percentiles
-	calculateSuccessRate(metrics)
-	calculatePercentiles(metrics)
-
-	return metrics
 }
 
 // processResult
@@ -335,9 +339,7 @@ func calculatePercentiles(m *methodMetrics) {
 	}
 
 	// Sort latencies
-	sort.Slice(latencies, func(i, j int) bool {
-		return latencies[i] < latencies[j]
-	})
+	slices.Sort(latencies)
 
 	// Calculate percentiles
 	m.p50 = percentile(latencies, 50)

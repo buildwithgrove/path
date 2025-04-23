@@ -95,87 +95,85 @@ func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride proto
 	return testCases
 }
 
-var (
-	// Morse network test cases
-	morseTestCases = []testCase{
-		{
-			name:      "F00C (Ethereum) Load Test",
-			serviceID: "F00C",
-			methods:   runAllMethods(),
-			archival:  true, // Use random historical block for archival service
-			serviceParams: serviceParameters{
-				// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-				contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
-				contractStartBlock: 12_300_000,
-				transactionHash:    "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
-				callData:           "0x18160ddd",
-			},
+// Shannon network test cases
+var shannonTestCases = []testCase{
+	{
+		name:      "anvil (local Ethereum) Load Test",
+		serviceID: "anvil",
+		// Only test a subset of methods for ephemeral test chain
+		methods: []jsonrpc.Method{
+			eth_blockNumber,
+			eth_call,
+			eth_getBlockByNumber,
+			eth_getBalance,
+			eth_chainId,
+			eth_getTransactionCount,
+			eth_gasPrice,
 		},
-		{
-			name:      "F021 (Polygon) Load Test",
-			serviceID: "F021",
-			methods:   runAllMethods(),
-			archival:  true, // Use random historical block for archival service
-			serviceParams: serviceParameters{
-				// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-				contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-				contractStartBlock: 5_000_000,
-				transactionHash:    "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4",
-				callData:           "0x18160ddd",
-			},
+		serviceParams: serviceParameters{
+			contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+			callData:        "0x18160ddd",
 		},
-		{
-			name:      "F01C (Oasys) Load Test",
-			serviceID: "F01C",
-			methods:   runAllMethods(),
-			archival:  true, // Use random historical block for archival service
-			serviceParams: serviceParameters{
-				// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-				contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
-				contractStartBlock: 424_300,
-				transactionHash:    "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee",
-				callData:           "0x18160ddd",
-			},
-		},
-		{
-			name:      "F036 (XRPL EVM Testnet) Load Test",
-			serviceID: "F036",
-			methods:   runAllMethods(),
-			archival:  true, // Use random historical block for archival service
-			serviceParams: serviceParameters{
-				// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-				contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-				contractStartBlock: 368_266,
-				transactionHash:    "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058",
-				callData:           "0x18160ddd",
-			},
-		},
-	}
+		// TODO_MVP(@commoddity): Temporary solution for slower test/dev chain
+		latencyMultiplier: 10,
+	},
+}
 
-	// Shannon network test cases
-	shannonTestCases = []testCase{
-		{
-			name:      "anvil (local Ethereum) Load Test",
-			serviceID: "anvil",
-			// Only test a subset of methods for ephemeral test chain
-			methods: []jsonrpc.Method{
-				eth_blockNumber,
-				eth_call,
-				eth_getBlockByNumber,
-				eth_getBalance,
-				eth_chainId,
-				eth_getTransactionCount,
-				eth_gasPrice,
-			},
-			serviceParams: serviceParameters{
-				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-				callData:        "0x18160ddd",
-			},
-			// TODO_MVP(@commoddity): Temporary solution for slower test/dev chain
-			latencyMultiplier: 10,
+// Morse network test cases
+var morseTestCases = []testCase{
+	{
+		name:      "F00C (Ethereum) Load Test",
+		serviceID: "F00C",
+		methods:   runAllMethods(),
+		archival:  true, // Use random historical block for archival service
+		serviceParams: serviceParameters{
+			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+			contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
+			contractStartBlock: 12_300_000,
+			transactionHash:    "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
+			callData:           "0x18160ddd",
 		},
-	}
-)
+	},
+	{
+		name:      "F021 (Polygon) Load Test",
+		serviceID: "F021",
+		methods:   runAllMethods(),
+		archival:  true, // Use random historical block for archival service
+		serviceParams: serviceParameters{
+			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+			contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+			contractStartBlock: 5_000_000,
+			transactionHash:    "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4",
+			callData:           "0x18160ddd",
+		},
+	},
+	{
+		name:      "F01C (Oasys) Load Test",
+		serviceID: "F01C",
+		methods:   runAllMethods(),
+		archival:  true, // Use random historical block for archival service
+		serviceParams: serviceParameters{
+			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+			contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+			contractStartBlock: 424_300,
+			transactionHash:    "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee",
+			callData:           "0x18160ddd",
+		},
+	},
+	{
+		name:      "F036 (XRPL EVM Testnet) Load Test",
+		serviceID: "F036",
+		methods:   runAllMethods(),
+		archival:  true, // Use random historical block for archival service
+		serviceParams: serviceParameters{
+			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+			contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+			contractStartBlock: 368_266,
+			transactionHash:    "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058",
+			callData:           "0x18160ddd",
+		},
+	},
+}
 
 /* -------------------- EVM Load Test Function -------------------- */
 

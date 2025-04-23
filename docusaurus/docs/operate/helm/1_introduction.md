@@ -34,14 +34,11 @@ These three components work together to provide a complete gateway solution for 
 
 ## Resource Requirements
 
-**Minimum**
-- 2 processor cores
-- 4GB of RAM
-- 10GB of storage
+The following are bare minimum resource requirements for PATH and will
+need to be adjusted based on the expected load.
 
-**Recommended**
-- 4 processor cores
-- 8GB of RAM
-- 20GB of storage
-
-In high traffic scenarios, you may need to increase these resources.
+| Resource  | Minimum | Recommended |
+| --------- | ------- | ----------- |
+| CPU Cores | 2       | 4           |
+| RAM       | 4GB     | 8GB         |
+| Storage   | 10GB    | 20GB        |
