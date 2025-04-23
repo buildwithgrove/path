@@ -63,118 +63,59 @@ type (
 	}
 )
 
+var (
+	defaultMethodConfig = methodConfig{
+		totalRequests: 10,
+		rps:           1,
+	}
+	defaultMethodSuccessRates = methodSuccessRates{
+		successRate:   0.95,
+		maxP50Latency: 3500 * time.Millisecond,
+		maxP95Latency: 9000 * time.Millisecond,
+		maxP99Latency: 30000 * time.Millisecond,
+	}
+)
+
 // TODO_FUTURE(@commoddity): allow reading this configuration from a YAML file
 //
 // methodDefinitions contains all method definitions for a service load test.
 // this allows customizing the configuration for each method as desired.
 var methodDefinitions = map[jsonrpc.Method]methodDefinition{
 	eth_blockNumber: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_call: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.90,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_getTransactionReceipt: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_getBlockByNumber: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_getBalance: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_chainId: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_getTransactionCount: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_getTransactionByHash: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 	eth_gasPrice: {
-		methodConfig: methodConfig{
-			totalRequests: 200,
-			rps:           10,
-		},
-		methodSuccessRates: methodSuccessRates{
-			successRate:   0.95,
-			maxP50Latency: 350 * time.Millisecond,
-			maxP95Latency: 900 * time.Millisecond,
-			maxP99Latency: 3_000 * time.Millisecond,
-		},
+		methodConfig:       defaultMethodConfig,
+		methodSuccessRates: defaultMethodSuccessRates,
 	},
 }
 

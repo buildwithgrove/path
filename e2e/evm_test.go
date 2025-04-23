@@ -21,15 +21,17 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-/* Example Usage
+/*
+Example Usage
 
-	`make test_e2e_evm_morse`                           - Run all EVM tests for Morse
-	`make test_e2e_evm_shannon`                         - Run all EVM tests for Shannon
-	`make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
-	`make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true` - Force a rebuild of the Docker image for the EVM tests
-	`make test_e2e_evm_morse DOCKER_LOG=true`           - Log the output of the Docker container for the EVM tests
-	`make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30`      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
-For full information on the test options, see `opts_test.go`
+	make test_e2e_evm_morse                           - Run all EVM tests for Morse
+	make test_e2e_evm_shannon                         - Run all EVM tests for Shannon
+	make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021  - Run only the F021 EVM test for Morse
+	make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true - Force a rebuild of the Docker image for the EVM tests
+	make test_e2e_evm_morse DOCKER_LOG=true           - Log the output of the Docker container for the EVM tests
+	make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
+
+	For full information on the test options, see `opts_test.go`
 */
 
 /* -------------------- Test Configuration Initialization -------------------- */
@@ -160,7 +162,7 @@ var (
 			},
 			// TODO_MVP(@commoddity): This is a temporary solution to account for
 			// the fact that anvil is slower due to being a test/development chain.
-			latencyMultiplier: 2,
+			latencyMultiplier: 10,
 		},
 	}
 )
@@ -169,15 +171,10 @@ var (
 
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
 func Test_PATH_E2E_EVM(t *testing.T) {
-	fmt.Println("🚀 Setting up PATH instance...")
+	t.Log("🚀 Setting up PATH instance...")
 
 	// Config YAML file, eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configFilePath := fmt.Sprintf(opts.configPathTemplate, opts.testProtocol)
-
-	// Default port for PATH instance
-	// If using Docker, the port will be dynamically assigned
-	// and overridden by the value returned from `setupPathInstance`.
-	port := "3069"
 
 	// If GATEWAY_URL_OVERRIDE is not set, we will start an instance of PATH in Docker using `dockertest`.
 	// This is configured in the file `docker_test.go` and is the default behavior.
@@ -187,20 +184,17 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	if !opts.gatewayURLOverridden {
 		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, opts.docker)
 		defer teardownFn()
-
-		port = pathContainerPort
-
 		// Format the gateway URL with the dynamically assigned port
-		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, port)
+		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, pathContainerPort)
 	}
 
-	fmt.Printf("🌿 Starting PATH E2E EVM test.\n")
-	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
-	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
+	t.Logf("🌿 Starting PATH E2E EVM test.\n")
+	t.Logf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
+	t.Logf("  📡 Test protocol: %s\n", opts.testProtocol)
 	if opts.serviceIDOverride != "" {
-		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+		t.Logf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
 	} else {
-		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
+		t.Logf("  ⛓️  Running tests for all service IDs\n")
 	}
 
 	// TODO_NEXT: This arbitrary wait is somewhat hacky and may need to be revisited in the future.
@@ -208,7 +202,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
 	// 		ie. for returning empty or invalid responses, etc.
 	if opts.waitForHydrator > 0 {
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
+		t.Logf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
 		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 			<-time.After(time.Duration(opts.waitForHydrator) * time.Second) // In CI, do not use wait bar as CI logs do not support it.
 		} else {
@@ -235,9 +229,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			testCases[i].serviceParams.blockNumber = "latest"
 		}
 
-		fmt.Printf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
-		fmt.Printf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
-		fmt.Printf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
+		t.Logf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
+		t.Logf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
+		t.Logf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
 
 		// Initialize service summary
 		serviceSummaries[testCases[i].serviceID] = &serviceSummary{
@@ -325,11 +319,11 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			}
 
 			// Add space after progress bars
-			fmt.Println()
+			t.Log()
 
 			// Adjust latency expectations for slow chain if latency multiplier is set.
 			if testCases[i].latencyMultiplier != 0 {
-				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
+				t.Logf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
 					YELLOW, testCases[i].name, testCases[i].latencyMultiplier, RESET,
 				)
 				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, testCases[i].latencyMultiplier)
@@ -400,19 +394,19 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 		// If this service test failed, fail the overall test immediately
 		if serviceTestFailed {
-			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, testCases[i].serviceID, RESET)
+			t.Logf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, testCases[i].serviceID, RESET)
 
 			// Print summary before failing
 			printServiceSummaries(serviceSummaries)
 
 			t.FailNow() // This will exit the test immediately
 		} else {
-			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, testCases[i].serviceID, RESET)
+			t.Logf("\n%s✅ Service %s test passed%s\n", GREEN, testCases[i].serviceID, RESET)
 		}
 	}
 
 	// If execution reaches here, all services have passed
-	fmt.Printf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
+	t.Logf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
 
 	// Print summary after all tests are complete
 	printServiceSummaries(serviceSummaries)

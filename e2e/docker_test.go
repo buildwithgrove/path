@@ -3,7 +3,9 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -175,15 +177,33 @@ func setupPathDocker(
 		}()
 	}
 
-	// Handle termination signals
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	// Create a context that we can cancel
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Set up signal handling
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Create a channel to wait for cleanup completion
+	cleanupDone := make(chan struct{})
+
+	// Handle signals
 	go func() {
-		for sig := range c {
-			fmt.Printf("exit signal %d received\n", sig)
+		select {
+		case <-signalChan:
+			fmt.Println("\nReceived Ctrl+C, cleaning up containers...")
+			// Cancel the context
+			cancel()
+
+			// Perform cleanup
 			if err := pool.Purge(resource); err != nil {
-				fmt.Printf("could not purge resource: %s", err)
+				log.Printf("Could not purge resource: %s", err)
 			}
+
+			// Signal that cleanup is done
+			close(cleanupDone)
+		case <-ctx.Done():
+			// Context was canceled elsewhere
 		}
 	}()
 
@@ -191,11 +211,12 @@ func setupPathDocker(
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
-	fmt.Println("  ✅ PATH test container started successfully!")
-	fmt.Println("🏥 Performing health check on PATH test container...")
+	t.Logf("  ✅ PATH test container started successfully!")
 
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
+
+	t.Logf("🏥 Performing health check on PATH test container at %s...", healthCheckURL)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {
@@ -218,7 +239,7 @@ func setupPathDocker(
 		t.Fatalf("could not connect to docker: %s", err)
 	}
 
-	fmt.Println("  ✅ PATH test container is healthy and ready for tests!")
+	t.Logf("  ✅ PATH test container is healthy and ready for tests!")
 
 	<-poolRetryChan
 
