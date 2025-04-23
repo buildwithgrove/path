@@ -1,0 +1,50 @@
+FROM docker:dind
+
+# Install essential build tools
+RUN apk add --no-cache \
+    curl \
+    jq \
+    make \
+    bash \
+    git
+
+# Install Go 1.23 with architecture detection
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+    x86_64) GOARCH=amd64 ;; \
+    aarch64|arm64) GOARCH=arm64 ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -O https://go.dev/dl/go1.23.linux-${GOARCH}.tar.gz && \
+    rm -rf /usr/local/go && \
+    tar -C /usr/local -xzf go1.23.linux-${GOARCH}.tar.gz && \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go && \
+    rm go1.23.0.linux-${GOARCH}.tar.gz
+
+# Install Tilt with architecture detection
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+    x86_64) TILT_ARCH=x86_64 ;; \
+    aarch64|arm64) TILT_ARCH=arm64 ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v0.33.5/tilt.0.33.5.linux.${TILT_ARCH}.tar.gz" | tar -xzC /usr/local/bin tilt
+
+# Install Helm if not already present
+RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
+# Install Kind
+RUN curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/latest/kind-linux-$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    chmod +x /usr/local/bin/kind
+
+# Create working directory
+WORKDIR /app
+
+# Use the start.sh script
+ENTRYPOINT []
+CMD ["/bin/sh", "-c", "/usr/local/bin/dockerd-entrypoint.sh & sleep 3 && ./local/start.sh"]
