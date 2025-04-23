@@ -41,12 +41,12 @@ const (
 // eg. 3069/tcp
 var containerPortAndProtocol = internalPathPort + "/tcp"
 
-// setupPathInstance starts an instance of PATH in a container, using Docker.
-// It returns:
-// 1. "pathPort", the port that is dynamically selected and exposed
-// by the ephemeral PATH container.
-// 2. "cleanup", a function that needs to be called to clean up the PATH container.
-// It is the responsibility of the test function to call this cleanup function.
+// setupPathInstance starts an instance of PATH in a Docker container.
+//
+// Returns:
+// - "pathPort": the dynamically selected and exposed port by the ephemeral PATH container
+// - "cleanup": a function that must be called to clean up the PATH container
+//   - Test functions are responsible for calling this cleanup function
 func setupPathInstance(
 	t *testing.T,
 	configFilePath string,
@@ -68,19 +68,12 @@ func setupPathInstance(
 // setupPathDocker sets up and starts a Docker container for the PATH service using dockertest.
 //
 // Key steps:
-//
 // - Builds the container from a specified Dockerfile.
-//
 // - Mounts necessary configuration files.
-//
 // - Sets environment variables for the container.
-//
 // - Exposes required ports and sets extra hosts.
-//
 // - Sets up a signal handler to clean up the container on termination signals.
-//
 // - Performs a health check to ensure the container is ready for requests.
-//
 // - Returns the dockertest pool, resource, and the container port.
 func setupPathDocker(
 	t *testing.T,
@@ -161,13 +154,28 @@ func setupPathDocker(
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
+	// Optionally log the PATH container output
 	if logContainer {
+		// Determine log output file
+		logOutputFile := os.Getenv("DOCKER_LOG_OUTPUT_FILE")
+		if logOutputFile == "" {
+			logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
+		}
+		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n\n", logOutputFile)
+
 		// Print container logs in a goroutine to prevent blocking
 		go func() {
+			f, err := os.Create(logOutputFile)
+			if err != nil {
+				fmt.Printf("could not create log file %s: %v\n", logOutputFile, err)
+				return
+			}
+			defer f.Close()
+
 			if err := pool.Client.Logs(docker.LogsOptions{
 				Container:    resource.Container.ID,
-				OutputStream: os.Stdout,
-				ErrorStream:  os.Stderr,
+				OutputStream: f,
+				ErrorStream:  f,
 				Stdout:       true,
 				Stderr:       true,
 				Follow:       true,

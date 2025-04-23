@@ -4,11 +4,13 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,19 +24,18 @@ import (
 )
 
 /*
-Example Usage
+For full information on the test options, see `opts_test.go`
 
-	make test_e2e_evm_morse                           - Run all EVM tests for Morse
-	make test_e2e_evm_shannon                         - Run all EVM tests for Shannon
-	make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021  - Run only the F021 EVM test for Morse
-	make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true - Force a rebuild of the Docker image for the EVM tests
-	make test_e2e_evm_morse DOCKER_LOG=true           - Log the output of the Docker container for the EVM tests
-	make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
-
-	For full information on the test options, see `opts_test.go`
+Example Usage:
+- `make test_e2e_evm_morse`                           - Run all EVM tests for Morse
+- `make test_e2e_evm_shannon`                         - Run all EVM tests for Shannon
+- `make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
+- `make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true` - Force a rebuild of the Docker image for the EVM tests
+- `make test_e2e_evm_morse DOCKER_LOG=true`           - Log the output of the Docker container for the EVM tests
+- `make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30`      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
 */
 
-/* -------------------- Test Configuration Initialization -------------------- */
+// -------------------- Test Configuration Initialization --------------------
 
 // Global test options
 var opts testOptions
@@ -44,33 +45,42 @@ func init() {
 	opts = gatherTestOptions()
 }
 
-/* -------------------- Get Test Cases for Protocol -------------------- */
+// -------------------- Get Test Cases for Protocol --------------------
 
 // testCase represents a single service load test configuration
+//
+// Fields:
+// - name:              Descriptive name for the test case
+// - serviceID:         The service ID to test
+// - archival:          Whether to select a random historical block
+// - methods:           The methods to test for this service
+// - serviceParams:     Service-specific parameters
+// - latencyMultiplier: Multiplier for latency expectations
 type testCase struct {
 	name              string
-	serviceID         protocol.ServiceID // The service ID to test
-	archival          bool               // Whether to select a random historical block
-	methods           []jsonrpc.Method   // The methods to test for this service
-	serviceParams     serviceParameters  // Service-specific parameters
-	latencyMultiplier int                // Multiplier for latency expectations
+	serviceID         protocol.ServiceID
+	archival          bool
+	methods           []jsonrpc.Method
+	serviceParams     serviceParameters
+	latencyMultiplier int
 }
 
-// getTestCases returns the appropriate test cases based on the protocol
+// getTestCases returns the appropriate test cases based on the protocol.
+//
+// - Filters for a specific service ID if provided.
+// - Panics if the service ID override is not found.
 func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride protocol.ServiceID) []testCase {
-	// Get the appropriate test cases based on the protocol
 	var testCases []testCase
+
 	switch protocolStr {
 	case morse:
 		testCases = morseTestCases
 	case shannon:
 		testCases = shannonTestCases
 	default:
-		// This shouldn't happen due to the init check, but just in case
 		t.Fatalf("Unsupported protocol: %s", protocolStr)
 	}
 
-	// If a service ID override is provided, filter for that specific test case.
 	if serviceIDOverride != "" {
 		var filteredTestCases []testCase
 		for _, tc := range testCases {
@@ -86,12 +96,13 @@ func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride proto
 }
 
 var (
+	// Morse network test cases
 	morseTestCases = []testCase{
 		{
 			name:      "F00C (Ethereum) Load Test",
 			serviceID: "F00C",
 			methods:   runAllMethods(),
-			archival:  true, // F00C is an archival service so we should use a random historical block.
+			archival:  true, // Use random historical block for archival service
 			serviceParams: serviceParameters{
 				// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 				contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
@@ -104,7 +115,7 @@ var (
 			name:      "F021 (Polygon) Load Test",
 			serviceID: "F021",
 			methods:   runAllMethods(),
-			archival:  true, // F021 is an archival service so we should use a random historical block.
+			archival:  true, // Use random historical block for archival service
 			serviceParams: serviceParameters{
 				// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 				contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
@@ -117,7 +128,7 @@ var (
 			name:      "F01C (Oasys) Load Test",
 			serviceID: "F01C",
 			methods:   runAllMethods(),
-			archival:  true, // F01C is an archival service so we should use a random historical block.
+			archival:  true, // Use random historical block for archival service
 			serviceParams: serviceParameters{
 				// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
 				contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
@@ -130,7 +141,7 @@ var (
 			name:      "F036 (XRPL EVM Testnet) Load Test",
 			serviceID: "F036",
 			methods:   runAllMethods(),
-			archival:  true, // F036 is an archival service so we should use a random historical block.
+			archival:  true, // Use random historical block for archival service
 			serviceParams: serviceParameters{
 				// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 				contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
@@ -141,12 +152,12 @@ var (
 		},
 	}
 
+	// Shannon network test cases
 	shannonTestCases = []testCase{
 		{
 			name:      "anvil (local Ethereum) Load Test",
 			serviceID: "anvil",
-			// anvil is an ephemeral test chain so we don't test
-			// `eth_getTransactionReceipt` and `eth_getTransactionByHash`
+			// Only test a subset of methods for ephemeral test chain
 			methods: []jsonrpc.Method{
 				eth_blockNumber,
 				eth_call,
@@ -160,8 +171,7 @@ var (
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 				callData:        "0x18160ddd",
 			},
-			// TODO_MVP(@commoddity): This is a temporary solution to account for
-			// the fact that anvil is slower due to being a test/development chain.
+			// TODO_MVP(@commoddity): Temporary solution for slower test/dev chain
 			latencyMultiplier: 10,
 		},
 	}
@@ -171,23 +181,36 @@ var (
 
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
 func Test_PATH_E2E_EVM(t *testing.T) {
+	// Set up context that cancels on SIGINT (Cmd+C)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Listen for interrupt signal
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		<-sigCh
+		t.Log("Received SIGINT, cancelling test...")
+		cancel()
+	}()
 	t.Log("🚀 Setting up PATH instance...")
 
 	// Config YAML file, eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configFilePath := fmt.Sprintf(opts.configPathTemplate, opts.testProtocol)
 
-	// If GATEWAY_URL_OVERRIDE is not set, we will start an instance of PATH in Docker using `dockertest`.
-	// This is configured in the file `docker_test.go` and is the default behavior.
-	//
-	// If GATEWAY_URL_OVERRIDE is set, we'll use the provided URL directly and skip starting a Docker container,
-	// assuming PATH is already running externally at the provided URL.
+	// Docker options
+	pathOpts := opts.docker
+	// If GATEWAY_URL_OVERRIDE is set:
+	// 	- Skip starting a Docker container
+	// 	- Assumes PATH is already running externally at the provided URL and
+	// 	- Uses the provided URL directly
 	if !opts.gatewayURLOverridden {
-		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, opts.docker)
+		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, pathOpts)
 		defer teardownFn()
 		// Format the gateway URL with the dynamically assigned port
 		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, pathContainerPort)
 	}
 
+	// Log test start information for the user
 	t.Logf("🌿 Starting PATH E2E EVM test.\n")
 	t.Logf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
 	t.Logf("  📡 Test protocol: %s\n", opts.testProtocol)
@@ -216,48 +239,50 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// Initialize map to store service summaries
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
-	for i := range testCases {
-		// If archival is true then we will use a random historical block for the test.
-		if testCases[i].archival {
-			testCases[i].serviceParams.blockNumber = setTestBlockNumber(
+	// Iterate over test cases
+	for i, tc := range testCases {
+		isArchival := tc.archival
+		if !isArchival {
+			tc.serviceParams.blockNumber = "latest"
+		} else {
+			// If archival is true then we will use a random historical block for the test.
+			tc.serviceParams.blockNumber = setTestBlockNumber(
 				t,
 				opts.gatewayURL,
-				testCases[i].serviceID,
-				testCases[i].serviceParams.contractStartBlock,
+				tc.serviceID,
+				tc.serviceParams.contractStartBlock,
 			)
-		} else {
-			testCases[i].serviceParams.blockNumber = "latest"
 		}
 
 		t.Logf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
-		t.Logf("  ⛓️  Service ID: %s\n", testCases[i].serviceID)
-		t.Logf("  📡 Block number: %s\n", testCases[i].serviceParams.blockNumber)
+		t.Logf("  ⛓️  Service ID: %s\n", tc.serviceID)
+		t.Logf("  📡 Block number: %s\n", tc.serviceParams.blockNumber)
 		t.Log("\n")
 
 		// Initialize service summary
-		serviceSummaries[testCases[i].serviceID] = &serviceSummary{
-			serviceID:    testCases[i].serviceID,
+		serviceSummaries[tc.serviceID] = &serviceSummary{
+			serviceID:    tc.serviceID,
 			methodErrors: make(map[jsonrpc.Method]map[string]int),
-			methodCount:  len(testCases[i].methods),
+			methodCount:  len(tc.methods),
 			totalErrors:  0,
 		}
 
 		// Use t.Run for proper test reporting
 		serviceTestFailed := false
-		t.Run(testCases[i].name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			// Create results map with a mutex to protect concurrent access
 			results := make(map[jsonrpc.Method]*methodMetrics)
 			var resultsMutex sync.Mutex
 
 			// Validate that all methods have a definition
-			for _, method := range testCases[i].methods {
+			for _, method := range tc.methods {
 				if _, exists := methodDefinitions[method]; !exists {
 					t.Fatalf("No definition for method %s", method)
 				}
 			}
 
 			// Create and start all progress bars upfront
-			progBars, err := newProgressBars(testCases[i].methods, methodDefinitions)
+			progBars, err := newProgressBars(tc.methods, methodDefinitions)
 			if err != nil {
 				t.Fatalf("Failed to create progress bars: %v", err)
 			}
@@ -273,15 +298,23 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			var methodWg sync.WaitGroup
 
 			// Run attack for each method concurrently
-			for _, method := range testCases[i].methods {
+			for _, method := range tc.methods {
 				methodWg.Add(1)
 
 				// Get method configuration
 				methodDef := methodDefinitions[method]
 
 				// Run the attack in a goroutine
-				go func(method jsonrpc.Method, def methodDefinition) {
+				go func(ctx context.Context, method jsonrpc.Method, def methodDefinition) {
 					defer methodWg.Done()
+
+					select {
+					case <-ctx.Done():
+						t.Logf("Method %s cancelled", method)
+						return
+					default:
+						// continue
+					}
 
 					// Create the JSON-RPC request
 					jsonrpcReq := jsonrpc.Request{
@@ -290,14 +323,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 						Method:  method,
 						Params: createParams(
 							method,
-							testCases[i].serviceParams,
+							tc.serviceParams,
 						),
 					}
 
-					// Run the attack
+					// TODO: Propagate ctx deeper into runAttack if it supports cancellation
 					metrics := runAttack(
+						ctx,
 						opts.gatewayURL,
-						testCases[i].serviceID,
+						tc.serviceID,
 						method,
 						def,
 						progBars.get(method),
@@ -308,7 +342,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 					resultsMutex.Lock()
 					results[method] = metrics
 					resultsMutex.Unlock()
-				}(method, methodDef)
+				}(ctx, method, methodDef)
 			}
 
 			// Wait for all method tests to complete
@@ -323,15 +357,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			fmt.Println()
 
 			// Adjust latency expectations for slow chain if latency multiplier is set.
-			if testCases[i].latencyMultiplier != 0 {
-				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s\n",
-					YELLOW, testCases[i].name, testCases[i].latencyMultiplier, RESET,
+			if tc.latencyMultiplier != 0 {
+				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
+					YELLOW, tc.name, tc.latencyMultiplier, RESET,
 				)
-				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, testCases[i].latencyMultiplier)
+				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, tc.latencyMultiplier)
 			}
 
 			// Calculate service summary metrics
-			summary := serviceSummaries[testCases[i].serviceID]
+			summary := serviceSummaries[tc.serviceID]
 
 			var totalLatency time.Duration
 			var totalP90Latency time.Duration
@@ -339,7 +373,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			var methodsWithResults int
 
 			// Validate results for each method and collect summary data
-			for _, method := range testCases[i].methods {
+			for _, method := range tc.methods {
 				methodMetrics := results[method]
 
 				// Skip methods with no data
@@ -395,14 +429,14 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 		// If this service test failed, fail the overall test immediately
 		if serviceTestFailed {
-			t.Logf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, testCases[i].serviceID, RESET)
+			t.Logf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.serviceID, RESET)
 
 			// Print summary before failing
 			printServiceSummaries(serviceSummaries)
 
 			t.FailNow() // This will exit the test immediately
 		} else {
-			t.Logf("\n%s✅ Service %s test passed%s\n", GREEN, testCases[i].serviceID, RESET)
+			t.Logf("\n%s✅ Service %s test passed%s\n", GREEN, tc.serviceID, RESET)
 		}
 	}
 

@@ -30,7 +30,7 @@ func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (prot
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Error().Msg("all endpoints failed validation; selecting a random endpoint.")
+		logger.Warn().Msg("SELECTING A RANDOM ENDPOINT because all endpoints failed validation.")
 		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpointAddr, nil
 	}

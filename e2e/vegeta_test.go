@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -69,6 +70,7 @@ func createRPCTarget(
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
 func runAttack(
+	ctx context.Context,
 	gatewayURL string,
 	serviceID protocol.ServiceID,
 	method jsonrpc.Method,
@@ -169,7 +171,7 @@ func runAttack(
 	}
 
 	// Run the attack until we hit the total number of requests
-	for res := range attacker.Attack(
+	attackCh := attacker.Attack(
 		targeter,
 		vegeta.Rate{
 			Freq: methodDef.rps,
@@ -177,8 +179,19 @@ func runAttack(
 		},
 		maxDuration,
 		string(method),
-	) {
-		resultsChan <- res
+	)
+attackLoop:
+	for {
+		select {
+		case <-ctx.Done():
+			// Graceful cancellation: stop processing further results
+			break attackLoop
+		case res, ok := <-attackCh:
+			if !ok {
+				break attackLoop
+			}
+			resultsChan <- res
+		}
 	}
 
 	close(resultsChan)
@@ -379,9 +392,9 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 	p50Color := getLatencyColor(m.p50, methodDef.maxP50Latency)
 	p95Color := getLatencyColor(m.p95, methodDef.maxP95Latency)
 	p99Color := getLatencyColor(m.p99, methodDef.maxP99Latency)
-	fmt.Printf("Latency P50: %s%s%s\n", p50Color, formatLatency(m.p50), RESET)
-	fmt.Printf("Latency P95: %s%s%s\n", p95Color, formatLatency(m.p95), RESET)
-	fmt.Printf("Latency P99: %s%s%s\n", p99Color, formatLatency(m.p99), RESET)
+	fmt.Printf("%sLatency P50%s: %s%s%s\n", BOLD, RESET, p50Color, formatLatency(m.p50), RESET)
+	fmt.Printf("%sLatency P95%s: %s%s%s\n", BOLD, RESET, p95Color, formatLatency(m.p95), RESET)
+	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
 
 	// Print JSON-RPC metrics with coloring
 	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors > 0 {
@@ -459,7 +472,7 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 
 	// If there are failures, report them all at once at the end
 	if len(failures) > 0 {
-		fmt.Printf("\n%s❌ Method %s has %d assertion failures:%s\n", RED, m.method, len(failures), RESET)
+		fmt.Printf("\n%s❌ Assertion failures for %s:%s\n", RED, m.method, RESET)
 		for i, failure := range failures {
 			fmt.Printf("   %s%d. %s%s\n", RED, i+1, failure, RESET)
 		}
