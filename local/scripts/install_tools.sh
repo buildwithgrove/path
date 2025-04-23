@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# TODO_IMPROVE(@commoddity): Create a Docker image that has all of these tools installed to avoid the need to install them on the host machine.
+#                            This will greatly simplify the developer experience of running PATH in development mode and remove the need to have a
+#                            local Kubernetes cluster running, as well as the need to install these tools on the host machine.
+
 # This script installs Docker, Kind, Kubectl, Helm, and Tilt if they are not already installed.
 # It detects the OS and architecture to download the correct binaries.
 
