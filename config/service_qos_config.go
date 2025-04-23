@@ -71,17 +71,17 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, nil),
 
 	// Anvil - Ethereum development/testing
-	evm.NewEVMServiceQoSConfig("anvil", defaultEVMChainID, nil),
+	evm.NewEVMServiceQoSConfig("anvil", "0x7a69", nil),
 
 	// Anvil WebSockets - Ethereum WebSockets development/testing
-	evm.NewEVMServiceQoSConfig("anvilws", defaultEVMChainID, nil),
+	evm.NewEVMServiceQoSConfig("anvilws", "0x7a69", nil),
 
 	// *** CometBFT Services ***
 
-	// CometBFT - Pocket Beta Testnet
+	// Pocket Beta Testnet
 	cometbft.NewCometBFTServiceQoSConfig("pocket-beta-rpc", "pocket-beta"),
 
-	// CometBFT - Cosmos Hub
+	// Cosmos Hub
 	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
 
 	// *** Solana Services ***
