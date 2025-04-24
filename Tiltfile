@@ -128,6 +128,8 @@ local_resource(
 #
 # For more context, see the comments at:
 # `./local/scripts/patch_envoy_gateway.sh`.
+#
+# TODO_TECHDEBT(@okdas): Remove this and the associated script once helm charts are updated.
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
@@ -276,6 +278,16 @@ k8s_resource(
     labels=["path"]
 )
 
+# Attach the proper port forwards to Grafana
+# TODO_TECHDEBT(@okdas): Remove admin/password requirements.
+k8s_attach(
+    'path-grafana',
+    'deployment/path-grafana',
+    namespace='path',
+    port_forwards="3003:3000",
+    resource_deps=["path-stack"]
+)
+
 # 2. GUARD Logs - Waits for container readiness before following logs
 local_resource(
     "guard-logs",
@@ -314,5 +326,3 @@ local_resource(
     labels=["k8s_logs"],
     resource_deps=["path-stack"]
 )
-
-k8s_attach('path-grafana', 'deployment/path-grafana', namespace='path', port_forwards="3003:3000", resource_deps=["path-stack"])
