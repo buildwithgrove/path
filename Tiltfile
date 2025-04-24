@@ -1,6 +1,7 @@
 # Load necessary Tilt extensions
 load("ext://restart_process", "docker_build_with_restart")
 load("ext://helm_resource", "helm_resource", "helm_repo")
+load('ext://k8s_attach', 'k8s_attach')
 load("ext://configmap", "configmap_create")
 
 # A list of directories where changes trigger a hot-reload of PATH.
@@ -314,18 +315,4 @@ local_resource(
     resource_deps=["path-stack"]
 )
 
-# --------------------------------------------------------------------------- #
-#                          Port Forwarding Resources                          #
-# --------------------------------------------------------------------------- #
-# 1. Grafana container port                                                   #
-# --------------------------------------------------------------------------- #
-# Grafana port
-# k8s_resource(workload="path-grafana", port_forwards=3000)
-# Create a local_resource for port forwarding to Grafana
-local_resource(
-    "path-grafana-portforward",
-    # Use port 3003:3000 is used by kind control plane.
-    serve_cmd="kubectl port-forward deployment/path-grafana 3003:3000",
-    resource_deps=["path-stack"],  # This ensures the port-forward starts after the Helm chart is deployed
-    labels=["grafana"]
-)
+k8s_attach('path-grafana', 'deployment/path-grafana', namespace='path', port_forwards="3003:3000", resource_deps=["path-stack"])
