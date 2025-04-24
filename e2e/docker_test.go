@@ -140,7 +140,7 @@ func setupPathDocker(
 		fmt.Println("🐳 Docker image built successfully!")
 	}
 
-	fmt.Println("\n🌿 Starting PATH test container...")
+	fmt.Println("\n 🌿  Starting PATH test container...")
 
 	// Run the built image
 	runOpts := &dockertest.RunOptions{
@@ -167,7 +167,7 @@ func setupPathDocker(
 		if logOutputFile == "" {
 			logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
 		}
-		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n\n", logOutputFile)
+		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n", logOutputFile)
 
 		// Print container logs in a goroutine to prevent blocking
 		go func() {
@@ -225,12 +225,12 @@ func setupPathDocker(
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
-	t.Logf("  ✅ PATH test container started successfully!")
+	fmt.Printf("\n ✅  PATH test container started successfully!")
 
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
 
-	t.Logf("🏥 Performing health check on PATH test container at %s...", healthCheckURL)
+	fmt.Printf("\n 🏥  Performing health check on PATH test container at %s...", healthCheckURL)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {
@@ -253,7 +253,7 @@ func setupPathDocker(
 		t.Fatalf("could not connect to docker: %s", err)
 	}
 
-	t.Logf("  ✅ PATH test container is healthy and ready for tests!")
+	fmt.Printf("\n ✅ PATH test container is healthy and ready for tests!")
 
 	<-poolRetryChan
 

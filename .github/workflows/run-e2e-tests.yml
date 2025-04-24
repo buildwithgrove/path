@@ -54,7 +54,6 @@ jobs:
     name: Run E2E tests - Morse
     runs-on: "ubuntu-22.04"
     needs:
-      - run-linter
       - run-unit-tests
       - build-and-test-docker-image
     strategy:

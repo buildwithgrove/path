@@ -17,11 +17,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cheggaaa/pb/v3"
+
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
-	"github.com/cheggaaa/pb/v3"
 )
 
 /*
@@ -277,15 +278,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 		serviceTestFailed := runEVMServiceTest(t, ctx, tc, opts, serviceSummaries[tc.serviceID])
 		if serviceTestFailed {
-			t.Logf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.serviceID, RESET)
+			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.serviceID, RESET)
 			printServiceSummaries(serviceSummaries)
 			t.FailNow()
 		} else {
-			t.Logf("\n%s✅ Service %s test passed%s\n", GREEN, tc.serviceID, RESET)
+			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, tc.serviceID, RESET)
 		}
 	}
 
-	t.Logf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
+	fmt.Printf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
 	printServiceSummaries(serviceSummaries)
 }
 
@@ -295,27 +296,27 @@ func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testi
 	signal.Notify(sigCh, os.Interrupt)
 	go func() {
 		<-sigCh
-		t.Log("Received SIGINT, cancelling test...")
+		fmt.Print("Received SIGINT, cancelling test...")
 		cancel()
 	}()
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
 func logEVMTestStartInfo(t *testing.T, opts testOptions) {
-	t.Logf("🌿 Starting PATH E2E EVM test.\n")
-	t.Logf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
-	t.Logf("  📡 Test protocol: %s\n", opts.testProtocol)
+	fmt.Printf("\n 🌿 Starting PATH E2E EVM test.\n")
+	fmt.Printf(" 🧬 Gateway URL: %s\n", opts.gatewayURL)
+	fmt.Printf(" 📡 Test protocol: %s\n", opts.testProtocol)
 	if opts.serviceIDOverride != "" {
-		t.Logf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+		fmt.Printf(" ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
 	} else {
-		t.Logf("  ⛓️  Running tests for all service IDs\n")
+		fmt.Printf(" ⛓️  Running tests for all service IDs\n\n")
 	}
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
 func waitForHydratorIfNeeded(opts testOptions, t *testing.T) {
 	if opts.waitForHydrator > 0 {
-		t.Logf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
+		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
 		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
 		} else {
@@ -348,7 +349,7 @@ func runEVMServiceTest(
 	}
 	defer func() {
 		if err := progBars.finish(); err != nil {
-			t.Logf("Error stopping progress bars: %v", err)
+			fmt.Printf("Error stopping progress bars: %v", err)
 		}
 	}()
 
@@ -367,7 +368,7 @@ func runEVMServiceTest(
 	methodWg.Wait()
 
 	if err := progBars.finish(); err != nil {
-		t.Logf("Error stopping progress bars: %v", err)
+		fmt.Printf("Error stopping progress bars: %v", err)
 	}
 	fmt.Println()
 
@@ -394,7 +395,7 @@ func runMethodAttack(
 ) *methodMetrics {
 	select {
 	case <-ctx.Done():
-		t.Logf("Method %s cancelled", method)
+		fmt.Printf("Method %s cancelled", method)
 		return nil
 	default:
 	}
