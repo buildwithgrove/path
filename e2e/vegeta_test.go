@@ -66,7 +66,7 @@ func createRPCTarget(
 
 // runAttack
 // • Executes a load test for a given method
-// • Sends `methodDef.totalRequests` requests at `methodDef.rps` requests/sec
+// • Sends `testConfig.totalRequests` requests at `testConfig.rps` requests/sec
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
 func runAttack(
@@ -74,30 +74,30 @@ func runAttack(
 	gatewayURL string,
 	serviceID protocol.ServiceID,
 	method jsonrpc.Method,
-	methodDef methodDefinition,
+	testConfig methodTestConfig,
 	progressBar *pb.ProgressBar,
 	jsonrpcReq jsonrpc.Request,
 ) *methodMetrics {
-	metrics := initMethodMetrics(method, methodDef.totalRequests)
+	metrics := initMethodMetrics(method, testConfig.totalRequests)
 	target := createRPCTarget(gatewayURL, serviceID, jsonrpcReq)
-	maxDuration := time.Duration(2*methodDef.totalRequests/methodDef.rps)*time.Second + 5*time.Second
+	maxDuration := time.Duration(2*testConfig.totalRequests/testConfig.rps)*time.Second + 5*time.Second
 	attacker := createVegetaAttacker()
 
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d RPS)...\n",
-			method, methodDef.totalRequests, methodDef.rps)
+			method, testConfig.totalRequests, testConfig.rps)
 	}
 
-	resultsChan := make(chan *vegeta.Result, methodDef.totalRequests)
+	resultsChan := make(chan *vegeta.Result, testConfig.totalRequests)
 	var resultsWg sync.WaitGroup
 	processedCount := 0
-	startResultsCollector(&resultsWg, resultsChan, metrics, method, methodDef, progressBar, &processedCount)
+	startResultsCollector(&resultsWg, resultsChan, metrics, method, testConfig, progressBar, &processedCount)
 
-	requestSlots := methodDef.totalRequests
+	requestSlots := testConfig.totalRequests
 	targeter := makeTargeter(&requestSlots, target)
 	attackCh := attacker.Attack(
 		targeter,
-		vegeta.Rate{Freq: methodDef.rps, Per: time.Second},
+		vegeta.Rate{Freq: testConfig.rps, Per: time.Second},
 		maxDuration,
 		string(method),
 	)
@@ -140,7 +140,7 @@ func startResultsCollector(
 	resultsChan <-chan *vegeta.Result,
 	metrics *methodMetrics,
 	method jsonrpc.Method,
-	methodDef methodDefinition,
+	testConfig methodTestConfig,
 	progressBar *pb.ProgressBar,
 	processedCount *int,
 ) {
@@ -151,26 +151,26 @@ func startResultsCollector(
 			if res.Error == "no targets to attack" {
 				continue
 			}
-			if *processedCount < methodDef.totalRequests {
+			if *processedCount < testConfig.totalRequests {
 				processResult(metrics, res)
 				(*processedCount)++
-				if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
+				if progressBar != nil && progressBar.Current() < int64(testConfig.totalRequests) {
 					progressBar.Increment()
 				}
 				if progressBar == nil && *processedCount%50 == 0 {
-					percent := float64(*processedCount) / float64(methodDef.totalRequests) * 100
+					percent := float64(*processedCount) / float64(testConfig.totalRequests) * 100
 					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
-						method, *processedCount, methodDef.totalRequests, percent)
+						method, *processedCount, testConfig.totalRequests, percent)
 				}
 			}
 		}
-		if progressBar != nil && progressBar.Current() < int64(methodDef.totalRequests) {
-			remaining := int64(methodDef.totalRequests) - progressBar.Current()
+		if progressBar != nil && progressBar.Current() < int64(testConfig.totalRequests) {
+			remaining := int64(testConfig.totalRequests) - progressBar.Current()
 			progressBar.Add64(remaining)
 		}
 		if progressBar == nil {
 			fmt.Printf("  %s: test completed (%d/%d requests)\n",
-				method, *processedCount, methodDef.totalRequests)
+				method, *processedCount, testConfig.totalRequests)
 		}
 	}()
 }
@@ -370,7 +370,7 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 }
 
 // validateResults performs assertions on test metrics
-func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition) {
+func validateResults(t *testing.T, m *methodMetrics, testConfig methodTestConfig) {
 	// Create a slice to collect all assertion failures
 	var failures []string
 
@@ -391,9 +391,9 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
 
 	// Print latencies (yellow if close to limit, green if well below)
-	p50Color := getLatencyColor(m.p50, methodDef.maxP50Latency)
-	p95Color := getLatencyColor(m.p95, methodDef.maxP95Latency)
-	p99Color := getLatencyColor(m.p99, methodDef.maxP99Latency)
+	p50Color := getLatencyColor(m.p50, testConfig.maxP50Latency)
+	p95Color := getLatencyColor(m.p95, testConfig.maxP95Latency)
+	p99Color := getLatencyColor(m.p99, testConfig.maxP99Latency)
 	fmt.Printf("%sLatency P50%s: %s%s%s\n", BOLD, RESET, p50Color, formatLatency(m.p50), RESET)
 	fmt.Printf("%sLatency P95%s: %s%s%s\n", BOLD, RESET, p95Color, formatLatency(m.p95), RESET)
 	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
@@ -404,19 +404,19 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 
 		if m.jsonRPCResponses > 0 {
 			// Unmarshal success rate
-			color := getRateColor(m.jsonRPCSuccessRate, methodDef.successRate)
+			color := getRateColor(m.jsonRPCSuccessRate, testConfig.successRate)
 			fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCSuccessRate*100, RESET, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
 			// Validation success rate
-			color = getRateColor(m.jsonRPCValidateRate, methodDef.successRate)
+			color = getRateColor(m.jsonRPCValidateRate, testConfig.successRate)
 			fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCValidateRate*100, RESET, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
 			// Non-nil result rate
-			color = getRateColor(m.jsonRPCResultRate, methodDef.successRate)
+			color = getRateColor(m.jsonRPCResultRate, testConfig.successRate)
 			fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCResultRate*100, RESET, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
 			// Error field absent rate
-			color = getRateColor(m.jsonRPCErrorFieldRate, methodDef.successRate)
+			color = getRateColor(m.jsonRPCErrorFieldRate, testConfig.successRate)
 			fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCErrorFieldRate*100, RESET, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
 		}
@@ -438,10 +438,10 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 	}
 
 	// Determine if the test passed based on our metrics
-	testPassed := m.successRate >= methodDef.successRate &&
-		m.p50 <= methodDef.maxP50Latency &&
-		m.p95 <= methodDef.maxP95Latency &&
-		m.p99 <= methodDef.maxP99Latency
+	testPassed := m.successRate >= testConfig.successRate &&
+		m.p50 <= testConfig.maxP50Latency &&
+		m.p95 <= testConfig.maxP95Latency &&
+		m.p99 <= testConfig.maxP99Latency
 
 	// Choose error color based on test passing status
 	errorColor := YELLOW // Yellow for warnings (test passed despite errors)
@@ -468,9 +468,9 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 	}
 
 	// Collect assertion failures
-	failures = append(failures, collectHTTPSuccessRateFailures(m, methodDef.successRate)...)
-	failures = append(failures, collectJSONRPCRatesFailures(m, methodDef.successRate)...)
-	failures = append(failures, collectLatencyFailures(m, methodDef)...)
+	failures = append(failures, collectHTTPSuccessRateFailures(m, testConfig.successRate)...)
+	failures = append(failures, collectJSONRPCRatesFailures(m, testConfig.successRate)...)
+	failures = append(failures, collectLatencyFailures(m, testConfig)...)
 
 	// If there are failures, report them all at once at the end
 	if len(failures) > 0 {
@@ -540,27 +540,27 @@ func collectJSONRPCRatesFailures(m *methodMetrics, requiredRate float64) []strin
 }
 
 // collectLatencyFailures checks latency metrics and returns failure messages
-func collectLatencyFailures(m *methodMetrics, methodDef methodDefinition) []string {
+func collectLatencyFailures(m *methodMetrics, testConfig methodTestConfig) []string {
 	var failures []string
 
 	// P50 latency check
-	if m.p50 > methodDef.maxP50Latency {
+	if m.p50 > testConfig.maxP50Latency {
 		msg := fmt.Sprintf("P50 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p50), formatLatency(methodDef.maxP50Latency))
+			formatLatency(m.p50), formatLatency(testConfig.maxP50Latency))
 		failures = append(failures, msg)
 	}
 
 	// P95 latency check
-	if m.p95 > methodDef.maxP95Latency {
+	if m.p95 > testConfig.maxP95Latency {
 		msg := fmt.Sprintf("P95 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p95), formatLatency(methodDef.maxP95Latency))
+			formatLatency(m.p95), formatLatency(testConfig.maxP95Latency))
 		failures = append(failures, msg)
 	}
 
 	// P99 latency check
-	if m.p99 > methodDef.maxP99Latency {
+	if m.p99 > testConfig.maxP99Latency {
 		msg := fmt.Sprintf("P99 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p99), formatLatency(methodDef.maxP99Latency))
+			formatLatency(m.p99), formatLatency(testConfig.maxP99Latency))
 		failures = append(failures, msg)
 	}
 
@@ -688,7 +688,7 @@ type progressBars struct {
 // newProgressBars
 // • Creates a set of progress bars for all methods in a test
 // • Disables progress bars in CI/non-interactive environments
-func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]methodDefinition) (*progressBars, error) {
+func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]methodTestConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 		fmt.Println("Running in CI environment - progress bars disabled")
@@ -718,7 +718,7 @@ func newProgressBars(methods []jsonrpc.Method, methodDefs map[jsonrpc.Method]met
 	barList := make([]*pb.ProgressBar, 0, len(methods))
 
 	for _, method := range sortedMethods {
-		def := methodDefs[method]
+		def := testConfigs[method]
 
 		// Store the method name with padding for display
 		padding := longestLen - len(string(method))

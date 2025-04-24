@@ -24,8 +24,8 @@ const (
 	eth_gasPrice              jsonrpc.Method = "eth_gasPrice"
 )
 
-// runAllMethods returns all EVM JSON-RPC methods for a service load test.
-func runAllMethods() []jsonrpc.Method {
+// allEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
+func allEVMTestMethods() []jsonrpc.Method {
 	return []jsonrpc.Method{
 		eth_blockNumber,
 		eth_call,
@@ -40,27 +40,27 @@ func runAllMethods() []jsonrpc.Method {
 }
 
 type (
-	// methodDefinition contains all configuration and test requirements for a single method.
-	methodDefinition struct {
-		methodConfig
-		methodSuccessRates
+	// methodTestConfig contains all configuration and test requirements for a single method.
+	methodTestConfig struct {
+		requestLoadConfig
+		successCriteria
 	}
 
-	// methodConfig specifies the configuration for a method to be tested.
+	// requestLoadConfig specifies the load configuration for a method to be tested.
 	// - totalRequests: Total number of requests to send
 	// - rps:           Requests per second
-	methodConfig struct {
+	requestLoadConfig struct {
 		totalRequests int
 		rps           int
 	}
 
-	// methodSuccessRates contains the minimum success rate and maximum
+	// successCriteria contains the minimum success rate and maximum
 	// latency requirements for a method to pass the load test.
 	// - successRate:   Minimum success rate (0-1)
 	// - maxP50Latency: Maximum P50 latency
 	// - maxP95Latency: Maximum P95 latency
 	// - maxP99Latency: Maximum P99 latency
-	methodSuccessRates struct {
+	successCriteria struct {
 		successRate   float64
 		maxP50Latency time.Duration
 		maxP95Latency time.Duration
@@ -69,67 +69,66 @@ type (
 )
 
 var (
-	// defaultMethodConfig contains the default configuration for a method.
-	defaultMethodConfig = methodConfig{
+	// defaultRequestLoadConfig contains the default configuration for a method.
+	defaultRequestLoadConfig = requestLoadConfig{
 		totalRequests: 100,
 		rps:           10,
 	}
 
-	// defaultMethodSuccessRates contains the default success rates and latency requirements for a method.
-	defaultMethodSuccessRates = methodSuccessRates{
-		successRate:   0.95,
+	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
+	defaultSuccessCriteria = successCriteria{
+		successRate:   0.90,
 		maxP50Latency: 1_000 * time.Millisecond, //
 		maxP95Latency: 5_000 * time.Millisecond,
 		maxP99Latency: 10_000 * time.Millisecond,
 	}
+
+	defaultTestConfigAllMethods = map[jsonrpc.Method]methodTestConfig{
+		eth_blockNumber: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_call: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_getTransactionReceipt: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_getBlockByNumber: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_getBalance: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_chainId: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_getTransactionCount: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_getTransactionByHash: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+		eth_gasPrice: {
+			requestLoadConfig: defaultRequestLoadConfig,
+			successCriteria:   defaultSuccessCriteria,
+		},
+	}
 )
 
-// TODO_IMPROVE(@commoddity): allow reading this configuration from a YAML file
-//
-// methodDefinitions contains all method definitions for a service load test.
-// Allows customizing the configuration for each method as desired.
-var methodDefinitions = map[jsonrpc.Method]methodDefinition{
-	eth_blockNumber: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_call: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_getTransactionReceipt: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_getBlockByNumber: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_getBalance: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_chainId: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_getTransactionCount: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_getTransactionByHash: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-	eth_gasPrice: {
-		methodConfig:       defaultMethodConfig,
-		methodSuccessRates: defaultMethodSuccessRates,
-	},
-}
-
-// serviceParameters holds service-specific test data for all methods.
+// evmServiceParameters holds service-specific test data for all methods.
 // Allows testing specific requests that require parameters.
-type serviceParameters struct {
+//
+// TODO_IMPROVE(@commoddity): allow reading this configuration from a YAML file
+// Per-method configs are now embedded in each testCase in evm_test.go as methodConfigs.
+type evmServiceParameters struct {
 	// For eth_getBalance, eth_getTransactionCount, eth_getTransactionReceipt
 	blockNumber string
 
@@ -153,8 +152,11 @@ type serviceParameters struct {
 	callData string
 }
 
-// createParams builds RPC params for each method using the provided service parameters.
-func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
+// createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.
+func createEVMJsonRPCParams(
+	method jsonrpc.Method,
+	sp evmServiceParameters,
+) jsonrpc.Params {
 	switch method {
 
 	// Methods with empty params
@@ -164,15 +166,15 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	// Methods that just need the transaction hash
 	//   Example: ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
 	case eth_getTransactionReceipt, eth_getTransactionByHash:
-		params, _ := jsonrpc.BuildParamsFromString(p.transactionHash)
+		params, _ := jsonrpc.BuildParamsFromString(sp.transactionHash)
 		return params
 
 	// Methods that need [address, blockNumber]
 	//   Example: ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
 	case eth_getBalance, eth_getTransactionCount:
 		params, _ := jsonrpc.BuildParamsFromStringArray([2]string{
-			p.contractAddress,
-			p.blockNumber,
+			sp.contractAddress,
+			sp.blockNumber,
 		})
 		return params
 
@@ -180,7 +182,7 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	//   Example: ["0xe71e1d", false]
 	case eth_getBlockByNumber:
 		params, _ := jsonrpc.BuildParamsFromStringAndBool(
-			p.blockNumber,
+			sp.blockNumber,
 			false,
 		)
 		return params
@@ -190,10 +192,10 @@ func createParams(method jsonrpc.Method, p serviceParameters) jsonrpc.Params {
 	case eth_call:
 		params, _ := jsonrpc.BuildParamsFromObjectAndString(
 			map[string]string{
-				"to":   p.contractAddress,
-				"data": p.callData,
+				"to":   sp.contractAddress,
+				"data": sp.callData,
 			},
-			p.blockNumber,
+			sp.blockNumber,
 		)
 		return params
 

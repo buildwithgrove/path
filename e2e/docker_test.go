@@ -55,11 +55,16 @@ func setupPathInstance(
 	t.Helper()
 
 	// Initialize the ephemeral PATH Docker container
-	pool, resource, containerPort := setupPathDocker(t, configFilePath, dockerOpts)
+	pool, resource, containerPort, logOutputFile := setupPathDocker(t, configFilePath, dockerOpts)
 
 	cleanupFn = func() {
 		// Cleanup the ephemeral PATH Docker container
 		cleanupPathDocker(t, pool, resource)
+		if logOutputFile != "" {
+			fmt.Printf("\n\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
+			fmt.Printf("\n ✍️ PATH container output logged to %s ✍️ \n\n", logOutputFile)
+			fmt.Printf("\n\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
+		}
 	}
 
 	return containerPort, cleanupFn
@@ -79,7 +84,7 @@ func setupPathDocker(
 	t *testing.T,
 	configFilePath string,
 	dockerOpts dockerOptions,
-) (*dockertest.Pool, *dockertest.Resource, string) {
+) (*dockertest.Pool, *dockertest.Resource, string, string) {
 	t.Helper()
 
 	// Get docker options from the global test options
@@ -155,9 +160,10 @@ func setupPathDocker(
 	}
 
 	// Optionally log the PATH container output
+	var logOutputFile string
 	if logContainer {
 		// Determine log output file
-		logOutputFile := os.Getenv("DOCKER_LOG_OUTPUT_FILE")
+		logOutputFile = os.Getenv("DOCKER_LOG_OUTPUT_FILE")
 		if logOutputFile == "" {
 			logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
 		}
@@ -251,7 +257,7 @@ func setupPathDocker(
 
 	<-poolRetryChan
 
-	return pool, resource, resource.GetPort(containerPortAndProtocol)
+	return pool, resource, resource.GetPort(containerPortAndProtocol), logOutputFile
 }
 
 // cleanupPathDocker purges the Docker container and resource from the provided dockertest pool and resource.

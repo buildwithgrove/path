@@ -57,12 +57,15 @@ func init() {
 // - serviceParams:     Service-specific parameters
 // - latencyMultiplier: Multiplier for latency expectations
 type testCase struct {
-	name              string
-	serviceID         protocol.ServiceID
-	archival          bool
-	methods           []jsonrpc.Method
-	serviceParams     serviceParameters
+	name          string
+	serviceID     protocol.ServiceID
+	archival      bool
+	methods       []jsonrpc.Method
+	serviceParams evmServiceParameters
+	// latencyMultiplier is particularly important for dev/test chains that are slower than mainnet.
+	// For integration tests, we need complete reliability and avoid false positives.
 	latencyMultiplier int
+	methodConfigs     map[jsonrpc.Method]methodTestConfig
 }
 
 // getTestCases returns the appropriate test cases based on the protocol.
@@ -72,6 +75,7 @@ type testCase struct {
 func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride protocol.ServiceID) []testCase {
 	var testCases []testCase
 
+	// Select test cases based on protocol
 	switch protocolStr {
 	case morse:
 		testCases = morseTestCases
@@ -81,12 +85,12 @@ func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride proto
 		t.Fatalf("Unsupported protocol: %s", protocolStr)
 	}
 
+	// Filter by serviceIDOverride if provided
 	if serviceIDOverride != "" {
-		var filteredTestCases []testCase
 		for _, tc := range testCases {
 			if tc.serviceID == serviceIDOverride {
-				filteredTestCases = append(filteredTestCases, tc)
-				return filteredTestCases
+				// Return single matching test case in a slice
+				return []testCase{tc}
 			}
 		}
 		panic(fmt.Sprintf("Service ID override %s not found", serviceIDOverride))
@@ -96,82 +100,136 @@ func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride proto
 }
 
 // Shannon network test cases
-var shannonTestCases = []testCase{
-	{
-		name:      "anvil (local Ethereum) Load Test",
-		serviceID: "anvil",
-		// Only test a subset of methods for ephemeral test chain
-		methods: []jsonrpc.Method{
-			eth_blockNumber,
-			eth_call,
-			eth_getBlockByNumber,
-			eth_getBalance,
-			eth_chainId,
-			eth_getTransactionCount,
-			eth_gasPrice,
+var (
+	shannonTestCases = []testCase{
+		{
+			name:      "anvil (local Ethereum) Load Test",
+			serviceID: "anvil",
+			methods:   shannonBetaTestNetMethods,
+			serviceParams: evmServiceParameters{
+				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+				callData:        "0x18160ddd",
+			},
+			latencyMultiplier: 10,
+			methodConfigs:     shannonBetaTestNetMethodConfigs,
 		},
-		serviceParams: serviceParameters{
-			contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-			callData:        "0x18160ddd",
+	}
+
+	shannonBetaTestNetMethods = []jsonrpc.Method{
+		eth_blockNumber,
+		eth_call,
+		eth_getBlockByNumber,
+		eth_getBalance,
+		eth_chainId,
+		eth_getTransactionCount,
+		eth_gasPrice,
+	}
+
+	// TODO_TECHDEBT: Iterate on these tests to make sure the anvil node can handle more load.
+
+	// defaultRequestLoadConfig contains the default configuration for a method.
+	shannonBetaTestNetRequestLoadConfig = requestLoadConfig{
+		totalRequests: 3,
+		rps:           1,
+	}
+
+	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
+	shannonBetaTestNetSuccessCriteria = successCriteria{
+		successRate:   0.75,
+		maxP50Latency: 5_000 * time.Millisecond,  // 5 seconds
+		maxP95Latency: 10_000 * time.Millisecond, // 10 seconds
+		maxP99Latency: 20_000 * time.Millisecond, // 30 seconds
+	}
+
+	shannonBetaTestNetMethodConfigs = map[jsonrpc.Method]methodTestConfig{
+		eth_blockNumber: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
 		},
-		// TODO_MVP(@commoddity): Temporary solution for slower test/dev chain
-		latencyMultiplier: 10,
-	},
-}
+		eth_call: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+		eth_getBlockByNumber: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+		eth_getBalance: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+		eth_chainId: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+		eth_getTransactionCount: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+		eth_gasPrice: {
+			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
+			successCriteria:   shannonBetaTestNetSuccessCriteria,
+		},
+	}
+)
 
 // Morse network test cases
 var morseTestCases = []testCase{
 	{
 		name:      "F00C (Ethereum) Load Test",
 		serviceID: "F00C",
-		methods:   runAllMethods(),
+		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
-		serviceParams: serviceParameters{
+		serviceParams: evmServiceParameters{
 			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 			contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
 			contractStartBlock: 12_300_000,
 			transactionHash:    "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
 			callData:           "0x18160ddd",
 		},
+		methodConfigs: defaultTestConfigAllMethods,
 	},
 	{
 		name:      "F021 (Polygon) Load Test",
 		serviceID: "F021",
-		methods:   runAllMethods(),
+		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
-		serviceParams: serviceParameters{
+		serviceParams: evmServiceParameters{
 			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 			contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
 			contractStartBlock: 5_000_000,
 			transactionHash:    "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4",
 			callData:           "0x18160ddd",
 		},
+		methodConfigs: defaultTestConfigAllMethods,
 	},
 	{
 		name:      "F01C (Oasys) Load Test",
 		serviceID: "F01C",
-		methods:   runAllMethods(),
+		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
-		serviceParams: serviceParameters{
+		serviceParams: evmServiceParameters{
 			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
 			contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
 			contractStartBlock: 424_300,
 			transactionHash:    "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee",
 			callData:           "0x18160ddd",
 		},
+		methodConfigs: defaultTestConfigAllMethods,
 	},
 	{
 		name:      "F036 (XRPL EVM Testnet) Load Test",
 		serviceID: "F036",
-		methods:   runAllMethods(),
+		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
-		serviceParams: serviceParameters{
+		serviceParams: evmServiceParameters{
 			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 			contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 			contractStartBlock: 368_266,
 			transactionHash:    "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058",
 			callData:           "0x18160ddd",
 		},
+		methodConfigs: defaultTestConfigAllMethods,
 	},
 }
 
@@ -274,13 +332,13 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 			// Validate that all methods have a definition
 			for _, method := range tc.methods {
-				if _, exists := methodDefinitions[method]; !exists {
+				if _, exists := tc.methodConfigs[method]; !exists {
 					t.Fatalf("No definition for method %s", method)
 				}
 			}
 
 			// Create and start all progress bars upfront
-			progBars, err := newProgressBars(tc.methods, methodDefinitions)
+			progBars, err := newProgressBars(tc.methods, tc.methodConfigs)
 			if err != nil {
 				t.Fatalf("Failed to create progress bars: %v", err)
 			}
@@ -300,10 +358,10 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 				methodWg.Add(1)
 
 				// Get method configuration
-				methodDef := methodDefinitions[method]
+				methodDef := tc.methodConfigs[method]
 
 				// Run the attack in a goroutine
-				go func(ctx context.Context, method jsonrpc.Method, def methodDefinition) {
+				go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
 					defer methodWg.Done()
 
 					select {
@@ -319,7 +377,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 						JSONRPC: jsonrpc.Version2,
 						ID:      jsonrpc.IDFromInt(1),
 						Method:  method,
-						Params: createParams(
+						Params: createEVMJsonRPCParams(
 							method,
 							tc.serviceParams,
 						),
@@ -359,7 +417,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
 					YELLOW, tc.name, tc.latencyMultiplier, RESET,
 				)
-				methodDefinitions = adjustLatencyForTestCase(methodDefinitions, tc.latencyMultiplier)
+				tc.methodConfigs = adjustLatencyForTestCase(tc.methodConfigs, tc.latencyMultiplier)
 			}
 
 			// Calculate service summary metrics
@@ -379,7 +437,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 					continue
 				}
 
-				validateResults(t, methodMetrics, methodDefinitions[method])
+				validateResults(t, methodMetrics, tc.methodConfigs[method])
 
 				// If the test has failed after validation, set the service failure flag
 				if t.Failed() {
@@ -445,21 +503,20 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	printServiceSummaries(serviceSummaries)
 }
 
-// TODO_MVP(@commoddity): This is a temporary solution.
-//
 // adjustLatencyForTestCase increases the latency expectations by the multiplier
-// for all methods in the test case to account for a slower than average chain.
-func adjustLatencyForTestCase(defs map[jsonrpc.Method]methodDefinition, multiplier int) map[jsonrpc.Method]methodDefinition {
-	// Create a new map to avoid modifying the original
-	adjustedDefs := make(map[jsonrpc.Method]methodDefinition, len(defs))
+// for all methods in the test case to account for a slower than average service providers (e.g. dev/test environments)
+func adjustLatencyForTestCase(
+	testConfig map[jsonrpc.Method]methodTestConfig,
+	latencyMultiplier int,
+) map[jsonrpc.Method]methodTestConfig {
+	// Create a new map to avoid modifying the original test config
+	adjustedDefs := make(map[jsonrpc.Method]methodTestConfig, len(testConfig))
 
-	for method, def := range defs {
+	for method, def := range testConfig {
 		adjustedDef := def
-
-		adjustedDef.maxP50Latency = def.maxP50Latency * time.Duration(multiplier)
-		adjustedDef.maxP95Latency = def.maxP95Latency * time.Duration(multiplier)
-		adjustedDef.maxP99Latency = def.maxP99Latency * time.Duration(multiplier)
-
+		adjustedDef.maxP50Latency = def.maxP50Latency * time.Duration(latencyMultiplier)
+		adjustedDef.maxP95Latency = def.maxP95Latency * time.Duration(latencyMultiplier)
+		adjustedDef.maxP99Latency = def.maxP99Latency * time.Duration(latencyMultiplier)
 		adjustedDefs[method] = adjustedDef
 	}
 

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-title: E2E Tests
+title: E2E Regression & Performance Tests
 description: End-to-End Tests for PATH
 ---
 
