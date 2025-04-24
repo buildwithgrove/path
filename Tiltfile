@@ -153,7 +153,7 @@ local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd 
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
