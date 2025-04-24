@@ -4,36 +4,47 @@ title: E2E Regression & Performance Tests
 description: End-to-End Tests for PATH
 ---
 
-import ReactPlayer from "react-player";
+PATH E2E (End-to-End) tests check if the full system works as expected by simulating real user traffic.
 
-## Overview <!-- omit in toc -->
+<div align="center">
+![E2E Test](../../../static/img/e2e_test.gif)
+</div>
 
-PATH E2E (End-to-End) tests check if the whole system works as expected, simulating real user traffic.
+## Table of Contents <!-- omit in toc -->
 
-These tests check:
+- [Overview](#overview)
+- [E2E Test Configuration](#e2e-test-configuration)
+  - [Helpers to create configurations](#helpers-to-create-configurations)
+- [Helper Make Targets](#helper-make-targets)
+- [Troubleshooting](#troubleshooting)
+  - [Running Binary manually (no docker)](#running-binary-manually-no-docker)
+  - [Reviewing PATH Logs](#reviewing-path-logs)
+  - [Debugging Anvil on Shannon Beta TestNet (:her)](#debugging-anvil-on-shannon-beta-testnet-her)
+- [Configuration \& Implementation](#configuration--implementation)
+  - [Supported Services](#supported-services)
+  - [Environment Variables](#environment-variables)
+  - [Extending/Updating/Adding EVM E2E Tests](#extendingupdatingadding-evm-e2e-tests)
+  - [Test Metrics and Validation](#test-metrics-and-validation)
+
+## Overview
+
+**The E2E tests verify:**
 
 - Correct request routing
 - Service responses (data + latency)
 - System reliability under load
 - Success metrics
 
-<!-- <ReactPlayer
-  playing={false}
-  controls
-  url="https://www.youtube.com/watch?v=H-R5FqrCYQs"
-/> -->
+**We use the [Vegeta library](https://github.com/tsenart/vegeta) for HTTP load testing:**
 
-## Table of Contents <!-- omit in toc -->
+- Generates thousands of requests/sec
+- Collects detailed metrics
+- Supports custom configs and attack configurations
+- Measures latency (p50, p95, p99)
 
-- [E2E Test Configuration](#e2e-test-configuration)
-- [Helper Make Targets](#helper-make-targets)
-  - [Vegeta Load Testing](#vegeta-load-testing)
-  - [CI Integration](#ci-integration)
-- [Supported Services](#supported-services)
-- [Environment Variables](#environment-variables)
-- [How to Add/Update Tests](#how-to-addupdate-tests)
-- [Test Metrics and Validation](#test-metrics-and-validation)
-- [Extending Tests](#extending-tests)
+<div align="center">
+![Vegeta](../../../static/img/9000.png)
+</div>
 
 ## E2E Test Configuration
 
@@ -44,44 +55,29 @@ E2E tests need a valid config file in `./e2e`:
 
 Config must match the protocol/services you want to test.
 
-- See [PATH Configuration File docs](./5_configurations_path.md) for details.
+See [PATH Configuration File docs](./5_configurations_path.md) for details.
 
-:::tip
+:::warning TODO: Prebuilt configs
+
+TODO(@olshansk): Provide prebuilt configs for 1-minute onboarding.
+
+:::
+
+### Helpers to create configurations
 
 You can use the following commands to copy example configs and follow the instructions in your CLI:
 
 - `make morse_prepare_e2e_config`
 - `make shannon_prepare_e2e_config`
 
-:::
+<details>
+<summary>🌿 For Grove Employees</summary>
+
+Search for `E2E Config` in `1Password` and copy-paste those configs directly.
+
+</details>
 
 ## Helper Make Targets
-
-```bash
-# Run all tests (unit + E2E)
-make test_all
-
-# Only E2E tests for Shannon
-make test_e2e_evm_shannon
-
-# Only E2E tests for Morse
-make test_e2e_evm_morse
-
-# E2E for a specific service
-make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
-
-# E2E against local PATH binary (no Docker)
-make test_e2e_evm_morse GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
-
-# Force Docker rebuild
-make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
-
-# Enable Docker logs
-make test_e2e_evm_morse DOCKER_LOG=true
-
-# Wait 30s for hydrator checks
-make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
-```
 
 :::tip make help
 
@@ -89,28 +85,103 @@ Run `make help` to see all available make targets.
 
 :::
 
-### Vegeta Load Testing
+**Only E2E tests for Shannon:**
 
-<div align="center">
-![Vegeta](../../../static/img/9000.png)
-</div>
+```bash
+make test_e2e_evm_shannon
+```
 
-PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta) for HTTP load testing, which can:
+**Only E2E tests for Morse:**
 
-- Generate thousands of requests/sec
-- Collect detailed metrics
-- Support custom configs and attack configurations
-- Measure latency (p50, p95, p99)
+```bash
+make test_e2e_evm_morse
+```
+
+**E2E for a specific service** (if you know which service ID you want to test):
+
+```bash
+make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
+```
+
+**E2E against local PATH binary** (no Docker):
+
+```bash
+# Run make path_run in another shell
+make test_e2e_evm_morse GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
+```
+
+**Force Docker rebuild** (if you made changes to the code):
+
+```bash
+make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
+```
+
+\*_Disable Docker logs_ (if its slowing down your system):
+
+````bash
+make test_e2e_evm_morse DOCKER_LOG=false
+```z
+
+**Wait 30s for hydrator checks** (if you're adding a new service):
+
+```bash
+make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
+````
 
 ---
 
-### CI Integration
+## Troubleshooting
 
-- E2E tests run automatically in GitHub Actions on every push to `main`.
+### Running Binary manually (no docker)
+
+**In one shell, run:**
+
+```bash
+# Replace with .morse.config.yaml for Morse
+cp ./e2e/.shannon.config.yaml ./local/path/.config.yaml
+make path_run
+```
+
+In another shell, run:
+
+```bash
+make test_e2e_evm_shannon GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
+```
+
+### Reviewing PATH Logs
+
+By default, the logs are written to `./path_log_e2e_test_{timestamp}.txt`.
+
+You should see the following log line at the bottom of the test summary:
+
+```bash
+===== 👀 LOGS 👀 =====
+
+ ✍️ PATH container output logged to /tmp/path_log_e2e_test_1745527319.txt ✍️
+
+===== 👀 LOGS 👀 =====
+
+```
+
+### Debugging Anvil on Shannon Beta TestNet (:her)
+
+🌿 Grove Employees Only
+
+Review the [Anvil Shannon Beta TestNet Debugging Playbook](https://www.notion.so/buildwithgrove/Playbook-Debugging-Anvil-E2E-on-Beta-TestNet-177a36edfff6809c9f24e865ec5adbf8?pvs=4) if you believe the Anvil Supplier is broken.
 
 ---
 
-## Supported Services
+## Configuration & Implementation
+
+The source code for E2E tests is available [here](https://github.com/buildwithgrove/path/tree/main/e2e).
+
+:::info
+
+The sections below were last updated on 04/24/2025.
+
+:::
+
+### Supported Services
 
 | Protocol | Service ID | Chain Name       | Type      |
 | -------- | ---------- | ---------------- | --------- |
@@ -120,9 +191,7 @@ PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta) for HTTP lo
 | Morse    | F036       | XRPL EVM Testnet | Archival  |
 | Shannon  | anvil      | Local Ethereum   | Ephemeral |
 
----
-
-## Environment Variables
+### Environment Variables
 
 | Variable             | Description                                                                                           | Default                  | Required |
 | -------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------ | -------- |
@@ -132,28 +201,7 @@ PATH's E2E tests utilize [Vegeta](https://github.com/tsenart/vegeta) for HTTP lo
 | SERVICE_ID_OVERRIDE  | Test only a specific service ID.                                                                      | All services             | No       |
 | WAIT_FOR_HYDRATOR    | Seconds to wait for hydrator checks.                                                                  | 0                        | No       |
 
----
-
-## How to Add/Update Tests
-
-1. Add new service definitions in `evm_test.go`
-2. (If needed) Add new methods in `evm_methods_test.go`
-3. Set up thresholds/latency expectations
-
-- For more details, check the `e2e` directory source code.
-
-## Test Metrics and Validation
-
-The E2E tests collect and validate various metrics:
-
-- HTTP success rates (percentage of successful requests)
-- Response latency percentiles (p50, p95, p99)
-- JSON-RPC response validation
-- Error rates and types
-
-Test results include detailed output showing performance against predefined thresholds, with colored indicators for passing or failing metrics.
-
-## Extending Tests
+### Extending/Updating/Adding EVM E2E Tests
 
 To add new services or methods to the E2E tests:
 
@@ -161,10 +209,11 @@ To add new services or methods to the E2E tests:
 2. If needed, add new method definitions in `evm_methods_test.go`
 3. Configure appropriate success thresholds and latency expectations
 
-For more details on the implementation, refer to the source code in the `e2e` directory.
+### Test Metrics and Validation
 
-TODO_IN_THIS_PR:
+The E2E tests collect and validate various metrics:
 
-- [ ] Add links to relevant parts of the code in the last few sections
-- [ ] Embed video as an example
-- [ ] Add an act trigger to run the CI locally
+- HTTP success rates (percentage of successful requests)
+- Response latency percentiles (p50, p95, p99)
+- JSON-RPC response validation
+- Error rates and types

@@ -91,7 +91,7 @@ jobs:
         run: ./e2e/scripts/update_morse_config_from_secrets.sh
 
       - name: Run Morse E2E Tests with Service ID ${{ matrix.service_id }}
-        run: make test_e2e_evm_morse SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40
+        run: make test_e2e_evm_morse SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40 DOCKER_LOG=false
 
   run-e2e-tests-shannon:
     name: Run E2E tests - Shannon
@@ -100,8 +100,6 @@ jobs:
       - run-linter
       - run-unit-tests
       - build-and-test-docker-image
-    # TODO_MVP(@commoddity): Remove the following line to re-enable Shannon E2E tests when `anvil` test chain issue is resolved
-    if: false
     strategy:
       matrix:
         service_id: [anvil]
@@ -134,4 +132,4 @@ jobs:
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
       - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}
-        run: make test_e2e_evm_shannon SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40
+        run: make test_e2e_evm_shannon SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40 DOCKER_LOG=false
