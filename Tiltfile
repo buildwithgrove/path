@@ -208,8 +208,6 @@ flags = [
     "--set", "config.fromSecret.key=.config.yaml",
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
-    "--set", "guard.enabled=true",
-    "--set", "observability.enabled=false",
 ]
 
 # TODO_DOCUMENT(@commoddity): Add documentation for the .values.yaml file.
