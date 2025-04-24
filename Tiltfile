@@ -84,9 +84,14 @@ helm_repo(
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
     helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
+    chart_prefix = helm_chart_local_repo + "/charts/"
+    # TODO_TECHDEBT(@okdas): Find a way to make this cleaner & performant w/ selective builds.
+    local("cd " + chart_prefix + "guard && helm dependency update")
+    local("cd " + chart_prefix + "path && helm dependency update")
+    local("cd " + chart_prefix + "watch && helm dependency update")
     hot_reload_dirs.append(helm_chart_local_repo)
     print("Using local helm chart repo " + helm_chart_local_repo)
-    chart_prefix = helm_chart_local_repo + "/charts/"
+
 
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
@@ -229,7 +234,7 @@ if read_yaml(valuesFile, default=None) != None:
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
-    "path",  # Changed from "path-helm" to "path-stack"
+    "path",
     chart_prefix + "path",
     image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],
@@ -319,7 +324,7 @@ local_resource(
 # Create a local_resource for port forwarding to Grafana
 local_resource(
     "path-grafana-portforward",
-    # Use port 3003: 3000 is used by kind control plane.
+    # Use port 3003:3000 is used by kind control plane.
     serve_cmd="kubectl port-forward deployment/path-grafana 3003:3000",
     resource_deps=["path-stack"],  # This ensures the port-forward starts after the Helm chart is deployed
     labels=["grafana"]
