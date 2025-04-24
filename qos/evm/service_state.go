@@ -1,14 +1,13 @@
 package evm
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -19,8 +18,7 @@ import (
 // It has three main responsibilities:
 //  1. Generate QoS endpoint checks for the hydrator
 //  2. Select a valid endpoint for a service request
-//  3. Update the stored endpoints from observations.
-//  4. Update the stored service state from observations.
+//  3. Update the service state from endpoint observations
 type serviceState struct {
 	logger polylog.Logger
 
@@ -97,26 +95,74 @@ func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
 	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
 }
 
-/* -------------------- QoS Endpoint State Updater -------------------- */
+/* -------------------- QoS Endpoint Validation -------------------- */
 
-// ApplyObservations updates endpoint storage and blockchain state from observations.
-func (ss *serviceState) ApplyObservations(observations *qosobservations.Observations) error {
-	if observations == nil {
-		return errors.New("ApplyObservations: received nil")
+// validateEndpoint returns an error if the supplied endpoint is not
+// valid based on the perceived state of the EVM blockchain.
+//
+// It returns an error if:
+// - The endpoint has returned an empty response in the past.
+// - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
+// - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
+// - The endpoint's archival check is invalid, if enabled.
+func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
+	ss.serviceStateLock.RLock()
+	defer ss.serviceStateLock.RUnlock()
+
+	// Ensure the endpoint has not returned an empty response.
+	if endpoint.hasReturnedEmptyResponse {
+		return fmt.Errorf("endpoint is invalid: history of empty responses")
 	}
 
-	evmObservations := observations.GetEvm()
-	if evmObservations == nil {
-		return errors.New("ApplyObservations: received nil EVM observation")
+	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
+	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
+		return err
 	}
 
-	updatedEndpoints := ss.endpointStore.updateEndpointsFromObservations(
-		evmObservations,
-		ss.archivalState.blockNumberHex,
-	)
+	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
+	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
+		return err
+	}
 
-	return ss.updateFromEndpoints(updatedEndpoints)
+	// Ensure the endpoint has returned an archival balance for the perceived block number.
+	if err := ss.archivalState.isArchivalBalanceValid(endpoint.checkArchival); err != nil {
+		return err
+	}
+
+	return nil
 }
+
+// isValid returns an error if the endpoint's block height is less
+// than the perceived block height minus the sync allowance.
+func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error {
+	if ss.perceivedBlockNumber == 0 {
+		return errNoBlockNumberObs
+	}
+
+	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
+	// then the endpoint is behind the chain and should be filtered out.
+	minAllowedBlockNumber := ss.perceivedBlockNumber - ss.serviceConfig.getSyncAllowance()
+
+	if *check.parsedBlockNumberResponse < minAllowedBlockNumber {
+		return errInvalidBlockNumberObs
+	}
+
+	return nil
+}
+
+// isChainIDValid returns an error if the endpoint's chain ID does not
+// match the expected chain ID in the service state.
+func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
+	if check.chainID == nil {
+		return errNoChainIDObs
+	}
+	if *check.chainID != ss.serviceConfig.getEVMChainID() {
+		return errInvalidChainIDObs
+	}
+	return nil
+}
+
+/* -------------------- QoS Endpoint State Updater -------------------- */
 
 // updateFromEndpoints updates the service state using estimation(s) derived from the set of updated
 // endpoints. This only includes the set of endpoints for which an observation was received.

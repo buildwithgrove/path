@@ -2,11 +2,13 @@ package evm
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -92,4 +94,24 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 		logger:       qos.logger,
 		serviceState: qos.serviceState,
 	}, true
+}
+
+// ApplyObservations updates endpoint storage and blockchain state from observations.
+// Implements gateway.QoSService interface.
+func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
+	if observations == nil {
+		return errors.New("ApplyObservations: received nil")
+	}
+
+	evmObservations := observations.GetEvm()
+	if evmObservations == nil {
+		return errors.New("ApplyObservations: received nil EVM observation")
+	}
+
+	updatedEndpoints := q.endpointStore.updateEndpointsFromObservations(
+		evmObservations,
+		q.serviceState.archivalState.blockNumberHex,
+	)
+
+	return q.serviceState.updateFromEndpoints(updatedEndpoints)
 }
