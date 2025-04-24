@@ -40,46 +40,31 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # This section is intended to spin up and develop a full modular stack that includes
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
+.PHONY: path_build_image
+path_build_image: ## Builds the PATH Docker development image
+	@echo "🔨 Building PATH Docker image..."
+	@docker build -t ghcr.io/buildwithgrove/path-localnet-env:latest -f local/Dockerfile.dev .
+
+.PHONY: path_push_image
+path_push_image: ## Pushes the PATH Docker image to GitHub Container Registry
+	@echo "📦 Pushing PATH Docker image to GitHub Container Registry..."
+	@docker push ghcr.io/buildwithgrove/path-localnet-env:latest
+
 .PHONY: path_up
-path_up: check_path_config check_docker ## Brings up local Tilt development environment in Docker 
-	docker compose -f local/docker-compose.yml up --build
+path_up: ## Brings up local Tilt development environment in Docker 
+	@./local/scripts/localnet.sh up
 
 .PHONY: path_down
 path_down: ## Tears down local Tilt development environment in Docker
-	docker compose -f local/docker-compose.yml down
-	docker stop path-localnet-control-plane
+	@./local/scripts/localnet.sh down
 
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path
 	@echo "################################################################";
-	@echo "If you're hitting issues running PATH, try running following commands:";
+	@echo "💡 If you're hitting issues running PATH, try running following commands:";
 	@echo "	make path_down";
 	@echo "	make path_up";
 	@echo "################################################################";
-
-.PHONY: check_path_config
-## Verify that path configuration file exists
-check_path_config:
-	@if [ ! -f ./local/path/.config.yaml ]; then \
-		echo "################################################################"; \
-   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
-   		echo ""; \
-   		echo "Initialize using either:"; \
-   		echo "  make shannon_prepare_e2e_config"; \
-   		echo "  make morse_prepare_e2e_config "; \
-   		echo "################################################################"; \
-   		exit 1; \
-   fi
-
-.PHONY: check_docker
-# Internal helper: Check if Docker is installed locally
-check_docker:
-	@if ! command -v docker >/dev/null 2>&1; then \
-		echo "Docker is not installed. Make sure you review README.md before continuing"; \
-		exit 1; \
-	fi;
-
-
 
 ###############################
 ###    Makefile imports     ###

@@ -6,45 +6,99 @@ RUN apk add --no-cache \
     jq \
     make \
     bash \
-    git
+    git \
+    python3 \
+    libc6-compat \
+    libstdc++ \
+    libgcc
 
-# Install Go 1.23 with architecture detection
+# Install Go 1.23
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in \
-    x86_64) GOARCH=amd64 ;; \
-    aarch64|arm64) GOARCH=arm64 ;; \
+    x86_64) ARCH="amd64" ;; \
+    aarch64|arm64) ARCH="arm64" ;; \
     *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
     esac && \
-    curl -O https://go.dev/dl/go1.23.linux-${GOARCH}.tar.gz && \
+    FILENAME="go1.23.0.linux-${ARCH}.tar.gz" && \
+    curl -L -o ${FILENAME} https://go.dev/dl/${FILENAME} && \
     rm -rf /usr/local/go && \
-    tar -C /usr/local -xzf go1.23.linux-${GOARCH}.tar.gz && \
+    tar -C /usr/local -xzf ${FILENAME} && \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go && \
-    rm go1.23.0.linux-${GOARCH}.tar.gz
+    rm ${FILENAME}
 
-# Install Tilt with architecture detection
+# Install Tilt - minimal adaptation of the install script
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in \
-    x86_64) TILT_ARCH=x86_64 ;; \
-    aarch64|arm64) TILT_ARCH=arm64 ;; \
-    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    x86_64) ARCH="amd64" ;; \
+    aarch64) ARCH="arm64" ;; \
+    armv7l)  ARCH="arm" ;; \
+    *) ARCH=$(uname -m) ;; \
     esac && \
-    curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v0.33.5/tilt.0.33.5.linux.${TILT_ARCH}.tar.gz" | tar -xzC /usr/local/bin tilt
-
-# Install Helm if not already present
-RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    VERSION="0.34.2" && \
+    curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v${VERSION}/tilt.${VERSION}.linux.${ARCH}.tar.gz" | tar -xzv tilt && \
+    mv tilt /usr/local/bin/tilt && \
+    chmod +x /usr/local/bin/tilt
 
 # Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')/kubectl" && \
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+    x86_64) ARCH="amd64" ;; \
+    aarch64|arm64) ARCH="arm64" ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt) && \
+    curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/
 
 # Install Kind
-RUN curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/latest/kind-linux-$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+    x86_64) ARCH="amd64" ;; \
+    aarch64|arm64) ARCH="arm64" ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4 || echo "v0.27.0") && \
+    BINARY_NAME="kind-linux-${ARCH}" && \
+    KIND_URL="https://kind.sigs.k8s.io/dl/${KIND_VERSION}/${BINARY_NAME}" && \
+    curl -Lo /usr/local/bin/kind ${KIND_URL} && \
     chmod +x /usr/local/bin/kind
+
+# Install Helm
+RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+# Create an integrated startup script that includes both Docker daemon and the path/local/start.sh functionality
+COPY <<EOF /integrated-start.sh
+#!/bin/bash
+# Start Docker daemon (required for Kind)
+/usr/local/bin/dockerd-entrypoint.sh &
+DOCKER_PID=\$!
+echo "Waiting for Docker daemon to start..."
+sleep 3
+
+# Change to app directory
+cd /app
+
+# Create Kind cluster
+kind create cluster --name path-localnet --config ./local/kind-config.yaml
+kubectl config use-context kind-path-localnet
+kubectl create namespace path
+kubectl create namespace monitoring
+kubectl config set-context --current --namespace=path
+kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path
+
+# Start Tilt with host binding for external access and reduce log level to hide trace warnings
+tilt up --host=0.0.0.0 --log-level=error
+
+# If Tilt exits, ensure we clean up the Docker daemon
+kill \$DOCKER_PID
+EOF
+
+RUN chmod +x /integrated-start.sh
 
 # Create working directory
 WORKDIR /app
 
-# Use the start.sh script
+# Use the integrated startup script
 ENTRYPOINT []
-CMD ["/bin/sh", "-c", "/usr/local/bin/dockerd-entrypoint.sh & sleep 3 && ./local/start.sh"]
+CMD ["/integrated-start.sh"]

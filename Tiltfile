@@ -186,7 +186,12 @@ WORKDIR /app
 """,
     # only=["/app/path"],
     entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
+    live_update=[
+        # First sync to a temporary location to avoid permission issues
+        sync("bin/path", "/app/bin/path"),
+        # Then run commands to properly handle the file
+        run("cp -f /app/bin/path /app/path && chmod +x /app/path", trigger="bin/path")
+    ],
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
@@ -264,7 +269,6 @@ update_settings(
 k8s_resource(
     workload="path",
     new_name="path-stack",
-    port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
     labels=["path"]
 )
