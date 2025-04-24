@@ -483,7 +483,7 @@ func validateResults(t *testing.T, m *methodMetrics, methodDef methodDefinition)
 	} else {
 		fmt.Printf("\n%s✅ Method %s passed all assertions%s\n", GREEN, m.method, RESET)
 	}
-	fmt.Printf("================================================================================\n")
+	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
 }
 
 // collectHTTPSuccessRateFailures checks HTTP success rate and returns failure message if not met
