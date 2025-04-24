@@ -61,9 +61,9 @@ func setupPathInstance(
 		// Cleanup the ephemeral PATH Docker container
 		cleanupPathDocker(t, pool, resource)
 		if logOutputFile != "" {
-			fmt.Printf("\n\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
-			fmt.Printf("\n ✍️ PATH container output logged to %s ✍️ \n\n", logOutputFile)
-			fmt.Printf("\n\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
+			fmt.Printf("\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
+			fmt.Printf("\n ✍️ PATH container output logged to %s ✍️ \n", logOutputFile)
+			fmt.Printf("%s===== 👀 LOGS 👀 =====%s\n\n", BOLD_CYAN, RESET)
 		}
 	}
 

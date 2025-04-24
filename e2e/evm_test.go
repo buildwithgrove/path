@@ -21,6 +21,7 @@ import (
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
+	"github.com/cheggaaa/pb/v3"
 )
 
 /*
@@ -237,71 +238,28 @@ var morseTestCases = []testCase{
 
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
 func Test_PATH_E2E_EVM(t *testing.T) {
-	// Set up context that cancels on SIGINT (Cmd+C)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// Listen for interrupt signal
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-	go func() {
-		<-sigCh
-		t.Log("Received SIGINT, cancelling test...")
-		cancel()
-	}()
-	t.Log("🚀 Setting up PATH instance...")
+	setupSIGINTHandler(ctx, cancel, t)
 
-	// Config YAML file, eg. `./.morse.config.yaml` or `./.shannon.config.yaml`
 	configFilePath := fmt.Sprintf(opts.configPathTemplate, opts.testProtocol)
-
-	// Docker options
-	pathOpts := opts.docker
-	// If GATEWAY_URL_OVERRIDE is set:
-	// 	- Skip starting a Docker container
-	// 	- Assumes PATH is already running externally at the provided URL and
-	// 	- Uses the provided URL directly
 	if !opts.gatewayURLOverridden {
-		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, pathOpts)
+		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, opts.docker)
 		defer teardownFn()
-		// Format the gateway URL with the dynamically assigned port
 		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, pathContainerPort)
 	}
 
-	// Log test start information for the user
-	t.Logf("🌿 Starting PATH E2E EVM test.\n")
-	t.Logf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
-	t.Logf("  📡 Test protocol: %s\n", opts.testProtocol)
-	if opts.serviceIDOverride != "" {
-		t.Logf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
-	} else {
-		t.Logf("  ⛓️  Running tests for all service IDs\n")
-	}
+	logEVMTestStartInfo(t, opts)
+	waitForHydratorIfNeeded(opts, t)
 
-	// TODO_NEXT: This arbitrary wait is somewhat hacky and may need to be revisited in the future.
-	//
-	// Wait for several rounds of hydrator checks to complete to ensure invalid endpoints are sanctioned.
-	// 		ie. for returning empty or invalid responses, etc.
-	if opts.waitForHydrator > 0 {
-		t.Logf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
-		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-			<-time.After(time.Duration(opts.waitForHydrator) * time.Second) // In CI, do not use wait bar as CI logs do not support it.
-		} else {
-			showWaitBar(opts.waitForHydrator) // In local environment, show progress bar to indicate we're waiting.
-		}
-	}
-
-	// Get test cases based on protocol
 	testCases := getTestCases(t, opts.testProtocol, opts.serviceIDOverride)
-
-	// Initialize map to store service summaries
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
-	// Iterate over test cases
-	for i, tc := range testCases {
+	for _, tc := range testCases {
 		isArchival := tc.archival
 		if !isArchival {
 			tc.serviceParams.blockNumber = "latest"
 		} else {
-			// If archival is true then we will use a random historical block for the test.
 			tc.serviceParams.blockNumber = setTestBlockNumber(
 				t,
 				opts.gatewayURL,
@@ -310,12 +268,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			)
 		}
 
-		t.Logf("🛠️  Testing service %d of %d\n", i+1, len(testCases))
-		t.Logf("  ⛓️  Service ID: %s\n", tc.serviceID)
-		t.Logf("  📡 Block number: %s\n", tc.serviceParams.blockNumber)
-		t.Log("\n")
-
-		// Initialize service summary
 		serviceSummaries[tc.serviceID] = &serviceSummary{
 			serviceID:    tc.serviceID,
 			methodErrors: make(map[jsonrpc.Method]map[string]int),
@@ -323,184 +275,216 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			totalErrors:  0,
 		}
 
-		// Use t.Run for proper test reporting
-		serviceTestFailed := false
-		t.Run(tc.name, func(t *testing.T) {
-			// Create results map with a mutex to protect concurrent access
-			results := make(map[jsonrpc.Method]*methodMetrics)
-			var resultsMutex sync.Mutex
-
-			// Validate that all methods have a definition
-			for _, method := range tc.methods {
-				if _, exists := tc.methodConfigs[method]; !exists {
-					t.Fatalf("No definition for method %s", method)
-				}
-			}
-
-			// Create and start all progress bars upfront
-			progBars, err := newProgressBars(tc.methods, tc.methodConfigs)
-			if err != nil {
-				t.Fatalf("Failed to create progress bars: %v", err)
-			}
-
-			// Make sure we stop the progress bars before printing results
-			defer func() {
-				if err := progBars.finish(); err != nil {
-					t.Logf("Error stopping progress bars: %v", err)
-				}
-			}()
-
-			// Create wait group for methods
-			var methodWg sync.WaitGroup
-
-			// Run attack for each method concurrently
-			for _, method := range tc.methods {
-				methodWg.Add(1)
-
-				// Get method configuration
-				methodDef := tc.methodConfigs[method]
-
-				// Run the attack in a goroutine
-				go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
-					defer methodWg.Done()
-
-					select {
-					case <-ctx.Done():
-						t.Logf("Method %s cancelled", method)
-						return
-					default:
-						// continue
-					}
-
-					// Create the JSON-RPC request
-					jsonrpcReq := jsonrpc.Request{
-						JSONRPC: jsonrpc.Version2,
-						ID:      jsonrpc.IDFromInt(1),
-						Method:  method,
-						Params: createEVMJsonRPCParams(
-							method,
-							tc.serviceParams,
-						),
-					}
-
-					// TODO: Propagate ctx deeper into runAttack if it supports cancellation
-					metrics := runAttack(
-						ctx,
-						opts.gatewayURL,
-						tc.serviceID,
-						method,
-						def,
-						progBars.get(method),
-						jsonrpcReq,
-					)
-
-					// Safely store the results
-					resultsMutex.Lock()
-					results[method] = metrics
-					resultsMutex.Unlock()
-				}(ctx, method, methodDef)
-			}
-
-			// Wait for all method tests to complete
-			methodWg.Wait()
-
-			// Make sure progress bars are stopped before printing results
-			if err := progBars.finish(); err != nil {
-				t.Logf("Error stopping progress bars: %v", err)
-			}
-
-			// Add space after progress bars
-			fmt.Println()
-
-			// Adjust latency expectations for slow chain if latency multiplier is set.
-			if tc.latencyMultiplier != 0 {
-				fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
-					YELLOW, tc.name, tc.latencyMultiplier, RESET,
-				)
-				tc.methodConfigs = adjustLatencyForTestCase(tc.methodConfigs, tc.latencyMultiplier)
-			}
-
-			// Calculate service summary metrics
-			summary := serviceSummaries[tc.serviceID]
-
-			var totalLatency time.Duration
-			var totalP90Latency time.Duration
-			var totalSuccessRate float64
-			var methodsWithResults int
-
-			// Validate results for each method and collect summary data
-			for _, method := range tc.methods {
-				methodMetrics := results[method]
-
-				// Skip methods with no data
-				if methodMetrics == nil || len(methodMetrics.results) == 0 {
-					continue
-				}
-
-				validateResults(t, methodMetrics, tc.methodConfigs[method])
-
-				// If the test has failed after validation, set the service failure flag
-				if t.Failed() {
-					serviceTestFailed = true
-				}
-
-				// Extract latencies for P90 calculation
-				var latencies []time.Duration
-				for _, res := range methodMetrics.results {
-					latencies = append(latencies, res.Latency)
-				}
-
-				// Calculate P90 for this method
-				p90 := calculateP90(latencies)
-				avgLatency := calculateAvgLatency(latencies)
-
-				// Add to summary totals
-				totalLatency += avgLatency
-				totalP90Latency += p90
-				totalSuccessRate += methodMetrics.successRate
-				methodsWithResults++
-
-				// Collect errors for the summary
-				if len(methodMetrics.errors) > 0 {
-					// Initialize method errors map if not already created
-					if summary.methodErrors[method] == nil {
-						summary.methodErrors[method] = make(map[string]int)
-					}
-
-					// Copy errors to summary
-					for errMsg, count := range methodMetrics.errors {
-						summary.methodErrors[method][errMsg] = count
-						summary.totalErrors += count
-					}
-				}
-			}
-
-			// Calculate averages if we have methods with results
-			if methodsWithResults > 0 {
-				summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
-				summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
-				summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
-			}
-		})
-
-		// If this service test failed, fail the overall test immediately
+		serviceTestFailed := runEVMServiceTest(t, ctx, tc, opts, serviceSummaries[tc.serviceID])
 		if serviceTestFailed {
 			t.Logf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.serviceID, RESET)
-
-			// Print summary before failing
 			printServiceSummaries(serviceSummaries)
-
-			t.FailNow() // This will exit the test immediately
+			t.FailNow()
 		} else {
 			t.Logf("\n%s✅ Service %s test passed%s\n", GREEN, tc.serviceID, RESET)
 		}
 	}
 
-	// If execution reaches here, all services have passed
 	t.Logf("\n%s✅ EVM E2E Test: All %d services passed%s\n", GREEN, len(testCases), RESET)
-
-	// Print summary after all tests are complete
 	printServiceSummaries(serviceSummaries)
+}
+
+// setupSIGINTHandler sets up a signal handler for SIGINT to cancel the test context.
+func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testing.T) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		<-sigCh
+		t.Log("Received SIGINT, cancelling test...")
+		cancel()
+	}()
+}
+
+// logEVMTestStartInfo logs the test start information for the user.
+func logEVMTestStartInfo(t *testing.T, opts testOptions) {
+	t.Logf("🌿 Starting PATH E2E EVM test.\n")
+	t.Logf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
+	t.Logf("  📡 Test protocol: %s\n", opts.testProtocol)
+	if opts.serviceIDOverride != "" {
+		t.Logf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+	} else {
+		t.Logf("  ⛓️  Running tests for all service IDs\n")
+	}
+}
+
+// waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
+func waitForHydratorIfNeeded(opts testOptions, t *testing.T) {
+	if opts.waitForHydrator > 0 {
+		t.Logf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
+		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
+		} else {
+			showWaitBar(opts.waitForHydrator)
+		}
+	}
+}
+
+// runEVMServiceTest runs the E2E test for a single EVM service in a test case.
+func runEVMServiceTest(
+	t *testing.T,
+	ctx context.Context,
+	tc testCase,
+	opts testOptions,
+	summary *serviceSummary,
+) (serviceTestFailed bool) {
+	results := make(map[jsonrpc.Method]*methodMetrics)
+	var resultsMutex sync.Mutex
+
+	// Validate that all methods have a definition
+	for _, method := range tc.methods {
+		if _, exists := tc.methodConfigs[method]; !exists {
+			t.Fatalf("No definition for method %s", method)
+		}
+	}
+
+	progBars, err := newProgressBars(tc.methods, tc.methodConfigs)
+	if err != nil {
+		t.Fatalf("Failed to create progress bars: %v", err)
+	}
+	defer func() {
+		if err := progBars.finish(); err != nil {
+			t.Logf("Error stopping progress bars: %v", err)
+		}
+	}()
+
+	var methodWg sync.WaitGroup
+	for _, method := range tc.methods {
+		methodWg.Add(1)
+		methodDef := tc.methodConfigs[method]
+		go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
+			defer methodWg.Done()
+			metrics := runMethodAttack(ctx, t, method, def, tc, opts, progBars.get(method))
+			resultsMutex.Lock()
+			results[method] = metrics
+			resultsMutex.Unlock()
+		}(ctx, method, methodDef)
+	}
+	methodWg.Wait()
+
+	if err := progBars.finish(); err != nil {
+		t.Logf("Error stopping progress bars: %v", err)
+	}
+	fmt.Println()
+
+	if tc.latencyMultiplier != 0 {
+		fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
+			YELLOW, tc.name, tc.latencyMultiplier, RESET,
+		)
+		tc.methodConfigs = adjustLatencyForTestCase(tc.methodConfigs, tc.latencyMultiplier)
+	}
+
+	calculateServiceSummary(t, tc, results, summary, &serviceTestFailed)
+	return serviceTestFailed
+}
+
+// runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
+func runMethodAttack(
+	ctx context.Context,
+	t *testing.T,
+	method jsonrpc.Method,
+	def methodTestConfig,
+	tc testCase,
+	opts testOptions,
+	progBar *pb.ProgressBar,
+) *methodMetrics {
+	select {
+	case <-ctx.Done():
+		t.Logf("Method %s cancelled", method)
+		return nil
+	default:
+	}
+	jsonrpcReq := jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(1),
+		Method:  method,
+		Params: createEVMJsonRPCParams(
+			method,
+			tc.serviceParams,
+		),
+	}
+	metrics := runAttack(
+		ctx,
+		opts.gatewayURL,
+		tc.serviceID,
+		method,
+		def,
+		progBar,
+		jsonrpcReq,
+	)
+	return metrics
+}
+
+// calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
+func calculateServiceSummary(
+	t *testing.T,
+	tc testCase,
+	results map[jsonrpc.Method]*methodMetrics,
+	summary *serviceSummary,
+	serviceTestFailed *bool,
+) {
+	var totalLatency time.Duration
+	var totalP90Latency time.Duration
+	var totalSuccessRate float64
+	var methodsWithResults int
+
+	// Validate results for each method and collect summary data
+	for _, method := range tc.methods {
+		methodMetrics := results[method]
+
+		// Skip methods with no data
+		if methodMetrics == nil || len(methodMetrics.results) == 0 {
+			continue
+		}
+
+		validateResults(t, methodMetrics, tc.methodConfigs[method])
+
+		// If the test has failed after validation, set the service failure flag
+		if t.Failed() {
+			*serviceTestFailed = true
+		}
+
+		// Extract latencies for P90 calculation
+		var latencies []time.Duration
+		for _, res := range methodMetrics.results {
+			latencies = append(latencies, res.Latency)
+		}
+
+		// Calculate P90 for this method
+		p90 := calculateP90(latencies)
+		avgLatency := calculateAvgLatency(latencies)
+
+		// Add to summary totals
+		totalLatency += avgLatency
+		totalP90Latency += p90
+		totalSuccessRate += methodMetrics.successRate
+		methodsWithResults++
+
+		// Collect errors for the summary
+		if len(methodMetrics.errors) > 0 {
+			// Initialize method errors map if not already created
+			if summary.methodErrors[method] == nil {
+				summary.methodErrors[method] = make(map[string]int)
+			}
+
+			// Copy errors to summary
+			for errMsg, count := range methodMetrics.errors {
+				summary.methodErrors[method][errMsg] = count
+				summary.totalErrors += count
+			}
+		}
+	}
+
+	// Calculate averages if we have methods with results
+	if methodsWithResults > 0 {
+		summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
+		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
+		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
+	}
 }
 
 // adjustLatencyForTestCase increases the latency expectations by the multiplier

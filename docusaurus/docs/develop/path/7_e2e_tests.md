@@ -4,6 +4,8 @@ title: E2E Regression & Performance Tests
 description: End-to-End Tests for PATH
 ---
 
+import ReactPlayer from "react-player";
+
 ## Overview <!-- omit in toc -->
 
 PATH E2E (End-to-End) tests check if the whole system works as expected, simulating real user traffic.
@@ -14,6 +16,12 @@ These tests check:
 - Service responses (data + latency)
 - System reliability under load
 - Success metrics
+
+<!-- <ReactPlayer
+  playing={false}
+  controls
+  url="https://www.youtube.com/watch?v=H-R5FqrCYQs"
+/> -->
 
 ## Table of Contents <!-- omit in toc -->
 
