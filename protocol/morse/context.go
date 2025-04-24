@@ -22,14 +22,15 @@ const defaultRelayTimeoutMillisec = 5000
 
 // requestContext captures all the data required for handling a single service request.
 type requestContext struct {
-	fullNode                 FullNode
-	sanctionedEndpointsStore *sanctionedEndpointsStore
-	serviceID                protocol.ServiceID
-	logger                   polylog.Logger
+	logger    polylog.Logger
+	fullNode  FullNode
+	serviceID protocol.ServiceID
 
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
-	// NOTE: Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
+
+	// tracks any errors encountered processing the request
+	requestErrorObservation *protocolobservations.MorseRequestError
 
 	// endpointObservations captures observations about endpoints used during request handling
 	endpointObservations []*protocolobservations.MorseEndpointObservation
@@ -41,39 +42,27 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// TODO_IMPROVE(@adshmh): use the same pattern for hydrated loggers in any packages with large number of logger fields.
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
+	// Internal error: no endpoint selected.
+	// record reuqest error due to internal error.
+	// no endpoint to sanction.
 	if rc.selectedEndpoint == nil {
-		// Internal error: no endpoint selected, record an observation but no sanctions
-		// as no endpoint was contacted
-		hydratedLogger.Error().Msg("no endpoint has been selected.")
-
-		rc.recordEndpointObservation(
-			endpoint{}, // No endpoint selected
-			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
-			"no endpoint has been selected, endpoint selection has not been performed or has failed",
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as no endpoint was contacted
-		)
-
-		return protocol.Response{}, fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID)
+		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
 	}
 
+	// match the selected endpoint against the session.
 	morseEndpoint, err := getEndpoint(rc.selectedEndpoint.session, rc.selectedEndpoint.Addr())
+
+	// Internal error: endpoint not in session.
+	// record request error due to internal error.
+	// no endpoint to sanction.
 	if err != nil {
-		// Internal error: endpoint not in session, record an observation but no sanctions
-		// as this is an internal error, not an endpoint issue
-		hydratedLogger.Error().Err(err).Msg("endpoint not found in session.")
-
-		rc.recordEndpointObservation(
-			*rc.selectedEndpoint,
-			protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL,
-			fmt.Sprintf("error matching endpoint against session's nodes: %v", err),
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_UNSPECIFIED, // No sanction as this is an internal error
-		)
-
-		return protocol.Response{}, NewEndpointNotInSessionError(string(rc.selectedEndpoint.Addr()))
+		return rc.handleInternalError(fmt.Errorf("error matching endpoint against session's nodes: %v", err))
 	}
 
-	latencyStart := time.Now()
+	// record the endpoint query time.
+	endpointQueryTime := time.Now()
 
+	// send the request to the endpoint.
 	output, err := rc.sendRelay(
 		hydratedLogger,
 		morseEndpoint,
@@ -84,35 +73,19 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		payload,
 	)
 
-	latency := time.Since(latencyStart)
+	endpointQueryCompletedTime := time.Now()
 
-	// TODO_FUTURE(@adshmh): evaluate tracking successful cases (err == nil).
-	// Example: measuring endpoint response times.
-	//
-	// Record any errors that occurred during relay
+	// Handle endpoint error:
+	// - Record observation
+	// - Return an error
 	if err != nil {
-		endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, err)
-
-		hydratedLogger.Error().
-			Str("error_type", endpointErrorType.String()).
-			Str("sanction_type", recommendedSanctionType.String()).
-			Err(err).
-			Msg("relay error occurred.")
-
-		rc.recordEndpointObservation(
-			*rc.selectedEndpoint,
-			endpointErrorType,
-			fmt.Sprintf("relay error: %v", err),
-			recommendedSanctionType,
-		)
+		return rc.handleEndpointError(endpointQueryTime, endpointQueryCompletedTime, err, []byte(output.Response), output.StatusCode)
 	}
 
-	return protocol.Response{
-		EndpointAddr:   rc.selectedEndpoint.Addr(),
-		Bytes:          []byte(output.Response),
-		HTTPStatusCode: output.StatusCode,
-		Latency:        latency,
-	}, err
+	// Success:
+	// - Record observation
+	// - Return the response received from the endpoint.
+	return rc.handleEndpointSuccess(endpointQueryTime, endpointQueryCompletedTime, []byte(output.Response), output.StatusCode)
 }
 
 // HandleWebsocketRequest handles incoming WebSocket network request.
@@ -139,26 +112,6 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 			},
 		},
 	}
-}
-
-// recordEndpointObservation records an observation for an endpoint.
-// It only appends to the observations slice and does not return an error.
-func (rc *requestContext) recordEndpointObservation(
-	endpoint endpoint,
-	errorType protocolobservations.MorseEndpointErrorType,
-	errorDetails string,
-	sanctionType protocolobservations.MorseSanctionType,
-) {
-	rc.endpointObservations = append(rc.endpointObservations, &protocolobservations.MorseEndpointObservation{
-		AppAddress:          string(endpoint.app.Addr()),
-		SessionKey:          endpoint.session.Key,
-		SessionServiceId:    endpoint.session.Header.Chain,
-		SessionHeight:       int32(endpoint.session.Header.SessionHeight),
-		EndpointAddr:        endpoint.address,
-		ErrorType:           &errorType,
-		ErrorDetails:        &errorDetails,
-		RecommendedSanction: &sanctionType,
-	})
 }
 
 // sendRelay is a helper function for handling the low-level details of a Morse relay.
@@ -213,4 +166,89 @@ func (rc *requestContext) sendRelay(
 	}
 
 	return *output.RelayOutput, nil
+}
+
+// handleEndpointSuccess records a successful endpoint observation and returns the response.
+// - Tracks the endpoint success in observations
+// - Builds and returns the protocol response from the endpoint's returned data.
+func (rc *requestContext) handleEndpointSuccess(
+	endpointQueryTime, endpointQueryCompletedTime time.Time,
+	endpointResponsePayload []byte,
+	endpointResponseHTTPStatusCode int,
+) (protocol.Response, error) {
+	// Track the endpoint success observation.
+	rc.endpointObservations = append(rc.endpointObservations,
+		buildEndpointSuccessObservation(
+			*rc.selectedEndpoint,
+			endpointQueryTime,
+			endpointQueryCompletedTime,
+		),
+	)
+
+	// Build and return the relay response received from the endpoint.
+	return protocol.Response{
+		EndpointAddr:   rc.selectedEndpoint.Addr(),
+		Bytes:          endpointResponsePayload,
+		HTTPStatusCode: endpointResponseHTTPStatusCode,
+		Latency:        endpointQueryCompletedTime.Sub(endpointQueryTime),
+	}, nil
+}
+
+// handleEndpointError records an endpoint error observation and returns the response.
+// - Tracks the endpoint error in observations
+// - Builds and returns the protocol response from the endpoint's returned data.
+func (rc *requestContext) handleEndpointError(
+	endpointQueryTime, endpointQueryCompletedTime time.Time,
+	endpointErr error,
+	endpointResponsePayload []byte,
+	endpointResponseHTTPStatusCode int,
+) (protocol.Response, error) {
+	// Classify the endpoint's error for the observation.
+	// Determine any applicable sanctions.
+	endpointErrorType, recommendedSanctionType := classifyRelayError(rc.logger, endpointErr)
+
+	// Log the endpoint error.
+	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
+	hydratedLogger.Error().
+		Str("error_type", endpointErrorType.String()).
+		Str("sanction_type", recommendedSanctionType.String()).
+		Err(endpointErr).
+		Msg("relay error occurred.")
+
+	// Track the endpoint error observation.
+	rc.endpointObservations = append(rc.endpointObservations,
+		buildEndpointErrorObservation(
+			*rc.selectedEndpoint,
+			endpointQueryTime,
+			endpointQueryCompletedTime,
+			endpointErrorType,
+			fmt.Sprintf("relay error: %v", endpointErr),
+			recommendedSanctionType,
+		),
+	)
+
+	// Return the endpoint's response as-is, along with the encountered error.
+	return protocol.Response{
+		EndpointAddr:   rc.selectedEndpoint.Addr(),
+		Bytes:          endpointResponsePayload,
+		HTTPStatusCode: endpointResponseHTTPStatusCode,
+		Latency:        endpointQueryCompletedTime.Sub(endpointQueryTime),
+	}, endpointErr
+}
+
+// handleInternalError is called if the request processing fails.
+// This only happens before the request is sent to any endpoints.
+// DEV_NOTE: This should NEVER happen and any logged entries by this method should be investigated.
+// - Records an internal error on the request for observations.
+// - Logs an error entry.
+func (rc *requestContext) handleInternalError(internalErr error) (protocol.Response, error) {
+	hydratedLogger := rc.getHydratedLogger("handleInternalError")
+
+	// log the internal error.
+	hydratedLogger.Error().Err(internalErr).Msg("Internal error occurred. This should be investigated as a bug.")
+
+	// Sets the request processing error for generating observations.
+	rc.requestErrorObservation = buildInternalRequestProcessingErrorObservation(internalErr)
+
+	return protocol.Response{}, internalErr
 }

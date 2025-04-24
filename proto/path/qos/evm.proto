@@ -67,6 +67,9 @@ message EVMRequestObservations {
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 1;
 
+  // The length of the client's request payload.
+  uint32 request_payload_length = 2;
+
   // If this oneof IS SET, then one of the following validation failures happened:
   //  - Indicates the request failed validation
   //  - Contains details about the specific failure type
@@ -77,24 +80,24 @@ message EVMRequestObservations {
   //  - The HTTP status code from the most recent endpoint observation should be used instead
   oneof request_validation_failure {
     // Indicates a failure to read the HTTP request body
-    EVMHTTPBodyReadFailure evm_http_body_read_failure = 2;
+    EVMHTTPBodyReadFailure evm_http_body_read_failure = 3;
 
     // Indicates a failure to unmarshal/parse the request
-    EVMRequestUnmarshalingFailure evm_request_unmarshaling_failure = 3;
+    EVMRequestUnmarshalingFailure evm_request_unmarshaling_failure = 4;
   }
 
   // The EVM blockchain service's JSON-RPC request.
   // This field will be populated only if request validation succeeds.
   // If there is an error reading the HTTP request, there will be no jsonrpc_request.
   // TODO_TECHDEBT: Assumes EVM chains only support JSON-RPC. May need refactoring to support other protocols.
-  JsonRpcRequest jsonrpc_request = 4;
+  JsonRpcRequest jsonrpc_request = 5;
 
   // EVM-specific observations from endpoint(s) that responded to the service request.
   // Multiple observations may occur when:
   // * Original endpoint fails
   // * Request is sent to additional endpoints for data collection
   // This field will only be populated if request validation succeeds.
-  repeated EVMEndpointObservation endpoint_observations = 5;
+  repeated EVMEndpointObservation endpoint_observations = 6;
 }
 
 // TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated

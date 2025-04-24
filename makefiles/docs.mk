@@ -13,4 +13,4 @@ docusaurus_start: ## Start docusaurus server
 
 .PHONY: gen_service_qos_docs
 gen_service_qos_docs: ## Generate service QoS documentation
-	./docusaurus/scripts/service_qos_doc_generator.sh ./config/service_qos_config.go ./docusaurus/docs/learn/qos/3_supported_services.md
+	./docusaurus/scripts/service_qos_doc_generator.sh ./config/service_qos_config.go ./docusaurus/docs/learn/qos/1_supported_services.md
