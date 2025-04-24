@@ -28,7 +28,7 @@ Select one or more from the following:
 - [ ] 2. Run one of the following:
   - For `Shannon` with `anvil`: `make test_request__envoy_relay_util_100`
   - For `Morse` with `F00C`: `make test_request__morse_relay_util_100`
-- [ ] 3. Visit [PATH Relay Grafana Dashboard](http://localhost:3000/d/relays/path-service-requests) to view results
+- [ ] 3. Visit [PATH Relay Grafana Dashboard](http://localhost:3003/d/relays/path-service-requests) to view results
 
 ## Sanity Checklist
 
