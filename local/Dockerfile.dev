@@ -1,5 +1,9 @@
 FROM docker:dind
 
+# Set ARGs for multi-platform builds
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
 # Install essential build tools
 RUN apk add --no-cache \
     curl \
@@ -13,11 +17,11 @@ RUN apk add --no-cache \
     libgcc
 
 # Install Go 1.23
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-    x86_64) ARCH="amd64" ;; \
-    aarch64|arm64) ARCH="arm64" ;; \
-    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
     esac && \
     FILENAME="go1.23.0.linux-${ARCH}.tar.gz" && \
     curl -L -o ${FILENAME} https://go.dev/dl/${FILENAME} && \
@@ -26,25 +30,26 @@ RUN ARCH=$(uname -m) && \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go && \
     rm ${FILENAME}
 
-# Install Tilt - minimal adaptation of the install script
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-    x86_64) ARCH="amd64" ;; \
-    aarch64) ARCH="arm64" ;; \
-    armv7l)  ARCH="arm" ;; \
-    *) ARCH=$(uname -m) ;; \
+# Install Tilt with correct architecture naming
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="x86_64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    "linux/arm/v7") ARCH="arm" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
     esac && \
     VERSION="0.34.2" && \
+    echo "Installing Tilt ${VERSION} for ${ARCH}" && \
     curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v${VERSION}/tilt.${VERSION}.linux.${ARCH}.tar.gz" | tar -xzv tilt && \
     mv tilt /usr/local/bin/tilt && \
     chmod +x /usr/local/bin/tilt
 
 # Install kubectl
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-    x86_64) ARCH="amd64" ;; \
-    aarch64|arm64) ARCH="arm64" ;; \
-    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
     esac && \
     KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt) && \
     curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl" && \
@@ -52,11 +57,11 @@ RUN ARCH=$(uname -m) && \
     mv kubectl /usr/local/bin/
 
 # Install Kind
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-    x86_64) ARCH="amd64" ;; \
-    aarch64|arm64) ARCH="arm64" ;; \
-    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
     esac && \
     KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4 || echo "v0.27.0") && \
     BINARY_NAME="kind-linux-${ARCH}" && \

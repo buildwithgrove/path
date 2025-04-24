@@ -91,24 +91,6 @@ show_spinner() {
 
 # Function to start up PATH Localnet
 start_localnet() {
-    # Check if path config exists
-    if [ ! -f ./local/path/.config.yaml ]; then
-        echo "################################################################"
-        echo "❌ Error: Missing config file at ./local/path/.config.yaml"
-        echo ""
-        echo "Initialize using either:"
-        echo "  make shannon_prepare_e2e_config"
-        echo "  make morse_prepare_e2e_config"
-        echo "################################################################"
-        exit 1
-    fi
-
-    # Check if Docker is installed
-    if ! command -v docker >/dev/null 2>&1; then
-        echo "❌ Docker is not installed. Make sure you review README.md before continuing"
-        exit 1
-    fi
-
     # Check if container already exists
     if docker ps -a --format '{{.Names}}' | grep -q "^path-localnet$"; then
         # Check if container is running
