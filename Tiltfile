@@ -198,6 +198,8 @@ WORKDIR /app
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
+    # Enable GUARD resources.
+    "--set", "guard.enabled=true",
     # Enable PATH to load the config from a secret.
     # PATH supports loading the config from either a Secret or a ConfigMap.
     # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
