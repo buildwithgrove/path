@@ -235,15 +235,13 @@ helm_resource(
     image_keys=[("image.repository", "image.tag")],
     links=[
         link(
-            "http://localhost:3000/d/relays/path-service-requests?orgId=1",
+            # Forward port 3003 to Grafana's port 3000.
+            # Port 3000 is already used by kind cluster's control plane.
+            "http://localhost:3003/d/relays/path-service-requests?orgId=1",
             "Grafana dashboard",
         ),
     ],
     flags=flags,
-    # Port 6060 is exposed to serve pprof data.
-    # Run the following commands to view the pprof data:
-    #   $ make debug_goroutines
-    port_forwards=["6060:6060"],
     resource_deps=["path-config-updater"],
     labels=["path"],
 )
@@ -264,6 +262,9 @@ update_settings(
 k8s_resource(
     workload="path",
     new_name="path-stack",
+    # Port 6060 is exposed to serve pprof data.
+    # Run the following commands to view the pprof data:
+    #   $ make debug_goroutines
     port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
     labels=["path"]
@@ -306,4 +307,20 @@ local_resource(
     ''',
     labels=["k8s_logs"],
     resource_deps=["path-stack"]
+)
+
+# --------------------------------------------------------------------------- #
+#                          Port Forwarding Resources                          #
+# --------------------------------------------------------------------------- #
+# 1. Grafana container port                                                   #
+# --------------------------------------------------------------------------- #
+# Grafana port
+# k8s_resource(workload="path-grafana", port_forwards=3000)
+# Create a local_resource for port forwarding to Grafana
+local_resource(
+    "path-grafana-portforward",
+    # Use port 3003: 3000 is used by kind control plane.
+    serve_cmd="kubectl port-forward deployment/path-grafana 3003:3000",
+    resource_deps=["path-stack"],  # This ensures the port-forward starts after the Helm chart is deployed
+    labels=["grafana"]
 )
