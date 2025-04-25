@@ -118,7 +118,7 @@ func setupPathDocker(
 			fmt.Println("  💡 TIP: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed 💡")
 		}
 	} else {
-		fmt.Println("🔄 Force rebuild requested, will build Docker image...")
+		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")
 	}
 
 	// Only build the image if it doesn't exist or force rebuild is set
@@ -140,7 +140,7 @@ func setupPathDocker(
 		fmt.Println("🐳 Docker image built successfully!")
 	}
 
-	fmt.Println("\n 🌿  Starting PATH test container...")
+	fmt.Println("\n🌿 Starting PATH test container ...")
 
 	// Run the built image
 	runOpts := &dockertest.RunOptions{
@@ -225,12 +225,12 @@ func setupPathDocker(
 		t.Fatalf("[ERROR] Failed to set expiration on docker container: %v", err)
 	}
 
-	fmt.Printf("\n ✅  PATH test container started successfully!")
+	fmt.Println("  ✅ PATH test container started successfully!")
 
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
 
-	fmt.Printf("\n 🏥  Performing health check on PATH test container at %s...", healthCheckURL)
+	fmt.Printf("🏥  Performing health check on PATH test container at %s ...\n", healthCheckURL)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {
@@ -253,7 +253,7 @@ func setupPathDocker(
 		t.Fatalf("could not connect to docker: %s", err)
 	}
 
-	fmt.Printf("\n ✅ PATH test container is healthy and ready for tests!")
+	fmt.Println("  ✅ PATH test container is healthy and ready for tests!")
 
 	<-poolRetryChan
 

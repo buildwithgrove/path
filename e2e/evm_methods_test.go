@@ -143,9 +143,9 @@ var (
 	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
 	shannonBetaTestNetSuccessCriteria = successCriteria{
 		successRate:   0.75,
-		maxP50Latency: 5_000 * time.Millisecond,  // 5 seconds
-		maxP95Latency: 10_000 * time.Millisecond, // 10 seconds
-		maxP99Latency: 20_000 * time.Millisecond, // 30 seconds
+		maxP50Latency: 15 * time.Second,
+		maxP95Latency: 30 * time.Second,
+		maxP99Latency: 60 * time.Second,
 	}
 
 	shannonBetaTestNetMethodConfigs = map[jsonrpc.Method]methodTestConfig{

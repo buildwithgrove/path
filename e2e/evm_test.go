@@ -193,8 +193,8 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, pathContainerPort)
 	}
 
-	logEVMTestStartInfo(t, opts)
-	waitForHydratorIfNeeded(opts, t)
+	logEVMTestStartInfo(opts)
+	waitForHydratorIfNeeded(opts)
 
 	testCases := getTestCases(t, opts.testProtocol, opts.serviceIDOverride)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
@@ -245,21 +245,21 @@ func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testi
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
-func logEVMTestStartInfo(t *testing.T, opts testOptions) {
-	fmt.Printf("\n 🌿 Starting PATH E2E EVM test.\n")
-	fmt.Printf(" 🧬 Gateway URL: %s\n", opts.gatewayURL)
-	fmt.Printf(" 📡 Test protocol: %s\n", opts.testProtocol)
+func logEVMTestStartInfo(opts testOptions) {
+	fmt.Println("\n🌿 Starting PATH E2E EVM test ...")
+	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
+	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
 	if opts.serviceIDOverride != "" {
-		fmt.Printf(" ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
 	} else {
-		fmt.Printf(" ⛓️  Running tests for all service IDs\n\n")
+		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
 	}
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
-func waitForHydratorIfNeeded(opts testOptions, t *testing.T) {
+func waitForHydratorIfNeeded(opts testOptions) {
 	if opts.waitForHydrator > 0 {
-		fmt.Printf("⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
+		fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
 		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
 		} else {
@@ -278,6 +278,8 @@ func runEVMServiceTest(
 ) (serviceTestFailed bool) {
 	results := make(map[jsonrpc.Method]*methodMetrics)
 	var resultsMutex sync.Mutex
+
+	fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n\n", BOLD_BLUE, tc.name, RESET)
 
 	// Validate that all methods have a definition
 	for _, method := range tc.methods {
@@ -299,13 +301,25 @@ func runEVMServiceTest(
 	var methodWg sync.WaitGroup
 	for _, method := range tc.methods {
 		methodWg.Add(1)
+
 		methodDef := tc.methodConfigs[method]
+
 		go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
 			defer methodWg.Done()
-			metrics := runMethodAttack(ctx, t, method, def, tc, opts, progBars.get(method))
+
+			metrics := runMethodAttack(
+				ctx,
+				method,
+				def,
+				tc,
+				opts,
+				progBars.get(method),
+			)
+
 			resultsMutex.Lock()
 			results[method] = metrics
 			resultsMutex.Unlock()
+
 		}(ctx, method, methodDef)
 	}
 	methodWg.Wait()
@@ -313,7 +327,6 @@ func runEVMServiceTest(
 	if err := progBars.finish(); err != nil {
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
-	fmt.Println()
 
 	if tc.latencyMultiplier != 0 {
 		fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
@@ -329,7 +342,6 @@ func runEVMServiceTest(
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
 func runMethodAttack(
 	ctx context.Context,
-	t *testing.T,
 	method jsonrpc.Method,
 	def methodTestConfig,
 	tc testCase,
