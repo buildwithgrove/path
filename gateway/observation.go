@@ -17,14 +17,14 @@ const (
 	httpHeaderPortalAccountID = "Portal-Account-ID"
 	httpHeaderPortalAppID     = "Portal-Application-ID"
 
-	// TODO_MVP(@adshmh): Implement proper region handling when region fields are passed to PATH.
 	// Region name constants and placeholders.
 	regionNamePlaceholder = "region-unspecified" // Used when no region is specified
 
-	// The following region constants are unused as of PR #215.
-	// They are declared here to document the expected content for future region values.
-	regionNorthAmericaEast1 = "northamerica-northeast1" // North America Northeast region
-	regionEuropeNorth1      = "europe-north1"           // Europe North region
+	// TODO_MVP(@adshmh): Implement proper region handling when region fields are passed to PATH.
+	// Uncomment the following as part of handling region fields.
+	//
+	// regionNorthAmericaEast1 = "northamerica-northeast1" // North America Northeast region
+	// regionEuropeNorth1      = "europe-north1"           // Europe North region
 )
 
 // getUserRequestGatewayObservations returns gateway-level observations for an organic, i.e. from a user, request.
