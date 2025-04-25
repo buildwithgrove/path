@@ -10,15 +10,21 @@ option go_package = "github.com/buildwithgrove/path/observation";
 // These are all external to PATH, i.e. reported to PATH by the authentication layer.
 // Used in generating observations for the data pipeline.
 message RequestAuth {
-  // Unique identifier for the request.
+  // Unique identifier for tracing the service request.
   // Used by the data pipeline.
-  string request_id = 1;
+  string trace_id = 1;
 
   // The geographic region where the gateway serving the request was located.
   // DEV_NOTE: It aligns with typical cloud regions (e.g. us-east) but kept as a string for simplicity.
     // TODO_FUTURE: this may need to move into a separate message if more details regarding the PATH instance are required.
   string region = 2;
 
+  // Tracks Grove portal credentials.
+  optional PortalCredentials portal_credentials = 3;
+}
+
+// PortalCredentials captures fields related to the Grove portal's request authentication.
+message PortalCredentials {
   // The ID of the Grove portal account behind the service request
   string portal_account_id = 3;
   // The ID of the Grove portal application authenticating the service request.
