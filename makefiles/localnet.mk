@@ -46,14 +46,12 @@ k8s_prepare_local_env: check_kind
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
 	fi
 
-.PHONY: dev_down
-# Internal helper: Tears down kind cluster
-dev_down:
-# @echo "Tearing down local environment..."
-	@tilt down
-# @kind delete cluster --name path-localnet
-# @if kubectl config get-contexts kind-path-localnet > /dev/null 2>&1; then \
-# 	kubectl config delete-context kind-path-localnet; \
-# else \
-# 	echo "Context kind-path-localnet not found in kubeconfig. Skipping deletion."; \
-# fi
+.PHONY: k8s_cleanup_local_env
+# Internal helper: Cleans up kind cluster and kubeconfig context for path-localnet
+k8s_cleanup_local_env:
+	@echo "[INFO] Cleaning up local k8s environment for 'path-localnet'..."
+	@kind delete cluster --name path-localnet || echo "[DEBUG] Cluster 'path-localnet' not found. Skipping deletion."
+	@kubectl config get-contexts kind-path-localnet > /dev/null 2>&1 && \
+		kubectl config delete-context kind-path-localnet || \
+		echo "[DEBUG] Context 'kind-path-localnet' not found. Skipping deletion."
+	@kubectl config get-contexts | grep -q 'kind-path-localnet' || echo "[INFO] Cleanup complete."
