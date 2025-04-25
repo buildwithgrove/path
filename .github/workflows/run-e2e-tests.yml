@@ -54,11 +54,10 @@ jobs:
     name: Run E2E tests - Morse
     runs-on: "ubuntu-22.04"
     needs:
-      - run-unit-tests
       - build-and-test-docker-image
     strategy:
       matrix:
-        # TODO_MVP(@commoddity): Add F021 to the list of service IDs to test
+        # DEV_NOTE: Add new services here if they should be tested as part of the E2E CI suite
         service_id: [F00C, F01C, F036]
     steps:
       - uses: actions/checkout@v4
@@ -96,8 +95,6 @@ jobs:
     name: Run E2E tests - Shannon
     runs-on: "ubuntu-22.04"
     needs:
-      - run-linter
-      - run-unit-tests
       - build-and-test-docker-image
     strategy:
       matrix:
