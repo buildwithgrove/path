@@ -15,8 +15,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IN_THIS_PR(@commoddity): implement a FullNode interface which caches the results.
-// This needs to consider the GatewayMode:
+// TODO_IN_THIS_PR(@commoddity): implement a FullNode interface that considersthe GatewayMode:
 //		A. Centralized: the list of owned apps is specified in advance, and onchain data can be cached before any requests are received.
 //		B. Delegated: cache needs to be done in Lazy/incremental way, as user requests specifying different apps are received.
 
@@ -39,7 +38,6 @@ type CachingFullNode struct {
 	// for fetching data from the protocol.
 	underlyingNode *LazyFullNode
 
-	// Separate caches for different entity types
 	appCache     *cache.Cache
 	sessionCache *cache.Cache
 }
@@ -72,7 +70,7 @@ func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		return nil, err
 	}
 
-	// Store in cache
+	// Store in cache if the app is found.
 	cfn.appCache.Set(cacheKey, app, cache.DefaultExpiration)
 
 	cfn.logger.Debug().Str("app_addr", appAddr).Msg("Cached application")
@@ -104,7 +102,7 @@ func (cfn *CachingFullNode) GetSession(
 		return sessiontypes.Session{}, err
 	}
 
-	// Store in cache
+	// Store in cache if the session is found.
 	cfn.sessionCache.Set(cacheKey, session, cache.DefaultExpiration)
 
 	cfn.logger.Debug().
@@ -116,8 +114,7 @@ func (cfn *CachingFullNode) GetSession(
 	return session, nil
 }
 
-// ValidateRelayResponse delegates to the underlying node's implementation.
-// This operation doesn't benefit from caching as it's validating external data.
+// ValidateRelayResponse delegates to the underlying node.
 func (cfn *CachingFullNode) ValidateRelayResponse(
 	supplierAddr sdk.SupplierAddress,
 	responseBz []byte,
@@ -125,9 +122,8 @@ func (cfn *CachingFullNode) ValidateRelayResponse(
 	return cfn.underlyingNode.ValidateRelayResponse(supplierAddr, responseBz)
 }
 
-// IsHealthy returns true if the cache is ready and the underlying node is healthy.
+// IsHealthy delegates to the underlying node.
 func (cfn *CachingFullNode) IsHealthy() bool {
-	// The cache is always ready, so we only need to check if the underlying node is healthy
 	return cfn.underlyingNode.IsHealthy()
 }
 
@@ -137,8 +133,9 @@ func (cfn *CachingFullNode) GetAccountClient() *sdk.AccountClient {
 }
 
 // createCacheKey creates a cache key for the given prefix and key.
-// eg. createCacheKey("app:", "0x123") -> "app:0x123"
-// eg. createCacheKey("session:", "0x123:0x456") -> "session:0x123:0x456"
+//
+//	eg. createCacheKey("app:", "0x123") -> "app:0x123"
+//	eg. createCacheKey("session:", "anvil:0x456") -> "session:anvil:0x456"
 func createCacheKey(prefix string, key string) string {
 	return fmt.Sprintf("%s%s", prefix, key)
 }
