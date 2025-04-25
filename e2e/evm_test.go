@@ -239,8 +239,17 @@ func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testi
 	signal.Notify(sigCh, os.Interrupt)
 	go func() {
 		<-sigCh
-		fmt.Print("Received SIGINT, cancelling test...")
+		fmt.Println("🛑 Received SIGINT, cancelling test...")
 		cancel()
+
+		// Give a short time for cleanup to happen in the other handlers
+		// but don't hang forever
+		timer := time.NewTimer(5 * time.Second)
+		select {
+		case <-timer.C:
+			fmt.Println("Cleanup timed out, forcing exit...")
+			os.Exit(1)
+		}
 	}()
 }
 

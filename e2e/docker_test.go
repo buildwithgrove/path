@@ -205,7 +205,7 @@ func setupPathDocker(
 	go func() {
 		select {
 		case <-signalChan:
-			fmt.Println("\nReceived Ctrl+C, cleaning up containers...")
+			fmt.Println("\n⚠️  Received Ctrl+C, cleaning up containers...")
 			// Cancel the context
 			cancel()
 
@@ -216,8 +216,17 @@ func setupPathDocker(
 
 			// Signal that cleanup is done
 			close(cleanupDone)
+
+			// Exit the program after cleanup - prevents hanging
+			fmt.Println("✅ Cleanup complete, exiting...")
+			os.Exit(1)
 		case <-ctx.Done():
 			// Context was canceled elsewhere
+			// Perform cleanup here too in case it wasn't already done
+			if err := pool.Purge(resource); err != nil {
+				log.Printf("Could not purge resource: %s", err)
+			}
+			close(cleanupDone)
 		}
 	}()
 
