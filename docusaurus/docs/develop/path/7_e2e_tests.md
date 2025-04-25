@@ -97,6 +97,13 @@ make test_e2e_evm_shannon
 make test_e2e_evm_morse
 ```
 
+**Saved Log Output to a File** (useful for debugging):
+
+```bash
+make test_e2e_evm_morse_with_logs
+make test_e2e_evm_shannon_with_logs
+```
+
 **E2E for a specific service** (if you know which service ID you want to test):
 
 ```bash
@@ -115,12 +122,6 @@ make test_e2e_evm_morse GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
 ```bash
 make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
 ```
-
-\*_Disable Docker logs_ (if its slowing down your system):
-
-````bash
-make test_e2e_evm_morse DOCKER_LOG=false
-```z
 
 **Wait 30s for hydrator checks** (if you're adding a new service):
 

@@ -116,63 +116,6 @@ var (
 			methodConfigs:     shannonBetaTestNetMethodConfigs,
 		},
 	}
-
-	shannonBetaTestNetMethods = []jsonrpc.Method{
-		eth_blockNumber,
-		eth_call,
-		eth_getBlockByNumber,
-		eth_getBalance,
-		eth_chainId,
-		eth_getTransactionCount,
-		eth_gasPrice,
-	}
-
-	// TODO_TECHDEBT: Iterate on these tests to make sure the anvil node can handle more load.
-
-	// defaultRequestLoadConfig contains the default configuration for a method.
-	shannonBetaTestNetRequestLoadConfig = requestLoadConfig{
-		totalRequests: 3,
-		rps:           1,
-	}
-
-	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
-	shannonBetaTestNetSuccessCriteria = successCriteria{
-		successRate:   0.75,
-		maxP50Latency: 5_000 * time.Millisecond,  // 5 seconds
-		maxP95Latency: 10_000 * time.Millisecond, // 10 seconds
-		maxP99Latency: 20_000 * time.Millisecond, // 30 seconds
-	}
-
-	shannonBetaTestNetMethodConfigs = map[jsonrpc.Method]methodTestConfig{
-		eth_blockNumber: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_call: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_getBlockByNumber: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_getBalance: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_chainId: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_getTransactionCount: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-		eth_gasPrice: {
-			requestLoadConfig: shannonBetaTestNetRequestLoadConfig,
-			successCriteria:   shannonBetaTestNetSuccessCriteria,
-		},
-	}
 )
 
 // Morse network test cases

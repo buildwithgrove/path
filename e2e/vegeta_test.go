@@ -81,7 +81,11 @@ func runAttack(
 	metrics := initMethodMetrics(method, testConfig.totalRequests)
 	target := createRPCTarget(gatewayURL, serviceID, jsonrpcReq)
 	maxDuration := time.Duration(2*testConfig.totalRequests/testConfig.rps)*time.Second + 5*time.Second
-	attacker := createVegetaAttacker()
+
+	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
+	// This is because the P99 latency is the highest latency band for test assertions.
+	// We add 5 seconds to account for any unexpected delays.
+	attacker := createVegetaAttacker(testConfig.maxP99Latency + 5*time.Second)
 
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d RPS)...\n",
@@ -124,9 +128,9 @@ func initMethodMetrics(method jsonrpc.Method, totalRequests int) *methodMetrics 
 
 // createVegetaAttacker
 // • Sets up a vegeta attacker with fixed options
-func createVegetaAttacker() *vegeta.Attacker {
+func createVegetaAttacker(timeout time.Duration) *vegeta.Attacker {
 	return vegeta.NewAttacker(
-		vegeta.Timeout(5*time.Second),
+		vegeta.Timeout(timeout),
 		vegeta.KeepAlive(true),
 		vegeta.Workers(3),
 		vegeta.MaxWorkers(5),
