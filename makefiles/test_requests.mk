@@ -13,6 +13,25 @@ debug_relayminer_supplier_info_msg:
 	@echo "########################################################################################################################################"
 	@echo ""
 
+.PHONY: debug_view_results_links
+# Internal helper: Displays links to view results in local dashboards
+debug_view_results_links:
+	@echo "##########################################################################################################"
+	@echo "####   VIEW RESULTS IN LOCAL DASHBOARDS   ####"
+	@echo ""
+	@echo "1. Path Service Requests:"
+	@echo "   http://localhost:3003/d/relays/path-service-requests?orgId=1&from=now-15m&to=now&timezone=browser"
+	@echo ""
+	@echo "2. Path Gateway Metrics:"
+	@echo "   http://localhost:3003/d/gateway/path-path-gateway?orgId=1&from=now-1h&to=now&timezone=browser&var-path=path-metrics&refresh=5s"
+	@echo ""
+	@echo "3. Morse Relay Requests:"
+	@echo "   http://localhost:3003/d/morse/morse-relay-requests?orgId=1&from=now-3h&to=now&timezone=browser&refresh=10s"
+	@echo ""
+	@echo "Login with: admin / admin (for now)"
+	@echo "##########################################################################################################"
+	@echo ""
+
 .PHONY: check_path_up
 # Internal helper: Checks if PATH is running at localhost:3070
 check_path_up:
@@ -81,7 +100,7 @@ test_request__morse_service_id_header: check_path_up ## Test request with API ke
 ##################################
 
 .PHONY: test_request__shannon_relay_util_100
-test_request__shannon_relay_util_100: check_path_up check_relay_util  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util
+test_request__shannon_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util
 	relay-util \
 		-u http://localhost:3070/v1 \
 		-H "target-service-id: anvil" \
@@ -91,7 +110,7 @@ test_request__shannon_relay_util_100: check_path_up check_relay_util  ## Test an
 		-b
 
 .PHONY: test_request__morse_relay_util_100
-test_request__morse_relay_util_100: check_path_up check_relay_util  ## Test F00C (Eth MainNet on Morse) via PATH behind GUARD with 10,000 eth_blockNumber requests using relay-util
+test_request__morse_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test F00C (Eth MainNet on Morse) via PATH behind GUARD with 10,000 eth_blockNumber requests using relay-util
 	relay-util \
 		-u http://localhost:3070/v1 \
 		-H "target-service-id: F00C" \

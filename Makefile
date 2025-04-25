@@ -57,13 +57,15 @@ path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt develop
 	tilt up
 
 .PHONY: path_down
-path_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_down: ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+	tilt down
 
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path
 	@echo "################################################################";
 	@echo "If you're hitting issues running PATH, try running following commands:";
 	@echo "	make path_down";
+	@echo "	make k8s_cleanup_local_env";
 	@echo "	make path_up";
 	@echo "################################################################";
 

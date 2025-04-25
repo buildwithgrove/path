@@ -1,6 +1,7 @@
 # Load necessary Tilt extensions
 load("ext://restart_process", "docker_build_with_restart")
 load("ext://helm_resource", "helm_resource", "helm_repo")
+load('ext://k8s_attach', 'k8s_attach')
 load("ext://configmap", "configmap_create")
 
 # A list of directories where changes trigger a hot-reload of PATH.
@@ -84,9 +85,14 @@ helm_repo(
 chart_prefix = "buildwithgrove/"
 if local_config["helm_chart_local_repo"]["enabled"]:
     helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
+    chart_prefix = helm_chart_local_repo + "/charts/"
+    # TODO_TECHDEBT(@okdas): Find a way to make this cleaner & performant w/ selective builds.
+    local("cd " + chart_prefix + "guard && helm dependency update")
+    local("cd " + chart_prefix + "path && helm dependency update")
+    local("cd " + chart_prefix + "watch && helm dependency update")
     hot_reload_dirs.append(helm_chart_local_repo)
     print("Using local helm chart repo " + helm_chart_local_repo)
-    chart_prefix = helm_chart_local_repo + "/charts/"
+
 
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
@@ -122,6 +128,8 @@ local_resource(
 #
 # For more context, see the comments at:
 # `./local/scripts/patch_envoy_gateway.sh`.
+#
+# TODO_TECHDEBT(@okdas): Remove this and the associated script once helm charts are updated.
 local_resource(
     "patch-envoy-gateway",
     "./local/scripts/patch_envoy_gateway.sh",
@@ -190,37 +198,6 @@ WORKDIR /app
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
-# Make sure path-binary runs before the Docker build
-local_resource(
-    "path-trigger",
-    """
-    echo "Triggering Docker build after binary build"
-    touch .tilt-build-trigger
-    """,
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_MANUAL,
-    labels=["hot-reloading"],
-)
-
-# Build an image with the PATH binary
-docker_build_with_restart(
-    "path-image",
-    context=".",
-    dockerfile_contents="""FROM golang:1.23.0
-RUN apt-get -q update && apt-get install -qyy curl jq less
-RUN mkdir -p /app/config
-COPY bin/path /app/path
-RUN chmod +x /app/path
-WORKDIR /app
-""",
-    # only=["/app/path"],
-    entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
-    trigger='.tilt-build-trigger',  # Rebuild when this file changes
-)
-
-
 # Tilt will run the Helm Chart with the following flags by default.
 #
 # For example:
@@ -229,6 +206,8 @@ WORKDIR /app
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
+    # Enable GUARD resources.
+    "--set", "guard.enabled=true",
     # Enable PATH to load the config from a secret.
     # PATH supports loading the config from either a Secret or a ConfigMap.
     # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
@@ -258,21 +237,19 @@ if read_yaml(valuesFile, default=None) != None:
 
 # Run PATH Helm chart, including GUARD & WATCH.
 helm_resource(
-    "path",  # Changed from "path-helm" to "path-stack"
+    "path",
     chart_prefix + "path",
     image_deps=["path-image"],
     image_keys=[("image.repository", "image.tag")],
     links=[
         link(
-            "http://localhost:3000/d/relays/path-service-requests?orgId=1",
+            # Forward port 3003 to Grafana's port 3000.
+            # Port 3000 is already used by kind cluster's control plane.
+            "http://localhost:3003/d/relays/path-service-requests?orgId=1",
             "Grafana dashboard",
         ),
     ],
     flags=flags,
-    # Port 6060 is exposed to serve pprof data.
-    # Run the following commands to view the pprof data:
-    #   $ make debug_goroutines
-    port_forwards=["6060:6060"],
     resource_deps=["path-config-updater"],
     labels=["path"],
 )
@@ -293,9 +270,22 @@ update_settings(
 k8s_resource(
     workload="path",
     new_name="path-stack",
+    # Port 6060 is exposed to serve pprof data.
+    # Run the following commands to view the pprof data:
+    #   $ make debug_goroutines
     port_forwards=["6060:6060"],
     extra_pod_selectors=[{"app.kubernetes.io/name": "path"}],
     labels=["path"]
+)
+
+# Attach the proper port forwards to Grafana
+# TODO_TECHDEBT(@okdas): Remove admin/password requirements.
+k8s_attach(
+    'path-grafana',
+    'deployment/path-grafana',
+    namespace='path',
+    port_forwards="3003:3000",
+    resource_deps=["path-stack"]
 )
 
 # 2. GUARD Logs - Waits for container readiness before following logs
