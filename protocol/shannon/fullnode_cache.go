@@ -56,12 +56,14 @@ func NewCachingFullNode(logger polylog.Logger, underlyingNode *LazyFullNode) *Ca
 
 // GetApp returns the application with the given address, using a cached version if available.
 func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	cacheKey := createCacheKey(appCacheKeyPrefix, appAddr)
+	appCacheKey := createCacheKey(appCacheKeyPrefix, appAddr)
 
 	// Check cache first
-	if cachedValue, found := cfn.appCache.Get(cacheKey); found {
+	if cachedApp, found := cfn.appCache.Get(appCacheKey); found {
 		cfn.logger.Debug().Str("app_addr", appAddr).Msg("Returning cached application")
-		return cachedValue.(*apptypes.Application), nil
+
+		// Type assertion is safe because we know the cache value can only be *apptypes.Application.
+		return cachedApp.(*apptypes.Application), nil
 	}
 
 	// Cache miss - get from underlying node
@@ -71,7 +73,7 @@ func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 	}
 
 	// Store in cache if the app is found.
-	cfn.appCache.Set(cacheKey, app, cache.DefaultExpiration)
+	cfn.appCache.Set(appCacheKey, app, cache.DefaultExpiration)
 
 	cfn.logger.Debug().Str("app_addr", appAddr).Msg("Cached application")
 
@@ -85,15 +87,17 @@ func (cfn *CachingFullNode) GetSession(
 	appAddr string,
 ) (sessiontypes.Session, error) {
 	// Create a unique cache key for this service+app combination
-	cacheKey := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
+	sessionCacheKey := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
 
 	// Check cache first
-	if cachedValue, found := cfn.sessionCache.Get(cacheKey); found {
+	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
 		cfn.logger.Debug().
 			Str("service_id", string(serviceID)).
 			Str("app_addr", appAddr).
 			Msg("Returning cached session")
-		return cachedValue.(sessiontypes.Session), nil
+
+		// Type assertion is safe because we know the cache value can only be sessiontypes.Session.
+		return cachedSession.(sessiontypes.Session), nil
 	}
 
 	// Cache miss - get from underlying node
@@ -103,7 +107,7 @@ func (cfn *CachingFullNode) GetSession(
 	}
 
 	// Store in cache if the session is found.
-	cfn.sessionCache.Set(cacheKey, session, cache.DefaultExpiration)
+	cfn.sessionCache.Set(sessionCacheKey, session, cache.DefaultExpiration)
 
 	cfn.logger.Debug().
 		Str("service_id", string(serviceID)).
