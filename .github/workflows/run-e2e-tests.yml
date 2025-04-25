@@ -98,6 +98,7 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
+        # DEV_NOTE: Add new services here if they should be tested as part of the E2E CI suite
         service_id: [anvil]
     steps:
       - uses: actions/checkout@v4
