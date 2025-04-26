@@ -81,6 +81,57 @@ done <"$INPUT_FILE"
     echo "|-------------|------------|-----------------|----------|---------------------------|"
 } >"${OUTPUT_FILE}.new"
 
+# Find lines with archival check and extract the service IDs
+archival_lines=$(grep -n "evm\.NewEVMArchivalCheckConfig" "$INPUT_FILE")
+archival_services=()
+
+# Process each line containing archival check configuration
+while IFS= read -r line; do
+    # Extract the line number
+    line_num=$(echo "$line" | cut -d: -f1)
+    
+    # Look up to 3 lines before the archival check to find the service ID
+    service_id=$(sed -n "$((line_num-3)),$((line_num-1))p" "$INPUT_FILE" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+    
+    if [[ -n "$service_id" ]]; then
+        archival_services+=("$service_id")
+    fi
+done <<< "$archival_lines"
+
+echo "Detected archival services: ${archival_services[*]}" >&2
+
+# Convert the array to a space-separated string for easier search
+archival_services_str=" ${archival_services[*]} "
+
+# Create a map of service IDs to chain IDs for archival services
+declare -A archival_chain_ids
+# Extract chain IDs for archival services
+for service_id in "${archival_services[@]}"; do
+    # For each archival service, extract the chain ID from the config file
+    chain_id=""
+    
+    # Check for F00C (Ethereum) - uses defaultEVMChainID
+    if [[ "$service_id" == "F00C" ]]; then
+        chain_id="$default_evm_chain_id_int"
+    else
+        # Extract chain ID from the line containing the service ID
+        chain_line=$(grep -A 2 "\"$service_id\"" "$INPUT_FILE" | grep -v "evm\.NewEVMArchivalCheckConfig")
+        if [[ "$chain_line" =~ \"([^\"]+)\", ]]; then
+            chain_id_hex="${BASH_REMATCH[1]}"
+            # Check if it's a hex value or defaultEVMChainID
+            if [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
+                chain_id="$default_evm_chain_id_int"
+            else
+                chain_id="$(hex_to_decimal "$chain_id_hex")"
+            fi
+        fi
+    fi
+    
+    # Store in the map
+    archival_chain_ids["$service_id"]="$chain_id"
+    echo "Archival service $service_id has chain ID: ${archival_chain_ids[$service_id]}" >&2
+done
+
 # Parse Shannon services
 in_shannon_section=false
 service_id=""
@@ -89,7 +140,6 @@ service_type=""
 chain_id=""
 archival_check=""
 comment_buffer=""
-previous_line=""
 
 # First pass: process Shannon services
 while IFS= read -r line; do
@@ -130,30 +180,44 @@ while IFS= read -r line; do
     fi
 
     # Check for new service
-    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
+    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig ]]; then
         # Process the previous service if exists
         if [[ -n "$service_id" ]]; then
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
         fi
 
         # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
         service_type="EVM"
         chain_id=""
         archival_check=""
+
+        # Determine service ID and set service_name
+        # Single-line definition with ID on the same line
+        if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            remainder_line="$line"
+        else
+            # Multi-line definition: read next line for service ID
+            read -r remainder_line
+            if [[ "$remainder_line" =~ ^[[:space:]]*\"([^\"]+)\" ]]; then
+                service_id="${BASH_REMATCH[1]}"
+            else
+                service_id=""
+            fi
+        fi
 
         # Use the most recent comment as the service name
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Unknown EVM Service"
         fi
 
-        # Extract chain ID
-        if [[ "$line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
+        # Attempt to extract chain ID from remainder_line
+        if [[ "$remainder_line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
             chain_id_hex="${BASH_REMATCH[1]}"
-
-            # Check if chain ID is in a comment
-            if [[ "$line" =~ //.*\(([0-9]+)\) ]]; then
+            if [[ "$remainder_line" =~ //.*\(([0-9]+)\) ]]; then
                 chain_id="${BASH_REMATCH[1]}"
             elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
                 chain_id="$default_evm_chain_id_int"
@@ -162,8 +226,8 @@ while IFS= read -r line; do
             fi
         fi
 
-        # Check for archival config
-        if [[ "$line" =~ ArchivalCheckConfig ]]; then
+        # Check if this service ID is in the list of archival services
+        if [[ "$archival_services_str" == *" $service_id "* ]]; then
             archival_check="✅"
         fi
     elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
@@ -182,6 +246,8 @@ while IFS= read -r line; do
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Unknown CometBFT Service"
         fi
     elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
         # Process the previous service if exists
@@ -199,15 +265,10 @@ while IFS= read -r line; do
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Solana"
         fi
     fi
-
-    # Detect if there's an archival check configuration
-    if [[ "$line" =~ NewEVMArchivalCheckConfig && "$archival_check" == "" ]]; then
-        archival_check="✅"
-    fi
-
-    previous_line="$line"
 done <"$INPUT_FILE"
 
 echo "" >>"${OUTPUT_FILE}.new"
@@ -228,7 +289,9 @@ service_type=""
 chain_id=""
 archival_check=""
 comment_buffer=""
-previous_line=""
+
+# Debug - special handling for F00C, F01C, F021, F036
+echo "Checking for known archival services in morse section" >&2
 
 # Reset to the beginning of the file for second pass
 while IFS= read -r line; do
@@ -268,42 +331,80 @@ while IFS= read -r line; do
         continue
     fi
 
-    # Check for new service
-    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
+    # Check for new service - this should be done before processing any other attributes
+    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig ]]; then
         # Process the previous service if exists
         if [[ -n "$service_id" ]]; then
+            # Debug output for special cases
+            if [[ "$service_id" == "F00C" || "$service_id" == "F01C" || "$service_id" == "F021" || "$service_id" == "F036" ]]; then
+                echo "Processing service $service_id with archival=$archival_check and chain_id=$chain_id" >&2
+            fi
+            
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
         fi
 
         # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
         service_type="EVM"
         chain_id=""
         archival_check=""
+
+        # Determine service ID and set service_name
+        # Single-line definition with ID on the same line
+        if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            remainder_line="$line"
+        else
+            # Multi-line definition: read next line for service ID
+            read -r remainder_line
+            if [[ "$remainder_line" =~ ^[[:space:]]*\"([^\"]+)\" ]]; then
+                service_id="${BASH_REMATCH[1]}"
+            else
+                service_id=""
+            fi
+        fi
 
         # Use the most recent comment as the service name
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Unknown EVM Service"
         fi
 
-        # Extract chain ID
-        if [[ "$line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
-            chain_id_hex="${BASH_REMATCH[1]}"
-
-            # Check if chain ID is in a comment
-            if [[ "$line" =~ //.*\(([0-9]+)\) ]]; then
-                chain_id="${BASH_REMATCH[1]}"
-            elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
-                chain_id="$default_evm_chain_id_int"
-            else
-                chain_id="$(hex_to_decimal "$chain_id_hex")"
-            fi
-        fi
-
-        # Check for archival config
-        if [[ "$line" =~ ArchivalCheckConfig ]]; then
+        # Check if this service ID is in the list of archival services
+        if [[ "$archival_services_str" == *" $service_id "* ]]; then
             archival_check="✅"
+            echo "Marking $service_id as archival" >&2
+            
+            # For archival services, use the pre-extracted chain ID if available
+            if [[ -n "${archival_chain_ids[$service_id]}" ]]; then
+                chain_id="${archival_chain_ids[$service_id]}"
+                echo "Using pre-extracted chain ID for $service_id: $chain_id" >&2
+            else
+                # Attempt to extract from the remainder_line as fallback
+                if [[ "$remainder_line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
+                    chain_id_hex="${BASH_REMATCH[1]}"
+                    if [[ "$remainder_line" =~ //.*\(([0-9]+)\) ]]; then
+                        chain_id="${BASH_REMATCH[1]}"
+                    elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
+                        chain_id="$default_evm_chain_id_int"
+                    else
+                        chain_id="$(hex_to_decimal "$chain_id_hex")"
+                    fi
+                fi
+            fi
+        else
+            # Normal (non-archival) service - extract chain ID as usual
+            if [[ "$remainder_line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
+                chain_id_hex="${BASH_REMATCH[1]}"
+                if [[ "$remainder_line" =~ //.*\(([0-9]+)\) ]]; then
+                    chain_id="${BASH_REMATCH[1]}"
+                elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
+                    chain_id="$default_evm_chain_id_int"
+                else
+                    chain_id="$(hex_to_decimal "$chain_id_hex")"
+                fi
+            fi
         fi
     elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
         # Process the previous service if exists
@@ -321,6 +422,8 @@ while IFS= read -r line; do
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Unknown CometBFT Service"
         fi
     elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
         # Process the previous service if exists
@@ -338,15 +441,10 @@ while IFS= read -r line; do
         if [[ -n "$comment_buffer" ]]; then
             service_name="$comment_buffer"
             comment_buffer=""
+        else
+            service_name="Solana"
         fi
     fi
-
-    # Detect if there's an archival check configuration
-    if [[ "$line" =~ NewEVMArchivalCheckConfig && "$archival_check" == "" ]]; then
-        archival_check="✅"
-    fi
-
-    previous_line="$line"
 done <"$INPUT_FILE"
 
 # Create the final file by combining the preserved content and new content

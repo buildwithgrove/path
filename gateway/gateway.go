@@ -20,9 +20,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/buildwithgrove/path/observation"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -69,13 +66,12 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
-		gatewayObservations: getUserRequestGatewayObservations(),
+		gatewayObservations: getUserRequestGatewayObservations(httpReq),
 		protocol:            g.Protocol,
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		// TODO_MVP(@adshmh): build the gateway observation data and pass it to the request context.
-		// TODO_MVP(@adshmh): build the HTTP request observation data and pass it to the request context.
+		context:             ctx,
 	}
 
 	defer func() {
@@ -113,8 +109,9 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		return
 	}
 
+	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromHTTP(ctx, httpReq)
+	err = gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
@@ -141,7 +138,7 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 // handleWebsocketRequest handles WebSocket connection requests
 func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(ctx, httpReq)
+	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {
 		return
 	}
@@ -156,13 +153,4 @@ func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Reque
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
-}
-
-// getUserRequestGatewayObservations returns gateway-level observations for an organic request.
-// Example: request originated from a user.
-func getUserRequestGatewayObservations() observation.GatewayObservations {
-	return observation.GatewayObservations{
-		RequestType:  observation.RequestType_REQUEST_TYPE_ORGANIC,
-		ReceivedTime: timestamppb.Now(),
-	}
 }

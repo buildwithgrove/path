@@ -11,7 +11,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 
-	"github.com/buildwithgrove/path/config"
+	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/request"
@@ -28,7 +28,7 @@ func main() {
 		log.Fatalf("failed to get config path: %v", err)
 	}
 
-	config, err := config.LoadGatewayConfigFromYAML(configPath)
+	config, err := configpkg.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -53,10 +53,31 @@ func main() {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
 
+	// setup metrics reporter, to be used by Gateway and Hydrator.
+	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
+	if err != nil {
+		log.Fatalf("failed to start metrics server: %v", err)
+	}
+
+	setupPprofServer(context.TODO(), logger, pprofAddr)
+
+	// setup data reporter, to be used by Gateway and Hydrator.
+	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
+	if err != nil {
+		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
+	}
+
 	// TODO_IMPROVE: consider using a separate protocol instance for the hydrator,
 	// to enable configuring separate worker pools for the user requests
 	// and the endpoint hydrator requests.
-	hydrator, err := setupEndpointHydrator(logger, protocol, qosInstances, config.HydratorConfig)
+	hydrator, err := setupEndpointHydrator(
+		logger,
+		protocol,
+		qosInstances,
+		metricsReporter,
+		dataReporter,
+		config.HydratorConfig,
+	)
 	if err != nil {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
@@ -68,13 +89,6 @@ func main() {
 		QoSServices: qosInstances,
 	}
 
-	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
-	if err != nil {
-		log.Fatalf("failed to start metrics server: %v", err)
-	}
-
-	setupPprofServer(context.TODO(), logger, pprofAddr)
-
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
 		Logger: logger,
@@ -82,6 +96,7 @@ func main() {
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
 		MetricsReporter:   metricsReporter,
+		DataReporter:      dataReporter,
 	}
 
 	// Until all components are ready, the `/healthz` endpoint will return a 503 Service
@@ -147,7 +162,7 @@ func getConfigPath(defaultConfigPath string) (string, error) {
 // - If `shannon_config` is set it returns a Shannon protocol instance.
 // - If `morse_config` is set it returns a Morse protocol instance.
 // - If neither is set, it returns an error.
-func getProtocol(logger polylog.Logger, config config.GatewayConfig) (gateway.Protocol, error) {
+func getProtocol(logger polylog.Logger, config configpkg.GatewayConfig) (gateway.Protocol, error) {
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
 		return getShannonProtocol(logger, shannonConfig)
 	}

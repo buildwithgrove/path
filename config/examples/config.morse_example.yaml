@@ -35,10 +35,13 @@ morse_config:
       application_public_key: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
       application_signature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388"
 
-# Enable endpoint hydrator to run QoS checks against endpoints of service F00C
+# Enable endpoint hydrator to run QoS checks against service endpoints
 hydrator_config:
   service_ids:
-    - "F00C"
+    - F00C # Ethereum
+    - F021 # Polygon
+    - F01C # Oasys
+    - F036 # XRPL EVM Testnet
 
 # Optional logger configuration
 logger_config:

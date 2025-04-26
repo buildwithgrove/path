@@ -85,10 +85,13 @@ type Protocol struct {
 	sessionCacheMu sync.RWMutex
 }
 
+// TODO_TECHDEBT(@adshmh): Enforce the deadline from the supplied context.
+// This is needed to avoid triggering a timeout on the HTTP server handling the service request.
+//
 // AvailableEndpoints returns the list of available endpoints for a given service ID.
 //
 // Implements the gateway.Protocol interface.
-func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
+func (p *Protocol) AvailableEndpoints(_ context.Context, serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
@@ -103,9 +106,12 @@ func (p *Protocol) AvailableEndpoints(serviceID protocol.ServiceID, _ *http.Requ
 	return endpointAddrs, nil
 }
 
+// TODO_TECHDEBT(@adshmh): Enforce the deadline from the supplied context.
+//
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
+	_ context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	_ *http.Request,
@@ -132,11 +138,10 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
-		logger:                   ctxLogger,
-		fullNode:                 p.fullNode,
-		sanctionedEndpointsStore: p.sanctionedEndpointsStore,
-		selectedEndpoint:         &selectedEndpoint,
-		serviceID:                serviceID,
+		logger:           ctxLogger,
+		fullNode:         p.fullNode,
+		selectedEndpoint: &selectedEndpoint,
+		serviceID:        serviceID,
 	}, nil
 }
 
