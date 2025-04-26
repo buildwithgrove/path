@@ -6,7 +6,11 @@ description: Guide to get a PATH instance up and running.
 
 This guide will help you set up and run PATH to serve requests using Morse or Shannon protocol in under 10 minutes.
 
-> **Note:** This guide covers running PATH without any authentication or authorization mechanisms. Work is underway to provide these capabilities - see [PATH Guard documentation](https://path.grove.city/operate/helm/guard) for details.
+:::note
+
+This guide covers running PATH without any authentication or authorization mechanisms. Work is underway to provide these capabilities - see [PATH Guard documentation](https://path.grove.city/operate/helm/guard) for details.
+
+:::
 
 ## Prerequisites
 
