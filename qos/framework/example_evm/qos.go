@@ -7,10 +7,10 @@ import (
 )
 
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
-func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
+func NewQoSInstance(logger polylog.Logger, config EVMQoSServiceConfig) *QoS {
 	logger = logger.With(
 		"qos_instance", "evm",
-		"evm_chain_id", evmChainID,
+		"evm_chain_id", config.GetEVMChainID(),
 	)
 
 	// Setup the QoS definitions for EVM blockchains QoS service
@@ -24,8 +24,9 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 		},
 
 		// ResultBuilders for JSONRPC request methods used for endpoint attributes.
-		ResultBuilders: getJSONRPCMethodEndpointResultBuilders(),
+		ResultBuilders: getJSONRPCMethodEndpointResultBuilders(config),
 
+/*
 		// StateUpdater uses the endpoint attributes to update the service state.
 		StateUpdater: 
 
@@ -36,6 +37,8 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 		//
 		// Use the framework's default request validator: i.e. accept any valid JSONRPC request.
 		RequestValidator: nil, 
+*/
+
 	}
 
 	return framework.NewQoSService(qosDefinition)
@@ -43,11 +46,23 @@ func NewQoSInstance(logger polylog.Logger, evmChainID string) *QoS {
 
 // Return the set of endpoint result builders to be called by the framework.
 // A result builder will be called if it matches the method of the JSONRPC request from the client.
-func getJSONRPCMethodEndpointResultBuilders() map[jsonrpc.Method]EndpointResultBuilder {
+func getJSONRPCMethodEndpointResultBuilders(config EVMQoSServiceConfig) map[jsonrpc.Method]EndpointResultBuilder {
 	// EVM QoS service collects endpoint attributes based on responses to the following methods.
 	return map[jsonrpc.Method]EndpointResultBuilder {
-		jsonrpc.Method(methodETHChainID):  endpointResultBuilderChainID,
-		jsonrpc.Method(methodETHBlockNumber): endpointResultBuilderBlockNumber,
+		jsonrpc.Method(methodETHChainID): setupResultBuilderChainID(config),
+		jsonrpc.Method(methodETHBlockNumber): setupResultBuilderBlockNumber(config),
 		// TODO_IN_THIS_PR: add eth_getBalance 
+	}
+}
+
+func setupResultBuilderChainID(config EVMQoSServiceConfig) framework.EndpointQueryResultBuilder {
+	return func(ctx *framework.EndpointQueryResultContext) *framework.EndpointQueryResult {
+		return endpointResultBuilderChainID(ctx, config)
+	}
+}
+
+func setupResultBuilderBlockNumber(config EVMQoSServiceConfig) framework.EndpointQueryResultBuilder {
+	return func(ctx *framework.EndpointQueryResultContext) *framework.EndpointQueryResult {
+		return endpointResultBuilderBlockNumber(ctx, config)
 	}
 }

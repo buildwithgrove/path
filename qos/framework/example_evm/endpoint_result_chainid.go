@@ -27,12 +27,17 @@ var _ framework.EndpointResultBuilder = endpointAttributeBuilderChainID
 // TODO_TECHDEBT(@adshmh): validate the `eth_chainId` request that was sent to the endpoint.
 //
 // endpointResultBuilderChainID handles attribute building and sanctioning of endpoints based on the data returned to `eth_chainId` requests.
-func endpointResultBuilderChainID(ctx *framework.EndpointResultContext) *framework.ResultData {
-	// TODO_MVP(@adshmh): implement the framework's RequestValidator interface to filter out invalid `eth_chainId` requests.
+func endpointResultBuilderChainID(
+	ctx *framework.EndpointQueryResultContext,
+	config EVMQoSServiceConfig,
+) *framework.ResultData {
+	// TODO_MVP(@adshmh): Sanction endpoints that fail to respond to `eth_chainId` requests:
+	//   1. Implement the framework's RequestValidator interface to filter out invalid `eth_chainId` requests.
+	//   2. Sanction an endpoint that returns an error, as the requests are guaranteed to be valid.
 	//
 	// The endpoint returned an error response: no further processing needed.
 	if ctx.IsJSONRPCError() {
-		return ctx.Error("endpoint returned a JSONRPC error response.")
+		return ctx.Error("endpoint returned a JSONRPC error response to an eth_chainId request.")
 	}
 
 	// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.
@@ -52,5 +57,5 @@ func endpointResultBuilderChainID(ctx *framework.EndpointResultContext) *framewo
 	// Store the endpoint's reported chainID as its attribute.
 	// This attribute will be used in:
 	// - endpoint selection: to drop misconfigured endpoints.
-	return ctx.Success(ctx.BuildStringAttribute(ethChainID, chainID)
+	return ctx.Success(ctx.BuildStringAttribute(ethChainID, chainID))
 }
