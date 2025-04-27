@@ -10,7 +10,7 @@ import (
 // It is package-private and not meant to be used directly by any entity outside the jsonrpc package.
 type endpointStore struct {
 	endpointsMu sync.RWMutex
-	endpoints   map[protocol.EndpointAddr]Endpoint
+	endpoints   map[protocol.EndpointAddr]*Endpoint
 }
 
 func (es *endpointStore) updateStoredEndpoints(endpointQueries []*endpointQuery) []Endpoint {
@@ -33,11 +33,11 @@ func (es *endpointStore) storeEndpoint(addr protocol.EndpointAddr, endpoint Endp
 		es.endpoints = make(map[protocol.EndpointAddr]Endpoint)
 	}
 
-	es.endpoints[addr] = endpoint
+	es.endpoints[addr] = &endpoint
 }
 
 // getEndpoint retrieves an endpoint by its address.
-func (es *endpointStore) getEndpoint(addr protocol.EndpointAddr) (Endpoint, bool) {
+func (es *endpointStore) getEndpoint(addr protocol.EndpointAddr) (*Endpoint, bool) {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 

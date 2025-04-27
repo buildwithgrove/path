@@ -29,6 +29,10 @@ type ServiceState struct {
 	endpointStore *endpointStore
 }
 
+func (s *ServiceState) GetEndpoint(endpointAddr protocol.EndpointAddr) (Endpoint, bool) {
+	return s.endpointStore.getEndpoint(endpointAddr)
+}
+
 func (s *ServiceState) GetStrParam(paramName string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

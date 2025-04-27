@@ -29,7 +29,7 @@ type QoS struct {
 
 // ParseHTTPRequest handles parsing an HTTP request and validating its content
 // It returns a RequestQoSContext and a boolean indicating if processing should continue
-func (s *QoSService) ParseHTTPRequest(
+func (s *QoS) ParseHTTPRequest(
 	_ context.Context,
 	httpReq *http.Request,
 ) (*requestContext, bool) {
@@ -53,7 +53,7 @@ func (s *QoSService) ParseHTTPRequest(
 // TODO_IN_THIS_PR: implement this method
 // func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool)
 
-func (s *QoSService) ApplyObservations(observations *qosobservations.Observations) error
+func (s *QoS) ApplyObservations(observations *qosobservations.Observations) error
 ) {
 	jsonrpcSvcObservations := observations.GetJsonrpc()
 	endpointQueries := extractEndpointQueriesFromObservations(jsonrpcSvcObservations)
@@ -66,6 +66,12 @@ func (s *QoSService) ApplyObservations(observations *qosobservations.Observation
 
 	// update the service state through the context, using stored endpoints.
 	return stateUpdateCtx.updateFromEndpoints(updatedEndpoints)
+}
+
+// Implements gateway.QoSEndpointCheckGenerator interface
+func (q *QoS) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []RequestQoSContext {
+	endpointChecksCtx := q.buildEndpointChecksContext(endpointAddr)
+	return endpointChecksCtx.BuildRequests()
 }
 
 // buildEndpointQueryResultContext creates a context for processing endpoint queries
@@ -96,6 +102,25 @@ func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
 		*ReadonlyServiceState: q.serviceState,
 		// The endpoint selector logic defined by the custom QoS service defintion.
 		customSelector:        q.qosDefinition.EndpointSelector,
+	}
+}
+
+// TODO_IN_THIS_PR: implement this method.
+func (q *QoS) buildEndpointChecksContext(endpointAddr protocol.EndpointAddr) *EndpointChecksContext {
+	// Ignore the second return value: an empty endpoint is a valid value when determining the required endpoint checks.
+	endpoint, _ := q.serviceState.GetEndpoint(endpointAddr)
+
+	return &EndpointChecksContext{
+		// Service State (read-only)
+		// Allows the custom QoS service to base the endpoint checks on current state.
+		// Includes the endpoint store in read-only mode.
+		ReadonlyServiceState: q.serviceState,
+
+		// Endpoint loaded from the endpoint store.
+		Endpoint: endpoint,
+
+		// Custom service's Endpoint Checks function
+		endpointChecksBuilder: q.qosDefinition.EndpointChecksBuilder,
 	}
 }
 

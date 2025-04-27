@@ -16,6 +16,9 @@ type Endpoint struct {
 	//     IntValues: {"balance": 133456789},
 	//   }
 	queryResults map[string]*EndpointQueryResult
+
+	// mutex for query results
+	resultsMu sync.Mutex
 }
 
 // GetQueryResultStringValue retrieves a string attribute of a result by key.
