@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 // ResultBuilder is implemented by custom service implementations to build an EndpointResult from an endpointCall.
 // It processes a valid JSONRPC response for a specific method and extracts the relevant data or error information.

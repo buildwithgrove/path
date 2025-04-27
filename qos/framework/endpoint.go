@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 // TODO_TECHDEBT(@adshmh): Persist this state (which may include sanctions) across restarts to maintain endpoint exclusions.
 // TODO_MVP(@adshmh): add support for removing expired query results.

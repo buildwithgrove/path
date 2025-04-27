@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 // endpointQuery represents a raw communication attempt with an endpoint.
 // Instantiated by: RequestQoSContext.

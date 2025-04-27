@@ -8,7 +8,7 @@
 //
 // Users implement the QoSDefinition interface to create custom QoS services that
 // leverage the framework's request handling, endpoint management, and state tracking.
-package jsonrpc
+package framework
 
 // TODO_FUTURE(@adshmh): Provide reasonable defaults for components to enable a no-config JSONRPC service QoS.
 //

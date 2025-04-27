@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 type requestErrorKind int
 const (

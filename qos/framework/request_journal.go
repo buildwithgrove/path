@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 // TODO_IN_THIS_PR: verify the EmptyResponse and NoResponse scenarios:
 // - EmptyResponse is an EndpointQueryResult, because the endpoint did return an empty payload.

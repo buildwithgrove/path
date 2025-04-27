@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 func (re *requestError) buildObservation() *qosobservations.ValidationError {
 	return &qosobservations.ValidationError {

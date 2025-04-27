@@ -1,4 +1,4 @@
-package jsonrpc
+package framework
 
 import (
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
