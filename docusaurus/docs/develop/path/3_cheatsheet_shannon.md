@@ -57,19 +57,19 @@ below to get a feel for the end-to-end process.
 **Prepare a gateway stake config:**
 
 ```bash
-cat <<EOF >>/tmp/stake_gateway_config.yaml
+cat <<🚀 > /tmp/stake_gateway_config.yaml
 stake_amount: 1000000upokt
-EOF
+🚀
 ```
 
 **Prepare an application stake config:**
 
 ```bash
-cat <<EOF > /tmp/stake_app_config.yaml
+cat <<🚀 > /tmp/stake_app_config.yaml
 stake_amount: 100000000upokt
 service_ids:
-- "anvil"
-EOF
+  - "anvil"
+🚀
 ```
 
 **Create gateway and application accounts in your keyring:**
@@ -141,6 +141,12 @@ pocketd keys show -a application
 ```
 
 ## 2. Configure PATH for Shannon
+
+:::tip
+
+If you are arriving here from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) in the `poktroll` documentation, you should start the walkthrough from [2.1 Generate Shannon Config](#21-generate-shannon-config).
+
+:::
 
 ### 2.1 Generate Shannon Config
 
