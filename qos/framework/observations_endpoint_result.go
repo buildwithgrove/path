@@ -49,13 +49,20 @@ func (eqr *EndpointQueryResult) buildObservation() *observations.EndpointQueryRe
 
 // extractEndpointQueryResultFromObservation extracts a single EndpointQueryResult from an observation's EndpointQueryResult
 // Ignores the HTTP stauts code: it is only required when responding to the client.
-func extractEndpointQueryResultFromObservation(obsResult *observations.EndpointQueryResult) *EndpointQueryResult {
+func extractEndpointQueryResultFromObservation(
+	endpointQuery *endpointQuery,
+	obsResult *observations.EndpointQueryResult,
+) *EndpointQueryResult {
 	if obsResult == nil {
 		return nil
 	}
 	
 	// Create a new result and populate it from the observation
 	result := &EndpointQueryResult{
+		// Set the endpointQuery underlying the observations.
+		endpointQuery: endpointQuery,
+
+		// Set the result values to be copied from the observations.
 		StringValues: make(map[string]string),
 		IntValues:    make(map[string]int),
 		ExpiryTime:   timeFromProto(obsResult.ExpiryTime),

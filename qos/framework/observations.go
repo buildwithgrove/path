@@ -1,9 +1,7 @@
 package framework
 
 import (
-	"github.com/buildwithgrove/path/observation/qos/jsonrpc"
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // getObservations returns the set of observations for the requestJournal.

@@ -21,7 +21,7 @@ type QoS struct {
 	// Logger for diagnostics
 	logger polylog.Logger
 
-	serviceState *serviceState
+	serviceState *ServiceState
 
 	// The definitoin of QoS behavior, supplied by the custom QoS service.
 	qosDefinition QoSDefinition
@@ -47,19 +47,28 @@ func (s *QoS) ParseHTTPRequest(
 	// check if the request processing flow should continue.
 	shouldContinue := requestDetails.getRequestErrorJSONRPCResponse() != nil
 
-	rturn requestCtx, shouldContinue
+	return requestCtx, shouldContinue
 }
 
 // TODO_IN_THIS_PR: implement this method
 // func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool)
 
-func (s *QoS) ApplyObservations(observations *qosobservations.Observations) error
-) {
-	jsonrpcSvcObservations := observations.GetJsonrpc()
-	endpointQueries := extractEndpointQueriesFromObservations(jsonrpcSvcObservations)
+func (q *QoS) ApplyObservations(observations *qosobservations.Observations) error {
+	serviceRequestObservations := observations.GetJsonrpc()
+
+	// Validate the Service Name
+	if serviceRequestObservations.ServiceName != q.qosDefinition.ServiceName {
+		return fmt.Errorf("Reported observations mismatch: service name %q, expected %q", serviceRequestObservations.ServiceName, q.qosDefinitions.ServiceName)
+	}
+
+	// Construct the endpoint query underlying the observations
+	endpointQuery := extractEndpointQueryFromObservations(serviceRequestObservations)
+
+	// Construct the query results using the observations.
+	endpointQueryResults := extractEndpointQueryResultsFromObservations(endpointQuery, serviceRequestObservations.GetEndpointQueryResultObservations())
 
 	// update the stored endpoints
-	updatedEndpoints := s.serviceState.updateStoredEndpoints(endpointQueries)
+	updatedEndpoints := s.serviceState.updateStoredEndpoints(endpointQueryResults)
 
 	// instantiate a state update context.
 	stateUpdateCtx := s.buildServiceStateUpdateContext()

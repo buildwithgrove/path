@@ -1,4 +1,4 @@
-package evm
+package framework
 
 // TODO_IN_THIS_PR: define, in the framework package, a context for adding QoS endpoint quality checks:
 // - Struct name: QualityCheckContext

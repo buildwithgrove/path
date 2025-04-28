@@ -71,11 +71,11 @@ func (s *ServiceState) GetConsensusParam(paramName string) (map[string]int, bool
 }
 
 // Returns the stored Endpoint structs matching the endpoint queries.
-func (s *serviceState) updateStoredEndpoints(endpointQueries []*endpointQuery) []Endpoint {
+func (s *serviceState) updateStoredEndpoints(endpointQueryResults []*EndpointQueryResult) []*Endpoint {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.endpointStore.updateEndpoints(endpointQueries)
+	return s.endpointStore.updateStoredEndpoints(endpointQueryResults)
 }
 
 func (s *ServiceState) updateParameters(updates StateParameterUpdateSet) error {

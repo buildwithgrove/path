@@ -2,6 +2,7 @@ package framework
 
 import (
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
@@ -13,7 +14,7 @@ import (
 type EndpointSelectionContext struct {
 	// Allows direct Get calls on the current service state.
 	// It is read only: this is not the context for updating service state.
-	*ReadonlyServiceState
+	*ServiceState
 
 	// Supplied from the Custom QoS service definition.
 	// Used to select an endpoint among those without an active sanction.
@@ -65,7 +66,7 @@ func (ctx *EndpointSelectionContext) Select(availableEndpoints []protocol.Endpoi
 }
 
 // Select marks an endpoint as selected.
-func (ctx *EndpointSelectionContext) Select(endpoint Endpoint) *EndpointSelectionContext {
+func (ctx *EndpointSelectionContext) SelectEndpoint(endpoint Endpoint) *EndpointSelectionContext {
 	ctx.selected = append(ctx.selected, endpoint)
 	return ctx
 }

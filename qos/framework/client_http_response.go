@@ -1,7 +1,10 @@
 package framework
 
 import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // ClientHTTPResponse implements the gateway.HTTPResponse interface
@@ -88,7 +91,7 @@ func BuildInternalErrorHTTPResponse(logger polylog.Logger) gateway.HTTPResponse 
 }
 
 // BuildErrorHTTPResponse creates an HTTP response for an error response.
-func BuildErrorHTTPResponse(logger polylog.Logger, errResp *jsonrpc.ErrorResponse) gateway.HTTPResponse {
+func BuildErrorHTTPResponse(logger polylog.Logger, errResp *jsonrpc.ResponseError) gateway.HTTPResponse {
 	payload, err := MarshalErrorResponse(logger, errResp)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to marshal error response")
@@ -97,7 +100,7 @@ func BuildErrorHTTPResponse(logger polylog.Logger, errResp *jsonrpc.ErrorRespons
 }
 
 // BuildSuccessHTTPResponse creates an HTTP response for a successful JSONRPC response.
-func BuildSuccessHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.JsonRpcResponse) gateway.HTTPResponse {
+func BuildSuccessHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.Response) gateway.HTTPResponse {
 	response := jsonrpc.Response{
 		ID:      jsonrpcResp.Id,
 		JSONRPC: jsonrpc.Version2,
@@ -107,19 +110,10 @@ func BuildSuccessHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.JsonRp
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to marshal JSONRPC response")
 		errResp := newErrResponseMarshalError(response.ID, err)
-		errPayload, _ := MarshalErrorResponse(logger, errResp)
+		errPayload, _ := marshalErrorResponse(logger, errResp)
 		return NewHTTPResponse(errResp.GetRecommendedHTTPStatusCode(), errPayload)
 	}
 	return NewHTTPResponse(response.GetRecommendedHTTPStatusCode(), payload)
-}
-
-// MarshalErrorResponse marshals an error response to JSON.
-func MarshalErrorResponse(logger polylog.Logger, errResp *jsonrpc.ErrorResponse) ([]byte, error) {
-	payload, err := errResp.MarshalJSON()
-	if err != nil && logger != nil {
-		logger.Error().Err(err).Msg("Failed to marshal error response")
-	}
-	return payload, err
 }
 
 // NewHTTPResponse creates a new HTTP response with the given status code and payload.

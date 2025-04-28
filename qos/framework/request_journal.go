@@ -1,5 +1,11 @@
 package framework
 
+import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos/framework"
+)
+
 // TODO_IN_THIS_PR: verify the EmptyResponse and NoResponse scenarios:
 // - EmptyResponse is an EndpointQueryResult, because the endpoint did return an empty payload.
 // - NoReponse is a requestError: e.g. there may have been ZERO ENDPOINTS available at the PROTOCOL-LEVEL.
@@ -21,20 +27,22 @@ type requestJournal struct {
 	requestDetails *requestDetails	
 
 	// All endpoint interactions that occurred during processing.
-	// These are expected to be processed: i.e. have a non-nil result pointer and a client JSONRPC response.
-	processedEndpointQueries []*endpointQuery
+	endpointQueryResults []*EndpointQueryResult
 }
 
 func (rj *requestJournal) buildEndpointQuery(endpointAddr protocol.EndpointAddr, receivedData []byte) *endpointQuery {
 	return &endpointQuery{
-		request:      rj.request,
+		// JSONRPC request underlying the endpoint query.
+		request:      rj.requestDetails.request,
+		// Address of the queried endpoint.
 		endpointAddr: endpointAddr,
+		// Data received from the endpoint.
 		receivedData: receivedData,
 	}
 }
 
-func (rj *requestJournal) reportProcessedEndpointQuery(processedEndpointQuery endpointQuery) {
-	rj.endpointQueries = append(rj.endpointQueries, processedEndpointQuery)
+func (rj *requestJournal) reportEndpointQueryResult(endpointQueryResult *EndpointQueryResult) {
+	rj.endpointQueryResults = append(rj.endpointQueryResults, endpointQueryResult)
 }
 
 func (rj *requestJournal) getServicePayload() protocol.Payload {
@@ -84,4 +92,23 @@ func (rj *requestJournal) getHTTPResponse() gateway.HTTPResponse {
 	selectedQuery := rj.processedEndpointQueries[len(rj.processedEndpointQueries)-1]
 	jsonrpcResponse := selectedQuery.result.clientJSONRPCResponse
 	return buildHTTPResponse(rj.Logger, jsonrpcResponse)
+}
+
+func (rj *requestJournal) buildObservations() qosobservations.Observations {
+	observations := qosobservations.Observations {
+		ServiceName: rj.serviceName,
+		RequestObservation: rj.requestDetails.buildObservations(),
+	}
+
+	if len(rj.endpointQueryResults) == 0 {
+		return observations
+	}
+
+	endpointObservations := make([]*qosobservations.EndpointObservation, len(rj.endpointQueryResults))
+	for index, endpointQueryResult := range rj.endpointQueryResults {
+		endpointObservation[index] = endpointQueryResult.buildObservations()
+	}
+
+	observations.EndpointQueryResultObservations = endpointObservations
+	return observations
 }

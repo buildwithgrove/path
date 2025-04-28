@@ -155,16 +155,17 @@ func (x *RequestError) GetJsonrpcRequest() *JsonRpcRequest {
 	return nil
 }
 
-// TODO_IN_THIS_PR: use `oneof` below: either the request is set, or the validationerror
 // RequestObservation captures details about the original client request.
 type RequestObservation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Only set if validation was successful
+	// Only set if parsing and basic JSONRPC validation was successful.
 	JsonrpcRequest *JsonRpcRequest `protobuf:"bytes,1,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3,oneof" json:"jsonrpc_request,omitempty"`
-	// Only set if the request failed
+	// Only set if the request failed.
+	// A parsed request can still have error set:
+	// e.g. if the QoS service does not support the JSONRPC request's method.
 	RequestError *RequestError `protobuf:"bytes,2,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
 }
 

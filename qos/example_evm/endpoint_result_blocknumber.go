@@ -19,7 +19,7 @@ var _ framework.EndpointResultBuilder = responseBuilderBlockNumber
 // TODO_TECHDEBT(@adshmh): validate the `eth_blockNumber` request that was sent to the endpoint.
 //
 // responseBuilderBlockNumber handles attribute building and sanctioning of endpoints based on the data returned to `eth_blockNumber` requests.
-func responseBuilderBlockNumber(ctx *framework.EndpointResultContext) *framework.ResultData {
+func responseBuilderBlockNumber(ctx *framework.EndpointQueryResultContext) *framework.EndpointQueryResult {
 	// TODO_MVP(@adshmh): implement the framework's RequestValidator interface to filter out invalid `eth_blockNumber` requests.
 	//
 	// The endpoint returned an error response: no further processing needed.
@@ -33,7 +33,7 @@ func responseBuilderBlockNumber(ctx *framework.EndpointResultContext) *framework
 	// The endpoint returned an error: no need to do further processing of the response.
 	blockNumber, err := ctx.GetResultAsInt()
 	if err != nil {
-		return ctx.SanctionEndpoint(5 * time.Minute, "endpoint returned malformed response to eth_blockNumber")
+		return ctx.SanctionEndpoint(5 * time.Minute, fmt.Sprintf("endpoint returned malformed response to eth_blockNumber: %v", err))
 	}
 
 	// Sanction the endpoint if it returned an invalid block number.

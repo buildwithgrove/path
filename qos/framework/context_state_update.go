@@ -16,9 +16,9 @@ type StateUpdateContext struct {
 	paramsToUpdate *StateParameterUpdateSet 
 }
 
-func (ctx *StateUpdateContext) updateFromEndpoints(updatedEndpoints) error {
+func (ctx *StateUpdateContext) updateFromEndpoints(updatedEndpoints []*Endpoint) error {
 	// get the list of params to update by calling the custom state updater.
-	paramsToUpdate := ctx.stateUpdater(ctx)
+	paramsToUpdate := ctx.stateUpdater(ctx, updatedEndpoints)
 
 	// Update the state parameters through the service state.
 	return ctx.ServiceState.updateParameters(paramsToUpdate)

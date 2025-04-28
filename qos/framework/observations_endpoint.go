@@ -4,17 +4,9 @@ import (
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
 )
 
-func (eq *endpointQuery) buildObservations() *qosobservations.EndpointObservation {
-	return &qosobservations.EndpointObservation{
-		EndpointAddr: string(eq.endpointAddr),
-		EndpointQueryResult: result.buildObservation(), 
-	}
-}
-
-func extractEndpointQueryFromObservation(observation *qosobservations.EndpointObservation) *endpointQuery {
+func extractEndpointQueryFromObservation(observation *qosobservations.Observations) *endpointQuery {
 	return &endpointQuery {
-		endpointAddr: observation.GetEndpointAddr(),
-		// Single result item extracted from this endpoint query.
-		result: extractEndpointQueryResultFromObservation(observation.GetResult()),
+		// Extract the JSONRPC request corresponding to the observation.
+		request: extractJSONRPCRequestFromObservation(observation.GetRequestObservation()),
 	}
 }

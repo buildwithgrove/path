@@ -1,5 +1,9 @@
 package framework
 
+import (
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
 type requestErrorKind int
 const (
 	_ requestErrorKind = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.

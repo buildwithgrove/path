@@ -10,6 +10,12 @@
 // leverage the framework's request handling, endpoint management, and state tracking.
 package framework
 
+import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
+)
+
 // TODO_FUTURE(@adshmh): Provide reasonable defaults for components to enable a no-config JSONRPC service QoS.
 //
 // QoSDefinition contains all custom behavior for a JSONRPC QoS service.
@@ -18,8 +24,9 @@ type QoSDefinition struct {
 	// Logger for service logs. If nil, a default logger is used
 	Logger polylog.Logger
 
-	// ServiceInfo identifies and describes the service
-	ServiceInfo ServiceInfo
+	// ServiceName identifies and describes the service.
+	// e.g. "ETH"
+	ServiceName string
 
 	// ResultBuilders maps JSONRPC methods to custom result processing logic
 	ResultBuilders map[string]EndpointQueryResultBuilder
@@ -45,6 +52,10 @@ type QoSDefinition struct {
 }
 
 // EndpointQueryResultBuilder processes a response and extracts the relevant result.
+// It is implemented by the custom service implementations to extract result(s) from an endpoint query.
+// It processes a valid JSONRPC response for a specific method and extracts the relevant data or error information.
+// It can potentially mark a JSONRPC response as invalid:
+// For example if the result field cannot be parsed into a number in an endpoint's response to an `eth_blockNumber` request.
 type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
 
 // StateUpdater updates service state based on endpoint results

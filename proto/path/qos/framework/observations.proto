@@ -4,7 +4,7 @@ package path.qos.framework;
 option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
 
 import "path/qos/framework/request.proto";  // Import RequestObservation
-import "path/qos/framework/endpoint.proto"; // Import EndpointObservation
+import "path/qos/framework/endpoint_query_result.proto"; // Import EndpointQueryResult
 
 // Observations is the top-level container for all QoS observations for a request.
 message Observations {
@@ -15,5 +15,5 @@ message Observations {
   RequestObservation request_observation = 2;
   
   // Observations from endpoint(s)
-  repeated EndpointObservation endpoint_observations = 3;
+  repeated EndpointQueryResult endpoint_quey_result_observations = 3;
 }

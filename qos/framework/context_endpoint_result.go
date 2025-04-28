@@ -1,10 +1,8 @@
 package framework
 
-// ResultBuilder is implemented by custom service implementations to build an EndpointResult from an endpointCall.
-// It processes a valid JSONRPC response for a specific method and extracts the relevant data or error information.
-// It can potentially makr a JSONRPC response as invalid:
-// For example if the result field cannot be parsed into a number in a response to an `eth_blockNumber` request.
-type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
+import (
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
 
 // TODO_IN_THIS_PR: add hydratedLoggers.
 //
@@ -14,25 +12,37 @@ type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQ
 // Provides a fluent API for custom service implementations to create endpoint query results without directly constructing types.
 type EndpointQueryResultContext struct {
 	// Allows direct Get calls on the current service state.
-	// It is read only: this is not the context for updating service state.
-	*ReadonlyServiceState
+	// ServiceState's public methods provide read only access: this is not the context for updating service state.
+	*ServiceState
+
+	// Tracks the result of the endpoint query.
+	// Declared public to expose EndpointQueryResult's setter/getter methods.
+	*EndpointQueryResult
 
 	// Custom result builders, supplied by the QoS Definition.
-	jsonrpcMethodResultBuilders map[string]EndpointQueryResultBuilder
-
-	// Response is the parsed JSON-RPC response received from the endpoint.
-	response *jsonrpc.JsonRpcResponse
+	jsonrpcMethodResultBuilders map[jsonrpc.Method]EndpointQueryResultBuilder
 }
+
+// ===> TODO_IN_THIS_PR: find a better name to signal to the client they should call this when done with updating the EndpointQueryResult.
+func (ctx *EndpointQueryResultContext) Success() *EndpointQueryResult {
+	return &ctx.endpointQueryResult
+}
+
+
 
 // buildResult uses the supplied method builder to build the EndpointResult for the supplied endpointQuery.
 // A default builder is used if no matches were found for the request method.
 // Returns the endpointQuery augmented with the endpoint result.
-func (ctx *EndpointResultContext) buildEndpointQueryResult(endpointQuery *endpointQuery) *endpointQuery {
-	parsedEndpointQuery, shouldContinue := ctx.parseEndpointPayload(endpointQuery)
+func (ctx *EndpointQueryResultContext) buildEndpointQueryResult() *EndpointQueryResult {
+	// Parse the endpoint's payload into JSONRPC response.
+	// Stores the parsed JSONRPC response in the endpointQuery.
+	shouldContinue := ctx.updateEndpointQueryWithParsedResponse()
+
+	// Parsing failed: skip the rest of the processing.
 	if !shouldContinue {
 		// parsing the request failed: stop the request processing flow.
 		// Return a failure result for building the client's response and observations.
-		return parsedEndpointQuery
+		return ctx.EndpointQueryResult
 	}
 
 	// Use the custom endpoint query result builder, if one is found matching the JSONRPC request's method.
@@ -42,20 +52,26 @@ func (ctx *EndpointResultContext) buildEndpointQueryResult(endpointQuery *endpoi
 		builder = defaultResultBuilder
 	}
 
-	// Process the result using service-specific processor with the context
-	parsedEndpointQuery.result = builder(ctx)
+	// Process the result using custom service's result processor.
+	// Pass the context to the builder to provide helper methods.
+	queryResult := builder(ctx)
 
-	// Return the updated endpoint query.
-	return parsedEndpointQuery
+	// Return the endpoint query result.
+	return queryResult
 }
 
 // TODO_IN_THIS_PR: define/allow customization of sanctions for endpoint errors: e.g. malformed response.
 //
-// parseEndpointPayload parses the payload from an endpoint and handles empty responses and parse errors.
-// It returns the result and a boolean indicating whether processing should continue (true) or stop (false).
-func (ctx *EndpointResultContext) parseEndpointPayload(endpointQuery *endpointQuery) (*endpointQuery, bool) {
+// parseEndpointQuery parses the payload from an endpoint and handles empty responses and parse errors.
+// It returns a boolean indicating whether processing should continue (true) or stop (false).
+func (ctx *EndpointQueryResultContext) updateEndpointQueryWithParsedResponse() bool {
+	logger := ctx.getHydratedLogger()
+
+	endpointQuery := ctx.EndpointQueryResult.endpointQuery
+
 	// Check for empty response
 	if len(endpointQuery.receivedData) == 0 {
+		ctx.logger.Info()
 		endpointQuery.result = buildResultForEmptyResponse(endpointQuery)
 		return endpointQuery, false
 	}
@@ -82,66 +98,8 @@ func (ctx *EndpointResultContext) parseEndpointPayload(endpointQuery *endpointQu
 	return endpointQuery, true
 }
 
-// Success creates a success result with the given value.
-func (ctx *ResultBuilderContext) Success(value string) *ResultData {
-	valuePtr := &value
-	return &ResultData{
-		Type:  ctx.Method,
-		Value: valuePtr,
-	}
-}
+// TODO_IN_THIS_PR: implement.
+func (ctx *EndpointQueryResultContext) getHydratedLogger() polylog.Logger() {
+	// hydrate the logger with endpointQuery fields.
 
-// ErrorResult creates an error result with the given message and no sanction.
-func (ctx *ResultBuilderContext) ErrorResult(description string) *ResultData {
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			kind:        EndpointDataErrorKindInvalidResult,
-		},
-		CreatedTime: time.Now(),
-	}
-}
-
-// SanctionEndpoint creates an error result with a temporary sanction.
-func (ctx *ResultBuilderContext) SanctionEndpoint(description, reason string, duration time.Duration) *ResultData {
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			RecommendedSanction: &SanctionRecommendation{
-				Sanction: Sanction{
-					Type:        SanctionTypeTemporary,
-					Reason:      reason,
-					ExpiryTime:  time.Now().Add(duration),
-					CreatedTime: time.Now(),
-				},
-				SourceDataType: ctx.Method,
-				TriggerDetails: description,
-			},
-			kind: EndpointDataErrorKindInvalidResult,
-		},
-		CreatedTime: time.Now(),
-	}
-}
-
-// PermanentSanction creates an error result with a permanent sanction.
-func (ctx *ResultBuilderContext) PermanentSanction(description, reason string) *ResultData {
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			RecommendedSanction: &SanctionRecommendation{
-				Sanction: Sanction{
-					Type:        SanctionTypePermanent,
-					Reason:      reason,
-					CreatedTime: time.Now(),
-				},
-				SourceDataType: ctx.Method,
-				TriggerDetails: description,
-			},
-			kind: EndpointDataErrorKindInvalidResult,
-		},
-		CreatedTime: time.Now(),
-	}
 }

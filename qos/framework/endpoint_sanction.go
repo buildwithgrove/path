@@ -1,9 +1,11 @@
 package framework
 
+import (
+	"time"
+)
 // ======================
 // Sanction Types
 // ======================
-
 // SanctionType identifies different types of endpoint sanctions.
 type SanctionType int
 

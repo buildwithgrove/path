@@ -141,22 +141,6 @@ func newErrResponseInvalidRequest(err error, requestID jsonrpc.ID) jsonrpc.Respo
 	)
 }
 
-// newErrResponseMarshalError creates a JSON-RPC error response for marshaling errors.
-// This response:
-// - Preserves the original request ID if available
-// - Marks error as retryable
-// - Indicates the response couldn't be serialized
-func newErrResponseMarshalError(requestID jsonrpc.ID, marshalErr error) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
-		requestID,
-		ErrorCodeInternalError,
-		fmt.Sprintf("Failed to marshal response: %s", marshalErr.Error()),
-		map[string]string{
-			"retryable": "true",
-		},
-	)
-}
-
 // newErrResponseInvalidVersionError creates a JSON-RPC error response for invalid version errors.
 // This response:
 // - Preserves the original request ID
@@ -223,9 +207,9 @@ func newErrResponseParseRequestError(parseErr error) jsonrpc.Response {
 	)
 }
 
-// MarshalErrorResponse marshals a JSONRPC error response to JSON.
+// marshalErrorResponse marshals a JSONRPC error response to JSON.
 // This handles the serialization of the error response to bytes.
-func MarshalErrorResponse(
+func marshalErrorResponse(
 	logger polylog.Logger,
 	response jsonrpc.Response,
 ) ([]byte, error) {

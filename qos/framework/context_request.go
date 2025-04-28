@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/gateway"
+	qosobservations "github.com/buildwithgrove/path/observation/qos/framework"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
@@ -73,13 +75,14 @@ func (rc *requestQoSContext) UpdateWithResponse(endpointAddr protocol.EndpointAd
 	// Instantiate an endpointQuery to capture the interaction with the service endpoint.
 	endpointQuery := rc.journal.buildEndpointQuery(endpointAddr, receivedData)
 
-	resultCtx := rc.contextBuilder.buildEndpointQueryResultContext()
+	// Instantiate a result context using the endpointQuery.
+	resultCtx := rc.contextBuilder.buildEndpointQueryResultContext(endpointQuery)
 
-	// Process the endpointQuery using the correct context.
-	processedEndpointQuery := resultCtx.buildEndpointQueryResult(endpointQuery)
+	// Build an endpoint query result using the context.
+	endpointQueryResult := resultCtx.buildEndpointQueryResult()
 
-	// Track the processed result in the request journal
-	rc.journal.reportProcessedEndpointQuery(processedEndpointQuery)
+	// Track the result in the request journal.
+	rc.journal.reportEndpointQueryResult(endpointQueryResult)
 }
 
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into single JSONRPC requests and tracking endpoints' response(s) to each.
@@ -104,7 +107,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	rc.checkForProtocolLevelError()
 
 	// Use the request journal to generate the observations.
-	return rc.journal.getObservations()
+	return rc.journal.buildObservations()
 }
 
 // Build and returns an instance EndpointSelectionContext to perform endpoint selection for the client request.

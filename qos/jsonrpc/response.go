@@ -18,7 +18,7 @@ type Response struct {
 	// Result captures the result field of the JSONRPC spec.
 	// It is allowed to be any arbitrary value as permitted by the spec.
 	// It is required on success and must not exist if there was an error invoking the method.
-	Result any `json:"result,omitempty"`
+	Result []byte `json:"result,omitempty"`
 	// Error captures the error field of the JSONRPC spec.
 	// Is is required on error and must not exist if there was no error triggered during invocation.
 	Error *ResponseError `json:"error,omitempty"`
@@ -42,6 +42,18 @@ func (r Response) Validate(reqID ID) error {
 
 func (r Response) GetResultAsBytes() ([]byte, error) {
 	return json.Marshal(r.Result)
+}
+
+func (r Response) GetResultAsInt() (int, error) {
+	var intValue int
+	err := json.Unmarshal(&intValue, r.Result)
+	return intValue, err
+}
+
+func (r Response) GetResultAsStr() (string, error) {
+	var strValue string
+	err := json.Unmarshal(&strValue, r.Result)
+	return strValue, err
 }
 
 // GetErrorResponse is a helper function that builds a JSONRPC Response using the supplied ID and error values.
