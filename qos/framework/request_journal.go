@@ -24,7 +24,12 @@ type requestJournal struct {
 	// Service identification
 	serviceName string
 
-	requestDetails *requestDetails	
+	// The client's JSONRPC request
+	// Only set if the request was successfully parsed.
+	request *jsonrpc.Request
+
+	// Request error, if any.
+	requestError *requestError
 
 	// All endpoint interactions that occurred during processing.
 	endpointQueryResults []*EndpointQueryResult
