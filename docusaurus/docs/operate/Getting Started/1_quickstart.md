@@ -128,3 +128,9 @@ Once PATH is running successfully:
 - Configure your client applications to connect to PATH
 - Monitor PATH's performance and logs as needed
 - For more advanced configuration options, refer to the [full documentation](https://path.grove.city/develop/path)
+
+:::warning TODO - Test instructions
+
+TODO_IMPROVE(@adshmh): Add additional instructions on how to test this and improve next steps
+
+:::
