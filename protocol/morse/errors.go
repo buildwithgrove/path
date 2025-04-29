@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/pokt-foundation/pocket-go/provider"
 )
 
 // Error definitions for the Morse protocol
@@ -35,14 +37,27 @@ var (
 	// ErrInvalidResponse is returned when an endpoint returns an invalid response
 	ErrInvalidResponse = errors.New("invalid response from endpoint")
 
-	// ErrMisconfigured is returned when an endpoint is misconfigured
-	ErrMisconfigured = errors.New("endpoint is misconfigured")
+	// ErrPocketCore is returned whan an endpoint returns an SDK or Pocket-core error.
+	ErrPocketCore = errors.New("endpoint returned SDK/Pocket-Core error.")
+
+	// ErrSDK4XX is the Morse SDK's 4XX error.
+	// https://github.com/pokt-foundation/pocket-go/blob/0cb5a3a2ab762e7af18b3482f864d2d9d211a71f/provider/provider.go#L24
+	ErrSDK4XX = provider.Err4xxOnConnection
+
+	// ErrSDK5XX is the Morse SDK's 5XX error.
+	// https://github.com/pokt-foundation/pocket-go/blob/0cb5a3a2ab762e7af18b3482f864d2d9d211a71f/provider/provider.go#L26
+	ErrSDK5XX = provider.Err5xxOnConnection
 
 	// ErrTLSCertificateVerificationFailed is returned when TLS certificate verification failed
 	ErrTLSCertificateVerificationFailed = errors.New("TLS certificate verification failed")
 
 	// ErrNonJSONResponse is returned when an endpoint returns a non-JSON response
 	ErrNonJSONResponse = errors.New("non JSON response received from endpoint")
+
+	// ErrHTTPContentLengthIncorrect is returned when an endpoint returns an HTTP response with a mismatch between:
+	// - The ContentLength HTTP header
+	// - Actual body length
+	ErrHTTPContentLengthIncorrect = errors.New("endpoint returned HTTP response with ContentLength mismatching the actual length.")
 )
 
 // NewNoEndpointsError creates a formatted error for when no endpoints are available
@@ -91,7 +106,8 @@ func extractErrFromRelayError(err error) error {
 		errors.Is(err, ErrNoEndpointsAvailable) ||
 		errors.Is(err, ErrEndpointNotFound) ||
 		errors.Is(err, ErrMaxedOut) ||
-		errors.Is(err, ErrMisconfigured) {
+		errors.Is(err, ErrSDK4XX) ||
+		errors.Is(err, ErrSDK5XX) {
 		return err
 	}
 
@@ -103,9 +119,13 @@ func extractErrFromRelayError(err error) error {
 		return ErrMaxedOut
 	}
 
-	// Check for endpoint misconfiguration errors
-	if isEndpointRejectingAValidChain(errStr) {
-		return ErrMisconfigured
+	// Check for endpoint SDK/Pocket-Core errors.
+	if isEndpointPocketCoreError(errStr) {
+		return ErrPocketCore
+	}
+
+	if isEndpointHTTPContentLengthMismatchErr(errStr) {
+		return ErrHTTPContentLengthIncorrect
 	}
 
 	// Check for TLS certificate verification errors
@@ -148,17 +168,30 @@ func isEndpointMaxedOutError(errStr string) bool {
 	)
 }
 
-// isEndpointRejectingAValidChain checks if the error string indicates the endpoint rejected a valid chain
-// The error message contains specific sections which are checked to identify this error type
-func isEndpointRejectingAValidChain(errStr string) bool {
+// isEndpointHTTPContentLengthMismatchErr checks if the error indicates a mismatch in the endpoint's HTTP response between:
+// - The `ContentLength` header, and
+// - Actual body length.
+func isEndpointHTTPContentLengthMismatchErr(errStr string) bool {
+	return matchesAllSubstrings(
+		errStr,
+		[]string{
+			"Post",
+			"v1/client/relay",
+			"http: ContentLength=",
+			"with Body length",
+		},
+	)
+}
+
+// isEndpointPocketCoreError checks if the error string indicates any SDK/Pocket-core errors.
+// The error message contains specific sections which are checked to identify this error type.
+func isEndpointPocketCoreError(errStr string) bool {
 	return matchesAllSubstrings(
 		errStr,
 		[]string{
 			"codespace: sdk",
 			"code: 1",
 			"codespace: pocketcore",
-			"code: 26",
-			"blockchain in the relay request is not supported on this node",
 		},
 	)
 }
