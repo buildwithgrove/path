@@ -59,7 +59,7 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
-	// The length of the request payload.
+	// The length of the request payload in bytes.
 	requestPayloadLength uint
 
 	serviceState *serviceState

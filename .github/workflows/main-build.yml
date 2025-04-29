@@ -15,7 +15,6 @@ on:
 jobs:
   build-and-push:
     runs-on: "ubuntu-22.04"
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
