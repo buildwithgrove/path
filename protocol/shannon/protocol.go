@@ -22,6 +22,12 @@ var _ gateway.Protocol = &Protocol{}
 
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
+//
+// A properly initialized fullNode struct can:
+// 1. Return the onchain apps matching a service ID.
+// 2. Fetch a session for a (service,app) combination.
+// 3. Validate a relay response.
+// 4. Etc...
 type FullNode interface {
 	// GetApp returns the onchain application matching the application address
 	GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error)

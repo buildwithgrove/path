@@ -23,9 +23,7 @@ shannon_config:
       # Otherwise, replace with the correct full node GRPC host:port.
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
 
-    # Disable caching of onchain data.
-    # TODO_MVP(@adshmh, #140): As of #140, lazy_mode=false became unsupported
-    # and needs to be added back.
+    # Setting this to true disables all caching of full node data.
     lazy_mode: true
 
   gateway_config:
