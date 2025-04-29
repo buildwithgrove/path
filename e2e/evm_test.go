@@ -62,7 +62,6 @@ type testCase struct {
 	name          string
 	serviceID     protocol.ServiceID
 	archival      bool
-	methods       []jsonrpc.Method
 	serviceParams evmServiceParameters
 	// latencyMultiplier is particularly important for dev/test chains that are slower than mainnet.
 	// For integration tests, we need complete reliability and avoid false positives.
@@ -107,7 +106,6 @@ var (
 		{
 			name:      "anvil (local Ethereum) Load Test",
 			serviceID: "anvil",
-			methods:   shannonBetaTestNetMethods,
 			serviceParams: evmServiceParameters{
 				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
 				callData:        "0x18160ddd",
@@ -123,7 +121,6 @@ var morseTestCases = []testCase{
 	{
 		name:      "F00C (Ethereum) Load Test",
 		serviceID: "F00C",
-		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
 		serviceParams: evmServiceParameters{
 			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
@@ -137,7 +134,6 @@ var morseTestCases = []testCase{
 	{
 		name:      "F021 (Polygon) Load Test",
 		serviceID: "F021",
-		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
 		serviceParams: evmServiceParameters{
 			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -151,7 +147,6 @@ var morseTestCases = []testCase{
 	{
 		name:      "F01C (Oasys) Load Test",
 		serviceID: "F01C",
-		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
 		serviceParams: evmServiceParameters{
 			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -165,7 +160,6 @@ var morseTestCases = []testCase{
 	{
 		name:      "F036 (XRPL EVM Testnet) Load Test",
 		serviceID: "F036",
-		methods:   allEVMTestMethods(),
 		archival:  true, // Use random historical block for archival service
 		serviceParams: evmServiceParameters{
 			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -215,7 +209,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		serviceSummaries[tc.serviceID] = &serviceSummary{
 			serviceID:    tc.serviceID,
 			methodErrors: make(map[jsonrpc.Method]map[string]int),
-			methodCount:  len(tc.methods),
+			methodCount:  len(tc.methodConfigs),
 			totalErrors:  0,
 		}
 
@@ -291,13 +285,18 @@ func runEVMServiceTest(
 	fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n\n", BOLD_BLUE, tc.name, RESET)
 
 	// Validate that all methods have a definition
-	for _, method := range tc.methods {
+	for method := range tc.methodConfigs {
 		if _, exists := tc.methodConfigs[method]; !exists {
 			t.Fatalf("No definition for method %s", method)
 		}
 	}
 
-	progBars, err := newProgressBars(tc.methods, tc.methodConfigs)
+	var methods []jsonrpc.Method
+	for method := range tc.methodConfigs {
+		methods = append(methods, method)
+	}
+
+	progBars, err := newProgressBars(methods, tc.methodConfigs)
 	if err != nil {
 		t.Fatalf("Failed to create progress bars: %v", err)
 	}
@@ -308,7 +307,7 @@ func runEVMServiceTest(
 	}()
 
 	var methodWg sync.WaitGroup
-	for _, method := range tc.methods {
+	for method := range tc.methodConfigs {
 		methodWg.Add(1)
 
 		methodDef := tc.methodConfigs[method]
@@ -398,7 +397,7 @@ func calculateServiceSummary(
 	var methodsWithResults int
 
 	// Validate results for each method and collect summary data
-	for _, method := range tc.methods {
+	for method := range tc.methodConfigs {
 		methodMetrics := results[method]
 
 		// Skip methods with no data
