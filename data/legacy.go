@@ -10,7 +10,7 @@ import (
 //
 // legacyRecord contains all the fields required by the legacy data pipeline.
 type legacyRecord struct {
-	RequestID              string  `json:"request_id"`            // Request's ID
+	TraceID                string  `json:"request_id"`            // Service Request's Trace ID.
 	Region                 string  `json:"region"`                // Region where the gateway serving the request is located (Grove legacy metadata)
 	PortalAccountID        string  `json:"portal_account_id"`     // Portal account ID (Grove legacy metadata)
 	PortalAppID            string  `json:"portal_application_id"` // Portal application ID (Grove legacy metadata)

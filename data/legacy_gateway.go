@@ -15,11 +15,16 @@ func setLegacyFieldsFromGatewayAuthData(
 	legacyRecord *legacyRecord,
 	authObservations *observation.RequestAuth,
 ) *legacyRecord {
-	legacyRecord.RequestID = authObservations.RequestId
+	legacyRecord.TraceID = authObservations.TraceId
 	legacyRecord.Region = authObservations.Region
 
-	legacyRecord.PortalAccountID = authObservations.PortalAccountId
-	legacyRecord.PortalAppID = authObservations.PortalApplicationId
+	portalCredentials := authObservations.GetPortalCredentials()
+	// No Portal Credentials fields set, skip the rest of the processing.
+	if portalCredentials == nil {
+		return legacyRecord
+	}
+	legacyRecord.PortalAccountID = portalCredentials.PortalAccountId
+	legacyRecord.PortalAppID = portalCredentials.PortalApplicationId
 
 	return legacyRecord
 }
