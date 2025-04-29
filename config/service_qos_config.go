@@ -63,6 +63,8 @@ const (
 	defaultCometBFTChainID = "cosmoshub-4"
 )
 
+// TODO_TECHDEBT(@commoddity, #234): Add archival checks for all chains.
+
 // shannonServices is the list of QoS service configs for the Shannon protocol.
 var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***

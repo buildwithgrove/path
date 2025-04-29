@@ -20,6 +20,8 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 **This means no QoS checks are performed for that service and endpoints are selected at random from the network.**
 
+TODO_TECHDEBT(@commoddity, #234): Add archival checks for all chains.
+
 :::
 
 ### Example Hydrator Configuration
@@ -45,10 +47,10 @@ hydrator_config:
 
 | Service Name                                               | Authoritative Service ID | Service QoS Type | Chain ID (if applicable)            | Archival Check Configured |
 | ---------------------------------------------------------- | ------------------------ | ---------------- | ----------------------------------- | ------------------------- |
-| Ethereum - ETH Mainnet                                     | eth                      | EVM              | 1                                   | ✅                         |
-| Polygon                                                    | poly                     | EVM              | 137                                 | ✅                         |
-| Oasys                                                      | oasys                    | EVM              | 248                                 | ✅                         |
-| XRPL EVM Testnet                                           | xrpl_evm_testnet         | EVM              | 1449000                             | ✅                         |
+| Ethereum - ETH Mainnet                                     | eth                      | EVM              | 1                                   | ✅                        |
+| Polygon                                                    | poly                     | EVM              | 137                                 | ✅                        |
+| Oasys                                                      | oasys                    | EVM              | 248                                 | ✅                        |
+| XRPL EVM Testnet                                           | xrpl_evm_testnet         | EVM              | 1449000                             | ✅                        |
 | Anvil - Ethereum development/testing                       | anvil                    | EVM              | 31337                               |                           |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws                  | EVM              | 31337                               |                           |
 | Arbitrum One                                               | arb_one                  | EVM              | 42161                               |                           |
@@ -109,10 +111,10 @@ hydrator_config:
 
 | Service Name                        | Authoritative Service ID | Service QoS Type | Chain ID (if applicable)            | Archival Check Configured |
 | ----------------------------------- | ------------------------ | ---------------- | ----------------------------------- | ------------------------- |
-| Ethereum                            | F00C                     | EVM              | 1                                   | ✅                         |
-| Polygon                             | F021                     | EVM              | 137                                 | ✅                         |
-| Oasys                               | F01C                     | EVM              | 248                                 | ✅                         |
-| XRPL EVM Testnet                    | F036                     | EVM              | 1449000                             | ✅                         |
+| Ethereum                            | F00C                     | EVM              | 1                                   | ✅                        |
+| Polygon                             | F021                     | EVM              | 137                                 | ✅                        |
+| Oasys                               | F01C                     | EVM              | 248                                 | ✅                        |
+| XRPL EVM Testnet                    | F036                     | EVM              | 1449000                             | ✅                        |
 | Arbitrum One                        | F001                     | EVM              | 42161                               |                           |
 | Arbitrum Sepolia Testnet            | F002                     | EVM              | 421614                              |                           |
 | Avalanche                           | F003                     | EVM              | 43114                               |                           |
