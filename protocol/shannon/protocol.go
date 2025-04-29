@@ -116,7 +116,7 @@ func (p *Protocol) AvailableEndpoints(
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("error getting the permitted apps list: relay request will fail.")
-		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service '%s' and gateway mode '%s': %w", serviceID, p.gatewayMode, err)
 	}
 
 	logger = logger.With("number_of_permitted_apps", len(permittedApps))
