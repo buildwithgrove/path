@@ -3,6 +3,7 @@ package shannon
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -40,6 +41,10 @@ type CachingFullNode struct {
 
 	appCache     *cache.Cache
 	sessionCache *cache.Cache
+
+	// Mutexes to protect cache access and prevent thundering herd problem
+	appMutex     sync.Mutex
+	sessionMutex sync.Mutex
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
@@ -63,6 +68,16 @@ func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		cfn.logger.Debug().Str("app_addr", appAddr).Msg("Returning cached application")
 
 		// Type assertion is safe because we know the cache value can only be *apptypes.Application.
+		return cachedApp.(*apptypes.Application), nil
+	}
+
+	// Use mutex to prevent multiple concurrent cache updates for the same app
+	cfn.appMutex.Lock()
+	defer cfn.appMutex.Unlock()
+
+	// Double-check cache after acquiring lock (follows standard double-checked locking pattern)
+	if cachedApp, found := cfn.appCache.Get(appCacheKey); found {
+		cfn.logger.Debug().Str("app_addr", appAddr).Msg("Returning cached application after lock")
 		return cachedApp.(*apptypes.Application), nil
 	}
 
@@ -97,6 +112,19 @@ func (cfn *CachingFullNode) GetSession(
 			Msg("Returning cached session")
 
 		// Type assertion is safe because we know the cache value can only be sessiontypes.Session.
+		return cachedSession.(sessiontypes.Session), nil
+	}
+
+	// Use mutex to prevent multiple concurrent cache updates for the same session
+	cfn.sessionMutex.Lock()
+	defer cfn.sessionMutex.Unlock()
+
+	// Double-check cache after acquiring lock (follows standard double-checked locking pattern)
+	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
+		cfn.logger.Debug().
+			Str("service_id", string(serviceID)).
+			Str("app_addr", appAddr).
+			Msg("Returning cached session after lock")
 		return cachedSession.(sessiontypes.Session), nil
 	}
 
