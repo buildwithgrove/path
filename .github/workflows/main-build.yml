@@ -54,10 +54,7 @@ jobs:
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: |
-            IMAGE_TAG=${{ steps.meta.outputs.version }}
-            TARGETOS=linux
-            TARGETARCH=amd64
+          build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           cache-from: type=gha
