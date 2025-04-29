@@ -20,18 +20,21 @@ import (
 // - 1. Centralized Mode:
 //   - List of owned apps is predefined.
 //   - Onchain data can be proactively cached before any user requests.
+//
 // - 2. Delegated Mode:
 //   - Apps are specified dynamically by incoming user requests.
 //   - Cache must be built incrementally (lazy-loading) as new apps are requested.
-
+//
+// - 3. Add more documentation around lazy mode
+// - 4. Test the performance of a caching node vs lazy node.
 const (
 	// TODO_IMPROVE(@commoddity): make the cache TTL configurable in config YAML file.
 	defaultCacheTTL             = 30 * time.Second
 	defaultCacheCleanupInterval = 1 * time.Minute
 
 	// Cache key prefixes to avoid collisions
-	appCacheKeyPrefix     = "app:"
-	sessionCacheKeyPrefix = "session:"
+	appCacheKeyPrefix     = "app"
+	sessionCacheKeyPrefix = "session"
 )
 
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
@@ -57,11 +60,12 @@ type cachingFullNode struct {
 	// for fetching data from the protocol.
 	lazyFullNode *lazyFullNode
 
-	appCache     *cache.Cache
-	sessionCache *cache.Cache
+	// Caches for applications and mutexes to protect cache access.
+	appCache *cache.Cache
+	appMutex sync.Mutex
 
-	// Mutexes to protect cache access and prevent thundering herd problem
-	appMutex     sync.Mutex
+	// Caches for sessions and mutexes to protect cache access.
+	sessionCache *cache.Cache
 	sessionMutex sync.Mutex
 }
 
@@ -110,12 +114,11 @@ func (cfn *cachingFullNode) GetSession(
 	// Create a unique cache key for this service+app combination
 	sessionCacheKey := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
 
+	logger := cfn.logger.With("service_id", string(serviceID), "app_addr", appAddr)
+
 	// Check cache first
 	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
-		cfn.logger.Debug().
-			Str("service_id", string(serviceID)).
-			Str("app_addr", appAddr).
-			Msg("Returning cached session")
+		logger.Debug().Msg("Returning cached session")
 
 		// Type assertion is safe because we know the cache value can only be sessiontypes.Session.
 		return cachedSession.(sessiontypes.Session), nil
@@ -127,10 +130,7 @@ func (cfn *cachingFullNode) GetSession(
 
 	// Double-check cache after acquiring lock (follows standard double-checked locking pattern)
 	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
-		cfn.logger.Debug().
-			Str("service_id", string(serviceID)).
-			Str("app_addr", appAddr).
-			Msg("Returning cached session after lock")
+		logger.Debug().Msg("Returning cached session after lock")
 		return cachedSession.(sessiontypes.Session), nil
 	}
 
@@ -143,11 +143,7 @@ func (cfn *cachingFullNode) GetSession(
 	// Store in cache if the session is found.
 	cfn.sessionCache.Set(sessionCacheKey, session, cache.DefaultExpiration)
 
-	cfn.logger.Debug().
-		Str("service_id", string(serviceID)).
-		Str("app_addr", appAddr).
-		Str("session_id", session.SessionId).
-		Msg("Cached session")
+	logger.Debug().Str("session_id", session.SessionId).Msg("Cached session")
 
 	return session, nil
 }
@@ -172,8 +168,8 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 
 // createCacheKey creates a cache key for the given prefix and key.
 //
-//	eg. createCacheKey("app:", "0x123") -> "app:0x123"
-//	eg. createCacheKey("session:", "anvil:0x456") -> "session:anvil:0x456"
+//	eg. createCacheKey("app", "0x123") -> "app/0x123"
+//	eg. createCacheKey("session", "anvil:0x456") -> "session/anvil:0x456"
 func createCacheKey(prefix string, key string) string {
-	return fmt.Sprintf("%s%s", prefix, key)
+	return fmt.Sprintf("%s/%s", prefix, key)
 }

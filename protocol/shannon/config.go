@@ -36,10 +36,8 @@ type (
 		RpcURL     string     `yaml:"rpc_url"`
 		GRPCConfig GRPCConfig `yaml:"grpc_config"`
 
-		// LazyMode, if set, will disable all caching of onchain data, specifically apps and sessions.
-		// This enables supporting short block times, e.g. when running E2E tests on LocalNet.
-		// TODO_MVP(@adshmh, #140): As of #140, lazy_mode=false became unsupported
-		// and needs to be added back.
+		// LazyMode, if set to true, will disable all caching of onchain data. For
+		// example, this disables caching of apps and sessions.
 		LazyMode bool `yaml:"lazy_mode" default:"true"`
 	}
 
