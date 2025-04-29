@@ -46,11 +46,12 @@ shannon_config:
       # README: the application private key MUST BE replaced with the correct application private key secret
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-# To enable endpoint hydrator to run QoS checks against
-# service endpoints, add the following to the config:
-# hydrator_config:
-#   service_ids:
-#     - "anvil"
+# This enables Quality-of-Service for "anvil" by default.
+# In most cases, there is no reason to comment this out.
+# Logging & debugging is usually the only reason one would not want QoS checks against the service endpoints.
+hydrator_config:
+  service_ids:
+    - "anvil"
 
 # Optional logger configuration
 logger_config:
