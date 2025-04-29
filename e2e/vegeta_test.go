@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -688,7 +687,7 @@ type progressBars struct {
 // • Disables progress bars in CI/non-interactive environments
 func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]methodTestConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
-	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+	if isCIEnv() {
 		fmt.Println("Running in CI environment - progress bars disabled")
 		return &progressBars{
 			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),

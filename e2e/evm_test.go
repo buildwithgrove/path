@@ -262,9 +262,9 @@ func logEVMTestStartInfo(opts testOptions) {
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
 func waitForHydratorIfNeeded(opts testOptions) {
+	fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
 	if opts.waitForHydrator > 0 {
-		fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
-		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		if isCIEnv() {
 			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
 		} else {
 			showWaitBar(opts.waitForHydrator)
