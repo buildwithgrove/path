@@ -136,16 +136,18 @@ var (
 
 	// defaultRequestLoadConfig contains the default configuration for a method.
 	shannonBetaTestNetRequestLoadConfig = requestLoadConfig{
-		totalRequests: 5,
+		totalRequests: 3,
 		rps:           1,
 	}
 
 	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
 	shannonBetaTestNetSuccessCriteria = successCriteria{
-		successRate:   0.75,
-		maxP50Latency: 15 * time.Second,
-		maxP95Latency: 30 * time.Second,
-		maxP99Latency: 60 * time.Second,
+		successRate: 0.60, // We want 2/3 requests to succeed
+		// The latencies are really high because we have 1 week anvil relayminer.
+		// We can up these in the future.
+		maxP50Latency: 30 * time.Second,
+		maxP95Latency: 60 * time.Second,
+		maxP99Latency: 90 * time.Second,
 	}
 
 	shannonBetaTestNetMethodConfigs = map[jsonrpc.Method]methodTestConfig{
