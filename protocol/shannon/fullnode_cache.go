@@ -16,12 +16,16 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IN_THIS_PR(@commoddity): implement a FullNode interface that considersthe GatewayMode:
-//		A. Centralized: the list of owned apps is specified in advance, and onchain data can be cached before any requests are received.
-//		B. Delegated: cache needs to be done in Lazy/incremental way, as user requests specifying different apps are received.
+// TODO_IMPROVE(@commoddity): Implement a FullNode interface that adapts caching strategy based on GatewayMode:
+// - 1. Centralized Mode:
+//   - List of owned apps is predefined.
+//   - Onchain data can be proactively cached before any user requests.
+// - 2. Delegated Mode:
+//   - Apps are specified dynamically by incoming user requests.
+//   - Cache must be built incrementally (lazy-loading) as new apps are requested.
 
 const (
-	// TODO_IN_THIS_PR(@commoddity): make the cache TTL configurable in config YAML file.
+	// TODO_IMPROVE(@commoddity): make the cache TTL configurable in config YAML file.
 	defaultCacheTTL             = 30 * time.Second
 	defaultCacheCleanupInterval = 1 * time.Minute
 
@@ -30,14 +34,28 @@ const (
 	sessionCacheKeyPrefix = "session:"
 )
 
-// CachingFullNode implements the FullNode interface by wrapping a LazyFullNode
+// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
+func NewCachingFullNode(logger polylog.Logger, lazyFullNode *lazyFullNode) *cachingFullNode {
+	return &cachingFullNode{
+		logger: logger.With("component", "CachingFullNode"),
+
+		lazyFullNode: lazyFullNode,
+
+		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+	}
+}
+
+var _ FullNode = &cachingFullNode{}
+
+// cachingFullNode implements the FullNode interface by wrapping a LazyFullNode
 // and caching results to improve performance.
-type CachingFullNode struct {
+type cachingFullNode struct {
 	logger polylog.Logger
 
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
-	underlyingNode *lazyFullNode
+	lazyFullNode *lazyFullNode
 
 	appCache     *cache.Cache
 	sessionCache *cache.Cache
@@ -47,20 +65,8 @@ type CachingFullNode struct {
 	sessionMutex sync.Mutex
 }
 
-// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
-func NewCachingFullNode(logger polylog.Logger, underlyingNode *lazyFullNode) *CachingFullNode {
-	return &CachingFullNode{
-		logger: logger.With("component", "CachingFullNode"),
-
-		underlyingNode: underlyingNode,
-
-		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-	}
-}
-
 // GetApp returns the application with the given address, using a cached version if available.
-func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	appCacheKey := createCacheKey(appCacheKeyPrefix, appAddr)
 
 	// Check cache first
@@ -82,7 +88,7 @@ func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 	}
 
 	// Cache miss - get from underlying node
-	app, err := cfn.underlyingNode.GetApp(ctx, appAddr)
+	app, err := cfn.lazyFullNode.GetApp(ctx, appAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +102,7 @@ func (cfn *CachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.
-func (cfn *CachingFullNode) GetSession(
+func (cfn *cachingFullNode) GetSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
@@ -129,7 +135,7 @@ func (cfn *CachingFullNode) GetSession(
 	}
 
 	// Cache miss - get from underlying node
-	session, err := cfn.underlyingNode.GetSession(ctx, serviceID, appAddr)
+	session, err := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
 		return sessiontypes.Session{}, err
 	}
@@ -147,21 +153,21 @@ func (cfn *CachingFullNode) GetSession(
 }
 
 // ValidateRelayResponse delegates to the underlying node.
-func (cfn *CachingFullNode) ValidateRelayResponse(
+func (cfn *cachingFullNode) ValidateRelayResponse(
 	supplierAddr sdk.SupplierAddress,
 	responseBz []byte,
 ) (*servicetypes.RelayResponse, error) {
-	return cfn.underlyingNode.ValidateRelayResponse(supplierAddr, responseBz)
+	return cfn.lazyFullNode.ValidateRelayResponse(supplierAddr, responseBz)
 }
 
 // IsHealthy delegates to the underlying node.
-func (cfn *CachingFullNode) IsHealthy() bool {
-	return cfn.underlyingNode.IsHealthy()
+func (cfn *cachingFullNode) IsHealthy() bool {
+	return cfn.lazyFullNode.IsHealthy()
 }
 
 // GetAccountClient delegates to the underlying node.
-func (cfn *CachingFullNode) GetAccountClient() *sdk.AccountClient {
-	return cfn.underlyingNode.GetAccountClient()
+func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
+	return cfn.lazyFullNode.GetAccountClient()
 }
 
 // createCacheKey creates a cache key for the given prefix and key.
