@@ -207,10 +207,11 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		}
 
 		serviceSummaries[tc.serviceID] = &serviceSummary{
-			serviceID:    tc.serviceID,
-			methodErrors: make(map[jsonrpc.Method]map[string]int),
-			methodCount:  len(tc.methodConfigs),
-			totalErrors:  0,
+			serviceID:     tc.serviceID,
+			methodConfigs: tc.methodConfigs,
+			methodErrors:  make(map[jsonrpc.Method]map[string]int),
+			methodCount:   len(tc.methodConfigs),
+			totalErrors:   0,
 		}
 
 		serviceTestFailed := runEVMServiceTest(t, ctx, tc, opts, serviceSummaries[tc.serviceID])
@@ -261,9 +262,9 @@ func logEVMTestStartInfo(opts testOptions) {
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
 func waitForHydratorIfNeeded(opts testOptions) {
+	fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
 	if opts.waitForHydrator > 0 {
-		fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
-		if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		if isCIEnv() {
 			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
 		} else {
 			showWaitBar(opts.waitForHydrator)
@@ -315,14 +316,7 @@ func runEVMServiceTest(
 		go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
 			defer methodWg.Done()
 
-			metrics := runMethodAttack(
-				ctx,
-				method,
-				def,
-				tc,
-				opts,
-				progBars.get(method),
-			)
+			metrics := runMethodAttack(ctx, method, def, tc, opts, progBars.get(method))
 
 			resultsMutex.Lock()
 			results[method] = metrics
@@ -366,20 +360,9 @@ func runMethodAttack(
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(1),
 		Method:  method,
-		Params: createEVMJsonRPCParams(
-			method,
-			tc.serviceParams,
-		),
+		Params:  createEVMJsonRPCParams(method, tc.serviceParams),
 	}
-	metrics := runAttack(
-		ctx,
-		opts.gatewayURL,
-		tc.serviceID,
-		method,
-		def,
-		progBar,
-		jsonrpcReq,
-	)
+	metrics := runAttack(ctx, opts.gatewayURL, tc.serviceID, method, def, progBar, jsonrpcReq)
 	return metrics
 }
 

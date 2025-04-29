@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -160,35 +161,54 @@ func setupPathDocker(
 	}
 
 	// Optionally log the PATH container output
+	// Handle container log output based on environment
 	var logOutputFile string
 	if logContainer {
-		// Determine log output file
-		logOutputFile = os.Getenv("DOCKER_LOG_OUTPUT_FILE")
-		if logOutputFile == "" {
-			logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
-		}
-		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n", logOutputFile)
+		var (
+			output io.Writer
+			dest   string
+			f      *os.File
+		)
 
-		// Print container logs in a goroutine to prevent blocking
-		go func() {
-			f, err := os.Create(logOutputFile)
-			if err != nil {
-				fmt.Printf("could not create log file %s: %v\n", logOutputFile, err)
-				return
+		if isCIEnv() {
+			// CI: log to stdout
+			output = os.Stdout
+			dest = "stdout (CI environment)"
+		} else {
+			// Local: log to file
+			logOutputFile = os.Getenv("DOCKER_LOG_OUTPUT_FILE")
+			if logOutputFile == "" {
+				logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
 			}
-			defer f.Close()
+			dest = logOutputFile
 
-			if err := pool.Client.Logs(docker.LogsOptions{
+			var err error
+			f, err = os.Create(logOutputFile)
+			if err != nil {
+				t.Fatalf("could not create log file %s: %v\n", logOutputFile, err)
+			}
+			output = f
+		}
+
+		// Log container output in a goroutine, ensuring file is closed after use
+		go func(t *testing.T, f *os.File) {
+			t.Helper()
+			if f != nil {
+				defer f.Close()
+			}
+			err := pool.Client.Logs(docker.LogsOptions{
 				Container:    resource.Container.ID,
-				OutputStream: f,
-				ErrorStream:  f,
+				OutputStream: output,
+				ErrorStream:  output,
 				Stdout:       true,
 				Stderr:       true,
 				Follow:       true,
-			}); err != nil {
-				fmt.Printf("could not fetch logs for PATH container: %s", err)
+			})
+			if err != nil {
+				t.Fatalf("could not fetch logs for PATH container: %s", err)
 			}
-		}()
+		}(t, f)
+		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n", dest)
 	}
 
 	// Create a context that we can cancel
