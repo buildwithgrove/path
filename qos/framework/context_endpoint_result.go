@@ -92,7 +92,7 @@ func (ctx *EndpointQueryResultContext) updateEndpointQueryResultWithParsedRespon
 }
 
 // TODO_IN_THIS_PR: implement.
-func (ctx *EndpointQueryResultContext) getHydratedLogger() polylog.Logger() {
+func (ctx *EndpointQueryResultContext) getHydratedLogger() polylog.Logger {
 	// hydrate the logger with endpointQuery fields.
-
+	return ctx.logger
 }

@@ -2,6 +2,8 @@ package jsonrpc
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 )
 
 // Method is the method specified by a JSONRPC request.
@@ -64,12 +66,12 @@ func (r Request) MarshalJSON() ([]byte, error) {
 // Returns a non-nil requestError if validation fails.
 func (r Request) Validate() error {
 	// Check JSONRPC version
-	if request.Jsonrpc != jsonrpc.Version2 {
-		return fmt.Errorf("%w: invalid version: %s", ErrInvalidRequestInvalidVersion, r.Jsonrpc)
+	if r.JSONRPC != Version2 {
+		return fmt.Errorf("%w: invalid version: %s", ErrInvalidRequestInvalidVersion, r.JSONRPC)
 	}
 
 	// Check method presence
-	if request.Method == "" {
+	if r.Method == "" {
 		return ErrInvalidRequestMissingMethod
 	}
 

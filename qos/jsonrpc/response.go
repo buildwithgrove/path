@@ -46,13 +46,13 @@ func (r Response) GetResultAsBytes() ([]byte, error) {
 
 func (r Response) GetResultAsInt() (int, error) {
 	var intValue int
-	err := json.Unmarshal(&intValue, r.Result)
+	err := json.Unmarshal(r.Result, &intValue)
 	return intValue, err
 }
 
 func (r Response) GetResultAsStr() (string, error) {
 	var strValue string
-	err := json.Unmarshal(&strValue, r.Result)
+	err := json.Unmarshal(r.Result, &strValue)
 	return strValue, err
 }
 

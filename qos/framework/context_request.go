@@ -130,13 +130,13 @@ func (ctx *requestContext) initFromHTTP(httpReq *http.Request) bool {
 	jsonrpcReq, reqErr := parseHTTPRequest(ctx.logger, httpReq)
 
 	// initialize the request journal to track all request data and events.
-	journal: &requestJournal{
+	ctx.journal = &requestJournal{
 		jsonrpcRequest: jsonrpcReq,
 		requestErr: reqErr,
-	},
+	}
 
 	// Only proceed with next steps if there were no errors parsing the HTTP request into a JSONRPC request.
-	return reqErr == nil 
+	return (reqErr == nil)
 }
 
 // parseHTTPRequest builds and returns a context for processing the HTTP request:
