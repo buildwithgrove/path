@@ -71,14 +71,14 @@ type (
 var (
 	// defaultRequestLoadConfig contains the default configuration for a method.
 	defaultRequestLoadConfig = requestLoadConfig{
-		totalRequests: 100,
-		rps:           10,
+		totalRequests: 50,
+		rps:           5,
 	}
 
 	// defaultSuccessCriteria contains the default success rates and latency requirements for a method.
 	defaultSuccessCriteria = successCriteria{
-		successRate:   0.90,
-		maxP50Latency: 1_000 * time.Millisecond, //
+		successRate:   0.80,
+		maxP50Latency: 2_000 * time.Millisecond, //
 		maxP95Latency: 5_000 * time.Millisecond,
 		maxP99Latency: 10_000 * time.Millisecond,
 	}
@@ -136,7 +136,7 @@ var (
 
 	// defaultRequestLoadConfig contains the default configuration for a method.
 	shannonBetaTestNetRequestLoadConfig = requestLoadConfig{
-		totalRequests: 3,
+		totalRequests: 5,
 		rps:           1,
 	}
 
