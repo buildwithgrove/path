@@ -33,19 +33,13 @@ func (s *QoS) ParseHTTPRequest(
 	_ context.Context,
 	httpReq *http.Request,
 ) (*requestContext, bool) {
-	requestDetails := buildRequestDetailsFromHTTP(s.logger, httpReq)
-
-	// initialize a context for processing the HTTP request.
+	// Context for processing the HTTP request.
 	requestCtx := &requestContext{
-		logger: logger,
-		// initialize the request journal to track all data on the request.
-		journal: &requestJournal{
-			requestDetails: requestDetails,
-		},
+		logger: s.logger,
 	}
-	
-	// check if the request processing flow should continue.
-	shouldContinue := requestDetails.getRequestErrorJSONRPCResponse() != nil
+
+	// Initialize the request context from the HTTP request.
+	shouldContinue := requestCtx.initFromHTTP(httpReq)
 
 	return requestCtx, shouldContinue
 }
@@ -61,14 +55,15 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return fmt.Errorf("Reported observations mismatch: service name %q, expected %q", serviceRequestObservations.ServiceName, q.qosDefinitions.ServiceName)
 	}
 
-	// Construct the endpoint query underlying the observations
-	endpointQuery := extractEndpointQueryFromObservations(serviceRequestObservations)
-
-	// Construct the query results using the observations.
-	endpointQueryResults := extractEndpointQueryResultsFromObservations(endpointQuery, serviceRequestObservations.GetEndpointQueryResultObservations())
+	// reconstruct the request journal matching the observations.
+	requestJournal, err := buildRequestJournalFromObservations(q.logger, serviceRequestObservations)
+	if err != nil {
+		q.logger.Error().Err(err).Msg("Error building the request journal from observations: skipping the application of observations.")a
+		return err
+	}
 
 	// update the stored endpoints
-	updatedEndpoints := s.serviceState.updateStoredEndpoints(endpointQueryResults)
+	updatedEndpoints := s.serviceState.updateStoredEndpoints(requestJournal.endpointQueryResults)
 
 	// instantiate a state update context.
 	stateUpdateCtx := s.buildServiceStateUpdateContext()
@@ -87,13 +82,15 @@ func (q *QoS) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []Req
 // The context provides:
 // - Read-only access to current service state
 // - Mapping of JSONRPC methods to their corresponding result builders.
-func (q *QoS) buildEndpointQueryResultContext() *EndpointQueryResultContext {
+func (q *QoS) buildEndpointQueryResultContext(endpointQueryResult *EndpointQueryResult) *EndpointQueryResultContext {
 	// instantiate a result context to process an endpointQuery.
 	return &EndpointQueryResultContext{
 		// Service State (read-only)
 		// Allows the custom QoS service to base the query results on current state if needed.
-		ReadonlyServiceState:        q.serviceState,
+		ServiceState:        q.serviceState,
 
+		// Tracks the result of the endpoint query.
+		EndpointQueryResult: endpointQueryResult,
 		// Map of JSONRPC request method to the corresponding query result builders.
 		jsonrpcMethodResultBuilders:  q.qosDefinition.ResultBuilders,
 	}

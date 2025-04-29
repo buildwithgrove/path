@@ -73,10 +73,10 @@ func (rc *requestQoSContext) UpdateWithResponse(endpointAddr protocol.EndpointAd
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 	//
 	// Instantiate an endpointQuery to capture the interaction with the service endpoint.
-	endpointQuery := rc.journal.buildEndpointQuery(endpointAddr, receivedData)
+	endpointQueryResult := rc.journal.buildEndpointQueryResult(endpointAddr, receivedData)
 
 	// Instantiate a result context using the endpointQuery.
-	resultCtx := rc.contextBuilder.buildEndpointQueryResultContext(endpointQuery)
+	resultCtx := rc.contextBuilder.buildEndpointQueryResultContext(endpointQueryResult)
 
 	// Build an endpoint query result using the context.
 	endpointQueryResult := resultCtx.buildEndpointQueryResult()
@@ -119,10 +119,72 @@ func (rc *requestQoSContext) GetEndpointSelector() protocol.EndpointSelector {
 
 // Declares the request as failed with protocol-level error if no data from any endpoints has been reported to the request context.
 func (rc *requestContext) checkForProtocolLevelError() {
-	// TODO_IMPROVE(@adshmh): consider using the journal directly for setting protocol failure error.
-	//
 	// Assume protocol-level error if no endpoint responses have been received yet.
-	if len(rc.journal.processedEndpointQueries) == 0 {
-		rc.journal.requestDetails.setProtocolLevelError()
+	if len(rc.journal.endpointQueryResults) == 0 {
+		rc.journal.setProtocolLevelError()
 	}
+}
+
+
+func (ctx *requestContext) initFromHTTP(httpReq *http.Request) bool {
+	jsonrpcReq, reqErr := parseHTTPRequest(ctx.logger, httpReq)
+
+	// initialize the request journal to track all request data and events.
+	journal: &requestJournal{
+		jsonrpcRequest: jsonrpcReq,
+		requestErr: reqErr,
+	},
+
+	// Only proceed with next steps if there were no errors parsing the HTTP request into a JSONRPC request.
+	return reqErr == nil 
+}
+
+// parseHTTPRequest builds and returns a context for processing the HTTP request:
+// - Reads and processes the HTTP request
+// - Parses a JSONRPC request from the HTTP request's payload.
+// - Validates the resulting JSONRPC request.
+func parseHTTPRequest(
+	logger polylog.Logger,
+	httpReq *http.Request,
+) (*jsonrpc.Request, *requestError) {
+	// Read the HTTP request body
+	body, err := io.ReadAll(httpReq.Body)
+	defer httpReq.Body.Close()
+
+	// TODO_IMPROVE(@adshmh): Propagate a request ID parameter on internal errors that occur after successful request parsing.
+	// There are no such cases as of PR #186.
+	if err != nil {
+		// Handle read error (internal server error)
+		logger.Error().Err(err).Msg("Failed to read request body")
+
+		// return the error details to be stored in the request journal.
+		return nil, buildRequestErrorForInternalErrHTTPRead(err)
+	}
+
+	// Parse the JSON-RPC request
+	var jsonrpcReq jsonrpc.JsonRpcRequest
+	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
+		// TODO_IN_THIS_PR: log the first 1K bytes of the body.
+		// Handle parse error (client error)
+		logger.Error().Err(err).Msg("Failed to parse JSON-RPC request")
+
+		return nil, buildRequestErrorForParseError(err)
+	}
+
+	// Validate the request
+	if validationErr := jsonrpcReq.Validate(); validationErr != nil {
+		// Request failed basic JSONRPC request validation.
+		logger.Info().Err(validationErr).
+			Str("method", jsonrpcReq.Method).
+			Msg("JSONRPC Request validation failed")
+
+		return jsonrpcReq, buildRequestErrorJSONRPCValidationError(jsonrpcReq.ID, validationErr)
+	}
+
+	// Request is valid
+	logger.Debug().
+		Str("method", jsonrpcReq.Method).
+		Msg("Request validation successful")
+
+	return jsonrpcReq, nil
 }

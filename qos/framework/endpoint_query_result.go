@@ -25,15 +25,33 @@ import (
 // - Stores one or more string/integer values.
 // - Contains error/sanction information on endpoint error.
 type EndpointQueryResult struct {
-	// The endpointQuery from which this result was built.
-	// It can be used, e.g. to retrieve the JSONRPC request and its method.
-	*endpointQuery
+	// The request's journal.
+	// Used to retrieve details of the JSONRPC request, e.g. the JSONRPC method.
+	// Declared embedded to allow direct access by other members of the `judge` package.
+	*requestJournal
 
-	// TODO_IN_THIS_PR: verify this is set by all result builders.
+	// Tracks the address of the endpoint for which the result is built.
+	endpointAddr protocol.EndpointAddr
 
-	// The JSONRPC response to be returned to the client.
-	// MUST be set.
-	clientResponse *jsonrpc.Response
+	// Tracks the payload received from the endpoint in response to the JSONRPC request.
+	// Custom QoS service does NOT have access to this: it can only act on a parsed JSONRPC response.
+	endpointPayload []byte
+
+	// Captures the queried endpoint's error and the response to return to the client.
+	// Can be set by either:
+	// - JUDGE: e.g. if the endpoint's payload failed to parse as a JSONRPC response.
+	// - Custom QoS: e.g. if the endpoint returned an unexpected block height.
+	// Only set if the query result indicates an endpoint error.
+	// It could also include sanctions:
+	// e.g. for an invalid value returned for an EVM `eth_blockNumber` request, the custom service could set:
+	// Error:
+	// - Description: "invalid response to eth_blockNumber"
+	// - RecommendedSanction: {Duration: 5 * time.Minute}
+	EndpointError *EndpointError
+
+	// Only set if the endpoint's returned payload could be parsed into a JSONRPC response.
+	parsedJSONRPCResponse *jsonrpc.Response
+
 
 	// The set of values/attributes extracted from the endpoint query and the endpoint's parsed JSONRPC response.
 	// e.g. for a Solana `getEpochInfo` request, the custom service could derive two endpoint attributes as follows:
@@ -41,15 +59,6 @@ type EndpointQueryResult struct {
 	// - "Epoch": 5
 	StringValues map[string]string
 	IntValues    map[string]int
-
-	// Captures the queried endpoint's error.
-	// Only set if the query result indicates an endpoint error.
-	// It could also include sanctions:
-	// e.g. for an invalid value returned for an EVM `eth_blockNumber` request, the custom service could set:
-	// Error:
-	// - Description: "invalid response to eth_blockNumber"
-	// - RecommendedSanction: {Duration: 5 * time.Minute}
-	Error *EndpointError
 
 	// The time at which the query result is expired.
 	// Expired results will be ignored, including in:
@@ -60,7 +69,10 @@ type EndpointQueryResult struct {
 	// TODO_FUTURE(@adshmh): add a JSONRPCErrorResponse to allow a result builder to supply its custom JSONRPC response.
 }
 
-// ===> These are moved from EndpointQueryResultContext --> it will have a public EndpointQueryResult field to allow direct access to the methods below.
+func (eqr *EndpointQueryResult) GetEndpointAddr() protocol.EndpointAddr {
+	return eqr.endpointAddr
+}
+
 func (eqr *EndpointQueryResult) IsJSONRPCError() bool {
 	parsedJSONRPCResponse, err := eqr.getParsedJSONRPCResponse()
 	if err != nil {
@@ -79,7 +91,7 @@ func (eqr *EndpointQueryResult) GetResultAsInt() (int, error) {
 	return parsedJSONRPCResponse.GetResultAsInt()
 }
 
-func (ctx *EndpointQueryResultContext) GetResultAsStr() (string, error) {
+func (eqr *EndpointQueryResult) GetResultAsStr() (string, error) {
 	parsedJSONRPCResponse := eqr.getParsedJSONRPCResponse()
 	if err != nil {
 		return "", err
@@ -99,69 +111,73 @@ func (eqr *EndpointQueryResult) getParsedJSONRPCResponse() (*jsonrpc.Response, e
 	return parsedJSONRPCResponse, nil
 }
 
-func (eqr *EndpointQueryResult) AddIntValue(key string, value int) {
-	eqr.endpointQueryResult.AddIntValue(key, value)
-}
+func (eqr *EndpointQueryResult) Success(
+	resultBuilders ...EndpointQueryResultBuilder
+) *EndpointQueryResult {
+	for _, builder := range resultBuilders {
+		builder(eqr)
+	}
 
-func (ctx *EndpointQueryResultContext) AddStrValue(key, value string) {
-	ctx.endpointQueryResult.AddStrValue(key, value)
+	return eqr
 }
-
 
 // ErrorResult creates an error result with the given message and no sanction.
-func (ctx *EndpointQueryResultContext) ErrorResult(description string) *EndpointQueryResult {
-
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			kind:        EndpointDataErrorKindInvalidResult,
-		},
+// Returns a self-reference for a fluent API.
+func (eqr *EndpointQueryResult) Error(description string) *EndpointQueryResult {
+	eqr.EndpointError = &EndpointError {
+		ErrorKind: EndpointErrKindInvalidResult,
+		// Description is set by the custom service implementation
+		Description: description,
 	}
+
+	return eqr
 }
 
 // SanctionEndpoint creates an error result with a temporary sanction.
-func (ctx *EndpointQueryResultContext) SanctionEndpoint(description, reason string, duration time.Duration) *ResultData {
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			RecommendedSanction: &SanctionRecommendation{
-				Sanction: Sanction{
-					Type:        SanctionTypeTemporary,
-					Reason:      reason,
-					ExpiryTime:  time.Now().Add(duration),
-					CreatedTime: time.Now(),
-				},
-				SourceDataType: ctx.Method,
-				TriggerDetails: description,
-			},
-			kind: EndpointDataErrorKindInvalidResult,
+func (eqr *EndpointQueryResult) SanctionEndpoint(description, reason string, duration time.Duration) *EndpointQueryResult {
+	eqr.EndpointError = &EndpointError {
+		ErrorKind: EndpointDataErrorKindInvalidResult,
+		Description: description,
+		RecommendedSanction: &Sanction{
+			Type:        SanctionTypeTemporary,
+			Reason:      reason,
+			ExpiryTime:  time.Now().Add(duration),
 		},
-		CreatedTime: time.Now(),
 	}
+
+	return eqr
 }
 
 // PermanentSanction creates an error result with a permanent sanction.
-func (ctx *EndpointQueryResultContext) PermanentSanction(description, reason string) *ResultData {
-	return &ResultData{
-		Type: ctx.Method,
-		Error: &ResultError{
-			Description: description,
-			RecommendedSanction: &SanctionRecommendation{
-				Sanction: Sanction{
-					Type:        SanctionTypePermanent,
-					Reason:      reason,
-					CreatedTime: time.Now(),
-				},
-				SourceDataType: ctx.Method,
-				TriggerDetails: description,
-			},
-			kind: EndpointDataErrorKindInvalidResult,
+func (eqr *EndpointQueryResult) PermanentSanction(description, reason string) *EndpointQueryResult {
+	eqr.EndpointError = &EndpointError {
+		ErrorKind: EndpointDataErrorKindInvalidResult,
+		Description: description,
+		RecommendedSanction: &Sanction{
+			Type:        SanctionTypePermanent,
+			Reason:      reason,
 		},
-		CreatedTime: time.Now(),
+	}
+
+	return eqr
+}
+
+type EndpointQueryResultBuilder func(*EndpointQueryResultBuilder)
+
+func (eqr *EndpointQueryResult) AddIntResult(key string, value int) EndpointQueryResultBuilder {
+	return func(r *EndpointQueryResult) {
+		if r.IntValues == nil {
+			r.IntValues = make(map[string]int)
+		}
+		r.IntValues[key] = value
 	}
 }
 
-
-
+func (eqr *EndpointQueryResult) AddStrResult(key, value string) EndpointQueryResultBuilder {
+	return func(r *EndpointQueryResult) {
+		if r.StrValues == nil {
+			r.StrValues = make(map[string]string)
+		}
+		r.StrValues[key] = value
+	}
+}

@@ -13,7 +13,7 @@ type StateUpdateContext struct {
 	updatedEndpoints []*Endpoint
 
 	// tracks the set of params set for update through the context.
-	paramsToUpdate *StateParameterUpdateSet 
+	paramsToUpdate *StateParameterUpdateSet
 }
 
 func (ctx *StateUpdateContext) updateFromEndpoints(updatedEndpoints []*Endpoint) error {

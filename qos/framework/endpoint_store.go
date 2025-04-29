@@ -11,7 +11,7 @@ import (
 // endpointStore maintains data on the set of available endpoints.
 // It is package-private and not meant to be used directly by any entity outside the jsonrpc package.
 type endpointStore struct {
-	logger polylog.Logger
+	logger      polylog.Logger
 	endpointsMu sync.RWMutex
 	endpoints   map[protocol.EndpointAddr]*Endpoint
 }

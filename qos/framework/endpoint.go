@@ -69,7 +69,7 @@ func (e *Endpoint) HasActiveSanction() (Sanction, bool) {
 
 // ApplyQueryResult updates the endpoint's attributes with attributes from the query result.
 // It merges the EndpointAttributes from the query result into the endpoint's attributes map.
-func (e *Endpoint) applyQueryResults(queryResults []*EndpointQueryResult) {
+func (e *Endpoint) applyQueryResults(endpointQueryResults []*EndpointQueryResult) {
 	e.resultsMu.Lock()
 	defer e.resultsMu.Unlock()
 
@@ -79,29 +79,17 @@ func (e *Endpoint) applyQueryResults(queryResults []*EndpointQueryResult) {
 	}
 
 	// Add or update attributes from the query result
-	for _, result := range queryResults {
-		query := result.endpointQuery
+	for _, endpointQueryResult := range endpointQueryResults {
+		jsonrpcRequestMethod := endpointQueryResult.getJSONRPCRequestMethod()
 
-		// Validate the supplied query results.
-		if query == nil {
-			e.logger.Warn().Msg("Endpoint received query result with no query data: skipping update.")
-			return
-		}
-
-		queryRequest := query.request
-		if queryRequest == nil {
-			e.logger.Warn().Msg("Endpoint received query result with no query request data: skipping update.")
-			return
-		}
-
-		if queryRequest.Method == "" {
+		if jsonrpcRequestMethod == "" {
 			e.logger.Warn().Msg("Endpoint received query result with no JSONRPC method set: skipping update.")
 			return
 		}
 
 		// Update the endpoint result matching the JSONRPC request.
-		e.queryResult[queryRequest.Method] = result
+		e.queryResult[jsonrpcRequestMethod] = result
 
-		e.logger.With("request_method", queryRequest.Method).Debug().Msg("Updated endpoint with query result.")
+		e.logger.With("jsonrpc_request_method", jsonrpcRequestMethod).Debug().Msg("Updated endpoint with query result.")
 	}
 }

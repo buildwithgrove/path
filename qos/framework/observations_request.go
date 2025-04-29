@@ -24,7 +24,7 @@ func (rd *requestDetails) buildObservations() *qosobservations.RequestObservatio
 		errorObs = rd.requestError.buildObservations()
 	}
 
-	return &qosobservations.RequestObservation {
+	return &qosobservations.RequestObservation{
 		// Only set if validation was successful
 		JsonrpcRequest: jsonrpcRequestObs,
 		// Only set if the request failed for any reason.
@@ -32,24 +32,5 @@ func (rd *requestDetails) buildObservations() *qosobservations.RequestObservatio
 		// - error reading HTTP request's body.
 		// - protocol-level error: e.g. selected endpoint timed out.
 		RequestError: errorObs,
-	}
-}
-
-func extractJSONRPCRequestFromObservation(
-	observation *qosobservations.RequestObservation,
-) *jsonrpc.Request {
-	// Nil 
-	if observation == nil {
-		return nil 
-	}
-
-	jsonrpcRequestObs := observation.GetJsonRpcRequest()
-	if jsonrpcRequestObs == nil {
-		return nil
-	}
-
-	// The only field required in applying the observations is the request's method.
-	return &jsonrpc.Request{
-		Method: jsonrpcRequestObs.GetMethod(),
 	}
 }

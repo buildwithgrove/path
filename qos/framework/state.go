@@ -15,7 +15,6 @@ import (
 // - Reading state parameters and endpoints (Read Only) for:
 //   - building endpoint results
 //   - endpoint selection
-//
 type ServiceState struct {
 	// logger for diagnostics
 	logger polylog.Logger

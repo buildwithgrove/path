@@ -24,7 +24,7 @@ func responseBuilderBlockNumber(ctx *framework.EndpointQueryResultContext) *fram
 	//
 	// The endpoint returned an error response: no further processing needed.
 	if ctx.IsJSONRPCError() {
-		return ctx.Error("endpoint returned a valid JSONRPC error response.")
+		return ctx.Error("endpoint returned a JSONRPC error response.")
 	}
 
 	// TODO_MVP(@adshmh): use the contents of the result field to determine the validity of the response.

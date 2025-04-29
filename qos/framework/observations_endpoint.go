@@ -5,7 +5,7 @@ import (
 )
 
 func extractEndpointQueryFromObservation(observation *qosobservations.Observations) *endpointQuery {
-	return &endpointQuery {
+	return &endpointQuery{
 		// Extract the JSONRPC request corresponding to the observation.
 		request: extractJSONRPCRequestFromObservation(observation.GetRequestObservation()),
 	}

@@ -18,39 +18,101 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// initialize the observations to include:
 	// - service name
 	// - observations related to the request:
-	observations := qosobservations.Observations {
+	observations := qosobservations.RequestJournal {
 		ServiceName: rj.serviceName,
-		// request observations:
-		//   - parsed JSONRPC (if successful)
-		//   - validation error (if invalid)
-		RequestObservation: rj.requestDetails.buildObservation(),
 	}
 
-	// No endpoint queries were performed: skip adding endpoint observations.
+	// observation for parsed JSONRPC (if parsed)
+	if rj.jsonrpcRequest != nil {
+		observations.JsonRpcRequest = buildJSONRPCRequestObservation(rj.jsonrpcRequest)
+	}
+
+	// observation for request error (if set)
+	if rj.requestErr != nil {
+		observations.RequestError = buildRequestErrorObservations(rj.requestErr)
+	}
+
+	// No endpoint query results.
 	// e.g. for invalid requests.
-	if len(rj.endpointQueries) == 0 {
+	// Skip adding endpoint observations.
+	if len(rj.endpointQueryResults) == 0 {
 		return observations
 	}
 
-	// Add one endpoint observation entry per processed enpoint query stored in the journal.
-	endpointObservations := make([]*qosobservations.EndpointObservation, len(rj.processedEndpointQueries))
-	for index, endpointQuery := range rj.processedEndpointQueries {
-		endpointObservations[index] = endpointQuery.buildObservation()
+	endpointObservations := make([]*qosobservations.EndpointQueryResultObservation, len(rj.endpointQueryResults))
+	for index, endpointQueryResult := range rj.endpointQueryResults {
+		endpointObservation[index] = endpointQueryResult.buildObservations()
 	}
 
-	observations.EndpointObservations = endpointObservations
+	observations.EndpointQueryResultObservations = endpointObservations
 	return observations
 }
 
-// TODO_IN_THIS_PR: check the observations have the correct service name.
-func (rj *requestJournal) extractEndpointQueriesFromObservations(observations *observations.Observations) []*endpointQuery {
-	// fetch endpoint observations
-	endpointObservations := observations.GetEndpointObservations()
 
-	endpointQueries := make(*endpointQuery, len(endpointObservations))
-	for index, endpointObservation := range endpointObservations {
-		endpointQueries[index] = extractEndpointQueryFromObservation(endpointObservation)
+func buildRequestJournalFromObservations(
+	logger polylog.Logger,
+	observations *qosobservations.Observations,
+) (*requestJournal, error) {
+	// hydrate the logger
+	logger := logger.With("method", "buildRequestJournalFromObservations")
+
+	// sanity check the observations.
+	if observations == nil {
+		errMsg := "Received nil observation: skip the processing."
+		logger.Warn().Msg(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
-	return endpointQueries
+	reqObs := observations.GetRequestObservation()
+	// No request observation present: skip the processing.
+	if reqObs == nil {
+		errMsg := "Received nil request observation: skip the processing."
+		logger.Warn().Msg(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	// construct the request and any errors from the observations.
+	jsonrpcRequest := buildJSONRPCRequestFromObservation(reqObs)
+	requestErr := buildRequestErrorFromObservations(reqObs)
+
+	// Instantiate the request journal.
+	requestJournal := &requestJournal{
+		logger: logger,
+		jsonrpcRequest: jsonrpcRequest,
+		requestErr: requestErr,
+	}
+
+	// request had an error: internal, parsing, validation, etc.
+	// no further processing required.
+	if requestErr != nil {
+		logger.With("num_endpoint_observations", len(observations.GetEndpointQueryResultObservatios()).
+			Info().Msg("Request had an error: no endpoint observations expected.")
+
+		return requestJournal
+	}
+
+	// reconstruct endpoint query results.
+	endpointsObs := observations.GetEndpointQueyResultObservations()
+	// No endpoint observation present: skip the processing.
+	if endpointsObs == nil || len(endpointsObs) == 0 {
+		logger.Warn().Msg("Received nil/empty endpoint observation: skip the processing.")
+		return nil
+	}
+
+	// Initialize the endpoint query results of the request journal.
+	requestJournal.endpointQueryResults = make([]*EndpointQueryResult, len(endpointsObs))
+
+	// add one endpoint query result per endpoint observation.
+	for index, endpointObs := range endpointsObs {
+		// Construct the query result from the endpoint observation.
+		endpointQueryResult := extractEndpointQueryResultsFromObservations(endpointObs)
+
+		// add a reference to the request journal: e.g. for retrieving the JSONRPC request method.
+		endpointQueryResult.requestJournal = requestJournal
+
+		// add the endpoint query result to the request journal.
+		requestJournal.endpointQueryResults[index] = endpointQueryResult
+	}
+
+	return requestJournal, nil
 }

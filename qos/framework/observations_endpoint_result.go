@@ -2,8 +2,8 @@ package framework
 
 import (
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // buildObservation converts an EndpointQueryResult to observations.EndpointQueryResult
@@ -48,39 +48,34 @@ func (eqr *EndpointQueryResult) buildObservation() *observations.EndpointQueryRe
 }
 
 // extractEndpointQueryResultFromObservation extracts a single EndpointQueryResult from an observation's EndpointQueryResult
-// Ignores the HTTP stauts code: it is only required when responding to the client.
-func extractEndpointQueryResultFromObservation(
-	endpointQuery *endpointQuery,
-	obsResult *observations.EndpointQueryResult,
-) *EndpointQueryResult {
-	if obsResult == nil {
-		return nil
-	}
-	
+func extractEndpointQueryResultsFromObservations(
+	logger polylog.Logger,
+	observation *observations.EndpointQueryResult,
+) []*EndpointQueryResult {
+	// hydrate the logger
+	logger := logger.With("method", "extractEndpointQueryResultFromObservation")
+
 	// Create a new result and populate it from the observation
 	result := &EndpointQueryResult{
-		// Set the endpointQuery underlying the observations.
-		endpointQuery: endpointQuery,
-
 		// Set the result values to be copied from the observations.
 		StringValues: make(map[string]string),
 		IntValues:    make(map[string]int),
-		ExpiryTime:   timeFromProto(obsResult.ExpiryTime),
+		ExpiryTime:   timeFromProto(observation.ExpiryTime),
 	}
 
 	// Copy string values
-	for key, value := range obsResult.StringValues {
+	for key, value := range observation.StringValues {
 		result.StringValues[key] = value
 	}
 
 	// Copy int values
-	for key, value := range obsResult.IntValues {
+	for key, value := range observation.IntValues {
 		result.IntValues[key] = int(value)
 	}
 
 	// Convert error information
-	if obsResult.Error != nil {
-		result.Error = extractEndpointErrorFromObservation(obsResult.Error)
+	if endpointErr := observation.GetEndpointError(); endpointError != nil {
+		result.EndpointError = extractEndpointErrorFromObservation(endpointError)
 	}
 
 	return result

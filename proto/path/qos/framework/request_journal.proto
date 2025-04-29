@@ -1,0 +1,25 @@
+syntax = "proto3";
+package path.qos.framework;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
+
+import "path/qos/framework/jsonrpc.proto"; // Import basic JSONRPC messages.
+import "path/qos/framework/request.proto";  // Import Request-related messages.
+import "path/qos/framework/endpoint_query_result.proto"; // Import EndpointQueryResult
+
+// RequestJournal is the top-level container for all QoS observations for a request.
+message RequestJournal {
+  // Service identification
+  string service_name = 1; // e.g. EVM, Solana, CometBFT
+
+  // Only set if parsing and basic JSONRPC validation was successful.
+  optional JsonRpcRequest jsonrpc_request = 2;
+  
+  // Only set if the request failed.
+  // A parsed request can still have error set:
+  // e.g. if the QoS service does not support the JSONRPC request's method.
+  optional RequestError request_error = 3;
+
+  // Observations from endpoint(s)
+  repeated EndpointQueryResult endpoint_quey_result_observations = 4;
+}

@@ -16,27 +16,14 @@ enum RequestErrorKind {
   REQUEST_ERROR_VALIDATION_INVALID_PARAMS = 6;        // Parameters are incorrect
 }
 
-// TODO_IN_THIS_PR: Consider removing the http_status_code.
-
 // RequestError contains details about a request error
 message RequestError {
+  // enumeration of the kind of error the request encountered.
   RequestErrorKind error_kind = 1;
-  // HTTP status code returned to the client.
-  int32 http_status_code = 2;
-  string error_details = 3;
-  
-  // Only set for validation failures on valid JSONRPC structures
-  // e.g. missing params field when required.
-  optional JsonRpcRequest jsonrpc_request = 4;
-}
 
-// RequestObservation captures details about the original client request.
-message RequestObservation {
-  // Only set if parsing and basic JSONRPC validation was successful.
-  optional JsonRpcRequest jsonrpc_request = 1;
-  
-  // Only set if the request failed.
-  // A parsed request can still have error set:
-  // e.g. if the QoS service does not support the JSONRPC request's method.
-  optional RequestError request_error = 2;
+  // Details of the request error.
+  string error_details = 2;
+
+  // The response returned to the client.
+  JsonRpcResponse json_rpc_response = 3;
 }

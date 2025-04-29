@@ -12,6 +12,10 @@ type Version string
 
 const Version2 = Version("2.0")
 
+var (
+	ErrInvalidRequestInvalidVersion = errors.New("Invalid JSONRPC Request: invalid version.")
+	ErrInvalidRequestMissingMethod = errors.New("Invalid JSONRPC Request: missing method.")
+)
 // Request represents a request as specificed
 // by the JSONRPC spec.
 // See the following link for more details:
@@ -50,4 +54,25 @@ func (r Request) MarshalJSON() ([]byte, error) {
 
 	// Marshal and return the serializable version of the request
 	return json.Marshal(out)
+}
+
+// Validate provides a basic validation of JSONRPC requests.
+// It checks:
+// - JSONRPC version (must be "2.0")
+// - Method presence
+//
+// Returns a non-nil requestError if validation fails.
+func (r Request) Validate() error {
+	// Check JSONRPC version
+	if request.Jsonrpc != jsonrpc.Version2 {
+		return fmt.Errorf("%w: invalid version: %s", ErrInvalidRequestInvalidVersion, r.Jsonrpc)
+	}
+
+	// Check method presence
+	if request.Method == "" {
+		return ErrInvalidRequestMissingMethod
+	}
+
+	// Request is valid
+	return nil
 }

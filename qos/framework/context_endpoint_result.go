@@ -23,20 +23,13 @@ type EndpointQueryResultContext struct {
 	jsonrpcMethodResultBuilders map[jsonrpc.Method]EndpointQueryResultBuilder
 }
 
-// ===> TODO_IN_THIS_PR: find a better name to signal to the client they should call this when done with updating the EndpointQueryResult.
-func (ctx *EndpointQueryResultContext) Success() *EndpointQueryResult {
-	return &ctx.endpointQueryResult
-}
-
-
-
 // buildResult uses the supplied method builder to build the EndpointResult for the supplied endpointQuery.
 // A default builder is used if no matches were found for the request method.
 // Returns the endpointQuery augmented with the endpoint result.
 func (ctx *EndpointQueryResultContext) buildEndpointQueryResult() *EndpointQueryResult {
 	// Parse the endpoint's payload into JSONRPC response.
 	// Stores the parsed JSONRPC response in the endpointQuery.
-	shouldContinue := ctx.updateEndpointQueryWithParsedResponse()
+	shouldContinue := ctx.updateEndpointQueryResultWithParsedResponse()
 
 	// Parsing failed: skip the rest of the processing.
 	if !shouldContinue {
@@ -64,38 +57,38 @@ func (ctx *EndpointQueryResultContext) buildEndpointQueryResult() *EndpointQuery
 //
 // parseEndpointQuery parses the payload from an endpoint and handles empty responses and parse errors.
 // It returns a boolean indicating whether processing should continue (true) or stop (false).
-func (ctx *EndpointQueryResultContext) updateEndpointQueryWithParsedResponse() bool {
+func (ctx *EndpointQueryResultContext) updateEndpointQueryResultWithParsedResponse() bool {
 	logger := ctx.getHydratedLogger()
 
-	endpointQuery := ctx.EndpointQueryResult.endpointQuery
-
 	// Check for empty response
-	if len(endpointQuery.receivedData) == 0 {
-		ctx.logger.Info()
-		endpointQuery.result = buildResultForEmptyResponse(endpointQuery)
-		return endpointQuery, false
+	if len(ctx.EndpointQueryResult.endpointPayload) == 0 {
+		ctx.logger.Info().Msg("Received payload with 0 length from the endpoint. Service request will fail.")
+
+		ctx.EndpointQueryResult = buildResultForEmptyResponse(ctx.EndpointQueryResult)
+		return false
 	}
 
 	// Parse JSONRPC response
 	var jsonrpcResp jsonrpc.JsonRpcResponse
-	if err := json.Unmarshal(endpointQuery.receivedData, &jsonrpcResp); err != nil {
-		endpointQuery.result = buildResultForErrorUnmarshalingEndpointReturnedData(endpointQuery, err)
-		return endpointQuery, false
+	if err := json.Unmarshal(ctx.EndpointQueryResult.endpointPayload, &jsonrpcResp); err != nil {
+		// Error parsing the endpoint payload: return generic response to the client.
+		ctx.EndpointQueryResult = buildResultForErrorUnmarshalingEndpointReturnedData(ctx.EndpointQueryResult, err)
+		return false
 	}
 
 	// Validate the JSONRPC response
 	if err := jsonrpcResp.Validate(eq.request.ID); err != nil {
 		// TODO_IN_THIS_PR: define a separate method for JSONRPC response validation errors.
-		endpointQuery.result = buildResultForErrorUnmarshalingEndpointReturnedData(endpointQuery, err)
+		ctx.EndpointQueryResult = buildResultForErrorUnmarshalingEndpointPayload(ctx.EndpointQueryResult, err)
 		return endpointQuery, false
 	}
 
 	// Store the parsed result
-	endpointQuery.parsedResponse = jsonrpcResp
+	ctx.EndpointQueryResult.ParsedJSONRPCResponse = jsonrpcResp
 
 	// Return true to signal that parsing was successful.
 	// Processing will continue to the next step.
-	return endpointQuery, true
+	return true
 }
 
 // TODO_IN_THIS_PR: implement.

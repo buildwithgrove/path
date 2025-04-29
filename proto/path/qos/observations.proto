@@ -3,7 +3,7 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
-import "path/qos/framework/observations.proto"; // Import JSONRPC Framework observations
+import "path/qos/framework/request_journal.proto"; // Import JSONRPC Framework observations
 
 // Observations contains QoS measurements for a single service request.
 // Currently only supports JSONRPC-based service observations.
@@ -11,7 +11,7 @@ message Observations {
   // service_observations contains QoS measurements specific to the service type
   oneof service_observations {
     // jsonrpc contains QoS measurements for a JSON-RPC based service request
-    path.qos.framework.Observations jsonrpc_service = 1;
+    path.qos.framework.RequestJournal request_journal = 1;
 
     // Additional service types can be added here in the future
     // For example:

@@ -10,10 +10,10 @@ import (
 const (
 	// Default sanction duration for empty responses
 	DefaultEmptyResponseSanctionDuration = 5 * time.Minute
-	
+
 	// Default sanction duration for parse errors
 	DefaultParseErrorSanctionDuration = 5 * time.Minute
-	
+
 	// Default sanction duration for no responses
 	DefaultNoResponseSanctionDuration = 5 * time.Minute
 )

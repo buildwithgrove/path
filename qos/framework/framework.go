@@ -1,5 +1,5 @@
 // Package jsonrpc provides a framework for implementing Quality of Service (QoS) for JSONRPC-based services.
-// 
+//
 // Key components:
 // - Context-based processing for standardizing service interactions
 // - Custom endpoint selection based on service state
@@ -16,6 +16,12 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// TODO_MVP(@adshmh): Allow custom QoS services to supply custom request validation logic.
+// Example use case: specifying a list of allowed JSONRPC request methods.
+// This would require:
+// 1. Declaring a public RequestValidator interface.
+// 2. Helper functions, e.g. BuildRequestValidatorForAllowedMethods.
+//
 // TODO_FUTURE(@adshmh): Provide reasonable defaults for components to enable a no-config JSONRPC service QoS.
 //
 // QoSDefinition contains all custom behavior for a JSONRPC QoS service.

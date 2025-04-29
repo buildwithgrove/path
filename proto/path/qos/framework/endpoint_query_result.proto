@@ -13,6 +13,9 @@ message EndpointQueryResult {
   // Address of the endpoint that handled the request
   string endpoint_addr = 1;
 
+  // TODO_IN_THIS_PR: REMOVE: it is 200 IFF endpointError == nil, and otherwise determined by the EndpointErr (which contains the JSONRPC response error code)
+  //
+
   // HTTP response returned to the client.
   int32 client_http_response = 2;
 

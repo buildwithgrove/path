@@ -15,6 +15,10 @@ const (
 	// TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
 	// The default timeout when sending a request to an EVM blockchain endpoint.
 	defaultServiceRequestTimeoutMillisec = 10000
+
+	// maximum length of the error message stored in request validation failure observations and logs.
+	// This is used to prevent overly verbose error messages from being stored in logs and metrics leading to excessive memory usage and cost.
+	maxErrMessageLen = 1000
 )
 
 // requestJournal holds the data for a complete JSONRPC request lifecycle.
@@ -26,7 +30,7 @@ type requestJournal struct {
 
 	// The client's JSONRPC request
 	// Only set if the request was successfully parsed.
-	request *jsonrpc.Request
+	jsonrpcRequest *jsonrpc.Request
 
 	// Request error, if any.
 	requestError *requestError
@@ -35,14 +39,30 @@ type requestJournal struct {
 	endpointQueryResults []*EndpointQueryResult
 }
 
-func (rj *requestJournal) buildEndpointQuery(endpointAddr protocol.EndpointAddr, receivedData []byte) *endpointQuery {
-	return &endpointQuery{
+func (rj *requestJournal) setProtocolLevelError() {
+	// request already marked as failed.
+	// skip setting an error.
+	if rj.requestError != nil {
+		return
+	}
+
+	// set the request as failed with protocol-level error.
+	rj.requestError = buildRequestErrorForInternalErrProtocolErr(rj.jsonrpcRequest.ID)
+}
+
+func (rj *requestJournal) buildEndpointQueryResult(endpointAddr protocol.EndpointAddr, receivedData []byte) *EndpointQueryResult {
+	return &EndpointQueryResult{
+		requestJournal: rj,
 		// JSONRPC request underlying the endpoint query.
-		request:      rj.requestDetails.request,
+		request: rj.jsonrpcRequest,
 		// Address of the queried endpoint.
 		endpointAddr: endpointAddr,
 		// Data received from the endpoint.
-		receivedData: receivedData,
+		endpointPayload: receivedData,
+
+		// Initialize attribute maps
+		IntValues: make(map[string]int),
+		StrValues: make(map[string]string),
 	}
 }
 
@@ -51,6 +71,13 @@ func (rj *requestJournal) reportEndpointQueryResult(endpointQueryResult *Endpoin
 }
 
 func (rj *requestJournal) getServicePayload() protocol.Payload {
+	// This should never happen.
+	// A non-nil requestErr indicates the request failed to parse/validate.
+	if rj.requestErr != nil {
+		rj.logger.With("request_error", js.requestErr).Error().Msg("Error: getServicePayload() called for invalid/failed request. This is a bug.")
+		return protocol.Payload{}
+	}
+
 	// TODO_IN_THIS_PR: update this code
 	reqBz, err := json.Marshal(*rc.Request)
 	if err != nil {
@@ -84,36 +111,29 @@ func (rj *requestJournal) getHTTPResponse() gateway.HTTPResponse {
 	// - Invalid request: e.g. malformed payload from client.
 	// - Internal error: error reading HTTP request's body
 	// - Internal error: Protocol-level error, e.g. selected endpoint timed out.
-	if requestErrorJSONRPCResponse := rj.requestDetails.getRequestErrorJSONRPCResponse(); requestErrorJSONRPCResponse != nil {
-		return buildHTTPResponse(rj.Logger, requestErrorJSONRPCResponse)
+	if requestErr := rj.requestErr; requestErr != nil {
+		return buildHTTPResponse(rj.logger, requestErr.jsonrpcErrorResponse)
 	}
 
+	// TODO_IN_THIS_PR: verify the implementation here.
+	//
+	//
 	// TODO_IMPROVE(@adshmh): find a refactor:
 	// Goal: guarantee that valid request -> at least 1 endpoint query.
 	// Constraint: Such a refactor should keep the requestJournal as a data container.
 	//
 	// Use the most recently reported endpoint query.
 	// There MUST be an entry if the request has no error set.
-	selectedQuery := rj.processedEndpointQueries[len(rj.processedEndpointQueries)-1]
+	selectedEndpointQueryResult := rj.endpointQueryResults[len(rj.endpointQueryResults)-1]
 	jsonrpcResponse := selectedQuery.result.clientJSONRPCResponse
 	return buildHTTPResponse(rj.Logger, jsonrpcResponse)
 }
 
-func (rj *requestJournal) buildObservations() qosobservations.Observations {
-	observations := qosobservations.Observations {
-		ServiceName: rj.serviceName,
-		RequestObservation: rj.requestDetails.buildObservations(),
+func (rj *requestJournal) getJSONRPCRequestMethod() jsonrpc.Method {
+	request := rj.jsonrpcRequest
+	if request == nil {
+		return jsonrpc.Method("")
 	}
 
-	if len(rj.endpointQueryResults) == 0 {
-		return observations
-	}
-
-	endpointObservations := make([]*qosobservations.EndpointObservation, len(rj.endpointQueryResults))
-	for index, endpointQueryResult := range rj.endpointQueryResults {
-		endpointObservation[index] = endpointQueryResult.buildObservations()
-	}
-
-	observations.EndpointQueryResultObservations = endpointObservations
-	return observations
+	return request.Method
 }

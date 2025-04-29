@@ -5,6 +5,7 @@ import (
 )
 
 type requestErrorKind int
+
 const (
 	_ requestErrorKind = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.
 	requestErrKindInternalErrReadyHTTPBody
@@ -27,13 +28,9 @@ type requestError struct {
 	jsonrpcErrorResponse jsonrpc.Response
 }
 
-func (re *requestError) getJSONRPCResponse() *jsonrpc.Response {
-	return &re.jsonrpcErrorResponse
-}
-
 func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
-	return &requestError {
-		errorKind: requestErrKindInternalErrReadyHTTPBody,
+	return &requestError{
+		errorKind:    requestErrKindInternalErrReadyHTTPBody,
 		errorDetails: fmt.Sprintf("error reading HTTP request body: %v", err),
 		// Create JSONRPC error response for read failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseInternalReadError(err),
@@ -49,8 +46,8 @@ func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
 // This is an internal error, causing a valid request to fail.
 // The exact error is not known here: see the TODO_TECHDEBT above.
 func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestError {
-	return &requestError {
-		errorKind: requestErrKindInternalErrProtocolError,
+	return &requestError{
+		errorKind:    requestErrKindInternalErrProtocolError,
 		errorDetails: "error handling the request due to protocol-level error.",
 		// Create JSONRPC error response for protocol error.
 		jsonrpcErrorResponse: newJSONRPCErrResponseInternalProtocolError(requestID),
@@ -58,8 +55,8 @@ func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestEr
 }
 
 func buildRequestErrorForParseError(err error) *requestError {
-	return &requestError {
-		errorKind: requestErrKindJSONRPCParsingErr,
+	return &requestError{
+		errorKind:    requestErrKindJSONRPCParsingErr,
 		errorDetails: fmt.Sprintf("error parsing HTTP request into JSONRPC: %v", err),
 		// Create JSONRPC error response for parse failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseParseError(err),
@@ -69,8 +66,8 @@ func buildRequestErrorForParseError(err error) *requestError {
 func buildRequestErrorJSONRPCErrInvalidVersion(requestID jsonrpc.ID, version jsonrpc.Version) *requestError {
 	err := fmt.Errorf("invalid version in JSONRPC request: %s", version)
 
-	return &requestError {
-		errorKind: requestErrKindJSONRPCInvalidVersion,
+	return &requestError{
+		errorKind:    requestErrKindJSONRPCInvalidVersion,
 		errorDetails: err.Error(),
 		// Create JSONRPC error response for parse failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseInvalidVersion(err, requestID),
@@ -78,8 +75,8 @@ func buildRequestErrorJSONRPCErrInvalidVersion(requestID jsonrpc.ID, version jso
 }
 
 func buildRequestErrorJSONRPCErrMissingMethod(requestID jsonrpc.Request) *requestError {
-	return &requestError {
-		errorKind: requestErrKindJSONRPCMissingMethod,
+	return &requestError{
+		errorKind:    requestErrKindJSONRPCMissingMethod,
 		errorDetails: "No method specified by the JSONRPC request",
 		// Create JSONRPC error response for parse failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseMissingMethod(requestID),

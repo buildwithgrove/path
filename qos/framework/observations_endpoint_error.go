@@ -2,9 +2,9 @@ package framework
 
 import (
 	"time"
-	
+
 	"google.golang.org/protobuf/types/known/timestamppb"
-	
+
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -14,26 +14,26 @@ func (ee *EndpointError) buildObservation() *observations.EndpointError {
 	if ee == nil {
 		return nil
 	}
-	
+
 	observationError := &observations.EndpointError{
 		Description: ee.Description,
-		ErrorKind: translateToObservationErrorKind(ee.ErrorKind),
+		ErrorKind:   translateToObservationErrorKind(ee.ErrorKind),
 	}
-	
+
 	// Include sanction information if available
 	if ee.RecommendedSanction != nil {
 		observationError.Sanction = &observations.Sanction{
 			Reason: ee.Description,
-			Type: observations.SanctionType_SANCTION_TYPE_TEMPORARY,
+			Type:   observations.SanctionType_SANCTION_TYPE_TEMPORARY,
 		}
-		
+
 		// Convert expiry timestamp if available
 		if !ee.RecommendedSanction.Duration.IsZero() {
 			// Convert Go time.Duration to proto timestamp
 			observationError.Sanction.ExpiryTimestamp = timestampProto(time.Now().Add(ee.RecommendedSanction.Duration))
 		}
 	}
-	
+
 	return observationError
 }
 
@@ -42,23 +42,23 @@ func extractEndpointErrorFromObservation(obsError *observations.EndpointError) *
 	if obsError == nil {
 		return nil
 	}
-	
+
 	err := &EndpointError{
 		Description: obsError.Description,
-		ErrorKind: translateFromObservationErrorKind(obsError.ErrorKind),
+		ErrorKind:   translateFromObservationErrorKind(obsError.ErrorKind),
 	}
-	
+
 	// Include sanction information if available
 	if obsError.Sanction != nil {
 		err.RecommendedSanction = &Sanction{}
-		
+
 		// Convert sanction expiry timestamp to Duration
 		if obsError.Sanction.ExpiryTimestamp != nil {
 			sanctionExpiry := timeFromProto(obsError.Sanction.ExpiryTimestamp)
 			err.RecommendedSanction.Duration = sanctionExpiry.Sub(time.Now())
 		}
 	}
-	
+
 	return err
 }
 

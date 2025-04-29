@@ -13,14 +13,13 @@ import (
 func defaultResultBuilder(ctx *EndpointQueryResultContext) *EndpointQueryResult {
 	//TODO_IN_THIS_PR: implement this function:
 	/*
-				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.jsonRPCResponse.ID.String(),
-				},
-				ResponseValidationError: r.validationError,
-				HttpStatusCode:          int32(r.getHTTPStatusCode()),
+		JsonrpcResponse: &qosobservations.JsonRpcResponse{
+			Id: r.jsonRPCResponse.ID.String(),
+		},
+		ResponseValidationError: r.validationError,
+		HttpStatusCode:          int32(r.getHTTPStatusCode()),
 	*/
 }
-
 
 // TODO_IN_THIS_PR: clarify that the following happens for a NoResponse:
 // - NoResponse's underlying getHTTPStatusCode always returns a 500 Internal error.
@@ -40,21 +39,21 @@ func buildResultForNoResponse(request *jsonrpc.JsonRpcRequest) *EndpointQueryRes
 			parseError: fmt.Errorf("no endpoint responses received"),
 		},
 	}
-	
+
 	// Create result context for creating the result
 	ctx := &ResultContext{
 		Request: request,
 	}
-	
+
 	// Apply default sanction for no response
 	result.ResultData = applySanctionForNoResponse(ctx)
-	
+
 	// Set error kind
 	result.ResultData.Error.kind = EndpointDataErrorKindNoInteraction
-	
+
 	// Set error response
 	result.ErrorResponse = newErrResponseNoEndpointResponses(request.Id)
-	
+
 	return result
 }
 
@@ -78,22 +77,22 @@ func buildResultForEmptyResponse(call *EndpointCall) *EndpointQueryResult {
 			parseError: fmt.Errorf("empty response from endpoint"),
 		},
 	}
-	
+
 	// Create result context for creating the result
 	ctx := &ResultContext{
 		EndpointAddr: call.EndpointAddr,
 		Request:      call.Request,
 	}
-	
+
 	// Apply default sanction for empty response
 	result.ResultData = applySanctionForEmptyResponse(ctx)
-	
+
 	// Set error kind
 	result.ResultData.Error.kind = EndpointDataErrorKindEmptyPayload
-	
+
 	// Set error response
 	result.ErrorResponse = newErrResponseEmptyResponse(call.Request.Id)
-	
+
 	return result
 }
 
@@ -109,22 +108,22 @@ func buildResultForErrorUnmarshalingEndpointReturnedData(
 			parseError: parseError,
 		},
 	}
-	
+
 	// Create result context for creating the result
 	ctx := &ResultContext{
 		EndpointAddr: call.EndpointAddr,
 		Request:      call.Request,
 	}
-	
+
 	// Apply default sanction for parse error
 	result.ResultData = applySanctionForUnmarshalingError(ctx, parseError)
-	
+
 	// Set error kind and raw payload
 	result.ResultData.Error.kind = EndpointDataErrorKindUnmarshaling
 	result.ResultData.Error.rawPayload = call.ReceivedData
-	
+
 	// Set error response
 	result.ErrorResponse = newErrResponseParseError(call.Request.Id, parseError)
-	
+
 	return result
 }
