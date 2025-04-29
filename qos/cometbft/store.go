@@ -39,12 +39,12 @@ func (es *EndpointStore) Select(availableEndpoints []protocol.EndpointAddr) (pro
 
 	filteredEndpointsAddr, err := es.filterValidEndpoints(availableEndpoints)
 	if err != nil {
-		logger.Warn().Err(err).Msg("error filtering endpoints")
+		logger.Error().Err(err).Msg("error filtering endpoints")
 		return protocol.EndpointAddr(""), err
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Warn().Msg("all endpoints failed validation; selecting a random endpoint.")
+		logger.Warn().Msg("SELECTING A RANDOM ENDPOINT because all endpoints failed validation.")
 		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpointAddr, nil
 	}
