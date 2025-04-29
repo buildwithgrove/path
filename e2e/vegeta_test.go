@@ -291,13 +291,16 @@ type methodMetrics struct {
 // • Holds aggregated metrics for a service
 // • Used for service-level reporting
 type serviceSummary struct {
-	serviceID      protocol.ServiceID
+	serviceID protocol.ServiceID
+
 	avgP90Latency  time.Duration
 	avgLatency     time.Duration
 	avgSuccessRate float64
-	methodErrors   map[jsonrpc.Method]map[string]int
-	methodCount    int
-	totalErrors    int
+
+	methodConfigs map[jsonrpc.Method]methodTestConfig
+	methodErrors  map[jsonrpc.Method]map[string]int
+	methodCount   int
+	totalErrors   int
 }
 
 // ===== Metric Calculation Helpers =====
@@ -622,6 +625,14 @@ func calculateAvgLatency(latencies []time.Duration) time.Duration {
 	return time.Duration(int64(sum) / int64(len(latencies)))
 }
 
+// getAnyMethodKey returns an arbitrary method key from the map (first found)
+func getAnyMethodKey(m map[jsonrpc.Method]methodTestConfig) jsonrpc.Method {
+	for k := range m {
+		return k
+	}
+	return ""
+}
+
 // printServiceSummaries prints a summary of all services after tests are complete
 func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	fmt.Printf("\n\n%s===== SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
@@ -638,34 +649,17 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	// Print summary for each service
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
+		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
+		methodKey := getAnyMethodKey(summary.methodConfigs)
+		methodConfig := summary.methodConfigs[methodKey]
 
 		// Header with service ID
 		fmt.Printf("\n%s⛓️  Service: %s%s\n", BOLD_BLUE, svcID, RESET)
 
-		// Print metrics with appropriate coloring
-		successColor := RED // Red by default
-		if summary.avgSuccessRate >= 0.99 {
-			successColor = GREEN // Green for ≥99%
-		} else if summary.avgSuccessRate >= 0.95 {
-			successColor = YELLOW // Yellow for ≥95%
-		}
-
-		// Color code for latencies - using similar thresholds as getLatencyColor
-		// For P90 latency, we'll use 350ms as a good threshold (green ≤245ms, yellow ≤350ms, red >350ms)
-		p90Color := RED // Red by default
-		if summary.avgP90Latency <= 245*time.Millisecond {
-			p90Color = GREEN // Green if well under threshold
-		} else if summary.avgP90Latency <= 350*time.Millisecond {
-			p90Color = YELLOW // Yellow if moderately under threshold
-		}
-
-		// For average latency, we'll use 200ms as a good threshold (green ≤140ms, yellow ≤200ms, red >200ms)
-		avgColor := RED // Red by default
-		if summary.avgLatency <= 140*time.Millisecond {
-			avgColor = GREEN // Green if well under threshold
-		} else if summary.avgLatency <= 200*time.Millisecond {
-			avgColor = YELLOW // Yellow if moderately under threshold
-		}
+		// Use helpers for coloring based on method config
+		successColor := getRateColor(summary.avgSuccessRate, methodConfig.successRate)
+		p90Color := getLatencyColor(summary.avgP90Latency, methodConfig.maxP95Latency) // P90 closest to P95
+		avgColor := getLatencyColor(summary.avgLatency, methodConfig.maxP50Latency)    // Avg closest to P50
 
 		fmt.Printf("  • Average Success Rate: %s%.2f%%%s\n",
 			successColor, summary.avgSuccessRate*100, RESET)
@@ -793,7 +787,7 @@ func showWaitBar(secondsToWait int) {
 	waitBar.Start()
 
 	// Wait for specified seconds, updating the progress bar every second
-	for i := 0; i < secondsToWait; i++ {
+	for range secondsToWait {
 		waitBar.Increment()
 		<-time.After(1 * time.Second)
 	}
