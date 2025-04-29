@@ -37,7 +37,7 @@ type CachingFullNode struct {
 
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
-	underlyingNode *LazyFullNode
+	underlyingNode *lazyFullNode
 
 	appCache     *cache.Cache
 	sessionCache *cache.Cache
@@ -48,7 +48,7 @@ type CachingFullNode struct {
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
-func NewCachingFullNode(logger polylog.Logger, underlyingNode *LazyFullNode) *CachingFullNode {
+func NewCachingFullNode(logger polylog.Logger, underlyingNode *lazyFullNode) *CachingFullNode {
 	return &CachingFullNode{
 		logger: logger.With("component", "CachingFullNode"),
 
