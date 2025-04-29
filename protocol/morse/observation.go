@@ -48,8 +48,10 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_MAXED_OUT,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 
-	case ErrMisconfigured:
-		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_MISCONFIGURED,
+	// Endpoint returned an SDK/Pocket-Core error.
+	// Sanction for the session.
+	case ErrPocketCore:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_POCKET_CORE,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 
 	case ErrTLSCertificateVerificationFailed:
@@ -58,6 +60,24 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 
 	case ErrNonJSONResponse:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	// Endpoint returned HTTP 4XX status code.
+	// Sanction for the session.
+	case ErrSDK4XX:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_HTTP_4XX_RESPONSE,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	// Endpoint returned HTTP 5XX status code.
+	// Sanction for the session.
+	case ErrSDK5XX:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_HTTP_5XX_RESPONSE,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	// Endpoint returned HTTP response with mismatching ContentLength header and actual length.
+	// Sanction for the session.
+	case ErrHTTPContentLengthIncorrect:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 	}
 

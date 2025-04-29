@@ -12,20 +12,20 @@ morse_prepare_e2e_config: ## Setup Morse E2E test config file from the example t
 		echo ""; \
 		echo "Next steps:"; \
 		echo ""; \
-		echo "For external contributors:"; \
-		echo "  Update the following values in .morse.config.yaml:"; \
-		echo "  - url"; \
-		echo "  - relay_signing_key"; \
-		echo "  - signed_aats"; \
+		echo "👥 For external contributors:"; \
+		echo "  - Update in .morse.config.yaml:"; \
+		echo "    • url"; \
+		echo "    • relay_signing_key"; \
+		echo "    • signed_aats"; \
 		echo ""; \
-		echo "For Grove employees:"; \
+		echo "🌿 For Grove employees:"; \
 		echo "  1. Search for 'PATH' in 1Password"; \
 		echo "  2. Replace the contents of ./e2e/.morse.config.yaml with the config"; \
 		echo ""; \
 		echo "Then, for E2E tests:"; \
-		echo "  make test_e2e_morse_relay"; \
+		echo "  make test_e2e_evm_morse"; \
 		echo ""; \
-		echo "Alternatively, for local development"; \
+		echo "🧑‍💻 Alternatively, for local development: "; \
 		echo "  make morse_copy_e2e_config_to_local"; \
 		echo "  make path_up"; \
 		echo "################################################################"; \

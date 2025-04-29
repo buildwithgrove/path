@@ -53,10 +53,12 @@ func (r Request) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+// -----------------
 // The following functions build Params objects from various input types.
 // These are individually defined in order to allow type-safe param construction.
 //
 // JSON-RPC spec reference: https://www.jsonrpc.org/specification#parameter_structures
+// -----------------
 
 // BuildParamsFromString builds a Params object from a single string.
 //
