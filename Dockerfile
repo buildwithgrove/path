@@ -1,8 +1,8 @@
 # Builder stage
 FROM golang:1.23-alpine3.19 AS builder
 
-# Install necessary build dependencies
-RUN apk add --no-cache git make build-base
+# Install necessary build dependencies (minimized)
+RUN apk add --no-cache git
 
 # Set working directory
 WORKDIR /go/src/github.com/buildwithgrove/path
@@ -22,7 +22,9 @@ ENV GO111MODULE=on
 COPY . .
 
 # Build with optimization flags
-RUN go build -ldflags="-s -w" -o /go/bin/path ./cmd
+ARG TARGETARCH
+ARG TARGETOS
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /go/bin/path ./cmd
 
 # Final stage
 FROM alpine:3.19 AS final
@@ -33,8 +35,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Set working directory
 WORKDIR /app
 
-# Add runtime dependencies and prepare directories
-RUN apk add --no-cache ca-certificates tzdata && \
+# Add runtime dependencies (minimal) and prepare directories
+RUN apk add --no-cache ca-certificates && \
     mkdir -p /app/config && \
     chown -R appuser:appgroup /app
 

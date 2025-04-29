@@ -14,13 +14,15 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: "ubuntu-22.04"
+    runs-on: "ubuntu-latest"
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
 
       - name: Docker Metadata action
         id: meta
@@ -44,14 +46,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
+          build-args: |
+            IMAGE_TAG=${{ steps.meta.outputs.version }}
+            TARGETOS=linux
+            TARGETARCH=amd64
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: .
+          provenance: false
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Path API
