@@ -62,10 +62,16 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
+  // Next ID: 8
+
   // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 1;
+
+  // service_id is the identifier for the evm QoS implementation.
+  // It is the "alias" or human readable interpratation of the chain_id.
+  string service_id = 7;
 
   // The length of the client's request payload, in bytes.
   uint32 request_payload_length = 2;

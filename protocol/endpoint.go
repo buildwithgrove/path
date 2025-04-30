@@ -1,11 +1,15 @@
 package protocol
 
+import "strings"
+
 // EndpointAddr is used as the unique identifier for a service endpoint.
 // Each protocol interface implementation needs to define an endpoint address which uniquely identifies a service endpoint.
 // As of writing this comment(#50):
 // - Morse (POKT): uses a node's public key as its endpoint address
 // - Shannon (POKT): appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
 type EndpointAddr string
+
+type EndpointAddrList []EndpointAddr
 
 // Endpoint represents an entity which serves relay requests.
 type Endpoint interface {
@@ -22,5 +26,18 @@ type Endpoint interface {
 // EndpointSelector defines the functionality that the user of a protocol needs to provide.
 // E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
-	Select([]EndpointAddr) (EndpointAddr, error)
+	Select(EndpointAddrList) (EndpointAddr, error)
+}
+
+func (e EndpointAddr) String() string {
+	return string(e)
+}
+
+func (e EndpointAddrList) String() string {
+	// Converts each EndpointAddr to string and joins them with a comma
+	addrs := make([]string, len(e))
+	for i, addr := range e {
+		addrs[i] = string(addr)
+	}
+	return strings.Join(addrs, ", ")
 }
