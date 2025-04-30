@@ -7,10 +7,11 @@ import "path/qos/framework/endpoint_sanction.proto"; // import Sanction definiti
 
 // EndpointErrorKind identifies different kinds of endpoint data errors.
 enum EndpointErrorKind {
-  ENDPOINT_DATA_ERROR_KIND_UNSPECIFIED = 0;
-  ENDPOINT_DATA_ERROR_KIND_EMPTY_PAYLOAD = 2;      // Empty payload from endpoint
-  ENDPOINT_DATA_ERROR_KIND_UNMARSHALING = 3;       // Could not parse endpoint payload
-  ENDPOINT_DATA_ERROR_KIND_INVALID_RESULT = 4;     // Payload result doesn't match expected value
+  ENDPOINT_ERROR_KIND_UNSPECIFIED = 0;
+  ENDPOINT_ERROR_KIND_EMPTY_PAYLOAD = 1;      // Empty payload from endpoint.
+  ENDPOINT_ERROR_KIND_UNMARSHALING = 2;       // Could not parse endpoint payload.
+  ENDPOINT_ERROR_KIND_VALIDATION_ERR = 3;     // Parsed endpoint payload failed JSONRPC response validation.
+  ENDPOINT_ERROR_KIND_INVALID_RESULT = 4;     // Payload result doesn't match expected value: to be used by the Custom QoS implementation.
 }
 
 // EndpointError contains error details for endpoint queries.

@@ -1,26 +1,25 @@
 package framework
 
-func buildJSONRPCRequestObservation(jsonrpcReq jsonrpc.Request) *qosobservations.JsonRpcRequest {
-	return &qosobservations.JsonRpcRequest {
+import (
+	observations "github.com/buildwithgrove/path/observation/qos/framework"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
+
+func buildJSONRPCRequestObservation(jsonrpcReq jsonrpc.Request) *observations.JsonRpcRequest {
+	return &observations.JsonRpcRequest {
 		Id: jsonrpcReq.ID.String(),
 		Method: jsonrpcReq.Method,
 	}
 }
 
 // TODO_IN_THIS_PR: implement.
-func buildJSONRPCResponseObservation(jsonrpcResp jsonrpc.Response) *qosobservations.JsonRpcResponse {
+func buildJSONRPCResponseObservation(jsonrpcResp jsonrpc.Response) *observations.JsonRpcResponse {
 	return nil
 }
 
 func extractJSONRPCRequestFromObservation(
-	observation *qosobservations.RequestObservation,
+	jsonrpcRequestObs *observations.JsonRpcRequest,
 ) *jsonrpc.Request {
-	// Nil 
-	if observation == nil {
-		return nil 
-	}
-
-	jsonrpcRequestObs := observation.GetJsonRpcRequest()
 	if jsonrpcRequestObs == nil {
 		return nil
 	}
@@ -31,8 +30,24 @@ func extractJSONRPCRequestFromObservation(
 	}
 }
 
-func extractJSONRPCResponseFRomObservation(
-	observation *qosobservations.
+func extractJSONRPCResponseFromObservation(
+	observation *observations.JsonRpcResponse,
 ) *jsonrpc.Response {
+	if observation == nil {
+		return nil
+	}
 
+	jsonrpcResp := &jsonrpc.Response{
+		ID: jsonrpc.IDFromStr(observation.GetId()),
+		// TODO_MVP(@adshmh): consider capturing the result.
+	}
+
+	if jsonrpcErr := observation.GetErr(); jsonrpcErr != nil {
+		jsonrpcResp.Error = &jsonrpc.ResponseError{
+			Code: jsonrpcErr.GetCode(),
+			Message: jsonrpcErr.GetMessage(),
+		}
+	}
+
+	return jsonrpcResp
 }

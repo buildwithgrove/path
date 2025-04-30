@@ -66,14 +66,14 @@ func (es *endpointStore) storeEndpoint(addr protocol.EndpointAddr, endpoint Endp
 }
 
 // getEndpoint retrieves an endpoint by its address.
-func (es *endpointStore) getEndpoint(addr protocol.EndpointAddr) (*Endpoint, bool) {
+func (es *endpointStore) getEndpoint(addr protocol.EndpointAddr) *Endpoint {
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
 	if es.endpoints == nil {
-		return Endpoint{}, false
+		return Endpoint{}
 	}
 
-	endpoint, found := es.endpoints[addr]
-	return endpoint, found
+	endpoint := es.endpoints[addr]
+	return endpoint
 }

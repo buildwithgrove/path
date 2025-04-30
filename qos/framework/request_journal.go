@@ -3,7 +3,9 @@ package framework
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	qosobservations "github.com/buildwithgrove/path/observation/qos/framework"
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // TODO_IN_THIS_PR: verify the EmptyResponse and NoResponse scenarios:
@@ -68,6 +70,11 @@ func (rj *requestJournal) buildEndpointQueryResult(endpointAddr protocol.Endpoin
 
 func (rj *requestJournal) reportEndpointQueryResult(endpointQueryResult *EndpointQueryResult) {
 	rj.endpointQueryResults = append(rj.endpointQueryResults, endpointQueryResult)
+}
+
+// Example: setting protocol-level error, i.e. no endpoint responses were received.
+func (rj *requestJournal) setRequestError(requestErr *requestError) {
+	rj.request.Error = requestErr
 }
 
 func (rj *requestJournal) getServicePayload() protocol.Payload {
@@ -136,4 +143,13 @@ func (rj *requestJournal) getJSONRPCRequestMethod() jsonrpc.Method {
 	}
 
 	return request.Method
+}
+
+func (rj *requestJournal) getJSONRPCRequestID() jsonrpc.ID {
+	request := rj.jsonrpcRequest
+	if request == nil {
+		return jsonrpc.ID{}
+	}
+
+	return request.ID
 }

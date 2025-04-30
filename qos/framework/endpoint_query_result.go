@@ -2,8 +2,10 @@ package framework
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -57,7 +59,7 @@ type EndpointQueryResult struct {
 	// e.g. for a Solana `getEpochInfo` request, the custom service could derive two endpoint attributes as follows:
 	// - "BlockHeight": 0x1234
 	// - "Epoch": 5
-	StringValues map[string]string
+	StrValues map[string]string
 	IntValues    map[string]int
 
 	// The time at which the query result is expired.
@@ -83,7 +85,7 @@ func (eqr *EndpointQueryResult) IsJSONRPCError() bool {
 }
 
 func (eqr *EndpointQueryResult) GetResultAsInt() (int, error) {
-	parsedJSONRPCResponse := eqr.getParsedJSONRPCResponse()
+	parsedJSONRPCResponse, err := eqr.getParsedJSONRPCResponse()
 	if err != nil {
 		return 0, err
 	}
@@ -92,7 +94,7 @@ func (eqr *EndpointQueryResult) GetResultAsInt() (int, error) {
 }
 
 func (eqr *EndpointQueryResult) GetResultAsStr() (string, error) {
-	parsedJSONRPCResponse := eqr.getParsedJSONRPCResponse()
+	parsedJSONRPCResponse, err := eqr.getParsedJSONRPCResponse()
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +103,7 @@ func (eqr *EndpointQueryResult) GetResultAsStr() (string, error) {
 }
 
 func (eqr *EndpointQueryResult) getParsedJSONRPCResponse() (*jsonrpc.Response, error) {
-	parsedJSONRPCResponse := eqr.endpointQuery.parsedJSONRPCResponse
+	parsedJSONRPCResponse := eqr.parsedJSONRPCResponse
 	// Endpoint payload failed to parse as JSONRPC response.
 	// This is not considered a JSONRPC error response.
 	if parsedJSONRPCResponse == nil {
@@ -112,7 +114,7 @@ func (eqr *EndpointQueryResult) getParsedJSONRPCResponse() (*jsonrpc.Response, e
 }
 
 func (eqr *EndpointQueryResult) Success(
-	resultBuilders ...EndpointQueryResultBuilder
+	resultBuilders ...ResultBuilder,
 ) *EndpointQueryResult {
 	for _, builder := range resultBuilders {
 		builder(eqr)
@@ -136,7 +138,7 @@ func (eqr *EndpointQueryResult) Error(description string) *EndpointQueryResult {
 // SanctionEndpoint creates an error result with a temporary sanction.
 func (eqr *EndpointQueryResult) SanctionEndpoint(description, reason string, duration time.Duration) *EndpointQueryResult {
 	eqr.EndpointError = &EndpointError {
-		ErrorKind: EndpointDataErrorKindInvalidResult,
+		ErrorKind: EndpointErrKindInvalidResult,
 		Description: description,
 		RecommendedSanction: &Sanction{
 			Type:        SanctionTypeTemporary,
@@ -151,7 +153,7 @@ func (eqr *EndpointQueryResult) SanctionEndpoint(description, reason string, dur
 // PermanentSanction creates an error result with a permanent sanction.
 func (eqr *EndpointQueryResult) PermanentSanction(description, reason string) *EndpointQueryResult {
 	eqr.EndpointError = &EndpointError {
-		ErrorKind: EndpointDataErrorKindInvalidResult,
+		ErrorKind: EndpointErrKindInvalidResult,
 		Description: description,
 		RecommendedSanction: &Sanction{
 			Type:        SanctionTypePermanent,
@@ -162,9 +164,9 @@ func (eqr *EndpointQueryResult) PermanentSanction(description, reason string) *E
 	return eqr
 }
 
-type EndpointQueryResultBuilder func(*EndpointQueryResultBuilder)
+type ResultBuilder func(*EndpointQueryResult)
 
-func (eqr *EndpointQueryResult) AddIntResult(key string, value int) EndpointQueryResultBuilder {
+func (eqr *EndpointQueryResult) AddIntResult(key string, value int) ResultBuilder {
 	return func(r *EndpointQueryResult) {
 		if r.IntValues == nil {
 			r.IntValues = make(map[string]int)
@@ -173,7 +175,7 @@ func (eqr *EndpointQueryResult) AddIntResult(key string, value int) EndpointQuer
 	}
 }
 
-func (eqr *EndpointQueryResult) AddStrResult(key, value string) EndpointQueryResultBuilder {
+func (eqr *EndpointQueryResult) AddStrResult(key, value string) ResultBuilder {
 	return func(r *EndpointQueryResult) {
 		if r.StrValues == nil {
 			r.StrValues = make(map[string]string)

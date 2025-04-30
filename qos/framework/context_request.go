@@ -3,12 +3,14 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	qosobservations "github.com/buildwithgrove/path/observation/qos/framework"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -23,32 +25,16 @@ import (
 // TODO_TECHDEBT: Need to add a Validate() method here to allow the caller (e.g. gateway)
 // determine whether the endpoint's response was valid, and whether a retry makes sense.
 //
-// requestContext provides the support required by the gateway
+// requestQoSContext provides the support required by the gateway
 // package for handling service requests.
-var _ gateway.RequestQoSContext = &requestContext{}
-
-// TODO_IN_THIS_PR: change the errorKind to private + find the correct file for it.
-
-// TODO_FUTURE(@adshmh): implement custom, typed result extractors that are commonly used by custom QoS implementations.
-// Example:
-// ResultContext.
-// endpointErrorKind identifies different kinds of endpoint data errors.
-type endpointErrorKind int
-
-const (
-	EndpointDataErrorKindUnspecified   endpointErrorKind = iota
-	EndpointDataErrorKindNoInteraction                   // No endpoint interaction occurred or no payload received
-	EndpointDataErrorKindEmptyPayload                    // Empty payload from endpoint
-	EndpointDataErrorKindUnmarshaling                    // Could not parse endpoint payload
-	EndpointDataErrorKindInvalidResult                   // Payload result doesn't match expected format
-)
+var _ gateway.RequestQoSContext = &requestQoSContext{}
 
 // TODO_IN_THIS_PR: sort out the scope of fields and methods: private/public on private structs.
 //
 // requestQoSContext holds the context for a request through its lifecycl.
 // It contains all the state needed to process the request, build responses, and generate observations.
 type requestQoSContext struct {
-	Logger polylog.Logger
+	logger polylog.Logger
 
 	// Tracks all data related to the current request context:
 	// - client's request
@@ -79,10 +65,10 @@ func (rc *requestQoSContext) UpdateWithResponse(endpointAddr protocol.EndpointAd
 	resultCtx := rc.contextBuilder.buildEndpointQueryResultContext(endpointQueryResult)
 
 	// Build an endpoint query result using the context.
-	endpointQueryResult := resultCtx.buildEndpointQueryResult()
+	processedEndpointQueryResult := resultCtx.buildEndpointQueryResult()
 
 	// Track the result in the request journal.
-	rc.journal.reportEndpointQueryResult(endpointQueryResult)
+	rc.journal.reportEndpointQueryResult(processedEndpointQueryResult)
 }
 
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into single JSONRPC requests and tracking endpoints' response(s) to each.
@@ -94,6 +80,7 @@ func (rc *requestQoSContext) UpdateWithResponse(endpointAddr protocol.EndpointAd
 // Implements the gateway.RequestQoSContext interface.
 func (rc requestQoSContext) GetHTTPResponse() gateway.HTTPResponse {
 	// check if a protocol-level error has occurred.
+	// A protocol-level error means no endpoint responses were received.
 	rc.checkForProtocolLevelError()
 
 	// use the request journal to build the client's HTTP response.
@@ -102,37 +89,46 @@ func (rc requestQoSContext) GetHTTPResponse() gateway.HTTPResponse {
 
 // GetObservations uses the request's journal to build and return all observations.
 // Implements gateway.RequestQoSContext interface.
-func (rc requestContext) GetObservations() qosobservations.Observations {
+func (rc requestQoSContext) GetObservations() qosobservations.Observations {
 	// check if a protocol-level error has occurred.
+	// A protocol-level error means no endpoint responses were received.
 	rc.checkForProtocolLevelError()
 
 	// Use the request journal to generate the observations.
-	return rc.journal.buildObservations()
+	return rc.journal.getObservations()
 }
 
 // Build and returns an instance EndpointSelectionContext to perform endpoint selection for the client request.
 // Implements the gateway.RequestQoSContext
 func (rc *requestQoSContext) GetEndpointSelector() protocol.EndpointSelector {
-	selectorCtx := rc.contextBuilder.buildEndpointSelectionContext()
-	return selectorCtx.buildSelectorForRequest(rc.journal)
+	endpointSelectionCtx := rc.contextBuilder.buildEndpointSelectionContext(rc.journal)
+	return endpointSelectionCtx
 }
 
 // Declares the request as failed with protocol-level error if no data from any endpoints has been reported to the request context.
-func (rc *requestContext) checkForProtocolLevelError() {
-	// Assume protocol-level error if no endpoint responses have been received yet.
-	if len(rc.journal.endpointQueryResults) == 0 {
-		rc.journal.setProtocolLevelError()
+func (rc *requestQoSContext) checkForProtocolLevelError() {
+	// One or more endpoint results were received: no protocol error has occurred.
+	if len(rc.journal.endpointQueryResults) > 0 {
+		return
 	}
+
+	// Assume protocol-level error if no endpoint responses have been received yet.
+	//
+	// Build a request error.
+	// Include the cluent JSONRPC request's ID if available.
+	reqErr := buildRequestErrorForInternalErrProtocolErr(rc.journal.getJSONRPCRequestID())
+	// Set the request error in the journal.
+	rc.journal.setRequestError(reqErr)
 }
 
 
-func (ctx *requestContext) initFromHTTP(httpReq *http.Request) bool {
+func (ctx *requestQoSContext) initFromHTTP(httpReq *http.Request) bool {
 	jsonrpcReq, reqErr := parseHTTPRequest(ctx.logger, httpReq)
 
 	// initialize the request journal to track all request data and events.
 	ctx.journal = &requestJournal{
 		jsonrpcRequest: jsonrpcReq,
-		requestErr: reqErr,
+		requestError: reqErr,
 	}
 
 	// Only proceed with next steps if there were no errors parsing the HTTP request into a JSONRPC request.
@@ -162,7 +158,7 @@ func parseHTTPRequest(
 	}
 
 	// Parse the JSON-RPC request
-	var jsonrpcReq jsonrpc.JsonRpcRequest
+	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
 		// TODO_IN_THIS_PR: log the first 1K bytes of the body.
 		// Handle parse error (client error)
@@ -175,16 +171,16 @@ func parseHTTPRequest(
 	if validationErr := jsonrpcReq.Validate(); validationErr != nil {
 		// Request failed basic JSONRPC request validation.
 		logger.Info().Err(validationErr).
-			Str("method", jsonrpcReq.Method).
+			Str("method", string(jsonrpcReq.Method)).
 			Msg("JSONRPC Request validation failed")
 
-		return jsonrpcReq, buildRequestErrorJSONRPCValidationError(jsonrpcReq.ID, validationErr)
+		return &jsonrpcReq, buildRequestErrorJSONRPCValidationError(jsonrpcReq.ID, validationErr)
 	}
 
 	// Request is valid
 	logger.Debug().
-		Str("method", jsonrpcReq.Method).
+		Str("method", string(jsonrpcReq.Method)).
 		Msg("Request validation successful")
 
-	return jsonrpcReq, nil
+	return &jsonrpcReq, nil
 }

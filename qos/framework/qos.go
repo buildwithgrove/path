@@ -58,7 +58,7 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 	// reconstruct the request journal matching the observations.
 	requestJournal, err := buildRequestJournalFromObservations(q.logger, serviceRequestObservations)
 	if err != nil {
-		q.logger.Error().Err(err).Msg("Error building the request journal from observations: skipping the application of observations.")a
+		q.logger.Error().Err(err).Msg("Error building the request journal from observations: skipping the application of observations.")
 		return err
 	}
 
@@ -100,12 +100,15 @@ func (q *QoS) buildEndpointQueryResultContext(endpointQueryResult *EndpointQuery
 // The context provides:
 // - Read-only access to current service state and endpoint store
 // - Custom endpoint selector logic from QoS service definition
-func (q *QoS) buildEndpointSelectionContext() *EndpointSelectionContext {
+func (q *QoS) buildEndpointSelectionContext(requestJournal *requestJournal) *EndpointSelectionContext {
 	return &EndpointSelectionContext{
+		logger: q.Logger,
+
+		requestJournal: requestJournal,
 		// Service State (read-only)
 		// Allows the custom QoS service to base the validation/selection of endpoints on current state.
 		// Includes the endpoint store in read-only mode.
-		*ReadonlyServiceState: q.serviceState,
+		*ServiceState: q.serviceState,
 		// The endpoint selector logic defined by the custom QoS service defintion.
 		customSelector:        q.qosDefinition.EndpointSelector,
 	}

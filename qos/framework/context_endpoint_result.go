@@ -1,6 +1,10 @@
 package framework
 
 import (
+	"encoding/json"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -39,7 +43,7 @@ func (ctx *EndpointQueryResultContext) buildEndpointQueryResult() *EndpointQuery
 	}
 
 	// Use the custom endpoint query result builder, if one is found matching the JSONRPC request's method.
-	builder, found := ctx.jsonrpcMethodResultBuilders[parsedEndpointQuery.request.Method]
+	builder, found := ctx.jsonrpcMethodResultBuilders[ctx.getJSONRPCRequestMethod()]
 	if !found {
 		// Use default processor for methods not specified by the custom QoS service definition.
 		builder = defaultResultBuilder
@@ -62,29 +66,32 @@ func (ctx *EndpointQueryResultContext) updateEndpointQueryResultWithParsedRespon
 
 	// Check for empty response
 	if len(ctx.EndpointQueryResult.endpointPayload) == 0 {
-		ctx.logger.Info().Msg("Received payload with 0 length from the endpoint. Service request will fail.")
-
+		logger.Info().Msg("Received payload with 0 length from the endpoint. Service request will fail.")
 		ctx.EndpointQueryResult = buildResultForEmptyResponse(ctx.EndpointQueryResult)
 		return false
 	}
 
 	// Parse JSONRPC response
-	var jsonrpcResp jsonrpc.JsonRpcResponse
+	var jsonrpcResp jsonrpc.Response
 	if err := json.Unmarshal(ctx.EndpointQueryResult.endpointPayload, &jsonrpcResp); err != nil {
+		logger.Info().Err(err).Msg("Endpoint payload failed to parse into a JSONRPC response.")
 		// Error parsing the endpoint payload: return generic response to the client.
 		ctx.EndpointQueryResult = buildResultForErrorUnmarshalingEndpointReturnedData(ctx.EndpointQueryResult, err)
 		return false
 	}
 
 	// Validate the JSONRPC response
-	if err := jsonrpcResp.Validate(eq.request.ID); err != nil {
-		// TODO_IN_THIS_PR: define a separate method for JSONRPC response validation errors.
-		ctx.EndpointQueryResult = buildResultForErrorUnmarshalingEndpointPayload(ctx.EndpointQueryResult, err)
-		return endpointQuery, false
+	if err := jsonrpcResp.Validate(ctx.getJSONRPCRequestID()); err != nil {
+		logger.Info().Err(err).Msg("Parsed endpoint payload failed validation as JSONRPC response.")
+		// JSONRPC response failed validation: return generic response to the client.
+		ctx.EndpointQueryResult = buildResultForErrorValidatingEndpointResponse(ctx.EndpointQueryResult, err)
+		return false
 	}
 
+	logger.Debug().Msg("Successfully validated endpoint payload as JSONRPC response.")
+
 	// Store the parsed result
-	ctx.EndpointQueryResult.ParsedJSONRPCResponse = jsonrpcResp
+	ctx.EndpointQueryResult.parsedJSONRPCResponse = &jsonrpcResp
 
 	// Return true to signal that parsing was successful.
 	// Processing will continue to the next step.

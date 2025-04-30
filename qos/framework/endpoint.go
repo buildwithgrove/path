@@ -22,7 +22,7 @@ type Endpoint struct {
 	// Examples:
 	// - "eth_blockNumber": &EndpointQueryResult{IntValues: {"blockNumber": 0x1234}}
 	// - "eth_getBalance": &EndpointQueryResult{
-	//     StringValues: {"address": "0x8d97..."},
+	//     StrValues: {"address": "0x8d97..."},
 	//     IntValues: {"balance": 133456789},
 	//   }
 	queryResults map[jsonrpc.Method]*EndpointQueryResult
@@ -31,12 +31,12 @@ type Endpoint struct {
 	resultsMu sync.RWMutex
 }
 
-// GetQueryResultStringValue retrieves a string attribute of a result by key.
+// GetStrResult retrieves a string attribute of a result by key.
 // DEV_NOTE: This design pattern:
 // - Prevents map leaking and unauthorized modifications through pointers
 // - Avoids expensive struct cloning
 // - Maintains proper encapsulation
-func (e *Endpoint) GetQueryResultStringValue(resultKey jsonrpc.Method, valueKey string) (string, bool) {
+func (e *Endpoint) GetStrResult(resultKey jsonrpc.Method, valueKey string) (string, bool) {
 	e.resultsMu.RLock()
 	defer e.resultsMu.RUnlock()
 
@@ -45,26 +45,28 @@ func (e *Endpoint) GetQueryResultStringValue(resultKey jsonrpc.Method, valueKey 
 		return "", false
 	}
 
-	return result.StringValues[valueKey]
+	strValue, found := result.StrValues[valueKey]
+	return strValue, found
 }
 
-// GetQueryResultStringValue retrieves an integer attribute of a result by key.
-// See the comment on GetQueryResultStringValue for notes on this pattern.
-func (e *Endpoint) GetQueryResultIntValue(resultKey jsonrpc.Method, valueKey string) (int, bool) {
+// GetIntResult retrieves an integer attribute of a result by key.
+// See the comment on GetStrResult for notes on this pattern.
+func (e *Endpoint) GetIntResult(resultKey jsonrpc.Method, valueKey string) (int, bool) {
 	e.resultsMu.RLock()
 	defer e.resultsMu.RUnlock()
 
 	result, exists := e.queryResults[resultKey]
 	if !exists || result == nil {
-		return "", false
+		return 0, false
 	}
 
-	return result.IntValues[valueKey]
+	intValue, found := result.IntValues[valueKey]
+	return intValue, found
 }
 
 // TODO_IN_THIS_PR: implement.
-func (e *Endpoint) HasActiveSanction() (Sanction, bool) {
-
+func (e *Endpoint) GetActiveSanction() (Sanction, bool) {
+	return Sanction{}, false
 }
 
 // ApplyQueryResult updates the endpoint's attributes with attributes from the query result.
@@ -88,7 +90,7 @@ func (e *Endpoint) applyQueryResults(endpointQueryResults []*EndpointQueryResult
 		}
 
 		// Update the endpoint result matching the JSONRPC request.
-		e.queryResult[jsonrpcRequestMethod] = result
+		e.queryResults[jsonrpcRequestMethod] = endpointQueryResult 
 
 		e.logger.With("jsonrpc_request_method", jsonrpcRequestMethod).Debug().Msg("Updated endpoint with query result.")
 	}

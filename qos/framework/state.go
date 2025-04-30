@@ -25,11 +25,9 @@ type ServiceState struct {
 	// stateParameters
 	parameters map[string]*StateParameter
 
-	endpointStore *endpointStore
-}
-
-func (s *ServiceState) GetEndpoint(endpointAddr protocol.EndpointAddr) (Endpoint, bool) {
-	return s.endpointStore.getEndpoint(endpointAddr)
+	// endpoint store maintained by the service state.
+	// declared embedded to allow direct access to the store methods, e.g. getEndpoint
+	*endpointStore
 }
 
 func (s *ServiceState) GetStrParam(paramName string) (string, bool) {
@@ -70,14 +68,15 @@ func (s *ServiceState) GetConsensusParam(paramName string) (map[string]int, bool
 }
 
 // Returns the stored Endpoint structs matching the endpoint queries.
-func (s *serviceState) updateStoredEndpoints(endpointQueryResults []*EndpointQueryResult) []*Endpoint {
+func (s *ServiceState) updateStoredEndpoints(endpointQueryResults []*EndpointQueryResult) []*Endpoint {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	return s.endpointStore.updateStoredEndpoints(endpointQueryResults)
 }
 
-func (s *ServiceState) updateParameters(updates StateParameterUpdateSet) error {
+// TODO_IN_THIS_PR: copy the supplied parameter values to prevent reference leaks.
+func (s *ServiceState) updateParameters(updates *StateParameterUpdateSet) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

@@ -9,11 +9,15 @@ type requestErrorKind int
 const (
 	_ requestErrorKind = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.
 	requestErrKindInternalErrReadyHTTPBody
+	requestErrKindInternalProtocolErr
 	requestErrKindJSONRPCParsingErr
-	requestErrKindJSONRPCInvalidVersion
-	requestErrKindJSONRPCMissingMethod
+	requestErrKindJSONRPCValidationErr
 )
 
+// TODO_FUTURE(@adshmh): Consider making requestError public.
+// This would allow custom QoS to reject valid JSONRPC requests.
+// e.g. reject a JSONRPC request with an unsupported method.
+// 
 type requestError struct {
 	// Captures the kind of error the request encountered.
 	// e.g. error parsing HTTP payload into a JSONRPC request.
@@ -43,6 +47,7 @@ func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
 // - Update requestContext: add ReportProtocolError to pass the error to the requestCtx.journal.request object.
 //
 // Protocol-level error: e.g. endpoint timeout has occurred.
+// No endpoint responses are reported to the QoS.
 // This is an internal error, causing a valid request to fail.
 // The exact error is not known here: see the TODO_TECHDEBT above.
 func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestError {
@@ -63,22 +68,11 @@ func buildRequestErrorForParseError(err error) *requestError {
 	}
 }
 
-func buildRequestErrorJSONRPCErrInvalidVersion(requestID jsonrpc.ID, version jsonrpc.Version) *requestError {
-	err := fmt.Errorf("invalid version in JSONRPC request: %s", version)
-
+func buildRequestErrorJSONRPCValidationError(requestID jsonrpc.ID, validationErr error) *requestError {
 	return &requestError{
-		errorKind:    requestErrKindJSONRPCInvalidVersion,
-		errorDetails: err.Error(),
+		errorKind:    requestErrKindJSONRPCValidationErr,
+		errorDetails: fmt.Sprintf("JSONRPC request failed validation: %s", validationErr.Error()),
 		// Create JSONRPC error response for parse failure
-		jsonrpcErrorResponse: newJSONRPCErrResponseInvalidVersion(err, requestID),
-	}
-}
-
-func buildRequestErrorJSONRPCErrMissingMethod(requestID jsonrpc.Request) *requestError {
-	return &requestError{
-		errorKind:    requestErrKindJSONRPCMissingMethod,
-		errorDetails: "No method specified by the JSONRPC request",
-		// Create JSONRPC error response for parse failure
-		jsonrpcErrorResponse: newJSONRPCErrResponseMissingMethod(requestID),
+		jsonrpcErrorResponse: newJSONRPCErrResponseJSONRPCRequestValidationError(requestID, validationErr),
 	}
 }

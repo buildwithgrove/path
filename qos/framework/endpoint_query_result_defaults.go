@@ -8,8 +8,11 @@ import (
 )
 
 // TODO_IN_THIS_PR: reword/rename the method and the comment.
-// defaultResultBuilder is applied by the endpointCallProcessor on EndpointCalls not matching any of the JSONRPC methods specified by the custom service QoS.
-// It builds an EndpointResult to track JSONRPC requests/responses which are not utilized by the custom QoS service for updating the service state or endpoint selection.
+// defaultResultBuilder is applied by the endpointCallProcessor on endpoint responses not matching any of the JSONRPC methods specified by the custom service QoS.
+// It builds an EndpointQueryResult to track JSONRPC requests/responses not utilized by the custom QoS service for updating the service state or endpoint selection.
+// Used in generating observations for:
+// - Metrics
+// - Data Pipeline
 func defaultResultBuilder(ctx *EndpointQueryResultContext) *EndpointQueryResult {
 	//TODO_IN_THIS_PR: implement this function:
 	/*
@@ -19,42 +22,7 @@ func defaultResultBuilder(ctx *EndpointQueryResultContext) *EndpointQueryResult 
 		ResponseValidationError: r.validationError,
 		HttpStatusCode:          int32(r.getHTTPStatusCode()),
 	*/
-}
-
-// TODO_IN_THIS_PR: clarify that the following happens for a NoResponse:
-// - NoResponse's underlying getHTTPStatusCode always returns a 500 Internal error.
-// - NoResponse is always an invalid response.
-//
-// buildResultForNoResponse handles the case when no endpoint response was received.
-// This can occur due to protocol-level failures or when no endpoint was selected.
-// This is not the same as empty responses (where an endpoint responded with empty data).
-func buildResultForNoResponse(request *jsonrpc.JsonRpcRequest) *EndpointQueryResult {
-	// Create a synthetic result for protocol error
-	result := &EndpointResult{
-		Call: &EndpointCall{
-			Request:    request,
-			ReceivedAt: time.Now(),
-		},
-		parseResult: &parseResult{
-			parseError: fmt.Errorf("no endpoint responses received"),
-		},
-	}
-
-	// Create result context for creating the result
-	ctx := &ResultContext{
-		Request: request,
-	}
-
-	// Apply default sanction for no response
-	result.ResultData = applySanctionForNoResponse(ctx)
-
-	// Set error kind
-	result.ResultData.Error.kind = EndpointDataErrorKindNoInteraction
-
-	// Set error response
-	result.ErrorResponse = newErrResponseNoEndpointResponses(request.Id)
-
-	return result
+	return nil
 }
 
 // TODO_MVP(@adshmh): Implement request retry support:
@@ -68,62 +36,56 @@ func buildResultForNoResponse(request *jsonrpc.JsonRpcRequest) *EndpointQueryRes
 // An empty response is always invalid: e.g. EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_EMPTY
 //
 // buildResultForEmptyResponse handles the case when an endpoint returned an empty response.
-func buildResultForEmptyResponse(call *EndpointCall) *EndpointQueryResult {
-	// Create a new result with the call
-	result := &EndpointResult{
-		Call: call,
-		parseResult: &parseResult{
-			isEmpty:    true,
-			parseError: fmt.Errorf("empty response from endpoint"),
-		},
+func buildResultForEmptyResponse(endpointQueryResult *EndpointQueryResult) *EndpointQueryResult {
+	endpointError := &EndpointError { 
+		ErrorKind: EndpointErrKindEmptyPayload,
+		Description: "endpoint returned an empty response",
+		// Set the recommended sanction based on the error
+		RecommendedSanction: getRecommendedSanction(EndpointErrKindEmptyPayload, nil),
 	}
 
-	// Create result context for creating the result
-	ctx := &ResultContext{
-		EndpointAddr: call.EndpointAddr,
-		Request:      call.Request,
-	}
+	// Set a generic response.
+	endpointQueryResult.Response = newErrResponseEmptyEndpointResponse(endpointQueryResult.getJSONRPCRequestID())
+	// Set the endpoint error
+	endpointQueryResult.EndpointError = endpointError
 
-	// Apply default sanction for empty response
-	result.ResultData = applySanctionForEmptyResponse(ctx)
-
-	// Set error kind
-	result.ResultData.Error.kind = EndpointDataErrorKindEmptyPayload
-
-	// Set error response
-	result.ErrorResponse = newErrResponseEmptyResponse(call.Request.Id)
-
-	return result
+	return endpointQueryResult
 }
 
 // buildResultForErrorUnmarshalingEndpointReturnedData handles the case when parsing the endpoint's returned data failed.
 func buildResultForErrorUnmarshalingEndpointReturnedData(
-	call *EndpointCall,
+	endpointQueryResult *EndpointQueryResult,
 	parseError error,
 ) *EndpointQueryResult {
-	// Create a new result with the call
-	result := &EndpointResult{
-		Call: call,
-		parseResult: &parseResult{
-			parseError: parseError,
-		},
+	endpointError := &EndpointError {
+		ErrorKind: EndpointErrKindUnmarshaling,
+		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
+		RecommendedSanction: getRecommendedSanction(EndpointErrKindUnmarshaling, parseError),
 	}
 
-	// Create result context for creating the result
-	ctx := &ResultContext{
-		EndpointAddr: call.EndpointAddr,
-		Request:      call.Request,
+	// Set a generic response.
+	endpointQueryResult.Response = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
+	// Set the endpoint error
+	endpointQueryResult.EndpointError = endpointError
+
+	return endpointQueryResult
+}
+
+// buildResultForErrorValidatingEndpointResponse handles the case when validating the unmarshaled endpoint's JSONRPC response has failed.
+func buildResultForErrorValidatingEndpointResponse(
+	endpointQueryResult *EndpointQueryResult,
+	parseError error,
+) *EndpointQueryResult {
+	endpointError := &EndpointError {
+		ErrorKind: EndpointErrKindUnmarshaling,
+		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
+		RecommendedSanction: getRecommendedSanction(EndpointErrKindUnmarshaling, parseError),
 	}
 
-	// Apply default sanction for parse error
-	result.ResultData = applySanctionForUnmarshalingError(ctx, parseError)
+	// Set a generic response.
+	endpointQueryResult.Response = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
+	// Set the endpoint error
+	endpointQueryResult.EndpointError = endpointError
 
-	// Set error kind and raw payload
-	result.ResultData.Error.kind = EndpointDataErrorKindUnmarshaling
-	result.ResultData.Error.rawPayload = call.ReceivedData
-
-	// Set error response
-	result.ErrorResponse = newErrResponseParseError(call.Request.Id, parseError)
-
-	return result
+	return endpointQueryResult
 }

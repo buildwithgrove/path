@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"

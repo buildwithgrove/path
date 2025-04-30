@@ -18,50 +18,36 @@ var _ framework.EndpointSelector = evmEndpointSelector
 
 // evmEndpointSelector selects an endpoint from the set of available ones.
 // It uses the configuration and service state to filter out misconfigured/out-of-sync/invalid endpoints.
-func evmEndpointSelector(ctx *EndpointSelectionContext) (protocol.EndpointAddr, error) {
-	// TODO_IN_THIS_PR: the framework should log an entry if the state attribute is not set.
+func evmEndpointSelector(
+	ctx *EndpointSelectionContext,
+	config EVMConfig,
+) (protocol.EndpointAddr, error) {
 	// Fetch latest block number from the service state.
-	perceivedBlockNumber := ctx.GetState().GetIntAttribute(attrETHBlockNumber)
+	perceivedBlockNumber, _ := ctx.GetIntParam(methodETHBlockNumber)
 
-	// TODO_FUTURE(@adshmh): use service-specific metrics to add an endpoint ranking method.
-	// e.g. use latency to break the tie between valid endpoints.
-	for _, endpoint := range ctx.GetAvailableEndpoints() {
-		endpointChainID, err := endpoint.GetStringAttribute(attrETHChainID)
-		// ChainID attribute not set: Disqualify the endpoint.
-		if err != nil {
-			ctx.DisqualifyEndpoint(endpoint, err)
-			continue
-		}
-
-		// TODO_MVP(@adshmh): pass the EVM config to endpoint selector.
-		// Invalid ChainID returned by the endpoint: Disqualify.
-		if endpointChainID != config.GetChainID() {
-			ctx.DisqualifyEndpoint(endpoint, fmt.Errorf("invalid chain ID %s, expected: %s", endpointChainID, config.GetChainID()))
-			continue
-		}
-
-		endpointBlockNumber, err := endpoint.GetIntAttribute(attrETHBlockNumber)
-		// BlockNumber attribute not set: Disqualify the endpoint.
-		if err != nil {
-			ctx.DisqualifyEndpoint(endpoint, err)
-			continue
-		}
-
-		// endpoint will only be disqualified if the State has reported a block number.
-		if perceivedBlockNumber <= 0 {
-			continue
-		}
-
-		// endpoint is out-of-sync: Disqualify.
-		if endpointBlockNumber < perceivedBlockNumber {
-			ctx.DisqualifyEndpoint(endpoint, fmt.Errorf("endpoint out of sync got %d block number, expected: %d", endpointBlockNumber, perceivedBlockNumber))
-			continue
-		}
-
-		// TODO_IN_THIS_PR: validate archival state.
+	// The perceived block number not set yet: return a random endpoint
+	if perceivedBlockNumber <= 0 {
+		return ctx.SelectRandomQualifiedEndpoint()
 	}
 
-	// All invalid endpoints have been marked as disqualified.
-	// Return a randomly selected Qualified endpoint.
-	return ctx.SelectRandomQualifiedEndpoint()
+	return ctx.SelectRandomQualifiedEndpoint(
+		func(endpoint *Endpoint) error {
+			endpointChainID, _ := endpoint.GetStrResult(methodETHChainID)
+			// Endpoint's chain ID does not match the expected value.
+			// Disqualify the endpoint.
+			if endpointChainID != config.GetChainID() {
+				return ctx.DisqualifyEndpoint(endpoint, fmt.Sprintf("invalid chain ID %s, expected: %s", endpointChainID, config.GetChainID()))
+			}
+
+			endpointBlockNumber, _ := endpoint.GetIntResult(methodETHBlockNumber)
+			// TODO_IN_THIS_PR: add slack from the configuration.
+			// endpoint is out-of-sync: Disqualify.
+			if endpointBlockNumber < perceivedBlockNumber {
+				return ctx.DisqualifyEndpoint(endpoint, fmt.Errorf("out of sync: %d block number, perceived: %d", endpointBlockNumber, perceivedBlockNumber))
+			}
+
+			// TODO_IN_THIS_PR: validate archival state.
+			return nil
+		}
+	)
 }

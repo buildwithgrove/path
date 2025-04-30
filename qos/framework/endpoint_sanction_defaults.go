@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// TODO_FUTURE(@adshmh): Support one or both of the following:
-// - ake these sanction durations/types configurable through service config,
+// TODO_FUTURE(@adshmh): Add capability to override default sanctions via the QoSDefinition struct.
+// TODO_FUTURE(@adshmh): make these sanction durations/types configurable through service config,
 const (
 	// Default sanction duration for empty responses
 	DefaultEmptyResponseSanctionDuration = 5 * time.Minute
@@ -18,34 +18,31 @@ const (
 	DefaultNoResponseSanctionDuration = 5 * time.Minute
 )
 
-// applySanctionForNoResponse applies the default sanction for when no endpoint responded.
-// This can occur due to protocol-level failures: e.g. the selected endpoint was temporarily unavailable.
-// This is not the same as empty responses (where an endpoint responded with empty data).
-func applySanctionForNoResponse(ctx *ResultContext) *ResultData {
-	return ctx.SanctionEndpoint(
-		"No endpoint responses received",
-		"Protocol error",
-		DefaultNoResponseSanctionDuration,
-	)
+func getRecommendedSanction(endpointErrKind EndpointErrorKind, err error) *Sanction {
+	switch endpointErrKind {
+	case EndpointDataErrorKindEmptyPayload:
+		return newSanctionForEmptyResponse()
+	case EndpointDataErrorKindUnmarshaling:
+		return newSanctionForUnmarshalingError(err)
+	default:
+		return nil
+	}
 }
 
-// applySanctionForEmptyResponse applies the default sanction for empty responses.
-func applySanctionForEmptyResponse(ctx *ResultContext) *ResultData {
-	return ctx.SanctionEndpoint(
-		"Empty response from endpoint",
-		"Empty response",
-		DefaultEmptyResponseSanctionDuration,
-	)
+// newSanctionForEmptyResponse returns the default sanction for empty responses.
+func newSanctionForEmptyResponse() *Sanction {
+	return &Sanction{
+		Type: SanctionTypeTemporary,              
+		Reason: "Empty response from the endpoint",
+		ExpiryTime: time.Now().Add(DefaultEmptyResponseSanctionDuration),
+	}
 }
 
-// applySanctionForUnmarshalingError applies the default sanction for parse errors.
-func applySanctionForUnmarshalingError(ctx *ResultContext, err error) *ResultData {
-	return ctx.SanctionEndpoint(
-		fmt.Sprintf("Failed to parse endpoint response: %v", err),
-		"Parse error",
-		DefaultParseErrorSanctionDuration,
-	)
+// newSanctionForUnmarshalingError returns the default sanction for parse errors.
+func newSanctionForUnmarshalingError(err error) *Sanction {
+	return &Sanction{
+		Type: SanctionTypeTemporary,              
+		Reason: fmt.Sprintf("Endpoint payload failed to parse into JSONRPC response: %s", err.Error()),
+		ExpiryTime: time.Now().Add(DefaultParseErrorSanctionDuration),
+	}
 }
-
-// TODO_FUTURE: Add capability to override default sanctions and/or make them configurable
-// through service configuration or dynamic policy updates.

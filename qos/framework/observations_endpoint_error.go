@@ -65,44 +65,32 @@ func extractEndpointErrorFromObservation(obsError *observations.EndpointError) *
 // TODO_IN_THIS_PR: verify errorKind conversion to/from proto.
 //
 // DEV_NOTE: you MUST update this function when changing the set of endpoint error kinds.
-func translateToObservationErrorKind(errKind EndpointErrorKind) observations.ErrorKind {
+func translateToObservationErrorKind(errKind EndpointErrorKind) observations.EndpointErrorKind {
 	switch errKind {
-	case EndpointErrorKindResponseMalformed:
-		return observations.ErrorKind_ERROR_KIND_RESPONSE_MALFORMED
-	case EndpointErrorKindResponseUnexpectedError:
-		return observations.ErrorKind_ERROR_KIND_RESPONSE_UNEXPECTED_ERROR
-	case EndpointErrorKindResponseInvalidValue:
-		return observations.ErrorKind_ERROR_KIND_RESPONSE_INVALID_VALUE
-	case EndpointErrorKindRequestTimedOut:
-		return observations.ErrorKind_ERROR_KIND_REQUEST_TIMED_OUT
-	case EndpointErrorKindInsufficientFunds:
-		return observations.ErrorKind_ERROR_KIND_INSUFFICIENT_FUNDS
-	case EndpointErrorKindRateLimited:
-		return observations.ErrorKind_ERROR_KIND_RATE_LIMITED
-	case EndpointErrorKindInternalError:
-		return observations.ErrorKind_ERROR_KIND_INTERNAL_ERROR
+	case EndpointErrKindEmptyPayload:
+		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_EMPTY_PAYLOAD
+	case EndpointErrKindParseErr:
+		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_UNMARSHALING
+	case EndpointErrKindValidationErr:
+		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_VALIDATION_ERR
+	case EndpointErrKindInvalidResult:
+		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_INVALID_RESULT
 	default:
-		return observations.ErrorKind_ERROR_KIND_UNSPECIFIED
+		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_UNSPECIFIED
 	}
 }
 
 // DEV_NOTE: you MUST update this function when changing the set of endpoint error kinds.
-func translateFromObservationErrorKind(errKind observations.ErrorKind) EndpointErrorKind {
+func translateFromObservationErrorKind(errKind observations.EndpointErrorKind) EndpointErrorKind {
 	switch errKind {
-	case observations.ErrorKind_ERROR_KIND_RESPONSE_MALFORMED:
-		return EndpointErrorKindResponseMalformed
-	case observations.ErrorKind_ERROR_KIND_RESPONSE_UNEXPECTED_ERROR:
-		return EndpointErrorKindResponseUnexpectedError
-	case observations.ErrorKind_ERROR_KIND_RESPONSE_INVALID_VALUE:
-		return EndpointErrorKindResponseInvalidValue
-	case observations.ErrorKind_ERROR_KIND_REQUEST_TIMED_OUT:
-		return EndpointErrorKindRequestTimedOut
-	case observations.ErrorKind_ERROR_KIND_INSUFFICIENT_FUNDS:
-		return EndpointErrorKindInsufficientFunds
-	case observations.ErrorKind_ERROR_KIND_RATE_LIMITED:
-		return EndpointErrorKindRateLimited
-	case observations.ErrorKind_ERROR_KIND_INTERNAL_ERROR:
-		return EndpointErrorKindInternalError
+	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_EMPTY_PAYLOAD:
+		return EndpointErrKindEmptyPayload
+	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_UNMARSHALING:
+		return EndpointErrKindParseErr
+	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_VALIDATION_ERR:
+		return EndpointErrKindValidationErr
+	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_INVALID_RESULT:
+		return EndpointErrKindInvalidResult
 	default:
 		return EndpointErrorKindUnspecified
 	}

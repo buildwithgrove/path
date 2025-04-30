@@ -1,7 +1,11 @@
 package framework
 
-func (re *requestError) buildObservation() *qosobservations.RequestError {
-	return &qosobservations.RequestError{
+import (
+	observations "github.com/buildwithgrove/path/observation/qos/framework"
+)
+
+func (re *requestError) buildObservation() *observations.RequestError {
+	return &observations.RequestError{
 		ErrorKind:    translateToRequestError(re.errorKind),
 		ErrorDetails: re.errorDetails,
 		// The JSONRPC response returned to the client.
@@ -10,19 +14,19 @@ func (re *requestError) buildObservation() *qosobservations.RequestError {
 }
 
 // DEV_NOTE: you MUST update this function when changing the set of request errors.
-func translateToRequestError(errKind requestErrorKind) qosobservations.RequestErrorKind {
+func translateToRequestError(errKind requestErrorKind) observations.RequestErrorKind {
 	switch errKind {
 	case requestErrKindInternalReadyHTTPBody:
-		return RequestValidationErrorKind_REQUEST_ERROR_INTERNAL_BODY_READ_FAILURE
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_INTERNAL_BODY_READ_FAILURE
 	case requestErrKindInternalProtocolError:
-		return RequestValidationErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR
 	case requestErrKindJSONRPCParsingErr:
-		return RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_UNMARSHALING_FAILURE
-		requestErrKindJSONRPCInvalidVersion
-		return RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_INVALID_VERSION
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_UNMARSHALING_FAILURE
+	case requestErrKindJSONRPCInvalidVersion:
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_INVALID_VERSION
 	case requestErrKindJSONRPCMissingMethod:
-		return RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_MISSING_METHOD
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_MISSING_METHOD
 	default:
-		return RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_UNSPECIFIED
+		return observations.RequestValidationErrorKind_REQUEST_ERROR_VALIDATION_UNSPECIFIED
 	}
 }

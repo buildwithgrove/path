@@ -3,8 +3,12 @@ package framework
 import (
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+// TODO_IN_THIS_PR: verify returned JSONRPC error codes.
 
 const (
 	// Standard JSONRPC 2.0 error codes
@@ -100,6 +104,20 @@ func newJSONRPCErrResponseInternalProtocolError(requestID jsonrpc.ID) jsonrpc.Re
 			// Custom extension - not part of the official JSON-RPC spec
 			// Marks the error as retryable to allow clients to safely retry their request
 			"retryable": "true",
+		},
+	)
+}
+
+func newJSONRPCErrResponseJSONRPCRequestValidationError(requestID jsonrpc.ID, validationErr error) jsonrpc.Response {
+	return jsonrpc.GetErrorResponse(
+		requestID,
+		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		fmt.Sprintf("invalid request: %s", validationErr.Error()), // Error Message
+		map[string]string{
+			"error": validationErr.Error(),
+			// Custom extension - not part of the official JSON-RPC spec
+			// Indicates this error is permanent - the request must be corrected as retrying will not succeed
+			"retryable": "false",
 		},
 	)
 }

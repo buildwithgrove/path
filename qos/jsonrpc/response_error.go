@@ -8,8 +8,9 @@ type ResponseError struct {
 	Code int `json:"code"`
 	// A String providing a short description of the error.
 	Message string `json:"message"`
+	// TODO_MVP(@adshmh): support more concrete data types as needed.
 	// A Primitive or Structured value that contains additional information about the error.
 	// This may be omitted.
 	// The value of this member is defined by the Server (e.g. detailed error information, nested errors etc.).
-	Data any `json:"data,omitempty"`
+	Data map[string]string `json:"data,omitempty"`
 }

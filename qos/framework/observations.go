@@ -1,6 +1,9 @@
 package framework
 
 import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
 )
 
@@ -18,25 +21,27 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// initialize the observations to include:
 	// - service name
 	// - observations related to the request:
-	observations := qosobservations.RequestJournal {
+	journalObservations := observations.RequestJournal {
 		ServiceName: rj.serviceName,
 	}
 
 	// observation for parsed JSONRPC (if parsed)
 	if rj.jsonrpcRequest != nil {
-		observations.JsonRpcRequest = buildJSONRPCRequestObservation(rj.jsonrpcRequest)
+		journalObservations.JsonRpcRequest = buildJSONRPCRequestObservation(rj.jsonrpcRequest)
 	}
 
 	// observation for request error (if set)
 	if rj.requestErr != nil {
-		observations.RequestError = buildRequestErrorObservations(rj.requestErr)
+		journalObservations.RequestError = buildRequestErrorObservations(rj.requestErr)
 	}
 
 	// No endpoint query results.
 	// e.g. for invalid requests.
 	// Skip adding endpoint observations.
 	if len(rj.endpointQueryResults) == 0 {
-		return observations
+		return qosobservations.Observations {
+			ServiceObservations: journalObservations,
+		}
 	}
 
 	endpointObservations := make([]*qosobservations.EndpointQueryResultObservation, len(rj.endpointQueryResults))
@@ -44,8 +49,10 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 		endpointObservation[index] = endpointQueryResult.buildObservations()
 	}
 
-	observations.EndpointQueryResultObservations = endpointObservations
-	return observations
+	journalObservations.EndpointQueryResultObservations = endpointObservations
+	return qosobservations.Observations {
+		ServiceObservations: journalObservations,
+	}
 }
 
 
@@ -85,7 +92,7 @@ func buildRequestJournalFromObservations(
 	// request had an error: internal, parsing, validation, etc.
 	// no further processing required.
 	if requestErr != nil {
-		logger.With("num_endpoint_observations", len(observations.GetEndpointQueryResultObservatios()).
+		logger.With("num_endpoint_observations", len(observations.GetEndpointQueryResultObservatios())).
 			Info().Msg("Request had an error: no endpoint observations expected.")
 
 		return requestJournal

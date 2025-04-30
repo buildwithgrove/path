@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/json"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -41,13 +43,16 @@ func newHTTPResponse(statusCode int, payload []byte) *ClientHTTPResponse {
 
 // buildHTTPResponse creates an HTTP response from a JSONRPC response.
 // It performs logging only if errors occur during the process.
-func buildHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.Response) gateway.HTTPResponse {
+func buildHTTPResponse(
+	logger polylog.Logger,
+	jsonrpcResp *jsonrpc.Response,
+) gateway.HTTPResponse {
 	if jsonrpcResp == nil {
 		logger.Error().Msg("Received nil JSONRPC response")
 		return buildErrorResponse(logger, jsonrpc.ID{})
 	}
 
-	payload, err := jsonrpcResp.MarshalJSON()
+	payload, err := json.Marshal(jsonrpcResp)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to marshal JSONRPC response")
 		return buildErrorResponse(logger, jsonrpcResp.ID)
@@ -63,63 +68,10 @@ func buildHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.Response) gat
 // buildErrorResponse creates an internal error HTTP response with the given ID.
 func buildErrorResponse(logger polylog.Logger, id jsonrpc.ID) gateway.HTTPResponse {
 	errResp := newErrResponseInternalError(id)
-	errPayload, _ := errResp.MarshalJSON()
+	errPayload, _ := json.Marshal(errResp)
 	return &ClientHTTPResponse{
 		StatusCode: errResp.GetRecommendedHTTPStatusCode(),
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Payload:    errPayload,
-	}
-}
-
-// ====================> DROP/REFACTOR these methods
-
-// BuildInternalErrorResponse creates a generic internal error HTTP response.
-func BuildInternalErrorResponse() gateway.HTTPResponse {
-	errResp := newErrResponseInternalError(jsonrpc.ID{})
-	errPayload, _ := MarshalErrorResponse(nil, errResp)
-	return NewHTTPResponse(errResp.GetRecommendedHTTPStatusCode(), errPayload)
-}
-
-// BuildInternalErrorHTTPResponse creates an internal error HTTP response with logging.
-func BuildInternalErrorHTTPResponse(logger polylog.Logger) gateway.HTTPResponse {
-	errResp := newErrResponseInternalError(jsonrpc.ID{})
-	errPayload, err := MarshalErrorResponse(logger, errResp)
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed to marshal internal error response")
-	}
-	return NewHTTPResponse(errResp.GetRecommendedHTTPStatusCode(), errPayload)
-}
-
-// BuildErrorHTTPResponse creates an HTTP response for an error response.
-func BuildErrorHTTPResponse(logger polylog.Logger, errResp *jsonrpc.ResponseError) gateway.HTTPResponse {
-	payload, err := MarshalErrorResponse(logger, errResp)
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed to marshal error response")
-	}
-	return NewHTTPResponse(errResp.GetRecommendedHTTPStatusCode(), payload)
-}
-
-// BuildSuccessHTTPResponse creates an HTTP response for a successful JSONRPC response.
-func BuildSuccessHTTPResponse(logger polylog.Logger, jsonrpcResp *jsonrpc.Response) gateway.HTTPResponse {
-	response := jsonrpc.Response{
-		ID:      jsonrpcResp.Id,
-		JSONRPC: jsonrpc.Version2,
-		Result:  jsonrpcResp.Result,
-	}
-	payload, err := response.MarshalJSON()
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed to marshal JSONRPC response")
-		errResp := newErrResponseMarshalError(response.ID, err)
-		errPayload, _ := marshalErrorResponse(logger, errResp)
-		return NewHTTPResponse(errResp.GetRecommendedHTTPStatusCode(), errPayload)
-	}
-	return NewHTTPResponse(response.GetRecommendedHTTPStatusCode(), payload)
-}
-
-// NewHTTPResponse creates a new HTTP response with the given status code and payload.
-func NewHTTPResponse(statusCode int, payload []byte) gateway.HTTPResponse {
-	return gateway.HTTPResponse{
-		StatusCode: statusCode,
-		Body:       payload,
 	}
 }
