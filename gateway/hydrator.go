@@ -5,7 +5,6 @@ package gateway
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -135,17 +134,12 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	)
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
-	// This implies there is no need to specifying a specific app.
+	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	availableEndpoints, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
-	if err != nil {
-		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
-	}
-
-	// Ensure there is at least one endpoint available for the service.
-	if len(availableEndpoints) == 0 {
-		logger.Warn().Msg("no endpoints available for service when running hydrator checks.")
-		// No endpoints available: skip.
+	if err != nil || len(availableEndpoints) == 0 {
+		// No session found or no endpoints available for service: skip.
+		logger.Warn().Msg("no session found or no endpoints available for service when running hydrator checks.")
 		// do NOT return an error: hydrator and PATH should not report unhealthy status if a single service is unavailable.
 		return nil
 	}

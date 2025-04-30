@@ -42,7 +42,7 @@ func setupEndpointHydrator(
 	// Throw an error if any of the manually disabled service IDs are not found
 	// in the protocol's configured service IDs.
 	for _, disabledServiceID := range hydratorConfig.QoSDisabledServiceIDs {
-		if _, notFound := configuredServiceIDs[disabledServiceID]; notFound {
+		if _, found := configuredServiceIDs[disabledServiceID]; !found {
 			return nil, fmt.Errorf("invalid configuration: QoS manually disabled for service ID: %s, but not found in protocol's configured service IDs", disabledServiceID)
 		}
 		logger.Info().Msgf("QoS manually disabled for service ID: %s", disabledServiceID)
@@ -56,7 +56,7 @@ func setupEndpointHydrator(
 	for serviceID := range configuredServiceIDs {
 		serviceQoS, found := qosServices[serviceID]
 		if !found {
-			logger.Warn().Msgf("QoS service not found for service ID: %s. NoOp QoS will be used for this service.", serviceID)
+			logger.Info().Msgf("QoS service not found for service ID: %s. NoOp QoS will be used for this service.", serviceID)
 			continue
 		}
 
@@ -73,8 +73,7 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-		Logger: logger,
-
+		Logger:                  logger,
 		Protocol:                protocolInstance,
 		ActiveQoSServices:       hydratorQoSServices,
 		RunInterval:             hydratorConfig.RunInterval,

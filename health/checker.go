@@ -104,12 +104,16 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 		imageTag = defaultImageTag
 	}
 
-	responseBytes, err := json.Marshal(healthCheckJSON{
-		Status:               status,
-		ReadyStates:          readyStates,
-		ImageTag:             imageTag,
-		ConfiguredServiceIDs: c.ServiceIDReporter.ConfiguredServiceIDs(),
-	})
+	healthCheckJSON := healthCheckJSON{
+		Status:      status,
+		ReadyStates: readyStates,
+		ImageTag:    imageTag,
+	}
+	if c.ServiceIDReporter != nil { // Ensure the ServiceIDReporter is not nil to avoid panic, ie. in unit tests.
+		healthCheckJSON.ConfiguredServiceIDs = c.ServiceIDReporter.ConfiguredServiceIDs()
+	}
+
+	responseBytes, err := json.Marshal(healthCheckJSON)
 	if err != nil {
 		c.Logger.Error().Msgf("error marshaling health check response: %s", err.Error())
 		return nil
