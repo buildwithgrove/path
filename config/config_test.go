@@ -70,7 +70,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
-						LazyMode: true,
+						LazyMode: false,
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,
