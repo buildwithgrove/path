@@ -67,7 +67,7 @@ message EVMRequestObservations {
   // Expected as the `Result` field in eth_chainId responses.
   string chain_id = 1;
 
-  // The length of the client's request payload.
+  // The length of the client's request payload, in bytes.
   uint32 request_payload_length = 2;
 
   // If this oneof IS SET, then one of the following validation failures happened:

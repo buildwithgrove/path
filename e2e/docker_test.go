@@ -3,7 +3,10 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,12 +42,12 @@ const (
 // eg. 3069/tcp
 var containerPortAndProtocol = internalPathPort + "/tcp"
 
-// setupPathInstance starts an instance of PATH in a container, using Docker.
-// It returns:
-// 1. "pathPort", the port that is dynamically selected and exposed
-// by the ephemeral PATH container.
-// 2. "cleanup", a function that needs to be called to clean up the PATH container.
-// It is the responsibility of the test function to call this cleanup function.
+// setupPathInstance starts an instance of PATH in a Docker container.
+//
+// Returns:
+// - "pathPort": the dynamically selected and exposed port by the ephemeral PATH container
+// - "cleanup": a function that must be called to clean up the PATH container
+//   - Test functions are responsible for calling this cleanup function
 func setupPathInstance(
 	t *testing.T,
 	configFilePath string,
@@ -53,11 +56,16 @@ func setupPathInstance(
 	t.Helper()
 
 	// Initialize the ephemeral PATH Docker container
-	pool, resource, containerPort := setupPathDocker(t, configFilePath, dockerOpts)
+	pool, resource, containerPort, logOutputFile := setupPathDocker(t, configFilePath, dockerOpts)
 
 	cleanupFn = func() {
 		// Cleanup the ephemeral PATH Docker container
 		cleanupPathDocker(t, pool, resource)
+		if logOutputFile != "" {
+			fmt.Printf("\n%s===== 👀 LOGS 👀 =====%s\n", BOLD_CYAN, RESET)
+			fmt.Printf("\n ✍️ PATH container output logged to %s ✍️ \n\n", logOutputFile)
+			fmt.Printf("%s===== 👀 LOGS 👀 =====%s\n\n", BOLD_CYAN, RESET)
+		}
 	}
 
 	return containerPort, cleanupFn
@@ -66,25 +74,18 @@ func setupPathInstance(
 // setupPathDocker sets up and starts a Docker container for the PATH service using dockertest.
 //
 // Key steps:
-//
 // - Builds the container from a specified Dockerfile.
-//
 // - Mounts necessary configuration files.
-//
 // - Sets environment variables for the container.
-//
 // - Exposes required ports and sets extra hosts.
-//
 // - Sets up a signal handler to clean up the container on termination signals.
-//
 // - Performs a health check to ensure the container is ready for requests.
-//
 // - Returns the dockertest pool, resource, and the container port.
 func setupPathDocker(
 	t *testing.T,
 	configFilePath string,
 	dockerOpts dockerOptions,
-) (*dockertest.Pool, *dockertest.Resource, string) {
+) (*dockertest.Pool, *dockertest.Resource, string, string) {
 	t.Helper()
 
 	// Get docker options from the global test options
@@ -114,11 +115,11 @@ func setupPathDocker(
 	if !forceRebuild {
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
-			fmt.Println("🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 Tip: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed")
+			fmt.Println("\n🐳 Using existing Docker image, skipping build...")
+			fmt.Println("  💡 TIP: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed 💡")
 		}
 	} else {
-		fmt.Println("🔄 Force rebuild requested, will build Docker image...")
+		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")
 	}
 
 	// Only build the image if it doesn't exist or force rebuild is set
@@ -140,7 +141,7 @@ func setupPathDocker(
 		fmt.Println("🐳 Docker image built successfully!")
 	}
 
-	fmt.Println("🌿 Starting PATH test container...")
+	fmt.Println("\n🌿 Starting PATH test container ...")
 
 	// Run the built image
 	runOpts := &dockertest.RunOptions{
@@ -159,31 +160,93 @@ func setupPathDocker(
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
+	// Optionally log the PATH container output
+	// Handle container log output based on environment
+	var logOutputFile string
 	if logContainer {
-		// Print container logs in a goroutine to prevent blocking
-		go func() {
-			if err := pool.Client.Logs(docker.LogsOptions{
+		var (
+			output io.Writer
+			dest   string
+			f      *os.File
+		)
+
+		if isCIEnv() {
+			// CI: log to stdout
+			output = os.Stdout
+			dest = "stdout (CI environment)"
+		} else {
+			// Local: log to file
+			logOutputFile = os.Getenv("DOCKER_LOG_OUTPUT_FILE")
+			if logOutputFile == "" {
+				logOutputFile = fmt.Sprintf("/tmp/path_log_e2e_test_%d.txt", time.Now().Unix())
+			}
+			dest = logOutputFile
+
+			var err error
+			f, err = os.Create(logOutputFile)
+			if err != nil {
+				t.Fatalf("could not create log file %s: %v\n", logOutputFile, err)
+			}
+			output = f
+		}
+
+		// Log container output in a goroutine, ensuring file is closed after use
+		go func(t *testing.T, f *os.File) {
+			t.Helper()
+			if f != nil {
+				defer f.Close()
+			}
+			err := pool.Client.Logs(docker.LogsOptions{
 				Container:    resource.Container.ID,
-				OutputStream: os.Stdout,
-				ErrorStream:  os.Stderr,
+				OutputStream: output,
+				ErrorStream:  output,
 				Stdout:       true,
 				Stderr:       true,
 				Follow:       true,
-			}); err != nil {
-				fmt.Printf("could not fetch logs for PATH container: %s", err)
+			})
+			if err != nil {
+				t.Fatalf("could not fetch logs for PATH container: %s", err)
 			}
-		}()
+		}(t, f)
+		fmt.Printf("\n ✍️ PATH container output will be logged to %s ✍️ \n", dest)
 	}
 
-	// Handle termination signals
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	// Create a context that we can cancel
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Set up signal handling
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Create a channel to wait for cleanup completion
+	cleanupDone := make(chan struct{})
+
+	// Handle signals
 	go func() {
-		for sig := range c {
-			fmt.Printf("exit signal %d received\n", sig)
+		select {
+		case <-signalChan:
+			fmt.Println("\n⚠️  Received Ctrl+C, cleaning up containers...")
+			// Cancel the context
+			cancel()
+
+			// Perform cleanup
 			if err := pool.Purge(resource); err != nil {
-				fmt.Printf("could not purge resource: %s", err)
+				log.Printf("Could not purge resource: %s", err)
 			}
+
+			// Signal that cleanup is done
+			close(cleanupDone)
+
+			// Exit the program after cleanup - prevents hanging
+			fmt.Println("✅ Cleanup complete, exiting...")
+			os.Exit(1)
+		case <-ctx.Done():
+			// Context was canceled elsewhere
+			// Perform cleanup here too in case it wasn't already done
+			if err := pool.Purge(resource); err != nil {
+				log.Printf("Could not purge resource: %s", err)
+			}
+			close(cleanupDone)
 		}
 	}()
 
@@ -192,10 +255,11 @@ func setupPathDocker(
 	}
 
 	fmt.Println("  ✅ PATH test container started successfully!")
-	fmt.Println("🏥 Performing health check on PATH test container...")
 
 	// performs a health check on the PATH container to ensure it is ready for requests
 	healthCheckURL := fmt.Sprintf("http://%s/healthz", resource.GetHostPort(containerPortAndProtocol))
+
+	fmt.Printf("🏥  Performing health check on PATH test container at %s ...\n", healthCheckURL)
 
 	poolRetryChan := make(chan struct{}, 1)
 	retryConnectFn := func() error {
@@ -222,7 +286,7 @@ func setupPathDocker(
 
 	<-poolRetryChan
 
-	return pool, resource, resource.GetPort(containerPortAndProtocol)
+	return pool, resource, resource.GetPort(containerPortAndProtocol), logOutputFile
 }
 
 // cleanupPathDocker purges the Docker container and resource from the provided dockertest pool and resource.

@@ -145,7 +145,11 @@ func (eph *EndpointHydrator) run() {
 }
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
-	logger := eph.Logger.With("service_id", string(serviceID))
+	logger := eph.Logger.With(
+		"component", "hydrator",
+		"method", "perform_checks",
+		"service_id", string(serviceID),
+	)
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specifying a specific app.
@@ -157,7 +161,10 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 	// Ensure there is at least one endpoint available for the service.
 	if len(availableEndpoints) == 0 {
-		return fmt.Errorf("performChecks: no endpoints available for service %s when running hydrator checks", serviceID)
+		logger.Warn().Msg("no endpoints available for service when running hydrator checks.")
+		// No endpoints available: skip.
+		// do NOT return an error: hydrator and PATH should not report unhealthy status if a single service is unavailable.
+		return nil
 	}
 
 	logger = logger.With("number_of_endpoints", len(availableEndpoints))

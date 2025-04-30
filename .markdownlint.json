@@ -1,6 +1,14 @@
 {
   "MD033": {
-    "allowed_elements": ["Tabs", "TabItem", "ReactPlayer", "details", "summary"]
+    "allowed_elements": [
+      "Tabs",
+      "TabItem",
+      "ReactPlayer",
+      "details",
+      "summary",
+      "div",
+      "img"
+    ]
   },
   "MD013": false,
   "MD046": false
