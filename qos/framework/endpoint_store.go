@@ -23,10 +23,10 @@ func (es *endpointStore) updateStoredEndpoints(endpointQueryResults []*EndpointQ
 	groupedEndpointResults := groupResultsByEndpointAddr(endpointQueryResults)
 
 	// Track the updated endpoints
-	var updatedEndpoints []Endpoint
+	var updatedEndpoints []*Endpoint
 	// Loop over query results, grouped by endpoint address, and update the corresponding stored endpoint.
 	for endpointAddr, queryResults := range groupedEndpointResults {
-		endpoint, found := es.endpoints[endpointQueryResult.endpointAddr]
+		endpoint, found := es.endpoints[endpointAddr]
 		if !found {
 			endpoint = &Endpoint{}
 		}
@@ -34,7 +34,7 @@ func (es *endpointStore) updateStoredEndpoints(endpointQueryResults []*EndpointQ
 		endpoint.applyQueryResults(queryResults)
 
 		// Store the updated endpoint
-		es.endpoints[endpointQueryResult.endpointAddr]
+		es.endpoints[endpointAddr] = endpoint
 
 		// Add the updated endpoint to the list to be returned.
 		updatedEndpoints = append(updatedEndpoints, endpoint)
@@ -59,7 +59,7 @@ func (es *endpointStore) storeEndpoint(addr protocol.EndpointAddr, endpoint Endp
 	defer es.endpointsMu.Unlock()
 
 	if es.endpoints == nil {
-		es.endpoints = make(map[protocol.EndpointAddr]Endpoint)
+		es.endpoints = make(map[protocol.EndpointAddr]*Endpoint)
 	}
 
 	es.endpoints[addr] = &endpoint
@@ -71,7 +71,7 @@ func (es *endpointStore) getEndpoint(addr protocol.EndpointAddr) *Endpoint {
 	defer es.endpointsMu.RUnlock()
 
 	if es.endpoints == nil {
-		return Endpoint{}
+		return &Endpoint{}
 	}
 
 	endpoint := es.endpoints[addr]

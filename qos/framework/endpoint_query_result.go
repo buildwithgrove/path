@@ -54,7 +54,6 @@ type EndpointQueryResult struct {
 	// Only set if the endpoint's returned payload could be parsed into a JSONRPC response.
 	parsedJSONRPCResponse *jsonrpc.Response
 
-
 	// The set of values/attributes extracted from the endpoint query and the endpoint's parsed JSONRPC response.
 	// e.g. for a Solana `getEpochInfo` request, the custom service could derive two endpoint attributes as follows:
 	// - "BlockHeight": 0x1234

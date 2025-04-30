@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -25,8 +26,8 @@ const (
 // newErrResponseEmptyEndpointResponse creates a JSON-RPC error response for empty endpoint responses:
 // - Preserves original request ID
 // - Marks error as retryable for safe client retry
-func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		requestID, // Use request's original ID if present
 		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		"Endpoint (data/service node error): Received an empty response. The endpoint will be dropped from the selection pool. Please try again.", // Error Response Message
@@ -36,6 +37,8 @@ func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response 
 			"retryable": "true",
 		},
 	)
+
+	return &jsonrpcResp
 }
 
 // newErrResponseParseError creates a JSON-RPC error response for parse errors.
@@ -43,8 +46,8 @@ func newErrResponseEmptyEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response 
 // - Preserves the original request ID
 // - Marks error as retryable
 // - Indicates the endpoint response couldn't be parsed
-func newErrResponseParseError(requestID jsonrpc.ID, parseErr error) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+func newErrResponseParseError(requestID jsonrpc.ID, parseErr error) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		requestID,
 		ErrorCodeParseError,
 		"Failed to parse endpoint response",
@@ -53,6 +56,7 @@ func newErrResponseParseError(requestID jsonrpc.ID, parseErr error) jsonrpc.Resp
 			"retryable": "true",
 		},
 	)
+	return &jsonrpcResp
 }
 
 // newErrResponseNoEndpointResponse creates a JSON-RPC error response for the case
@@ -61,8 +65,8 @@ func newErrResponseParseError(requestID jsonrpc.ID, parseErr error) jsonrpc.Resp
 // - Preserves the original request ID
 // - Marks error as retryable for safe client retry
 // - Provides actionable message for clients
-func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		requestID, // Use request's original ID if present
 		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		"Failed to receive any response from endpoints. This could be due to network issues or high load. Please try again.", // Error Response Message
@@ -72,6 +76,8 @@ func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) jsonrpc.Response {
 			"retryable": "true",
 		},
 	)
+
+	return &jsonrpcResp
 }
 
 // newErrResponseInternalError creates a JSON-RPC error response for internal server errors.
@@ -84,9 +90,9 @@ func newErrResponseInternalError(requestID jsonrpc.ID) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
 		requestID,
 		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
-		fmt.Sprintf("internal error: %s", err.Error()), // Error Message
+		"internal error", // Error Message
 		map[string]string{
-			"error": err.Error(),
+			"error_type": "internal",
 			// Custom extension - not part of the official JSON-RPC spec
 			// Marks the error as retryable to allow clients to safely retry their request
 			"retryable": "true",
@@ -231,7 +237,7 @@ func marshalErrorResponse(
 	logger polylog.Logger,
 	response jsonrpc.Response,
 ) ([]byte, error) {
-	payload, err := response.MarshalJSON()
+	payload, err := json.Marshal(response)
 	if err != nil {
 		// Create a simple fallback error response as raw JSON
 		fallback := fmt.Sprintf(`{"jsonrpc":"2.0","id":"%v","error":{"code":%d,"message":"%s"}}`,

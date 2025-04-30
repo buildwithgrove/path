@@ -45,7 +45,7 @@ func buildResultForEmptyResponse(endpointQueryResult *EndpointQueryResult) *Endp
 	}
 
 	// Set a generic response.
-	endpointQueryResult.Response = newErrResponseEmptyEndpointResponse(endpointQueryResult.getJSONRPCRequestID())
+	endpointQueryResult.parsedJSONRPCResponse = newErrResponseEmptyEndpointResponse(endpointQueryResult.getJSONRPCRequestID())
 	// Set the endpoint error
 	endpointQueryResult.EndpointError = endpointError
 
@@ -58,13 +58,13 @@ func buildResultForErrorUnmarshalingEndpointReturnedData(
 	parseError error,
 ) *EndpointQueryResult {
 	endpointError := &EndpointError {
-		ErrorKind: EndpointErrKindUnmarshaling,
+		ErrorKind: EndpointErrKindParseErr,
 		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
-		RecommendedSanction: getRecommendedSanction(EndpointErrKindUnmarshaling, parseError),
+		RecommendedSanction: getRecommendedSanction(EndpointErrKindParseErr, parseError),
 	}
 
 	// Set a generic response.
-	endpointQueryResult.Response = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
+	endpointQueryResult.parsedJSONRPCResponse = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
 	// Set the endpoint error
 	endpointQueryResult.EndpointError = endpointError
 
@@ -77,13 +77,13 @@ func buildResultForErrorValidatingEndpointResponse(
 	parseError error,
 ) *EndpointQueryResult {
 	endpointError := &EndpointError {
-		ErrorKind: EndpointErrKindUnmarshaling,
+		ErrorKind: EndpointErrKindValidationErr,
 		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
-		RecommendedSanction: getRecommendedSanction(EndpointErrKindUnmarshaling, parseError),
+		RecommendedSanction: getRecommendedSanction(EndpointErrKindValidationErr, parseError),
 	}
 
 	// Set a generic response.
-	endpointQueryResult.Response = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
+	endpointQueryResult.parsedJSONRPCResponse = newErrResponseParseError(endpointQueryResult.getJSONRPCRequestID(), parseError)
 	// Set the endpoint error
 	endpointQueryResult.EndpointError = endpointError
 

@@ -5,7 +5,11 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-func buildJSONRPCRequestObservation(jsonrpcReq jsonrpc.Request) *observations.JsonRpcRequest {
+func buildJSONRPCRequestObservation(jsonrpcReq *jsonrpc.Request) *observations.JsonRpcRequest {
+	if jsonrpcReq == nil {
+		return nil
+	}
+
 	return &observations.JsonRpcRequest {
 		Id: jsonrpcReq.ID.String(),
 		Method: jsonrpcReq.Method,

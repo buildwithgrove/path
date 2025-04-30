@@ -20,9 +20,9 @@ const (
 
 func getRecommendedSanction(endpointErrKind EndpointErrorKind, err error) *Sanction {
 	switch endpointErrKind {
-	case EndpointDataErrorKindEmptyPayload:
+	case EndpointErrKindEmptyPayload:
 		return newSanctionForEmptyResponse()
-	case EndpointDataErrorKindUnmarshaling:
+	case EndpointErrKindParseErr:
 		return newSanctionForUnmarshalingError(err)
 	default:
 		return nil

@@ -5,7 +5,7 @@ package jsonrpc
 // https://www.jsonrpc.org/specification#error_object
 type ResponseError struct {
 	// A Number that indicates the error type that occurred.
-	Code int `json:"code"`
+	Code int64 `json:"code"`
 	// A String providing a short description of the error.
 	Message string `json:"message"`
 	// TODO_MVP(@adshmh): support more concrete data types as needed.

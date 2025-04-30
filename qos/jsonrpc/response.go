@@ -57,7 +57,7 @@ func (r Response) GetResultAsStr() (string, error) {
 }
 
 // GetErrorResponse is a helper function that builds a JSONRPC Response using the supplied ID and error values.
-func GetErrorResponse(id ID, errCode int, errMsg string, errData map[string]string) Response {
+func GetErrorResponse(id ID, errCode int64, errMsg string, errData map[string]string) Response {
 	return Response{
 		ID:      id,
 		Version: Version2,

@@ -27,12 +27,12 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 
 	// observation for parsed JSONRPC (if parsed)
 	if rj.jsonrpcRequest != nil {
-		journalObservations.JsonRpcRequest = buildJSONRPCRequestObservation(rj.jsonrpcRequest)
+		journalObservations.JsonrpcRequest = buildJSONRPCRequestObservation(rj.jsonrpcRequest)
 	}
 
 	// observation for request error (if set)
-	if rj.requestErr != nil {
-		journalObservations.RequestError = buildRequestErrorObservations(rj.requestErr)
+	if rj.requestError != nil {
+		journalObservations.RequestError = rj.requestError.buildObservation()
 	}
 
 	// No endpoint query results.
@@ -40,18 +40,22 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// Skip adding endpoint observations.
 	if len(rj.endpointQueryResults) == 0 {
 		return qosobservations.Observations {
-			ServiceObservations: journalObservations,
+			ServiceObservations: &qosobservations.Observations_RequestJournal {
+				RequestJournal: &journalObservations,
+			},
 		}
 	}
 
-	endpointObservations := make([]*qosobservations.EndpointQueryResultObservation, len(rj.endpointQueryResults))
+	endpointObservations := make([]*observations.EndpointQueryResult, len(rj.endpointQueryResults))
 	for index, endpointQueryResult := range rj.endpointQueryResults {
-		endpointObservation[index] = endpointQueryResult.buildObservations()
+		endpointObservations[index] = endpointQueryResult.buildObservation()
 	}
 
 	journalObservations.EndpointQueryResultObservations = endpointObservations
 	return qosobservations.Observations {
-		ServiceObservations: journalObservations,
+		ServiceObservations: &qosobservations.Observations_RequestJournal {
+			RequestJournal: &journalObservations,
+		},
 	}
 }
 
@@ -61,7 +65,7 @@ func buildRequestJournalFromObservations(
 	observations *qosobservations.Observations,
 ) (*requestJournal, error) {
 	// hydrate the logger
-	logger := logger.With("method", "buildRequestJournalFromObservations")
+	logger = logger.With("method", "buildRequestJournalFromObservations")
 
 	// sanity check the observations.
 	if observations == nil {
