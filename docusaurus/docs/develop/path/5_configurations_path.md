@@ -41,7 +41,7 @@ shannon_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
     grpc_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
-    lazy_mode: true
+    lazy_mode: false
 
   gateway_config:
     gateway_mode: "centralized"
@@ -141,7 +141,7 @@ Configuration for the Shannon protocol gateway.
 ```yaml
 shannon_config:
   full_node_config:
-    lazy_mode: true # TODO_TECHDEBT: Add description and support for other modes. Use true for now.
+    lazy_mode: false 
     rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
     grpc_config: # Required
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
@@ -169,7 +169,7 @@ shannon_config:
 | ------------- | ------- | -------- | ------- | --------------------------------------------------------------- |
 | `rpc_url`     | string  | Yes      | -       | URL of the Shannon RPC endpoint                                 |
 | `grpc_config` | object  | Yes      | -       | gRPC connection configuration                                   |
-| `lazy_mode`   | boolean | No       | true    | If true, disables caching of onchain data (e.g. apps, sessions) |
+| `lazy_mode`   | boolean | No       | false   | If true, disables caching of onchain data (e.g. apps, sessions) |
 
 **`full_node_config.grpc_config`**
 
