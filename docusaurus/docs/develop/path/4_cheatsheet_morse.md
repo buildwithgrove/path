@@ -175,7 +175,7 @@ To manually disable QoS checks for a specific service, the `qos_disabled_service
 For more information, see:
 
 - [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
-- [Supported QoS Services](../learn/qos/1_supported_services.md)
+- [Supported QoS Services](../../learn/qos/1_supported_services.md)
 
 :::
 
