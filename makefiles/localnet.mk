@@ -5,16 +5,6 @@
 # tl;dr Mimic an E2E real environment.
 # This section is intended to spin up and develop a full modular stack
 
-.PHONY: path_build_image
-path_build_image: ## Builds the PATH Docker development image
-	@echo "🔨 Building PATH Docker image..."
-	@docker build -t ghcr.io/buildwithgrove/path-localnet-env:latest -f local/Dockerfile.dev .
-
-.PHONY: path_push_image
-path_push_image: ## Pushes the PATH Docker image to GitHub Container Registry
-	@echo "📦 Pushing PATH Docker image to GitHub Container Registry..."
-	@docker push ghcr.io/buildwithgrove/path-localnet-env:latest
-
 .PHONY: path_up
 path_up: check_docker check_path_config ## Brings up local Tilt development environment in Docker 
 	@./local/scripts/localnet.sh up
