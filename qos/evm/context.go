@@ -59,6 +59,11 @@ type requestContext struct {
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
+	// service_id is the identifier for the evm QoS implementation.
+	// It is the "alias" or human readable interpratation of the chain_id.
+	// Used in generating observations.
+	serviceID protocol.ServiceID
+
 	// The length of the request payload in bytes.
 	requestPayloadLength uint
 
@@ -171,6 +176,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 			Evm: &qosobservations.EVMRequestObservations{
 				JsonrpcRequest:       rc.jsonrpcReq.GetObservation(),
 				ChainId:              rc.chainID,
+				ServiceId:            string(rc.serviceID),
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
 				EndpointObservations: observations,
 			},
