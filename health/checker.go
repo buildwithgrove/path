@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
@@ -32,8 +33,9 @@ type (
 	// health.Checker struct is used to store all PATH components whose
 	// health needs to be checked to consider PATH ready to serve traffic.
 	Checker struct {
-		Logger     polylog.Logger
-		Components []Check
+		Logger            polylog.Logger
+		Components        []Check
+		ServiceIDReporter ServiceIDReporter
 	}
 
 	// health.Check is an interface that must be implemented
@@ -42,6 +44,12 @@ type (
 		Name() string // Name returns the name of the component being checked.
 		// TODO_FUTURE: consider adding a message/reason for an unhealthy status.
 		IsAlive() bool // IsAlive returns true if the component is healthy, otherwise false.
+	}
+
+	// ServiceIDReporter is satisfied by the protocol instance and returns
+	// the list of service IDs that the protocol instance is configured for.
+	ServiceIDReporter interface {
+		ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 	}
 )
 
@@ -56,6 +64,8 @@ type healthCheckJSON struct {
 	ImageTag string `json:"imageTag"`
 	// ReadyStates is a map of component names to their ready status
 	ReadyStates map[string]bool `json:"readyStates,omitempty"`
+	// ConfiguredServiceIDs is a map of service IDs to their ready status
+	ConfiguredServiceIDs map[protocol.ServiceID]struct{} `json:"configuredServiceIDs,omitempty"`
 }
 
 // healthCheckHandler returns the health status of PATH as a JSON response.
@@ -94,11 +104,16 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 		imageTag = defaultImageTag
 	}
 
-	responseBytes, err := json.Marshal(healthCheckJSON{
+	healthCheckJSON := healthCheckJSON{
 		Status:      status,
 		ReadyStates: readyStates,
 		ImageTag:    imageTag,
-	})
+	}
+	if c.ServiceIDReporter != nil { // Ensure the ServiceIDReporter is not nil to avoid panic, ie. in unit tests.
+		healthCheckJSON.ConfiguredServiceIDs = c.ServiceIDReporter.ConfiguredServiceIDs()
+	}
+
+	responseBytes, err := json.Marshal(healthCheckJSON)
 	if err != nil {
 		c.Logger.Error().Msgf("error marshaling health check response: %s", err.Error())
 		return nil

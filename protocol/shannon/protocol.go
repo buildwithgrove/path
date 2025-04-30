@@ -12,6 +12,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/health"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -19,6 +20,13 @@ import (
 // gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using methods that are specific to Shannon.
 var _ gateway.Protocol = &Protocol{}
+
+// Shannon protocol implements the health.Check and health.ServiceIDReporter interfaces.
+// This allows the protocol to report its health status and the list of service IDs it is configured for.
+var (
+	_ health.Check             = &Protocol{}
+	_ health.ServiceIDReporter = &Protocol{}
+)
 
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
@@ -57,19 +65,7 @@ func NewProtocol(
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
 
-	// Derive the address of apps owned by the gateway operator using the supplied apps' private keys.
-	// This only applies to Centralized gateway mode and needs to be done during initialization to ensure it is possible to send relays in Centralized mode.
-	ownedAppsAddr, err := getCentralizedModeOwnedAppsAddr(config.OwnedAppsPrivateKeysHex)
-	if err != nil {
-		return nil, fmt.Errorf("NewProtocol: error parsing the supplied private keys: %w", err)
-	}
-
-	ownedAppsAddrIdx := make(map[string]struct{})
-	for _, appAddr := range ownedAppsAddr {
-		ownedAppsAddrIdx[appAddr] = struct{}{}
-	}
-
-	return &Protocol{
+	protocolInstance := &Protocol{
 		logger: shannonLogger,
 
 		FullNode: fullNode,
@@ -80,8 +76,17 @@ func NewProtocol(
 		gatewayAddr:          config.GatewayAddress,
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
-		ownedAppsAddr:        ownedAppsAddrIdx,
-	}, nil
+	}
+
+	if config.GatewayMode == protocol.GatewayModeCentralized {
+		ownedApps, err := protocolInstance.getCentralizedModeOwnedApps(config.OwnedAppsPrivateKeysHex)
+		if err != nil {
+			return nil, fmt.Errorf("NewProtocol: error getting the owned apps for Centralized gateway mode: %w", err)
+		}
+		protocolInstance.ownedApps = ownedApps
+	}
+
+	return protocolInstance, nil
 }
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
@@ -101,9 +106,9 @@ type Protocol struct {
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedAppsAddr holds the addresss of all apps owned by the gateway operator running PATH in Centralized mode.
-	// This data is stored as a map for efficiency, since this field is only used to lookup app addresses.
-	ownedAppsAddr map[string]struct{}
+	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
+	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
+	ownedApps []ownedApp
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
@@ -206,6 +211,23 @@ func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error
 	//  3. Filter invalid endpoints before setting on requestContexts
 	//     (e.g., drop maxed-out endpoints for current session)
 	return nil
+}
+
+// ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
+// This is used by the hydrator to determine which service IDs to run QoS checks on.
+func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
+	// Currently hydrator is only enabled for Centralized gateway mode.
+	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	if p.gatewayMode != protocol.GatewayModeCentralized {
+		return nil
+	}
+
+	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
+	for _, ownedApp := range p.ownedApps {
+		configuredServiceIDs[ownedApp.stakedServiceID] = struct{}{}
+	}
+
+	return configuredServiceIDs
 }
 
 // Name satisfies the HealthCheck#Name interface function

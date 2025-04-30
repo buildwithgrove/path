@@ -166,6 +166,19 @@ If you are an employee of Grove, look for `PATH - Morse - Test - E2E Config` in 
 
 :::
 
+:::info Service QoS Hydrator Checks
+
+By default, the QoS hydrator will run checks against all services that applications configured in the `morse_config.signed_aats` section are staked for.
+
+To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+For more information, see:
+
+- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [Supported QoS Services](../learn/qos/1_supported_services.md)
+
+:::
+
 ## 3. Run PATH in development mode
 
 ### 3.1 Start PATH

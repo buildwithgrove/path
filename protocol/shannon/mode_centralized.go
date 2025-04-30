@@ -10,6 +10,12 @@ import (
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
+// Own
+type ownedApp struct {
+	appAddr         string
+	stakedServiceID protocol.ServiceID
+}
+
 // In Centralized Gateway Mode, the Shannon protocol integration behaves as follows:
 // 1. PATH (or more specifically the Shannon protocol integration instance) holds the private keys of the gateway operator's app(s).
 // 2. All configured apps are owned by the gateway (PATH) operator.
@@ -20,10 +26,15 @@ import (
 // See the following link for more details on PATH's Centralized operation mode.
 // https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680d4a0fff3a40dea543e
 //
-// getCentralizedModeOwnedAppsAddr returns the list of addresses of apps owned by the gateway, built using the supplied private keys.
+// getCentralizedModeOwnedApps returns the list of apps owned by the gateway, built using the supplied private keys.
+//
+// The following fields are populated for each owned app:
+//   - appAddr: the address of the app
+//   - stakedServiceID: the service ID for which the app is staked
+//
 // The ONLY use of the supplied apps' private keys by the centralized mode is to build apps' addresses on behalf of which relays are sent.
-func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string, error) {
-	var ownedAppsAddr []string
+func (p *Protocol) getCentralizedModeOwnedApps(ownedAppsPrivateKeysHex []string) ([]ownedApp, error) {
+	var ownedApps []ownedApp
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
 		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
 		if err != nil {
@@ -35,10 +46,28 @@ func getCentralizedModeOwnedAppsAddr(ownedAppsPrivateKeysHex []string) ([]string
 			return nil, err
 		}
 
-		ownedAppsAddr = append(ownedAppsAddr, appAddr)
+		application, err := p.FullNode.GetApp(context.Background(), appAddr)
+		if err != nil {
+			return nil, err
+		}
+
+		appServiceConfigs := application.GetServiceConfigs()
+		if len(appServiceConfigs) != 1 {
+			return nil, fmt.Errorf("centralized GatewayMode: app with address %s is not staked for exactly one service", appAddr)
+		}
+
+		stakedServiceID := appServiceConfigs[0].GetServiceId()
+		if stakedServiceID == "" {
+			return nil, fmt.Errorf("centralized GatewayMode: app with address %s is not staked for any service", appAddr)
+		}
+
+		ownedApps = append(ownedApps, ownedApp{
+			appAddr:         appAddr,
+			stakedServiceID: protocol.ServiceID(stakedServiceID),
+		})
 	}
 
-	return ownedAppsAddr, nil
+	return ownedApps, nil
 }
 
 // appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
@@ -59,18 +88,20 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 		"service_id", string(serviceID),
 		"gateway_addr", p.gatewayAddr,
 		"gateway_mode", protocol.GatewayModeCentralized,
-		"num_owned_apps", len(p.ownedAppsAddr),
+		"num_owned_apps", len(p.ownedApps),
 	)
 
 	var permittedApps []*apptypes.Application
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
-	for ownedAppAddr := range p.ownedAppsAddr {
+	for _, ownedApp := range p.ownedApps {
+		ownedAppAddr := ownedApp.appAddr
+
 		logger.Info().Msgf("Centralized GatewayMode: checking app owned by the gateway with address: %s", ownedAppAddr)
 
 		onchainApp, err := p.FullNode.GetApp(ctx, ownedAppAddr)
 		if err != nil {
-			return nil, fmt.Errorf("Centralized GatewayMode: error getting onchain data for app %s owned by the gateway: %w", ownedAppAddr, err)
+			return nil, fmt.Errorf("centralized GatewayMode: error getting onchain data for app %s owned by the gateway: %w", ownedAppAddr, err)
 		}
 
 		// Skip the app if it is not staked for the requested service.
@@ -81,7 +112,7 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 		// Verify the app delegates to the gateway.
 		if !gatewayHasDelegationForApp(p.gatewayAddr, onchainApp) {
-			return nil, fmt.Errorf("Centralized GatewayMode: app with address %s does not delegate to gateway address: %s", onchainApp.Address, p.gatewayAddr)
+			return nil, fmt.Errorf("centralized GatewayMode: app with address %s does not delegate to gateway address: %s", onchainApp.Address, p.gatewayAddr)
 		}
 
 		permittedApps = append(permittedApps, onchainApp)
@@ -89,7 +120,7 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 	if len(permittedApps) == 0 {
 		logger.Info().Msg("No owned apps matched the request.")
-		return nil, fmt.Errorf("Centralized GatewayMode: no owned apps matched the request.")
+		return nil, fmt.Errorf("centralized GatewayMode: no owned apps matched the request")
 	}
 
 	return permittedApps, nil

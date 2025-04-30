@@ -209,6 +209,21 @@ hydrator_config:
 
 :::
 
+:::info Service QoS Hydrator Checks
+
+**The below information applies only to PATH instances running in `centralized` mode.**
+
+By default, the QoS hydrator will run checks against all services that applications configured in the `shannon_config.owned_apps_private_keys_hex` section are staked for.
+
+To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+For more information, see:
+
+- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [Supported QoS Services](../learn/qos/1_supported_services.md)
+
+:::
+
 ## 3. Run PATH in development mode
 
 ### 3.1 Start PATH
