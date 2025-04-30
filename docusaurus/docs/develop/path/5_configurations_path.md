@@ -21,7 +21,8 @@ A `PATH` stack is configured via two files:
 - [Config File Location (Local Development)](#config-file-location-local-development)
 - [`shannon_config` (required)](#shannon_config-required)
 - [`morse_config` (required)](#morse_config-required)
-- [`hydrator_config` (optional but recommended)](#hydrator_config-optional-but-recommended)
+- [`hydrator_config` (optional)](#hydrator_config-optional)
+  - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
 - [`logger_config` (optional)](#logger_config-optional)
 
@@ -237,32 +238,33 @@ morse_config:
 
 ---
 
-## `hydrator_config` (optional but recommended)
+## `hydrator_config` (optional)
 
 :::info
 
 For a full list of supported QoS service implementations, refer to the [QoS Documentation](../../learn/qos/1_supported_services.md).
 
-⚠️ Any ID provided here **MUST** match a `Service ID` from the [QoS Documentation](../../learn/qos/1_supported_services.md). An invalid ID will cause the gateway to error ⚠️
-
 :::
 
-Configures the QoS hydrator to run synthetic Quality of Service (QoS) checks against endpoints of the provided service IDs.
+Configures the QoS hydrator. By default, all services configured in the `shannon_config` or `morse_config` sections will have QoS checks run against them.
 
-For example, to enable QoS checks for `anvil` and `F00C`, the following configuration must be added to the `.config.yaml` file:
+### Manually Disable QoS Checks for a Service
+
+To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
 
 ```yaml
 hydrator_config:
-  service_ids:
-    - "anvil"
+  qos_disabled_service_ids:
     - "F00C"
 ```
 
-| Field                        | Type          | Required | Default   | Description                                                                          |
-| ---------------------------- | ------------- | -------- | --------- | ------------------------------------------------------------------------------------ |
-| `service_ids`                | array[string] | No       | -         | List of service IDs for which the Quality of Service (QoS) logic will apply          |
-| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                   |
-| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints |
+| Field                        | Type          | Required | Default   | Description                                                                                                                                                 |
+| ---------------------------- | ------------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                                                                                          |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints                                                                        |
+| `qos_disabled_service_ids`   | array[string] | No       | -         | List of service IDs to exclude from QoS checks. Will throw an error on startup if a service ID is provided that the PATH instance is not configured to use. |
 
 ---
 

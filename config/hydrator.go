@@ -22,8 +22,10 @@ var (
 // Endpoint Hydrator instance to collect observations about service endpoints.
 // The hydrator will not start without specified service IDs.
 type EndpointHydratorConfig struct {
-	// List of service IDs to be handled for observation collection
-	ServiceIDs []protocol.ServiceID `yaml:"service_ids"`
+	// List of service IDs to disable QoS checks for.
+	// By default all configured service IDs will be checked unless specified here.
+	// Startup will error if a service ID is specified here that is not in the protocol's configured service IDs.
+	QoSDisabledServiceIDs []protocol.ServiceID `yaml:"qos_disabled_service_ids"`
 
 	// Interval between hydrator runs during which endpoint checks are performed
 	RunInterval time.Duration `yaml:"run_interval_ms"`
