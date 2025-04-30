@@ -81,9 +81,6 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
-		// Wait for the protocol to be healthy before starting hydrator
-		eph.waitForProtocolHealth()
-
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,20 +89,6 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
-}
-
-// waitForProtocolHealth blocks until the Protocol reports as healthy.
-// This ensures that the hydrator only starts running once the underlying
-// protocol layer is ready.
-func (eph *EndpointHydrator) waitForProtocolHealth() {
-	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
-
-	for !eph.Protocol.IsAlive() {
-		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
-		time.Sleep(1 * time.Second)
-	}
-
-	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 func (eph *EndpointHydrator) run() {
@@ -196,7 +179,6 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// Create a new protocol request context with a pre-selected endpoint for each request.
 					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
 					// avoid race conditions related to concurrent access issues when running concurrent QoS checks.
-					//
 
 					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
 					// which means there is no need for specifying a specific app.
