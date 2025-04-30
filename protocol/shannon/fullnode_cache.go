@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -37,25 +36,11 @@ const (
 	sessionCacheKeyPrefix = "session"
 )
 
-// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
-func NewCachingFullNode(logger polylog.Logger, lazyFullNode *lazyFullNode) *cachingFullNode {
-	return &cachingFullNode{
-		logger: logger.With("component", "CachingFullNode"),
-
-		lazyFullNode: lazyFullNode,
-
-		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-	}
-}
-
 var _ FullNode = &cachingFullNode{}
 
 // cachingFullNode implements the FullNode interface by wrapping a LazyFullNode
 // and caching results to improve performance.
 type cachingFullNode struct {
-	logger polylog.Logger
-
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
 	lazyFullNode *lazyFullNode
@@ -69,26 +54,23 @@ type cachingFullNode struct {
 	sessionMutex sync.Mutex
 }
 
+// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
+func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
+	return &cachingFullNode{
+		lazyFullNode: lazyFullNode,
+
+		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+	}
+}
+
 // GetApp returns the application with the given address, using a cached version if available.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	appCacheKey := createCacheKey(appCacheKeyPrefix, appAddr)
 
-	// Check cache first
-	if cachedApp, found := cfn.appCache.Get(appCacheKey); found {
-		cfn.logger.Debug().Str("app_addr", appAddr).Msg("Returning cached application")
-
-		// Type assertion is safe because we know the cache value can only be *apptypes.Application.
-		return cachedApp.(*apptypes.Application), nil
-	}
-
-	// Use mutex to prevent multiple concurrent cache updates for the same app
-	cfn.appMutex.Lock()
-	defer cfn.appMutex.Unlock()
-
-	// Double-check cache after acquiring lock (follows standard double-checked locking pattern)
-	if cachedApp, found := cfn.appCache.Get(appCacheKey); found {
-		cfn.logger.Debug().Str("app_addr", appAddr).Msg("Returning cached application after lock")
-		return cachedApp.(*apptypes.Application), nil
+	// Try to get app from cache with double-check locking pattern
+	if cachedApp, found := cfn.getFromAppCache(appCacheKey); found {
+		return cachedApp, nil
 	}
 
 	// Cache miss - get from underlying node
@@ -100,9 +82,27 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 	// Store in cache if the app is found.
 	cfn.appCache.Set(appCacheKey, app, cache.DefaultExpiration)
 
-	cfn.logger.Debug().Str("app_addr", appAddr).Msg("Cached application")
-
 	return app, nil
+}
+
+// getFromAppCache retrieves an application from the cache using double-check locking pattern.
+// It returns the cached application and a boolean indicating if it was found.
+func (cfn *cachingFullNode) getFromAppCache(cacheKey string) (*apptypes.Application, bool) {
+	// Check cache first
+	if cachedApp, found := cfn.appCache.Get(cacheKey); found {
+		return cachedApp.(*apptypes.Application), true
+	}
+
+	// Use mutex to prevent multiple concurrent cache updates for the same app
+	cfn.appMutex.Lock()
+	defer cfn.appMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	if cachedApp, found := cfn.appCache.Get(cacheKey); found {
+		return cachedApp.(*apptypes.Application), true
+	}
+
+	return nil, false
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.
@@ -114,24 +114,9 @@ func (cfn *cachingFullNode) GetSession(
 	// Create a unique cache key for this service+app combination
 	sessionCacheKey := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
 
-	logger := cfn.logger.With("service_id", string(serviceID), "app_addr", appAddr)
-
-	// Check cache first
-	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
-		logger.Debug().Msg("Returning cached session")
-
-		// Type assertion is safe because we know the cache value can only be sessiontypes.Session.
-		return cachedSession.(sessiontypes.Session), nil
-	}
-
-	// Use mutex to prevent multiple concurrent cache updates for the same session
-	cfn.sessionMutex.Lock()
-	defer cfn.sessionMutex.Unlock()
-
-	// Double-check cache after acquiring lock (follows standard double-checked locking pattern)
-	if cachedSession, found := cfn.sessionCache.Get(sessionCacheKey); found {
-		logger.Debug().Msg("Returning cached session after lock")
-		return cachedSession.(sessiontypes.Session), nil
+	// Try to get session from cache with double-check locking pattern
+	if cachedSession, found := cfn.getFromSessionCache(sessionCacheKey); found {
+		return cachedSession, nil
 	}
 
 	// Cache miss - get from underlying node
@@ -143,9 +128,27 @@ func (cfn *cachingFullNode) GetSession(
 	// Store in cache if the session is found.
 	cfn.sessionCache.Set(sessionCacheKey, session, cache.DefaultExpiration)
 
-	logger.Debug().Str("session_id", session.SessionId).Msg("Cached session")
-
 	return session, nil
+}
+
+// getFromSessionCache retrieves a session from the cache using double-check locking pattern.
+// It returns the cached session and a boolean indicating if it was found.
+func (cfn *cachingFullNode) getFromSessionCache(cacheKey string) (sessiontypes.Session, bool) {
+	// Check cache first
+	if cachedSession, found := cfn.sessionCache.Get(cacheKey); found {
+		return cachedSession.(sessiontypes.Session), true
+	}
+
+	// Use mutex to prevent multiple concurrent cache updates for the same session
+	cfn.sessionMutex.Lock()
+	defer cfn.sessionMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	if cachedSession, found := cfn.sessionCache.Get(cacheKey); found {
+		return cachedSession.(sessiontypes.Session), true
+	}
+
+	return sessiontypes.Session{}, false
 }
 
 // ValidateRelayResponse delegates to the underlying node.
