@@ -22,6 +22,12 @@ var _ gateway.Protocol = &Protocol{}
 
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
+//
+// A properly initialized fullNode struct can:
+// 1. Return the onchain apps matching a service ID.
+// 2. Fetch a session for a (service,app) combination.
+// 3. Validate a relay response.
+// 4. Etc...
 type FullNode interface {
 	// GetApp returns the onchain application matching the application address
 	GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error)
@@ -116,7 +122,7 @@ func (p *Protocol) AvailableEndpoints(
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("error getting the permitted apps list: relay request will fail.")
-		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service '%s' and gateway mode '%s': %w", serviceID, p.gatewayMode, err)
 	}
 
 	logger = logger.With("number_of_permitted_apps", len(permittedApps))

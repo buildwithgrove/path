@@ -234,7 +234,7 @@ properties:
 
   # Data Reporter Configuration (optional)
   data_reporter_config:
-    description: "Configuration for the HTTP data reporter, which is used to send data to an external data pipeline."
+    description: "Configuration for the HTTP data reporter that accepts JSON via POST and feeds into pipelines writing to services like BigQuery (e.g., Fluentd with HTTP input and BigQuery output plugins)."
     type: object
     additionalProperties: false
     required:

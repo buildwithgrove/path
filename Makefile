@@ -23,9 +23,14 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
-
-
-# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
+# The PATH config value can be overridden via the CONFIG_PATH env variable, which defaults to ../local/path/.config.yaml
+# This path must be either an absolute path or relative to the location of the PATH binary in `bin`.
+#
+# Example usage:
+# - absolute path
+# 	make path_run CONFIG_PATH=/Users/greg/path/local/path/.config.yaml
+# - relative path
+# 	make path_run CONFIG_PATH=../local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
 
 .PHONY: path_run

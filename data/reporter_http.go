@@ -23,6 +23,7 @@ type DataReporterHTTP struct {
 	Logger polylog.Logger
 
 	// The URL of the Data Pipeline's HTTP server.
+	// Only JSON-accepting data pipelines are supported as of PR #215.
 	// e.g. Fluentd HTTP input plugin on localhost:8686.
 	DataProcessorURL string
 }
@@ -93,6 +94,6 @@ func (drh *DataReporterHTTP) hydrateLogger(observations *observation.RequestResp
 	}
 
 	// Add request ID for tracing
-	logger = logger.With("request_id", requestAuth.GetRequestId())
+	logger = logger.With("trace_id", requestAuth.GetTraceId())
 	return logger
 }
