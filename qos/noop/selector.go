@@ -17,7 +17,7 @@ type RandomEndpointSelector struct{}
 
 // Select returns a randomly selected endpoint from the set of supplied endpoints.
 // This method fulfills the protocol.EndpointSelector interface.
-func (RandomEndpointSelector) Select(endpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
+func (RandomEndpointSelector) Select(endpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	if len(endpoints) == 0 {
 		return protocol.EndpointAddr(""), errors.New("RandomEndpointSelector: an empty endpoint list was supplied to the selector")
 	}
