@@ -166,7 +166,7 @@ type EVMRequestObservations struct {
 	// This is preset by the processor and not determined by the request.
 	// Expected as the `Result` field in eth_chainId responses.
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// The length of the client's request payload.
+	// The length of the client's request payload, in bytes.
 	RequestPayloadLength uint32 `protobuf:"varint,2,opt,name=request_payload_length,json=requestPayloadLength,proto3" json:"request_payload_length,omitempty"`
 	// If this oneof IS SET, then one of the following validation failures happened:
 	//   - Indicates the request failed validation

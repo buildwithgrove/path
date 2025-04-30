@@ -10,8 +10,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅        | PATH **gateway** configurations               |
-| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅       | PATH **gateway** configurations               |
+| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
 
 :::
 

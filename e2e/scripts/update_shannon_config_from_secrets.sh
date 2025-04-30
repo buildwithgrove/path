@@ -19,8 +19,6 @@ update_shannon_config_from_env() {
     fi
 
     # Update the PATH Shannon config to reflect secrets on GitHub.
-    # Also set the hydrator config to run 20 checks to ensure invalid endpoints are sanctioned.
-    # Also set lazy_mode to true in order to minimize verbosity of log entries in CI E2E tests.
     yq -i '
 	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
 	.shannon_config.gateway_config.owned_apps_private_keys_hex = [env(SHANNON_OWNED_APPS_PRIVATE_KEYS)] |

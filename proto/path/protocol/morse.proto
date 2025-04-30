@@ -17,13 +17,22 @@ enum MorseEndpointErrorType {
   MORSE_ENDPOINT_ERROR_CONNECTION_FAILED = 1;
   MORSE_ENDPOINT_ERROR_TIMEOUT = 2;
   MORSE_ENDPOINT_ERROR_MAXED_OUT = 3;
-  MORSE_ENDPOINT_ERROR_MISCONFIGURED = 4;
+  // This error indicates the endpoint returned an SDK/pocket-core error as its response.
+  MORSE_ENDPOINT_ERROR_POCKET_CORE = 4;
   MORSE_ENDPOINT_ERROR_TLS_CERTIFICATE_VERIFICATION_FAILED = 5;
   MORSE_ENDPOINT_ERROR_INVALID_RESPONSE = 6;
   // This error indicates that the endpoint returned invalid data in its response and was rejected by the SDK.
   // This is important because the `protocol` package should not attempt to parse the response contents.
   MORSE_ENDPOINT_ERROR_NON_JSON_RESPONSE = 7;
-  MORSE_ENDPOINT_ERROR_INTERNAL = 8;  // Added for internal gateway errors
+  // This error indicates the endpoint returned a 4xx HTTP status code.
+  MORSE_ENDPOINT_ERROR_HTTP_4XX_RESPONSE = 8;
+  // This error indicates the endpoint returned a 5xx HTTP status code.
+  MORSE_ENDPOINT_ERROR_HTTP_5XX_RESPONSE = 9;
+
+  // This error indicates the endpoint returned an HTTP response with a mismatch between ContentLength header and actual body length.
+  // Mostly encountered as ContentLength > 0 with an actual body length of 0.
+  MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH = 10;
+  MORSE_ENDPOINT_ERROR_INTERNAL = 11;  // Added for internal gateway errors
 }
 
 // TODO_DOCUMENT(@adshmh): Document the sanction system in the Morse protocol implementation:
