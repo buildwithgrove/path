@@ -126,6 +126,10 @@ func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error
 		return errNoBlockNumberObs
 	}
 
+	if check.parsedBlockNumberResponse == nil {
+		return errNoBlockNumberObs
+	}
+
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
 	minAllowedBlockNumber := ss.perceivedBlockNumber - ss.serviceConfig.getSyncAllowance()
