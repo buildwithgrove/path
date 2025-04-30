@@ -116,7 +116,7 @@ type errorTrackingSelector struct {
 // Select method of an errorTrackingSelector should never be called.
 // It logs a warning and returns an invalid usage error.
 // Implements the protocol.EndpointSelector interface.
-func (ets errorTrackingSelector) Select(endpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
+func (ets errorTrackingSelector) Select(endpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	ets.logger.With(
 		"num_endpoints", len(endpoints),
 	).Warn().Msg("Invalid usage: errorTrackingSelector.Select() should never be called.")
