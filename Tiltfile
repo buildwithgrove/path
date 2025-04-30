@@ -161,7 +161,7 @@ local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd 
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
@@ -194,7 +194,12 @@ WORKDIR /app
 """,
     # only=["/app/path"],
     entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
+    live_update=[
+        # First sync to a temporary location to avoid permission issues
+        sync("bin/path", "/app/bin/path"),
+        # Then run commands to properly handle the file
+        run("cp -f /app/bin/path /app/path && chmod +x /app/path", trigger="bin/path")
+    ],
     trigger='.tilt-build-trigger',  # Rebuild when this file changes
 )
 
@@ -305,24 +310,24 @@ local_resource(
     resource_deps=["path-stack"]
 )
 
-# 3. WATCH Logs - Waits for container readiness before following logs
-local_resource(
-    "watch-logs",
-    cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
-    serve_cmd='''
-    echo "Waiting for WATCH pods to be fully ready..."
-    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
-          kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
-      sleep 5
-    done
-    echo "Checking other components..."
-    until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
-      sleep 5
-    done
-    echo "All pods ready, stabilizing..."; sleep 20
-    echo "Following WATCH logs..."
-    kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
-    ''',
-    labels=["k8s_logs"],
-    resource_deps=["path-stack"]
-)
+# # 3. WATCH Logs - Waits for container readiness before following logs
+# local_resource(
+#     "watch-logs",
+#     cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
+#     serve_cmd='''
+#     echo "Waiting for WATCH pods to be fully ready..."
+#     until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
+#           kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
+#       sleep 5
+#     done
+#     echo "Checking other components..."
+#     until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
+#       sleep 5
+#     done
+#     echo "All pods ready, stabilizing..."; sleep 20
+#     echo "Following WATCH logs..."
+#     kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
+#     ''',
+#     labels=["k8s_logs"],
+#     resource_deps=["path-stack"]
+# )
