@@ -20,7 +20,7 @@ var (
 // RequestErrorContext provides the support required by the gateway package for handling service requests.
 var _ gateway.RequestQoSContext = &RequestErrorContext{}
 
-// RequestErrorContext terminates a JSONRPC-service request processing on errors (internal failures or invalid requests).
+// RequestErrorContext terminates the processing of a JSONRPC-service request on errors (internal failures or invalid requests).
 // Provides:
 //  1. Detailed error response to the user.
 //  2. Log entries to warn on potential incorrect usage.
@@ -38,9 +38,6 @@ type RequestErrorContext struct {
 func (rec *RequestErrorContext) GetHTTPResponse() gateway.HTTPResponse {
 	bz, err := json.Marshal(rec.Response)
 	if err != nil {
-		// TODO_IMPROVE(@adshmh): Standardize logger labels across packages
-		// 1. Create shared label schema for the evm package
-		// 2. Extend schema to other QoS packages
 		rec.Logger.With(
 			"component", "RequestErrorContext",
 			"method", "GetHTTPResponse",
