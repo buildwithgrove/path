@@ -155,7 +155,7 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# Compile the binary inside the container (this is "local" to Tilt)
+# Compile the binary inside the container
 local_resource(
     'path-binary',
     '''
@@ -184,8 +184,7 @@ RUN chmod +x /app/path
     ],
 )
 
-# Since resource_deps isn't supported in your Tilt version,
-# use a trigger mechanism to ensure the binary is built before the image
+# Ensure the binary is built before the image
 local_resource(
     "path-trigger",
     "touch bin/path",
