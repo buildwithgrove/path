@@ -95,14 +95,13 @@ func extractAuthObservationFromHTTPHeaders(httpReq *http.Request) *observation.R
 // getTraceID extracts the trace ID from the HTTP headers.
 // If the trace ID is not set, it generates a new UUID.
 func getTraceID(httpReq *http.Request) string {
-	traceID := httpReq.Header.Get(httpHeaderEnvoyTraceID)
+	// If the trace ID is set in the header by Envoy, use it.
+	if traceID := httpReq.Header.Get(httpHeaderEnvoyTraceID); traceID != "" {
+		return traceID
+	}
 
 	// If the trace ID is not set, fallback to generating a new UUID.
 	// This is a fallback for cases where the trace ID is not set by
 	// Envoy. For example, if PATH is running standalone (i.e. not behind Envoy).
-	if traceID == "" {
-		return uuid.New().String()
-	}
-
-	return traceID
+	return uuid.New().String()
 }
