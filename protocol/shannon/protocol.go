@@ -119,7 +119,7 @@ func (p *Protocol) AvailableEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
-) ([]protocol.EndpointAddr, error) {
+) (protocol.EndpointAddrList, error) {
 	// hydrate the logger.
 	logger := p.logger.With("service", serviceID)
 
@@ -145,7 +145,7 @@ func (p *Protocol) AvailableEndpoints(
 	logger.Debug().Msg("Successfully fetched the set of available endpoints for the selected apps.")
 
 	// Convert the list of endpoints to a list of endpoint addresses
-	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
+	endpointAddrs := make(protocol.EndpointAddrList, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
 	}
