@@ -3,8 +3,6 @@ package framework
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -16,22 +14,16 @@ func (ee *EndpointError) buildObservation() *observations.EndpointError {
 	}
 
 	observationError := &observations.EndpointError{
-		Description: ee.Description,
-		ErrorKind:   translateToObservationErrorKind(ee.ErrorKind),
+		ErrorKind:    translateToObservationRequestErrorKind(re.errorKind),
+		ErrorDetails: re.errorDetails,
+		// The JSONRPC response returned to the client.
+		JsonRpcResponse: buildJSONRPCResponseObservation(re.jsonrpcResponse),
 	}
 
 	// Include sanction information if available
 	if ee.RecommendedSanction != nil {
-		observationError.Sanction = &observations.Sanction{
-			Reason: ee.Description,
-			Type:   observations.SanctionType_SANCTION_TYPE_TEMPORARY,
-		}
+		observationError.Sanction = ee.RecommendedSanction.buildObservation()
 
-		// Convert expiry timestamp if available
-		if !ee.RecommendedSanction.Duration.IsZero() {
-			// Convert Go time.Duration to proto timestamp
-			observationError.Sanction.ExpiryTimestamp = timestampProto(time.Now().Add(ee.RecommendedSanction.Duration))
-		}
 	}
 
 	return observationError
@@ -96,17 +88,4 @@ func translateFromObservationErrorKind(errKind observations.EndpointErrorKind) E
 	}
 }
 
-// Helper functions for proto timestamp conversion
-func timestampProto(t time.Time) *timestamppb.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	return timestamppb.New(t)
-}
 
-func timeFromProto(ts *timestamppb.Timestamp) time.Time {
-	if ts == nil {
-		return time.Time{}
-	}
-	return ts.AsTime()
-}

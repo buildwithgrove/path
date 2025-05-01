@@ -10,6 +10,11 @@ const (
 	EndpointErrKindInvalidResult                          // Payload result doesn't match expected value: e.g. invalid chainID value
 )
 
+// TODO_FUTURE(@adshmh): Allow custom QoS implementations to provide a custom JSONRPC response:
+// - Add a CustomJSONRPCResponse field to EndpointError struct.
+// - Support setting the above by custom QoS implementations.
+// - If set, the above should be returned to the client instead of the JSONRPC response parsed from endpoint's returned payload.
+//
 // EndpointError contains error details for endpoint queries.
 // An EndpointError is always associated with an Endpoint Attribute struct.
 type EndpointError struct {

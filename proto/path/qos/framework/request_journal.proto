@@ -7,8 +7,8 @@ import "path/qos/framework/jsonrpc.proto"; // Import basic JSONRPC messages.
 import "path/qos/framework/request.proto";  // Import Request-related messages.
 import "path/qos/framework/endpoint_query_result.proto"; // Import EndpointQueryResult
 
-// RequestJournal is the top-level container for all QoS observations for a request.
-message RequestJournal {
+// RequestJournalObservations is the top-level container for all QoS observations for a request.
+message RequestJournalObservations {
   // Service identification
   string service_name = 1; // e.g. EVM, Solana, CometBFT
 

@@ -21,7 +21,7 @@ func buildJSONRPCResponseObservation(jsonrpcResp jsonrpc.Response) *observations
 	return nil
 }
 
-func extractJSONRPCRequestFromObservation(
+func buildJSONRPCRequestFromObservation(
 	jsonrpcRequestObs *observations.JsonRpcRequest,
 ) *jsonrpc.Request {
 	if jsonrpcRequestObs == nil {
@@ -34,7 +34,7 @@ func extractJSONRPCRequestFromObservation(
 	}
 }
 
-func extractJSONRPCResponseFromObservation(
+func buildJSONRPCResponseFromObservation(
 	observation *observations.JsonRpcResponse,
 ) *jsonrpc.Response {
 	if observation == nil {

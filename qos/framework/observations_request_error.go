@@ -6,15 +6,23 @@ import (
 
 func (re *requestError) buildObservation() *observations.RequestError {
 	return &observations.RequestError{
-		ErrorKind:    translateToRequestError(re.errorKind),
+		ErrorKind:    translateToObservationRequestErrorKind(re.errorKind),
 		ErrorDetails: re.errorDetails,
 		// The JSONRPC response returned to the client.
 		JsonRpcResponse: buildJSONRPCResponseObservation(re.jsonrpcResponse),
 	}
 }
 
+func buildRequestErrorFromObservation(obs *observations.RequestError) *requestError {
+	return &requestErro {
+		errorKind: translateFromObservationRequestErrorKind(obs.ErrorKind()),
+		errorDetails: obs.GetErrorDetails(),
+		jsonrpcErrorResponse: buildJSONRPCResponseFromObservation(obs.GetJsonRpcResponse()),
+	}
+}
+
 // DEV_NOTE: you MUST update this function when changing the set of request errors.
-func translateToRequestError(errKind requestErrorKind) observations.RequestErrorKind {
+func translateToObservationRequestErrorKind(errKind requestErrorKind) observations.RequestErrorKind {
 	switch errKind {
 	case requestErrKindInternalReadyHTTPBody:
 		return observations.RequestValidationErrorKind_REQUEST_ERROR_INTERNAL_BODY_READ_FAILURE

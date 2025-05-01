@@ -8,6 +8,14 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+
+=======>>>>>>
+		// Convert expiry timestamp if available
+		if !ee.RecommendedSanction.ExpiryTimestamp.IsZero() {
+			// Convert Go time.Duration to proto timestamp
+			observationError.Sanction.ExpiryTimestamp = timestampProto(time.Now().Add(ee.RecommendedSanction.Duration))
+		}
+
 // buildObservation converts an EndpointQueryResult to observations.EndpointQueryResult
 // Used for reporting metrics.
 func (eqr *EndpointQueryResult) buildObservation() *observations.EndpointQueryResult {
@@ -49,11 +57,11 @@ func (eqr *EndpointQueryResult) buildObservation() *observations.EndpointQueryRe
 	return observationResult
 }
 
-// extractEndpointQueryResultFromObservation extracts a single EndpointQueryResult from an observation's EndpointQueryResult
-func extractEndpointQueryResultsFromObservations(
+// buildEndpointQueryResultFromObservation builds a single EndpointQueryResult from an observation's EndpointQueryResult
+func buildEndpointQueryResultFromObservation(
 	logger polylog.Logger,
 	observation *observations.EndpointQueryResult,
-) []*EndpointQueryResult {
+) *EndpointQueryResult {
 	// hydrate the logger
 	logger := logger.With("method", "extractEndpointQueryResultFromObservation")
 

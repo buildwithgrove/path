@@ -11,7 +11,7 @@ message Observations {
   // service_observations contains QoS measurements specific to the service type
   oneof service_observations {
     // jsonrpc contains QoS measurements for a JSON-RPC based service request
-    path.qos.framework.RequestJournal request_journal = 1;
+    path.qos.framework.RequestJournalObservations request_journal_observations = 1;
 
     // Additional service types can be added here in the future
     // For example:
