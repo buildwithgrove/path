@@ -77,8 +77,4 @@ include ./makefiles/test_requests.mk
 include ./makefiles/release.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
-<<<<<<< HEAD
 include ./makefiles/claudesync.mk
-=======
-include ./makefiles/claude.mk
->>>>>>> origin/main
