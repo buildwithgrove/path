@@ -24,7 +24,7 @@ shannon_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
 
     # Setting this to true disables all caching of full node data.
-    lazy_mode: true
+    lazy_mode: false
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode

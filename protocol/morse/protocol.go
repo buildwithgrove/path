@@ -91,14 +91,14 @@ type Protocol struct {
 // AvailableEndpoints returns the list of available endpoints for a given service ID.
 //
 // Implements the gateway.Protocol interface.
-func (p *Protocol) AvailableEndpoints(_ context.Context, serviceID protocol.ServiceID, _ *http.Request) ([]protocol.EndpointAddr, error) {
+func (p *Protocol) AvailableEndpoints(_ context.Context, serviceID protocol.ServiceID, _ *http.Request) (protocol.EndpointAddrList, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	// Convert the list of endpoints to a list of endpoint addresses
-	endpointAddrs := make([]protocol.EndpointAddr, 0, len(endpoints))
+	endpointAddrs := make(protocol.EndpointAddrList, 0, len(endpoints))
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
 	}

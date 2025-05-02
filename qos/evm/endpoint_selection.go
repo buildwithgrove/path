@@ -19,9 +19,12 @@ var _ protocol.EndpointSelector = &serviceState{}
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
-func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select")
-	logger.With("total_endpoints", len(availableEndpoints)).Info().Msg("filtering available endpoints.")
+func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
+	logger := ss.logger.With("method", "Select").
+		With("chain_id", ss.serviceConfig.getEVMChainID()).
+		With("service_id", ss.serviceConfig.GetServiceID())
+
+	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
 
 	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
 	if err != nil {
@@ -30,15 +33,12 @@ func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (prot
 	}
 
 	if len(filteredEndpointsAddr) == 0 {
-		logger.Warn().Msg("SELECTING A RANDOM ENDPOINT because all endpoints failed validation.")
+		logger.Warn().Msgf("SELECTING A RANDOM ENDPOINT because all endpoints failed validation from: %s", availableEndpoints.String())
 		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
 		return randomAvailableEndpointAddr, nil
 	}
 
-	logger.With(
-		"total_endpoints", len(availableEndpoints),
-		"endpoints_after_filtering", len(filteredEndpointsAddr),
-	).Info().Msg("filtered endpoints")
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
 
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
 	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
@@ -47,7 +47,7 @@ func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (prot
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
 // according to previously processed observations.
-func (ss *serviceState) filterValidEndpoints(availableEndpoints []protocol.EndpointAddr) ([]protocol.EndpointAddr, error) {
+func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddrList, error) {
 	ss.endpointStore.endpointsMu.RLock()
 	defer ss.endpointStore.endpointsMu.RUnlock()
 
@@ -61,7 +61,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints []protocol.Endpo
 
 	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-	var filteredEndpointsAddr []protocol.EndpointAddr
+	var filteredEndpointsAddr protocol.EndpointAddrList
 	for _, availableEndpointAddr := range availableEndpoints {
 		logger := logger.With("endpoint_addr", availableEndpointAddr)
 		logger.Info().Msg("processing endpoint")
@@ -123,6 +123,10 @@ func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
 // than the perceived block height minus the sync allowance.
 func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error {
 	if ss.perceivedBlockNumber == 0 {
+		return errNoBlockNumberObs
+	}
+
+	if check.parsedBlockNumberResponse == nil {
 		return errNoBlockNumberObs
 	}
 

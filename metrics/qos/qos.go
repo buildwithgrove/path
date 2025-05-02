@@ -31,6 +31,6 @@ func PublishQoSMetrics(
 
 	// Log warning if no matching observation types were found
 	if !hasProcessedObservations {
-		hydratedLogger.Warn().Msg("supplied observations do not match any known QoS service")
+		hydratedLogger.Warn().Msgf("supplied observations do not match any known QoS service: %+v", qosObservations)
 	}
 }

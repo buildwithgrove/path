@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -18,8 +17,32 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// The Shannon FullNode interface is implemented by the lazyFullNode struct below.
+//
+// A lazyFullNode queries the onchain data for every data item it needs to do an action (e.g. serve a relay request, etc).
+// This is done to enable supporting short block times (a few seconds), by avoiding caching
+// which can result in failures due to stale data in the cache.
+var _ FullNode = &lazyFullNode{}
+
+// TODO_MVP(@adshmh): Rename `lazyFullNode`: this struct does not perform any caching and should be named accordingly.
+//
+// LazyFullNode: default implementation of a full node for the Shannon.
+//
+// Key differences from a caching full node:
+// - Intentionally avoids caching:
+//   - Enables support for short block times (e.g. LocalNet)
+//   - Use CachingFullNode struct if caching is desired for performance
+type lazyFullNode struct {
+	// logger polylog.Logger
+
+	appClient     *sdk.ApplicationClient
+	sessionClient *sdk.SessionClient
+	blockClient   *sdk.BlockClient
+	accountClient *sdk.AccountClient
+}
+
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*lazyFullNode, error) {
+func NewLazyFullNode(config FullNodeConfig) (*lazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
@@ -47,35 +70,9 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*lazyFullNod
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
-
-		logger: logger,
 	}
 
 	return fullNode, nil
-}
-
-// The Shannon FullNode interface is implemented by the lazyFullNode struct below.
-//
-// A lazyFullNode queries the onchain data for every data item it needs to do an action (e.g. serve a relay request, etc).
-// This is done to enable supporting short block times (a few seconds), by avoiding caching
-// which can result in failures due to stale data in the cache.
-var _ FullNode = &lazyFullNode{}
-
-// TODO_MVP(@adshmh): Rename `lazyFullNode`: this struct does not perform any caching and should be named accordingly.
-//
-// LazyFullNode: default implementation of a full node for the Shannon.
-//
-// Key differences from a caching full node:
-// - Intentionally avoids caching:
-//   - Enables support for short block times (e.g. LocalNet)
-//   - Use CachingFullNode struct if caching is desired for performance
-type lazyFullNode struct {
-	logger polylog.Logger
-
-	appClient     *sdk.ApplicationClient
-	sessionClient *sdk.SessionClient
-	blockClient   *sdk.BlockClient
-	accountClient *sdk.AccountClient
 }
 
 // GetApp:
