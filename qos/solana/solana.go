@@ -35,14 +35,16 @@ type QoS struct {
 //
 // Implements the gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := qos.logger.With("qos", "solana")
+
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return requestContextFromInternalError(err), false
+		return requestContextFromInternalError(logger, err), false
 	}
 
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(err), false
+		return requestContextFromUserError(logger, err), false
 	}
 
 	// TODO_TECHDEBT(@adshmh): validate the JSONRPC request to block invalid requests from being sent to endpoints.
