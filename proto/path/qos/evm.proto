@@ -172,7 +172,6 @@ message EVMEndpointObservation {
     // This differs from EVMEmptyResponse as no response was reported by the protocol.
     EVMNoResponse no_response = 7;
   }
-  // TODO_MVP(@commoddity): add observations for archival checks.
 }
 
 // TODO_MVP(@adshmh): Implement a consolidated SanctionObservation message structure that:

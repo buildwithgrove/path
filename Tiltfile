@@ -218,8 +218,6 @@ flags = [
     "--set", "global.imagePullPolicy=Never",
 ]
 
-# TODO_DOCUMENT(@commoddity): Add documentation for the .values.yaml file.
-#
 # Optional: Use a local values.yaml file to override the default values.
 #
 # For example, Tilt will append the flags:
