@@ -155,8 +155,7 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# if local_config["hot-reloading"]:
-# Build the Go binary with proper settings for Alpine
+# Compile the binary inside the container
 local_resource(
     'path-binary',
     '''
@@ -168,39 +167,31 @@ local_resource(
     labels=["hot-reloading"],
 )
 
-# Make sure path-binary runs before the Docker build
-local_resource(
-    "path-trigger",
-    """
-    echo "Triggering Docker build after binary build"
-    touch .tilt-build-trigger
-    """,
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_MANUAL,
-    labels=["hot-reloading"],
-)
-
-# Build an image with the PATH binary
+# Build a minimal Docker image with just the binary
 docker_build_with_restart(
     "path-image",
     context=".",
-    dockerfile_contents="""FROM golang:1.23.0
-RUN apt-get -q update && apt-get install -qyy curl jq less
-RUN mkdir -p /app/config
+    dockerfile_contents="""FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
 COPY bin/path /app/path
 RUN chmod +x /app/path
-WORKDIR /app
 """,
-    # only=["/app/path"],
+    only=["bin/path"],
     entrypoint=["/app/path"],
     live_update=[
-        # First sync to a temporary location to avoid permission issues
-        sync("bin/path", "/app/bin/path"),
-        # Then run commands to properly handle the file
-        run("cp -f /app/bin/path /app/path && chmod +x /app/path", trigger="bin/path")
+        sync("bin/path", "/app/path"),
     ],
-    trigger='.tilt-build-trigger',  # Rebuild when this file changes
+)
+
+# Ensure the binary is built before the image
+local_resource(
+    "path-trigger",
+    "touch bin/path",
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_AUTO,
+    labels=["hot-reloading"],
 )
 
 # Tilt will run the Helm Chart with the following flags by default.
