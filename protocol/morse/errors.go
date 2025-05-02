@@ -191,7 +191,7 @@ func isEndpointPocketCoreError(errStr string) bool {
 		[]string{
 			"codespace: sdk",
 			"code: 1",
-			"codespace: pocketcore",
+			"Codespace: sdk",
 		},
 	)
 }
