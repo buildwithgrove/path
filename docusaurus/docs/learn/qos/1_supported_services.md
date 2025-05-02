@@ -22,7 +22,7 @@ The following table lists the Quality of Service (QoS) implementations currently
 
 If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
 
-**This means no QoS checks are performed for that service and endpoints are selected at random from the network.**
+**This means no QoS checks will be performed for that service and endpoints are selected at random from the network.**
 
 :::
 
@@ -40,11 +40,11 @@ hydrator_config:
     - "F00C"
 ```
 
-💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/6_configurations_helm.md)._
+💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configurations_path.md)._
 
 # 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-04-30**
+**🗓️ Document Last Updated: 2025-05-02**
 
 ## Shannon Protocol Services
 

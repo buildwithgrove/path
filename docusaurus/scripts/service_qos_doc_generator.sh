@@ -70,7 +70,7 @@ hydrator_config:
     - "F00C"
 ```
 
-💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/6_configurations_helm.md)._
+💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configurations_path.md)._
 
 EOF
 }
