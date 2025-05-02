@@ -30,7 +30,6 @@ But feel free to take a look if you're curious.
   - [Repo](#repo-1)
   - [README.md](#readmemd-1)
 
-
 ## Overview
 
 GUARD contains configurations to implement authentication for PATH in a way that is compatible with Grove's Portal.
@@ -39,7 +38,7 @@ This Grove specific implementation is comprised of two components:
 
 - `PEAS` - PATH External Auth Server
   - This is a gRPC server that is responsible for checking if a request is authorized to access a specific service.
-  - Implement's Envoy Proxy's `ext_authz` gRPC interface.
+  - Implements Envoy Proxy's `ext_authz` gRPC interface.
     - [Envoy External Authorization HTTP Filter Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - `PADS` - PATH Auth Data Server
   - This is a gRPC server that is responsible for providing the auth data to the `PEAS` server.
@@ -90,14 +89,23 @@ guard.auth.groveLegacy.pads.enabled = true
 
 ### Documentation References
 
-**Grove PATH Docs**
+**Helm Charts**
 
-- [`PATH/GUARD` `values.yaml`](./5_values.md)
-- [`GUARD` Helm Chart](./3_guard.md)
+For the full GUARD Helm Chart documentation, see [GUARD Helm Chart](./3_guard.md).
+
+For the Grove Auth code in the Helm Charts repo, see:
+
+- [Grove Auth `templates` Directory](https://github.com/buildwithgrove/helm-charts/tree/main/charts/guard/templates/auth-grove)
+- [GUARD Helm Chart Grove Auth values.yaml](https://github.com/buildwithgrove/helm-charts/blob/main/charts/guard/values.yaml#L50)
 
 **Envoy External Docs**
 
+For an example walkthrough of implementing external authorization with Envoy Gateway, see:
+
 - [Envoy Gateway External Auth Docs](https://gateway.envoyproxy.io/docs/tasks/security/ext-auth/)
+
+For Envoy Proxy's `ext_authz` HTTP Filter documentation (how `PEAS` communicates with Envoy), see:
+
 - [Envoy Proxy External Auth Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 
 ## PADS Documentation
