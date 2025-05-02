@@ -2,12 +2,10 @@ package framework
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // TODO_IN_THIS_PR: reword/rename the method and the comment.
+//
 // defaultResultBuilder is applied by the endpointCallProcessor on endpoint responses not matching any of the JSONRPC methods specified by the custom service QoS.
 // It builds an EndpointQueryResult to track JSONRPC requests/responses not utilized by the custom QoS service for updating the service state or endpoint selection.
 // Used in generating observations for:
@@ -37,8 +35,8 @@ func defaultResultBuilder(ctx *EndpointQueryResultContext) *EndpointQueryResult 
 //
 // buildResultForEmptyResponse handles the case when an endpoint returned an empty response.
 func buildResultForEmptyResponse(endpointQueryResult *EndpointQueryResult) *EndpointQueryResult {
-	endpointError := &EndpointError { 
-		ErrorKind: EndpointErrKindEmptyPayload,
+	endpointError := &EndpointError{
+		ErrorKind:   EndpointErrKindEmptyPayload,
 		Description: "endpoint returned an empty response",
 		// Set the recommended sanction based on the error
 		RecommendedSanction: getRecommendedSanction(EndpointErrKindEmptyPayload, nil),
@@ -57,9 +55,9 @@ func buildResultForErrorUnmarshalingEndpointReturnedData(
 	endpointQueryResult *EndpointQueryResult,
 	parseError error,
 ) *EndpointQueryResult {
-	endpointError := &EndpointError {
-		ErrorKind: EndpointErrKindParseErr,
-		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
+	endpointError := &EndpointError{
+		ErrorKind:           EndpointErrKindParseErr,
+		Description:         fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
 		RecommendedSanction: getRecommendedSanction(EndpointErrKindParseErr, parseError),
 	}
 
@@ -76,9 +74,9 @@ func buildResultForErrorValidatingEndpointResponse(
 	endpointQueryResult *EndpointQueryResult,
 	parseError error,
 ) *EndpointQueryResult {
-	endpointError := &EndpointError {
-		ErrorKind: EndpointErrKindValidationErr,
-		Description: fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
+	endpointError := &EndpointError{
+		ErrorKind:           EndpointErrKindValidationErr,
+		Description:         fmt.Sprintf("endpoint payload failed to unmarshal: %q", parseError.Error()),
 		RecommendedSanction: getRecommendedSanction(EndpointErrKindValidationErr, parseError),
 	}
 

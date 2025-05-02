@@ -3,7 +3,7 @@ package framework
 type EndpointErrorKind int
 
 const (
-	EndpointErrKindUnspecified  EndpointErrorKind = iota  // matches the "UNSPECIFIED" enum value in proto definitions.
+	EndpointErrKindUnspecified   EndpointErrorKind = iota // matches the "UNSPECIFIED" enum value in proto definitions.
 	EndpointErrKindEmptyPayload                           // Empty payload from endpoint
 	EndpointErrKindParseErr                               // Could not parse endpoint payload
 	EndpointErrKindValidationErr                          // Parsed endpoint payload, in the form of JSONRPC response, failed validation.

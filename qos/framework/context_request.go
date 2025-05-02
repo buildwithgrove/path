@@ -2,10 +2,8 @@ package framework
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -121,18 +119,25 @@ func (rc *requestQoSContext) checkForProtocolLevelError() {
 	rc.journal.setRequestError(reqErr)
 }
 
-
 func (ctx *requestQoSContext) initFromHTTP(httpReq *http.Request) bool {
 	jsonrpcReq, reqErr := parseHTTPRequest(ctx.logger, httpReq)
 
 	// initialize the request journal to track all request data and events.
 	ctx.journal = &requestJournal{
 		jsonrpcRequest: jsonrpcReq,
-		requestError: reqErr,
+		requestError:   reqErr,
 	}
 
 	// Only proceed with next steps if there were no errors parsing the HTTP request into a JSONRPC request.
 	return (reqErr == nil)
+}
+
+// Used for building request contexts for synthetic requests, i.e. endpoint quality checks.
+func (ctx *requestQoSContext) initFromJSONRPCRequest(jsonrpcReq *jsonrpc.Request) {
+	// initialize the request journal to track all request data and events.
+	ctx.journal = &requestJournal{
+		jsonrpcRequest: jsonrpcReq,
+	}
 }
 
 // parseHTTPRequest builds and returns a context for processing the HTTP request:

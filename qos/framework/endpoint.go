@@ -90,7 +90,7 @@ func (e *Endpoint) applyQueryResults(endpointQueryResults []*EndpointQueryResult
 		}
 
 		// Update the endpoint result matching the JSONRPC request.
-		e.queryResults[jsonrpcRequestMethod] = endpointQueryResult 
+		e.queryResults[jsonrpcRequestMethod] = endpointQueryResult
 
 		e.logger.With("jsonrpc_request_method", jsonrpcRequestMethod).Debug().Msg("Updated endpoint with query result.")
 	}

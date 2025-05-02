@@ -13,17 +13,17 @@ import (
 // This includes:
 // - Successful requests
 // - Failed requests, due to:
-//    - internal error:
-//      - error reading HTTP request's body.
-//      - any protocol-level error: e.g. endpoint timed out.
-//    - invalid request
+//   - internal error:
+//   - error reading HTTP request's body.
+//   - any protocol-level error: e.g. endpoint timed out.
+//   - invalid request
 //
 // requestJournal is the top-level struct in the chain of observation generators.
 func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// initialize the observations to include:
 	// - service name
 	// - observations related to the request:
-	journalObservations := observations.RequestJournalObservations {
+	journalObservations := observations.RequestJournalObservations{
 		ServiceName: rj.serviceName,
 	}
 
@@ -41,8 +41,8 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 	// e.g. for invalid requests.
 	// Skip adding endpoint observations.
 	if len(rj.endpointQueryResults) == 0 {
-		return qosobservations.Observations {
-			ServiceObservations: &qosobservations.Observations_RequestJournalObservations {
+		return qosobservations.Observations{
+			ServiceObservations: &qosobservations.Observations_RequestJournalObservations{
 				RequestJournalObservations: &journalObservations,
 			},
 		}
@@ -50,40 +50,21 @@ func (rj *requestJournal) getObservations() qosobservations.Observations {
 
 	endpointObservations := make([]*observations.EndpointQueryResult, len(rj.endpointQueryResults))
 	for index, endpointQueryResult := range rj.endpointQueryResults {
-		endpointObservations[index] = endpointQueryResult.buildObservation()
+		endpointObservations[index] = endpointQueryResult.buildObservation(rj.logger)
 	}
 
 	journalObservations.EndpointQueryResultObservations = endpointObservations
-	return qosobservations.Observations {
-		ServiceObservations: &qosobservations.Observations_RequestJournalObservations {
+	return qosobservations.Observations{
+		ServiceObservations: &qosobservations.Observations_RequestJournalObservations{
 			RequestJournalObservations: &journalObservations,
 		},
 	}
 }
 
-
 func buildRequestJournalFromObservations(
 	logger polylog.Logger,
-	observations *qosobservations.Observations,
+	journalObs *observations.RequestJournalObservations,
 ) (*requestJournal, error) {
-	// hydrate the logger
-	logger = logger.With("method", "buildRequestJournalFromObservations")
-
-	// sanity check the observations.
-	if observations == nil {
-		errMsg := "Received nil observation: skip the processing."
-		logger.Warn().Msg(errMsg)
-		return nil, errors.New(errMsg)
-	}
-
-	journalObs := observations.GetRequestJournalObservations()
-	// No request observation present: skip the processing.
-	if journalObs == nil {
-		errMsg := "Should happen very rarely: received nil journal observation: skip the processing."
-		logger.Warn().Msg(errMsg)
-		return nil, errors.New(errMsg)
-	}
-
 	// construct the request and any errors from the observations.
 	reqObs := journalObs.GetJsonrpcRequest()
 	// nil request observation: no further processing can be done.
@@ -99,10 +80,9 @@ func buildRequestJournalFromObservations(
 
 	// Instantiate the request journal.
 	requestJournal := &requestJournal{
-		logger: logger,
+		logger:         logger,
 		jsonrpcRequest: jsonrpcRequest,
 	}
-
 
 	// hydrate the logger with endpoint observations count.
 	numEndpointObservations := len(journalObs.GetEndpointQueryResultObservations())

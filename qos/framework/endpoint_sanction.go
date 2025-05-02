@@ -11,9 +11,9 @@ import (
 type SanctionType int
 
 const (
-	_                     SanctionType = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.
-	SanctionTypeTemporary              // Time-limited exclusion
-	SanctionTypePermanent              // Permanent exclusion
+	SanctionTypeUnspecified SanctionType = iota // matches the "UNSPECIFIED" enum value in proto definitions.
+	SanctionTypeTemporary                       // Time-limited exclusion
+	SanctionTypePermanent                       // Permanent exclusion
 )
 
 // Sanction represents a recommendation to limit endpoint usage.

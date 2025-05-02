@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 //     - epochInfoResult := endpoint.GetQueryResult("getEpochInfo")
 //     - epoch := epochInfoResult.GetIntValue("epoch")
 //     - blockHeight := epochInfoResult.GetIntValue("blockHeight")
-
 
 // TODO_IMPROVE(@adshmh): Enhance EndpointQueryResult to support data types commonly stored for endpoints.
 //
@@ -59,7 +57,7 @@ type EndpointQueryResult struct {
 	// - "BlockHeight": 0x1234
 	// - "Epoch": 5
 	StrValues map[string]string
-	IntValues    map[string]int
+	IntValues map[string]int
 
 	// The time at which the query result is expired.
 	// Expired results will be ignored, including in:
@@ -125,7 +123,7 @@ func (eqr *EndpointQueryResult) Success(
 // ErrorResult creates an error result with the given message and no sanction.
 // Returns a self-reference for a fluent API.
 func (eqr *EndpointQueryResult) Error(description string) *EndpointQueryResult {
-	eqr.EndpointError = &EndpointError {
+	eqr.EndpointError = &EndpointError{
 		ErrorKind: EndpointErrKindInvalidResult,
 		// Description is set by the custom service implementation
 		Description: description,
@@ -136,13 +134,13 @@ func (eqr *EndpointQueryResult) Error(description string) *EndpointQueryResult {
 
 // SanctionEndpoint creates an error result with a temporary sanction.
 func (eqr *EndpointQueryResult) SanctionEndpoint(description, reason string, duration time.Duration) *EndpointQueryResult {
-	eqr.EndpointError = &EndpointError {
-		ErrorKind: EndpointErrKindInvalidResult,
+	eqr.EndpointError = &EndpointError{
+		ErrorKind:   EndpointErrKindInvalidResult,
 		Description: description,
 		RecommendedSanction: &Sanction{
-			Type:        SanctionTypeTemporary,
-			Reason:      reason,
-			ExpiryTime:  time.Now().Add(duration),
+			Type:       SanctionTypeTemporary,
+			Reason:     reason,
+			ExpiryTime: time.Now().Add(duration),
 		},
 	}
 
@@ -151,12 +149,12 @@ func (eqr *EndpointQueryResult) SanctionEndpoint(description, reason string, dur
 
 // PermanentSanction creates an error result with a permanent sanction.
 func (eqr *EndpointQueryResult) PermanentSanction(description, reason string) *EndpointQueryResult {
-	eqr.EndpointError = &EndpointError {
-		ErrorKind: EndpointErrKindInvalidResult,
+	eqr.EndpointError = &EndpointError{
+		ErrorKind:   EndpointErrKindInvalidResult,
 		Description: description,
 		RecommendedSanction: &Sanction{
-			Type:        SanctionTypePermanent,
-			Reason:      reason,
+			Type:   SanctionTypePermanent,
+			Reason: reason,
 		},
 	}
 

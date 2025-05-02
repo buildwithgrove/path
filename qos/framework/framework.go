@@ -14,6 +14,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // TODO_MVP(@adshmh): Allow custom QoS services to supply custom request validation logic.
@@ -34,14 +35,17 @@ type QoSDefinition struct {
 	// e.g. "ETH"
 	ServiceName string
 
+	// Constructs JSONRPC requests to assess endpoint eligibility to handle service requests.
+	EndpointQualityChecksBuilder
+
 	// ResultBuilders maps JSONRPC methods to custom result processing logic
-	ResultBuilders map[string]EndpointQueryResultBuilder
+	ResultBuilders map[jsonrpc.Method]EndpointQueryResultBuilder
 
 	// StateUpdater defines how endpoint results affect service state
-	StateUpdater StateUpdater
+	StateUpdater
 
 	// EndpointSelector defines custom endpoint selection logic
-	EndpointSelector EndpointSelector
+	EndpointSelector
 
 	// TODO_MVP(@adshmh): Enable custom service QoS implementations to provide a list of allowed methods which the requestValidator needs to enforce:
 	// - Uncomment the following line.
@@ -49,12 +53,28 @@ type QoSDefinition struct {
 	// RequestValidator RequestValidator
 
 	// TODO_FUTURE(@adshmh): Add additional configuration options:
-	// - InitialState: Starting values for service state
 	// - AllowedMethods: Restrict which JSONRPC methods can be processed
 	// - RequestTimeout: Custom timeout for requests
 	// - RetryPolicy: Configuration for request retries
 	// - StateExpiryPolicy: Rules for expiring state entries
-	// - MetricsCollection: Settings for performance metrics
+}
+
+// NewQoSService creates a new QoS service with the given definition
+func (qd *QoSDefinition) NewQoSService() *QoS {
+	return &QoS{
+		logger: qd.Logger,
+		// set the definitions required for building different contexts.
+		qosDefinition: qd,
+		// initialize the service state and endpoint store.
+		serviceState: &ServiceState{
+			// hydrate the logger with component name: service state.
+			logger: qd.Logger.With("component", "serviceState"),
+			// initialize the endpoint store
+			endpointStore: &endpointStore{
+				logger: qd.Logger.With("component", "endpointStore"),
+			},
+		},
+	}
 }
 
 // EndpointQueryResultBuilder processes a response and extracts the relevant result.
@@ -62,15 +82,18 @@ type QoSDefinition struct {
 // It processes a valid JSONRPC response for a specific method and extracts the relevant data or error information.
 // It can potentially mark a JSONRPC response as invalid:
 // For example if the result field cannot be parsed into a number in an endpoint's response to an `eth_blockNumber` request.
-type EndpointQueryResultBuilder func(ctx *EndpointQueryResultContext) *EndpointQueryResult
+type EndpointQueryResultBuilder func(*EndpointQueryResultContext) *EndpointQueryResult
 
 // StateUpdater updates service state based on endpoint results
-type StateUpdater func(ctx *StateUpdateContext) *StateParameterUpdateSet
+type StateUpdater func(*StateUpdateContext) *StateParameterUpdateSet
 
 // EndpointSelector chooses an endpoint for a request based on service state
-type EndpointSelector func(ctx *EndpointSelectionContext) (protocol.EndpointAddr, error)
+type EndpointSelector func(*EndpointSelectionContext) (protocol.EndpointAddr, error)
 
-// NewQoSService creates a new QoS service with the given definition
-func NewQoSService(def QoSDefinition) *QoS {
-	// TODO_IN_THIS_PR: instantiate the framrwork using the QoSDeinition struct.
-}
+// EndpointQualityChecksBuilder constructs JSONRPC requests.
+// Used to assess endpoint eligibility to handle service requests.
+// Custom QoS service implements this.
+// Determines what data points are needed on an endpoint, considering:
+// - The existing observations on the endpoint
+// - Current service state.
+type EndpointQualityChecksBuilder func(*EndpointQualityChecksContext) []*jsonrpc.Request

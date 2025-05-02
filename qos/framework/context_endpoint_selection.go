@@ -8,7 +8,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // TODO_FUTURE(@adshmh): Rank qualified endpoints, e.g. based on latency, for selection.
@@ -108,7 +107,7 @@ func (ctx *EndpointSelectionContext) SelectRandomQualifiedEndpoint(endpointFilte
 			}
 		}
 	}
-	
+
 	// Disqualified endpoints have been marked.
 	// return a random qualified endpoint.
 	return ctx.selectRandomEndpoint()

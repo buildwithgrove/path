@@ -1,63 +1,46 @@
 package framework
 
 import (
-	"time"
-
 	observations "github.com/buildwithgrove/path/observation/qos/framework"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // buildObservation converts an EndpointError to an observations.EndpointError
 func (ee *EndpointError) buildObservation() *observations.EndpointError {
-	if ee == nil {
-		return nil
-	}
-
-	observationError := &observations.EndpointError{
-		ErrorKind:    translateToObservationRequestErrorKind(re.errorKind),
-		ErrorDetails: re.errorDetails,
-		// The JSONRPC response returned to the client.
-		JsonRpcResponse: buildJSONRPCResponseObservation(re.jsonrpcResponse),
+	endpointErrorObs := &observations.EndpointError{
+		ErrorKind:   translateToObservationEndpointErrorKind(ee.ErrorKind),
+		Description: ee.Description,
 	}
 
 	// Include sanction information if available
 	if ee.RecommendedSanction != nil {
-		observationError.Sanction = ee.RecommendedSanction.buildObservation()
-
+		endpointErrorObs.RecommendedSanction = ee.RecommendedSanction.buildObservation()
 	}
 
-	return observationError
+	return endpointErrorObs
 }
 
-// extractEndpointErrorFromObservation extracts an EndpointError from an observations.EndpointError
-func extractEndpointErrorFromObservation(obsError *observations.EndpointError) *EndpointError {
-	if obsError == nil {
-		return nil
+// buildEndpointErrorFromObservation extracts an EndpointError from an observations.EndpointError
+func buildEndpointErrorFromObservation(endpointErrorObs *observations.EndpointError) *EndpointError {
+	endpointErr := &EndpointError{
+		ErrorKind:   translateFromObservationEndpointErrorKind(endpointErrorObs.GetErrorKind()),
+		Description: endpointErrorObs.Description,
 	}
 
-	err := &EndpointError{
-		Description: obsError.Description,
-		ErrorKind:   translateFromObservationErrorKind(obsError.ErrorKind),
+	recommendedSanctionObs := endpointErrorObs.GetRecommendedSanction()
+	// No sanctions: skip the rest of the processing.
+	if recommendedSanctionObs == nil {
+		return endpointErr
 	}
 
-	// Include sanction information if available
-	if obsError.Sanction != nil {
-		err.RecommendedSanction = &Sanction{}
+	endpointErr.RecommendedSanction = buildSanctionFromObservation(recommendedSanctionObs)
 
-		// Convert sanction expiry timestamp to Duration
-		if obsError.Sanction.ExpiryTimestamp != nil {
-			sanctionExpiry := timeFromProto(obsError.Sanction.ExpiryTimestamp)
-			err.RecommendedSanction.Duration = sanctionExpiry.Sub(time.Now())
-		}
-	}
-
-	return err
+	return endpointErr
 }
 
 // TODO_IN_THIS_PR: verify errorKind conversion to/from proto.
 //
 // DEV_NOTE: you MUST update this function when changing the set of endpoint error kinds.
-func translateToObservationErrorKind(errKind EndpointErrorKind) observations.EndpointErrorKind {
+func translateToObservationEndpointErrorKind(errKind EndpointErrorKind) observations.EndpointErrorKind {
 	switch errKind {
 	case EndpointErrKindEmptyPayload:
 		return observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_EMPTY_PAYLOAD
@@ -73,7 +56,7 @@ func translateToObservationErrorKind(errKind EndpointErrorKind) observations.End
 }
 
 // DEV_NOTE: you MUST update this function when changing the set of endpoint error kinds.
-func translateFromObservationErrorKind(errKind observations.EndpointErrorKind) EndpointErrorKind {
+func translateFromObservationEndpointErrorKind(errKind observations.EndpointErrorKind) EndpointErrorKind {
 	switch errKind {
 	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_EMPTY_PAYLOAD:
 		return EndpointErrKindEmptyPayload
@@ -84,8 +67,6 @@ func translateFromObservationErrorKind(errKind observations.EndpointErrorKind) E
 	case observations.EndpointErrorKind_ENDPOINT_ERROR_KIND_INVALID_RESULT:
 		return EndpointErrKindInvalidResult
 	default:
-		return EndpointErrorKindUnspecified
+		return EndpointErrKindUnspecified
 	}
 }
-
-

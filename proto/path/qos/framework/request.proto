@@ -10,8 +10,8 @@ enum RequestErrorKind {
   REQUEST_ERROR_UNSPECIFIED = 0;
   REQUEST_ERROR_INTERNAL_BODY_READ_FAILURE = 1;     // Error reading HTTP request body
   REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR = 2;     // Protocol error: e.g. endpoint timed out.
-  REQUEST_ERROR_VALIDATION_UNMARSHALING_FAILURE = 3;  // Error parsing JSON-RPC request
-  REQUEST_ERROR_JSONRPC_VALIDATION_ERR = 4;       // JSONRPC request has failed validation: e.g. missing `method` field.
+  REQUEST_ERROR_UNMARSHALING_ERROR = 3;  // Error parsing JSON-RPC request
+  REQUEST_ERROR_JSONRPC_VALIDATION_ERROR = 4;       // JSONRPC request has failed validation: e.g. missing `method` field.
 }
 
 // RequestError contains details about a request error

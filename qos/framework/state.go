@@ -2,9 +2,7 @@ package framework
 
 import (
 	"sync"
-	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 

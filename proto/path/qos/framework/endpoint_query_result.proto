@@ -5,6 +5,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos/framework";
 
 import "google/protobuf/timestamp.proto";
 import "path/qos/framework/endpoint_error.proto";  // Import endpoint error definitions.
+import "path/qos/framework/jsonrpc.proto";  // Import jsonrpc definitions.
 
 // EndpointQueryResult captures data extracted from an endpoint query.
 // - Stores one or more string/integer values.
@@ -13,11 +14,9 @@ message EndpointQueryResult {
   // Address of the endpoint that handled the request
   string endpoint_addr = 1;
 
-  // TODO_IN_THIS_PR: REMOVE: it is 200 IFF endpointError == nil, and otherwise determined by the EndpointErr (which contains the JSONRPC response error code)
-  //
-
-  // HTTP response returned to the client.
-  int32 client_http_response = 2;
+  // JSONRPC response to send to client.
+  // Parsed from service endpoint's payload.
+  optional JsonRpcResponse jsonrpc_response = 2;
 
   // The set of values/attributes extracted from the endpoint query 
   // and the endpoint's parsed JSONRPC response
@@ -26,7 +25,7 @@ message EndpointQueryResult {
 
   // Captures the queried endpoint's error
   // Only set if the query result indicates an endpoint error
-  optional EndpointError error = 5;
+  optional EndpointError endpoint_error = 5;
 
   // The time at which the query result is expired
   google.protobuf.Timestamp expiry_time = 6;

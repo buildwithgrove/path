@@ -2,6 +2,7 @@ package framework
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -49,13 +50,13 @@ func buildHTTPResponse(
 ) gateway.HTTPResponse {
 	if jsonrpcResp == nil {
 		logger.Error().Msg("Received nil JSONRPC response")
-		return buildErrorResponse(logger, jsonrpc.ID{})
+		return buildErrorResponse(jsonrpc.ID{}, errors.New("internal error: empy JSONRPC response"))
 	}
 
 	payload, err := json.Marshal(jsonrpcResp)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to marshal JSONRPC response")
-		return buildErrorResponse(logger, jsonrpcResp.ID)
+		return buildErrorResponse(jsonrpcResp.ID, err)
 	}
 
 	return &ClientHTTPResponse{
@@ -66,8 +67,8 @@ func buildHTTPResponse(
 }
 
 // buildErrorResponse creates an internal error HTTP response with the given ID.
-func buildErrorResponse(logger polylog.Logger, id jsonrpc.ID) gateway.HTTPResponse {
-	errResp := newErrResponseInternalError(id)
+func buildErrorResponse(id jsonrpc.ID, err error) gateway.HTTPResponse {
+	errResp := newJSONRPCErrResponseMarshalError(id, err)
 	errPayload, _ := json.Marshal(errResp)
 	return &ClientHTTPResponse{
 		StatusCode: errResp.GetRecommendedHTTPStatusCode(),

@@ -10,14 +10,14 @@ func buildJSONRPCRequestObservation(jsonrpcReq *jsonrpc.Request) *observations.J
 		return nil
 	}
 
-	return &observations.JsonRpcRequest {
-		Id: jsonrpcReq.ID.String(),
-		Method: jsonrpcReq.Method,
+	return &observations.JsonRpcRequest{
+		Id:     jsonrpcReq.ID.String(),
+		Method: string(jsonrpcReq.Method),
 	}
 }
 
 // TODO_IN_THIS_PR: implement.
-func buildJSONRPCResponseObservation(jsonrpcResp jsonrpc.Response) *observations.JsonRpcResponse {
+func buildObservationFromJSONRPCResponse(jsonrpcResp *jsonrpc.Response) *observations.JsonRpcResponse {
 	return nil
 }
 
@@ -30,7 +30,7 @@ func buildJSONRPCRequestFromObservation(
 
 	// The only field required in applying the observations is the request's method.
 	return &jsonrpc.Request{
-		Method: jsonrpcRequestObs.GetMethod(),
+		Method: jsonrpc.Method(jsonrpcRequestObs.GetMethod()),
 	}
 }
 
@@ -48,7 +48,7 @@ func buildJSONRPCResponseFromObservation(
 
 	if jsonrpcErr := observation.GetErr(); jsonrpcErr != nil {
 		jsonrpcResp.Error = &jsonrpc.ResponseError{
-			Code: jsonrpcErr.GetCode(),
+			Code:    jsonrpcErr.GetCode(),
 			Message: jsonrpcErr.GetMessage(),
 		}
 	}

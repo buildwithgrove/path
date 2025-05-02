@@ -1,23 +1,24 @@
 package framework
 
 import (
+	"fmt"
+
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 type requestErrorKind int
 
 const (
-	_ requestErrorKind = iota // skip the 0 value: it matches the "UNSPECIFIED" enum value in proto definitions.
+	requestErrKindUnspecified requestErrorKind = iota // matches the "UNSPECIFIED" enum value in proto definitions.
 	requestErrKindInternalErrReadyHTTPBody
-	requestErrKindInternalProtocolErr
-	requestErrKindJSONRPCParsingErr
-	requestErrKindJSONRPCValidationErr
+	requestErrKindInternalProtocolError
+	requestErrKindJSONRPCParsingError
+	requestErrKindJSONRPCValidationError
 )
 
 // TODO_FUTURE(@adshmh): Consider making requestError public.
 // This would allow custom QoS to reject valid JSONRPC requests.
 // e.g. reject a JSONRPC request with an unsupported method.
-// 
 type requestError struct {
 	// Captures the kind of error the request encountered.
 	// e.g. error parsing HTTP payload into a JSONRPC request.
@@ -29,7 +30,7 @@ type requestError struct {
 	// Error response to return if a request parsing error occurred:
 	// - error reading HTTP request's body.
 	// - error parsing the request's payload into a jsonrpc.Request struct.
-	jsonrpcErrorResponse jsonrpc.Response
+	jsonrpcErrorResponse *jsonrpc.Response
 }
 
 func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
@@ -52,7 +53,7 @@ func buildRequestErrorForInternalErrHTTPRead(err error) *requestError {
 // The exact error is not known here: see the TODO_TECHDEBT above.
 func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestError {
 	return &requestError{
-		errorKind:    requestErrKindInternalErrProtocolError,
+		errorKind:    requestErrKindInternalProtocolError,
 		errorDetails: "error handling the request due to protocol-level error.",
 		// Create JSONRPC error response for protocol error.
 		jsonrpcErrorResponse: newJSONRPCErrResponseInternalProtocolError(requestID),
@@ -61,16 +62,16 @@ func buildRequestErrorForInternalErrProtocolErr(requestID jsonrpc.ID) *requestEr
 
 func buildRequestErrorForParseError(err error) *requestError {
 	return &requestError{
-		errorKind:    requestErrKindJSONRPCParsingErr,
+		errorKind:    requestErrKindJSONRPCParsingError,
 		errorDetails: fmt.Sprintf("error parsing HTTP request into JSONRPC: %v", err),
 		// Create JSONRPC error response for parse failure
-		jsonrpcErrorResponse: newJSONRPCErrResponseParseError(err),
+		jsonrpcErrorResponse: newJSONRPCErrResponseParseRequestError(err),
 	}
 }
 
 func buildRequestErrorJSONRPCValidationError(requestID jsonrpc.ID, validationErr error) *requestError {
 	return &requestError{
-		errorKind:    requestErrKindJSONRPCValidationErr,
+		errorKind:    requestErrKindJSONRPCValidationError,
 		errorDetails: fmt.Sprintf("JSONRPC request failed validation: %s", validationErr.Error()),
 		// Create JSONRPC error response for parse failure
 		jsonrpcErrorResponse: newJSONRPCErrResponseJSONRPCRequestValidationError(requestID, validationErr),

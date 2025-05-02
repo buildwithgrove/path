@@ -80,30 +80,10 @@ func newErrResponseNoEndpointResponse(requestID jsonrpc.ID) *jsonrpc.Response {
 	return &jsonrpcResp
 }
 
-// newErrResponseInternalError creates a JSON-RPC error response for internal server errors.
-// e.g. error reading HTTP request's body.
-// This response:
-// - Preserves the original request ID if available
-// - Marks error as retryable for safe client retry
-// - Provides a generic internal error message
-func newErrResponseInternalError(requestID jsonrpc.ID) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+func newJSONRPCErrResponseInternalProtocolError(requestID jsonrpc.ID) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		requestID,
-		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
-		"internal error", // Error Message
-		map[string]string{
-			"error_type": "internal",
-			// Custom extension - not part of the official JSON-RPC spec
-			// Marks the error as retryable to allow clients to safely retry their request
-			"retryable": "true",
-		},
-	)
-}
-
-func newJSONRPCErrResponseInternalProtocolError(requestID jsonrpc.ID) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
-		requestID,
-		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		ErrorCodeInternalError,
 		"internal error: protocol-level error has occurred", // Error Message
 		map[string]string{
 			"error_type": "protocol",
@@ -112,10 +92,31 @@ func newJSONRPCErrResponseInternalProtocolError(requestID jsonrpc.ID) jsonrpc.Re
 			"retryable": "true",
 		},
 	)
+
+	return &jsonrpcResp
 }
 
-func newJSONRPCErrResponseJSONRPCRequestValidationError(requestID jsonrpc.ID, validationErr error) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+// newJSONRPCErrResponseInternalReadError creates a JSON-RPC error response for HTTP request read errors.
+// This response:
+// - Uses an empty ID since the request couldn't be read
+// - Marks error as retryable since it's likely a server issue
+// - Provides the specific read error message
+func newJSONRPCErrResponseInternalReadError(readErr error) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
+		jsonrpc.ID{}, // No ID for read errors
+		ErrorCodeInternalError,
+		"Internal server error: failed to read request",
+		map[string]string{
+			"error":     readErr.Error(),
+			"retryable": "true",
+		},
+	)
+
+	return &jsonrpcResp
+}
+
+func newJSONRPCErrResponseJSONRPCRequestValidationError(requestID jsonrpc.ID, validationErr error) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		requestID,
 		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("invalid request: %s", validationErr.Error()), // Error Message
@@ -126,6 +127,8 @@ func newJSONRPCErrResponseJSONRPCRequestValidationError(requestID jsonrpc.ID, va
 			"retryable": "false",
 		},
 	)
+
+	return &jsonrpcResp
 }
 
 // newErrResponseMarshalError creates a JSON-RPC error response for marshaling errors.
@@ -133,7 +136,7 @@ func newJSONRPCErrResponseJSONRPCRequestValidationError(requestID jsonrpc.ID, va
 // - Preserves the original request ID if available
 // - Marks error as retryable
 // - Indicates the response couldn't be serialized
-func newErrResponseMarshalError(requestID jsonrpc.ID, marshalErr error) jsonrpc.Response {
+func newJSONRPCErrResponseMarshalError(requestID jsonrpc.ID, marshalErr error) jsonrpc.Response {
 	return jsonrpc.GetErrorResponse(
 		requestID,
 		ErrorCodeInternalError,
@@ -197,30 +200,13 @@ func newErrResponseMissingMethodError(requestID jsonrpc.ID) jsonrpc.Response {
 	)
 }
 
-// newErrResponseInternalReadError creates a JSON-RPC error response for HTTP request read errors.
-// This response:
-// - Uses an empty ID since the request couldn't be read
-// - Marks error as retryable since it's likely a server issue
-// - Provides the specific read error message
-func newErrResponseInternalReadError(readErr error) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
-		jsonrpc.ID{}, // No ID for read errors
-		ErrorCodeInternalError,
-		"Internal server error: failed to read request",
-		map[string]string{
-			"error":     readErr.Error(),
-			"retryable": "true",
-		},
-	)
-}
-
-// newErrResponseParseRequestError creates a JSON-RPC error response for parse errors.
+// newJSONRPCErrResponseParseRequestError creates a JSON-RPC error response for parse errors.
 // This response:
 // - Uses an empty ID since we couldn't parse the request to get an ID
 // - Marks error as non-retryable since it's likely a client issue with the JSONRPC format
 // - Indicates the request couldn't be parsed
-func newErrResponseParseRequestError(parseErr error) jsonrpc.Response {
-	return jsonrpc.GetErrorResponse(
+func newJSONRPCErrResponseParseRequestError(parseErr error) *jsonrpc.Response {
+	jsonrpcResp := jsonrpc.GetErrorResponse(
 		jsonrpc.ID{}, // No ID for parse errors
 		ErrorCodeParseError,
 		"Failed to parse JSON-RPC request",
@@ -229,6 +215,8 @@ func newErrResponseParseRequestError(parseErr error) jsonrpc.Response {
 			"retryable": "false",
 		},
 	)
+
+	return &jsonrpcResp
 }
 
 // marshalErrorResponse marshals a JSONRPC error response to JSON.

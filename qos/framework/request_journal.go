@@ -1,6 +1,9 @@
 package framework
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -54,9 +57,10 @@ func (rj *requestJournal) setProtocolLevelError() {
 
 func (rj *requestJournal) buildEndpointQueryResult(endpointAddr protocol.EndpointAddr, receivedData []byte) *EndpointQueryResult {
 	return &EndpointQueryResult{
+		// request journal reference.
+		// Used to access the request, e.g. JSONRPC request method.
 		requestJournal: rj,
-		// JSONRPC request underlying the endpoint query.
-		request: rj.jsonrpcRequest,
+
 		// Address of the queried endpoint.
 		endpointAddr: endpointAddr,
 		// Data received from the endpoint.
@@ -74,23 +78,29 @@ func (rj *requestJournal) reportEndpointQueryResult(endpointQueryResult *Endpoin
 
 // Example: setting protocol-level error, i.e. no endpoint responses were received.
 func (rj *requestJournal) setRequestError(requestErr *requestError) {
-	rj.request.Error = requestErr
+	rj.requestError = requestErr
 }
 
 func (rj *requestJournal) getServicePayload() protocol.Payload {
-	// This should never happen.
+	// Sanity check the request fields.
 	// A non-nil requestErr indicates the request failed to parse/validate.
-	if rj.requestErr != nil {
-		rj.logger.With("request_error", js.requestErr).Error().Msg("Error: getServicePayload() called for invalid/failed request. This is a bug.")
+	if rj.requestError != nil {
+		rj.logger.With("request_error", rj.requestError).Error().Msg("Should never happen: getServicePayload() called for invalid/failed request.")
 		return protocol.Payload{}
 	}
 
-	// TODO_IN_THIS_PR: update this code
-	reqBz, err := json.Marshal(*rc.Request)
+	// JSONRPC request not set on the journal: skip the processing.
+	if rj.jsonrpcRequest == nil {
+		rj.logger.Error().Msg("Should never happen: getServicePayload() called with nil JSONRPC request.")
+		return protocol.Payload{}
+	}
+
+	reqBz, err := json.Marshal(*rj.jsonrpcRequest)
 	if err != nil {
 		// TODO_MVP(@adshmh): find a way to guarantee this never happens,
 		// e.g. by storing the serialized form of the JSONRPC request
 		// at the time of creating the request context.
+		rj.logger.With("marshal_err", err).Error().Msg("Should never happen: getServicePayload() failed to marshal the JSONRPC request.")
 		return protocol.Payload{}
 	}
 
@@ -118,22 +128,14 @@ func (rj *requestJournal) getHTTPResponse() gateway.HTTPResponse {
 	// - Invalid request: e.g. malformed payload from client.
 	// - Internal error: error reading HTTP request's body
 	// - Internal error: Protocol-level error, e.g. selected endpoint timed out.
-	if requestErr := rj.requestErr; requestErr != nil {
+	if requestErr := rj.requestError; requestErr != nil {
 		return buildHTTPResponse(rj.logger, requestErr.jsonrpcErrorResponse)
 	}
 
-	// TODO_IN_THIS_PR: verify the implementation here.
-	//
-	//
-	// TODO_IMPROVE(@adshmh): find a refactor:
-	// Goal: guarantee that valid request -> at least 1 endpoint query.
-	// Constraint: Such a refactor should keep the requestJournal as a data container.
-	//
 	// Use the most recently reported endpoint query.
 	// There MUST be an entry if the request has no error set.
 	selectedEndpointQueryResult := rj.endpointQueryResults[len(rj.endpointQueryResults)-1]
-	jsonrpcResponse := selectedQuery.result.clientJSONRPCResponse
-	return buildHTTPResponse(rj.Logger, jsonrpcResponse)
+	return buildHTTPResponse(rj.logger, selectedEndpointQueryResult.parsedJSONRPCResponse)
 }
 
 func (rj *requestJournal) getJSONRPCRequestMethod() jsonrpc.Method {

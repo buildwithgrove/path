@@ -32,8 +32,8 @@ func getRecommendedSanction(endpointErrKind EndpointErrorKind, err error) *Sanct
 // newSanctionForEmptyResponse returns the default sanction for empty responses.
 func newSanctionForEmptyResponse() *Sanction {
 	return &Sanction{
-		Type: SanctionTypeTemporary,              
-		Reason: "Empty response from the endpoint",
+		Type:       SanctionTypeTemporary,
+		Reason:     "Empty response from the endpoint",
 		ExpiryTime: time.Now().Add(DefaultEmptyResponseSanctionDuration),
 	}
 }
@@ -41,8 +41,8 @@ func newSanctionForEmptyResponse() *Sanction {
 // newSanctionForUnmarshalingError returns the default sanction for parse errors.
 func newSanctionForUnmarshalingError(err error) *Sanction {
 	return &Sanction{
-		Type: SanctionTypeTemporary,              
-		Reason: fmt.Sprintf("Endpoint payload failed to parse into JSONRPC response: %s", err.Error()),
+		Type:       SanctionTypeTemporary,
+		Reason:     fmt.Sprintf("Endpoint payload failed to parse into JSONRPC response: %s", err.Error()),
 		ExpiryTime: time.Now().Add(DefaultParseErrorSanctionDuration),
 	}
 }
