@@ -22,8 +22,13 @@ But feel free to take a look if you're curious.
   - [Architecture Diagram](#architecture-diagram)
   - [Enabling Grove Auth](#enabling-grove-auth)
   - [Documentation References](#documentation-references)
-- [PEAS README.md](#peas-readmemd)
-- [PADS README.md](#pads-readmemd)
+- [PADS Documentation](#pads-documentation)
+  - [Repo](#repo)
+  - [Grove Portal Database](#grove-portal-database)
+  - [README.md](#readmemd)
+- [PEAS Documentation](#peas-documentation)
+  - [Repo](#repo-1)
+  - [README.md](#readmemd-1)
 
 
 ## Overview
@@ -81,10 +86,7 @@ To enable Grove Auth, you need to set the following values in the `values.yaml` 
 guard.auth.groveLegacy.enabled = true
 guard.auth.groveLegacy.peas.enabled = true
 guard.auth.groveLegacy.pads.enabled = true
-guard.auth.groveLegacy.pads.enabled = true
 ```
-
-- [GUARD values.yaml Grove Auth Configuration](https://github.com/buildwithgrove/helm-charts/blob/main/charts/guard/values.yaml#L50)
 
 ### Documentation References
 
@@ -98,9 +100,32 @@ guard.auth.groveLegacy.pads.enabled = true
 - [Envoy Gateway External Auth Docs](https://gateway.envoyproxy.io/docs/tasks/security/ext-auth/)
 - [Envoy Proxy External Auth Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 
-## PEAS README.md
+## PADS Documentation
+
+### Repo
+
+- [PADS Repo](https://github.com/buildwithgrove/path-auth-data-server)
+
+### Grove Portal Database
+
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/main/postgres/grove/README.md" />
+
+### README.md
+
+<details>
+<summary>PADS README.md</summary>
+
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/main/README.md" />
+
+</details>
+
+## PEAS Documentation
+
+### Repo
 
 - [PEAS Repo](https://github.com/buildwithgrove/path-external-auth-server)
+
+### README.md
 
 <details>
 <summary>PEAS README.md</summary>
@@ -109,13 +134,3 @@ guard.auth.groveLegacy.pads.enabled = true
 
 </details>
 
-## PADS README.md
-
-- [PADS Repo](https://github.com/buildwithgrove/path-auth-data-server)
-
-<details>
-<summary>PADS README.md</summary>
-
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/main/README.md" />
-
-</details>
