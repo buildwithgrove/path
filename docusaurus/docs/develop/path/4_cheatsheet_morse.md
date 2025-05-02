@@ -177,6 +177,37 @@ For more information, see:
 - [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
 - [Supported QoS Services](../../learn/qos/1_supported_services.md)
 
+:::tip
+
+To see the list of services that PATH is configured for, you can use the `/healthz` endpoint.
+
+```bash
+curl http://localhost:3069/healthz
+```
+
+The response will contain the list of services that PATH is configured for in the `configuredServiceIDs` field.
+
+**Example response:**
+
+```json
+{
+  "status": "ready",
+  "imageTag": "development",
+  "readyStates": {
+    "endpoint-hydrator": true,
+    "pokt-morse": true
+  },
+  "configuredServiceIDs": [
+    "F000",
+    "F00C",
+    "F01C",
+    "F021",
+    "F02C",
+    "F036"
+  ]
+}
+```
+
 :::
 
 ## 3. Run PATH in development mode

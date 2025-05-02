@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -65,7 +66,7 @@ type healthCheckJSON struct {
 	// ReadyStates is a map of component names to their ready status
 	ReadyStates map[string]bool `json:"readyStates,omitempty"`
 	// ConfiguredServiceIDs lists the service IDs that the PATH instance is configured for.
-	ConfiguredServiceIDs map[protocol.ServiceID]struct{} `json:"configuredServiceIDs,omitempty"`
+	ConfiguredServiceIDs []protocol.ServiceID `json:"configuredServiceIDs,omitempty"`
 }
 
 // healthCheckHandler returns the health status of PATH as a JSON response.
@@ -105,12 +106,10 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 	}
 
 	healthCheckJSON := healthCheckJSON{
-		Status:      status,
-		ReadyStates: readyStates,
-		ImageTag:    imageTag,
-	}
-	if c.ServiceIDReporter != nil { // Ensure the ServiceIDReporter is not nil to avoid panic, ie. in unit tests.
-		healthCheckJSON.ConfiguredServiceIDs = c.ServiceIDReporter.ConfiguredServiceIDs()
+		Status:               status,
+		ReadyStates:          readyStates,
+		ImageTag:             imageTag,
+		ConfiguredServiceIDs: getConfiguredServiceIDs(c.ServiceIDReporter),
 	}
 
 	responseBytes, err := json.Marshal(healthCheckJSON)
@@ -140,4 +139,17 @@ func getStatus(readyStates map[string]bool) healthCheckStatus {
 		}
 	}
 	return statusReady
+}
+
+// getConfiguredServiceIDs returns a slice of configured service IDs
+func getConfiguredServiceIDs(serviceIDReporter ServiceIDReporter) []protocol.ServiceID {
+	if serviceIDReporter == nil {
+		return nil
+	}
+	configuredServiceIDs := make([]protocol.ServiceID, 0, len(serviceIDReporter.ConfiguredServiceIDs()))
+	for serviceID := range serviceIDReporter.ConfiguredServiceIDs() {
+		configuredServiceIDs = append(configuredServiceIDs, serviceID)
+	}
+	slices.Sort(configuredServiceIDs)
+	return configuredServiceIDs
 }

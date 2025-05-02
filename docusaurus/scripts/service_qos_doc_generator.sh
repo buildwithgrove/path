@@ -42,7 +42,9 @@ This file was auto-generated via `make gen_service_qos_docs`.
 
 PATH automatically performs QoS checks on all configured services for a PATH instance.
 
-A service is configured for PATH if an application staked for that service is configured in the PATH instance's configuration file. This applies to both Shannon and Morse PATH instances.
+A service is configured for PATH if an application staked for that service is configured in the PATH instance's configuration file. 
+
+**This applies to both Shannon and Morse PATH instances.** 
 
 ## ⛓️ Supported QoS Services
 

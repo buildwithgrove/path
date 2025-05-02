@@ -213,7 +213,7 @@ hydrator_config:
 
 **The below information applies only to PATH instances running in `centralized` mode.**
 
-By default, the QoS hydrator will run checks against all services that applications configured in the `shannon_config.owned_apps_private_keys_hex` section are staked for.
+By default, the QoS hydrator will run checks against all services that applications configured in the `shannon_config.owned_apps_private_keys_hex` section are staked for. 
 
 To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
 
@@ -221,6 +221,38 @@ For more information, see:
 
 - [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
 - [Supported QoS Services](../../learn/qos/1_supported_services.md)
+
+:::tip
+
+To see the list of services that PATH is configured for, you can use the `/healthz` endpoint.
+
+```bash
+curl http://localhost:3069/healthz
+```
+
+The response will contain the list of services that PATH is configured for in the `configuredServiceIDs` field.
+
+**Example response:**
+
+```json
+{
+  "status": "ready",
+  "imageTag": "development",
+  "readyStates": {
+    "endpoint-hydrator": true,
+    "pokt-morse": true
+  },
+  "configuredServiceIDs": [
+    "anvil"
+    "eth",
+    "oasys",
+    "polygon",
+    "xrpl_evm_dev",
+    "xrpl_evm_testnet"
+  ]
+}
+```
+
 
 :::
 
