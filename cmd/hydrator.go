@@ -29,19 +29,19 @@ func setupEndpointHydrator(
 	}
 
 	// Wait for the protocol to become healthy before configuring and starting
-	// the hydrator. This is necessary to ensure the configured service IDs for
-	// the protocol instance and are available in order to start the hydrator.
+	// the hydrator. This is necessary to ensure the configured service IDs
+	// for the protocol instance are available in order to start the hydrator.
 	waitForProtocolHealth(logger, protocolInstance)
 
 	// Get the configured service IDs from the protocol instance
 	// in order to run hydrator checks on all configured service
-	// IDs that are not manually disabled by the user.
+	// IDs (that are not manually disabled by the user).
 	configuredServiceIDs := protocolInstance.ConfiguredServiceIDs()
 
 	// Remove any service IDs that are manually disabled by the user.
-	// Throw an error if any of the manually disabled service IDs are not found
-	// in the protocol's configured service IDs.
 	for _, disabledServiceID := range hydratorConfig.QoSDisabledServiceIDs {
+		// Throw an error if any of the manually disabled service IDs
+		// are not found in the protocol's configured service IDs.
 		if _, found := configuredServiceIDs[disabledServiceID]; !found {
 			return nil, fmt.Errorf("invalid configuration: QoS manually disabled for service ID: %s, but not found in protocol's configured service IDs", disabledServiceID)
 		}
@@ -94,12 +94,12 @@ func setupEndpointHydrator(
 // This ensures that the hydrator only starts running once the underlying
 // protocol layer is ready.
 func waitForProtocolHealth(logger polylog.Logger, protocolInstance gateway.Protocol) {
-	logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
+	logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before configuring and starting hydrator")
 
 	for !protocolInstance.IsAlive() {
 		logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
 		time.Sleep(1 * time.Second)
 	}
 
-	logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
+	logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator configuration and startup can proceed")
 }
