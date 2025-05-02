@@ -64,7 +64,7 @@ type healthCheckJSON struct {
 	ImageTag string `json:"imageTag"`
 	// ReadyStates is a map of component names to their ready status
 	ReadyStates map[string]bool `json:"readyStates,omitempty"`
-	// ConfiguredServiceIDs is a map of service IDs to their ready status
+	// ConfiguredServiceIDs lists the service IDs that the PATH instance is configured for.
 	ConfiguredServiceIDs map[protocol.ServiceID]struct{} `json:"configuredServiceIDs,omitempty"`
 }
 
