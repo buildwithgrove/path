@@ -35,14 +35,16 @@ type QoS struct {
 //
 // Implements the gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := qos.logger.With("qos", "solana")
+
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return requestContextFromInternalError(err), false
+		return requestContextFromInternalError(logger, err), false
 	}
 
 	var jsonrpcReq jsonrpc.Request
 	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(err), false
+		return requestContextFromUserError(logger, err), false
 	}
 
 	// TODO_TECHDEBT(@adshmh): validate the JSONRPC request to block invalid requests from being sent to endpoints.
@@ -66,7 +68,6 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // WebSocket connection requests do not have a body, so we don't need to parse it.
 //
 // This method implements the gateway.QoSService interface.
-// TODO_HACK(@commoddity, #143): Utilize this method once the Shannon protocol supports websocket connections.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
 		logger: qos.logger,

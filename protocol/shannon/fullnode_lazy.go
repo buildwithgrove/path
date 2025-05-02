@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -18,20 +17,32 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// The Shannon Relayer's FullNode interface is implemented by the LazyFullNode struct below,
-// which provides the full node capabilities required by the Shannon relayer.
-// A LazyFullNode queries the onchain data for every data item it needs to serve a relay request, e.g. applications staked for a service.
-// This is done to enable supporting short block times (a few seconds), by avoiding caching which can result in failures due to stale
-// data in the cache.
+// The Shannon FullNode interface is implemented by the lazyFullNode struct below.
 //
-// A properly initialized fullNode struct can:
-// 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a (service,app) combination.
-// 3. Send a relay, corresponding to a specific session, to an endpoint.
-var _ FullNode = &LazyFullNode{}
+// A lazyFullNode queries the onchain data for every data item it needs to do an action (e.g. serve a relay request, etc).
+// This is done to enable supporting short block times (a few seconds), by avoiding caching
+// which can result in failures due to stale data in the cache.
+var _ FullNode = &lazyFullNode{}
+
+// TODO_MVP(@adshmh): Rename `lazyFullNode`: this struct does not perform any caching and should be named accordingly.
+//
+// LazyFullNode: default implementation of a full node for the Shannon.
+//
+// Key differences from a caching full node:
+// - Intentionally avoids caching:
+//   - Enables support for short block times (e.g. LocalNet)
+//   - Use CachingFullNode struct if caching is desired for performance
+type lazyFullNode struct {
+	// logger polylog.Logger
+
+	appClient     *sdk.ApplicationClient
+	sessionClient *sdk.SessionClient
+	blockClient   *sdk.BlockClient
+	accountClient *sdk.AccountClient
+}
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
+func NewLazyFullNode(config FullNodeConfig) (*lazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
@@ -54,46 +65,34 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		return nil, fmt.Errorf("NewSdk: error creating new account client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	lazyFullNode := &LazyFullNode{
+	fullNode := &lazyFullNode{
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
-
-		logger: logger,
 	}
 
-	return lazyFullNode, nil
+	return fullNode, nil
 }
 
-// TODO_MVP(@adshmh): Rename `LazyFullNode`: this struct does not perform any caching and should be named accordingly.
-//
-// LazyFullNode provides the default implementation of a full node required by the Shannon relayer.
-// The key differences between a lazy and full node are:
-// 1. Lazy node intentionally avoids caching.
-//   - This allows supporting short block times (e.g. LocalNet)
-//   - CachingFullNode struct can be used instead if caching is desired for performance reasons
-type LazyFullNode struct {
-	logger polylog.Logger
-
-	appClient     *sdk.ApplicationClient
-	sessionClient *sdk.SessionClient
-	blockClient   *sdk.BlockClient
-	accountClient *sdk.AccountClient
-}
-
-// GetApp returns the onchain application matching the supplied application address
-// It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+// GetApp:
+// - Returns the onchain application matching the supplied application address.
+// - Required to fulfill the FullNode interface.
+func (lfn *lazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	app, err := lfn.appClient.GetApplication(ctx, appAddr)
 	return &app, err
 }
 
-// GetSession uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
-// It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) GetSession(serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
+// GetSession:
+// - Uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
+// - Required to fulfill the FullNode interface.
+func (lfn *lazyFullNode) GetSession(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
 	session, err := lfn.sessionClient.GetSession(
-		context.Background(),
+		ctx,
 		appAddr,
 		string(serviceID),
 		0,
@@ -116,8 +115,10 @@ func (lfn *LazyFullNode) GetSession(serviceID protocol.ServiceID, appAddr string
 	return *session, nil
 }
 
-// ValidateRelayResponse validates the raw response bytes received from an endpoint using the SDK and the account client.
-func (lfn *LazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+// ValidateRelayResponse:
+// - Validates the raw response bytes received from an endpoint.
+// - Uses the SDK and the account client for validation.
+func (lfn *lazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	return sdk.ValidateRelayResponse(
 		context.Background(),
 		supplierAddr,
@@ -126,19 +127,23 @@ func (lfn *LazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress,
 	)
 }
 
-// IsHealthy always returns true for a LazyFullNode.
-// It is required to fulfill the FullNode interface.
-func (lfn *LazyFullNode) IsHealthy() bool {
+// IsHealthy:
+// - Always returns true for a LazyFullNode.
+// - Required to fulfill the FullNode interface.
+func (lfn *lazyFullNode) IsHealthy() bool {
 	return true
 }
 
-// GetAccountClient returns the account client created by the lazy fullnode.
-// It is used to create relay request signers.
-func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
+// GetAccountClient:
+// - Returns the account client created by the lazy fullnode.
+// - Used to create relay request signers.
+func (lfn *lazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
 }
 
-// serviceRequestPayload is the contents of the request received by the underlying service's API server.
+// serviceRequestPayload:
+// - Contents of the request received by the underlying service's API server.
+
 func shannonJsonRpcHttpRequest(serviceRequestPayload []byte, url string) (*http.Request, error) {
 	jsonRpcServiceReq, err := http.NewRequest(http.MethodPost, url, io.NopCloser(bytes.NewReader(serviceRequestPayload)))
 	if err != nil {
@@ -160,21 +165,26 @@ func embedHttpRequest(reqToEmbed *http.Request) (*servicetypes.RelayRequest, err
 	}, nil
 }
 
-// TODO_IMPROVE: consider enhancing the service or RelayRequest/RelayResponse types in poktroll repo (link below) to perform
-// Serialization/Deserialization of the payload. This will make the code easier to read and less error prone as a single
-// source, e.g. the relay.go file linked below, would be responsible for both operations.
-// Currently, the relay miner serializes the HTTP response received from the service it proxies (link below), while the
-// deserialization needs to take place here (see the call to sdktypes.DeserializeHTTPResponse below).
+// TODO_IMPROVE: consider enhancing the service or RelayRequest/RelayResponse types in poktroll repo (see links below) to perform
+// Serialization/Deserialization of the payload.
+//
+// Benefits:
+// - Makes code easier to read and less error-prone by consolidating serialization/deserialization in a single source (e.g. relay.go).
+//
+// Current behavior:
+// - Relay miner serializes the HTTP response received from the proxied service (see link below).
+// - Deserialization is handled here (see sdktypes.DeserializeHTTPResponse below).
+//
+// Links:
+// - Relay miner serializing the service response:
+//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
+// - Relay response validation (potential package for serialization/deserialization):
+//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
+//
+// deserializeRelayResponse:
+// - Uses the Shannon sdk to deserialize the relay response payload received from an endpoint into a protocol.Response.
+// - Required because the relay miner (the endpoint serving the relay) returns the HTTP response in serialized format in its payload.
 
-// Link to relay miner serializing the service response:
-// https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
-//
-// Link to relay response validation, as a potentially good package fit for performing serialization/deserialization of relay request/response.
-// https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
-//
-// deserializeRelayResponse uses the Shannon sdk to deserialize the relay response payload
-// received from an endpoint into a protocol.Response. This is necessary since the relay miner, i.e. the endpoint
-// that serves the relay, returns the HTTP response in serialized format in its payload.
 func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
 	poktHttpResponse, err := sdktypes.DeserializeHTTPResponse(bz)
 	if err != nil {

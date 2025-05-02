@@ -27,9 +27,9 @@ const maxErrMessageLen = 1000
 // - Request contexts when validation succeeds
 // TODO_IMPROVE(@adshmh): Consider creating an interface with method-specific JSONRPC request validation
 type evmRequestValidator struct {
-	logger        polylog.Logger
-	chainID       string
-	endpointStore *endpointStore
+	logger       polylog.Logger
+	chainID      string
+	serviceState *serviceState
 }
 
 // validateHTTPRequest validates an HTTP request, extracting and validating its EVM JSONRPC payload.
@@ -59,10 +59,11 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 
 	// Request is valid, return a fully initialized requestContext
 	return &requestContext{
-		logger:        erv.logger,
-		chainID:       erv.chainID,
-		jsonrpcReq:    jsonrpcReq,
-		endpointStore: erv.endpointStore,
+		logger:               erv.logger,
+		chainID:              erv.chainID,
+		requestPayloadLength: uint(len(body)),
+		jsonrpcReq:           jsonrpcReq,
+		serviceState:         erv.serviceState,
 	}, true
 }
 

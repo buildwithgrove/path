@@ -8,6 +8,13 @@ This guide covers setting up `PATH` with Pocket Network's **Shannon** protocol.
 
 Shannon is in Beta TestNet as of 01/2025 and private MainNet as of 04/2025.
 
+:::tip Skip to section 2.1
+
+If you are arriving here from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet)
+in the `poktroll` documentation, you should start the walkthrough from [2.1 Generate Shannon Config](#21-generate-shannon-config).
+
+:::
+
 ## Table of Contents <!-- omit in toc -->
 
 - [0. Prerequisites](#0-prerequisites)
@@ -57,19 +64,19 @@ below to get a feel for the end-to-end process.
 **Prepare a gateway stake config:**
 
 ```bash
-cat <<EOF >>/tmp/stake_gateway_config.yaml
+cat <<🚀 > /tmp/stake_gateway_config.yaml
 stake_amount: 1000000upokt
-EOF
+🚀
 ```
 
 **Prepare an application stake config:**
 
 ```bash
-cat <<EOF > /tmp/stake_app_config.yaml
+cat <<🚀 > /tmp/stake_app_config.yaml
 stake_amount: 100000000upokt
 service_ids:
-- "anvil"
-EOF
+  - "anvil"
+🚀
 ```
 
 **Create gateway and application accounts in your keyring:**
@@ -177,7 +184,7 @@ shannon_config:
     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
     grpc_config:
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
-    lazy_mode: true
+    lazy_mode: false
   gateway_config:
     gateway_mode: "centralized"
     gateway_address: pokt1... # Your gateway address

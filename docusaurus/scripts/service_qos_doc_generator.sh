@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# Script to parse service_qos_config.go and generate markdown tables
-# Usage: ./generate_service_docs.sh <path/to/service_qos_config.go> <output_markdown_file>
-
-# TODO_MVP(@commoddity): Update this file so the entirety of the output file is generated. This is a best practice for auto-generated files.
+# Script to parse service_qos_config.go and generate markdown tables of supported QoS services
+# Usage: ./service_qos_doc_generator.sh <path/to/service_qos_config.go> <output_markdown_file>
 
 if [ $# -lt 2 ]; then
     echo "Usage: $0 <path/to/service_qos_config.go> <output_markdown_file>"
@@ -18,7 +16,7 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
-# Function to convert hex to decimal
+# Function to convert hex chain ID to decimal
 hex_to_decimal() {
     local hex="$1"
     # Remove "0x" prefix if present
@@ -27,333 +25,214 @@ hex_to_decimal() {
     printf "%d" "0x$hex" 2>/dev/null || echo "N/A"
 }
 
-# Get the current content of the file and extract content up to the QoS section
-if [ -f "$OUTPUT_FILE" ]; then
-    # Find the line number where "# 🌿 Current PATH QoS Support" starts
-    HEADER_LINE=$(grep -n "# 🌿 Current PATH QoS Support" "$OUTPUT_FILE" | head -1 | cut -d: -f1)
+# Function to generate the static content for the beginning of the markdown file
+generate_static_content() {
+    cat > "$1" << 'EOF'
+---
+sidebar_position: 1
+title: Supported QoS Services
+description: Supported Quality of Service Implementations in PATH
+---
 
-    if [ -n "$HEADER_LINE" ]; then
-        # Save the content before "# 🌿 Current PATH QoS Support"
-        head -n $((HEADER_LINE - 1)) "$OUTPUT_FILE" >"${OUTPUT_FILE}.tmp"
-    else
-        # If not found, preserve all content (we'll append to it)
-        cat "$OUTPUT_FILE" >"${OUTPUT_FILE}.tmp"
-    fi
-else
-    # Create an empty temp file if output file doesn't exist
-    touch "${OUTPUT_FILE}.tmp"
-fi
+:::danger DO NOT EDIT
 
-# First, extract default values
-default_evm_chain_id_hex=""
-default_evm_chain_id_int=""
-default_cometbft_chain_id=""
+This file was auto-generated via `make gen_service_qos_docs`.
 
-while IFS= read -r line; do
-    # Match defaultEVMChainID
-    if [[ "$line" =~ defaultEVMChainID[[:space:]]*=[[:space:]]*\"([^\"]+)\"[[:space:]]*//(.*) ]]; then
-        default_evm_chain_id_hex="${BASH_REMATCH[1]}"
-        # Extract decimal value from comment if available
-        if [[ "${BASH_REMATCH[2]}" =~ \(([0-9]+)\) ]]; then
-            default_evm_chain_id_int="${BASH_REMATCH[1]}"
-        else
-            default_evm_chain_id_int="$(hex_to_decimal "$default_evm_chain_id_hex")"
+:::
+
+## ⛓️ Supported QoS Services
+
+The following table lists the Quality of Service (QoS) implementations currently supported by PATH.
+
+:::important 🚧 QoS Support 🚧
+
+If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
+
+**This means no QoS checks are performed for that service and endpoints are selected at random from the network.**
+
+:::
+
+### Example Hydrator Configuration
+
+In order to utilize automated QoS checks, the `Service ID` field must be specified in the `.config.yaml` file's `hydrator_config` section.
+
+For example, for a Morse PATH gateway supporting Ethereum & Polygon QoS, the following configuration would be added to the `.config.yaml` file:
+
+```yaml
+hydrator_config:
+  service_ids:
+    - "F00C"
+    - "F021"
+```
+
+💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/6_configurations_helm.md)._
+
+EOF
+}
+
+# Extract default chain IDs from the config file
+extract_default_values() {
+    local file="$1"
+    local default_evm_chain_id_int=""
+    
+    while IFS= read -r line; do
+        # Match defaultEVMChainID
+        if [[ "$line" =~ defaultEVMChainID[[:space:]]*=[[:space:]]*\"([^\"]+)\"[[:space:]]*//(.*) ]]; then
+            default_evm_chain_id_hex="${BASH_REMATCH[1]}"
+            # Extract decimal value from comment if available
+            if [[ "${BASH_REMATCH[2]}" =~ \(([0-9]+)\) ]]; then
+                default_evm_chain_id_int="${BASH_REMATCH[1]}"
+            else
+                default_evm_chain_id_int="$(hex_to_decimal "$default_evm_chain_id_hex")"
+            fi
+            break
         fi
-    fi
+    done < "$file"
+    
+    echo "$default_evm_chain_id_int"
+}
 
-    # Match defaultCometBFTChainID
-    if [[ "$line" =~ defaultCometBFTChainID[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
-        default_cometbft_chain_id="${BASH_REMATCH[1]}"
-    fi
-done <"$INPUT_FILE"
+# Process services in the specified section
+process_services() {
+    local section="$1"
+    local default_chain_id="$2"
+    local file="$3"
+    local output_file="$4"
+    local service_name=""
+    local comment_buffer=""
+    local in_section=false
+    
+    while IFS= read -r line; do
+        # Check if we're in the specified section
+        if [[ "$line" =~ ^var\ ${section}\ = ]]; then
+            in_section=true
+            continue
+        fi
 
-# Start the new section
+        # Check if we've reached the end of the section
+        if [[ "$in_section" == true && "$line" =~ ^}$ ]]; then
+            in_section=false
+            break
+        fi
+
+        # Skip if not in the specified section
+        if [[ "$in_section" != true ]]; then
+            continue
+        fi
+
+        # Capture comments for service name extraction
+        if [[ "$line" =~ ^[[:space:]]*//[[:space:]]*(.*)[[:space:]]*$ ]]; then
+            comment_text="${BASH_REMATCH[1]}"
+
+            # Skip section headers
+            if [[ "$comment_text" =~ ^\*\*\*.*\*\*\*$ || "$comment_text" =~ ^=+$ ]]; then
+                comment_buffer=""
+                continue
+            fi
+
+            # Store comment for service name
+            comment_buffer="$comment_text"
+            continue
+        fi
+
+        # Process EVM configurations with inline chain ID
+        if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            chain_id_hex="${BASH_REMATCH[2]}"
+            service_type="EVM"
+            
+            # Convert chain ID to decimal
+            chain_id="$(hex_to_decimal "$chain_id_hex")"
+            
+            # Check if this is an archival service
+            archival_check=""
+            if [[ "$line" =~ evm\.NewEVMArchivalCheckConfig ]]; then
+                archival_check="✅"
+            fi
+            
+            # Use the most recent comment as the service name
+            service_name="${comment_buffer:-Unknown EVM Service}"
+            comment_buffer=""
+            
+            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
+            
+        # Process EVM configurations with defaultEVMChainID (Ethereum)
+        elif [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*defaultEVMChainID ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            chain_id="$default_chain_id"
+            service_type="EVM"
+            
+            # Ethereum is always archival
+            archival_check="✅"
+            
+            # Use the most recent comment as the service name
+            service_name="${comment_buffer:-Ethereum}"
+            comment_buffer=""
+            
+            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
+            
+        # Process CometBFT configurations
+        elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            chain_id="${BASH_REMATCH[2]}"
+            service_type="CometBFT"
+            archival_check=""
+            
+            # Use the most recent comment as the service name
+            service_name="${comment_buffer:-Unknown CometBFT Service}"
+            comment_buffer=""
+            
+            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
+            
+        # Process Solana configurations
+        elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
+            service_id="${BASH_REMATCH[1]}"
+            chain_id=""
+            service_type="Solana"
+            archival_check=""
+            
+            # Use the most recent comment as the service name
+            service_name="${comment_buffer:-Solana}"
+            comment_buffer=""
+            
+            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
+        fi
+    done < "$file"
+}
+
+# Main execution starts here
+default_evm_chain_id=$(extract_default_values "$INPUT_FILE")
+
+# Generate the static content at the beginning of the file
+generate_static_content "$OUTPUT_FILE"
+
+# Start the dynamic section
 {
     echo "# 🌿 Current PATH QoS Support"
     echo ""
     echo "**🗓️ Document Last Updated: $(date '+%Y-%m-%d')**"
     echo ""
 
-    # Process Shannon services
+    # Add Shannon services section header
     echo "## Shannon Protocol Services"
     echo ""
     echo "| Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |"
     echo "|-------------|------------|-----------------|----------|---------------------------|"
-} >"${OUTPUT_FILE}.new"
+} >> "$OUTPUT_FILE"
 
-# Parse Shannon services
-in_shannon_section=false
-service_id=""
-service_name=""
-service_type=""
-chain_id=""
-archival_check=""
-comment_buffer=""
-previous_line=""
+# Process Shannon services
+process_services "shannonServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
 
-# First pass: process Shannon services
-while IFS= read -r line; do
-    # Check if we're in the Shannon services section
-    if [[ "$line" =~ ^var\ shannonServices\ = ]]; then
-        in_shannon_section=true
-        continue
-    fi
-
-    # Check if we've reached the end of Shannon services section
-    if [[ "$in_shannon_section" == true && "$line" =~ ^}$ ]]; then
-        # Process the last service before exiting
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-        in_shannon_section=false
-        continue
-    fi
-
-    # Skip if not in Shannon section
-    if [[ "$in_shannon_section" != true ]]; then
-        continue
-    fi
-
-    # Capture comments for service name extraction
-    if [[ "$line" =~ ^[[:space:]]*//[[:space:]]*(.*)[[:space:]]*$ ]]; then
-        comment_text="${BASH_REMATCH[1]}"
-
-        # If it's a section header like "*** EVM Services ***", skip it
-        if [[ "$comment_text" =~ ^\*\*\*.*\*\*\*$ || "$comment_text" =~ ^=+$ ]]; then
-            comment_buffer=""
-            continue
-        fi
-
-        # Store comment for potential service name
-        comment_buffer="$comment_text"
-        continue
-    fi
-
-    # Check for new service
-    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="EVM"
-        chain_id=""
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-
-        # Extract chain ID
-        if [[ "$line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
-            chain_id_hex="${BASH_REMATCH[1]}"
-
-            # Check if chain ID is in a comment
-            if [[ "$line" =~ //.*\(([0-9]+)\) ]]; then
-                chain_id="${BASH_REMATCH[1]}"
-            elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
-                chain_id="$default_evm_chain_id_int"
-            else
-                chain_id="$(hex_to_decimal "$chain_id_hex")"
-            fi
-        fi
-
-        # Check for archival config
-        if [[ "$line" =~ ArchivalCheckConfig ]]; then
-            archival_check="✅"
-        fi
-    elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="CometBFT"
-        chain_id="${BASH_REMATCH[2]}"
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-    elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="Solana"
-        chain_id=""
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-    fi
-
-    # Detect if there's an archival check configuration
-    if [[ "$line" =~ NewEVMArchivalCheckConfig && "$archival_check" == "" ]]; then
-        archival_check="✅"
-    fi
-
-    previous_line="$line"
-done <"$INPUT_FILE"
-
-echo "" >>"${OUTPUT_FILE}.new"
-
-# Process Morse services
+# Add Morse services section header
 {
+    echo ""
     echo "## Morse Protocol Services"
     echo ""
     echo "| Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |"
     echo "|-------------|------------|-----------------|----------|---------------------------|"
-} >>"${OUTPUT_FILE}.new"
+} >> "$OUTPUT_FILE"
 
-# Parse Morse services
-in_morse_section=false
-service_id=""
-service_name=""
-service_type=""
-chain_id=""
-archival_check=""
-comment_buffer=""
-previous_line=""
-
-# Reset to the beginning of the file for second pass
-while IFS= read -r line; do
-    # Check if we're in the Morse services section
-    if [[ "$line" =~ ^var\ morseServices\ = ]]; then
-        in_morse_section=true
-        continue
-    fi
-
-    # Check if we've reached the end of Morse services section
-    if [[ "$in_morse_section" == true && "$line" =~ ^}$ ]]; then
-        # Process the last service before exiting
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-        in_morse_section=false
-        break
-    fi
-
-    # Skip if not in Morse section
-    if [[ "$in_morse_section" != true ]]; then
-        continue
-    fi
-
-    # Capture comments for service name extraction
-    if [[ "$line" =~ ^[[:space:]]*//[[:space:]]*(.*)[[:space:]]*$ ]]; then
-        comment_text="${BASH_REMATCH[1]}"
-
-        # If it's a section header like "*** EVM Services ***", skip it
-        if [[ "$comment_text" =~ ^\*\*\*.*\*\*\*$ || "$comment_text" =~ ^=+$ ]]; then
-            comment_buffer=""
-            continue
-        fi
-
-        # Store comment for potential service name
-        comment_buffer="$comment_text"
-        continue
-    fi
-
-    # Check for new service
-    if [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="EVM"
-        chain_id=""
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-
-        # Extract chain ID
-        if [[ "$line" =~ \"([^\"]+)\",[[:space:]]*(nil|evm\.New) ]]; then
-            chain_id_hex="${BASH_REMATCH[1]}"
-
-            # Check if chain ID is in a comment
-            if [[ "$line" =~ //.*\(([0-9]+)\) ]]; then
-                chain_id="${BASH_REMATCH[1]}"
-            elif [[ "$chain_id_hex" == "defaultEVMChainID" ]]; then
-                chain_id="$default_evm_chain_id_int"
-            else
-                chain_id="$(hex_to_decimal "$chain_id_hex")"
-            fi
-        fi
-
-        # Check for archival config
-        if [[ "$line" =~ ArchivalCheckConfig ]]; then
-            archival_check="✅"
-        fi
-    elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="CometBFT"
-        chain_id="${BASH_REMATCH[2]}"
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-    elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
-        # Process the previous service if exists
-        if [[ -n "$service_id" ]]; then
-            echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"${OUTPUT_FILE}.new"
-        fi
-
-        # Reset variables for new service
-        service_id="${BASH_REMATCH[1]}"
-        service_type="Solana"
-        chain_id=""
-        archival_check=""
-
-        # Use the most recent comment as the service name
-        if [[ -n "$comment_buffer" ]]; then
-            service_name="$comment_buffer"
-            comment_buffer=""
-        fi
-    fi
-
-    # Detect if there's an archival check configuration
-    if [[ "$line" =~ NewEVMArchivalCheckConfig && "$archival_check" == "" ]]; then
-        archival_check="✅"
-    fi
-
-    previous_line="$line"
-done <"$INPUT_FILE"
-
-# Create the final file by combining the preserved content and new content
-cat "${OUTPUT_FILE}.tmp" >"$OUTPUT_FILE"
-cat "${OUTPUT_FILE}.new" >>"$OUTPUT_FILE"
-
-# Clean up temp files
-rm "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}.new"
+# Process Morse services
+process_services "morseServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
 
 echo "Documentation successfully updated at $OUTPUT_FILE"

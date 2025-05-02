@@ -29,9 +29,12 @@ check_path_config:
    		exit 1; \
    fi
 
-# The PATH config value can be set via the CONFIG_PATH env variable.
-# Defaults to ./local/path/.config.yaml
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
 CONFIG_PATH ?= ../local/path/.config.yaml
+
+.PHONY: path_run
+path_run: path_build check_path_config ## Run the path binary as a standalone binary
+	(cd bin; ./path -config ${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###
@@ -46,13 +49,15 @@ path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt develop
 	tilt up
 
 .PHONY: path_down
-path_down: dev_down ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_down: ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+	tilt down
 
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path
 	@echo "################################################################";
 	@echo "If you're hitting issues running PATH, try running following commands:";
 	@echo "	make path_down";
+	@echo "	make k8s_cleanup_local_env";
 	@echo "	make path_up";
 	@echo "################################################################";
 
@@ -72,4 +77,8 @@ include ./makefiles/test_requests.mk
 include ./makefiles/release.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
+<<<<<<< HEAD
 include ./makefiles/claudesync.mk
+=======
+include ./makefiles/claude.mk
+>>>>>>> origin/main

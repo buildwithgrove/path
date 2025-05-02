@@ -8,8 +8,6 @@ import (
 func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig) *QoS {
 	logger = logger.With("qos_instance", "solana")
 
-	logger.Warn().Msgf("TODO_MVP(@commoddity): Use the Solana ServiceConfig for QoS")
-
 	serviceState := &ServiceState{
 		logger: logger,
 	}

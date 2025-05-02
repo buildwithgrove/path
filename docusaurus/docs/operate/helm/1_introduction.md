@@ -31,3 +31,14 @@ A full PATH deployment is packaged as a single Helm chart, with 3 main component
 | **WATCH** (Workload Analytics and Telemetry for Comprehensive Health) | The observability layer including Prometheus, Grafana, and Alertmanager   | [buildwithgrove/helm-charts/charts/watch](https://github.com/buildwithgrove/helm-charts/charts/watch) |
 
 These three components work together to provide a complete gateway solution for accessing decentralized services through protocols like Shannon and Morse.
+
+## Resource Requirements
+
+The following are bare minimum resource requirements for PATH and will
+need to be adjusted based on the expected load.
+
+| Resource  | Minimum | Recommended |
+| --------- | ------- | ----------- |
+| CPU Cores | 2       | 4           |
+| RAM       | 4GB     | 8GB         |
+| Storage   | 10GB    | 20GB        |
