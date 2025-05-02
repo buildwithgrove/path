@@ -10,9 +10,13 @@ import (
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
-// Own
+// ownedApp represents a single app owned by the gateway operator in Centralized Gateway Mode.
 type ownedApp struct {
-	appAddr         string
+	// The address of the app.
+	// For example: "0x1234567890123456789012345678901234567890"
+	appAddr string
+	// The service ID for which the app is staked.
+	// For example: "anvil"
 	stakedServiceID protocol.ServiceID
 }
 
