@@ -32,8 +32,10 @@ type QoS struct {
 // Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := qos.logger.With("qos", "solana")
+
 	requestContext := &requestContext{
-		logger:        qos.logger,
+		logger:        logger,
 		httpReq:       req,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
@@ -46,7 +48,7 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		// TODO_IMPROVE(@commoddity): implement JSON-RPC request validation.
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
-			return requestContextFromInternalError(err), false
+			return requestContextFromInternalError(logger, err), false
 		}
 
 		// Store the serialized JSON-RPC request as a byte slice
