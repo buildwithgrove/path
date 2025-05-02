@@ -1,15 +1,6 @@
 # This file allows optional configuration of the PATH service.
 # It is used to customize the PATH service for local development in two main ways:
-#
-#    TODO_DOCUMENT(@commoddity): Add documentation for updating service IDs and aliases.
-# 1. Configure the service IDs and aliases for the PATH service.
-#    This allows configuring the PATH service to use different service IDs and aliases
-#    for different environments.
-#
-#    TODO_DOCUMENT(@commoddity): Add documentation for updating API keys.
-# 2. Configure the allowed set of API keys for the PATH service.
-#    This allows configuring the allowed set of API keys for the PATH service.
-#
+
 # See the PATH Helm Chart `values.yaml` file for the full set of available customizations.
 # https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
 
