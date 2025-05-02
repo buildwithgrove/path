@@ -87,6 +87,9 @@ func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestCon
 		logger:       ss.logger,
 		serviceState: ss,
 		jsonrpcReq:   jsonrpcReq,
+		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
+		chainID:   ss.serviceConfig.getEVMChainID(),
+		serviceID: ss.serviceConfig.GetServiceID(),
 	}
 }
 

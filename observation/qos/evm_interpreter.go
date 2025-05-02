@@ -61,9 +61,6 @@ func (i *EVMObservationInterpreter) GetRequestMethod() (string, bool) {
 // GetChainID extracts the chain ID associated with the EVM observations.
 // Returns (chainID, true) if available
 // Returns ("", false) if chain ID is missing or observations are nil
-//
-// DEV_NOTE: If adapting this for other QoS observations, chainID may need to be
-// renamed to ServiceID for non-blockchain services.
 func (i *EVMObservationInterpreter) GetChainID() (string, bool) {
 	if i.Observations == nil {
 		return "", false
@@ -75,6 +72,22 @@ func (i *EVMObservationInterpreter) GetChainID() (string, bool) {
 	}
 
 	return chainID, true
+}
+
+// GetServiceID extracts the service ID associated with the EVM observations.
+// Returns (serviceID, true) if available
+// Returns ("", false) if service ID is missing or observations are nil
+func (i *EVMObservationInterpreter) GetServiceID() (string, bool) {
+	if i.Observations == nil {
+		return "", false
+	}
+
+	serviceID := i.Observations.GetServiceId()
+	if serviceID == "" {
+		return "", false
+	}
+
+	return serviceID, true
 }
 
 // GetRequestStatus interprets the observations to determine request status information:

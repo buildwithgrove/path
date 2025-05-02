@@ -16,7 +16,7 @@ var _ protocol.EndpointSelector = &serviceState{}
 
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // The endpoints are filtered based on their validity and weighted based on latency.
-func (ss *serviceState) Select(availableEndpoints []protocol.EndpointAddr) (protocol.EndpointAddr, error) {
+func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	logger := ss.logger.With(
 		"method", "Select",
 		"total_endpoints", len(availableEndpoints),

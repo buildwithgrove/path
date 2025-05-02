@@ -1,4 +1,4 @@
-package evm
+package qos
 
 import (
 	"encoding/json"
@@ -18,50 +18,34 @@ var (
 	errInvalidSelectorUsage = errors.New("endpoint selection attempted on failed request")
 )
 
-// errorContext provides the support required by the gateway package for handling service requests.
-var _ gateway.RequestQoSContext = &errorContext{}
+// RequestErrorContext provides the support required by the gateway package for handling service requests.
+var _ gateway.RequestQoSContext = &RequestErrorContext{}
 
-// errorContext terminates EVM request processing on errors (internal failures or invalid requests).
+// RequestErrorContext terminates the processing of a JSONRPC-service request on errors (internal failures or invalid requests).
 // Provides:
-//  1. Detailed error response to the user
-//  2. Observation: feed into Metrics and data pipeline.
+//  1. Detailed error response to the user.
+//  2. Log entries to warn on potential incorrect usage.
 //
 // Implements gateway.RequestQoSContext
-type errorContext struct {
-	logger polylog.Logger
-
-	// The observation to return, to be processed by the metrics and data pipeline components.
-	evmObservations *qosobservations.Observations_Evm
+type RequestErrorContext struct {
+	Logger polylog.Logger
 
 	// The response to be returned to the user.
-	response jsonrpc.Response
-
-	// HTTP status code for the response
-	// If not set, will default to the status code recommended by the JSONRPC response.
-	responseHTTPStatusCode int
+	Response jsonrpc.Response
 }
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
-	bz, err := json.Marshal(ec.response)
+func (rec *RequestErrorContext) GetHTTPResponse() gateway.HTTPResponse {
+	bz, err := json.Marshal(rec.Response)
 	if err != nil {
-		// TODO_IMPROVE(@adshmh): Standardize logger labels across packages
-		// 1. Create shared label schema for the evm package
-		// 2. Extend schema to other QoS packages
-		ec.logger.With(
-			"qos", "evm",
-			"component", "errorContext",
+		rec.Logger.With(
+			"component", "RequestErrorContext",
 			"method", "GetHTTPResponse",
 		).Warn().Err(err).Msg("Failed to serialize client response.")
 	}
 
-	httpStatusCode := ec.responseHTTPStatusCode
-	// A 0 status code indicates that no HTTP status code was received, observed
-	// or identified yet.
-	if httpStatusCode == 0 {
-		httpStatusCode = ec.response.GetRecommendedHTTPStatusCode()
-	}
+	httpStatusCode := rec.Response.GetRecommendedHTTPStatusCode()
 
 	return httpResponse{
 		responsePayload: bz,
@@ -69,44 +53,39 @@ func (ec *errorContext) GetHTTPResponse() gateway.HTTPResponse {
 	}
 }
 
+// TODO_MVP(@adshmh): Generate observations for the error context.
 // GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetObservations() qosobservations.Observations {
-	return qosobservations.Observations{
-		ServiceObservations: ec.evmObservations,
-	}
+func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
+	return qosobservations.Observations{}
 }
 
 // GetServicePayload should never be called.
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetServicePayload() protocol.Payload {
-	ec.logger.Warn().Msg("Invalid usage: errorContext.GetServicePayload() should never be called.")
+func (rec *RequestErrorContext) GetServicePayload() protocol.Payload {
+	rec.Logger.Warn().Msg("Invalid usage: RequestErrorContext.GetServicePayload() should never be called.")
 	return protocol.Payload{}
 }
 
 // UpdateWithResponse should never be called.
 // Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) UpdateWithResponse(
-	endpointAddr protocol.EndpointAddr,
-	endpointSerializedResponse []byte,
-	_ time.Duration,
-) {
-	ec.logger.With(
+func (rec *RequestErrorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte, _ time.Duration) {
+	rec.Logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),
-	).Warn().Msg("Invalid usage: errorContext.UpdateWithResponse() should never be called.")
+	).Warn().Msg("Invalid usage: RequestErrorContext.UpdateWithResponse() should never be called.")
 }
 
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.
-func (ec *errorContext) GetEndpointSelector() protocol.EndpointSelector {
-	ec.logger.Warn().Msg("Invalid usage: errorContext.GetEndpointSelector() should never be called.")
+func (rec *RequestErrorContext) GetEndpointSelector() protocol.EndpointSelector {
+	rec.Logger.Warn().Msg("Invalid usage: RequestErrorContext.GetEndpointSelector() should never be called.")
 
 	return errorTrackingSelector{
-		logger: ec.logger,
+		logger: rec.Logger,
 	}
 }
 
