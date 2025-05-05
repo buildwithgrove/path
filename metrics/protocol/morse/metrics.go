@@ -148,7 +148,7 @@ func recordRelayTotal(serviceID string, observations []*protocol.MorseEndpointOb
 // isAnyObservationSuccessful returns true if any observation succeeded (no error)
 func isAnyObservationSuccessful(observations []*protocol.MorseEndpointObservation) bool {
 	for _, obs := range observations {
-		if obs.GetErrorType() != protocol.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_UNSPECIFIED {
+		if obs.GetErrorType() == protocol.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_UNSPECIFIED {
 			return true
 		}
 	}
