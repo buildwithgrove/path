@@ -87,16 +87,13 @@ TODO_IMPROVE: Replace `main` with `latest` once the artifact release CI is compl
 
    ```json
    {
-      "status": "ready",
-      "imageTag": "development",
-      "readyStates": {
-         "endpoint-hydrator": true,
-         "pokt-morse": true
-      },
-      "configuredServiceIDs": [
-         "F00C",
-         "F021",
-      ]
+     "status": "ready",
+     "imageTag": "development",
+     "readyStates": {
+       "endpoint-hydrator": true,
+       "pokt-morse": true
+     },
+     "configuredServiceIDs": ["F00C", "F021"]
    }
    ```
 

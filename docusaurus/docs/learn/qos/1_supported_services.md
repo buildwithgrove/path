@@ -10,29 +10,15 @@ This file was auto-generated via `make gen_service_qos_docs`.
 
 :::
 
-PATH automatically performs QoS checks on all configured services for a PATH instance.
+## Configuring PATH QoS Checks
 
-A service is configured for PATH if an application staked for that service is configured in the PATH instance's configuration file. 
+PATH uses an **opt-out** rather than an **opt-in** approach to QoS checks.
 
-**This applies to both Shannon and Morse PATH instances.** 
+This means that PATH **automatically** performs QoS checks for all services the applications it manages are staked for.
 
-## ⛓️ Supported QoS Services
+### Disable QoS Checks for a particular Service
 
-The following table lists the Quality of Service (QoS) implementations currently supported by PATH.
-
-:::important 🚧 QoS Support 🚧
-
-If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
-
-**This means no QoS checks will be performed for that service and endpoints are selected at random from the network.**
-
-:::
-
-### Manually Disable QoS Checks for a Service
-
-**As mentioned above, by default all configured services for a PATH instance will have QoS checks run against them.**
-
-In order to disable QoS checks for a specific service, the `Service ID` field may be specified in the `.config.yaml` file's `qos_disabled_service_ids` field.
+In order to disable QoS checks for a specific service, the `service_id` field may be specified in the `.config.yaml` file's `qos_disabled_service_ids` field.
 
 For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
 
@@ -42,11 +28,21 @@ hydrator_config:
     - "F00C"
 ```
 
-💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/5_configurations_path.md)._
+See [PATH Configuration File](../../develop/path/5_configurations_path.md#hydrator_config-optional) for more details.
 
-# 🌿 Current PATH QoS Support
+## ⛓️ Supported QoS Services
 
-**🗓️ Document Last Updated: 2025-05-02**
+The table below lists the Quality of Service (QoS) implementations currently supported by PATH.
+
+:::warning **🚧 QoS Support 🚧**
+
+If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
+
+:::
+
+## 🌿 Current PATH QoS Support
+
+**🗓️ Document Last Updated: 2025-05-06**
 
 ## Shannon Protocol Services
 

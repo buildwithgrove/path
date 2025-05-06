@@ -14,6 +14,7 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 - [2. Configure PATH](#2-configure-path)
   - [2.1 Generate Morse Config](#21-generate-morse-config)
   - [2.2 Verify Configuration](#22-verify-configuration)
+  - [2.4 (Optional) Disable QoS Hydrator Checks](#24-optional-disable-qos-hydrator-checks)
 - [3. Run PATH in development mode](#3-run-path-in-development-mode)
   - [3.1 Start PATH](#31-start-path)
   - [3.2 Monitor PATH](#32-monitor-path)
@@ -166,11 +167,14 @@ If you are an employee of Grove, look for `PATH - Morse - Test - E2E Config` in 
 
 :::
 
-:::info Service QoS Hydrator Checks
+### 2.4 (Optional) Disable QoS Hydrator Checks
 
 By default, the QoS hydrator will run checks against all services that applications configured in the `morse_config.signed_aats` section are staked for.
 
 To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+This is primarily useful for testing and development purposes. It is unlikely you'll need this
+feature unless you are customizing QoS modules yourself.
 
 For more information, see:
 
@@ -183,29 +187,6 @@ To see the list of services that PATH is configured for, you can use the `/healt
 
 ```bash
 curl http://localhost:3069/healthz
-```
-
-The response will contain the list of services that PATH is configured for in the `configuredServiceIDs` field.
-
-**Example response:**
-
-```json
-{
-  "status": "ready",
-  "imageTag": "development",
-  "readyStates": {
-    "endpoint-hydrator": true,
-    "pokt-morse": true
-  },
-  "configuredServiceIDs": [
-    "F000",
-    "F00C",
-    "F01C",
-    "F021",
-    "F02C",
-    "F036"
-  ]
-}
 ```
 
 :::

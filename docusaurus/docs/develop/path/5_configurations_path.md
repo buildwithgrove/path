@@ -10,8 +10,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅        | PATH **gateway** configurations               |
-| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅       | PATH **gateway** configurations               |
+| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
 
 :::
 
@@ -50,11 +50,6 @@ shannon_config:
     owned_apps_private_keys_hex:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
 
-# (Optional) Quality of Service (QoS) Configuration
-hydrator_config:
-  service_ids:
-    - "anvil"
-
 # (Optional) Logger Configuration
 logger_config:
   level: "info" # Valid values: debug, info, warn, error
@@ -81,12 +76,6 @@ morse_config:
       client_public_key: "<64-char-hex>" # Client public key
       application_public_key: "<64-char-hex>" # Application public key
       application_signature: "<128-char-hex>" # Application signature
-
-# (Optional) Quality of Service (QoS) Configuration
-hydrator_config:
-  service_ids:
-    - "F00C"
-    - "F021"
 
 # (Optional) Logger Configuration
 logger_config:
@@ -141,7 +130,7 @@ Configuration for the Shannon protocol gateway.
 ```yaml
 shannon_config:
   full_node_config:
-    lazy_mode: false 
+    lazy_mode: false
     rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
     grpc_config: # Required
       host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port

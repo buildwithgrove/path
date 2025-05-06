@@ -6,8 +6,9 @@ import (
 	"os"
 	"slices"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -109,7 +110,7 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 		Status:               status,
 		ReadyStates:          readyStates,
 		ImageTag:             imageTag,
-		ConfiguredServiceIDs: getConfiguredServiceIDs(c.ServiceIDReporter),
+		ConfiguredServiceIDs: c.getConfiguredServiceIDs(),
 	}
 
 	responseBytes, err := json.Marshal(healthCheckJSON)
@@ -131,6 +132,19 @@ func (c *Checker) getComponentReadyStates() map[string]bool {
 	return readyStates
 }
 
+// getConfiguredServiceIDs returns a slice of configured service IDs
+func (c *Checker) getConfiguredServiceIDs() []protocol.ServiceID {
+	if c.ServiceIDReporter == nil {
+		return nil
+	}
+	configuredServiceIDs := make([]protocol.ServiceID, 0, len(c.ServiceIDReporter.ConfiguredServiceIDs()))
+	for serviceID := range c.ServiceIDReporter.ConfiguredServiceIDs() {
+		configuredServiceIDs = append(configuredServiceIDs, serviceID)
+	}
+	slices.Sort(configuredServiceIDs)
+	return configuredServiceIDs
+}
+
 // getStatus returns false if any component is not ready, otherwise true
 func getStatus(readyStates map[string]bool) healthCheckStatus {
 	for _, ready := range readyStates {
@@ -139,17 +153,4 @@ func getStatus(readyStates map[string]bool) healthCheckStatus {
 		}
 	}
 	return statusReady
-}
-
-// getConfiguredServiceIDs returns a slice of configured service IDs
-func getConfiguredServiceIDs(serviceIDReporter ServiceIDReporter) []protocol.ServiceID {
-	if serviceIDReporter == nil {
-		return nil
-	}
-	configuredServiceIDs := make([]protocol.ServiceID, 0, len(serviceIDReporter.ConfiguredServiceIDs()))
-	for serviceID := range serviceIDReporter.ConfiguredServiceIDs() {
-		configuredServiceIDs = append(configuredServiceIDs, serviceID)
-	}
-	slices.Sort(configuredServiceIDs)
-	return configuredServiceIDs
 }
