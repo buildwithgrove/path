@@ -20,6 +20,22 @@ var _ framework.EndpointResultBuilder = responseBuilderBlockNumber
 //
 // responseBuilderBlockNumber handles attribute building and sanctioning of endpoints based on the data returned to `eth_blockNumber` requests.
 func responseBuilderBlockNumber(ctx *framework.EndpointQueryResultContext) *framework.EndpointQueryResult {
+	// ===> single value from result: eg. eth_blockNumber
+	result := ctx.BuildIntResult(ethBlockNumber)
+	switch {
+	case result.IsJSONRPCError():
+		return result.SetError("endpoint returned a JSONRPC error response")
+	case result.GetValue() <= 0:
+		return result.SanctionEndpoint(5*time.Minute, "endpoint returned invalid value as block number")
+	default:
+		return result
+	}
+
+	// Complex values: e.g. Solana getEpochInfo:
+
+
+
+
 	// TODO_MVP(@adshmh): implement the framework's RequestValidator interface to filter out invalid `eth_blockNumber` requests.
 	//
 	// The endpoint returned an error response: no further processing needed.
