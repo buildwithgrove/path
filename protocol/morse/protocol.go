@@ -84,9 +84,10 @@ type Protocol struct {
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
+	// appCache caches applications associated with the services supported.
 	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
-	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
+
 	// sessionCache caches sessions for use by the Relay function.
 	// map keys are of the format "serviceID:appAddr"
 	sessionCache   map[string]provider.Session
@@ -174,7 +175,7 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	return nil
 }
 
-// ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
+// ConfiguredServiceIDs returns the list of all service IDs with configured AATs.
 // This is used by the hydrator to determine which service IDs to run QoS checks on.
 func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
 	p.appCacheMu.RLock()

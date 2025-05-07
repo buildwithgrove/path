@@ -127,11 +127,7 @@ func (eph *EndpointHydrator) run() {
 }
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
-	logger := eph.Logger.With(
-		"component", "hydrator",
-		"method", "perform_checks",
-		"service_id", string(serviceID),
-	)
+	logger := eph.Logger.With("method", "perform_checks", "service_id", string(serviceID))
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specify a specific app.

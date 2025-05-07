@@ -25,6 +25,7 @@ type EndpointHydratorConfig struct {
 	// List of service IDs to disable QoS checks for.
 	// By default all configured service IDs will be checked unless specified here.
 	// Startup will error if a service ID is specified here that is not in the protocol's configured service IDs.
+	// Primarily just used for testing & development.
 	QoSDisabledServiceIDs []protocol.ServiceID `yaml:"qos_disabled_service_ids"`
 
 	// Interval between hydrator runs during which endpoint checks are performed
