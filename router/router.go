@@ -98,8 +98,6 @@ func (r *router) Start() error {
 		MaxHeaderBytes: r.config.MaxRequestBodySize,
 	}
 
-	r.logger.Info().Msgf("PATH gateway running on port %d", r.config.Port)
-
 	if err := server.ListenAndServe(); err != nil {
 		return err
 	}

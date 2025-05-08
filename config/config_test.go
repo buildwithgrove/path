@@ -51,9 +51,6 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					WriteTimeout:       defaultHTTPServerWriteTimeout,
 					IdleTimeout:        defaultHTTPServerIdleTimeout,
 				},
-				HydratorConfig: EndpointHydratorConfig{
-					ServiceIDs: []protocol.ServiceID{"F00C"},
-				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
 				},

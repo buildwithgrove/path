@@ -160,6 +160,12 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 }
 
 // IsHealthy delegates to the underlying node.
+//
+// TODO_IMPROVE(@commoddity):
+// - Implement a more sophisticated health check
+// - Check for the presence of cached apps and sessions (when the TODO_IMPROVE at the top of this file is addressed)
+// - For now, always returns true because:
+//   - The cache is populated incrementally as new apps and sessions are requested.
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
 }

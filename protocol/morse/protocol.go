@@ -13,6 +13,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/health"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -20,6 +21,13 @@ import (
 // gateway package's Protocol interface is fulfilled by the Protocol struct
 // below using Morse-specific methods.
 var _ gateway.Protocol = &Protocol{}
+
+// Morse protocol implements the health.Check and health.ServiceIDReporter interfaces.
+// This allows the protocol to report its health status and the list of service IDs it is configured for.
+var (
+	_ health.Check             = &Protocol{}
+	_ health.ServiceIDReporter = &Protocol{}
+)
 
 // TODO_TECHDEBT(@adshmh): make the apps and sessions cache refresh interval configurable.
 var appsAndSessionsCacheRefreshInterval = time.Minute
@@ -76,9 +84,10 @@ type Protocol struct {
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
+	// appCache caches applications associated with the services supported.
 	appCache   map[protocol.ServiceID][]app
 	appCacheMu sync.RWMutex
-	// TODO_IMPROVE: Add a sessionCacheKey type with the necessary helpers to concat a key
+
 	// sessionCache caches sessions for use by the Relay function.
 	// map keys are of the format "serviceID:appAddr"
 	sessionCache   map[string]provider.Session
@@ -164,6 +173,20 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	p.sanctionedEndpointsStore.ApplyObservations(morseObservations)
 
 	return nil
+}
+
+// ConfiguredServiceIDs returns the list of all service IDs with configured AATs.
+// This is used by the hydrator to determine which service IDs to run QoS checks on.
+func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
+	p.appCacheMu.RLock()
+	defer p.appCacheMu.RUnlock()
+
+	configuredServiceIDs := make(map[protocol.ServiceID]struct{}, len(p.appCache))
+	for serviceID := range p.appCache {
+		configuredServiceIDs[serviceID] = struct{}{}
+	}
+
+	return configuredServiceIDs
 }
 
 // Name satisfies the HealthCheck#Name interface function
