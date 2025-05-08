@@ -81,11 +81,7 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-<<<<<<< HEAD
-		Logger:                  cmdLogger.With("component", "hydrator"),
-=======
 		Logger:                  cmdLogger,
->>>>>>> origin/main
 		Protocol:                protocolInstance,
 		ActiveQoSServices:       hydratorQoSServices,
 		RunInterval:             hydratorConfig.RunInterval,
