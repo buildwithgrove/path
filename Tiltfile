@@ -60,8 +60,8 @@ local_config_defaults = {
     #   1. enabled: true
     #   2. path: {PATH_TO_LOCAL_HELM_CHART}
     "helm_chart_local_repo": {
-        "enabled": False if not helm_charts_path else True,
-        "path": "../helm-charts" if not helm_charts_path else helm_charts_path
+        "enabled": False if not helm_charts_path or helm_charts_path == "" else True,
+        "path": "../helm-charts" if not helm_charts_path or helm_charts_path == "" else helm_charts_path
     }
 }
 
@@ -74,11 +74,15 @@ merge_dicts(local_config, local_config_defaults)
 # Then merge file contents over defaults
 merge_dicts(local_config, local_config_file)
 
-# Override with environment variable if provided
-if helm_charts_path:
+# Always override with environment variable if provided, or force to False if not
+if helm_charts_path and helm_charts_path != "":
     local_config["helm_chart_local_repo"]["enabled"] = True
     local_config["helm_chart_local_repo"]["path"] = helm_charts_path
     print("Using helm charts from environment variable: {}".format(helm_charts_path))
+else:
+    local_config["helm_chart_local_repo"]["enabled"] = False
+    local_config["helm_chart_local_repo"]["path"] = "../helm-charts"
+    print("Not using local helm charts (env var empty)")
 
 # Check if there are differences or if the file doesn't exist
 if (local_config_file != local_config) or (not os.path.exists(local_config_path)):

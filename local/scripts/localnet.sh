@@ -137,6 +137,45 @@ show_spinner() {
     fi
 }
 
+# Function to start Docker container with local helm charts
+run_with_local_helm_charts() {
+    local helm_charts_path=$1
+    
+    echo "  📦 Mounting local helm charts from ${helm_charts_path}"
+    
+    if ! docker run \
+        --name path-localnet \
+        -v "$(pwd)":/app \
+        -p 10350:10350 \
+        -p 3070:3070 \
+        --privileged \
+        -v "${helm_charts_path}":/helm-charts \
+        -e LOCAL_HELM_CHARTS_PATH=/helm-charts \
+        -d \
+        ${DOCKER_IMAGE}; then
+        echo "❌ Failed to start Docker container. Check if ports 10350 and 3070 are available."
+        exit 1
+    fi
+}
+
+# Function to start Docker container without local helm charts
+run_without_local_helm_charts() {
+    echo "  📡 Using remote helm charts"
+    
+    if ! docker run \
+        --name path-localnet \
+        -v "$(pwd)":/app \
+        -p 10350:10350 \
+        -p 3070:3070 \
+        --privileged \
+        -e LOCAL_HELM_CHARTS_PATH= \
+        -d \
+        ${DOCKER_IMAGE}; then
+        echo "❌ Failed to start Docker container. Check if ports 10350 and 3070 are available."
+        exit 1
+    fi
+}
+
 # Function to start up PATH Localnet
 start_localnet() {
     # Check if container already exists
@@ -152,49 +191,23 @@ start_localnet() {
         fi
     fi
 
-    # Check if we should use local helm charts
+    # Start the container based on whether we should use local helm charts
+    echo "🚀 Starting PATH Localnet ..."
+    
     if [ "$USE_LOCAL_HELM" = true ]; then
         echo "🔍 Running PATH Localnet with local helm charts ..."
-        if ! prompt_for_local_helm_charts; then
+        if prompt_for_local_helm_charts; then
+            if [ ! -d "${LOCAL_HELM_CHARTS_PATH}" ]; then
+                echo "❌ Error: LOCAL_HELM_CHARTS_PATH directory does not exist: ${LOCAL_HELM_CHARTS_PATH}"
+                exit 1
+            fi
+            run_with_local_helm_charts "${LOCAL_HELM_CHARTS_PATH}"
+        else
             echo "⚠️ Failed to set up local helm charts, reverting to remote charts"
-            unset LOCAL_HELM_CHARTS_PATH
+            run_without_local_helm_charts
         fi
     else
-        echo "  📡 Starting PATH Localnet with remote helm charts"
-    fi
-
-    # Start the container
-    echo "📡 Starting PATH Localnet ..."
-    
-    # Set up docker run command with base parameters
-    DOCKER_CMD="docker run \
-        --name path-localnet \
-        -v \"$(pwd)\":/app \
-        -p 10350:10350 \
-        -p 3070:3070 \
-        --privileged"
-    
-    # Add helm charts volume mount if LOCAL_HELM_CHARTS_PATH is set
-    if [ -n "${LOCAL_HELM_CHARTS_PATH}" ]; then
-        if [ ! -d "${LOCAL_HELM_CHARTS_PATH}" ]; then
-            echo "❌ Error: LOCAL_HELM_CHARTS_PATH directory does not exist: ${LOCAL_HELM_CHARTS_PATH}"
-            exit 1
-        fi
-        echo "  📦 Mounting local helm charts from ${LOCAL_HELM_CHARTS_PATH}"
-        DOCKER_CMD="${DOCKER_CMD} \
-        -v \"${LOCAL_HELM_CHARTS_PATH}\":/helm-charts \
-        -e LOCAL_HELM_CHARTS_PATH=/helm-charts"
-    fi
-    
-    # Complete the docker command
-    DOCKER_CMD="${DOCKER_CMD} \
-        -d \
-        ${DOCKER_IMAGE}"
-    
-    # Run the container
-    if ! eval ${DOCKER_CMD}; then
-        echo "❌ Failed to start Docker container. Check if ports 10350 and 3070 are available."
-        exit 1
+        run_without_local_helm_charts
     fi
 
     # First, wait for Tilt UI to become available
