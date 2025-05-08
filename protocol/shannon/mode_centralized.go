@@ -96,7 +96,10 @@ func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Applicati
 
 // getCentralizedGatewayModeApps returns the set of permitted apps under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID protocol.ServiceID) ([]*apptypes.Application, error) {
-	logger := p.logger.With("method", "getCentralizedGatewayModeApps", "service_id", string(serviceID))
+	logger := p.logger.With(
+		"method", "getCentralizedGatewayModeApps",
+		"service_id", string(serviceID),
+	)
 	logger.Debug().Msg("fetching the list of owned apps.")
 
 	var permittedApps []*apptypes.Application
