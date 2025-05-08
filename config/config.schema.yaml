@@ -226,8 +226,8 @@ properties:
         description: "Maximum number of workers that will concurrently check endpoints."
         type: integer
         default: 100
-      service_ids:
-        description: "List of service IDs for the hydrator."
+      qos_disabled_service_ids:
+        description: "List of service IDs for which QoS checks will be disabled. By default all configured services will have QoS checks enabled. Primarily just used for testing & development."
         type: array
         items:
           type: string

@@ -64,6 +64,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 
 	evmRequestValidator := &evmRequestValidator{
 		logger:       logger,
+		serviceID:    serviceId,
 		chainID:      evmChainID,
 		serviceState: serviceState,
 	}

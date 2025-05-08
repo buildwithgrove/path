@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -32,8 +35,9 @@ type (
 	// health.Checker struct is used to store all PATH components whose
 	// health needs to be checked to consider PATH ready to serve traffic.
 	Checker struct {
-		Logger     polylog.Logger
-		Components []Check
+		Logger            polylog.Logger
+		Components        []Check
+		ServiceIDReporter ServiceIDReporter
 	}
 
 	// health.Check is an interface that must be implemented
@@ -42,6 +46,12 @@ type (
 		Name() string // Name returns the name of the component being checked.
 		// TODO_FUTURE: consider adding a message/reason for an unhealthy status.
 		IsAlive() bool // IsAlive returns true if the component is healthy, otherwise false.
+	}
+
+	// ServiceIDReporter is satisfied by the protocol instance and returns
+	// the list of service IDs that the protocol instance is configured for.
+	ServiceIDReporter interface {
+		ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 	}
 )
 
@@ -56,6 +66,8 @@ type healthCheckJSON struct {
 	ImageTag string `json:"imageTag"`
 	// ReadyStates is a map of component names to their ready status
 	ReadyStates map[string]bool `json:"readyStates,omitempty"`
+	// ConfiguredServiceIDs lists the service IDs that the PATH instance is configured for.
+	ConfiguredServiceIDs []protocol.ServiceID `json:"configuredServiceIDs,omitempty"`
 }
 
 // healthCheckHandler returns the health status of PATH as a JSON response.
@@ -94,11 +106,14 @@ func (c *Checker) getHealthCheckResponse(status healthCheckStatus, readyStates m
 		imageTag = defaultImageTag
 	}
 
-	responseBytes, err := json.Marshal(healthCheckJSON{
-		Status:      status,
-		ReadyStates: readyStates,
-		ImageTag:    imageTag,
-	})
+	healthCheckJSON := healthCheckJSON{
+		Status:               status,
+		ReadyStates:          readyStates,
+		ImageTag:             imageTag,
+		ConfiguredServiceIDs: c.getConfiguredServiceIDs(),
+	}
+
+	responseBytes, err := json.Marshal(healthCheckJSON)
 	if err != nil {
 		c.Logger.Error().Msgf("error marshaling health check response: %s", err.Error())
 		return nil
@@ -115,6 +130,19 @@ func (c *Checker) getComponentReadyStates() map[string]bool {
 	}
 
 	return readyStates
+}
+
+// getConfiguredServiceIDs returns a slice of configured service IDs
+func (c *Checker) getConfiguredServiceIDs() []protocol.ServiceID {
+	if c.ServiceIDReporter == nil {
+		return nil
+	}
+	configuredServiceIDs := make([]protocol.ServiceID, 0, len(c.ServiceIDReporter.ConfiguredServiceIDs()))
+	for serviceID := range c.ServiceIDReporter.ConfiguredServiceIDs() {
+		configuredServiceIDs = append(configuredServiceIDs, serviceID)
+	}
+	slices.Sort(configuredServiceIDs)
+	return configuredServiceIDs
 }
 
 // getStatus returns false if any component is not ready, otherwise true
