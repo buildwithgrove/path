@@ -20,6 +20,7 @@ It is a pre-requisite for both the:
   - [3. Install Docker](#3-install-docker)
   - [4. Choose Your Protocol](#4-choose-your-protocol)
 - [Development Environment Details](#development-environment-details)
+- [Remote vs Local Helm Charts](#remote-vs-local-helm-charts)
 
 ## Getting Started
 
@@ -89,3 +90,19 @@ The full PATH stack uses [Helm Charts](https://helm.sh/) to deploy the necessary
 For more information, see the [PATH Helm Introduction](../../operate/helm/1_introduction.md).
 
 You may view the [PATH Helm Charts](https://github.com/buildwithgrove/helm-charts) repository if you're interested in the services deployed to the local Kubernetes cluster.
+
+## Remote vs Local Helm Charts
+
+By default, the PATH local development environment uses the remote PATH Helm Charts.
+
+For local development, you may optionally choose to use the local Helm Charts by pulling the [PATH Helm Charts](https://github.com/buildwithgrove/helm-charts) repository.
+
+To use the local Helm Charts, run:
+
+```bash
+make path_up_local_helm
+```
+
+This will prompt you for the local path to the PATH Helm Charts repository. By default this is `../helm-charts` relative to the PATH repository root.
+
+You may also specify a custom relative or absolute path to the PATH Helm Charts repository.

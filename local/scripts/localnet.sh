@@ -146,6 +146,31 @@ show_spinner() {
     fi
 }
 
+# Function to check container status
+check_container_status() {
+    # Wait briefly to allow container to start and run validation
+    echo -e "  ${WHITE}🔍 Starting container and checking validation...${NC}"
+    sleep 1
+    
+    # Check if container is running
+    if docker ps --format '{{.Names}}' | grep -q "^path-localnet$"; then
+        # Container is running, validation passed
+        echo -e "  ${GREEN}✓ Container validation passed${NC}"
+        return 0
+    else
+        # Container exited, check the exit code
+        exit_code=$(docker inspect path-localnet --format='{{.State.ExitCode}}')
+        if [ "$exit_code" != "0" ]; then
+            echo -e "${RED}❌ PATH Localnet container exited with code $exit_code. See logs below:${NC}"
+            docker logs path-localnet
+            exit 1
+        fi
+        # If we get here, container exited with code 0, which is unexpected
+        echo -e "${YELLOW}⚠️ Container exited with code 0 unexpectedly${NC}"
+        return 1
+    fi
+}
+
 # Function to start Docker container with local helm charts
 run_with_local_helm_charts() {
     local helm_charts_path=$1
@@ -165,6 +190,9 @@ run_with_local_helm_charts() {
         echo -e "${RED}❌ Failed to start Docker container. Check if ports 10350 and 3070 are available.${NC}"
         exit 1
     fi
+
+    # Check container status
+    check_container_status
 }
 
 # Function to start Docker container without local helm charts
@@ -183,6 +211,9 @@ run_without_local_helm_charts() {
         echo -e "${RED}❌ Failed to start Docker container. Check if ports 10350 and 3070 are available.${NC}"
         exit 1
     fi
+
+    # Check container status
+    check_container_status
 }
 
 # Function to start up PATH Localnet

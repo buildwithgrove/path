@@ -14,7 +14,13 @@ RUN apk add --no-cache \
     python3 \
     libc6-compat \
     libstdc++ \
-    libgcc
+    libgcc \
+    nodejs \
+    npm \
+    yq 
+
+# Install ajv-cli (for validating config.yaml against config.schema.yaml)
+RUN npm install -g ajv-cli
 
 # Install Go 1.23
 RUN set -ex && \
@@ -73,11 +79,33 @@ RUN set -ex && \
 RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 # Create an integrated startup script that includes both Docker daemon and the path/local/start.sh functionality
+# It also validates the config.yaml against the config.schema.yaml before starting anything else
+#
+# TODO_IMPROVE(@commoddity): Add a YAML schema for the `.values.yaml` file in the Helm Charts repo and validate it as part of the startup script.
 COPY <<EOF /integrated-start.sh
 #!/bin/bash
+set -e
+
+# Validate config YAML against schema before starting anything else
+yq -o=json ./config/config.schema.yaml > /tmp/config.schema.json
+if ! ajv validate -s /tmp/config.schema.json -d ./local/path/.config.yaml --strict=false; then
+    echo ""
+    echo "❌ Error: ./local/path/.config.yaml failed schema validation. Please fix the errors above before continuing."
+    echo ""
+    echo "  💡 For information about the PATH config YAML file and schema, see the documentation at: "
+    echo "       https://path.grove.city/develop/path/configurations_path "
+    echo ""
+    echo "  🌿 Grove employees: you may find a valid .config.yaml file on 1Password in the note called 'PATH Localnet Config' "
+    echo ""
+    # Exit with error code - this will terminate the container
+    exit 1
+else
+    echo "Config file is valid!"
+fi
+
+# Important: Only proceed with the rest if validation passes
 # Start Docker daemon (required for Kind)
 /usr/local/bin/dockerd-entrypoint.sh &
-DOCKER_PID=\$!
 echo "Waiting for Docker daemon to start..."
 sleep 3
 
@@ -94,9 +122,6 @@ kubectl create secret generic path-config --from-file=./local/path/.config.yaml 
 
 # Start Tilt with host binding for external access and reduce log level to hide trace warnings
 tilt up --host=0.0.0.0 --log-level=error
-
-# If Tilt exits, ensure we clean up the Docker daemon
-kill \$DOCKER_PID
 EOF
 
 RUN chmod +x /integrated-start.sh

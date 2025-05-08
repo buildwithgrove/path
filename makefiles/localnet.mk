@@ -38,7 +38,7 @@ path_help: ## Prints help commands if you cannot start path
 .PHONY: build_and_push_localnet_image
 build_and_push_localnet_image: ## Builds and pushes the localnet Docker image for multi-architecture builds
 	@echo "🔨 Building and pushing multi-architecture localnet Docker image..."
-	@docker buildx build --platform linux/amd64,linux/arm64 \
+	@docker buildx build --no-cache --platform linux/amd64,linux/arm64 \
 	  -t ghcr.io/buildwithgrove/path-localnet-env:latest \
 	  -f ./local/Dockerfile.dev \
 	  --push .
