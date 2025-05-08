@@ -218,19 +218,6 @@ run_without_local_helm_charts() {
 
 # Function to start up PATH Localnet
 start_localnet() {
-    # Check if container already exists
-    if docker ps -a --format '{{.Names}}' | grep -q "^path-localnet$"; then
-        # Check if container is running
-        if docker ps --format '{{.Names}}' | grep -q "^path-localnet$"; then
-            echo -e "${RED}❌ Error: path-localnet is already running.${NC}"
-            echo -e "${WHITE}To stop it, run: ${BLUE}make path_down${NC}"
-            exit 1
-        else
-            echo -e "${YELLOW}🧹 Removing stopped path-localnet container...${NC}"
-            docker rm path-localnet > /dev/null 2>&1 || true
-        fi
-    fi
-
     # Start the container based on whether we should use local helm charts
     echo -e "${BLUE}🍃 Starting PATH Localnet ...${NC}"
     
@@ -308,6 +295,19 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Check if container already exists
+if docker ps -a --format '{{.Names}}' | grep -q "^path-localnet$"; then
+    # Check if container is running
+    if docker ps --format '{{.Names}}' | grep -q "^path-localnet$"; then
+        echo -e "${RED}❌ Error: path-localnet is already running.${NC}"
+        echo -e "${WHITE}To stop it, run: ${BLUE}make path_down${NC}"
+        exit 1
+    else
+        echo -e "${YELLOW}🧹 Removing stopped path-localnet container...${NC}"
+        docker rm path-localnet > /dev/null 2>&1 || true
+    fi
+fi
+
 # Check for required config file
 if [ ! -f "./local/path/.config.yaml" ]; then
     echo -e "\n${RED}❌ Error: ./local/path/.config.yaml not found. Ensure you have a valid config YAML file at this location.${NC}\n"
@@ -319,7 +319,7 @@ fi
 
 # Check for optional values file
 if [ ! -f "./local/path/.values.yaml" ]; then
-    echo -e "\n${BLUE}ℹ️ Info: ./local/path/.values.yaml not found. PATH Localnet will use the default Helm Chart values.${NC}\n"
+    echo -e "\n${BLUE}ℹ️  Info: ./local/path/.values.yaml not found. PATH Localnet will use the default Helm Chart values.${NC}\n"
     echo -e "  💡 For information about the PATH values YAML file, see the documentation at: "
     echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_helm${NC}  "
     echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.values.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
