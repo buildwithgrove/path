@@ -1,6 +1,6 @@
 helm_chart_local_repo:
-  enabled: false
-  path: ../helm-charts
+  enabled: true
+  path: /helm-charts
 hot-reloading: true
 observability:
   enabled: true

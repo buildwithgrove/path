@@ -37,6 +37,9 @@ def merge_dicts(base, updates):
             # Replace or set the value
             base[k] = v
 
+# Get the helm charts path from environment variable if set
+helm_charts_path = os.getenv("LOCAL_HELM_CHARTS_PATH", "")
+
 # Load the existing config file, if it exists, or use an empty dict as fallback
 local_config_path = "local_config.yaml"
 local_config_defaults = {
@@ -57,8 +60,8 @@ local_config_defaults = {
     #   1. enabled: true
     #   2. path: {PATH_TO_LOCAL_HELM_CHART}
     "helm_chart_local_repo": {
-        "enabled": False,
-        "path": "../helm-charts"
+        "enabled": False if not helm_charts_path else True,
+        "path": "../helm-charts" if not helm_charts_path else helm_charts_path
     }
 }
 
@@ -70,6 +73,13 @@ local_config_file = read_yaml(local_config_path, default={})
 merge_dicts(local_config, local_config_defaults)
 # Then merge file contents over defaults
 merge_dicts(local_config, local_config_file)
+
+# Override with environment variable if provided
+if helm_charts_path:
+    local_config["helm_chart_local_repo"]["enabled"] = True
+    local_config["helm_chart_local_repo"]["path"] = helm_charts_path
+    print("Using helm charts from environment variable: {}".format(helm_charts_path))
+
 # Check if there are differences or if the file doesn't exist
 if (local_config_file != local_config) or (not os.path.exists(local_config_path)):
     print("Updating " + local_config_path + " with defaults")
@@ -91,7 +101,7 @@ if local_config["helm_chart_local_repo"]["enabled"]:
     local("cd " + chart_prefix + "path && helm dependency update")
     local("cd " + chart_prefix + "watch && helm dependency update")
     hot_reload_dirs.append(helm_chart_local_repo)
-    print("Using local helm chart repo " + helm_chart_local_repo)
+    print("Using local helm chart repo {}".format(helm_chart_local_repo))
 
 
 # The folder containing the local configuration files.

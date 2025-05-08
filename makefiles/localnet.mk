@@ -9,6 +9,10 @@
 path_up: check_docker check_path_config ## Brings up local Tilt development environment in Docker 
 	@./local/scripts/localnet.sh up
 
+.PHONY: path_up_local_helm
+path_up_local_helm: check_docker check_path_config ## Brings up local Tilt environment with local helm charts
+	@./local/scripts/localnet.sh up --use-local-helm
+
 .PHONY: path_down
 path_down: ## Tears down local Tilt development environment in Docker
 	@./local/scripts/localnet.sh down
