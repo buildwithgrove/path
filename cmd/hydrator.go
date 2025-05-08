@@ -32,7 +32,10 @@ func setupEndpointHydrator(
 	if cmdLogger == nil {
 		return nil, errors.New("no logger provided")
 	}
-	logger := cmdLogger.With("component", "hydrator").With("method", "setupEndpointHydrator")
+	logger := cmdLogger.With(
+		"component", "hydrator",
+		"method", "setupEndpointHydrator",
+	)
 
 	// Wait for the protocol to become healthy BEFORE configuring and starting the hydrator.
 	// - Ensures the protocol instance's configured service IDs are available before hydrator startup.
@@ -78,7 +81,7 @@ func setupEndpointHydrator(
 	}
 
 	endpointHydrator := gateway.EndpointHydrator{
-		Logger:                  cmdLogger.With("component", "hydrator"),
+		Logger:                  cmdLogger,
 		Protocol:                protocolInstance,
 		ActiveQoSServices:       hydratorQoSServices,
 		RunInterval:             hydratorConfig.RunInterval,
