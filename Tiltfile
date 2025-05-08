@@ -40,54 +40,21 @@ def merge_dicts(base, updates):
 # Get the helm charts path from environment variable if set
 helm_charts_path = os.getenv("LOCAL_HELM_CHARTS_PATH", "")
 
-# Load the existing config file, if it exists, or use an empty dict as fallback
-local_config_path = "local_config.yaml"
-local_config_defaults = {
-    "hot-reloading": True,
-    "path": {
-        "count": 1,
-        "delve": {
-            "enabled": False
-        }
-    },
-    "observability": {
-        "enabled": True,
-        "grafana": {
-            "defaultDashboardsEnabled": False
-        }
-    },
-    # DEV_NOTE: to use a local copy of Helm charts, set BOTH of the following:
-    #   1. enabled: true
-    #   2. path: {PATH_TO_LOCAL_HELM_CHART}
-    "helm_chart_local_repo": {
-        "enabled": False if not helm_charts_path or helm_charts_path == "" else True,
-        "path": "../helm-charts" if not helm_charts_path or helm_charts_path == "" else helm_charts_path
-    }
-}
+# Define configuration values directly
+hot_reloading_enabled = True
+path_count = 1
+delve_enabled = False
+observability_enabled = True
+grafana_default_dashboards_enabled = False
 
-# Initial empty config
-local_config = {}
-# Load the existing config file, if it exists, or use an empty dict as fallback
-local_config_file = read_yaml(local_config_path, default={})
-# Merge defaults into the local_config first
-merge_dicts(local_config, local_config_defaults)
-# Then merge file contents over defaults
-merge_dicts(local_config, local_config_file)
+# Determine whether to use local helm charts based on environment variable
+use_local_helm_charts = helm_charts_path and helm_charts_path != ""
+local_helm_charts_path = helm_charts_path if use_local_helm_charts else "../helm-charts"
 
-# Always override with environment variable if provided, or force to False if not
-if helm_charts_path and helm_charts_path != "":
-    local_config["helm_chart_local_repo"]["enabled"] = True
-    local_config["helm_chart_local_repo"]["path"] = helm_charts_path
+if use_local_helm_charts:
     print("Using helm charts from environment variable: {}".format(helm_charts_path))
 else:
-    local_config["helm_chart_local_repo"]["enabled"] = False
-    local_config["helm_chart_local_repo"]["path"] = "../helm-charts"
     print("Not using local helm charts (env var empty)")
-
-# Check if there are differences or if the file doesn't exist
-if (local_config_file != local_config) or (not os.path.exists(local_config_path)):
-    print("Updating " + local_config_path + " with defaults")
-    local("cat - > " + local_config_path, stdin=encode_yaml(local_config))
 
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
@@ -97,24 +64,23 @@ helm_repo(
     labels=["configuration"],
 )
 chart_prefix = "buildwithgrove/"
-if local_config["helm_chart_local_repo"]["enabled"]:
-    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
-    chart_prefix = helm_chart_local_repo + "/charts/"
+if use_local_helm_charts:
+    chart_prefix = local_helm_charts_path + "/charts/"
     # TODO_TECHDEBT(@okdas): Find a way to make this cleaner & performant w/ selective builds.
     local("cd " + chart_prefix + "guard && helm dependency update")
     local("cd " + chart_prefix + "path && helm dependency update")
     local("cd " + chart_prefix + "watch && helm dependency update")
-    hot_reload_dirs.append(helm_chart_local_repo)
-    print("Using local helm chart repo {}".format(helm_chart_local_repo))
+    hot_reload_dirs.append(local_helm_charts_path)
+    print("Using local helm chart repo {}".format(local_helm_charts_path))
 
 
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
 
 # The folder containing PATH's local configuration files.
-PATH_LOCAL_DIR = LOCAL_DIR + "/path"
+PATH_LOCAL_DIR = LOCAL_DIR + "/path" # ./local/path
 # The configuration file for PATH.
-PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
+PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml" # ./local/path/.config.yaml
 
 # --------------------------------------------------------------------------- #
 #                              Configuration Resources                        #
