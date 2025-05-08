@@ -2,15 +2,25 @@
 ###  Local PATH make targets  ###
 #################################
 
-# tl;dr Mimic an E2E real environment.
-# This section is intended to spin up and develop a full modular stack
+# These targets are used to bring up the local Tilt environment in a 
+# dedicated Docker container that contains all dependencies for local
+# development (Tilt, Helm, etc).
+#
+# The localnet.sh script handles all the complexity of bringing up the PATH
+# services in the Docker container, including checking for the presence of
+# the config.yaml and .values.yaml files.
+#
+# For more information see the documentation at:
+# https://path.grove.city/develop/path/environment
 
+# Brings up local Tilt environment with remote helm charts
 .PHONY: path_up
-path_up: check_docker check_path_config ## Brings up local Tilt development environment in Docker 
-	@./local/scripts/localnet.sh up
+path_up: check_docker ## Brings up local Tilt development environment in Docker 
+	@./local/scripts/localnet.sh up 
 
+# Brings up local Tilt environment with local helm charts
 .PHONY: path_up_local_helm
-path_up_local_helm: check_docker check_path_config ## Brings up local Tilt environment with local helm charts
+path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
 	@./local/scripts/localnet.sh up --use-local-helm
 
 .PHONY: path_down
