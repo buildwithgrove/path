@@ -276,6 +276,40 @@ stop_localnet() {
     exit 1
 }
 
+check_path_localnet_running() {
+    # Check if container already exists
+    if docker ps -a --format '{{.Names}}' | grep -q "^path-localnet$"; then
+        # Check if container is running
+        if docker ps --format '{{.Names}}' | grep -q "^path-localnet$"; then
+            echo -e "${RED}❌ Error: path-localnet is already running.${NC}"
+            echo -e "${WHITE}To stop it, run: ${BLUE}make path_down${NC}"
+            exit 1
+        else
+            echo -e "${YELLOW}🧹 Removing stopped path-localnet container...${NC}"
+            docker rm path-localnet > /dev/null 2>&1 || true
+        fi
+    fi
+}
+
+check_config_files() {
+    # Check for required config file
+    if [ ! -f "./local/path/.config.yaml" ]; then
+        echo -e "\n${RED}❌ Error: ./local/path/.config.yaml not found. Ensure you have a valid config YAML file at this location.${NC}\n"
+        echo -e "  💡 For information about the PATH config YAML file, see the documentation at: "
+        echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_path${NC} "
+        echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.config.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
+        exit 1
+    fi
+
+    # Check for optional values file
+    if [ ! -f "./local/path/.values.yaml" ]; then
+        echo -e "\n${BLUE}ℹ️  Info: ./local/path/.values.yaml not found. PATH Localnet will use the default Helm Chart values.${NC}\n"
+        echo -e "  💡 For information about the PATH values YAML file and how the default values can be overridden, see the documentation at: "
+        echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_helm${NC}  "
+        echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.values.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
+    fi
+}
+
 # Parse command-line arguments
 COMMAND=${1:-up}
 shift || true
@@ -295,39 +329,11 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# Check if container already exists
-if docker ps -a --format '{{.Names}}' | grep -q "^path-localnet$"; then
-    # Check if container is running
-    if docker ps --format '{{.Names}}' | grep -q "^path-localnet$"; then
-        echo -e "${RED}❌ Error: path-localnet is already running.${NC}"
-        echo -e "${WHITE}To stop it, run: ${BLUE}make path_down${NC}"
-        exit 1
-    else
-        echo -e "${YELLOW}🧹 Removing stopped path-localnet container...${NC}"
-        docker rm path-localnet > /dev/null 2>&1 || true
-    fi
-fi
-
-# Check for required config file
-if [ ! -f "./local/path/.config.yaml" ]; then
-    echo -e "\n${RED}❌ Error: ./local/path/.config.yaml not found. Ensure you have a valid config YAML file at this location.${NC}\n"
-    echo -e "  💡 For information about the PATH config YAML file, see the documentation at: "
-    echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_path${NC} "
-    echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.config.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
-    exit 1
-fi
-
-# Check for optional values file
-if [ ! -f "./local/path/.values.yaml" ]; then
-    echo -e "\n${BLUE}ℹ️  Info: ./local/path/.values.yaml not found. PATH Localnet will use the default Helm Chart values.${NC}\n"
-    echo -e "  💡 For information about the PATH values YAML file, see the documentation at: "
-    echo -e "       ${CYAN}https://path.grove.city/develop/path/configurations_helm${NC}  "
-    echo -e "\n  🌿 Grove employees: you may find a valid ${BLUE}.values.yaml${NC} file on 1Password in the note called ${BLUE}\"PATH Localnet Config\"${NC}\n"
-fi
-
 # Main script logic to handle arguments
 case "${COMMAND}" in
     up)
+        check_path_localnet_running
+        check_config_files
         start_localnet
         ;;
     down)
