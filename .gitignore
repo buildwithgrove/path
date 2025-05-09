@@ -70,3 +70,6 @@ install.log
 # Config Backup files
 *.backup
 
+# Act GitHub workflow secrets
+.secrets
+release/
