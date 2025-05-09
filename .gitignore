@@ -31,7 +31,9 @@ localnet_config.yaml-e
 # Config
 .*.yaml
 *config.yaml
+*.config.yaml
 *values.yaml
+*.values.yaml
 *values*
 .config.yaml
 .config.*.yaml
@@ -41,6 +43,10 @@ localnet_config.yaml-e
 # Shannon E2E config
 .shannon.config.yaml
 .config.shannon.yaml
+
+# TODO_IN_THIS_PR(@commoddity): remove this once quickstart Shannon 
+# Gateway & Application are staked and ready to be added to repo.
+config.tmpl.yaml
 
 # Env
 .env

@@ -26,7 +26,7 @@ Configuring a gateway for the Pocket Shannon Protocol requires the following fie
  - %s'gateway_private_key_hex'%s - The gateway_private_key_hex is the private key of the gateway you want to configure.
  - One or more %s'owned_apps_private_keys_hex'%s - An owned app means an Application delegated to the onchain Gateway.
 
-💡 These fields may be obtained by following the Gateway Quickstart Guide:
+💡 These fields may be obtained by following the App & PATH Gateway Cheat Shee:
 %s https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet%s
 (⏰ approximate time to complete: 10-15 minutes)
 
@@ -52,28 +52,183 @@ Configuring a gateway for the Pocket Shannon Protocol requires the following fie
 	return nil
 }
 
+// displaySetupOptions displays the setup options for the Shannon configuration.
+func displaySetupOptions(reader *bufio.Reader) (int, error) {
+	options := fmt.Sprintf(
+		`%s🚀 PATH Gateway Setup for Pocket Shannon Beta TestNet%s
+
+Choose a setup option:
+%s1. Quickstart mode%s (default) 
+   Use a pre-staked Gateway and Application and get started right away
+
+%s2. App & PATH Gateway Cheat Sheet%s
+   Follow the official guide to setup your own Gateway and Application 
+
+%s3. Enter your own values%s
+   Skip guides and directly enter your Gateway and Application details
+
+`,
+		log.Green, log.ResetColor,
+		log.Cyan, log.ResetColor,
+		log.Cyan, log.ResetColor,
+		log.Cyan, log.ResetColor,
+	)
+	fmt.Print(options)
+
+	input, err := prompt(reader, log.Blue+"Enter your choice [1]: "+log.ResetColor)
+	if err != nil {
+		return 0, err
+	}
+
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return 1, nil // Default option
+	}
+
+	choice, err := parseOptionChoice(input)
+	if err != nil {
+		return 0, err
+	}
+
+	cfgEditor.ClearTerminal()
+	return choice, nil
+}
+
+// parseOptionChoice parses the user input for option choice.
+func parseOptionChoice(input string) (int, error) {
+	choice := 0
+	switch input {
+	case "1":
+		choice = 1
+	case "2":
+		choice = 2
+	case "3":
+		choice = 3
+	default:
+		return 0, fmt.Errorf("invalid option: %s. Please choose 1, 2, or 3", input)
+	}
+	return choice, nil
+}
+
+// copyTemplateConfig copies the template config to the target location.
+func copyTemplateConfig(conf *config.Config) error {
+	srcPath := conf.GetPATHRepoFilepath() + "/local/path/config.tmpl.yaml"
+	destPath := conf.GetPATHConfigFilepath()
+
+	// Check if destination file already exists
+	if _, err := os.Stat(destPath); err == nil {
+		return fmt.Errorf(".config.yaml file already exists at '%s'", destPath)
+	}
+
+	// Copy the template file
+	data, err := os.ReadFile(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to read template config file: %v", err)
+	}
+
+	if err := os.WriteFile(destPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %v", err)
+	}
+
+	fmt.Printf(log.Green+"✅ Created quickstart config file at '%s'\n"+log.ResetColor, destPath)
+	return nil
+}
+
+// copyValuesConfig copies the values config to the target location.
+func copyValuesConfig(conf *config.Config) error {
+	srcPath := conf.GetPATHRepoFilepath() + "/local/path/values.tmpl.yaml"
+	destPath := conf.GetPATHValuesFilepath()
+
+	// Check if destination file already exists
+	if _, err := os.Stat(destPath); err == nil {
+		// IF it already exists don't overwrite but also don't return an error
+		return nil
+	}
+
+	// Copy the template file
+	data, err := os.ReadFile(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to read template values file: %v", err)
+	}
+
+	if err := os.WriteFile(destPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write values file: %v", err)
+	}
+
+	return nil
+}
+
 // ConfigureShannon performs an interactive configuration for Shannon settings.
-// It first displays the preamble then proceeds with prompting for configuration fields.
+// It first displays setup options and then proceeds based on user choice.
 func ConfigureShannon(conf *config.Config, schema *yaml.Node) error {
 	reader := bufio.NewReader(os.Stdin)
 
-	// Display preamble and wait for confirmation.
-	if err := displayShannonPreamble(reader); err != nil {
+	// Display setup options and get user choice
+	choice, err := displaySetupOptions(reader)
+	if err != nil {
+		return err
+	}
+
+	// Copy the values template file
+	if err := copyValuesConfig(conf); err != nil {
 		return err
 	}
 
 	configPath := conf.GetPATHConfigFilepath()
-	examplePath := conf.GetExamplePATHConfigFilepath("shannon")
-	if examplePath == "" {
-		return fmt.Errorf("no example config found for shannon")
-	}
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		if err := copyAndStripComments(examplePath, configPath); err != nil {
-			return fmt.Errorf("failed to create shannon config file: %v", err)
+
+	switch choice {
+	case 1: // Quickstart mode
+		// Copy the template config file
+		if err := copyTemplateConfig(conf); err != nil {
+			return err
 		}
-		fmt.Printf(log.Green+"✅ Created config file for shannon at '%s'\n"+log.ResetColor, configPath)
+
+		fmt.Println(log.Green + "✅ Quickstart setup completed successfully." + log.ResetColor)
+		return nil
+
+	case 2: // App & PATH Gateway Cheat Sheet
+		// Display preamble and wait for confirmation.
+		if err := displayShannonPreamble(reader); err != nil {
+			return err
+		}
+
+		// Continue with existing flow
+		examplePath := conf.GetExamplePATHConfigFilepath("shannon")
+		if examplePath == "" {
+			return fmt.Errorf("no example config found for shannon")
+		}
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			if err := copyAndStripComments(examplePath, configPath); err != nil {
+				return fmt.Errorf("failed to create shannon config file: %v", err)
+			}
+			fmt.Printf(log.Green+"✅ Created config file for shannon at '%s'\n"+log.ResetColor, configPath)
+		}
+
+		// Once the config file is created, prompt to start the localnet
+		if err := promptToStartLocalnet(reader); err != nil {
+			return err
+		}
+
+	case 3: // Enter your own values
+		// Skip preamble and just proceed with config
+		examplePath := conf.GetExamplePATHConfigFilepath("shannon")
+		if examplePath == "" {
+			return fmt.Errorf("no example config found for shannon")
+		}
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			if err := copyAndStripComments(examplePath, configPath); err != nil {
+				return fmt.Errorf("failed to create shannon config file: %v", err)
+			}
+			fmt.Printf(log.Green+"✅ Created config file for shannon at '%s'\n"+log.ResetColor, configPath)
+		}
+
+		// Once the config file is created, prompt to start the localnet
+		if err := promptToStartLocalnet(reader); err != nil {
+			return err
+		}
 	}
 
+	// For options 2 and 3, continue with the configuration process
 	cfgMap, err := loadShannonConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load shannon config: %v", err)
@@ -103,7 +258,7 @@ func ConfigureShannon(conf *config.Config, schema *yaml.Node) error {
 		return fmt.Errorf("failed to save shannon config: %v", err)
 	}
 
-	fmt.Println("✅ Shannon configuration updated successfully.")
+	fmt.Println(log.Green + "✅ Shannon configuration updated successfully." + log.ResetColor)
 	return nil
 }
 

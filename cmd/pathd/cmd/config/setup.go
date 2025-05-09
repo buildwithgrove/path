@@ -20,42 +20,51 @@ import (
 const pathRepo = "https://github.com/buildwithgrove/path"
 
 // RunFirstTimeSetup performs an interactive configuration when the config file does not exist.
-func RunFirstTimeSetup(reader *bufio.Reader) error {
-	schema, err := config.LoadSchema()
-	if err != nil {
-		return fmt.Errorf("failed to load schema: %v", err)
-	}
-
+func RunFirstTimeSetup(reader *bufio.Reader) (*config.Config, error) {
 	cfgEditor.ClearTerminal()
 	fmt.Println(log.Green + "🌿 Welcome to PATH! It looks like this is the first time you're using it." + log.ResetColor)
 
 	pathRepoPath, err := promptForPathRepoPath(reader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println("✅ Local PATH repo path saved as: " + pathRepoPath + "\n")
 
 	// Save the config file
-	savedConfig, err := saveConfig(pathRepoPath)
+	config, err := saveConfig(pathRepoPath)
 	if err != nil {
 		fmt.Printf(log.Red+"❌ Failed to save config file: %v"+log.ResetColor, err)
-		return fmt.Errorf("failed to save config file: %v", err)
+		return nil, fmt.Errorf("failed to save config file: %v", err)
+	}
+
+	return config, nil
+}
+
+func RunPATHConfigSetup(reader *bufio.Reader) error {
+	schema, err := config.LoadSchema()
+	if err != nil {
+		return fmt.Errorf("failed to load schema: %v", err)
+	}
+
+	pathdConfig, err := config.LoadPATHDConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load PATHD config: %v", err)
 	}
 
 	// Prompt for configuring Morse and Shannon
-	if err := promptForMorseAndShannon(reader, savedConfig, schema); err != nil {
+	if err := promptForMorseAndShannon(reader, pathdConfig, schema); err != nil {
 		return err
 	}
 
 	// (inside RunFirstTimeSetup, after printing the completion message)
-	fmt.Println(log.Green + "\n🌿 PATH configuration completed and saved.\n" + log.Blue + "\nℹ️ You may edit the PATH local config file at any time by running " + log.ResetColor + "'pathd config'" + log.Blue + ".\n" + log.ResetColor)
+	fmt.Println(log.Green + "\n🌿 PATH configuration completed and saved.\n" + log.Blue + "\nℹ️  You may edit the PATH local config file at any time by running " + log.ResetColor + "'pathd config'" + log.Blue + ".\n" + log.ResetColor)
 
 	return nil
 }
 
-// PromptForDevelopmentMode prompts the user if they would like to run PATH in development mode and executes the appropriate command.
-func PromptForDevelopmentMode(reader *bufio.Reader) error {
-	devChoice, err := prompt(reader, log.Blue+"Would you like to run PATH in development mode now? (y/n):"+log.ResetColor)
+// promptToStartLocalnet prompts the user if they would like to run PATH Localnet and executes the appropriate command.
+func promptToStartLocalnet(reader *bufio.Reader) error {
+	devChoice, err := prompt(reader, log.Blue+"Would you like to run PATH Localnet now? (y/n):"+log.ResetColor)
 	if err != nil {
 		return err
 	}
@@ -64,19 +73,19 @@ func PromptForDevelopmentMode(reader *bufio.Reader) error {
 
 	switch devChoice {
 	case "y":
-		fmt.Println(log.Green + "🚀 Starting PATH in local development mode in Tilt ..." + log.ResetColor)
-		cmd := exec.Command("pathd", "develop", "up")
+		fmt.Println(log.Green + "🚀 Starting PATH Localnet ..." + log.ResetColor)
+		cmd := exec.Command("pathd", "localnet", "up")
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			fmt.Println(log.Red + "❌ Failed to run PATH in development mode: " + err.Error() + log.ResetColor)
+			fmt.Println(log.Red + "❌ Failed to run PATH Localnet: " + err.Error() + log.ResetColor)
 			return err
 		}
 	case "n":
-		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH in development mode at any time by running 'pathd develop up'." + log.ResetColor)
+		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH Localnet at any time by running 'pathd localnet up'." + log.ResetColor)
 	default:
-		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH in development mode at any time by running 'pathd develop up'." + log.ResetColor)
+		fmt.Println(log.Blue + "👋 Goodbye! You can run PATH Localnet at any time by running 'pathd localnet up'." + log.ResetColor)
 	}
 	return nil
 }

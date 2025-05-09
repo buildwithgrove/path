@@ -16,9 +16,13 @@ var (
 	// eg. /Users/greg/.path/.pathd.yaml
 	ConfigFilePath = PathConfigDir + "/.pathd.yaml"
 
-	pathLocalConfigFilepath      = "/local/path/.config.yaml"
-	morseExampleConfigFilepath   = "/config/examples/config.morse_example.yaml"
-	shannonExampleConfigFilepath = "/config/examples/config.shannon_example.yaml"
+	pathLocalDirpath        = "/local/path"
+	pathLocalConfigFilepath = pathLocalDirpath + "/.config.yaml"
+	pathLocalValuesFilepath = pathLocalDirpath + "/.values.yaml"
+
+	configExamplesDirpath        = "/config/examples"
+	morseExampleConfigFilepath   = configExamplesDirpath + "/config.morse_example.yaml"
+	shannonExampleConfigFilepath = configExamplesDirpath + "/config.shannon_example.yaml"
 )
 
 // Config represents the configuration for LLM providers and Git.
@@ -26,8 +30,8 @@ type Config struct {
 	PATHRepo string `yaml:"path_repo"`
 }
 
-// LoadConfig loads the configuration from a YAML file.
-func LoadConfig() (*Config, error) {
+// LoadPATHDConfig loads the configuration from a YAML file.
+func LoadPATHDConfig() (*Config, error) {
 	file, err := os.Open(ConfigFilePath)
 	if err != nil {
 		return nil, err
@@ -48,8 +52,13 @@ func LoadConfig() (*Config, error) {
 	return &config, nil
 }
 
-func ConfigExists() bool {
+func PATHDConfigExists() bool {
 	_, err := os.Stat(ConfigFilePath)
+	return err == nil
+}
+
+func (c *Config) PATHLocalConfigExists() bool {
+	_, err := os.Stat(c.GetPATHConfigFilepath())
 	return err == nil
 }
 
@@ -73,6 +82,10 @@ func (c *Config) GetPATHRepoFilepath() string {
 
 func (c *Config) GetPATHConfigFilepath() string {
 	return c.PATHRepo + pathLocalConfigFilepath
+}
+
+func (c *Config) GetPATHValuesFilepath() string {
+	return c.PATHRepo + pathLocalValuesFilepath
 }
 
 func (c *Config) GetExamplePATHConfigFilepath(exampleConfigName string) string {

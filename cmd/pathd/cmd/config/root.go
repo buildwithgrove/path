@@ -55,7 +55,7 @@ var (
 // init sets up flags for the config command.
 func init() {
 	var defaultConfigFilePath string
-	if pathdConfig, _ := config.LoadConfig(); pathdConfig != nil {
+	if pathdConfig, _ := config.LoadPATHDConfig(); pathdConfig != nil {
 		defaultConfigFilePath = pathdConfig.GetPATHConfigFilepath()
 	}
 
