@@ -30,6 +30,9 @@ localnet_config.yaml-e
 
 # Config
 .*.yaml
+*config.yaml
+*values.yaml
+*values*
 .config.yaml
 .config.*.yaml
 # Morse E2E config

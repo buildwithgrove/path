@@ -23,6 +23,20 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
+# The PATH config value can be overridden via the CONFIG_PATH env variable, which defaults to ../local/path/.config.yaml
+# This path must be either an absolute path or relative to the location of the PATH binary in `bin`.
+#
+# Example usage:
+# - absolute path
+# 	make path_run CONFIG_PATH=/Users/greg/path/local/path/.config.yaml
+# - relative path
+# 	make path_run CONFIG_PATH=../local/path/.config.yaml
+CONFIG_PATH ?= ../local/path/.config.yaml
+
+.PHONY: path_run
+path_run: path_build check_path_config ## Run the path binary as a standalone binary
+	(cd bin; ./path -config ${CONFIG_PATH})
+
 .PHONY: check_path_config
 ## Verify that path configuration file exists
 check_path_config:
@@ -37,38 +51,13 @@ check_path_config:
    		exit 1; \
    fi
 
-# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
-CONFIG_PATH ?= ../local/path/.config.yaml
-
-.PHONY: path_run
-path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ${CONFIG_PATH})
-
-#################################
-###  Local PATH make targets  ###
-#################################
-
-# tl;dr Mimic an E2E real environment.
-# This section is intended to spin up and develop a full modular stack that includes
-# PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
-
-.PHONY: path_up
-path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	tilt up
-
-.PHONY: path_down
-path_down: ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	tilt down
-
-.PHONY: path_help
-path_help: ## Prints help commands if you cannot start path
-	@echo "################################################################";
-	@echo "If you're hitting issues running PATH, try running following commands:";
-	@echo "	make path_down";
-	@echo "	make k8s_cleanup_local_env";
-	@echo "	make path_up";
-	@echo "################################################################";
-
+.PHONY: check_docker
+# Internal helper: Check if Docker is installed locally
+check_docker:
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "Docker is not installed. Make sure you review README.md before continuing"; \
+		exit 1; \
+	fi;
 
 ###############################
 ###    Makefile imports     ###
