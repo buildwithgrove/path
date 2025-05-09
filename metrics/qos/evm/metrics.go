@@ -35,6 +35,7 @@ var (
 	// requestsTotal tracks the total EVM requests processed.
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
 	//   - request_method: JSON-RPC method name
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (or "" for successful requests)
@@ -53,7 +54,7 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
@@ -74,6 +75,9 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 
 	// Extract chain ID
 	chainID := extractChainID(logger, interpreter)
+
+	// Extract service ID
+	serviceID := extractServiceID(logger, interpreter)
 
 	// Extract request method
 	method := extractRequestMethod(logger, interpreter)
@@ -98,6 +102,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	requestsTotal.With(
 		prometheus.Labels{
 			"chain_id":         chainID,
+			"service_id":       serviceID,
 			"request_method":   method,
 			"success":          fmt.Sprintf("%t", requestError == nil),
 			"error_type":       errorType,
@@ -114,9 +119,22 @@ func extractChainID(logger polylog.Logger, interpreter *qos.EVMObservationInterp
 		// For clarity in metrics, use empty string as the default value when chain ID can't be determined
 		chainID = ""
 		// This should rarely happen with properly configured EVM observations
-		logger.Warn().Msg("Unable to determine chain ID for EVM metrics")
+		logger.Warn().Msgf("Should happen very rarely: Unable to determine chain ID for EVM metrics: %+v", interpreter)
 	}
 	return chainID
+}
+
+// extractServiceID extracts the service ID from the interpreter.
+// Returns empty string if service ID cannot be determined.
+func extractServiceID(logger polylog.Logger, interpreter *qos.EVMObservationInterpreter) string {
+	serviceID, serviceIDFound := interpreter.GetServiceID()
+	if !serviceIDFound {
+		// For clarity in metrics, use empty string as the default value when service ID can't be determined
+		serviceID = ""
+		// This should rarely happen with properly configured EVM observations
+		logger.Warn().Msgf("Should happen very rarely: Unable to determine service ID for EVM metrics: %+v", interpreter)
+	}
+	return serviceID
 }
 
 // extractRequestMethod extracts the request method from the interpreter.
@@ -127,7 +145,7 @@ func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservation
 		// For clarity in metrics, use empty string as the default value when method can't be determined
 		method = ""
 		// This can happen for invalid requests, but we should still log it
-		logger.Debug().Msg("Unable to determine request method for EVM metrics")
+		logger.Debug().Msgf("Should happen very rarely: Unable to determine request method for EVM metrics: %+v", interpreter)
 	}
 	return method
 }

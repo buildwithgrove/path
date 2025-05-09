@@ -29,9 +29,11 @@ type QoS struct {
 // NewQoSInstance builds and returns an instance of the EVM QoS service.
 func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 	evmChainID := config.getEVMChainID()
+	serviceId := config.GetServiceID()
 
 	logger = logger.With(
 		"qos_instance", "evm",
+		"service_id", serviceId,
 		"evm_chain_id", evmChainID,
 	)
 
@@ -62,6 +64,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 
 	evmRequestValidator := &evmRequestValidator{
 		logger:       logger,
+		serviceID:    serviceId,
 		chainID:      evmChainID,
 		serviceState: serviceState,
 	}

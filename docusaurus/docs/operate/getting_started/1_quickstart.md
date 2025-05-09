@@ -78,10 +78,24 @@ TODO_IMPROVE: Replace `main` with `latest` once the artifact release CI is compl
 2. Wait for PATH to be ready to serve requests:
 
    ```bash
-   curl -s http://localhost:3069/healthz | jq '.status'
+   curl -s http://localhost:3069/healthz
    ```
 
-   When PATH is ready, this command will output: `"ready"`
+   When PATH is ready, this command will return a `200 status code` and the response body will contain the JSON: `"status": "ready"`
+
+   **Example response:**
+
+   ```json
+   {
+     "status": "ready",
+     "imageTag": "development",
+     "readyStates": {
+       "endpoint-hydrator": true,
+       "pokt-morse": true
+     },
+     "configuredServiceIDs": ["F00C", "F021"]
+   }
+   ```
 
 ## 4. Test Relays
 

@@ -123,9 +123,6 @@ shannon_config:
         gateway_private_key_hex: ${gateway_private_key_hex}
         owned_apps_private_keys_hex:
             - ${application_private_key_hex}
-hydrator_config:
-  service_ids:
-    - "anvil"
 EOF
 
 echo -e "${GREEN}✅   Configuration update completed.${NC}"

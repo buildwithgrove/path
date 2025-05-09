@@ -5,7 +5,6 @@ package gateway
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -81,9 +80,6 @@ func (eph *EndpointHydrator) Start() error {
 	}
 
 	go func() {
-		// Wait for the protocol to be healthy before starting hydrator
-		eph.waitForProtocolHealth()
-
 		ticker := time.NewTicker(eph.RunInterval)
 		for {
 			eph.run()
@@ -92,20 +88,6 @@ func (eph *EndpointHydrator) Start() error {
 	}()
 
 	return nil
-}
-
-// waitForProtocolHealth blocks until the Protocol reports as healthy.
-// This ensures that the hydrator only starts running once the underlying
-// protocol layer is ready.
-func (eph *EndpointHydrator) waitForProtocolHealth() {
-	eph.Logger.Info().Msg("waitForProtocolHealth: waiting for protocol to become healthy before starting hydrator")
-
-	for !eph.Protocol.IsAlive() {
-		eph.Logger.Info().Msg("waitForProtocolHealth: protocol not yet healthy, waiting...")
-		time.Sleep(1 * time.Second)
-	}
-
-	eph.Logger.Info().Msg("waitForProtocolHealth: protocol is now healthy, hydrator can proceed")
 }
 
 func (eph *EndpointHydrator) run() {
@@ -146,23 +128,17 @@ func (eph *EndpointHydrator) run() {
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
-		"component", "hydrator",
-		"method", "perform_checks",
+		"method", "performChecks",
 		"service_id", string(serviceID),
 	)
 
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
-	// This implies there is no need to specifying a specific app.
+	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	availableEndpoints, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
-	if err != nil {
-		return fmt.Errorf("performChecks: error getting available endpoints for service %s: %w", serviceID, err)
-	}
-
-	// Ensure there is at least one endpoint available for the service.
-	if len(availableEndpoints) == 0 {
-		logger.Warn().Msg("no endpoints available for service when running hydrator checks.")
-		// No endpoints available: skip.
+	if err != nil || len(availableEndpoints) == 0 {
+		// No session found or no endpoints available for service: skip.
+		logger.Warn().Msg("no session found or no endpoints available for service when running hydrator checks.")
 		// do NOT return an error: hydrator and PATH should not report unhealthy status if a single service is unavailable.
 		return nil
 	}
@@ -196,7 +172,6 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// Create a new protocol request context with a pre-selected endpoint for each request.
 					// IMPORTANT: A new request context MUST be created on each iteration of the loop to
 					// avoid race conditions related to concurrent access issues when running concurrent QoS checks.
-					//
 
 					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
 					// which means there is no need for specifying a specific app.

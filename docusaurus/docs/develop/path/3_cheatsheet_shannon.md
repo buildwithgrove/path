@@ -23,7 +23,9 @@ in the `poktroll` documentation, you should start the walkthrough from [2.1 Gene
   - [1.2 `Application` and `Gateway` Account Validation](#12-application-and-gateway-account-validation)
 - [2. Configure PATH for Shannon](#2-configure-path-for-shannon)
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
-  - [2.2 Verify Configuration](#22-verify-configuration)
+  - [2.2 Manual Configuration Verification](#22-manual-configuration-verification)
+  - [2.3 Ensure onchain configuration matches](#23-ensure-onchain-configuration-matches)
+  - [2.4 (Optional) Disable QoS Hydrator Checks](#24-optional-disable-qos-hydrator-checks)
 - [3. Run PATH in development mode](#3-run-path-in-development-mode)
   - [3.1 Start PATH](#31-start-path)
   - [3.2 Monitor PATH](#32-monitor-path)
@@ -168,7 +170,7 @@ You can set the following environment variables to override the default values:
 
 :::
 
-### 2.2 Verify Configuration
+### 2.2 Manual Configuration Verification
 
 Check your config file:
 
@@ -191,21 +193,41 @@ shannon_config:
     gateway_private_key_hex: "0x..." # Your gateway private key
     owned_apps_private_keys_hex:
       - "0x..." # Your application private key
-hydrator_config:
-  service_ids:
-    - "anvil"
 ```
 
-:::important Gateway Configuration Validation
+### 2.3 Ensure onchain configuration matches
 
-1. Do a manual sanity check of the addresses to ensure everything looks correct before continuing.
-2. The configuration about is set up for `anvil`, so ensure your application is staked for the same service id. You can verify this by running:
+Double check the onchain configuration are configured for the `service_ids` you expect.
 
-   ```bash
-   pocketd query application show-application \
+Repeat this command for each addresses associated with `owned_apps_private_keys_hex`.
+
+```bash
+pocketd query application show-application \
      $(pkd keys show -a application) \
      --node=https://shannon-testnet-grove-rpc.beta.poktroll.com
-   ```
+```
+
+### 2.4 (Optional) Disable QoS Hydrator Checks
+
+By default, the QoS hydrator will run checks against all services that applications configured in the `shannon_config.owned_apps_private_keys_hex` section are staked for.
+
+To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+This is primarily useful for testing and development purposes. It is unlikely you'll need this
+feature unless you are customizing QoS modules yourself.
+
+For more information, see:
+
+- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [Supported QoS Services](../../learn/qos/1_supported_services.md)
+
+:::tip
+
+To see the list of services that PATH is configured for, you can use the `/healthz` endpoint.
+
+```bash
+curl http://localhost:3069/healthz
+```
 
 :::
 

@@ -19,7 +19,7 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	AvailableEndpoints(context.Context, protocol.ServiceID, *http.Request) ([]protocol.EndpointAddr, error)
+	AvailableEndpoints(context.Context, protocol.ServiceID, *http.Request) (protocol.EndpointAddrList, error)
 
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
@@ -39,6 +39,16 @@ type Protocol interface {
 	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
 	// 	- result: skip the endpoint for a set time period until a new session begins.
 	ApplyObservations(*protocolobservations.Observations) error
+
+	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	// TODO_TECHDEBT: Enable the hydrator for gateway modes beyond Centralized only.
+	//
+	// ConfiguredServiceIDs returns the list of service IDs that the protocol instance is configured to serve.
+	// For Morse:
+	// 	- Returns the list of all service IDs with available configured AATs.
+	// For Shannon:
+	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
+	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

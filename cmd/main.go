@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -109,9 +110,9 @@ func main() {
 	}
 
 	healthChecker := &health.Checker{
-		Logger: logger,
-
-		Components: components,
+		Logger:            logger,
+		Components:        components,
+		ServiceIDReporter: protocol,
 	}
 
 	apiRouter := router.NewRouter(logger, gateway, healthChecker, config.GetRouterConfig())
@@ -119,6 +120,17 @@ func main() {
 		log.Fatalf("failed to create API router: %v", err)
 	}
 
+	// Log out some basic info about the running PATH instance.
+	configuredServiceIDs := make([]string, 0, len(protocol.ConfiguredServiceIDs()))
+	for serviceID := range protocol.ConfiguredServiceIDs() {
+		configuredServiceIDs = append(configuredServiceIDs, string(serviceID))
+	}
+	// log.Printf is used here to ensure this info is printed to the console regardless of the log level.
+	log.Printf("🌿 PATH gateway started.\n  Port: %d\n  Protocol: %s\n  Configured Service IDs: %s",
+		config.GetRouterConfig().Port, protocol.Name(), strings.Join(configuredServiceIDs, ", "))
+
+	// Start the API router.
+	// This will block until the router is stopped.
 	if err := apiRouter.Start(); err != nil {
 		log.Fatalf("failed to start API router: %v", err)
 	}

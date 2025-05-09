@@ -63,8 +63,6 @@ const (
 	defaultCometBFTChainID = "cosmoshub-4"
 )
 
-// TODO_TECHDEBT(@commoddity, #234): Add archival checks for all chains.
-
 // shannonServices is the list of QoS service configs for the Shannon protocol.
 var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
@@ -110,7 +108,6 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("anvilws", "0x7a69", nil),
 
 	// *** EVM Services (Non-Archival) ***
-	// TODO_MVP(@commoddity): Add non-archival configs for all EVM services.
 
 	// Arbitrum One
 	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", nil),
@@ -315,7 +312,6 @@ var morseServices = []ServiceQoSConfig{
 	)),
 
 	// *** EVM Services (Non-Archival) ***
-	// TODO_MVP(@commoddity): Add non-archival configs for all EVM services.
 
 	// Arbitrum One
 	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", nil),
