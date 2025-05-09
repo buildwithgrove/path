@@ -27,6 +27,10 @@ path_up_local_helm: check_docker ## Brings up local Tilt environment with local 
 path_down: ## Tears down local Tilt development environment in Docker
 	@./local/scripts/localnet.sh down
 
+.PHONY: localnet_exec
+localnet_exec: ## Opens a terminal inside the path-localnet container
+	@docker exec -it path-localnet /bin/bash
+
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path
 	@echo "################################################################";
