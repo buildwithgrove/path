@@ -155,47 +155,43 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# if local_config["hot-reloading"]:
-# Build the Go binary with proper settings for Alpine
+# Compile the binary inside the container
 local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd 
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
     labels=["hot-reloading"],
 )
 
-# Make sure path-binary runs before the Docker build
-local_resource(
-    "path-trigger",
-    """
-    echo "Triggering Docker build after binary build"
-    touch .tilt-build-trigger
-    """,
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_MANUAL,
-    labels=["hot-reloading"],
-)
-
-# Build an image with the PATH binary
+# Build a minimal Docker image with just the binary
 docker_build_with_restart(
     "path-image",
     context=".",
-    dockerfile_contents="""FROM golang:1.23.0
-RUN apt-get -q update && apt-get install -qyy curl jq less
-RUN mkdir -p /app/config
+    dockerfile_contents="""FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
 COPY bin/path /app/path
 RUN chmod +x /app/path
-WORKDIR /app
 """,
-    # only=["/app/path"],
+    only=["bin/path"],
     entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
-    trigger='.tilt-build-trigger',  # Rebuild when this file changes
+    live_update=[
+        sync("bin/path", "/app/path"),
+    ],
+)
+
+# Ensure the binary is built before the image
+local_resource(
+    "path-trigger",
+    "touch bin/path",
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_AUTO,
+    labels=["hot-reloading"],
 )
 
 # Tilt will run the Helm Chart with the following flags by default.
@@ -303,24 +299,24 @@ local_resource(
     resource_deps=["path-stack"]
 )
 
-# 3. WATCH Logs - Waits for container readiness before following logs
-local_resource(
-    "watch-logs",
-    cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
-    serve_cmd='''
-    echo "Waiting for WATCH pods to be fully ready..."
-    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
-          kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
-      sleep 5
-    done
-    echo "Checking other components..."
-    until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
-      sleep 5
-    done
-    echo "All pods ready, stabilizing..."; sleep 20
-    echo "Following WATCH logs..."
-    kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
-    ''',
-    labels=["k8s_logs"],
-    resource_deps=["path-stack"]
-)
+# # 3. WATCH Logs - Waits for container readiness before following logs
+# local_resource(
+#     "watch-logs",
+#     cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
+#     serve_cmd='''
+#     echo "Waiting for WATCH pods to be fully ready..."
+#     until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
+#           kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
+#       sleep 5
+#     done
+#     echo "Checking other components..."
+#     until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
+#       sleep 5
+#     done
+#     echo "All pods ready, stabilizing..."; sleep 20
+#     echo "Following WATCH logs..."
+#     kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
+#     ''',
+#     labels=["k8s_logs"],
+#     resource_deps=["path-stack"]
+# )

@@ -14,16 +14,64 @@ It is a pre-requisite for both the:
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Development Environment Details](#development-environment-details)
-- [Technical Pre-Requisites \& Setup](#technical-pre-requisites--setup)
+- [Getting Started](#getting-started)
   - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Install Required Tools (Linux \& MacOS)](#2-install-required-tools-linux--macos)
-    - [Install `pocketd` CLI](#install-pocketd-cli)
-    - [Install Required Local Tools](#install-required-local-tools)
-  - [3. Choose Your Protocol](#3-choose-your-protocol)
+  - [2. Install `pocketd` CLI](#2-install-pocketd-cli)
+  - [3. Install Docker](#3-install-docker)
+  - [4. Choose Your Protocol](#4-choose-your-protocol)
+- [Development Environment Details](#development-environment-details)
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/buildwithgrove/path.git
+cd ./path
+```
+
+### 2. Install `pocketd` CLI
+
+To install the [`pocketd` CLI](https://dev.poktroll.com/category/pocketd-cli) on Linux or MacOS, run:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/pokt-network/poktroll/main/scripts/install.sh | bash
+```
+
+### 3. Install Docker
+
+<br/>
+<div align="center">
+<a href="https://docs.docker.com/get-started/get-docker">
+![Docker](../../../static/img/docker.png)
+<p><b>Docker Installation Instructions</b></p>
+</a>
+</div>
+
+If not already installed, follow the directions at [Get Docker](https://docs.docker.com/get-started/get-docker) to install Docker in your environment.
+
+### 4. Choose Your Protocol
+
+Pick one of these protocols and follow the respective guide.
+
+| Protocol | Version (aka) | Status (04/2025)       | Network | Documentation                                     |
+| -------- | ------------- | ---------------------- | ------- | ------------------------------------------------- |
+| Shannon  | v1            | Beta & Private MainNet | TestNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
+| Morse    | v0            | MainNet (2020)         | MainNet | [Morse Protocol Guide](4_cheatsheet_morse.md)     |
 
 ## Development Environment Details
 
+:::tip
+
+The PATH local development environment runs inside a single Docker container using the `docker/dind` image as a base.
+
+**Therefore the only dependency is a running Docker daemon.**
+
+However, if you wish to know more about what's happening under the hood, read on.
+
+:::
+
+<br/>
 <div align="center">
   <a href="https://docs.tilt.dev/">
     <img src="https://blog.tilt.dev/assets/img/blog-default-preview.png" alt="Tilt logo" width="200"/>
@@ -36,62 +84,8 @@ It is a pre-requisite for both the:
 We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the local Kubernetes cluster, as it provides better compatibility with Tilt's
 image building process compared to Docker Desktop's Kubernetes cluster.
 
-## Technical Pre-Requisites & Setup
+The full PATH stack uses [Helm Charts](https://helm.sh/) to deploy the necessary services to the `Kind` Kubernetes cluster.
 
-### 1. Clone the Repository
+For more information, see the [PATH Helm Introduction](../../operate/helm/1_introduction.md).
 
-```bash
-git clone https://github.com/buildwithgrove/path.git
-cd ./path
-```
-
-### 2. Install Required Tools (Linux & MacOS)
-
-#### Install `pocketd` CLI
-
-To install the [`pocketd` CLI](https://dev.poktroll.com/category/pocketd-cli) on Linux or MacOS, run:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/pokt-network/poktroll/main/scripts/install.sh | bash
-```
-
-#### Install Required Local Tools
-
-To install all required local development tools on Linux or MacOS, run:
-
-```bash
-make install_tools
-```
-
-The above script will install the following tools which are required to start a PATH instance locally in development mode:
-
-- [**Docker**](https://docs.docker.com/get-docker/): Container runtime
-- [**Kind**](https://kind.sigs.k8s.io/#installation-and-usage): Local Kubernetes cluster
-- [**kubectl**](https://kubernetes.io/docs/tasks/tools/#kubectl): CLI for interacting with Kubernetes
-- [**Helm**](https://helm.sh/docs/intro/install/): Package manager for Kubernetes
-- [**Tilt**](https://docs.tilt.dev/install.html): Local Kubernetes development environment
-
-:::tip
-
-The following optional tools may be helpful for your development workflow but are not required to start a PATH instance locally in development mode:
-
-- [**Relay Util**](https://github.com/commoddity/relay-util): An easy to use load testing tool for sending configurable batches of relays concurrently
-- [**Graphviz**](https://graphviz.org): Required for generating profiling & debugging performance
-- [**Uber Mockgen**](https://github.com/uber-go/mock): Mock interface generator for testing
-
-They may be installed with:
-
-```bash
-make install_optional_tools
-```
-
-:::
-
-### 3. Choose Your Protocol
-
-Pick one of these protocols and follow the respective guide.
-
-| Protocol | Version (aka) | Status (04/2025)       | Network | Documentation                                     |
-| -------- | ------------- | ---------------------- | ------- | ------------------------------------------------- |
-| Shannon  | v1            | Beta & Private MainNet | TestNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
-| Morse    | v0            | MainNet (2020)         | MainNet | [Morse Protocol Guide](4_cheatsheet_morse.md)     |
+You may view the [PATH Helm Charts](https://github.com/buildwithgrove/helm-charts) repository if you're interested in the services deployed to the local Kubernetes cluster.

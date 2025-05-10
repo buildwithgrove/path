@@ -73,17 +73,19 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		payload,
 	)
 
+	endpointQueryCompletedTime := time.Now()
+
 	// Handle endpoint error:
 	// - Record observation
 	// - Return an error
 	if err != nil {
-		return rc.handleEndpointError(endpointQueryTime, err, []byte(output.Response), output.StatusCode)
+		return rc.handleEndpointError(endpointQueryTime, endpointQueryCompletedTime, err, []byte(output.Response), output.StatusCode)
 	}
 
 	// Success:
 	// - Record observation
 	// - Return the response received from the endpoint.
-	return rc.handleEndpointSuccess(endpointQueryTime, []byte(output.Response), output.StatusCode)
+	return rc.handleEndpointSuccess(endpointQueryTime, endpointQueryCompletedTime, []byte(output.Response), output.StatusCode)
 }
 
 // HandleWebsocketRequest handles incoming WebSocket network request.
@@ -170,7 +172,7 @@ func (rc *requestContext) sendRelay(
 // - Tracks the endpoint success in observations
 // - Builds and returns the protocol response from the endpoint's returned data.
 func (rc *requestContext) handleEndpointSuccess(
-	endpointQueryTime time.Time,
+	endpointQueryTime, endpointQueryCompletedTime time.Time,
 	endpointResponsePayload []byte,
 	endpointResponseHTTPStatusCode int,
 ) (protocol.Response, error) {
@@ -179,7 +181,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		buildEndpointSuccessObservation(
 			*rc.selectedEndpoint,
 			endpointQueryTime,
-			time.Now(), // Timestamp: endpoint query completed.
+			endpointQueryCompletedTime,
 		),
 	)
 
@@ -188,6 +190,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          endpointResponsePayload,
 		HTTPStatusCode: endpointResponseHTTPStatusCode,
+		Latency:        endpointQueryCompletedTime.Sub(endpointQueryTime),
 	}, nil
 }
 
@@ -195,7 +198,7 @@ func (rc *requestContext) handleEndpointSuccess(
 // - Tracks the endpoint error in observations
 // - Builds and returns the protocol response from the endpoint's returned data.
 func (rc *requestContext) handleEndpointError(
-	endpointQueryTime time.Time,
+	endpointQueryTime, endpointQueryCompletedTime time.Time,
 	endpointErr error,
 	endpointResponsePayload []byte,
 	endpointResponseHTTPStatusCode int,
@@ -217,7 +220,7 @@ func (rc *requestContext) handleEndpointError(
 		buildEndpointErrorObservation(
 			*rc.selectedEndpoint,
 			endpointQueryTime,
-			time.Now(), // Timestamp: endpoint query completed.
+			endpointQueryCompletedTime,
 			endpointErrorType,
 			fmt.Sprintf("relay error: %v", endpointErr),
 			recommendedSanctionType,
@@ -229,6 +232,7 @@ func (rc *requestContext) handleEndpointError(
 		EndpointAddr:   rc.selectedEndpoint.Addr(),
 		Bytes:          endpointResponsePayload,
 		HTTPStatusCode: endpointResponseHTTPStatusCode,
+		Latency:        endpointQueryCompletedTime.Sub(endpointQueryTime),
 	}, endpointErr
 }
 

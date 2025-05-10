@@ -1,0 +1,168 @@
+logger_config:
+    level: error
+########################################################
+# ------------------ SHANNON CONFIG ------------------ #
+########################################################
+
+# shannon_config:
+#   full_node_config:
+#     rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+#     grpc_config:
+#       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+#     lazy_mode: false
+#   gateway_config:
+#     gateway_mode: "centralized"
+#     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
+#     gateway_private_key_hex: d66fdb552a130c4633706735de87cc26cb6041b72403a16f1658abd5bb9c1a29
+#     owned_apps_private_keys_hex:
+#       - 55c9ecf418a94cf7839efb3bfb38e3c2b2c1ea7c1b059ad666428f88793e96a1 # Anvil Staked App
+
+########################################################
+# ------------------- MORSE CONFIG ------------------- #
+########################################################
+morse_config:
+    full_node_config:
+        url: "https://pocket-rpc.liquify.com"
+        relay_signing_key: "c0f234a308e79741748aeb1d633f050f696d34a1b739b85412be2c8123848b25e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6"
+        http_config:
+            retries: 3
+            timeout: "5000ms"
+    signed_aats:
+        # ---------------- ETH MAINNET ----------------
+
+        # "eth - F00C - miltank"
+        138ffe690fae7511521ca96b14cc5cb7aa8f79bb:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 2afc46b1235ddf0a5729a1b5c52d2ea394c4976946e2e81a41e20a4ce36b67a7
+            application_signature: 3995e2ed7cc39bddd7223ab7a5aef3fef00bdf494d29a84a99bf655eb1e46ab110c6354013816faf47282d128bdc579408b1fec9ab55e85bac58f1b1a9e4970b
+        # "eth - F00C - entei"
+        1726057994c42e2a633cea7bdd719f4b59e59457:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 59a9549470b282200616a8a2c458ba6edbbadb912ee75e6768afb67333b6c9f8
+            application_signature: 22463fdb9650fbac6bfd34421fa32537700268a34891661d4d602c42ef4321921957c8221432245bca7b0b6e07341d767d0b92687ea6db3af80c70111df1a906
+        # "eth - F00C - regirock"
+        aef8a16dc701b410733f0d4cd456f05d7e8afd6c:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 6bf363be1783f1c748913750d5033aae7cd6f9280bc5ac976ad188ee8e4bd4e3
+            application_signature: 5011e5c10de3fe4cf260c7428db255e06a77a07f2314ff09f83cb196e9462c15e1dc9207e93778803be68341214f442a563a846777623abbb268de9079b5ad0e
+        # "eth - F00C - suicune"
+        17c154b39768a1b0b5c86b8ccfc0cf7b7eef24ef:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: e1779ce45d04548ad5e1ba014c2e6e6bf704e11e86581b48fcf41b6b274705dc
+            application_signature: 878cfaf5045092801ed3432a62133543dc496f1359e2dead8d6cccd240fffc7199da90d4c4abb89d36dcdf599d75cc9dd2e822073c40fe7a9b6db236baf25203
+        # "eth - F00C - pupitar"
+        18fa9326c6a4a821609b244f744831bf3b0ead3d:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 1fc8635b936b18f209e17f8d0613cc7c780ca67b22bdf540ecdbbd7b68a3e45a
+            application_signature: 32a3e7044cd8a0a11f10ebe735523d52899a179c7234123eb00458bd24d4ac377d24df15230631d8ed8ac3da064163e70e0c536cc131525a6b59cba88680cb0d
+        # "eth - F00C - raikou"
+        16a9a05066743b780c31b98dda0a3ad927a0e12c:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 21ce71cc4f1a017d0f00c1d7191b59c2bc328fcee6e4109ccbdc9725a3e1cba9
+            application_signature: cf842deb3c30166221ef147bdc73608da53f0b4bf89067039dd45d6992fd6a7956750d0e6b2e99bdad0619b7c3bad3f32ed22be0ee4c54e2e31458d568f19e0f
+        # "eth - F00C - ho-oh"
+        1c2daba9e55f354875cfacd23f93f62cc19bf015:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: c31aaefa0bb1732a8799e6fd70bbaf11897dfedacb11a7776607a5662ae950d4
+            application_signature: a4fa7d70366aa58b8fe1a3697ff718dec2c7be11461013c8ce15f27e08428e863f8c86f4d329eecbb2d54def36a4834cccea9781609b7487bc06baab0c332c08
+        # "eth - F00C - porygon2"
+        07da2fe596700d1a198b0a9c8473c4ab23ee5729:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: f5d6789bbf91a7140b5b610ec20b667d71aac2138330d44fa47515b513c0bccb
+            application_signature: d3562823d494f912676231ebc536cdddd79a11729a16607c3fa4459b5ad05503742df3446742ec66e739005eb7d5e40f3d8759596add5115d6f1e3ed52e22007
+        # ---------------- POLYGON ----------------
+
+        # "polygon - F021 - beautifly"
+        346c0eff8e92fc5a16cc7f4f584f2242a054d12b:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 645881863026cd346bc20a72ee013666a0ce0b8a87d0eaba6024283e96581068
+            application_signature: 84432822453ed0585fb5939b9ae4ed4ffb57da934d36e28c04b2472dd429baafd95e03c0bed17b40f8616228b6315ea1226a5cef9fac6d8fee1b253da2a4af0b
+        # "polygon - F021 - ralts"
+        3f808856e5fab5b89bd883f3a660fa569ad0039b:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: c25d49d4744adfef3eb5126172bdae981b893e90882d9b7ce32a2df08cb35acc
+            application_signature: d47c9e087fbf4d706c90e66e1cc32edc968451a534e292a69741d0af2d1a022174d6c4ccbea9bd772ddc24dcf67cf72fa3a41f85ccb89866d3d107d8ead6c106
+        # "polygon - F021 - wingull"
+        3e51f774904a76906512ed61224792347ab8bc1a:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 38840bacdc6641233feb5277dd30d9e5bb2ea9071f00b531d07d711b30e571d4
+            application_signature: 6b661a9384ee905377237af8356d577ef1cf8de3b8b38a393b5486f7836c8bd2a8bb6035e7cbde019ccdbee7fd02ba2fd1e1db8fbf518154d1b9a2b82f4b2500
+        # "polygon - F021 - kirlia"
+        41d8598da6f075dd4d0f8afbbf34b2a1ae6e2cab:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: c80218cde5b65f5d62856c964d8530e18e3d8bae6603d8ad8f80ec69618a0398
+            application_signature: d171f4a9eac33edbadbd967d1386c3812ef953f3f29ca9c518c557f4f0949cdb29ca6224edd91976d198373525d182a19a8bf6e7fb686a1fa0d29dbb8e42a00d
+        # "polygon - F021 - delibird"
+        56913a5e1d9e88f9e14dbcee486cddb5da291579:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: f00ebf69acdb50ac1e0ba68761f763aabe82f0f228a4e65eafcdfd912c40a0e7
+            application_signature: b2cd1c020eba4a7865e01eeb030d23a7ed8ffd70de13e8f1cd9e4f3d0c63416f0c4600149254c006e35ea75712fdabed37658398015d8d05ba3b4cc73e09f105
+        # "polygon - F021 - silcoon"
+        32702292015ce6a49707c4c11a003f707fb66dd4:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 097313f0f11635db971e6318873841ddc1e2fc7b26b0a4cf3f7d739c8b2be5f4
+            application_signature: 15d2581f8c8c3960a39702cb855e90cb723bba5e0f8752c76f351532d4239ffdbeaf811a05bdadd7e8d02c6ebbc5770b1002cdd3c1e5a2eaeeb3c266bcfb7207
+        # "polygon - F021 - piloswine"
+        a63c33823904d8509ad89d32113625cdc3f38ccc:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: fccb8767cf40dabbffca9117243b71af50561a1fd707041944f1f4ef3cc2cf15
+            application_signature: 41877c882875b7919c5267676995cc4cb6bcb1ddf37972e9bb899a44b78d76c3a001204f2a2cfef160dc8a5859e5964dc6ca8e6f2c225854c6c60dfb82a9da0c
+        # "polygon - F021 - wurmple"
+        2fde68eedc10f67ee58a301c7732610b03a6c948:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 3070daa6c5a36cf6d47000b422d25286ca8f9c1688b36af2473d7e44af40a182
+            application_signature: 95dd3c7e38b543fde75e098c1bfbedcc7601ba6d34a017dc0e01a6a4bae50199fa8dc5276d2340ace2b0c38bf52cd05f46643600670ed47a45e868fc67979c04
+        # "polygon - F021 - mantine"
+        48f60b97819c380fd28ca56f7b36c85367f20e0a:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 983a7409505493bf40c545a4a2bb46567d864630303929686249bae7a09593a8
+            application_signature: 54c1fe336576d313673596bfba9ebd63cca4b7ad95aa19cf28fc61dea1c99e53bc7b636ee48391e55eca62328dd50a4b190a79834d1791cbdee400a941892601
+        # "polygon - F021 - salamence"
+        a8ff3dfddbbe3d44d3389914521783e1308a8d00:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 16533290df0b335ac6569ee1c51f1171a23dd3a8a3c3252164a61ec7d0df05e4
+            application_signature: ae98dbaf55a4bf3edb3ede55c3e467f81b98bdeb9d6d0f76566b20359ad937ac2a0c555e2a26fa76d36f05c31875c1bda626eeb208982cbf34f8772c255a8f0a
+        # "polygon - F021 - houndoom"
+        00a949c2c56a2afc85ce5906dcfbd7cc2bf5bdf3:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: b84cdd7a87bef5a285f02d6ec66bebe06b8edf45f1d89688ef608d3d188cc195
+            application_signature: 13740fcab457909a3912e3da6874403472479fad37ed1ff1f26f6a04354f64e4d4a38b4737c0f972b81221123daaa557034b778b814b03a21da3ca7b82c54e05
+        # ---------------- OASYS ----------------
+
+        # "oasys - F01C - shuppet"
+        9679a9e27295044f8e23274f1a39dd51c153d59e:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 4d39c665a939ab19c9dc5add8307fb98f68491dc64073c8a0a243328f9c6971f
+            application_signature: 6430a67a6659ae5740fe4c9d2a181a478ad1ea89f97e6a86a0a723d47b65e2bf6ee90cf41963142c3f1999359c7050a0895dcfba4c603f2c3b5a5113555a0908
+        # "oasys - F01C - banette"
+        96d4a8a8b83ca6b35653adf8b9b9bd28efb30e91:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 74feab634c9f0438a05b16f17cfc3cfd3af8f9f1d83ccd8b77046e216d7181a5
+            application_signature: 670280df13767fc21cbd85a284f4c5c35f8138fc135c1933686600906d09942f9282d5dd99e7a20b24058966578d57473ae1df615bc4dab4ee784e2c13a2160f
+        # "oasys - F01C - duskull"
+        984ad6e246b67efb94aa48f9c829c4547f624050:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: fa536676f11193d5ce379cc1c065408a96ec2fe8814639d9dec386d8c1d73ef3
+            application_signature: 554efe5af033c7446a1c37c298902eb81a82a3e7f7f599fe60c7d0ad5cc1866439c58d7a0e106dfefc3a005c10a62dac2151abd35e47590105fbda05ade1b805
+        # "oasys - F01C - milotic"
+        94c8327774bebded4dfefb3bd84e604417dd9734:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: f7badfe393e3ec8ec58471705992fd55c23f09aa8a3ca9cee9e42d8d20e2b76f
+            application_signature: f712fdd1edc8451054dbaa97add3470de15b32cc264ff8158ccbb82691ef37ec4afbfefe94f6789ba4dd523f1784613a9ecdb468ce1c9e11bac825c6e604b005
+        # ---------------- XRPL EVM TESTNET ----------------
+
+        # "xrpl-evm-testnet - F036 - taillow"
+        3c50afb94de9d9719f9c23bd2976858c74ad44eb:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: d2fc07b88c5ef5e37fee832e0d197b80c517c66a5e3e3e41f3dd19f134d67a24
+            application_signature: 0f6571e46f268720bb90e8eae1d87b4567c2f84f163996bf938c2ca61be64bc15975be1312dbcb015e4fcdb4a44d7122ec23e93b184358b7f4bafce3a60ba10a
+        # "xrpl-evm-testnet - F036 - nosepass"
+        5266fa808ed9a6a5e915894570d46e3d451c1267:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 0c0aaad07227be4a9c846c7291e9e00c3bd7a3ac66c6dafc2d19fa55937ed4af
+            application_signature: 5c950b4ffc30b61cc6fde34e15c34de6ab57a18780980df9e41fcceb6cfa44bb67dfb76e4c1bc2d291a22c0142d6ed1adb286ec64935c4adf0731bc4cf79a407
+        # "xrpl-evm-testnet - F036 - plusle"
+        62e344a58a141935e4f00766bce8f8c1c2736d61:
+            client_public_key: e7e91202573bdd1927b00fce9b0b46fa7944b06e6fe1bc987abc86e4d0dd47d6
+            application_public_key: 8144efd8965ccf0a62e830826d104345f80a0f7ac613945fa1ceba52e9c27cae
+            application_signature: e40e1ddc927d3f4d19282f4656bca8a58e47ce00b59f1a3be043888c7182b0e3792959b2b4f32582df3dea38eb6e2d57468c8beea6d06e284dd5694f23f0a302

@@ -59,6 +59,9 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// get a logger, hydrated with the selected endpoint.
 	logger := rc.getHydratedLogger()
 
+	// start the latency timer, which records only the time taken to send the relay request.
+	latencyStart := time.Now()
+
 	response, err := rc.sendRelay(payload)
 	if err != nil {
 		logger.Warn().Err(err).Msg("error sending a relay. Service request will fail.")
@@ -68,6 +71,9 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
+
+	// record the time taken to send the relay request.
+	latency := time.Since(latencyStart)
 
 	logger = logger.With("endpoint_response_payload_len", len(response.Payload))
 	logger.Debug().Msg("Received a response from the selected endpoint.")
@@ -84,6 +90,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 				rc.serviceID, selectedEndpointAddr, err,
 			)
 	}
+
+	relayResponse.Latency = latency
 
 	relayResponse.EndpointAddr = selectedEndpointAddr
 

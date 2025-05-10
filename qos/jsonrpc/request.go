@@ -60,7 +60,7 @@ func (r Request) MarshalJSON() ([]byte, error) {
 // JSON-RPC spec reference: https://www.jsonrpc.org/specification#parameter_structures
 // -----------------
 
-// BuildParamsFromString builds a Params object from a single string.
+// BuildParamsFromStringArray builds a Params object from an array of strings.
 //
 // For example, for an `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60"]

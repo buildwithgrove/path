@@ -3,6 +3,7 @@ package qos
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -70,7 +71,7 @@ func (rec *RequestErrorContext) GetServicePayload() protocol.Payload {
 // UpdateWithResponse should never be called.
 // Only logs a warning.
 // Implements the gateway.RequestQoSContext interface.
-func (rec *RequestErrorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
+func (rec *RequestErrorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte, _ time.Duration) {
 	rec.Logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),

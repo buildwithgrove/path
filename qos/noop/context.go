@@ -2,6 +2,7 @@ package noop
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -66,7 +67,7 @@ func (rc *requestContext) GetServicePayload() protocol.Payload {
 // UpdateWithResponse is used to inform the requestContext of the response to its underlying service request, returned from an endpoint.
 // UpdateWithResponse is NOT safe for concurrent use
 // Implements the gateway.RequestQoSContext interface.
-func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte) {
+func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte, _ time.Duration) {
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
 
