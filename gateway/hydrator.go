@@ -128,8 +128,7 @@ func (eph *EndpointHydrator) run() {
 
 func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
-		"component", "hydrator",
-		"method", "perform_checks",
+		"method", "performChecks",
 		"service_id", string(serviceID),
 	)
 

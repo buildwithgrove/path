@@ -1,0 +1,14 @@
+logger_config:
+    level: error
+shannon_config:
+  full_node_config:
+    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    grpc_config:
+      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+    lazy_mode: false
+  gateway_config:
+    gateway_mode: "centralized"
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
+    gateway_private_key_hex: d66fdb552a130c4633706735de87cc26cb6041b72403a16f1658abd5bb9c1a29
+    owned_apps_private_keys_hex:
+      - 55c9ecf418a94cf7839efb3bfb38e3c2b2c1ea7c1b059ad666428f88793e96a1 # Anvil Staked App

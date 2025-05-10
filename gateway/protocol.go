@@ -40,13 +40,14 @@ type Protocol interface {
 	// 	- result: skip the endpoint for a set time period until a new session begins.
 	ApplyObservations(*protocolobservations.Observations) error
 
+	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
+	// TODO_TECHDEBT: Enable the hydrator for gateway modes beyond Centralized only.
+	//
 	// ConfiguredServiceIDs returns the list of service IDs that the protocol instance is configured to serve.
 	// For Morse:
-	// 	- Returns the list of all all service IDs for all configured AATs.
+	// 	- Returns the list of all service IDs with available configured AATs.
 	// For Shannon:
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
-	//  - Currently hydrator is only enabled for Centralized gateway mode.
-	//    TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 
 	// health.Check interface is used to verify protocol instance's health status.

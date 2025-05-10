@@ -27,7 +27,7 @@ hex_to_decimal() {
 
 # Function to generate the static content for the beginning of the markdown file
 generate_static_content() {
-    cat > "$1" << 'EOF'
+    cat >"$1" <<'EOF'
 ---
 sidebar_position: 1
 title: Supported QoS Services
@@ -40,27 +40,15 @@ This file was auto-generated via `make gen_service_qos_docs`.
 
 :::
 
-PATH automatically performs QoS checks on all configured services for a PATH instance.
+## Configuring PATH QoS Checks
 
-A service is configured for PATH if an application staked for that service is configured in the PATH instance's configuration file. This applies to both Shannon and Morse PATH instances.
+PATH uses an **opt-out** rather than an **opt-in** approach to QoS checks.
 
-## ⛓️ Supported QoS Services
+This means that PATH **automatically** performs QoS checks for all services the applications it manages are staked for.
 
-The following table lists the Quality of Service (QoS) implementations currently supported by PATH.
+### Disable QoS Checks for a particular Service
 
-:::important 🚧 QoS Support 🚧
-
-If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
-
-**This means no QoS checks will be performed for that service and endpoints are selected at random from the network.**
-
-:::
-
-### Manually Disable QoS Checks for a Service
-
-**As mentioned above, by default all configured services for a PATH instance will have QoS checks run against them.**
-
-In order to disable QoS checks for a specific service, the `Service ID` field may be specified in the `.config.yaml` file's `qos_disabled_service_ids` field.
+In order to disable QoS checks for a specific service, the `service_id` field may be specified in the `.config.yaml` file's `qos_disabled_service_ids` field.
 
 For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
 
@@ -70,7 +58,17 @@ hydrator_config:
     - "F00C"
 ```
 
-💡 _For more information on PATH's configuration file, please refer to the [configuration documentation](../../develop/path/6_configurations_helm.md)._
+See [PATH Configuration File](../../develop/path/5_configurations_path.md#hydrator_config-optional) for more details.
+
+## ⛓️ Supported QoS Services
+
+The table below lists the Quality of Service (QoS) implementations currently supported by PATH.
+
+:::warning **🚧 QoS Support 🚧**
+
+If a Service ID is not specified in the tables below, it does not have a QoS implementation in PATH.
+
+:::
 
 EOF
 }
@@ -79,7 +77,7 @@ EOF
 extract_default_values() {
     local file="$1"
     local default_evm_chain_id_int=""
-    
+
     while IFS= read -r line; do
         # Match defaultEVMChainID
         if [[ "$line" =~ defaultEVMChainID[[:space:]]*=[[:space:]]*\"([^\"]+)\"[[:space:]]*//(.*) ]]; then
@@ -92,8 +90,8 @@ extract_default_values() {
             fi
             break
         fi
-    done < "$file"
-    
+    done <"$file"
+
     echo "$default_evm_chain_id_int"
 }
 
@@ -106,7 +104,7 @@ process_services() {
     local service_name=""
     local comment_buffer=""
     local in_section=false
-    
+
     while IFS= read -r line; do
         # Check if we're in the specified section
         if [[ "$line" =~ ^var\ ${section}\ = ]]; then
@@ -145,64 +143,64 @@ process_services() {
             service_id="${BASH_REMATCH[1]}"
             chain_id_hex="${BASH_REMATCH[2]}"
             service_type="EVM"
-            
+
             # Convert chain ID to decimal
             chain_id="$(hex_to_decimal "$chain_id_hex")"
-            
+
             # Check if this is an archival service
             archival_check=""
             if [[ "$line" =~ evm\.NewEVMArchivalCheckConfig ]]; then
                 archival_check="✅"
             fi
-            
+
             # Use the most recent comment as the service name
             service_name="${comment_buffer:-Unknown EVM Service}"
             comment_buffer=""
-            
+
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
-            
+
         # Process EVM configurations with defaultEVMChainID (Ethereum)
         elif [[ "$line" =~ evm\.NewEVMServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*defaultEVMChainID ]]; then
             service_id="${BASH_REMATCH[1]}"
             chain_id="$default_chain_id"
             service_type="EVM"
-            
+
             # Ethereum is always archival
             archival_check="✅"
-            
+
             # Use the most recent comment as the service name
             service_name="${comment_buffer:-Ethereum}"
             comment_buffer=""
-            
+
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
-            
+
         # Process CometBFT configurations
         elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
             service_id="${BASH_REMATCH[1]}"
             chain_id="${BASH_REMATCH[2]}"
             service_type="CometBFT"
             archival_check=""
-            
+
             # Use the most recent comment as the service name
             service_name="${comment_buffer:-Unknown CometBFT Service}"
             comment_buffer=""
-            
+
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
-            
+
         # Process Solana configurations
         elif [[ "$line" =~ solana\.NewSolanaServiceQoSConfig\([[:space:]]*\"([^\"]+)\" ]]; then
             service_id="${BASH_REMATCH[1]}"
             chain_id=""
             service_type="Solana"
             archival_check=""
-            
+
             # Use the most recent comment as the service name
             service_name="${comment_buffer:-Solana}"
             comment_buffer=""
-            
+
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
         fi
-    done < "$file"
+    done <"$file"
 }
 
 # Main execution starts here
@@ -213,7 +211,7 @@ generate_static_content "$OUTPUT_FILE"
 
 # Start the dynamic section
 {
-    echo "# 🌿 Current PATH QoS Support"
+    echo "## 🌿 Current PATH QoS Support"
     echo ""
     echo "**🗓️ Document Last Updated: $(date '+%Y-%m-%d')**"
     echo ""
@@ -223,7 +221,7 @@ generate_static_content "$OUTPUT_FILE"
     echo ""
     echo "| Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |"
     echo "|-------------|------------|-----------------|----------|---------------------------|"
-} >> "$OUTPUT_FILE"
+} >>"$OUTPUT_FILE"
 
 # Process Shannon services
 process_services "shannonServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
@@ -235,7 +233,7 @@ process_services "shannonServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPU
     echo ""
     echo "| Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |"
     echo "|-------------|------------|-----------------|----------|---------------------------|"
-} >> "$OUTPUT_FILE"
+} >>"$OUTPUT_FILE"
 
 # Process Morse services
 process_services "morseServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"

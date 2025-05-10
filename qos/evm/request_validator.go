@@ -9,6 +9,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -29,6 +30,7 @@ const maxErrMessageLen = 1000
 type evmRequestValidator struct {
 	logger       polylog.Logger
 	chainID      string
+	serviceID    protocol.ServiceID
 	serviceState *serviceState
 }
 
@@ -61,6 +63,7 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 	return &requestContext{
 		logger:               erv.logger,
 		chainID:              erv.chainID,
+		serviceID:            erv.serviceID,
 		requestPayloadLength: uint(len(body)),
 		jsonrpcReq:           jsonrpcReq,
 		serviceState:         erv.serviceState,
@@ -70,7 +73,7 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 // createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.
 func (erv *evmRequestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
 	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(erv.chainID, err)
+	observations := createHTTPBodyReadFailureObservation(erv.serviceID, erv.chainID, err)
 
 	// TODO_IMPROVE(@adshmh): Propagate a request ID parameter on internal errors
 	// that occur after successful request parsing.
@@ -92,7 +95,7 @@ func (erv *evmRequestValidator) createHTTPBodyReadFailureContext(err error) gate
 func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.ID, err error) gateway.RequestQoSContext {
 
 	// Create the observations object with the request unmarshaling failure observation
-	observations := createRequestUnmarshalingFailureObservation(id, erv.chainID, err)
+	observations := createRequestUnmarshalingFailureObservation(id, erv.serviceID, erv.chainID, err)
 	// Create the JSON-RPC error response
 	response := newErrResponseInvalidRequest(err, id)
 
@@ -121,13 +124,15 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 // - qosobservations.Observations: A structured observation containing details about the validation failure
 func createRequestUnmarshalingFailureObservation(
 	_ jsonrpc.ID,
+	serviceID protocol.ServiceID,
 	chainID string,
 	err error,
 ) *qosobservations.Observations_Evm {
 	errorDetails := err.Error()
 	return &qosobservations.Observations_Evm{
 		Evm: &qosobservations.EVMRequestObservations{
-			ChainId: chainID,
+			ServiceId: string(serviceID),
+			ChainId:   chainID,
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmRequestUnmarshalingFailure{
 				EvmRequestUnmarshalingFailure: &qosobservations.EVMRequestUnmarshalingFailure{
 					HttpStatusCode:  httpStatusRequestValidationFailureUnmarshalFailure,
@@ -153,13 +158,15 @@ func createRequestUnmarshalingFailureObservation(
 // Returns:
 // - qosobservations.Observations: A structured observation containing details about the HTTP read failure
 func createHTTPBodyReadFailureObservation(
+	serviceID protocol.ServiceID,
 	chainID string,
 	err error,
 ) *qosobservations.Observations_Evm {
 	errorDetails := err.Error()
 	return &qosobservations.Observations_Evm{
 		Evm: &qosobservations.EVMRequestObservations{
-			ChainId: chainID,
+			ServiceId: string(serviceID),
+			ChainId:   chainID,
 			RequestValidationFailure: &qosobservations.EVMRequestObservations_EvmHttpBodyReadFailure{
 				EvmHttpBodyReadFailure: &qosobservations.EVMHTTPBodyReadFailure{
 					HttpStatusCode:  httpStatusRequestValidationFailureReadHTTPBodyFailure,
