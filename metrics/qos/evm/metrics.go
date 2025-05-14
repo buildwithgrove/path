@@ -61,10 +61,12 @@ var (
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
 // It logs errors for unexpected conditions that should never occur in normal operation.
 func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservations) {
+	logger = logger.With("method", "PublishMetricsEVM")
+
 	// Skip if observations is nil.
 	// This should never happen as PublishQoSMetrics uses nil checks to identify which QoS service produced the observations.
 	if observations == nil {
-		logger.Error().Msg("Unable to publish EVM metrics: received nil observations - this should never happen")
+		logger.Error().Msg("SHOULD NEVER HAPPEN: Unable to publish EVM metrics: received nil observations.")
 		return
 	}
 

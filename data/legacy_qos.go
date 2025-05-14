@@ -31,7 +31,7 @@ func setLegacyFieldsFromQoSObservations(
 		return setLegacyFieldsFromQoSEVMObservations(logger, legacyRecord, evmObservations)
 	}
 
-	// TODO_IN_THIS_PR: use Solana observations to update the legactRecord fields.
+	// TODO_IN_THIS_PR: use Solana observations to update the legacyRecord fields.
 
 	return legacyRecord
 }

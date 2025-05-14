@@ -6,7 +6,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// RequestContextFromProtocolError returns a request context for a protocol error, e.g. the selected endpoint did not return a response.
+// RequestContextFromInternalError returns a request context for an internal error.
+// E.g. the selected endpoint did not return a response.
 func RequestContextFromInternalError(logger polylog.Logger, jsonrpcRequestID jsonrpc.ID, err error) *RequestErrorContext {
 	return &RequestErrorContext{
 		Logger:   logger,

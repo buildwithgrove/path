@@ -33,7 +33,7 @@ message SolanaRequestObservations {
   // TODO_TECHDEBT: This assumes all SolanaVM blockchains only (and always) support JSON-RPC.
   // May need expansion/refactoring for future blockchain support.
   optional JsonRpcRequest jsonrpc_request = 6;
-   
+
   // Multiple observations possible if:
   // - Original endpoint returns invalid response
   // - Retry mechanism activates

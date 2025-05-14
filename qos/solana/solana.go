@@ -44,8 +44,8 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 	return &requestContext{
 		logger:        qos.logger,
 		endpointStore: qos.EndpointStore,
-		// Set the origin of the request as USER:
-		// i.e. the request is from a user.
+		// Set the origin of the request as USER (i.e. organic relay)
+		// The request is from a user.
 		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_USER,
 	}, true
 }

@@ -33,7 +33,6 @@ func PublishQoSMetrics(
 		solana.PublishMetrics(hydratedLogger, solanaObservations)
 		hydratedLogger.Debug().Msg("published Solana metrics.")
 		return
-
 	}
 
 	// Log warning if no matching observation types were found
