@@ -99,6 +99,14 @@ var shannonServices = []ServiceQoSConfig{
 		368_266,
 	)),
 
+	// BNB Smart Chain
+	evm.NewEVMServiceQoSConfig("bsc", "0x38", evm.NewEVMArchivalCheckConfig(
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590?p=25
+		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
+		// Contract start block
+		33_049_200,
+	)),
+
 	// *** EVM Services (testing) ***
 
 	// Anvil - Ethereum development/testing
@@ -129,9 +137,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Blast
 	evm.NewEVMServiceQoSConfig("blast", "0x13e31", nil),
-
-	// BNB Smart Chain
-	evm.NewEVMServiceQoSConfig("bsc", "0x38", nil),
 
 	// Boba
 	evm.NewEVMServiceQoSConfig("boba", "0x120", nil),
@@ -303,12 +308,21 @@ var morseServices = []ServiceQoSConfig{
 		// Contract start block
 		424_300,
 	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 		// Contract start block
 		368_266,
+	)),
+
+	// BNB Smart Chain
+	evm.NewEVMServiceQoSConfig("F009", "0x38", evm.NewEVMArchivalCheckConfig(
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590?p=25
+		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
+		// Contract start block
+		33_049_200,
 	)),
 
 	// *** EVM Services (Non-Archival) ***
@@ -333,9 +347,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Blast
 	evm.NewEVMServiceQoSConfig("F008", "0x13e31", nil),
-
-	// BNB Smart Chain
-	evm.NewEVMServiceQoSConfig("F009", "0x38", nil),
 
 	// Boba
 	evm.NewEVMServiceQoSConfig("F00A", "0x120", nil),
