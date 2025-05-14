@@ -115,6 +115,14 @@ var shannonServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
+	// Base
+	evm.NewEVMServiceQoSConfig("base", "0x2105", evm.NewEVMArchivalCheckConfig(
+		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
+		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
+		// Contract start block
+		4_504_400,
+	)),
+
 	// *** EVM Services (testing) ***
 
 	// Anvil - Ethereum development/testing
@@ -136,9 +144,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Avalanche-DFK
 	evm.NewEVMServiceQoSConfig("avax-dfk", "0xd2af", nil),
-
-	// Base
-	evm.NewEVMServiceQoSConfig("base", "0x2105", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("base-test", "0x14a34", nil),
@@ -338,6 +343,14 @@ var morseServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
+	// Base
+	evm.NewEVMServiceQoSConfig("F005", "0x2105", evm.NewEVMArchivalCheckConfig(
+		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
+		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
+		// Contract start block
+		4_504_400,
+	)),
+
 	// *** EVM Services (Non-Archival) ***
 
 	// Arbitrum One
@@ -351,9 +364,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Avalanche-DFK
 	evm.NewEVMServiceQoSConfig("F004", "0xd2af", nil),
-
-	// Base
-	evm.NewEVMServiceQoSConfig("F005", "0x2105", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F006", "0x14a34", nil),
