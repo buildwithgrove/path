@@ -2,7 +2,6 @@ package solana
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"sync"
 
@@ -33,12 +32,17 @@ type EndpointStore struct {
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria.
 func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	logger := es.logger.With("method", "Select")
-	logger.With("total_endpoints", len(allAvailableEndpoints)).Info().Msg("filtering available endpoints.")
+	logger := es.logger.With(
+		"qos", "Solana",
+		"method", "Select",
+		"num_endpoints", len(allAvailableEndpoints),
+	)
+
+	logger.Debug().Msg("filtering available endpoints.")
 
 	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
 	if err != nil {
-		logger.Error().Err(err).Msg("error filtering endpoints")
+		logger.Error().Err(err).Msg("error filtering endpoints: service request will fail.")
 		return protocol.EndpointAddr(""), err
 	}
 
@@ -58,13 +62,17 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 	es.endpointsMu.RLock()
 	defer es.endpointsMu.RUnlock()
 
-	logger := es.logger.With("method", "filterEndpoints").With("qos_instance", "solana")
+	logger := es.logger.With(
+		"method", "filterEndpoints",
+		"qos_instance", "solana",
+		"num_endpoints", len(allAvailableEndpoints),
+	)
 
 	if len(allAvailableEndpoints) == 0 {
 		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(allAvailableEndpoints)))
+	logger.Debug().Msg("About to filter available endpoints.")
 
 	// TODO_FUTURE: rank the endpoints based on some service-specific metric.
 	// For example: latency rather than making a single selection.
@@ -72,21 +80,21 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 	for _, availableEndpointAddr := range allAvailableEndpoints {
 		logger := logger.With("endpoint_addr", availableEndpointAddr)
 
-		logger.Info().Msg("processing endpoint")
+		logger.Debug().Msg("Processing endpoint")
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", availableEndpointAddr))
+			logger.Info().Msg("endpoint not found in the store. Skipping.")
 			continue
 		}
 
 		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
+			logger.Info().Err(err).Msg("endpoint failed validation. Skipping.")
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", availableEndpointAddr))
+		logger.Debug().Msg("endpoint passed validation.")
 	}
 
 	return filteredEndpointsAddr, nil

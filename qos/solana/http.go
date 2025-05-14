@@ -6,6 +6,17 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 )
 
+const (
+	// HTTP status code 400 bad request is used if the request cannot be deserialized into JSONRPC.
+	httpStatusRequestValidationFailureUnmarshalFailure = http.StatusBadRequest
+
+	// HTTP status code 500 internal server error is used if reading the HTTP request's body fails
+	httpStatusRequestValidationFailureReadHTTPBodyFailure = http.StatusInternalServerError
+
+	// HTTP status codes returned on response validation failure: no response received
+	httpStatusResponseValidationFailureNoResponse = http.StatusInternalServerError
+)
+
 // httpResponse is used by the RequestContext to provide
 // a Solana-specific implementation of gateway package's HTTPResponse.
 var _ gateway.HTTPResponse = httpResponse{}

@@ -11,33 +11,35 @@ import (
 
 // responseUnmarshallerGetEpochInfo deserializes the provided payload into a responseToGetEpochInfo struct,
 // adding any encountered errors to the returned struct.
-func responseUnmarshallerGetEpochInfo(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
+func responseUnmarshallerGetEpochInfo(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) response {
+	logger = logger.With("response_processor", "getEpochInfo")
+
+	getEpochInfoResponse := responseToGetEpochInfo{
+		Logger:   logger,
+		Response: jsonrpcResp,
+	}
+
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
 		// Note: this assumes the `getEpochInfo` request sent to the endpoint was valid.
-		return responseToGetEpochInfo{
-			Logger: logger,
-
-			Response: jsonrpcResp,
-		}, nil
+		return getEpochInfoResponse
 	}
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		return responseToGetEpochInfo{
-			Logger: logger,
-
-			Response: jsonrpcResp,
-		}, err
+		logger.Info().Err(err).Msg("JSONRPC response result field is not a byte slice: endpoint will fail QoS check.")
+		return getEpochInfoResponse
 	}
 
 	var epochInfo epochInfo
 	err = json.Unmarshal(resultBz, &epochInfo)
+	if err != nil {
+		logger.Info().Err(err).Msg("JSONRPC response result field failed to parse: endpoint will fail QoS check.")
+		return getEpochInfoResponse
+	}
 
-	return &responseToGetEpochInfo{
-		Response:  jsonrpcResp,
-		epochInfo: epochInfo,
-	}, err
+	getEpochInfoResponse.epochInfo = epochInfo
+	return getEpochInfoResponse
 }
 
 // epochInfo captures all the fields expected from a response to a `getEpochInfo` request.
@@ -53,9 +55,9 @@ type epochInfo struct {
 // responseToGetEpochInfo captures the fields expected in a
 // response to a `getEpochInfo` request.
 type responseToGetEpochInfo struct {
+	Logger polylog.Logger
 	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonrpc.Response
-	Logger polylog.Logger
 
 	// epochInfo stores the epochInfo struct that is parsed from the response to a `getEpochInfo` request.
 	epochInfo epochInfo
@@ -81,11 +83,6 @@ func (r responseToGetEpochInfo) GetObservation() qosobservations.SolanaEndpointO
 //     This should be returned to the user as-is.
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
-func (r responseToGetEpochInfo) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToGetEpochInfo: Marshaling JSONRPC response failed.")
-	}
-	return bz
+func (r responseToGetEpochInfo) GetJSONRPCResponse() jsonrpc.Response {
+	return r.Response
 }

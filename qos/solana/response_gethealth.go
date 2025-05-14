@@ -12,7 +12,14 @@ import (
 // responseUnmarshallerGetHealth deserializes the provided payload
 // into a responseToBlockNumber struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) (response, error) {
+func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) response {
+	logger = logger.With("response_processor", "getHealth")
+
+	getHealthResponse := responseToGetHealth{
+		Logger:   logger,
+		Response: jsonrpcResp,
+	}
+
 	// TODO_MVP(@adshmh): validate a `getHealth` request before sending it out to an endpoint.
 	// e.g. If the request contains a params field, it is invalid and should not be sent to any endpoints.
 	//
@@ -24,43 +31,37 @@ func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Req
 	// https://solana.com/docs/rpc/http/gethealth
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-		return responseToGetHealth{
-			Logger: logger,
-
-			Response: jsonrpcResp,
-		}, nil
+		return getHealthResponse
 	}
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
+	// endpoint failed to provide a valid response to `getHealth` request.
 	if err != nil {
-		return responseToGetHealth{
-			Logger: logger,
-
-			Response: jsonrpcResp,
-		}, err
+		logger.Info().Err(err).Msg("JSONRPC response result field is not a byte slice: endpoint will fail QoS check.")
+		return getHealthResponse
 	}
 
 	var getHealthResult string
 	err = json.Unmarshal(resultBz, &getHealthResult)
+	if err != nil {
+		logger.Info().Err(err).Msg("JSONRPC response result could not be parsed as a string: endpoint will fail QoS check.")
+	}
 
-	return responseToGetHealth{
-		Logger: logger,
-
-		Response:     jsonrpcResp,
-		HealthResult: getHealthResult,
-	}, err
+	// Set the string response to `getHealth` request.
+	getHealthResponse.HealthResult = getHealthResult
+	return getHealthResponse
 }
 
 // responseToGetHealth captures the fields expected in a
 // response to a `getHealth` request.
 type responseToGetHealth struct {
+	Logger polylog.Logger
+
 	// Response stores the JSONRPC response parsed from an endpoint's response bytes.
 	jsonrpc.Response
 
 	// HealthResult stores the result field of a response to a `getHealth` request.
 	HealthResult string
-
-	Logger polylog.Logger
 }
 
 // GetObservation returns a Solana Endpoint observation based on an endpoint's response to a `getHealth` request.
@@ -82,11 +83,6 @@ func (r responseToGetHealth) GetObservation() qosobservations.SolanaEndpointObse
 //     This should be returned to the user as-is.
 //  3. An endpoint returns a valid JSONRPC response to a valid user request:
 //     This should be returned to the user as-is.
-func (r responseToGetHealth) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSONRPC response failed.")
-	}
-	return bz
+func (r responseToGetHealth) GetJSONRPCResponse() jsonrpc.Response {
+	return r.Response
 }

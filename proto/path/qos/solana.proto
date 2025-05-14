@@ -4,19 +4,40 @@ package path.qos;
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
+import "path/qos/request_origin.proto";
+import "path/qos/request_error.proto";
 
 // SolanaRequestObservations captures QoS data for a single Solana blockchain service request,
 // including all observations made during potential retries.
 message SolanaRequestObservations {
-  // JSON-RPC request to the Solana blockchain service
+  // chain_id is the blockchain identifier for the QoS implementation.
+  // This is preset by the processor and not determined by the request.
+  // Used by metrics and data pipeline.
+  string chain_id = 1;
+
+  // service_id is the identifier for the QoS implementation.
+  // It is the "alias" or human readable interpratation of the chain_id.
+  string service_id = 2;
+
+  // The length of the client's request payload, in bytes.
+  uint32 request_payload_length = 3;
+
+  // The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
+  RequestOrigin request_origin = 4;
+
+  // Tracks request errors, if any.
+  optional RequestError request_error = 5;
+
+  // JSON-RPC request to the Solana blockchain service.
+  // Only set if the HTTP request payload was successfully parsed into JSONRPC.
   // TODO_TECHDEBT: This assumes all SolanaVM blockchains only (and always) support JSON-RPC.
   // May need expansion/refactoring for future blockchain support.
-  JsonRpcRequest jsonrpc_request = 1;
-
+  optional JsonRpcRequest jsonrpc_request = 6;
+   
   // Multiple observations possible if:
   // - Original endpoint returns invalid response
   // - Retry mechanism activates
-  repeated SolanaEndpointObservation endpoint_observations = 2;
+  repeated SolanaEndpointObservation endpoint_observations = 7;
 }
 
 // SolanaEndpointObservation captures a single endpoint's response to a request

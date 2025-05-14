@@ -1,0 +1,13 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+// RequestOrigin enumerates possible request origins:
+// - User: the request was sent to PATH by a user.
+// - QoS: the request was built by the QoS service to collect data points on an endpoint.
+enum RequestOrigin {
+  REQUEST_ORIGIN_UNSPECIFIED = 0;
+  REQUEST_ORIGIN_USER = 1; // User request
+  REQUEST_ORIGIN_QOS = 2; //  QoS Service generated the request.
+}
