@@ -19,30 +19,28 @@ But feel free to take a look if you're curious.
 ## Table of Contents <!-- omit in toc -->
 
 - [Overview](#overview)
+  - [🫛 `PEAS` - PATH External Auth Server](#-peas---path-external-auth-server)
   - [Architecture Diagram](#architecture-diagram)
   - [Enabling Grove Auth](#enabling-grove-auth)
-  - [Documentation References](#documentation-references)
-- [PADS Documentation](#pads-documentation)
-  - [Repo](#repo)
+- [PEAS Documentation](#peas-documentation)
   - [Grove Portal Database](#grove-portal-database)
   - [README.md](#readmemd)
-- [PEAS Documentation](#peas-documentation)
-  - [Repo](#repo-1)
-  - [README.md](#readmemd-1)
+- [Documentation References](#documentation-references)
 
 ## Overview
 
 GUARD contains configurations to implement authentication for PATH in a way that is compatible with Grove's Portal.
 
-This Grove specific implementation is comprised of two components:
+This Grove-specific implementation utilizes Envoy Gateway's External Authorization feature, which wraps Envoy Proxy's `ext_authz` gRPC interface.
 
-- `PEAS` - PATH External Auth Server
-  - This is a gRPC server that is responsible for checking if a request is authorized to access a specific service.
-  - Implements Envoy Proxy's `ext_authz` gRPC interface.
-    - [Envoy External Authorization HTTP Filter Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
-- `PADS` - PATH Auth Data Server
-  - This is a gRPC server that is responsible for providing the auth data to the `PEAS` server.
-  - Connects to the Grove Portal database to get the auth data and provides it to the `PEAS` server using gRPC.
+### 🫛 `PEAS` - PATH External Auth Server
+
+[PEAS Repo](https://github.com/buildwithgrove/path-external-auth-server)
+
+PEAS is the Grove-specific implementation of Envoy Gateway's External Authorization feature.
+
+- This is a gRPC server that is responsible for checking if a request is authorized to access a specific service.
+- Connects to the Grove Portal database to get the auth data and stores in an in-memory cache.
 
 ### Architecture Diagram
 
@@ -58,7 +56,6 @@ graph TD
     Error[[Error Returned to User]]
     Result[[Result Returned to User]]
 
-    GRPCServer["PADS<br>PATH Auth Data Server"]
     GroveDB[("Grove Portal Database<br>(Postgres)")]
 
     subgraph AUTH["PEAS<br/>PATH External Auth Server"]
@@ -72,9 +69,7 @@ graph TD
     AUTH_DECISION -->|4.Yes <br> Forward Request| PATH
     PATH -->|5.Response| Result
 
-    GroveDB -->|Postgres Connection| GRPCServer
-
-    GRPCServer <-.-> |gRPC| AUTH
+    GroveDB <-->|Postgres Connection| AUTH
 ```
 
 ### Enabling Grove Auth
@@ -84,10 +79,24 @@ To enable Grove Auth, you need to set the following values in the `values.yaml` 
 ```yaml
 guard.auth.groveLegacy.enabled = true
 guard.auth.groveLegacy.peas.enabled = true
-guard.auth.groveLegacy.pads.enabled = true
 ```
 
-### Documentation References
+## PEAS Documentation
+
+### Grove Portal Database
+
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/merge-pads-functionality/postgres/grove/README.md" />
+
+### README.md
+
+<details>
+<summary>PEAS README.md</summary>
+
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/merge-pads-functionality/README.md" />
+
+</details>
+
+## Documentation References
 
 **Helm Charts**
 
@@ -107,38 +116,3 @@ For an example walkthrough of implementing external authorization with Envoy Gat
 For Envoy Proxy's `ext_authz` HTTP Filter documentation (how `PEAS` communicates with Envoy), see:
 
 - [Envoy Proxy External Auth Docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
-
-## PADS Documentation
-
-### Repo
-
-- [PADS Repo](https://github.com/buildwithgrove/path-auth-data-server)
-
-### Grove Portal Database
-
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/main/postgres/grove/README.md" />
-
-### README.md
-
-<details>
-<summary>PADS README.md</summary>
-
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-auth-data-server/refs/heads/main/README.md" />
-
-</details>
-
-## PEAS Documentation
-
-### Repo
-
-- [PEAS Repo](https://github.com/buildwithgrove/path-external-auth-server)
-
-### README.md
-
-<details>
-<summary>PEAS README.md</summary>
-
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/main/README.md" />
-
-</details>
-
