@@ -67,36 +67,20 @@ const (
 var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
-	// Ethereum - ETH Mainnet
-	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
-		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-		"0x28C6c06298d514Db089934071355E5743bf21d60",
+	// Arbitrum One
+	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
+		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
 		// Contract start block
-		12_300_000,
+		3_057_700,
 	)),
 
-	// Polygon
-	evm.NewEVMServiceQoSConfig("poly", "0x89", evm.NewEVMArchivalCheckConfig(
-		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-		"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+	// Base
+	evm.NewEVMServiceQoSConfig("base", "0x2105", evm.NewEVMArchivalCheckConfig(
+		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
+		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
 		// Contract start block
-		5_000_000,
-	)),
-
-	// Oasys
-	evm.NewEVMServiceQoSConfig("oasys", "0xf8", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
-		// Contract start block
-		424_300,
-	)),
-
-	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-		// Contract start block
-		368_266,
+		4_504_400,
 	)),
 
 	// BNB Smart Chain
@@ -107,6 +91,22 @@ var shannonServices = []ServiceQoSConfig{
 		33_049_200,
 	)),
 
+	// Ethereum - ETH Mainnet
+	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
+		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+		"0x28C6c06298d514Db089934071355E5743bf21d60",
+		// Contract start block
+		12_300_000,
+	)),
+
+	// Oasys
+	evm.NewEVMServiceQoSConfig("oasys", "0xf8", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		424_300,
+	)),
+
 	// Optimism
 	evm.NewEVMServiceQoSConfig("op", "0xa", evm.NewEVMArchivalCheckConfig(
 		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
@@ -115,12 +115,20 @@ var shannonServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
-	// Base
-	evm.NewEVMServiceQoSConfig("base", "0x2105", evm.NewEVMArchivalCheckConfig(
-		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
-		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
+	// Polygon
+	evm.NewEVMServiceQoSConfig("poly", "0x89", evm.NewEVMArchivalCheckConfig(
+		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+		"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
 		// Contract start block
-		4_504_400,
+		5_000_000,
+	)),
+
+	// XRPL EVM Testnet
+	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+		// Contract start block
+		368_266,
 	)),
 
 	// *** EVM Services (testing) ***
@@ -132,9 +140,6 @@ var shannonServices = []ServiceQoSConfig{
 	evm.NewEVMServiceQoSConfig("anvilws", "0x7a69", nil),
 
 	// *** EVM Services (Non-Archival) ***
-
-	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", nil),
 
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("arb_sep_test", "0x66EEE", nil),
@@ -295,52 +300,12 @@ var shannonServices = []ServiceQoSConfig{
 var morseServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
-	// Ethereum
-	evm.NewEVMServiceQoSConfig("F00C", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
-		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-		"0x28C6c06298d514Db089934071355E5743bf21d60",
+	// Arbitrum One
+	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
+		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
 		// Contract start block
-		12_300_000,
-	)),
-
-	// Polygon
-	evm.NewEVMServiceQoSConfig("F021", "0x89", evm.NewEVMArchivalCheckConfig(
-		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-		"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-		// Contract start block
-		5_000_000,
-	)),
-
-	// Oasys
-	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
-		// Contract start block
-		424_300,
-	)),
-
-	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-		// Contract start block
-		368_266,
-	)),
-
-	// BNB Smart Chain
-	evm.NewEVMServiceQoSConfig("F009", "0x38", evm.NewEVMArchivalCheckConfig(
-		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
-		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
-		// Contract start block
-		33_049_200,
-	)),
-
-	// Optimism
-	evm.NewEVMServiceQoSConfig("F01D", "0xa", evm.NewEVMArchivalCheckConfig(
-		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
-		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
-		// Contract start block
-		8_121_800,
+		3_100_000,
 	)),
 
 	// Base
@@ -351,10 +316,55 @@ var morseServices = []ServiceQoSConfig{
 		4_504_400,
 	)),
 
-	// *** EVM Services (Non-Archival) ***
+	// BNB Smart Chain
+	evm.NewEVMServiceQoSConfig("F009", "0x38", evm.NewEVMArchivalCheckConfig(
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
+		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
+		// Contract start block
+		33_049_200,
+	)),
 
-	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", nil),
+	// Ethereum
+	evm.NewEVMServiceQoSConfig("F00C", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
+		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
+		"0x28C6c06298d514Db089934071355E5743bf21d60",
+		// Contract start block
+		12_300_000,
+	)),
+
+	// Oasys
+	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		424_300,
+	)),
+
+	// Optimism
+	evm.NewEVMServiceQoSConfig("F01D", "0xa", evm.NewEVMArchivalCheckConfig(
+		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
+		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
+		// Contract start block
+		8_121_800,
+	)),
+
+	// Polygon
+	evm.NewEVMServiceQoSConfig("F021", "0x89", evm.NewEVMArchivalCheckConfig(
+		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+		"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+		// Contract start block
+		5_000_000,
+	)),
+
+	// XRPL EVM Testnet
+	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+		// Contract start block
+		368_266,
+	)),
+
+	// *** EVM Services (Non-Archival) ***
 
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F002", "0x66EEE", nil),
