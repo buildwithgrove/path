@@ -130,6 +130,8 @@ func (x *SolanaRequestObservations) GetEndpointObservations() []*SolanaEndpointO
 	return nil
 }
 
+// TODO_MVP(@adshmh): add unmarshaling error tracker to endpoint observations.
+//
 // SolanaEndpointObservation captures a single endpoint's response to a request
 type SolanaEndpointObservation struct {
 	state         protoimpl.MessageState

@@ -40,6 +40,8 @@ message SolanaRequestObservations {
   repeated SolanaEndpointObservation endpoint_observations = 7;
 }
 
+// TODO_MVP(@adshmh): add unmarshaling error tracker to endpoint observations.
+//
 // SolanaEndpointObservation captures a single endpoint's response to a request
 message SolanaEndpointObservation {
   // Address of the endpoint handling the request
