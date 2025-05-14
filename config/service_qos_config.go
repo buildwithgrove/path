@@ -101,10 +101,18 @@ var shannonServices = []ServiceQoSConfig{
 
 	// BNB Smart Chain
 	evm.NewEVMServiceQoSConfig("bsc", "0x38", evm.NewEVMArchivalCheckConfig(
-		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590?p=25
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
 		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
 		// Contract start block
 		33_049_200,
+	)),
+
+	// Optimism
+	evm.NewEVMServiceQoSConfig("op", "0xa", evm.NewEVMArchivalCheckConfig(
+		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
+		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
+		// Contract start block
+		8_121_800,
 	)),
 
 	// *** EVM Services (testing) ***
@@ -188,9 +196,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Near
 	evm.NewEVMServiceQoSConfig("near", "0x18d", nil),
-
-	// Optimism
-	evm.NewEVMServiceQoSConfig("op", "0xa", nil),
 
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", nil),
@@ -319,10 +324,18 @@ var morseServices = []ServiceQoSConfig{
 
 	// BNB Smart Chain
 	evm.NewEVMServiceQoSConfig("F009", "0x38", evm.NewEVMArchivalCheckConfig(
-		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590?p=25
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
 		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
 		// Contract start block
 		33_049_200,
+	)),
+
+	// Optimism
+	evm.NewEVMServiceQoSConfig("F01D", "0xa", evm.NewEVMArchivalCheckConfig(
+		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
+		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
+		// Contract start block
+		8_121_800,
 	)),
 
 	// *** EVM Services (Non-Archival) ***
@@ -398,9 +411,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Near
 	evm.NewEVMServiceQoSConfig("F01B", "0x18d", nil),
-
-	// Optimism
-	evm.NewEVMServiceQoSConfig("F01D", "0xa", nil),
 
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", nil),
