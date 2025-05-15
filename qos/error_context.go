@@ -59,7 +59,9 @@ func (rec *RequestErrorContext) GetHTTPResponse() gateway.HTTPResponse {
 // GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
 func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
-	return *rec.Observations
+	return qosobservations.Observations{
+		ServiceObservations: rec.Observations.ServiceObservations,
+	}
 }
 
 // GetServicePayload should never be called.
