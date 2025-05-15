@@ -51,6 +51,6 @@ func (c solanaServiceQoSConfig) getChainID() string {
 
 // GetServiceQoSType returns the QoS type of the service.
 // Implements the ServiceQoSConfig interface.
-func (_ solanaServiceQoSConfig) GetServiceQoSType() string {
+func (solanaServiceQoSConfig) GetServiceQoSType() string {
 	return QoSType
 }
