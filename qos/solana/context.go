@@ -128,7 +128,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// e.g. protocol-level errors like endpoint timing out.
 	if len(rc.endpointResponses) == 0 {
 		// Build the JSONRPC response indicating a protocol-level error.
-		jsonrpcErrorResponse := jsonrpc.NewErrResponseInternalErr(rc.JSONRPCReq.ID, errors.New("protocol-level error: no endpoint responses received."))
+		jsonrpcErrorResponse := jsonrpc.NewErrResponseInternalErr(rc.JSONRPCReq.ID, errors.New("protocol-level error: no endpoint responses received"))
 		return qos.BuildHTTPResponseFromJSONRPCResponse(rc.logger, jsonrpcErrorResponse)
 	}
 
