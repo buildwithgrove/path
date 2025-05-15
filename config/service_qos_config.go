@@ -473,5 +473,6 @@ var morseServices = []ServiceQoSConfig{
 	// *** Solana Services ***
 
 	// Solana
-	solana.NewSolanaServiceQoSConfig("Solana", "F025"),
+	// TODO_MVP(@adshmh): Drop the Chain ID for Solana.
+	solana.NewSolanaServiceQoSConfig("F025", "F025"),
 }
