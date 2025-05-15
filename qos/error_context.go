@@ -33,7 +33,7 @@ type RequestErrorContext struct {
 	Response jsonrpc.Response
 
 	// The observations to use for the error.
-	Observations qosobservations.Observations
+	Observations *qosobservations.Observations
 }
 
 // GetHTTPResponse formats the stored JSONRPC error as an HTTP response
@@ -59,7 +59,7 @@ func (rec *RequestErrorContext) GetHTTPResponse() gateway.HTTPResponse {
 // GetObservation returns the QoS observation set for the error context.
 // Implements the gateway.RequestQoSContext interface.
 func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
-	return rec.Observations
+	return *rec.Observations
 }
 
 // GetServicePayload should never be called.

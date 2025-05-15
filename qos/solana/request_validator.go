@@ -88,7 +88,7 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
 		Response: response,
-		Observations: qosobservations.Observations{
+		Observations: &qosobservations.Observations{
 			ServiceObservations: observations,
 		},
 	}
@@ -108,7 +108,7 @@ func (rv *requestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.I
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
 		Response: response,
-		Observations: qosobservations.Observations{
+		Observations: &qosobservations.Observations{
 			ServiceObservations: observations,
 		},
 	}
