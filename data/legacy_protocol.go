@@ -137,6 +137,8 @@ func setLegacyErrFieldsFromMorseEndpointError(
 // subdomains, ports, paths, queries, and fragments.
 // Returns the domain without protocol, path, query parameters, or fragments.
 // Returns an empty string and error if the URL is invalid.
+// Example:
+// Endpoint URL: https://long_string.subdomain.domain.cloud:443 -> `domain.cloud`
 func extractEndpointDomainFromURL(rawURL string) (string, error) {
 	// If the URL doesn't have a scheme, add one to make it parseable
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
