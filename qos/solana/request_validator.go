@@ -66,7 +66,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 		JSONRPCReq:           jsonrpcReq,
 		// Set the origin of the request as USER (i.e. organic relay)
 		// The request is from a user.
-		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_USER,
+		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
 }
 

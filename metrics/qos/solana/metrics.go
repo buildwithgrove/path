@@ -38,6 +38,7 @@ var (
 	// - Labels:
 	//   - chain_id: Target Solana chain identifier
 	//   - service_id: Service ID of the Solana QoS instance
+	//   - request_origin: origin of the request: User or Hydrator.
 	//   - request_method: JSON-RPC method name
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (empty for success)
@@ -56,7 +57,7 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by Solana QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
@@ -84,6 +85,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 		prometheus.Labels{
 			"chain_id":         interpreter.GetChainID(),
 			"service_id":       interpreter.GetServiceID(),
+			"request_origin":   observations.GetRequestOrigin().String(),
 			"request_method":   interpreter.GetRequestMethod(),
 			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
 			"error_type":       interpreter.GetRequestErrorType(),
