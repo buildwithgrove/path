@@ -11,7 +11,11 @@ import (
 
 // responseUnmarshallerGetEpochInfo deserializes the provided payload into a responseToGetEpochInfo struct,
 // adding any encountered errors to the returned struct.
-func responseUnmarshallerGetEpochInfo(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResp jsonrpc.Response) response {
+func responseUnmarshallerGetEpochInfo(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	jsonrpcResp jsonrpc.Response,
+) response {
 	logger = logger.With("response_processor", "getEpochInfo")
 
 	getEpochInfoResponse := responseToGetEpochInfo{
