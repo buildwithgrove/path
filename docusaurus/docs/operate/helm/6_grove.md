@@ -85,14 +85,14 @@ guard.auth.groveLegacy.peas.enabled = true
 
 ### Grove Portal Database
 
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/merge-pads-functionality/postgres/grove/README.md" />
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/main/postgres/grove/README.md" />
 
 ### README.md
 
 <details>
 <summary>PEAS README.md</summary>
 
-<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/merge-pads-functionality/README.md" />
+<RemoteMarkdown src="https://raw.githubusercontent.com/buildwithgrove/path-external-auth-server/refs/heads/main/README.md" />
 
 </details>
 
