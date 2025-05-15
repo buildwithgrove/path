@@ -50,7 +50,7 @@ type requestContext struct {
 	chainID string
 
 	// service_id is the identifier for the Solana QoS implementation.
-	// It is the "alias" or human readable interpratation of the chain_id.
+	// It is the "alias" or human readable interpretation of the chain_id.
 	// Used in generating observations.
 	serviceID protocol.ServiceID
 
