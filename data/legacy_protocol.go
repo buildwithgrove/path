@@ -142,22 +142,36 @@ func extractEndpointDomainFromURL(rawURL string) (string, error) {
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
 		rawURL = "https://" + rawURL
 	}
-
 	// Parse the URL
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse URL: %w", err)
 	}
-
 	// Extract just the host part (domain + port if present)
 	host := parsedURL.Host
-
 	// Remove port number if present
 	if strings.Contains(host, ":") {
 		host = strings.Split(host, ":")[0]
 	}
 
-	return host, nil
+	// Check if host is empty
+	if host == "" {
+		return "", fmt.Errorf("empty host in URL: %s", rawURL)
+	}
+
+	// Split the host by dots and extract the domain
+	parts := strings.Split(host, ".")
+
+	switch {
+	// If there are two or more parts, return the last two
+	case len(parts) >= 2:
+		return parts[len(parts)-2] + "." + parts[len(parts)-1], nil
+	// If there's only one part (e.g., "localhost"), return it
+	case len(parts) == 1:
+		return parts[0], nil
+	default:
+		return "", fmt.Errorf("unexpected error processing host: %s", host)
+	}
 }
 
 // formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.
