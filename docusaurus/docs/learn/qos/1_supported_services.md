@@ -55,6 +55,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
 | Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
+| Gnosis | gnosis | EVM | 100 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
 | Polygon | poly | EVM | 137 | ✅ |
@@ -73,7 +74,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fantom | fantom | EVM | 250 |  |
 | Fraxtal | fraxtal | EVM | 252 |  |
 | Fuse | fuse | EVM | 122 |  |
-| Gnosis | gnosis | EVM | 100 |  |
 | Harmony-0 | harmony | EVM | 1666600000 |  |
 | IoTeX | iotex | EVM | 4689 |  |
 | Kaia | kaia | EVM | 8217 |  |
@@ -119,6 +119,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
 | Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
+| Gnosis | F013 | EVM | 100 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
@@ -135,7 +136,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fantom | F010 | EVM | 250 |  |
 | Fraxtal | F011 | EVM | 252 |  |
 | Fuse | F012 | EVM | 122 |  |
-| Gnosis | F013 | EVM | 100 |  |
 | Harmony-0 | F014 | EVM | 1666600000 |  |
 | IoTeX | F015 | EVM | 4689 |  |
 | Kaia | F016 | EVM | 8217 |  |
