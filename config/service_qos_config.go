@@ -123,6 +123,14 @@ var shannonServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Polygon zkEVM
+	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
+		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
+		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
+		// Contract start block
+		111,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -230,9 +238,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("taiko_hek_test", "0x28c61", nil),
-
-	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", nil),
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", nil),
@@ -356,6 +361,14 @@ var morseServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Polygon zkEVM
+	evm.NewEVMServiceQoSConfig("F029", "0x44d", evm.NewEVMArchivalCheckConfig(
+		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
+		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
+		// Contract start block
+		111,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -455,9 +468,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("F028", "0x28c61", nil),
-
-	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("F029", "0x44d", nil),
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", nil),

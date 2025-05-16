@@ -16,6 +16,7 @@ description: Description of how we implement EVM Archival checks
   - [Full Nodes](#full-nodes)
   - [Archive Nodes](#archive-nodes)
 - [RPC Methods Requiring Archive Data](#rpc-methods-requiring-archive-data)
+- [Adding new EVM Archival Checks](#adding-new-evm-archival-checks)
 - [References](#references)
 
 ## Overview
@@ -115,6 +116,16 @@ The following methods require archive data when requesting information older tha
 - `eth_getStorageAt`
 
 Note: These methods can also be used for recent data (< 128 blocks old), but archive access is required when requesting older data.
+
+## Adding new EVM Archival Checks
+
+Archival Check Config Process
+
+1. Go to chain's block explorer
+2. Find an address with lots of activity (I'm using Binance's address on the chain if they have one; otherwise any address with lots of balance and activity),
+3. Find the first transaction for that address and use that as the starting block height,
+4. Once values added to config, run PATH with Morse gigas for that chain then send some test eth_getBalance cURLs for that contract and an old block height and validate we get data and no "missing trie node" errors.
+5. Repeat
 
 ## References
 
