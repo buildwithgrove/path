@@ -177,11 +177,20 @@ run_with_local_helm_charts() {
     
     echo -e "  ${WHITE}📦 Mounting local helm charts from ${helm_charts_path}${NC}"
     
+    # Description of the run command
+    # Volume Mounts:
+    #   - "$(pwd)":/app - Mount the PATH repository as /app to enable hot reloading of changes
+    #   - "${helm_charts_path}":/helm-charts - Mount the local helm charts path as /helm-charts
+    # Port Forwards:
+    #   - 10350 - Tilt UI
+    #   - 3070 - PATH API
+    #   - 3003 - Grafana
     if ! docker run \
         --name path-localnet \
         -v "$(pwd)":/app \
         -p 10350:10350 \
         -p 3070:3070 \
+        -p 3003:3003 \
         --privileged \
         -v "${helm_charts_path}":/helm-charts \
         -e LOCAL_HELM_CHARTS_PATH=/helm-charts \
@@ -199,11 +208,19 @@ run_with_local_helm_charts() {
 run_without_local_helm_charts() {
     echo -e "  ${WHITE}📡 Using remote helm charts${NC}"
     
+    # Description of the container
+    # Volume Mounts:
+    #   - "$(pwd)":/app - Mount the PATH repository as /app to enable hot reloading of changes
+    # Port Forwards:
+    #   - 10350 - Tilt UI
+    #   - 3070 - PATH API
+    #   - 3003 - Grafana
     if ! docker run \
         --name path-localnet \
         -v "$(pwd)":/app \
         -p 10350:10350 \
         -p 3070:3070 \
+        -p 3003:3003 \
         --privileged \
         -e LOCAL_HELM_CHARTS_PATH= \
         -d \
