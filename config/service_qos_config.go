@@ -83,6 +83,14 @@ var shannonServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Avalanche-DFK
+	evm.NewEVMServiceQoSConfig("avax-dfk", "0xd2af", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
+		"0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260",
+		// Contract start block
+		45_000_000,
+	)),
+
 	// Base
 	evm.NewEVMServiceQoSConfig("base", "0x2105", evm.NewEVMArchivalCheckConfig(
 		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
@@ -159,9 +167,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("arb_sep_test", "0x66EEE", nil),
-
-	// Avalanche-DFK
-	evm.NewEVMServiceQoSConfig("avax-dfk", "0xd2af", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("base-test", "0x14a34", nil),
@@ -326,6 +331,14 @@ var morseServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Avalanche-DFK
+	evm.NewEVMServiceQoSConfig("F004", "0xd2af", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
+		"0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260",
+		// Contract start block
+		45_000_000,
+	)),
+
 	// Base
 	evm.NewEVMServiceQoSConfig("F005", "0x2105", evm.NewEVMArchivalCheckConfig(
 		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
@@ -394,9 +407,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F002", "0x66EEE", nil),
-
-	// Avalanche-DFK
-	evm.NewEVMServiceQoSConfig("F004", "0xd2af", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F006", "0x14a34", nil),

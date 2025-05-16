@@ -50,6 +50,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 |-------------|------------|-----------------|----------|---------------------------|
 | Arbitrum One | arb_one | EVM | 42161 | ✅ |
 | Avalanche | avax | EVM | 43114 | ✅ |
+| Avalanche-DFK | avax-dfk | EVM | 53935 | ✅ |
 | Base | base | EVM | 8453 | ✅ |
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
@@ -61,7 +62,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
 | Arbitrum Sepolia Testnet | arb_sep_test | EVM | 421614 |  |
-| Avalanche-DFK | avax-dfk | EVM | 53935 |  |
 | Base Sepolia Testnet | base-test | EVM | 84532 |  |
 | Blast | blast | EVM | 81457 |  |
 | Boba | boba | EVM | 288 |  |
@@ -114,6 +114,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 |-------------|------------|-----------------|----------|---------------------------|
 | Arbitrum One | F001 | EVM | 42161 | ✅ |
 | Avalanche | F003 | EVM | 43114 | ✅ |
+| Avalanche-DFK | F004 | EVM | 53935 | ✅ |
 | Base | F005 | EVM | 8453 | ✅ |
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
@@ -123,7 +124,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
 | Arbitrum Sepolia Testnet | F002 | EVM | 421614 |  |
-| Avalanche-DFK | F004 | EVM | 53935 |  |
 | Base Sepolia Testnet | F006 | EVM | 84532 |  |
 | Blast | F008 | EVM | 81457 |  |
 | Boba | F00A | EVM | 288 |  |
