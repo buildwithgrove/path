@@ -119,13 +119,108 @@ Note: These methods can also be used for recent data (< 128 blocks old), but arc
 
 ## Adding new EVM Archival Checks
 
-Archival Check Config Process
+The process for adding new archival check configurations is somewhat manual but most be performed only once per chain.
 
-1. Go to chain's block explorer
-2. Find an address with lots of activity (I'm using Binance's address on the chain if they have one; otherwise any address with lots of balance and activity),
-3. Find the first transaction for that address and use that as the starting block height,
-4. Once values added to config, run PATH with Morse gigas for that chain then send some test eth_getBalance cURLs for that contract and an old block height and validate we get data and no "missing trie node" errors.
-5. Repeat
+Configuration must be added to [`service_qos_config.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos_config.go).
+
+For more information on the `service_qos_config.go` file, see the [Service QoS Config](./1_supported_services.md) page.
+
+**Example**
+
+This example uses the `Polygon zkEVM` chain (`F029`). Most EVM chain block explorers use a similar format for their browser UI.
+
+- Block Explorer: https://zkevm.polygonscan.com/
+
+**Steps**
+
+1. Go to chain's block explorer and search for `Top Account` in the `Blockchain` dropdown
+
+   <div align="center">
+   ![HowToArchival1](../../../static/img/howto_archival_1.png)
+   </div>
+
+2. Find an account with lots of activity and click on the `Address`
+
+   <div align="center">
+   ![HowToArchival2](../../../static/img/howto_archival_2.png)
+   </div>
+
+3. Under the `Filters` section, select `View Contract Creation`
+
+   <div align="center">
+   ![HowToArchival3](../../../static/img/howto_archival_3.png)
+   </div>
+
+4. Take note of the block number of the first transaction for that address
+
+   <div align="center">
+   ![HowToArchival4](../../../static/img/howto_archival_4.png)
+   </div>
+
+5. In the [`service_qos_config.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos_config.go) file, add a new entry to the `shannonServices` and/or `morseServices` array
+
+   :::important IMPORTANT
+
+   The configuration must be entered in this exact format.
+
+   ```go
+   // Polygon zkEVM
+   evm.NewEVMServiceQoSConfig("F029", "0x44d", evm.NewEVMArchivalCheckConfig(
+      // https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
+      "0xee1727f5074E747716637e1776B7F7C7133f16b1",
+      // Contract start block
+      111,
+   )),
+   ```
+
+   It must contain the following elements in `evm.NewEVMArchivalCheckConfig`, exactly as shown above.
+
+   - Line 1: The URL for the contract address on the block explorer as a comment
+      - _Example: `// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1`_
+   - Line 2: The contract address as the first parameter
+      - _Example: `"0xee1727f5074E747716637e1776B7F7C7133f16b1"`_
+   - Line 3: A comment containing `// Contract start block`
+   - Line 4: A block number just slightly higher than the first transaction for that address as the second parameter
+      - _Example: `111`_
+
+   :::
+
+6. Configure PATH for the service you want to test, run `make path_run` for that service and validate that data is returned correctly for the requested block.
+
+   :::tip 
+
+   Use an `eth_getBalance` request for:
+
+   - The contract address
+     - _Example: `0xee1727f5074E747716637e1776B7F7C7133f16b1`_
+   - An old block hash, ideally close to the first transaction for that address
+     - _Example: `0x15E` (350)_
+
+   ```bash
+   curl http://localhost:3069/v1 \
+     -H "Target-Service-Id: F029" \
+     -d '{
+        "jsonrpc": "2.0",
+        "method": "eth_getBalance",
+        "id": 1,
+        "params": [
+           "0xee1727f5074E747716637e1776B7F7C7133f16b1",
+           "0x15E"
+        ]
+     }'
+   ```
+
+   Response:
+
+   ```json
+   {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": "0x247a76d7647c0000"
+   }
+   ```
+
+   :::
 
 ## References
 
