@@ -67,6 +67,8 @@ func (erv *evmRequestValidator) validateHTTPRequest(req *http.Request) (gateway.
 		requestPayloadLength: uint(len(body)),
 		jsonrpcReq:           jsonrpcReq,
 		serviceState:         erv.serviceState,
+		// Set the origin of the request as ORGANIC, i.e. from a user.
+		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
 }
 

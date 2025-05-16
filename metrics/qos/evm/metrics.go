@@ -36,6 +36,7 @@ var (
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
 	//   - service_id: Service ID of the EVM QoS instance
+	//   - request_origin: origin of the request: User or Hydrator.
 	//   - request_method: JSON-RPC method name
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (or "" for successful requests)
@@ -54,7 +55,7 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
@@ -72,6 +73,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 
 	// Create an interpreter for the observations
 	interpreter := &qos.EVMObservationInterpreter{
+		Logger:       logger,
 		Observations: observations,
 	}
 
@@ -105,6 +107,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 		prometheus.Labels{
 			"chain_id":         chainID,
 			"service_id":       serviceID,
+			"request_origin":   interpreter.GetRequestOrigin(),
 			"request_method":   method,
 			"success":          fmt.Sprintf("%t", requestError == nil),
 			"error_type":       errorType,
