@@ -119,6 +119,8 @@ Note: These methods can also be used for recent data (< 128 blocks old), but arc
 
 ## Adding new EVM Archival Checks
 
+<!-- TODO_MOVE(@commoddity): Update this section and merge it into JUDGE docs once JUDGE PR is merged -->
+
 The process for adding new archival check configurations is somewhat manual but most be performed only once per chain.
 
 Configuration must be added to [`service_qos_config.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos_config.go).
