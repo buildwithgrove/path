@@ -4,12 +4,16 @@ import (
 	"fmt"
 )
 
+const (
+	ResponseCodeDefaultInternalErr = -32000 // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+)
+
 // NewErrResponseInternalErr creates a JSON-RPC error response when an internal error has occurred (e.g. reading HTTP request's body)
 // Marks the error as retryable to allow clients to safely retry their request.
 func NewErrResponseInternalErr(requestID ID, err error) Response {
 	return GetErrorResponse(
 		requestID,
-		-32000, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		ResponseCodeDefaultInternalErr, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("internal error: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),
@@ -30,8 +34,8 @@ func NewErrResponseInternalErr(requestID ID, err error) Response {
 // The error is marked as permanent since retrying without correcting the request will fail.
 func NewErrResponseInvalidRequest(requestID ID, err error) Response {
 	return GetErrorResponse(
-		requestID, // Use request's original ID if present
-		-32000,    // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
+		requestID,                      // Use request's original ID if present
+		ResponseCodeDefaultInternalErr, // JSON-RPC standard server error code; https://www.jsonrpc.org/historical/json-rpc-2-0.html
 		fmt.Sprintf("invalid request: %s", err.Error()), // Error Message
 		map[string]string{
 			"error": err.Error(),

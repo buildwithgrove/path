@@ -26,6 +26,7 @@ var (
 // This interpreter allows the rest of the code to draw conclusions about the observations
 // without needing to understand the structure of the proto-generated types.
 type EVMObservationInterpreter struct {
+	// TODO_TECHDEBT(@adshmh): Missing a logger
 	Observations *EVMRequestObservations
 }
 
