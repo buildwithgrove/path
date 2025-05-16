@@ -107,6 +107,14 @@ var shannonServices = []ServiceQoSConfig{
 		33_049_200,
 	)),
 
+	// Celo
+	evm.NewEVMServiceQoSConfig("celo", "0xa4ec", evm.NewEVMArchivalCheckConfig(
+		// https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		20_000_000,
+	)),
+
 	// Ethereum - ETH Mainnet
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
 		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
@@ -176,9 +184,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Boba
 	evm.NewEVMServiceQoSConfig("boba", "0x120", nil),
-
-	// Celo
-	evm.NewEVMServiceQoSConfig("celo", "0xa4ec", nil),
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("eth_hol_test", "0x4268", nil),
@@ -355,6 +360,14 @@ var morseServices = []ServiceQoSConfig{
 		33_049_200,
 	)),
 
+	// Celo
+	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", evm.NewEVMArchivalCheckConfig(
+		// https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		20_000_000,
+	)),
+
 	// Ethereum
 	evm.NewEVMServiceQoSConfig("F00C", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
 		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
@@ -416,9 +429,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Boba
 	evm.NewEVMServiceQoSConfig("F00A", "0x120", nil),
-
-	// Celo
-	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", nil),
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("F00D", "0x4268", nil),

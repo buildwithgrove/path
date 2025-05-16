@@ -53,6 +53,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Avalanche-DFK | avax-dfk | EVM | 53935 | ✅ |
 | Base | base | EVM | 8453 | ✅ |
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
+| Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
@@ -65,7 +66,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Base Sepolia Testnet | base-test | EVM | 84532 |  |
 | Blast | blast | EVM | 81457 |  |
 | Boba | boba | EVM | 288 |  |
-| Celo | celo | EVM | 42220 |  |
 | Ethereum Holesky Testnet | eth_hol_test | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | eth_sep_test | EVM | 11155111 |  |
 | Evmos | evmos | EVM | 9001 |  |
@@ -117,6 +117,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Avalanche-DFK | F004 | EVM | 53935 | ✅ |
 | Base | F005 | EVM | 8453 | ✅ |
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
+| Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
@@ -127,7 +128,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Base Sepolia Testnet | F006 | EVM | 84532 |  |
 | Blast | F008 | EVM | 81457 |  |
 | Boba | F00A | EVM | 288 |  |
-| Celo | F00B | EVM | 42220 |  |
 | Ethereum Holesky Testnet | F00D | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | F00E | EVM | 11155111 |  |
 | Evmos | F00F | EVM | 9001 |  |
