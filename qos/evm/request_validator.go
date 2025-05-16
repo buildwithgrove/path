@@ -199,9 +199,7 @@ func parseJSONRPCFromRequestBody(
 	if err != nil {
 		// Only log a preview of the request body (first 1000 bytes or less) to avoid excessive logging
 		requestPreview := string(requestBody[:min(maxErrMessageLen, len(requestBody))])
-		logger.With(
-			"request_preview", requestPreview,
-		).Info().Err(err).Msg("Request failed JSON-RPC validation - returning generic error response")
+		logger.Info().Err(err).Msgf("Request failed JSON-RPC validation - returning generic error response. Request preview: %s", requestPreview)
 	}
 
 	return jsonrpcRequest, err

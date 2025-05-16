@@ -29,16 +29,16 @@ func responseUnmarshallerGeneric(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
-) (response, error) {
+) response {
 	var response jsonrpc.Response
 	if err := json.Unmarshal(data, &response); err != nil {
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), nil
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
 	}
 
 	return responseGeneric{
 		Logger:   logger,
 		Response: response,
-	}, nil
+	}
 }
 
 // TODO_MVP(@adshmh): implement the generic jsonrpc response
@@ -73,13 +73,8 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 // Implements the response interface.
 //
 // TODO_MVP(@adshmh): handle any unmarshaling errors and build a method-specific payload generator.
-func (r responseGeneric) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.Response)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.Logger.Warn().Err(err).Msg("responseGeneric: Marshaling JSON-RPC response failed.")
-	}
-	return bz
+func (r responseGeneric) GetJSONRPCResponse() jsonrpc.Response {
+	return r.Response
 }
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSON-RPC error response with the supplied ID, error, and the invalid payload in the "data" field.

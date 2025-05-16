@@ -39,6 +39,8 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 			evmQoS := evm.NewQoSInstance(logger, evmServiceQoSConfig)
 			qosServices[serviceID] = evmQoS
 
+			logger.With("service_id", serviceID).Debug().Msg("Added EVM QoS instance for the service ID.")
+
 		case cometbft.QoSType:
 			cometBFTServiceQoSConfig, ok := serviceConfig.(cometbft.CometBFTServiceQoSConfig)
 			if !ok {
@@ -57,6 +59,7 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 			solanaQoS := solana.NewQoSInstance(logger, solanaServiceQoSConfig)
 			qosServices[serviceID] = solanaQoS
 
+			logger.With("service_id", serviceID).Debug().Msg("Added Solana QoS instance for the service ID.")
 		default:
 			return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}

@@ -298,7 +298,7 @@ var shannonServices = []ServiceQoSConfig{
 	// *** Solana Services ***
 
 	// Solana
-	solana.NewSolanaServiceQoSConfig("solana"),
+	solana.NewSolanaServiceQoSConfig("solana", "solana"),
 }
 
 // morseServices is the list of QoS service configs for the Morse protocol.
@@ -524,5 +524,6 @@ var morseServices = []ServiceQoSConfig{
 	// *** Solana Services ***
 
 	// Solana
-	solana.NewSolanaServiceQoSConfig("F025"),
+	// TODO_MVP(@adshmh): Drop the Chain ID for Solana.
+	solana.NewSolanaServiceQoSConfig("F025", "F025"),
 }
