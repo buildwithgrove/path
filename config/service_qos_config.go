@@ -67,12 +67,84 @@ const (
 var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
+	// Arbitrum One
+	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
+		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
+		// Contract start block
+		3_057_700,
+	)),
+
+	// Avalanche
+	evm.NewEVMServiceQoSConfig("avax", "0xa86a", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
+		"0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9",
+		// Contract start block
+		5_000_000,
+	)),
+
+	// Avalanche-DFK
+	evm.NewEVMServiceQoSConfig("avax-dfk", "0xd2af", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
+		"0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260",
+		// Contract start block
+		45_000_000,
+	)),
+
+	// Base
+	evm.NewEVMServiceQoSConfig("base", "0x2105", evm.NewEVMArchivalCheckConfig(
+		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
+		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
+		// Contract start block
+		4_504_400,
+	)),
+
+	// BNB Smart Chain
+	evm.NewEVMServiceQoSConfig("bsc", "0x38", evm.NewEVMArchivalCheckConfig(
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
+		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
+		// Contract start block
+		33_049_200,
+	)),
+
+	// Celo
+	evm.NewEVMServiceQoSConfig("celo", "0xa4ec", evm.NewEVMArchivalCheckConfig(
+		// https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		20_000_000,
+	)),
+
 	// Ethereum - ETH Mainnet
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
 		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 		"0x28C6c06298d514Db089934071355E5743bf21d60",
 		// Contract start block
 		12_300_000,
+	)),
+
+	// Gnosis
+	evm.NewEVMServiceQoSConfig("gnosis", "0x64", evm.NewEVMArchivalCheckConfig(
+		// https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
+		"0xe91d153e0b41518a2ce8dd3d7944fa863463a97d",
+		// Contract start block
+		20_000_000,
+	)),
+
+	// Oasys
+	evm.NewEVMServiceQoSConfig("oasys", "0xf8", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		424_300,
+	)),
+
+	// Optimism
+	evm.NewEVMServiceQoSConfig("op", "0xa", evm.NewEVMArchivalCheckConfig(
+		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
+		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
+		// Contract start block
+		8_121_800,
 	)),
 
 	// Polygon
@@ -83,12 +155,20 @@ var shannonServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
-	// Oasys
-	evm.NewEVMServiceQoSConfig("oasys", "0xf8", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+	// Polygon zkEVM
+	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
+		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
+		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
 		// Contract start block
-		424_300,
+		111,
+	)),
+
+	// Scroll
+	evm.NewEVMServiceQoSConfig("scroll", "0x82750", evm.NewEVMArchivalCheckConfig(
+		// https://scrollscan.com/address/0x5300000000000000000000000000000000000004
+		"0x5300000000000000000000000000000000000004",
+		// Contract start block
+		5_000_000,
 	)),
 
 	// XRPL EVM Testnet
@@ -109,20 +189,8 @@ var shannonServices = []ServiceQoSConfig{
 
 	// *** EVM Services (Non-Archival) ***
 
-	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", nil),
-
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("arb_sep_test", "0x66EEE", nil),
-
-	// Avalanche
-	evm.NewEVMServiceQoSConfig("avax", "0xa86a", nil),
-
-	// Avalanche-DFK
-	evm.NewEVMServiceQoSConfig("avax-dfk", "0xd2af", nil),
-
-	// Base
-	evm.NewEVMServiceQoSConfig("base", "0x2105", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("base-test", "0x14a34", nil),
@@ -130,14 +198,8 @@ var shannonServices = []ServiceQoSConfig{
 	// Blast
 	evm.NewEVMServiceQoSConfig("blast", "0x13e31", nil),
 
-	// BNB Smart Chain
-	evm.NewEVMServiceQoSConfig("bsc", "0x38", nil),
-
 	// Boba
 	evm.NewEVMServiceQoSConfig("boba", "0x120", nil),
-
-	// Celo
-	evm.NewEVMServiceQoSConfig("celo", "0xa4ec", nil),
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("eth_hol_test", "0x4268", nil),
@@ -156,9 +218,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Fuse
 	evm.NewEVMServiceQoSConfig("fuse", "0x7a", nil),
-
-	// Gnosis
-	evm.NewEVMServiceQoSConfig("gnosis", "0x64", nil),
 
 	// Harmony-0
 	evm.NewEVMServiceQoSConfig("harmony", "0x63564c40", nil),
@@ -184,9 +243,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Near
 	evm.NewEVMServiceQoSConfig("near", "0x18d", nil),
 
-	// Optimism
-	evm.NewEVMServiceQoSConfig("op", "0xa", nil),
-
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", nil),
 
@@ -199,9 +255,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Radix
 	evm.NewEVMServiceQoSConfig("radix", "0x1337", nil),
 
-	// Scroll
-	evm.NewEVMServiceQoSConfig("scroll", "0x82750", nil),
-
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
 
@@ -210,9 +263,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("taiko_hek_test", "0x28c61", nil),
-
-	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", nil),
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", nil),
@@ -280,12 +330,84 @@ var shannonServices = []ServiceQoSConfig{
 var morseServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
+	// Arbitrum One
+	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
+		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
+		// Contract start block
+		3_100_000,
+	)),
+
+	// Avalanche
+	evm.NewEVMServiceQoSConfig("F003", "0xa86a", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
+		"0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9",
+		// Contract start block
+		5_000_000,
+	)),
+
+	// Avalanche-DFK
+	evm.NewEVMServiceQoSConfig("F004", "0xd2af", evm.NewEVMArchivalCheckConfig(
+		// https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
+		"0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260",
+		// Contract start block
+		45_000_000,
+	)),
+
+	// Base
+	evm.NewEVMServiceQoSConfig("F005", "0x2105", evm.NewEVMArchivalCheckConfig(
+		// https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
+		"0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A",
+		// Contract start block
+		4_504_400,
+	)),
+
+	// BNB Smart Chain
+	evm.NewEVMServiceQoSConfig("F009", "0x38", evm.NewEVMArchivalCheckConfig(
+		// https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
+		"0xfb50526f49894b78541b776f5aaefe43e3bd8590",
+		// Contract start block
+		33_049_200,
+	)),
+
+	// Celo
+	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", evm.NewEVMArchivalCheckConfig(
+		// https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		20_000_000,
+	)),
+
 	// Ethereum
 	evm.NewEVMServiceQoSConfig("F00C", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
 		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 		"0x28C6c06298d514Db089934071355E5743bf21d60",
 		// Contract start block
 		12_300_000,
+	)),
+
+	// Gnosis
+	evm.NewEVMServiceQoSConfig("F013", "0x64", evm.NewEVMArchivalCheckConfig(
+		// https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
+		"0xe91d153e0b41518a2ce8dd3d7944fa863463a97d",
+		// Contract start block
+		20_000_000,
+	)),
+
+	// Oasys
+	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
+		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+		// Contract start block
+		424_300,
+	)),
+
+	// Optimism
+	evm.NewEVMServiceQoSConfig("F01D", "0xa", evm.NewEVMArchivalCheckConfig(
+		// https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
+		"0xacD03D601e5bB1B275Bb94076fF46ED9D753435A",
+		// Contract start block
+		8_121_800,
 	)),
 
 	// Polygon
@@ -296,13 +418,22 @@ var morseServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
-	// Oasys
-	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-		"0xf89d7b9c864f589bbF53a82105107622B35EaA40",
+	// Polygon zkEVM
+	evm.NewEVMServiceQoSConfig("F029", "0x44d", evm.NewEVMArchivalCheckConfig(
+		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
+		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
 		// Contract start block
-		424_300,
+		111,
 	)),
+
+	// Scroll
+	evm.NewEVMServiceQoSConfig("F024", "0x82750", evm.NewEVMArchivalCheckConfig(
+		// https://scrollscan.com/address/0x5300000000000000000000000000000000000004
+		"0x5300000000000000000000000000000000000004",
+		// Contract start block
+		5_000_000,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -313,20 +444,8 @@ var morseServices = []ServiceQoSConfig{
 
 	// *** EVM Services (Non-Archival) ***
 
-	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("F001", "0xa4b1", nil),
-
 	// Arbitrum Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F002", "0x66EEE", nil),
-
-	// Avalanche
-	evm.NewEVMServiceQoSConfig("F003", "0xa86a", nil),
-
-	// Avalanche-DFK
-	evm.NewEVMServiceQoSConfig("F004", "0xd2af", nil),
-
-	// Base
-	evm.NewEVMServiceQoSConfig("F005", "0x2105", nil),
 
 	// Base Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F006", "0x14a34", nil),
@@ -334,14 +453,8 @@ var morseServices = []ServiceQoSConfig{
 	// Blast
 	evm.NewEVMServiceQoSConfig("F008", "0x13e31", nil),
 
-	// BNB Smart Chain
-	evm.NewEVMServiceQoSConfig("F009", "0x38", nil),
-
 	// Boba
 	evm.NewEVMServiceQoSConfig("F00A", "0x120", nil),
-
-	// Celo
-	evm.NewEVMServiceQoSConfig("F00B", "0xa4ec", nil),
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("F00D", "0x4268", nil),
@@ -360,9 +473,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Fuse
 	evm.NewEVMServiceQoSConfig("F012", "0x7a", nil),
-
-	// Gnosis
-	evm.NewEVMServiceQoSConfig("F013", "0x64", nil),
 
 	// Harmony-0
 	evm.NewEVMServiceQoSConfig("F014", "0x63564c40", nil),
@@ -388,9 +498,6 @@ var morseServices = []ServiceQoSConfig{
 	// Near
 	evm.NewEVMServiceQoSConfig("F01B", "0x18d", nil),
 
-	// Optimism
-	evm.NewEVMServiceQoSConfig("F01D", "0xa", nil),
-
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", nil),
 
@@ -403,9 +510,6 @@ var morseServices = []ServiceQoSConfig{
 	// Radix
 	evm.NewEVMServiceQoSConfig("F023", "0x1337", nil),
 
-	// Scroll
-	evm.NewEVMServiceQoSConfig("F024", "0x82750", nil),
-
 	// Sui
 	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),
 
@@ -414,9 +518,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("F028", "0x28c61", nil),
-
-	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("F029", "0x44d", nil),
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", nil),

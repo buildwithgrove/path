@@ -42,35 +42,38 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-05-06**
+**🗓️ Document Last Updated: 2025-05-16**
 
 ## Shannon Protocol Services
 
 | Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |
 |-------------|------------|-----------------|----------|---------------------------|
+| Arbitrum One | arb_one | EVM | 42161 | ✅ |
+| Avalanche | avax | EVM | 43114 | ✅ |
+| Avalanche-DFK | avax-dfk | EVM | 53935 | ✅ |
+| Base | base | EVM | 8453 | ✅ |
+| BNB Smart Chain | bsc | EVM | 56 | ✅ |
+| Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
-| Polygon | poly | EVM | 137 | ✅ |
+| Gnosis | gnosis | EVM | 100 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
+| Optimism | op | EVM | 10 | ✅ |
+| Polygon | poly | EVM | 137 | ✅ |
+| Polygon zkEVM | poly_zkevm | EVM | 1101 | ✅ |
+| Scroll | scroll | EVM | 534352 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
-| Arbitrum One | arb_one | EVM | 42161 |  |
 | Arbitrum Sepolia Testnet | arb_sep_test | EVM | 421614 |  |
-| Avalanche | avax | EVM | 43114 |  |
-| Avalanche-DFK | avax-dfk | EVM | 53935 |  |
-| Base | base | EVM | 8453 |  |
 | Base Sepolia Testnet | base-test | EVM | 84532 |  |
 | Blast | blast | EVM | 81457 |  |
-| BNB Smart Chain | bsc | EVM | 56 |  |
 | Boba | boba | EVM | 288 |  |
-| Celo | celo | EVM | 42220 |  |
 | Ethereum Holesky Testnet | eth_hol_test | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | eth_sep_test | EVM | 11155111 |  |
 | Evmos | evmos | EVM | 9001 |  |
 | Fantom | fantom | EVM | 250 |  |
 | Fraxtal | fraxtal | EVM | 252 |  |
 | Fuse | fuse | EVM | 122 |  |
-| Gnosis | gnosis | EVM | 100 |  |
 | Harmony-0 | harmony | EVM | 1666600000 |  |
 | IoTeX | iotex | EVM | 4689 |  |
 | Kaia | kaia | EVM | 8217 |  |
@@ -79,16 +82,13 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonbeam | moonbeam | EVM | 1284 |  |
 | Moonriver | moonriver | EVM | 1285 |  |
 | Near | near | EVM | 397 |  |
-| Optimism | op | EVM | 10 |  |
 | Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 |  |
 | opBNB | opbnb | EVM | 204 |  |
 | Polygon Amoy Testnet | poly_amoy_test | EVM | 80002 |  |
 | Radix | radix | EVM | 4919 |  |
-| Scroll | scroll | EVM | 534352 |  |
 | Sui | sui | EVM | 257 |  |
 | Taiko | taiko | EVM | 167000 |  |
 | Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 |  |
-| Polygon zkEVM | poly_zkevm | EVM | 1101 |  |
 | zkLink | zklink_nova | EVM | 810180 |  |
 | zkSync | zksync_era | EVM | 324 |  |
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
@@ -112,27 +112,30 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 | Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |
 |-------------|------------|-----------------|----------|---------------------------|
+| Arbitrum One | F001 | EVM | 42161 | ✅ |
+| Avalanche | F003 | EVM | 43114 | ✅ |
+| Avalanche-DFK | F004 | EVM | 53935 | ✅ |
+| Base | F005 | EVM | 8453 | ✅ |
+| BNB Smart Chain | F009 | EVM | 56 | ✅ |
+| Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
-| Polygon | F021 | EVM | 137 | ✅ |
+| Gnosis | F013 | EVM | 100 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
+| Optimism | F01D | EVM | 10 | ✅ |
+| Polygon | F021 | EVM | 137 | ✅ |
+| Polygon zkEVM | F029 | EVM | 1101 | ✅ |
+| Scroll | F024 | EVM | 534352 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
-| Arbitrum One | F001 | EVM | 42161 |  |
 | Arbitrum Sepolia Testnet | F002 | EVM | 421614 |  |
-| Avalanche | F003 | EVM | 43114 |  |
-| Avalanche-DFK | F004 | EVM | 53935 |  |
-| Base | F005 | EVM | 8453 |  |
 | Base Sepolia Testnet | F006 | EVM | 84532 |  |
 | Blast | F008 | EVM | 81457 |  |
-| BNB Smart Chain | F009 | EVM | 56 |  |
 | Boba | F00A | EVM | 288 |  |
-| Celo | F00B | EVM | 42220 |  |
 | Ethereum Holesky Testnet | F00D | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | F00E | EVM | 11155111 |  |
 | Evmos | F00F | EVM | 9001 |  |
 | Fantom | F010 | EVM | 250 |  |
 | Fraxtal | F011 | EVM | 252 |  |
 | Fuse | F012 | EVM | 122 |  |
-| Gnosis | F013 | EVM | 100 |  |
 | Harmony-0 | F014 | EVM | 1666600000 |  |
 | IoTeX | F015 | EVM | 4689 |  |
 | Kaia | F016 | EVM | 8217 |  |
@@ -141,16 +144,13 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonbeam | F019 | EVM | 1284 |  |
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
-| Optimism | F01D | EVM | 10 |  |
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |
 | opBNB | F01F | EVM | 204 |  |
 | Polygon Amoy Testnet | F022 | EVM | 80002 |  |
 | Radix | F023 | EVM | 4919 |  |
-| Scroll | F024 | EVM | 534352 |  |
 | Sui | F026 | EVM | 257 |  |
 | Taiko | F027 | EVM | 167000 |  |
 | Taiko Hekla Testnet | F028 | EVM | 167009 |  |
-| Polygon zkEVM | F029 | EVM | 1101 |  |
 | zkLink | F02A | EVM | 810180 |  |
 | zkSync | F02B | EVM | 324 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
@@ -167,4 +167,4 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Celestia Testnet DA Archival | A0CC | CometBFT | celestia-testnet-da-archival |  |
 | Celestia Testnet Consensus Archival | A0CD | CometBFT | celestia-testnet-consensus-archival |  |
 | Osmosis | F020 | CometBFT | osmosis |  |
-| Solana | F025 | Solana |  |  |
+| TODO_MVP(@adshmh): Drop the Chain ID for Solana. | F025 | Solana |  |  |
