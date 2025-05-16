@@ -155,6 +155,14 @@ var shannonServices = []ServiceQoSConfig{
 		111,
 	)),
 
+	// Scroll
+	evm.NewEVMServiceQoSConfig("scroll", "0x82750", evm.NewEVMArchivalCheckConfig(
+		// https://scrollscan.com/address/0x5300000000000000000000000000000000000004
+		"0x5300000000000000000000000000000000000004",
+		// Contract start block
+		5_000_000,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -241,9 +249,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Radix
 	evm.NewEVMServiceQoSConfig("radix", "0x1337", nil),
-
-	// Scroll
-	evm.NewEVMServiceQoSConfig("scroll", "0x82750", nil),
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
@@ -408,6 +413,14 @@ var morseServices = []ServiceQoSConfig{
 		111,
 	)),
 
+	// Scroll
+	evm.NewEVMServiceQoSConfig("F024", "0x82750", evm.NewEVMArchivalCheckConfig(
+		// https://scrollscan.com/address/0x5300000000000000000000000000000000000004
+		"0x5300000000000000000000000000000000000004",
+		// Contract start block
+		5_000_000,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -486,9 +499,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Radix
 	evm.NewEVMServiceQoSConfig("F023", "0x1337", nil),
-
-	// Scroll
-	evm.NewEVMServiceQoSConfig("F024", "0x82750", nil),
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),

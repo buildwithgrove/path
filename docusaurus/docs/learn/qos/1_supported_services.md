@@ -59,6 +59,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Optimism | op | EVM | 10 | ✅ |
 | Polygon | poly | EVM | 137 | ✅ |
 | Polygon zkEVM | poly_zkevm | EVM | 1101 | ✅ |
+| Scroll | scroll | EVM | 534352 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
@@ -85,7 +86,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | opBNB | opbnb | EVM | 204 |  |
 | Polygon Amoy Testnet | poly_amoy_test | EVM | 80002 |  |
 | Radix | radix | EVM | 4919 |  |
-| Scroll | scroll | EVM | 534352 |  |
 | Sui | sui | EVM | 257 |  |
 | Taiko | taiko | EVM | 167000 |  |
 | Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 |  |
@@ -123,6 +123,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Optimism | F01D | EVM | 10 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
+| Scroll | F024 | EVM | 534352 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
 | Arbitrum Sepolia Testnet | F002 | EVM | 421614 |  |
 | Base Sepolia Testnet | F006 | EVM | 84532 |  |
@@ -147,7 +148,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | opBNB | F01F | EVM | 204 |  |
 | Polygon Amoy Testnet | F022 | EVM | 80002 |  |
 | Radix | F023 | EVM | 4919 |  |
-| Scroll | F024 | EVM | 534352 |  |
 | Sui | F026 | EVM | 257 |  |
 | Taiko | F027 | EVM | 167000 |  |
 | Taiko Hekla Testnet | F028 | EVM | 167009 |  |
