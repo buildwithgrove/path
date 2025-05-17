@@ -27,10 +27,10 @@ const maxErrMessageLen = 1000
 // - Generates request context if validation succeeds
 // - Used as the entry point for HTTP request validation
 type requestValidator struct {
-	logger       polylog.Logger
-	chainID      string
-	serviceID    protocol.ServiceID
-	serviceState *ServiceState
+	logger        polylog.Logger
+	chainID       string
+	serviceID     protocol.ServiceID
+	endpointStore *EndpointStore
 }
 
 // validateHTTPRequest:
@@ -67,6 +67,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 		// Set the origin of the request as USER (i.e. organic relay)
 		// The request is from a user.
 		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		endpointStore: rv.endpointStore,
 	}, true
 }
 
