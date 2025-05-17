@@ -25,10 +25,10 @@ func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig)
 	}
 
 	requestValidator := &requestValidator{
-		logger:       logger,
-		serviceID:    serviceID,
-		chainID:      chainID,
-		serviceState: serviceState,
+		logger:        logger,
+		serviceID:     serviceID,
+		chainID:       chainID,
+		endpointStore: solanaEndpointStore,
 	}
 
 	return &QoS{
