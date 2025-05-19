@@ -5,6 +5,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/metrics/qos/evm"
+	"github.com/buildwithgrove/path/metrics/qos/solana"
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
@@ -20,17 +21,20 @@ func PublishQoSMetrics(
 		return
 	}
 
-	var hasProcessedObservations bool
-
 	// Publish EVM metrics.
 	if evmObservations := qosObservations.GetEvm(); evmObservations != nil {
-		hasProcessedObservations = true
 		evm.PublishMetrics(hydratedLogger, evmObservations)
+		hydratedLogger.Debug().Msg("published EVM metrics.")
+		return
 	}
-	// TODO_MVP(@adshmh): add calls to metric exporter functions for Solana QoS
+
+	// Publish Solana metrics.
+	if solanaObservations := qosObservations.GetSolana(); solanaObservations != nil {
+		solana.PublishMetrics(hydratedLogger, solanaObservations)
+		hydratedLogger.Debug().Msg("published Solana metrics.")
+		return
+	}
 
 	// Log warning if no matching observation types were found
-	if !hasProcessedObservations {
-		hydratedLogger.Warn().Msgf("supplied observations do not match any known QoS service: %+v", qosObservations)
-	}
+	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: %+v", qosObservations)
 }

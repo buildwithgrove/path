@@ -63,9 +63,12 @@ func setupEndpointHydrator(
 	// - Gateway: selects endpoints (validated using Hydrator's observations)
 	hydratorQoSServices := make(map[protocol.ServiceID]gateway.QoSService)
 	for serviceID := range configuredServiceIDs {
+		logger := logger.With("service_id", serviceID)
+		logger.Debug().Msg("Processing service ID for the Endpoint Hydrator.")
+
 		serviceQoS, found := qosServices[serviceID]
 		if !found {
-			logger.Info().Msgf("QoS service not found for service ID: %s. NoOp QoS will be used for this service.", serviceID)
+			logger.Warn().Msgf("QoS service not found for the service ID %s. NoOp QoS will be used for this service.", serviceID)
 			continue
 		}
 		hydratorQoSServices[serviceID] = serviceQoS

@@ -1,0 +1,26 @@
+syntax = "proto3";
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+// RequestErrorKind enumerates possible request errors.
+enum RequestErrorKind {
+  REQUEST_ERROR_UNSPECIFIED = 0;
+  REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR = 1; // Internal error: reading HTTP request's body failed.
+  REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR = 2; // Internal error: protocol error: e.g. no endpoint responses received.
+  REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR = 3; // User error: Request failed to parse as JSONRPC.
+}
+
+// RequestError tracks the details of a request error.
+message RequestError {
+  // Tracks the kind of error: e.g. internal.
+  RequestErrorKind error_kind = 1;
+
+  // Tracks details of the error.
+  string error_details = 2;
+
+  // TODO_MVP(@adshm): drop this in favor of JUDGE's solution:
+  // store the JSONRPC Response's details (specifically the `code` field).
+  // The HTTP status can be derived from the JSONRPC response.
+  int32 http_status_code = 3;
+}

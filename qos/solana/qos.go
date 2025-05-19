@@ -6,7 +6,14 @@ import (
 
 // NewQoSInstance builds and returns an instance of the Solana QoS service.
 func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig) *QoS {
-	logger = logger.With("qos_instance", "solana")
+	chainID := serviceConfig.getChainID()
+	serviceID := serviceConfig.GetServiceID()
+
+	logger = logger.With(
+		"qos_instance", "solana",
+		"chain_id", chainID,
+		"service_id", serviceID,
+	)
 
 	serviceState := &ServiceState{
 		logger: logger,
@@ -17,9 +24,17 @@ func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig)
 		serviceState: serviceState,
 	}
 
-	return &QoS{
+	requestValidator := &requestValidator{
 		logger:        logger,
-		ServiceState:  serviceState,
-		EndpointStore: solanaEndpointStore,
+		serviceID:     serviceID,
+		chainID:       chainID,
+		endpointStore: solanaEndpointStore,
+	}
+
+	return &QoS{
+		logger:           logger,
+		ServiceState:     serviceState,
+		EndpointStore:    solanaEndpointStore,
+		requestValidator: requestValidator,
 	}
 }
