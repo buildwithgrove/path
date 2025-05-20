@@ -139,6 +139,14 @@ var shannonServices = []ServiceQoSConfig{
 		20_000_000,
 	)),
 
+	// Harmony-0
+	evm.NewEVMServiceQoSConfig("harmony", "0x63564c40", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
+		"one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a",
+		// Contract start block
+		60_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("moonbeam", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -231,9 +239,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Fuse
 	evm.NewEVMServiceQoSConfig("fuse", "0x7a", nil),
-
-	// Harmony-0
-	evm.NewEVMServiceQoSConfig("harmony", "0x63564c40", nil),
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("iotex", "0x1251", nil),
@@ -412,6 +417,14 @@ var morseServices = []ServiceQoSConfig{
 		20_000_000,
 	)),
 
+	// Harmony-0
+	evm.NewEVMServiceQoSConfig("F014", "0x63564c40", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
+		"one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a",
+		// Contract start block
+		60_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("F019", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -496,9 +509,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Fuse
 	evm.NewEVMServiceQoSConfig("F012", "0x7a", nil),
-
-	// Harmony-0
-	evm.NewEVMServiceQoSConfig("F014", "0x63564c40", nil),
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("F015", "0x1251", nil),
