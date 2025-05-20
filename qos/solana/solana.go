@@ -2,16 +2,13 @@ package solana
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // QoS implements gateway.QoSService by providing:
@@ -28,6 +25,7 @@ type QoS struct {
 	logger polylog.Logger
 	*EndpointStore
 	*ServiceState
+	*requestValidator
 }
 
 // ParseHTTPRequest builds a request context from the provided HTTP request.
@@ -35,33 +33,7 @@ type QoS struct {
 //
 // Implements the gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	logger := qos.logger.With("qos", "solana")
-
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return requestContextFromInternalError(logger, err), false
-	}
-
-	var jsonrpcReq jsonrpc.Request
-	if err := json.Unmarshal(body, &jsonrpcReq); err != nil {
-		return requestContextFromUserError(logger, err), false
-	}
-
-	// TODO_TECHDEBT(@adshmh): validate the JSONRPC request to block invalid requests from being sent to endpoints.
-	// TODO_IMPROVE(@adshmh): perform method-specific validation of the JSONRPC request.
-	// e.g. for a `getTokenAccountBalance` request, ensure there is a single account public key is specified as the `params` object.
-	// https://solana.com/docs/rpc/http/gettokenaccountbalance
-	return &requestContext{
-		logger: qos.logger,
-
-		JSONRPCReq:    jsonrpcReq,
-		endpointStore: qos.EndpointStore,
-
-		// set isValid to true to signal to the requestContext that the request is considered valid.
-		// The requestContext can be enhanced (see the above TODOs) to e.g. skip sending an invalid request to any endpoints,
-		// and directly return an error response to the user instead.
-		isValid: true,
-	}, true
+	return qos.requestValidator.validateHTTPRequest(req)
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
@@ -70,11 +42,11 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 // This method implements the gateway.QoSService interface.
 func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSContext, bool) {
 	return &requestContext{
-		logger: qos.logger,
-
+		logger:        qos.logger,
 		endpointStore: qos.EndpointStore,
-
-		isValid: true,
+		// Set the origin of the request as Organic (i.e. user request)
+		// The request is from a user.
+		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
 }
 
