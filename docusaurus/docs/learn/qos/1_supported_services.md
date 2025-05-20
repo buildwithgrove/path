@@ -42,7 +42,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-05-16**
+**🗓️ Document Last Updated: 2025-05-20**
 
 ## Shannon Protocol Services
 
@@ -56,6 +56,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
 | Gnosis | gnosis | EVM | 100 | ✅ |
+| Moonbeam | moonbeam | EVM | 1284 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
 | Polygon | poly | EVM | 137 | ✅ |
@@ -79,7 +80,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Kaia | kaia | EVM | 8217 |  |
 | Kava | kava | EVM | 2222 |  |
 | Metis | metis | EVM | 1088 |  |
-| Moonbeam | moonbeam | EVM | 1284 |  |
 | Moonriver | moonriver | EVM | 1285 |  |
 | Near | near | EVM | 397 |  |
 | Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 |  |
@@ -120,6 +120,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
 | Gnosis | F013 | EVM | 100 | ✅ |
+| Moonbeam | F019 | EVM | 1284 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
@@ -141,7 +142,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Kaia | F016 | EVM | 8217 |  |
 | Kava | F017 | EVM | 2222 |  |
 | Metis | F018 | EVM | 1088 |  |
-| Moonbeam | F019 | EVM | 1284 |  |
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |

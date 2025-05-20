@@ -131,6 +131,14 @@ var shannonServices = []ServiceQoSConfig{
 		20_000_000,
 	)),
 
+	// Moonbeam
+	evm.NewEVMServiceQoSConfig("moonbeam", "0x504", evm.NewEVMArchivalCheckConfig(
+		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
+		"0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+		// Contract start block
+		677_000,
+	)),
+
 	// Oasys
 	evm.NewEVMServiceQoSConfig("oasys", "0xf8", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -233,9 +241,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Metis
 	evm.NewEVMServiceQoSConfig("metis", "0x440", nil),
-
-	// Moonbeam
-	evm.NewEVMServiceQoSConfig("moonbeam", "0x504", nil),
 
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("moonriver", "0x505", nil),
@@ -394,6 +399,14 @@ var morseServices = []ServiceQoSConfig{
 		20_000_000,
 	)),
 
+	// Moonbeam
+	evm.NewEVMServiceQoSConfig("F019", "0x504", evm.NewEVMArchivalCheckConfig(
+		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
+		"0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+		// Contract start block
+		677_000,
+	)),
+
 	// Oasys
 	evm.NewEVMServiceQoSConfig("F01C", "0xf8", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -488,9 +501,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Metis
 	evm.NewEVMServiceQoSConfig("F018", "0x440", nil),
-
-	// Moonbeam
-	evm.NewEVMServiceQoSConfig("F019", "0x504", nil),
 
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("F01A", "0x505", nil),
