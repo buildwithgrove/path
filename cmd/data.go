@@ -29,5 +29,6 @@ func setupHTTPDataReporter(
 	return &data.DataReporterHTTP{
 		Logger:           logger,
 		DataProcessorURL: config.TargetURL,
+		PostTimeoutMS:    config.PostTimeoutMS,
 	}, nil
 }
