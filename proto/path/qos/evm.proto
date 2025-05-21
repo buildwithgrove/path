@@ -17,6 +17,7 @@ package path.qos;
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
+import "path/qos/request_origin.proto";
 import "path/metadata/metadata.proto";
 
 // EVMRequestValidationError enumerates possible causes for EVM request rejection:
@@ -62,7 +63,7 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 8
+  // Next ID: 9
 
   // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
@@ -72,6 +73,11 @@ message EVMRequestObservations {
   // service_id is the identifier for the evm QoS implementation.
   // It is the "alias" or human readable interpratation of the chain_id.
   string service_id = 7;
+
+  // The origin of the request:
+  // - Organic: real (i.e. user) requests
+  // - Synthetic: requests built by QoS module for collecting data on endpoints (a.k.a hydrator)
+  RequestOrigin request_origin = 8;
 
   // The length of the client's request payload, in bytes.
   uint32 request_payload_length = 2;

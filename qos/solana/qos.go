@@ -16,7 +16,9 @@ func NewQoSInstance(logger polylog.Logger, serviceConfig SolanaServiceQoSConfig)
 	)
 
 	serviceState := &ServiceState{
-		logger: logger,
+		logger:    logger,
+		serviceID: serviceID,
+		chainID:   chainID,
 	}
 
 	solanaEndpointStore := &EndpointStore{
