@@ -21,6 +21,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// TODO_DOCUMENT(@Olshansk): Standardize the language on organic vs synthetic requests across docs/comments/code.
+//
 // RequestOrigin enumerates possible request origins:
 // - Organic: the request was sent to PATH by a user
 // - Synthetic: the request was built by the QoS service to collect data points on an endpoint.
