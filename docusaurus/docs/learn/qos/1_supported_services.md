@@ -42,7 +42,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-05-20**
+**🗓️ Document Last Updated: 2025-05-21**
 
 ## Shannon Protocol Services
 
@@ -125,6 +125,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonbeam | F019 | EVM | 1284 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
+| opBNB | F01F | EVM | 204 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
 | Scroll | F024 | EVM | 534352 | ✅ |
@@ -145,7 +146,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |
-| opBNB | F01F | EVM | 204 |  |
 | Polygon Amoy Testnet | F022 | EVM | 80002 |  |
 | Radix | F023 | EVM | 4919 |  |
 | Sui | F026 | EVM | 257 |  |

@@ -449,6 +449,14 @@ var morseServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
+	// opBNB
+	evm.NewEVMServiceQoSConfig("F01F", "0xcc", evm.NewEVMArchivalCheckConfig(
+		// https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
+		"0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2",
+		// Contract start block
+		20_000_000,
+	)),
+
 	// Polygon
 	evm.NewEVMServiceQoSConfig("F021", "0x89", evm.NewEVMArchivalCheckConfig(
 		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -530,9 +538,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Optimism Sepolia Testnet
 	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", nil),
-
-	// opBNB
-	evm.NewEVMServiceQoSConfig("F01F", "0xcc", nil),
 
 	// Polygon Amoy Testnet
 	evm.NewEVMServiceQoSConfig("F022", "0x13882", nil),
