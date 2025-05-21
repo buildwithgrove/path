@@ -25,6 +25,10 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
+// TODO_IN_THIS_PR(@commoddity): create separate "LOAD TEST" mode alongside "MORSE" and "SHANNON" modes to differentiate between the different test modes
+//  		- LOAD TEST mode should be used for load testing the gateway using a custom override URL (no docker PATH instance required - uses either local PATH)
+//  		- MORSE and SHANNON modes actually spin up PATH in Docker and run the tests against it
+//
 /*
 For full information on the test options, see `opts_test.go`
 
