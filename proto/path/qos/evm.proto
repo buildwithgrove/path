@@ -75,8 +75,8 @@ message EVMRequestObservations {
   string service_id = 7;
 
   // The origin of the request:
-  // - Organic, i.e. User request.
-  // - Synthetic: requests built by QoS for collecting data on endpoints.
+  // - Organic: real (i.e. user) requests
+  // - Synthetic: requests built by QoS module for collecting data on endpoints (a.k.a hydrator)
   RequestOrigin request_origin = 8;
 
   // The length of the client's request payload, in bytes.
