@@ -75,7 +75,7 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(endpointObservation.EndpointResponseTimestamp)
 
 	// track time spent waiting for the endpoint: required for calculating the `PortalTripTime` legacy field.
-	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Seconds()
+	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Milliseconds()
 
 	// Set endpoint address
 	legacyRecord.NodeAddress = endpointObservation.EndpointAddr
