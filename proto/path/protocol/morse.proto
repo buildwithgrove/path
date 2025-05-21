@@ -32,7 +32,11 @@ enum MorseEndpointErrorType {
   // This error indicates the endpoint returned an HTTP response with a mismatch between ContentLength header and actual body length.
   // Mostly encountered as ContentLength > 0 with an actual body length of 0.
   MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH = 10;
+
   MORSE_ENDPOINT_ERROR_INTERNAL = 11;  // Added for internal gateway errors
+
+  // This error indicates the endpoint returned an error on executing the HTTP request.
+  MORSE_ENDPOINT_ERROR_EXECUTING_HTTP_REQUEST = 12;
 }
 
 // TODO_DOCUMENT(@adshmh): Document the sanction system in the Morse protocol implementation:
