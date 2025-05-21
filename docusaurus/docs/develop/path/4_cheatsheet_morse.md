@@ -119,7 +119,7 @@ signed_aats:
 Run the following commands to generate a Morse config at `local/path/.config.yaml`:
 
 ```bash
-# Generate ./e2e/.morse.config.yaml
+# Generate ./e2e/config/.morse.config.yaml
 make morse_prepare_e2e_config
 
 # Copy to ./local/path/.config.yaml

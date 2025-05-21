@@ -51,7 +51,7 @@ var containerPortAndProtocol = internalPathPort + "/tcp"
 func setupPathInstance(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts dockerOptions,
+	dockerOpts DockerConfig,
 ) (containerPort string, cleanupFn func()) {
 	t.Helper()
 
@@ -84,13 +84,13 @@ func setupPathInstance(
 func setupPathDocker(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts dockerOptions,
+	dockerOpts DockerConfig,
 ) (*dockertest.Pool, *dockertest.Resource, string, string) {
 	t.Helper()
 
 	// Get docker options from the global test options
-	logContainer := dockerOpts.logOutput
-	forceRebuild := dockerOpts.forceRebuild
+	logContainer := dockerOpts.DockerLog
+	forceRebuild := dockerOpts.DockerForceRebuild
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
@@ -100,7 +100,7 @@ func setupPathDocker(
 		t.Fatalf("config file does not exist: %s", configFilePath)
 	}
 
-	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/config/.config.yaml
+	// eg. {file_path}/path/e2e/config/.shannon.config.yaml:/app/config/.config.yaml
 	containerConfigMount := configFilePath + configMountPoint
 
 	// Initialize the dockertest pool
@@ -116,7 +116,7 @@ func setupPathDocker(
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
 			fmt.Println("\n🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 TIP: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed 💡")
+			fmt.Println("  💡 TIP: Set `docker_config.docker_force_rebuild: true` to rebuild the image if needed 💡")
 		}
 	} else {
 		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")

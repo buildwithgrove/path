@@ -1,0 +1,146 @@
+# This schema file may be used to validate the e2e config file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+description: "PATH E2E Testing Configuration YAML: this file is used to configure end-to-end tests for PATH gateways"
+type: object
+additionalProperties: false
+
+definitions:
+  method_config_base:
+    description: "Common test configuration options"
+    type: object
+    additionalProperties: false
+    properties:
+      total_requests:
+        description: "Total number of requests to send for each method"
+        type: integer
+        minimum: 1
+      rps:
+        description: "Requests per second for each method"
+        type: integer
+        minimum: 1
+      success_rate:
+        description: "Minimum success rate required (0-1)"
+        type: number
+        minimum: 0
+        maximum: 1
+      max_p50_latency_ms:
+        description: "Maximum P50 latency in milliseconds"
+        type: string
+        minimum: 0
+        pattern: "^[0-9]+ms$"
+      max_p95_latency_ms:
+        description: "Maximum P95 latency in milliseconds"
+        type: string
+        minimum: 0
+        pattern: "^[0-9]+ms$"
+      max_p99_latency_ms:
+        description: "Maximum P99 latency in milliseconds"
+        type: string
+        minimum: 0
+        pattern: "^[0-9]+ms$"
+  service_params:
+    description: "Service parameters for test requests"
+    type: object
+    additionalProperties: false
+    properties:
+      contract_address:
+        description: "Contract address for eth calls"
+        type: string
+      call_data:
+        description: "Call data for eth_call"
+        type: string
+      contract_start_block:
+        description: "Minimum block number for archival tests - ensures contract address has balance or transactions"
+        type: integer
+        minimum: 0
+      transaction_hash:
+        description: "Transaction hash for receipt/transaction queries"
+        type: string
+
+  test_case:
+    description: "Test case definition for all protocols"
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - service_id
+    properties:
+      name:
+        description: "Name of the test case"
+        type: string
+      service_id:
+        description: "Service ID to test - identifies the specific blockchain service"
+        type: string
+      archival:
+        description: "Whether this is an archival test (historical data access)"
+        type: boolean
+      service_params:
+        $ref: "#/definitions/service_params"
+      latency_multiplier:
+        description: "Multiplier for latency thresholds for this test case"
+        type: integer
+        minimum: 1
+      test_case_config_override:
+        description: "Override default configuration for this test case"
+        $ref: "#/definitions/method_config_base"
+      test_case_method_override:
+        description: "Override methods to test for this test case"
+        type: array
+        items:
+          type: string
+
+  protocol_config:
+    description: "Protocol configuration structure (shared between Morse and Shannon)"
+    type: object
+    additionalProperties: false
+    properties:
+      default_method_config:
+        $ref: "#/definitions/method_config_base"
+        description: "Default configuration for all test cases in this protocol"
+      test_cases:
+        description: "Array of test cases to run"
+        type: array
+        items:
+          $ref: "#/definitions/test_case"
+
+properties:
+  test_config:
+    description: "General test configuration"
+    type: object
+    additionalProperties: false
+    properties:
+      gateway_url_override:
+        description: "Custom PATH gateway URL (useful for local dev) - if set, skips Docker and runs tests against this URL"
+        type: string
+      service_id_override:
+        description: "Test only a specific service ID instead of all services"
+        type: string
+      wait_for_hydrator:
+        description: "Seconds to wait for hydrator checks - useful when adding new services"
+        type: integer
+        minimum: 0
+
+  docker_config:
+    description: "Docker configuration for e2e tests"
+    type: object
+    additionalProperties: false
+    properties:
+      docker_log:
+        description: "Log Docker container output to file"
+        type: boolean
+      docker_force_rebuild:
+        description: "Force Docker image rebuild (useful after code changes)"
+        type: boolean
+
+  default_method_config:
+    $ref: "#/definitions/method_config_base"
+    description: "Default configuration for all test cases"
+
+  morse_config:
+    description: "Configuration for Morse protocol tests"
+    $ref: "#/definitions/protocol_config"
+
+  shannon_config:
+    description: "Configuration for Shannon protocol tests"
+    $ref: "#/definitions/protocol_config"

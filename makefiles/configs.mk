@@ -7,8 +7,8 @@ CONFIG_FILES := \
 	./bin/config/.config.yaml \
 	./config/.config.yaml \
 	./local/path/.config.yaml \
-	./e2e/.shannon.config.yaml \
-	./e2e/.morse.config.yaml \
+	./e2e/config/.shannon.config.yaml \
+	./e2e/config/.morse.config.yaml \
 	./local/path/envoy/.envoy.yaml
 
 # Helper function to check if a config file exists

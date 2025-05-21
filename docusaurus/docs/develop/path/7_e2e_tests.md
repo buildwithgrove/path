@@ -139,7 +139,7 @@ make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
 
 ```bash
 # Replace with .morse.config.yaml for Morse
-cp ./e2e/.shannon.config.yaml ./local/path/.config.yaml
+cp ./e2e/config/.shannon.config.yaml ./local/path/.config.yaml
 make path_run
 ```
 
