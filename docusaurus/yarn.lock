@@ -99,9 +99,9 @@
   resolved "https://registry.npmjs.org/@algolia/events/-/events-4.0.1.tgz"
   integrity sha512-FQzvOCgoFXAbf5Y6mYozw2aj5KCJoA3m4heImceldzPSMbdyS4atVjJzXKMsfX3wnZTFYwkkt8/z8UesLHlSBQ==
 
-"@algolia/ingestion@1.23.2":
-  version "1.23.2"
-  resolved "https://registry.npmjs.org/@algolia/ingestion/-/ingestion-1.23.2.tgz"
+"@algolia/ingestion@1.24.3":
+  version "1.24.3"
+  resolved "https://registry.npmjs.org/@algolia/ingestion/-/ingestion-1.24.3.tgz"
   integrity sha512-7ClIghvUFZTomBipD8Kor9Z5llcAM3lHUBG3VFOvUsOxOJcaMMONlBXyoFDfI1na+u14lVaGehY2oIEfY1eB0w==
   dependencies:
     "@algolia/client-common" "5.23.2"
@@ -109,9 +109,9 @@
     "@algolia/requester-fetch" "5.23.2"
     "@algolia/requester-node-http" "5.23.2"
 
-"@algolia/monitoring@1.23.2":
-  version "1.23.2"
-  resolved "https://registry.npmjs.org/@algolia/monitoring/-/monitoring-1.23.2.tgz"
+"@algolia/monitoring@1.24.3":
+  version "1.24.3"
+  resolved "https://registry.npmjs.org/@algolia/monitoring/-/monitoring-1.24.3.tgz"
   integrity sha512-kF7KKd0iIIlaD70flFS+8+DNxRvIzrG9A22iWG5LDX225Kl6pITroq+qIUweqqyyoqJBYuIXKZGDGtnahEwQxw==
   dependencies:
     "@algolia/client-common" "5.23.2"
@@ -3488,8 +3488,8 @@ algoliasearch@^5.14.2, algoliasearch@^5.17.1:
     "@algolia/client-personalization" "5.23.2"
     "@algolia/client-query-suggestions" "5.23.2"
     "@algolia/client-search" "5.23.2"
-    "@algolia/ingestion" "1.23.2"
-    "@algolia/monitoring" "1.23.2"
+    "@algolia/ingestion" "1.24.3"
+    "@algolia/monitoring" "1.24.3"
     "@algolia/recommend" "5.23.2"
     "@algolia/requester-browser-xhr" "5.23.2"
     "@algolia/requester-fetch" "5.23.2"
