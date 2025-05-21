@@ -36,7 +36,6 @@ k8s_prepare_local_env: check_kind
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
 		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
 		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
-		kubectl config use-context kind-path-localnet; \
 		kubectl create namespace path; \
 		kubectl create namespace monitoring; \
 		kubectl create namespace middleware; \
@@ -44,7 +43,8 @@ k8s_prepare_local_env: check_kind
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 	else \
 		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
-	fi
+	fi; \
+	kubectl config use-context kind-path-localnet;
 
 .PHONY: k8s_cleanup_local_env
 # Internal helper: Cleans up kind cluster and kubeconfig context for path-localnet

@@ -64,6 +64,12 @@ type requestContext struct {
 	// Used in generating observations.
 	serviceID protocol.ServiceID
 
+	// The origin of the request handled by the context.
+	// Either:
+	// - Organic: user requests
+	// - Synthetic: requests built by the QoS service to get additional data points on endpoints.
+	requestOrigin qosobservations.RequestOrigin
+
 	// The length of the request payload in bytes.
 	requestPayloadLength uint
 
@@ -178,6 +184,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 				ChainId:              rc.chainID,
 				ServiceId:            string(rc.serviceID),
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
+				RequestOrigin:        rc.requestOrigin,
 				EndpointObservations: observations,
 			},
 		},
