@@ -36,7 +36,7 @@ var (
 	// Labels:
 	//   - chain_id: Target EVM chain identifier
 	//   - service_id: Service ID of the EVM QoS instance
-	//   - request_origin: origin of the request: User or Hydrator.
+	//   - request_origin: origin of the request: Organic (i.e. user) or Synthetic (i.e. hydrator)
 	//   - request_method: JSON-RPC method name
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (or "" for successful requests)
