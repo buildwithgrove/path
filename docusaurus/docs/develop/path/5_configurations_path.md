@@ -25,6 +25,7 @@ A `PATH` stack is configured via two files:
   - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
 - [`logger_config` (optional)](#logger_config-optional)
+- [`data_reporter_config` (optional)](#data_reporter_config-optional)
 
 All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
 
@@ -285,3 +286,24 @@ logger_config:
 | Field   | Type   | Required | Default | Description                                                           |
 | ------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
 | `level` | string | No       | "info"  | Minimum log level. Valid values are: "debug", "info", "warn", "error" |
+
+---
+
+## `data_reporter_config` (optional)
+
+Configures HTTP-based data reporting to external services like BigQuery via data pipelines (e.g., Fluentd with HTTP input and BigQuery output plugins).
+
+```yaml
+data_reporter_config:
+  target_url: "https://fluentd-service.example.com/http-input"
+  post_timeout_ms: 5000
+```
+
+| Field            | Type    | Required | Default | Description                                                                                         |
+| ---------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `target_url`     | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)                 |
+| `post_timeout_ms`| integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used   |
+
+:::info
+Currently, only JSON-accepting data pipelines are supported as of PR #215.
+:::
