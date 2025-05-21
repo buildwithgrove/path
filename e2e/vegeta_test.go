@@ -20,7 +20,6 @@ import (
 
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/buildwithgrove/path/request"
 )
 
 // ===== ANSI Color Constants =====
@@ -43,8 +42,8 @@ const (
 // • Returns a vegeta.Targeter for the specified RPC method
 func createRPCTarget(
 	gatewayURL string,
-	serviceID protocol.ServiceID,
 	jsonrpcReq jsonrpc.Request,
+	headers http.Header,
 ) vegeta.Targeter {
 	return func(tgt *vegeta.Target) error {
 		body, err := json.Marshal(jsonrpcReq)
@@ -55,10 +54,7 @@ func createRPCTarget(
 		tgt.Method = http.MethodPost
 		tgt.URL = gatewayURL
 		tgt.Body = body
-		tgt.Header = http.Header{
-			"Content-Type":                    []string{"application/json"},
-			request.HTTPHeaderTargetServiceID: []string{string(serviceID)},
-		}
+		tgt.Header = headers
 		return nil
 	}
 }
@@ -71,14 +67,14 @@ func createRPCTarget(
 func runAttack(
 	ctx context.Context,
 	gatewayURL string,
-	serviceID protocol.ServiceID,
 	method jsonrpc.Method,
 	testConfig MethodConfig,
 	progressBar *pb.ProgressBar,
 	jsonrpcReq jsonrpc.Request,
+	headers http.Header,
 ) *methodMetrics {
 	metrics := initMethodMetrics(method, testConfig.TotalRequests)
-	target := createRPCTarget(gatewayURL, serviceID, jsonrpcReq)
+	target := createRPCTarget(gatewayURL, jsonrpcReq, headers)
 	maxDuration := time.Duration(2*testConfig.TotalRequests/testConfig.RPS)*time.Second + 5*time.Second
 
 	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
@@ -295,6 +291,10 @@ type serviceSummary struct {
 	avgP90Latency  time.Duration
 	avgLatency     time.Duration
 	avgSuccessRate float64
+
+	totalRequests int
+	totalSuccess  int
+	totalFailure  int
 
 	methodConfigs map[jsonrpc.Method]MethodConfig
 	methodErrors  map[jsonrpc.Method]map[string]int
@@ -659,6 +659,27 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		successColor := getRateColor(summary.avgSuccessRate, methodConfig.SuccessRate)
 		p90Color := getLatencyColor(summary.avgP90Latency, methodConfig.MaxP95LatencyMS) // P90 closest to P95
 		avgColor := getLatencyColor(summary.avgLatency, methodConfig.MaxP50LatencyMS)    // Avg closest to P50
+
+		// Calculate allowed failure rate
+		maxFailureRate := 1.0 - methodConfig.SuccessRate
+		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
+
+		// Color for failures based on whether they exceed the allowed threshold
+		failureColor := GREEN
+		if summary.totalFailure > maxAllowedFailures {
+			failureColor = RED
+		}
+
+		// Print request stats
+		fmt.Printf("  • Total Requests: %d\n", summary.totalRequests)
+		fmt.Printf("  • Total Successes: %s%d%s\n", GREEN, summary.totalSuccess, RESET)
+		fmt.Printf("  • Total Failures: %s%d%s", failureColor, summary.totalFailure, RESET)
+
+		// Add context about allowed failures if there are any failures
+		if summary.totalFailure > 0 {
+			fmt.Printf(" (max allowed: %d)", maxAllowedFailures)
+		}
+		fmt.Println()
 
 		fmt.Printf("  • Average Success Rate: %s%.2f%%%s\n",
 			successColor, summary.avgSuccessRate*100, RESET)

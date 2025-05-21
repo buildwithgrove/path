@@ -11,6 +11,10 @@
 test_config:
   # Custom PATH gateway URL (if not empty, skips Docker and runs tests against this URL)
   gateway_url_override: ""
+  # Custom user identifier for the test (eg. portal-application-id)
+  portal_application_id_override: ""
+  # Custom API key for the test (eg. portal-api-key)
+  portal_api_key_override: ""
   # Test only a specific service ID instead of all services
   service_id_override: ""
   # Seconds to wait for hydrator checks (useful when adding new services)

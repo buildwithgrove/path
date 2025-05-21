@@ -141,14 +141,16 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
 	}
 
-	// Log test information
-	logEVMTestStartInfo(testProtocol, gatewayURL, serviceIDOverride)
-
-	// Wait for hydrator if needed
-	waitForHydratorIfNeeded(waitForHydrator)
-
 	// Get test cases from config
 	testCases := getTestCases(t, testProtocol, serviceIDOverride)
+
+	// Log test information
+	logEVMTestStartInfo(testProtocol, gatewayURL, serviceIDOverride, testCases)
+
+	// Wait for hydrator if needed
+	if waitForHydrator > 0 {
+		waitForHydratorIfNeeded(waitForHydrator)
+	}
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
 	for _, tc := range testCases {
@@ -163,6 +165,9 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			callData:           tc.ServiceParams.CallData,
 		}
 
+		// Get request headers
+		headers := getRequestHeaders(serviceID, &cfg.TestConfig)
+
 		// Determine if test is archival
 		isArchival := tc.Archival
 		if !isArchival {
@@ -171,7 +176,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			serviceParams.blockNumber = setTestBlockNumber(
 				t,
 				gatewayURL,
-				serviceID,
+				headers,
 				serviceParams.contractStartBlock,
 			)
 		}
@@ -193,7 +198,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			t,
 			ctx,
 			tc.Name,
-			serviceID,
+			headers,
 			serviceParams,
 			tc.LatencyMultiplier,
 			methodConfigs,
@@ -286,14 +291,29 @@ func setupSIGINTHandler(cancel context.CancelFunc) {
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
-func logEVMTestStartInfo(protocol protocolType, gatewayURL string, serviceIDOverride string) {
-	fmt.Println("\n🌿 Starting PATH E2E EVM test ...")
+func logEVMTestStartInfo(
+	protocol protocolType,
+	gatewayURL string,
+	serviceIDOverride string,
+	testCases []TestCase,
+) {
+	fmt.Println("\n🌿 Starting PATH Vegeta load test ...")
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
+	if cfg.TestConfig.PortalApplicationIDOverride != "" {
+		fmt.Printf("  🌀 Portal Application ID: %s\n", cfg.TestConfig.PortalApplicationIDOverride)
+	}
+	if cfg.TestConfig.PortalAPIKeyOverride != "" {
+		fmt.Printf("  🔑 Portal API Key: %s\n", cfg.TestConfig.PortalAPIKeyOverride)
+	}
 	fmt.Printf("  📡 Test protocol: %s\n", protocol)
 	if serviceIDOverride != "" {
 		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", serviceIDOverride)
 	} else {
-		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
+		var serviceIDs []string
+		for _, tc := range testCases {
+			serviceIDs = append(serviceIDs, tc.ServiceID)
+		}
+		fmt.Printf("  ⛓️  Running tests for all service IDs: %s\n", strings.Join(serviceIDs, ", "))
 	}
 }
 
@@ -314,7 +334,7 @@ func runEVMServiceTest(
 	t *testing.T,
 	ctx context.Context,
 	testName string,
-	serviceID protocol.ServiceID,
+	headers http.Header,
 	serviceParams evmServiceParameters,
 	latencyMultiplier int,
 	methodConfigs map[jsonrpc.Method]MethodConfig,
@@ -361,9 +381,10 @@ func runEVMServiceTest(
 				ctx,
 				method,
 				methodDef,
-				serviceID,
+				headers,
 				serviceParams,
-				gatewayURL, progBars.get(method),
+				gatewayURL,
+				progBars.get(method),
 			)
 
 			resultsMutex.Lock()
@@ -394,7 +415,7 @@ func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
 	methodConfig MethodConfig,
-	serviceID protocol.ServiceID,
+	headers http.Header,
 	serviceParams evmServiceParameters,
 	gatewayURL string,
 	progBar *pb.ProgressBar,
@@ -416,14 +437,28 @@ func runMethodAttack(
 	metrics := runAttack(
 		ctx,
 		gatewayURL,
-		serviceID,
 		method,
 		methodConfig,
 		progBar,
 		jsonrpcReq,
+		headers,
 	)
 
 	return metrics
+}
+
+func getRequestHeaders(serviceID protocol.ServiceID, testConfig *TestConfig) http.Header {
+	headers := http.Header{
+		"Content-Type":                    []string{"application/json"},
+		request.HTTPHeaderTargetServiceID: []string{string(serviceID)},
+	}
+	if testConfig.PortalApplicationIDOverride != "" {
+		headers.Set("Portal-Application-ID", testConfig.PortalApplicationIDOverride)
+	}
+	if testConfig.PortalAPIKeyOverride != "" {
+		headers.Set("Authorization", testConfig.PortalAPIKeyOverride)
+	}
+	return headers
 }
 
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
@@ -438,6 +473,11 @@ func calculateServiceSummary(
 	var totalP90Latency time.Duration
 	var totalSuccessRate float64
 	var methodsWithResults int
+
+	// Track service totals
+	summary.totalRequests = 0
+	summary.totalSuccess = 0
+	summary.totalFailure = 0
 
 	// Validate results for each method and collect summary data
 	for method := range methodConfigs {
@@ -465,6 +505,11 @@ func calculateServiceSummary(
 		if t.Failed() {
 			*serviceTestFailed = true
 		}
+
+		// Accumulate totals for the service summary
+		summary.totalRequests += methodMetrics.requestCount
+		summary.totalSuccess += methodMetrics.success
+		summary.totalFailure += methodMetrics.failed
 
 		// Extract latencies for P90 calculation
 		var latencies []time.Duration
@@ -531,11 +576,11 @@ func adjustLatencyForTestCase(
 func setTestBlockNumber(
 	t *testing.T,
 	gatewayURL string,
-	serviceID protocol.ServiceID,
+	headers http.Header,
 	contractStartBlock uint64,
 ) string {
 	// Get current block height - fail test if this doesn't work
-	currentBlock, err := getCurrentBlockNumber(gatewayURL, serviceID)
+	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
 	if err != nil {
 		t.Fatalf("FATAL: Could not get current block height: %v", err)
 	}
@@ -545,7 +590,7 @@ func setTestBlockNumber(
 }
 
 // getCurrentBlockNumber gets current block height with consensus from multiple requests
-func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
+func getCurrentBlockNumber(gatewayURL string, headers http.Header) (uint64, error) {
 	// Track frequency of each block height seen
 	blockHeights := make(map[uint64]int)
 	maxAttempts, requiredAgreement := 5, 3
@@ -553,7 +598,7 @@ func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uin
 
 	// Make multiple attempts to get consensus
 	for range maxAttempts {
-		blockNum, err := fetchBlockNumber(client, gatewayURL, serviceID)
+		blockNum, err := fetchBlockNumber(client, gatewayURL, headers)
 		if err != nil {
 			continue
 		}
@@ -570,9 +615,9 @@ func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uin
 }
 
 // fetchBlockNumber makes a single request to get the current block number
-func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
+func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
 	// Build and send request
-	req, err := buildBlockNumberRequest(gatewayURL, serviceID)
+	req, err := buildBlockNumberRequest(gatewayURL, headers)
 	if err != nil {
 		return 0, err
 	}
@@ -610,7 +655,7 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol
 }
 
 // Helper to build a block number request
-func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*http.Request, error) {
+func buildBlockNumberRequest(gatewayURL string, headers http.Header) (*http.Request, error) {
 	blockNumberReq := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(1),
@@ -627,8 +672,7 @@ func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(request.HTTPHeaderTargetServiceID, string(serviceID))
+	req.Header = headers.Clone()
 
 	return req, nil
 }

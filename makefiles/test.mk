@@ -11,9 +11,9 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_e2e_evm_morse
 test_e2e_evm_morse: morse_e2e_config_warning ## Run an E2E Morse relay test
-	TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 .PHONY: test_e2e_evm_shannon
 test_e2e_evm_shannon: shannon_e2e_config_warning ## Run an E2E Shannon relay test
-	TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 

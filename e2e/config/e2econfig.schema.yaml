@@ -113,6 +113,12 @@ properties:
       gateway_url_override:
         description: "Custom PATH gateway URL (useful for local dev) - if set, skips Docker and runs tests against this URL"
         type: string
+      portal_application_id_override:
+        description: "Custom user identifier for the test (eg. portal-application-id)"
+        type: string
+      portal_api_key_override:
+        description: "Custom API key for the test (eg. portal-api-key)"
+        type: string
       service_id_override:
         description: "Test only a specific service ID instead of all services"
         type: string

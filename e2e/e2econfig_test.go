@@ -9,10 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Config file paths relative to the e2e directory
 const (
-	// Config file paths relative to the e2e directory
-	defaultConfigFile = "config/e2econfig.tmpl.yaml"
-	customConfigFile  = "config/.e2econfig.yaml"
+	customConfigFile  = "config/.e2econfig.yaml"     // Custom config file (loaded if it exists)
+	defaultConfigFile = "config/e2econfig.tmpl.yaml" // Default config file (used if custom config file is not found)
 )
 
 // LoadE2EConfig loads the E2E configuration in the following order:
@@ -58,6 +58,10 @@ type (
 	TestConfig struct {
 		// Custom PATH gateway URL (useful for local dev)
 		GatewayURLOverride string `yaml:"gateway_url_override"`
+		// Custom user identifier for the test (eg. portal-application-id)
+		PortalApplicationIDOverride string `yaml:"portal_application_id_override"`
+		// Custom API key for the test (eg. portal-api-key)
+		PortalAPIKeyOverride string `yaml:"portal_api_key_override"`
 		// Test only a specific service ID
 		ServiceIDOverride string `yaml:"service_id_override"`
 		// Seconds to wait for hydrator checks
