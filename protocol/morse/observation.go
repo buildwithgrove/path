@@ -79,6 +79,11 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	case ErrHTTPContentLengthIncorrect:
 		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH,
 			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
+
+	// Endpoint indicated it encountered an error executing the HTTP request.
+	case ErrExecutingHTTPRequest:
+		return protocolobservations.MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_EXECUTING_HTTP_REQUEST,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION
 	}
 
 	// If the error doesn't match any of our defined errors, log it and return a generic internal error.
