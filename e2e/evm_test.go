@@ -41,72 +41,15 @@ Example Usage:
 // -------------------- Test Configuration Initialization --------------------
 
 // Global config
-var cfg *Config
+var cfg *config
 
 // init initializes the test configuration
 func init() {
 	var err error
-	cfg, err = LoadE2EConfig()
+	cfg, err = loadE2EConfig()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load E2E config: %v", err))
 	}
-}
-
-// -------------------- Protocol Type --------------------
-
-// protocolType determines whether to test PATH with Morse or Shannon
-type protocolType string
-
-const (
-	protocolMorse   protocolType = "morse"
-	protocolShannon protocolType = "shannon"
-)
-
-// isValid returns true if the protocol is either morse or shannon
-func (p protocolType) isValid() bool {
-	return p == protocolMorse || p == protocolShannon
-}
-
-// -------------------- Get Test Cases for Protocol --------------------
-
-// getTestCases returns the appropriate test cases based on the protocol.
-//
-// - Filters for a specific service ID if provided.
-// - Panics if the service ID override is not found.
-func getTestCases(t *testing.T, protocol protocolType, serviceIDOverride string) []TestCase {
-	var testCases []TestCase
-	var protocolConfig *ProtocolConfig
-
-	// Select test cases based on protocol
-	switch protocol {
-	case protocolMorse:
-		if cfg.MorseConfig == nil {
-			t.Fatalf("No Morse configuration found in config file")
-		}
-		protocolConfig = cfg.MorseConfig
-	case protocolShannon:
-		if cfg.ShannonConfig == nil {
-			t.Fatalf("No Shannon configuration found in config file")
-		}
-		protocolConfig = cfg.ShannonConfig
-	default:
-		t.Fatalf("Unsupported protocol: %s", protocol)
-	}
-
-	testCases = protocolConfig.TestCases
-
-	// Filter by serviceIDOverride if provided
-	if serviceIDOverride != "" {
-		for _, tc := range testCases {
-			if tc.ServiceID == serviceIDOverride {
-				// Return single matching test case in a slice
-				return []TestCase{tc}
-			}
-		}
-		panic(fmt.Sprintf("Service ID override %s not found", serviceIDOverride))
-	}
-
-	return testCases
 }
 
 /* -------------------- EVM Load Test Function -------------------- */
@@ -117,63 +60,50 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	defer cancel()
 	setupSIGINTHandler(cancel)
 
-	// Determine which protocol we're testing based on TEST_PROTOCOL env var
-	protocolStr := os.Getenv("TEST_PROTOCOL")
-	if protocolStr == "" {
-		t.Fatalf("TEST_PROTOCOL environment variable is not set")
-	}
+	// 1. Get test cases from config based on `TEST_PROTOCOL` env var
+	testCases := cfg.getTestCases()
 
-	testProtocol := protocolType(protocolStr)
-	if !testProtocol.isValid() {
-		t.Fatalf("TEST_PROTOCOL must be 'morse' or 'shannon', got %s", protocolStr)
-	}
-
-	// Set up gateway URL
-	gatewayURL := "http://localhost:%s/v1" // Default format, will be populated with port
-	configFilePath := fmt.Sprintf("./config/.%s.config.yaml", testProtocol)
-
-	// Use config values directly
-	gatewayURLOverridden := cfg.TestConfig.GatewayURLOverride != ""
-	serviceIDOverride := cfg.TestConfig.ServiceIDOverride
-	waitForHydrator := cfg.TestConfig.WaitForHydrator
-
-	if gatewayURLOverridden {
-		gatewayURL = cfg.TestConfig.GatewayURLOverride
-	} else {
-		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, cfg.DockerConfig)
+	// If running in E2E mode, start the PATH instance in Docker
+	var dockerPort string // Docker port only set if we are running in E2E mode
+	if cfg.getTestMode() == testModeE2E {
+		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
+		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, cfg.testConfig.e2eConfig.dockerConfig)
 		defer teardownFn()
-		gatewayURL = fmt.Sprintf(gatewayURL, pathContainerPort)
+		dockerPort = pathContainerPort
+
+		waitForHydratorIfNeeded()
 	}
 
-	// Get test cases from config
-	testCases := getTestCases(t, testProtocol, serviceIDOverride)
+	// 2. Get gateway URL based on `TEST_MODE` env var
+	gatewayURL := cfg.getGatewayURL(dockerPort)
 
 	// Log test information
-	logEVMTestStartInfo(testProtocol, gatewayURL, serviceIDOverride, testCases)
+	logEVMTestStartInfo(gatewayURL, testCases)
 
-	// Wait for hydrator if needed
-	if waitForHydrator > 0 {
-		waitForHydratorIfNeeded(waitForHydrator)
-	}
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
 	for _, tc := range testCases {
 		// Convert config.TestCase to parameters needed for test
-		serviceID := protocol.ServiceID(tc.ServiceID)
+		serviceID := protocol.ServiceID(tc.serviceID)
 
 		// Set up service parameters
 		serviceParams := evmServiceParameters{
-			contractAddress:    tc.ServiceParams.ContractAddress,
-			contractStartBlock: tc.ServiceParams.ContractStartBlock,
-			transactionHash:    tc.ServiceParams.TransactionHash,
-			callData:           tc.ServiceParams.CallData,
+			contractAddress:    tc.serviceParams.contractAddress,
+			contractStartBlock: tc.serviceParams.contractStartBlock,
+			transactionHash:    tc.serviceParams.transactionHash,
+			callData:           tc.serviceParams.callData,
 		}
 
 		// Get request headers
-		headers := getRequestHeaders(serviceID, &cfg.TestConfig)
+		headers := getRequestHeaders(serviceID)
+
+		// If we are using service subdomain, set the subdomain in the gateway URL
+		if cfg.useServiceSubdomain() {
+			gatewayURL = setServiceIDInGatewayURLSubdomain(gatewayURL, serviceID)
+		}
 
 		// Determine if test is archival
-		isArchival := tc.Archival
+		isArchival := tc.archival
 		if !isArchival {
 			serviceParams.blockNumber = "latest"
 		} else {
@@ -201,10 +131,10 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		serviceTestFailed := runEVMServiceTest(
 			t,
 			ctx,
-			tc.Name,
+			tc.name,
 			headers,
 			serviceParams,
-			tc.LatencyMultiplier,
+			tc.latencyMultiplier,
 			methodConfigs,
 			gatewayURL,
 			serviceSummaries[serviceID],
@@ -224,15 +154,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 }
 
 // createMethodConfigs creates the method configurations for a test case
-func createMethodConfigs(tc TestCase) map[jsonrpc.Method]MethodConfig {
+func createMethodConfigs(tc testCase) map[jsonrpc.Method]methodConfig {
 	// Initialize the method config map
-	methodConfigs := make(map[jsonrpc.Method]MethodConfig)
+	methodConfigs := make(map[jsonrpc.Method]methodConfig)
 
 	// Get the list of methods to test
 	var methodsToTest []jsonrpc.Method
-	if len(tc.TestCaseMethodOverride) > 0 {
+	if len(tc.testCaseMethodOverride) > 0 {
 		// Use the specified methods
-		for _, method := range tc.TestCaseMethodOverride {
+		for _, method := range tc.testCaseMethodOverride {
 			methodsToTest = append(methodsToTest, jsonrpc.Method(method))
 		}
 	} else {
@@ -242,28 +172,28 @@ func createMethodConfigs(tc TestCase) map[jsonrpc.Method]MethodConfig {
 	// Create config for each method
 	for _, method := range methodsToTest {
 		// Start with the default method config
-		methodConfig := cfg.DefaultMethodConfig
+		methodConfig := cfg.defaultMethodConfig
 
 		// Override with test case specific config if provided
-		if tc.TestCaseConfigOverride != nil {
+		if tc.testCaseConfigOverride != nil {
 			// Apply all overrides from test case
-			if tc.TestCaseConfigOverride.TotalRequests != 0 {
-				methodConfig.TotalRequests = tc.TestCaseConfigOverride.TotalRequests
+			if tc.testCaseConfigOverride.totalRequests != 0 {
+				methodConfig.totalRequests = tc.testCaseConfigOverride.totalRequests
 			}
-			if tc.TestCaseConfigOverride.RPS != 0 {
-				methodConfig.RPS = tc.TestCaseConfigOverride.RPS
+			if tc.testCaseConfigOverride.rps != 0 {
+				methodConfig.rps = tc.testCaseConfigOverride.rps
 			}
-			if tc.TestCaseConfigOverride.SuccessRate != 0 {
-				methodConfig.SuccessRate = tc.TestCaseConfigOverride.SuccessRate
+			if tc.testCaseConfigOverride.successRate != 0 {
+				methodConfig.successRate = tc.testCaseConfigOverride.successRate
 			}
-			if tc.TestCaseConfigOverride.MaxP50LatencyMS != 0 {
-				methodConfig.MaxP50LatencyMS = tc.TestCaseConfigOverride.MaxP50LatencyMS
+			if tc.testCaseConfigOverride.maxP50LatencyMS != 0 {
+				methodConfig.maxP50LatencyMS = tc.testCaseConfigOverride.maxP50LatencyMS
 			}
-			if tc.TestCaseConfigOverride.MaxP95LatencyMS != 0 {
-				methodConfig.MaxP95LatencyMS = tc.TestCaseConfigOverride.MaxP95LatencyMS
+			if tc.testCaseConfigOverride.maxP95LatencyMS != 0 {
+				methodConfig.maxP95LatencyMS = tc.testCaseConfigOverride.maxP95LatencyMS
 			}
-			if tc.TestCaseConfigOverride.MaxP99LatencyMS != 0 {
-				methodConfig.MaxP99LatencyMS = tc.TestCaseConfigOverride.MaxP99LatencyMS
+			if tc.testCaseConfigOverride.maxP99LatencyMS != 0 {
+				methodConfig.maxP99LatencyMS = tc.testCaseConfigOverride.maxP99LatencyMS
 			}
 		}
 
@@ -295,36 +225,33 @@ func setupSIGINTHandler(cancel context.CancelFunc) {
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
-func logEVMTestStartInfo(
-	protocol protocolType,
-	gatewayURL string,
-	serviceIDOverride string,
-	testCases []TestCase,
-) {
+func logEVMTestStartInfo(gatewayURL string, testCases []testCase) {
 	fmt.Println("\n🌿 Starting PATH Vegeta load test ...")
 	fmt.Printf("  🧬 Gateway URL: %s\n", gatewayURL)
-	if cfg.TestConfig.PortalApplicationIDOverride != "" {
-		fmt.Printf("  🌀 Portal Application ID: %s\n", cfg.TestConfig.PortalApplicationIDOverride)
-	}
-	if cfg.TestConfig.PortalAPIKeyOverride != "" {
-		fmt.Printf("  🔑 Portal API Key: %s\n", cfg.TestConfig.PortalAPIKeyOverride)
-	}
-	fmt.Printf("  📡 Test protocol: %s\n", protocol)
-	if serviceIDOverride != "" {
-		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", serviceIDOverride)
-	} else {
-		var serviceIDs []string
-		for _, tc := range testCases {
-			serviceIDs = append(serviceIDs, tc.ServiceID)
+
+	if cfg.testConfig.loadTestConfig != nil {
+		if cfg.testConfig.loadTestConfig.portalApplicationIDOverride != "" {
+			fmt.Printf("  🌀 Portal Application ID: %s\n", cfg.testConfig.loadTestConfig.portalApplicationIDOverride)
 		}
-		fmt.Printf("  ⛓️  Running tests for all service IDs: %s\n", strings.Join(serviceIDs, ", "))
+		if cfg.testConfig.loadTestConfig.portalAPIKeyOverride != "" {
+			fmt.Printf("  🔑 Portal API Key: %s\n", cfg.testConfig.loadTestConfig.portalAPIKeyOverride)
+		}
 	}
+
+	fmt.Printf("  📡 Test protocol: %s\n", cfg.getTestProtocol())
+	var serviceIDs []string
+	for _, tc := range testCases {
+		serviceIDs = append(serviceIDs, tc.serviceID)
+	}
+	fmt.Printf("  ⛓️  Running tests for all service IDs: %s\n", strings.Join(serviceIDs, ", "))
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
-func waitForHydratorIfNeeded(waitSeconds int) {
-	fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", waitSeconds)
-	if waitSeconds > 0 {
+func waitForHydratorIfNeeded() {
+	if waitSeconds := cfg.testConfig.e2eConfig.waitForHydrator; waitSeconds > 0 {
+		fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n",
+			waitSeconds,
+		)
 		if isCIEnv() {
 			<-time.After(time.Duration(waitSeconds) * time.Second)
 		} else {
@@ -341,7 +268,7 @@ func runEVMServiceTest(
 	headers http.Header,
 	serviceParams evmServiceParameters,
 	latencyMultiplier int,
-	methodConfigs map[jsonrpc.Method]MethodConfig,
+	methodConfigs map[jsonrpc.Method]methodConfig,
 	gatewayURL string,
 	summary *serviceSummary,
 ) (serviceTestFailed bool) {
@@ -378,7 +305,7 @@ func runEVMServiceTest(
 
 		methodDef := methodConfigs[method]
 
-		go func(ctx context.Context, method jsonrpc.Method, methodDef MethodConfig) {
+		go func(ctx context.Context, method jsonrpc.Method, methodDef methodConfig) {
 			defer methodWg.Done()
 
 			metrics := runMethodAttack(
@@ -418,7 +345,7 @@ func runEVMServiceTest(
 func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
-	methodConfig MethodConfig,
+	methodConfig methodConfig,
 	headers http.Header,
 	serviceParams evmServiceParameters,
 	gatewayURL string,
@@ -451,24 +378,28 @@ func runMethodAttack(
 	return metrics
 }
 
-func getRequestHeaders(serviceID protocol.ServiceID, testConfig *TestConfig) http.Header {
+func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 	headers := http.Header{
 		"Content-Type":                    []string{"application/json"},
 		request.HTTPHeaderTargetServiceID: []string{string(serviceID)},
 	}
-	if testConfig.PortalApplicationIDOverride != "" {
-		headers.Set("Portal-Application-ID", testConfig.PortalApplicationIDOverride)
+
+	if cfg.getTestMode() == testModeLoad {
+		// Portal App ID is required for load tests
+		headers.Set("Portal-Application-ID", cfg.testConfig.loadTestConfig.portalApplicationIDOverride)
+		// Portal API Key is optional for load tests
+		if cfg.testConfig.loadTestConfig.portalAPIKeyOverride != "" {
+			headers.Set("Authorization", cfg.testConfig.loadTestConfig.portalAPIKeyOverride)
+		}
 	}
-	if testConfig.PortalAPIKeyOverride != "" {
-		headers.Set("Authorization", testConfig.PortalAPIKeyOverride)
-	}
+
 	return headers
 }
 
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[jsonrpc.Method]MethodConfig,
+	methodConfigs map[jsonrpc.Method]methodConfig,
 	results map[jsonrpc.Method]*methodMetrics,
 	summary *serviceSummary,
 	serviceTestFailed *bool,
@@ -494,13 +425,13 @@ func calculateServiceSummary(
 
 		// Convert MethodConfig to methodTestConfig for validation
 		methodDef := methodConfigs[method]
-		testConfig := MethodConfig{
-			TotalRequests:   methodDef.TotalRequests,
-			RPS:             methodDef.RPS,
-			SuccessRate:     methodDef.SuccessRate,
-			MaxP50LatencyMS: methodDef.MaxP50LatencyMS,
-			MaxP95LatencyMS: methodDef.MaxP95LatencyMS,
-			MaxP99LatencyMS: methodDef.MaxP99LatencyMS,
+		testConfig := methodConfig{
+			totalRequests:   methodDef.totalRequests,
+			rps:             methodDef.rps,
+			successRate:     methodDef.successRate,
+			maxP50LatencyMS: methodDef.maxP50LatencyMS,
+			maxP95LatencyMS: methodDef.maxP95LatencyMS,
+			maxP99LatencyMS: methodDef.maxP99LatencyMS,
 		}
 
 		validateResults(t, methodMetrics, testConfig)
@@ -557,17 +488,17 @@ func calculateServiceSummary(
 // adjustLatencyForTestCase increases the latency expectations by the multiplier
 // for all methods in the test case to account for a slower than average service providers (e.g. dev/test environments)
 func adjustLatencyForTestCase(
-	testConfig map[jsonrpc.Method]MethodConfig,
+	testConfig map[jsonrpc.Method]methodConfig,
 	latencyMultiplier int,
-) map[jsonrpc.Method]MethodConfig {
+) map[jsonrpc.Method]methodConfig {
 	// Create a new map to avoid modifying the original test config
-	adjustedDefs := make(map[jsonrpc.Method]MethodConfig, len(testConfig))
+	adjustedDefs := make(map[jsonrpc.Method]methodConfig, len(testConfig))
 
 	for method, methodDef := range testConfig {
 		adjustedDef := methodDef
-		adjustedDef.MaxP50LatencyMS = methodDef.MaxP50LatencyMS * time.Duration(latencyMultiplier)
-		adjustedDef.MaxP95LatencyMS = methodDef.MaxP95LatencyMS * time.Duration(latencyMultiplier)
-		adjustedDef.MaxP99LatencyMS = methodDef.MaxP99LatencyMS * time.Duration(latencyMultiplier)
+		adjustedDef.maxP50LatencyMS = methodDef.maxP50LatencyMS * time.Duration(latencyMultiplier)
+		adjustedDef.maxP95LatencyMS = methodDef.maxP95LatencyMS * time.Duration(latencyMultiplier)
+		adjustedDef.maxP99LatencyMS = methodDef.maxP99LatencyMS * time.Duration(latencyMultiplier)
 		adjustedDefs[method] = adjustedDef
 	}
 

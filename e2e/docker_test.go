@@ -51,7 +51,7 @@ var containerPortAndProtocol = internalPathPort + "/tcp"
 func setupPathInstance(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts DockerConfig,
+	dockerOpts dockerConfig,
 ) (containerPort string, cleanupFn func()) {
 	t.Helper()
 
@@ -84,13 +84,13 @@ func setupPathInstance(
 func setupPathDocker(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts DockerConfig,
+	dockerOpts dockerConfig,
 ) (*dockertest.Pool, *dockertest.Resource, string, string) {
 	t.Helper()
 
 	// Get docker options from the global test options
-	logContainer := dockerOpts.DockerLog
-	forceRebuild := dockerOpts.DockerForceRebuild
+	logContainer := dockerOpts.logToFile
+	forceRebuild := dockerOpts.forceRebuildImage
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)

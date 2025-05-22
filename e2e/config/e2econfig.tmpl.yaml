@@ -5,27 +5,42 @@
 # If a custom test configuration file is not detected at `./e2e/config/.yaml`,
 # this file will be used as the default configuration.
 #
-# To use a custom configuration, create a file at `./e2e/config/.yaml`.
+# To use a custom configuration, create a file at `./e2e/config/.e2econfig.yaml`.
 
 # General test configuration overrides that apply to all tests
+# Vegeta tests may be run in either:
+#   1. E2E test mode: starts up PATH in a Docker container using Dockertest and runs the tests against it
+#   2. Load test mode: runs the tests against a provided gateway URL
 test_config:
-  # Custom PATH gateway URL (if not empty, skips Docker and runs tests against this URL)
-  gateway_url_override: ""
-  # Custom user identifier for the test (eg. portal-application-id)
-  portal_application_id_override: ""
-  # Custom API key for the test (eg. portal-api-key)
-  portal_api_key_override: ""
-  # Test only a specific service ID instead of all services
-  service_id_override: ""
-  # Seconds to wait for hydrator checks (useful when adding new services)
-  wait_for_hydrator: 0
+  # E2E test mode starts up PATH in a Docker container using Dockertest and runs the tests against it
+  e2e_config: 
+    # [OPTIONAL] Seconds to wait for hydrator checks after PATH startup
+    wait_for_hydrator: 0
+    # [OPTIONAL] Docker configuration
+    docker_config:
+      # [OPTIONAL] Log Docker container output to file
+      log_to_file: false
+      # [OPTIONAL] Force Docker image rebuild (useful after code changes)
+      force_rebuild_image: false
 
-# Docker configuration for running PATH in a container
-docker_config:
-  # Log Docker container output to file
-  docker_log: false
-  # Force Docker image rebuild (useful after code changes)
-  docker_force_rebuild: false
+  # Load test mode runs the tests against a provided gateway URL
+  # Can be either a local PATH instance or a public gateway URL
+  # For example:
+  #     - Local PATH instance: "http://localhost:3091/v1"
+  #     - Public gateway URL:  "https://rpc.grove.city/v1"
+  load_test_config:
+    # [REQUIRED] Custom PATH gateway URL
+    gateway_url_override: ""
+    # [OPTIONAL] Whether to specify the service using the subdomain per-test case
+    #  If true, the test case will insert the service ID into the subdomain per-test case
+    #     - Example: "F00C.rpc.grove.city/v1"
+    # TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
+    #     - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
+    use_service_subdomain: false
+    # [REQUIRED] Custom user identifier for the test (eg. portal-application-id)
+    portal_application_id_override: ""
+    # [OPTIONAL] Custom API key for the test (eg. portal-api-key)
+    portal_api_key_override: ""
 
 # Default test configuration for all test cases
 # These will be used if no test-specific overrides are provided
@@ -37,71 +52,74 @@ default_method_config:
   max_p95_latency_ms: 5000ms  # Maximum acceptable P95 latency (ms)
   max_p99_latency_ms: 10000ms # Maximum acceptable P99 latency (ms)
 
-# Morse protocol E2E load test configuration
-morse_config:
-  test_cases:
-    # Ethereum Mainnet (Archival)
-    - name: "F00C (Ethereum) Load Test"
-      service_id: "F00C"
-      archival: true  # Historical data access test
-      service_params:
-        contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
-        contract_start_block: 12300000  # Minimum block for archival tests
-        transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
-        call_data: "0x18160ddd" 
-    # Polygon Mainnet (Archival)
-    - name: "F021 (Polygon) Load Test"
-      service_id: "F021"
-      archival: true
-      service_params:
-        contract_address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
-        contract_start_block: 5000000
-        transaction_hash: "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4"
-        call_data: "0x18160ddd" 
-    # Oasys Mainnet (Archival)
-    - name: "F01C (Oasys) Load Test"
-      service_id: "F01C"
-      archival: true
-      service_params:
-        contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
-        contract_start_block: 424300
-        transaction_hash: "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee"
-        call_data: "0x18160ddd" 
-    # XRPL EVM Testnet (Archival)
-    - name: "F036 (XRPL EVM Testnet) Load Test"
-      service_id: "F036"
-      archival: true
-      service_params:
-        contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
-        contract_start_block: 368266
-        transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
-        call_data: "0x18160ddd" 
+# Define
+test_cases:
+  # ---------------- MORSE ----------------
+  # Ethereum Mainnet (Archival)
+  - name: "F00C (Ethereum) Load Test"
+    protocol: "morse"
+    service_id: "F00C"
+    archival: true
+    service_params:
+      contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
+      contract_start_block: 12300000  # Minimum block for archival tests
+      transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
+      call_data: "0x18160ddd" 
+  # Polygon Mainnet (Archival)
+  - name: "F021 (Polygon) Load Test"
+    protocol: "morse"
+    service_id: "F021"
+    archival: true
+    service_params:
+      contract_address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+      contract_start_block: 5000000
+      transaction_hash: "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4"
+      call_data: "0x18160ddd" 
+  # Oasys Mainnet (Archival)
+  - name: "F01C (Oasys) Load Test"
+    protocol: "morse"
+    service_id: "F01C"
+    archival: true
+    service_params:
+      contract_address: "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
+      contract_start_block: 424300
+      transaction_hash: "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee"
+      call_data: "0x18160ddd" 
+  # XRPL EVM Testnet (Archival)
+  - name: "F036 (XRPL EVM Testnet) Load Test"
+    protocol: "morse"
+    service_id: "F036"
+    archival: true
+    service_params:
+      contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
+      contract_start_block: 368266
+      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
+      call_data: "0x18160ddd" 
 
-# Shannon protocol E2E load test configuration
-shannon_config:
-  test_cases:
-    # Anvil local Ethereum node (Ephemeral)
-    - name: "anvil (local Ethereum) Load Test"
-      service_id: "anvil"
-      service_params:
-        contract_address: "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-        call_data: "0x18160ddd"       
-      # Multiply latency thresholds by this value (used for potentially slower networks)
-      latency_multiplier: 10
-      # Override default configuration for this Shannon service test case
-      test_case_config_override:
-        total_requests: 3
-        rps: 1
-        success_rate: 0.60
-        max_p50_latency_ms: 30000ms
-        max_p95_latency_ms: 60000ms
-        max_p99_latency_ms: 90000ms
-      # Only test these specific EVM JSON-RPC methods for this Shannon service test case
-      test_case_method_override:
-        - eth_blockNumber     
-        - eth_call            
-        - eth_getBlockByNumber 
-        - eth_getBalance      
-        - eth_chainId         
-        - eth_getTransactionCount 
-        - eth_gasPrice        
+  # ---------------- SHANNON ----------------
+  # Anvil local Ethereum node (Ephemeral)
+  - name: "anvil (local Ethereum) Load Test"
+    protocol: "shannon"
+    service_id: "anvil"
+    service_params:
+      contract_address: "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+      call_data: "0x18160ddd"       
+    # Multiply latency thresholds by this value (used for potentially slower networks)
+    latency_multiplier: 10
+    # Override default configuration for this Shannon service test case
+    test_case_config_override:
+      total_requests: 3
+      rps: 1
+      success_rate: 0.60
+      max_p50_latency_ms: 30000ms
+      max_p95_latency_ms: 60000ms
+      max_p99_latency_ms: 90000ms
+    # Only test these specific EVM JSON-RPC methods for this Shannon service test case
+    test_case_method_override:
+      - eth_blockNumber     
+      - eth_call            
+      - eth_getBlockByNumber 
+      - eth_getBalance      
+      - eth_chainId         
+      - eth_getTransactionCount 
+      - eth_gasPrice        

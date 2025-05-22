@@ -64,11 +64,16 @@ definitions:
     additionalProperties: false
     required:
       - name
+      - protocol
       - service_id
     properties:
       name:
         description: "Name of the test case"
         type: string
+      protocol:
+        description: "Protocol name (morse or shannon)"
+        type: string
+        enum: ["morse", "shannon"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
@@ -90,63 +95,56 @@ definitions:
         items:
           type: string
 
-  protocol_config:
-    description: "Protocol configuration structure (shared between Morse and Shannon)"
-    type: object
-    additionalProperties: false
-    properties:
-      default_method_config:
-        $ref: "#/definitions/method_config_base"
-        description: "Default configuration for all test cases in this protocol"
-      test_cases:
-        description: "Array of test cases to run"
-        type: array
-        items:
-          $ref: "#/definitions/test_case"
-
 properties:
   test_config:
     description: "General test configuration"
     type: object
     additionalProperties: false
     properties:
-      gateway_url_override:
-        description: "Custom PATH gateway URL (useful for local dev) - if set, skips Docker and runs tests against this URL"
-        type: string
-      portal_application_id_override:
-        description: "Custom user identifier for the test (eg. portal-application-id)"
-        type: string
-      portal_api_key_override:
-        description: "Custom API key for the test (eg. portal-api-key)"
-        type: string
-      service_id_override:
-        description: "Test only a specific service ID instead of all services"
-        type: string
-      wait_for_hydrator:
-        description: "Seconds to wait for hydrator checks - useful when adding new services"
-        type: integer
-        minimum: 0
-
-  docker_config:
-    description: "Docker configuration for e2e tests"
-    type: object
-    additionalProperties: false
-    properties:
-      docker_log:
-        description: "Log Docker container output to file"
-        type: boolean
-      docker_force_rebuild:
-        description: "Force Docker image rebuild (useful after code changes)"
-        type: boolean
+      e2e_config:
+        description: "E2E test mode configuration"
+        type: object
+        additionalProperties: false
+        properties:
+          wait_for_hydrator:
+            description: "Seconds to wait for hydrator checks after PATH startup"
+            type: integer
+            minimum: 0
+          docker_config:
+            description: "Docker configuration"
+            type: object
+            additionalProperties: false
+            properties:
+              log_to_file:
+                description: "Log Docker container output to file"
+                type: boolean
+              force_rebuild_image:
+                description: "Force Docker image rebuild (useful after code changes)"
+                type: boolean
+      load_test_config:
+        description: "Load test mode configuration"
+        type: object
+        additionalProperties: false
+        properties:
+          gateway_url_override:
+            description: "Custom PATH gateway URL"
+            type: string
+          use_service_subdomain:
+            description: "Whether to specify the service using the subdomain per-test case"
+            type: boolean
+          portal_application_id_override:
+            description: "Custom user identifier for the test (eg. portal-application-id)"
+            type: string
+          portal_api_key_override:
+            description: "Custom API key for the test (eg. portal-api-key)"
+            type: string
 
   default_method_config:
     $ref: "#/definitions/method_config_base"
     description: "Default configuration for all test cases"
 
-  morse_config:
-    description: "Configuration for Morse protocol tests"
-    $ref: "#/definitions/protocol_config"
-
-  shannon_config:
-    description: "Configuration for Shannon protocol tests"
-    $ref: "#/definitions/protocol_config"
+  test_cases:
+    description: "Array of test cases to run for both Morse and Shannon protocols"
+    type: array
+    items:
+      $ref: "#/definitions/test_case"
