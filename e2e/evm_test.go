@@ -36,8 +36,7 @@ Example Usage - E2E tests
 
 Example Usage - Load tests
 - `make test_load_evm_morse`   - Run all EVM load tests for Morse
-- `make test_load_evm_shannon` - Run all EVM load tests for Shannon
-*/
+- `make test_load_evm_shannon` - Run all EVM load tests for Shannon */
 
 // -------------------- Test Configuration Initialization --------------------
 
@@ -53,7 +52,7 @@ func init() {
 	}
 }
 
-/* -------------------- EVM Load Test Function -------------------- */
+// -------------------- EVM Load Test Function --------------------
 
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
 func Test_PATH_E2E_EVM(t *testing.T) {
@@ -64,8 +63,10 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	// Get test cases from config based on `TEST_PROTOCOL` env var
 	testCases := cfg.getTestCases()
 
+	// Initialize gateway URL variable
+	var gatewayURL string
+
 	// If running in E2E mode, start the PATH instance in Docker
-	var gatewayURL string // Docker port only set if we are running in E2E mode
 	if cfg.getTestMode() == testModeE2E {
 		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
 		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, cfg.ModeConfig.E2EConfig.DockerConfig)
@@ -75,12 +76,17 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 		waitForHydratorIfNeeded()
 	} else {
+		// If running in load test mode, use the gateway URL from the config.
+		//
+		// If `mode_config.load_test_config.use_service_subdomain` is set, subdomain will be
+		// added to the gateway URL in each service's test case. See: `setServiceIDInGatewayURLSubdomain`.
 		gatewayURL = cfg.getGatewayURLForLoadTest()
 	}
 
 	// Log test information
 	logEVMTestStartInfo(gatewayURL, testCases)
 
+	// Initialize service summaries map (will be logged out at the end of the test)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
 	for _, tc := range testCases {
@@ -93,6 +99,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		if cfg.getTestMode() == testModeLoad && cfg.useServiceSubdomain() {
 			serviceGatewayURL = setServiceIDInGatewayURLSubdomain(serviceGatewayURL, tc.ServiceID)
 		}
+
 		// Get request headers
 		headers := getRequestHeaders(tc.ServiceID)
 
