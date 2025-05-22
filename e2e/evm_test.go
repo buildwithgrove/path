@@ -26,15 +26,17 @@ import (
 )
 
 /* Vegeta E2E & Load Tests
+
 For documentation on these tests, please visit:
 https://path.grove.city/develop/path/e2e_tests
 
-For full information on the test configuration, see `e2econfig_test.go`
+Example Usage - E2E tests
+- `make test_e2e_evm_morse`    - Run all EVM E2E tests for Morse
+- `make test_e2e_evm_shannon`  - Run all EVM E2E tests for Shannon
 
-Example Usage:
-- `make test_e2e_evm_morse`                           - Run all EVM tests for Morse
-- `make test_e2e_evm_shannon`                         - Run all EVM tests for Shannon
-- `make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
+Example Usage - Load tests
+- `make test_load_evm_morse`   - Run all EVM load tests for Morse
+- `make test_load_evm_shannon` - Run all EVM load tests for Shannon
 */
 
 // -------------------- Test Configuration Initialization --------------------
