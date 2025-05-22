@@ -119,15 +119,16 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			)
 		}
 
-		// Create method configs using default configuration in the config file
+		// Create method configs
 		methodConfigs := createMethodConfigs(tc)
+		methodCount := len(methodConfigs)
 
 		// Create summary for this service
 		serviceSummaries[tc.ServiceID] = &serviceSummary{
 			serviceID:     tc.ServiceID,
 			methodConfigs: methodConfigs,
 			methodErrors:  make(map[jsonrpc.Method]map[string]int),
-			methodCount:   len(methodConfigs),
+			methodCount:   methodCount,
 			totalErrors:   0,
 		}
 
@@ -140,6 +141,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			serviceParams,
 			tc.LatencyMultiplier,
 			methodConfigs,
+			methodCount,
 			serviceGatewayURL,
 			serviceSummaries[tc.ServiceID],
 		)
@@ -277,6 +279,7 @@ func runEVMServiceTest(
 	serviceParams evmServiceParameters,
 	latencyMultiplier int,
 	methodConfigs map[jsonrpc.Method]MethodConfig,
+	methodCount int,
 	gatewayURL string,
 	summary *serviceSummary,
 ) (serviceTestFailed bool) {
@@ -318,6 +321,7 @@ func runEVMServiceTest(
 				ctx,
 				method,
 				methodDef,
+				methodCount,
 				headers,
 				serviceParams,
 				gatewayURL,
@@ -352,6 +356,7 @@ func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
 	methodConfig MethodConfig,
+	methodCount int,
 	headers http.Header,
 	serviceParams evmServiceParameters,
 	gatewayURL string,
@@ -376,6 +381,7 @@ func runMethodAttack(
 		gatewayURL,
 		method,
 		methodConfig,
+		methodCount,
 		progBar,
 		jsonrpcReq,
 		headers,
