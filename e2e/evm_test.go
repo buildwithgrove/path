@@ -161,15 +161,15 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 
 // getMethodsToTest determines which methods to test for a test case
 func getMethodsToTest(tc TestCase) []jsonrpc.Method {
-	// Get the list of methods to test
+	// If no override, use all methods
+	if len(tc.TestCaseMethodOverride) == 0 {
+		return allEVMTestMethods()
+	}
+
+	// Otherwise, use only the methods specified in the override
 	var methodsToTest []jsonrpc.Method
-	if len(tc.TestCaseMethodOverride) > 0 {
-		// Use the specified methods
-		for _, method := range tc.TestCaseMethodOverride {
-			methodsToTest = append(methodsToTest, jsonrpc.Method(method))
-		}
-	} else {
-		methodsToTest = allEVMTestMethods()
+	for _, method := range tc.TestCaseMethodOverride {
+		methodsToTest = append(methodsToTest, jsonrpc.Method(method))
 	}
 
 	return methodsToTest
@@ -464,7 +464,8 @@ func calculateServiceSummary(
 
 /* -------------------- Get Test Block Number -------------------- */
 
-// setTestBlockNumber gets a block number for testing or fails the test
+// setTestBlockNumber gets an archival block number for testing or fails the test.
+// Selected by picking a random block number between the current block and the contract start block.
 func setTestBlockNumber(
 	t *testing.T,
 	gatewayURL string,
