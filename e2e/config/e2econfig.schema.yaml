@@ -73,7 +73,9 @@ definitions:
       protocol:
         description: "Protocol name (morse or shannon)"
         type: string
-        enum: ["morse", "shannon"]
+        enum:
+          - morse
+          - shannon
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
@@ -94,6 +96,16 @@ definitions:
         type: array
         items:
           type: string
+          enum:
+            - eth_blockNumber
+            - eth_call
+            - eth_getTransactionReceipt
+            - eth_getBlockByNumber
+            - eth_getBalance
+            - eth_chainId
+            - eth_getTransactionCount
+            - eth_getTransactionByHash
+            - eth_gasPrice
 
 properties:
   mode_config:
