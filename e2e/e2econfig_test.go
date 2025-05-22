@@ -89,7 +89,7 @@ const (
 // loadE2EConfig loads the E2E configuration in the following order:
 //  1. Custom config in e2e/config/.e2econfig.yaml
 //  2. Default config in e2e/config/e2econfig.tmpl.yaml
-func loadE2EConfig() (*config, error) {
+func loadE2EConfig() (*Config, error) {
 	envConfig, err := getEnvConfig()
 	if err != nil {
 		return nil, err
@@ -125,13 +125,13 @@ func PrettyLog(args ...interface{}) {
 }
 
 // loadConfig loads the E2E configuration from the specified file path
-func loadConfig(filePath string) (*config, error) {
+func loadConfig(filePath string) (*Config, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var config config
+	var config Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
@@ -142,125 +142,120 @@ func loadConfig(filePath string) (*config, error) {
 
 // Config is the top-level E2E test configuration
 type (
-	config struct {
-		envConfig           envConfig
-		testConfig          testConfig   `yaml:"test_config"`
-		defaultMethodConfig methodConfig `yaml:"default_method_config"`
-		testCases           []testCase   `yaml:"test_cases"`
+	Config struct {
+		envConfig           envConfig    // envConfig is loaded from environment variables not YAML
+		TestConfig          TestConfig   `yaml:"test_config"`
+		DefaultMethodConfig MethodConfig `yaml:"default_method_config"`
+		TestCases           []TestCase   `yaml:"test_cases"`
 	}
 
+	// envConfig for environment configuration (loaded from environment variables)
 	envConfig struct {
 		testMode     testMode
 		testProtocol testProtocol
 	}
 
-	// testConfig for general test settings
-	testConfig struct {
+	// TestConfig for general test settings
+	TestConfig struct {
 		// E2E test mode configuration
-		e2eConfig *e2eConfig `yaml:"e2e_config"`
+		E2EConfig *E2EConfig `yaml:"e2e_config"`
 		// Load test mode configuration
-		loadTestConfig *loadTestConfig `yaml:"load_test_config"`
+		LoadTestConfig *LoadTestConfig `yaml:"load_test_config"`
 	}
 
-	// e2eConfig for E2E test mode configuration
-	e2eConfig struct {
+	// E2EConfig for E2E test mode configuration
+	E2EConfig struct {
 		// Seconds to wait for hydrator checks
-		waitForHydrator int `yaml:"wait_for_hydrator"`
+		WaitForHydrator int `yaml:"wait_for_hydrator"`
 		// Docker configuration
-		dockerConfig dockerConfig `yaml:"docker_config"`
+		DockerConfig DockerConfig `yaml:"docker_config"`
 	}
 
-	// dockerConfig for Docker configuration
-	dockerConfig struct {
+	// DockerConfig for Docker configuration
+	DockerConfig struct {
 		// Log Docker container output
-		logToFile bool `yaml:"log_to_file"`
+		LogToFile bool `yaml:"log_to_file"`
 		// Force Docker image rebuild (useful after code changes)
-		forceRebuildImage bool `yaml:"force_rebuild_image"`
+		ForceRebuildImage bool `yaml:"force_rebuild_image"`
 	}
 
-	// loadTestConfig for load test mode configuration
-	loadTestConfig struct {
+	// LoadTestConfig for load test mode configuration
+	LoadTestConfig struct {
 		// Custom PATH gateway URL
-		gatewayURLOverride string `yaml:"gateway_url_override"`
+		GatewayURLOverride string `yaml:"gateway_url_override"`
 		// Whether to specify the service using the subdomain per-test case
 		// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 		//     - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
-		useServiceSubdomain bool `yaml:"use_service_subdomain"`
+		UseServiceSubdomain bool `yaml:"use_service_subdomain"`
 		// Custom user identifier for the test (eg. portal-application-id)
-		portalApplicationIDOverride string `yaml:"portal_application_id_override"`
+		PortalApplicationIDOverride string `yaml:"portal_application_id_override"`
 		// Custom API key for the test (eg. portal-api-key)
-		portalAPIKeyOverride string `yaml:"portal_api_key_override"`
+		PortalAPIKeyOverride string `yaml:"portal_api_key_override"`
 	}
 
-	// methodConfig for common test configuration options
-	methodConfig struct {
+	// MethodConfig for common test configuration options
+	MethodConfig struct {
 		// Total number of requests to send for each method
-		totalRequests int `yaml:"total_requests"`
+		TotalRequests int `yaml:"total_requests"`
 		// Requests per second
-		rps int `yaml:"rps"`
+		RPS int `yaml:"rps"`
 		// Minimum success rate required (0-1)
-		successRate float64 `yaml:"success_rate"`
+		SuccessRate float64 `yaml:"success_rate"`
 		// Maximum P50 latency in milliseconds
-		maxP50LatencyMS time.Duration `yaml:"max_p50_latency_ms"`
+		MaxP50LatencyMS time.Duration `yaml:"max_p50_latency_ms"`
 		// Maximum P95 latency in milliseconds
-		maxP95LatencyMS time.Duration `yaml:"max_p95_latency_ms"`
+		MaxP95LatencyMS time.Duration `yaml:"max_p95_latency_ms"`
 		// Maximum P99 latency in milliseconds
-		maxP99LatencyMS time.Duration `yaml:"max_p99_latency_ms"`
+		MaxP99LatencyMS time.Duration `yaml:"max_p99_latency_ms"`
 	}
 
-	// testCase for test case configuration
-	testCase struct {
+	// TestCase for test case configuration
+	TestCase struct {
 		// Name of the test case
-		name string `yaml:"name"`
+		Name string `yaml:"name"`
 		// Protocol name (morse or shannon)
-		protocol testProtocol `yaml:"protocol"`
+		Protocol testProtocol `yaml:"protocol"`
 		// Service ID to test (identifies the specific blockchain service)
-		serviceID string `yaml:"service_id"`
+		ServiceID protocol.ServiceID `yaml:"service_id"`
 		// Whether this is an archival test (historical data access)
-		archival bool `yaml:"archival,omitempty"`
+		Archival bool `yaml:"archival,omitempty"`
 		// Service-specific parameters for test requests
-		serviceParams serviceParams `yaml:"service_params"`
+		ServiceParams ServiceParams `yaml:"service_params"`
 		// Multiplier for latency thresholds for this test case
-		latencyMultiplier int `yaml:"latency_multiplier,omitempty"`
+		LatencyMultiplier int `yaml:"latency_multiplier,omitempty"`
 		// Override default configuration for this test case
-		testCaseConfigOverride *methodConfig `yaml:"test_case_config_override,omitempty"`
+		TestCaseConfigOverride *MethodConfig `yaml:"test_case_config_override,omitempty"`
 		// Override methods to test for this test case
-		testCaseMethodOverride []string `yaml:"test_case_method_override,omitempty"`
+		TestCaseMethodOverride []string `yaml:"test_case_method_override,omitempty"`
 	}
 
-	// serviceParams for service-specific parameters
-	serviceParams struct {
+	// ServiceParams for service-specific parameters
+	ServiceParams struct {
 		// Contract address for eth calls
-		contractAddress string `yaml:"contract_address,omitempty"`
+		ContractAddress string `yaml:"contract_address,omitempty"`
 		// Call data for eth_call
-		callData string `yaml:"call_data,omitempty"`
+		CallData string `yaml:"call_data,omitempty"`
 		// Minimum block number for archival tests
-		contractStartBlock uint64 `yaml:"contract_start_block,omitempty"`
+		ContractStartBlock uint64 `yaml:"contract_start_block,omitempty"`
 		// Transaction hash for receipt/transaction queries
-		transactionHash string `yaml:"transaction_hash,omitempty"`
+		TransactionHash string `yaml:"transaction_hash,omitempty"`
 	}
 )
 
-func (c *config) getTestMode() testMode {
+func (c *Config) getTestMode() testMode {
 	return c.envConfig.testMode
 }
 
-func (c *config) getTestProtocol() testProtocol {
+func (c *Config) getTestProtocol() testProtocol {
 	return c.envConfig.testProtocol
 }
 
-func (c *config) useServiceSubdomain() bool {
-	return c.testConfig.loadTestConfig.useServiceSubdomain
+func (c *Config) useServiceSubdomain() bool {
+	return c.TestConfig.LoadTestConfig.UseServiceSubdomain
 }
 
-// getGatewayURL returns the gateway URL based on the test mode
-//   - In load test mode, the gateway URL is specified in the config file
-//   - In E2E test mode, the gateway URL is the Docker container URL
-func (c *config) getGatewayURL(dockerPort string) string {
-	if c.getTestMode() == testModeLoad {
-		return c.testConfig.loadTestConfig.gatewayURLOverride
-	}
-	return fmt.Sprintf("http://localhost:%s/v1", dockerPort)
+func (c *Config) getGatewayURLForLoadTest() string {
+	return c.TestConfig.LoadTestConfig.GatewayURLOverride
 }
 
 // setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL
@@ -288,11 +283,11 @@ func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.Ser
 
 // getTestCases returns test cases filtered by protocol if specified in environment
 // If no protocol is specified, returns all test cases
-func (c *config) getTestCases() []testCase {
+func (c *Config) getTestCases() []TestCase {
 	// Filter test cases by protocol
-	var filteredTestCases []testCase
-	for _, tc := range c.testCases {
-		if tc.protocol == c.getTestProtocol() {
+	var filteredTestCases []TestCase
+	for _, tc := range c.TestCases {
+		if tc.Protocol == c.getTestProtocol() {
 			filteredTestCases = append(filteredTestCases, tc)
 		}
 	}
