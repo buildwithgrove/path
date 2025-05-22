@@ -2,9 +2,7 @@
 
 package e2e
 
-import (
-	"github.com/buildwithgrove/path/qos/jsonrpc"
-)
+import "github.com/buildwithgrove/path/qos/jsonrpc"
 
 /* -------------------- EVM JSON-RPC Method Definitions -------------------- */
 

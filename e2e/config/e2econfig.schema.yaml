@@ -11,12 +11,12 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      total_requests:
-        description: "Total number of requests to send for each method"
+      global_rps:
+        description: "Requests per second for all methods"
         type: integer
         minimum: 1
-      rps:
-        description: "Requests per second for each method"
+      requests_per_method:
+        description: "Total number of requests to send for each method"
         type: integer
         minimum: 1
       success_rate:
@@ -96,7 +96,7 @@ definitions:
           type: string
 
 properties:
-  test_config:
+  mode_config:
     description: "General test configuration"
     type: object
     additionalProperties: false
@@ -125,6 +125,9 @@ properties:
         description: "Load test mode configuration"
         type: object
         additionalProperties: false
+        required:
+          - gateway_url_override
+          - portal_application_id
         properties:
           gateway_url_override:
             description: "Custom PATH gateway URL"
@@ -132,14 +135,14 @@ properties:
           use_service_subdomain:
             description: "Whether to specify the service using the subdomain per-test case"
             type: boolean
-          portal_application_id_override:
-            description: "Custom user identifier for the test (eg. portal-application-id)"
+          portal_application_id:
+            description: "Portal Application ID for the test"
             type: string
-          portal_api_key_override:
-            description: "Custom API key for the test (eg. portal-api-key)"
+          portal_api_key:
+            description: "Portal API key for the test"
             type: string
 
-  default_method_config:
+  default_test_config:
     $ref: "#/definitions/method_config_base"
     description: "Default configuration for all test cases"
 

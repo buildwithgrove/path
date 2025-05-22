@@ -116,7 +116,7 @@ func setupPathDocker(
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
 			fmt.Println("\n🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 TIP: Set `docker_config.docker_force_rebuild: true` to rebuild the image if needed 💡")
+			fmt.Println("  💡 TIP: Set `mode_config.e2e_config.docker_config.force_rebuild_image: true` to rebuild the image if needed 💡")
 		}
 	} else {
 		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")

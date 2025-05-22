@@ -11,7 +11,7 @@
 # Vegeta tests may be run in either:
 #   1. E2E test mode: starts up PATH in a Docker container using Dockertest and runs the tests against it
 #   2. Load test mode: runs the tests against a provided gateway URL
-test_config:
+mode_config:
   # E2E test mode starts up PATH in a Docker container using Dockertest and runs the tests against it
   e2e_config: 
     # [OPTIONAL] Seconds to wait for hydrator checks after PATH startup
@@ -38,16 +38,16 @@ test_config:
     #     - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
     use_service_subdomain: false
     # [REQUIRED] Custom user identifier for the test (eg. portal-application-id)
-    portal_application_id_override: ""
+    portal_application_id: ""
     # [OPTIONAL] Custom API key for the test (eg. portal-api-key)
-    portal_api_key_override: ""
+    portal_api_key: ""
 
 # Default test configuration for all test cases
 # These will be used if no test-specific overrides are provided
-default_method_config:
-  total_requests: 50  # Total number of requests to send for each method
-  rps: 5              # Requests per second rate
-  success_rate: 0.80  # Minimum success rate required (80%)
+default_test_config:
+  global_rps: 50              # Requests per second rate (shared by all methods)
+  requests_per_method: 50     # Total number of requests to send for each method
+  success_rate: 0.80          # Minimum success rate required (80%)
   max_p50_latency_ms: 2000ms  # Maximum acceptable P50 latency (ms)
   max_p95_latency_ms: 5000ms  # Maximum acceptable P95 latency (ms)
   max_p99_latency_ms: 10000ms # Maximum acceptable P99 latency (ms)
@@ -108,8 +108,8 @@ test_cases:
     latency_multiplier: 10
     # Override default configuration for this Shannon service test case
     test_case_config_override:
-      total_requests: 3
-      rps: 1
+      global_rps: 1
+      requests_per_method: 3
       success_rate: 0.60
       max_p50_latency_ms: 30000ms
       max_p95_latency_ms: 60000ms

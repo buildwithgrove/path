@@ -30,6 +30,7 @@ const (
 	GREEN     = "\x1b[32m"
 	YELLOW    = "\x1b[33m"
 	BLUE      = "\x1b[34m"
+	CYAN      = "\x1b[36m"
 	BOLD      = "\x1b[1m"
 	BOLD_BLUE = "\x1b[1m\x1b[34m"
 	BOLD_CYAN = "\x1b[1m\x1b[36m"
@@ -68,17 +69,18 @@ func runAttack(
 	ctx context.Context,
 	gatewayURL string,
 	method jsonrpc.Method,
-	testConfig MethodConfig,
+	testConfig TestConfig,
 	methodCount int,
 	progressBar *pb.ProgressBar,
 	jsonrpcReq jsonrpc.Request,
 	headers http.Header,
 ) *methodMetrics {
-	attackRPS := testConfig.RPS / methodCount
+	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
+	attackRPS := max((testConfig.GlobalRPS+methodCount-1)/methodCount, 1)
 
-	metrics := initMethodMetrics(method, testConfig.TotalRequests)
+	metrics := initMethodMetrics(method, testConfig.RequestsPerMethod)
 	target := createRPCTarget(gatewayURL, jsonrpcReq, headers)
-	maxDuration := time.Duration(2*testConfig.TotalRequests/attackRPS)*time.Second + 5*time.Second
+	maxDuration := time.Duration(2*testConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
 
 	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
 	// This is because the P99 latency is the highest latency band for test assertions.
@@ -86,17 +88,17 @@ func runAttack(
 	attacker := createVegetaAttacker(attackRPS, testConfig.MaxP99LatencyMS+5*time.Second)
 
 	if progressBar == nil {
-		fmt.Printf("Starting test for method %s (%d requests at %d RPS)...\n",
-			method, testConfig.TotalRequests, attackRPS,
+		fmt.Printf("Starting test for method %s (%d requests at %d GlobalRPS)...\n",
+			method, testConfig.RequestsPerMethod, attackRPS,
 		)
 	}
 
-	resultsChan := make(chan *vegeta.Result, testConfig.TotalRequests)
+	resultsChan := make(chan *vegeta.Result, testConfig.RequestsPerMethod)
 	var resultsWg sync.WaitGroup
 	processedCount := 0
 	startResultsCollector(&resultsWg, resultsChan, metrics, method, testConfig, progressBar, &processedCount)
 
-	requestSlots := testConfig.TotalRequests
+	requestSlots := testConfig.RequestsPerMethod
 	targeter := makeTargeter(&requestSlots, target)
 	attackCh := attacker.Attack(
 		targeter,
@@ -146,7 +148,7 @@ func startResultsCollector(
 	resultsChan <-chan *vegeta.Result,
 	metrics *methodMetrics,
 	method jsonrpc.Method,
-	testConfig MethodConfig,
+	testConfig TestConfig,
 	progressBar *pb.ProgressBar,
 	processedCount *int,
 ) {
@@ -157,26 +159,26 @@ func startResultsCollector(
 			if res.Error == "no targets to attack" {
 				continue
 			}
-			if *processedCount < testConfig.TotalRequests {
+			if *processedCount < testConfig.RequestsPerMethod {
 				processResult(metrics, res)
 				(*processedCount)++
-				if progressBar != nil && progressBar.Current() < int64(testConfig.TotalRequests) {
+				if progressBar != nil && progressBar.Current() < int64(testConfig.RequestsPerMethod) {
 					progressBar.Increment()
 				}
 				if progressBar == nil && *processedCount%50 == 0 {
-					percent := float64(*processedCount) / float64(testConfig.TotalRequests) * 100
+					percent := float64(*processedCount) / float64(testConfig.RequestsPerMethod) * 100
 					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
-						method, *processedCount, testConfig.TotalRequests, percent)
+						method, *processedCount, testConfig.RequestsPerMethod, percent)
 				}
 			}
 		}
-		if progressBar != nil && progressBar.Current() < int64(testConfig.TotalRequests) {
-			remaining := int64(testConfig.TotalRequests) - progressBar.Current()
+		if progressBar != nil && progressBar.Current() < int64(testConfig.RequestsPerMethod) {
+			remaining := int64(testConfig.RequestsPerMethod) - progressBar.Current()
 			progressBar.Add64(remaining)
 		}
 		if progressBar == nil {
 			fmt.Printf("  %s: test completed (%d/%d requests)\n",
-				method, *processedCount, testConfig.TotalRequests)
+				method, *processedCount, testConfig.RequestsPerMethod)
 		}
 	}()
 }
@@ -303,7 +305,8 @@ type serviceSummary struct {
 	totalSuccess  int
 	totalFailure  int
 
-	methodConfigs map[jsonrpc.Method]MethodConfig
+	testConfig    TestConfig
+	methodsToTest []jsonrpc.Method
 	methodErrors  map[jsonrpc.Method]map[string]int
 	methodCount   int
 	totalErrors   int
@@ -383,7 +386,7 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 }
 
 // validateResults performs assertions on test metrics
-func validateResults(t *testing.T, m *methodMetrics, testConfig MethodConfig) {
+func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
 	// Create a slice to collect all assertion failures
 	var failures []string
 
@@ -553,7 +556,7 @@ func collectJSONRPCRatesFailures(m *methodMetrics, requiredRate float64) []strin
 }
 
 // collectLatencyFailures checks latency metrics and returns failure messages
-func collectLatencyFailures(m *methodMetrics, testConfig MethodConfig) []string {
+func collectLatencyFailures(m *methodMetrics, testConfig TestConfig) []string {
 	var failures []string
 
 	// P50 latency check
@@ -632,12 +635,6 @@ func calculateAvgLatency(latencies []time.Duration) time.Duration {
 }
 
 // getAnyMethodKey returns an arbitrary method key from the map (first found)
-func getAnyMethodKey(m map[jsonrpc.Method]MethodConfig) jsonrpc.Method {
-	for k := range m {
-		return k
-	}
-	return ""
-}
 
 // printServiceSummaries prints a summary of all services after tests are complete
 func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
@@ -656,8 +653,7 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
 		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
-		methodKey := getAnyMethodKey(summary.methodConfigs)
-		methodConfig := summary.methodConfigs[methodKey]
+		methodConfig := summary.testConfig
 
 		// Header with service ID
 		fmt.Printf("\n%s⛓️  Service: %s%s\n", BOLD_BLUE, svcID, RESET)
@@ -713,7 +709,7 @@ type progressBars struct {
 // newProgressBars
 // • Creates a set of progress bars for all methods in a test
 // • Disables progress bars in CI/non-interactive environments
-func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]MethodConfig) (*progressBars, error) {
+func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]TestConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
 	if isCIEnv() {
 		fmt.Println("Running in CI environment - progress bars disabled")
@@ -759,7 +755,7 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Me
 			methodWithPadding, customCounterFormat)
 
 		// Create the bar with the template and start it
-		bar := pb.ProgressBarTemplate(tmpl).New(def.TotalRequests)
+		bar := pb.ProgressBarTemplate(tmpl).New(def.RequestsPerMethod)
 
 		// Ensure we're not using byte formatting
 		bar.Set(pb.Bytes, false)

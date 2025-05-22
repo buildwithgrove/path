@@ -3,15 +3,14 @@
 package e2e
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	"gopkg.in/yaml.v3"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // -------------------- Environment Variables --------------------
@@ -117,18 +116,6 @@ func loadE2EConfig() (*Config, error) {
 	return cfg, nil
 }
 
-func PrettyLog(args ...interface{}) {
-	for _, arg := range args {
-		var prettyJSON bytes.Buffer
-		jsonArg, _ := json.Marshal(arg)
-		str := string(jsonArg)
-		_ = json.Indent(&prettyJSON, []byte(str), "", "    ")
-		output := prettyJSON.String()
-
-		fmt.Println(output)
-	}
-}
-
 // loadConfig loads the E2E configuration from the specified file path
 func loadConfig(filePath string) (*Config, error) {
 	data, err := os.ReadFile(filePath)
@@ -145,25 +132,26 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-// Config is the top-level E2E test configuration
+// DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`
 type (
+	// Config is the top-level E2E test configuration
 	Config struct {
-		envConfig           envConfig    // envConfig is loaded from environment variables not YAML
-		TestConfig          TestConfig   `yaml:"test_config"`
-		DefaultMethodConfig MethodConfig `yaml:"default_method_config"`
-		TestCases           []TestCase   `yaml:"test_cases"`
+		envConfig         envConfig  // envConfig is loaded from environment variables not YAML
+		ModeConfig        ModeConfig `yaml:"mode_config"`
+		DefaultTestConfig TestConfig `yaml:"default_test_config"`
+		TestCases         []TestCase `yaml:"test_cases"`
 	}
 
-	// envConfig for environment configuration (loaded from environment variables)
+	// envConfig for environment configuration (loaded from environment variables, not YAML)
 	envConfig struct {
 		testMode     testMode
 		testProtocol testProtocol
 	}
 
-	// TestConfig for general test settings
-	TestConfig struct {
+	// ModeConfig for test mode configuration
+	ModeConfig struct {
 		// E2E test mode configuration
-		E2EConfig *E2EConfig `yaml:"e2e_config"`
+		E2EConfig E2EConfig `yaml:"e2e_config"`
 		// Load test mode configuration
 		LoadTestConfig *LoadTestConfig `yaml:"load_test_config"`
 	}
@@ -186,24 +174,24 @@ type (
 
 	// LoadTestConfig for load test mode configuration
 	LoadTestConfig struct {
-		// Custom PATH gateway URL
+		// [REQUIRED] Custom PATH gateway URL
 		GatewayURLOverride string `yaml:"gateway_url_override"`
 		// Whether to specify the service using the subdomain per-test case
 		// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 		//     - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
 		UseServiceSubdomain bool `yaml:"use_service_subdomain"`
-		// Custom user identifier for the test (eg. portal-application-id)
-		PortalApplicationIDOverride string `yaml:"portal_application_id_override"`
-		// Custom API key for the test (eg. portal-api-key)
-		PortalAPIKeyOverride string `yaml:"portal_api_key_override"`
+		// [REQUIRED] Portal Application ID for the test
+		PortalApplicationID string `yaml:"portal_application_id"`
+		// [OPTIONAL] Portal API key for the test
+		PortalAPIKey string `yaml:"portal_api_key"`
 	}
 
-	// MethodConfig for common test configuration options
-	MethodConfig struct {
+	// TestConfig for common test configuration options
+	TestConfig struct {
+		// Requests per second (shared by all methods)
+		GlobalRPS int `yaml:"global_rps"`
 		// Total number of requests to send for each method
-		TotalRequests int `yaml:"total_requests"`
-		// Requests per second
-		RPS int `yaml:"rps"`
+		RequestsPerMethod int `yaml:"requests_per_method"`
 		// Minimum success rate required (0-1)
 		SuccessRate float64 `yaml:"success_rate"`
 		// Maximum P50 latency in milliseconds
@@ -229,7 +217,7 @@ type (
 		// Multiplier for latency thresholds for this test case
 		LatencyMultiplier int `yaml:"latency_multiplier,omitempty"`
 		// Override default configuration for this test case
-		TestCaseConfigOverride *MethodConfig `yaml:"test_case_config_override,omitempty"`
+		TestCaseConfigOverride *TestConfig `yaml:"test_case_config_override,omitempty"`
 		// Override methods to test for this test case
 		TestCaseMethodOverride []string `yaml:"test_case_method_override,omitempty"`
 	}
@@ -256,11 +244,11 @@ func (c *Config) getTestProtocol() testProtocol {
 }
 
 func (c *Config) useServiceSubdomain() bool {
-	return c.TestConfig.LoadTestConfig.UseServiceSubdomain
+	return c.ModeConfig.LoadTestConfig.UseServiceSubdomain
 }
 
 func (c *Config) getGatewayURLForLoadTest() string {
-	return c.TestConfig.LoadTestConfig.GatewayURLOverride
+	return c.ModeConfig.LoadTestConfig.GatewayURLOverride
 }
 
 // setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL
@@ -307,23 +295,19 @@ func (c *Config) validate() error {
 
 	// Mode-specific validations
 	if mode == testModeLoad {
-		if c.TestConfig.LoadTestConfig == nil {
+		if c.ModeConfig.LoadTestConfig == nil {
 			return fmt.Errorf("load test mode requires LoadTestConfig to be set")
 		}
 
 		// Required fields validation for load test mode
-		if c.TestConfig.LoadTestConfig.GatewayURLOverride == "" {
+		if c.ModeConfig.LoadTestConfig.GatewayURLOverride == "" {
 			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
 		}
 
-		if c.TestConfig.LoadTestConfig.PortalApplicationIDOverride == "" {
-			return fmt.Errorf("load test mode requires PortalApplicationIDOverride to be set")
+		if c.ModeConfig.LoadTestConfig.PortalApplicationID == "" {
+			return fmt.Errorf("load test mode requires PortalApplicationID to be set")
 		}
 	} else if mode == testModeE2E {
-		if c.TestConfig.E2EConfig == nil {
-			return fmt.Errorf("e2e test mode requires E2EConfig to be set")
-		}
-
 		// Check for protocol-specific config files in e2e mode
 		protocol := c.getTestProtocol()
 		var configFile string
@@ -370,16 +354,16 @@ func (c *Config) validate() error {
 	}
 
 	// Validate default method config
-	if c.DefaultMethodConfig.TotalRequests <= 0 {
-		return fmt.Errorf("DefaultMethodConfig.TotalRequests must be greater than 0")
+	if c.DefaultTestConfig.RequestsPerMethod <= 0 {
+		return fmt.Errorf("DefaultTestConfig.RequestsPerMethod must be greater than 0")
 	}
 
-	if c.DefaultMethodConfig.RPS <= 0 {
-		return fmt.Errorf("DefaultMethodConfig.RPS must be greater than 0")
+	if c.DefaultTestConfig.GlobalRPS <= 0 {
+		return fmt.Errorf("DefaultTestConfig.GlobalRPS must be greater than 0")
 	}
 
-	if c.DefaultMethodConfig.SuccessRate < 0 || c.DefaultMethodConfig.SuccessRate > 1 {
-		return fmt.Errorf("DefaultMethodConfig.SuccessRate must be between 0 and 1")
+	if c.DefaultTestConfig.SuccessRate < 0 || c.DefaultTestConfig.SuccessRate > 1 {
+		return fmt.Errorf("DefaultTestConfig.SuccessRate must be between 0 and 1")
 	}
 
 	// All validations passed
@@ -428,12 +412,12 @@ func (c *Config) validateTestCase(tc TestCase, index int) error {
 
 	// Validate test case override config if present
 	if tc.TestCaseConfigOverride != nil {
-		if tc.TestCaseConfigOverride.TotalRequests <= 0 {
-			return fmt.Errorf("test case #%d: TestCaseConfigOverride.TotalRequests must be greater than 0", index)
+		if tc.TestCaseConfigOverride.RequestsPerMethod <= 0 {
+			return fmt.Errorf("test case #%d: TestCaseConfigOverride.RequestsPerMethod must be greater than 0", index)
 		}
 
-		if tc.TestCaseConfigOverride.RPS <= 0 {
-			return fmt.Errorf("test case #%d: TestCaseConfigOverride.RPS must be greater than 0", index)
+		if tc.TestCaseConfigOverride.GlobalRPS <= 0 {
+			return fmt.Errorf("test case #%d: TestCaseConfigOverride.GlobalRPS must be greater than 0", index)
 		}
 
 		if tc.TestCaseConfigOverride.SuccessRate < 0 || tc.TestCaseConfigOverride.SuccessRate > 1 {
