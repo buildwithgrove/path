@@ -83,6 +83,8 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
 	for _, tc := range testCases {
+		fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n\n", BOLD_BLUE, tc.Name, RESET)
+
 		serviceGatewayURL := gatewayURL // Make a copy to avoid appending to the original
 
 		// If specifying the service ID in the subdomain, set the subdomain in the gateway URL.
@@ -280,8 +282,6 @@ func runEVMServiceTest(
 ) (serviceTestFailed bool) {
 	results := make(map[jsonrpc.Method]*methodMetrics)
 	var resultsMutex sync.Mutex
-
-	fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n\n", BOLD_BLUE, testName, RESET)
 
 	// Validate that all methods have a definition
 	for method := range methodConfigs {

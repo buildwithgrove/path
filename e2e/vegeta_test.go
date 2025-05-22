@@ -131,8 +131,8 @@ func createVegetaAttacker(rps int, timeout time.Duration) *vegeta.Attacker {
 	return vegeta.NewAttacker(
 		vegeta.Timeout(timeout),
 		vegeta.KeepAlive(true),
-		vegeta.Workers(uint64(rps/4)),
-		vegeta.MaxWorkers(uint64(rps/2)),
+		vegeta.Workers(uint64(rps/8)),
+		vegeta.MaxWorkers(uint64(rps/4)),
 	)
 }
 

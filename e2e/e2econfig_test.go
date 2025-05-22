@@ -109,6 +109,11 @@ func loadE2EConfig() (*Config, error) {
 	}
 	cfg.envConfig = envConfig
 
+	// Validate the configuration
+	if err := cfg.validate(); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
+	}
+
 	return cfg, nil
 }
 
@@ -293,4 +298,153 @@ func (c *Config) getTestCases() []TestCase {
 	}
 
 	return filteredTestCases
+}
+
+// validate performs configuration validation based on schema and runtime requirements
+func (c *Config) validate() error {
+	// Validate based on test mode
+	mode := c.getTestMode()
+
+	// Mode-specific validations
+	if mode == testModeLoad {
+		if c.TestConfig.LoadTestConfig == nil {
+			return fmt.Errorf("load test mode requires LoadTestConfig to be set")
+		}
+
+		// Required fields validation for load test mode
+		if c.TestConfig.LoadTestConfig.GatewayURLOverride == "" {
+			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
+		}
+
+		if c.TestConfig.LoadTestConfig.PortalApplicationIDOverride == "" {
+			return fmt.Errorf("load test mode requires PortalApplicationIDOverride to be set")
+		}
+	} else if mode == testModeE2E {
+		if c.TestConfig.E2EConfig == nil {
+			return fmt.Errorf("e2e test mode requires E2EConfig to be set")
+		}
+
+		// Check for protocol-specific config files in e2e mode
+		protocol := c.getTestProtocol()
+		var configFile string
+
+		if protocol == protocolMorse {
+			configFile = "config/.morse.config.yaml"
+		} else if protocol == protocolShannon {
+			configFile = "config/.shannon.config.yaml"
+		}
+
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
+		}
+	}
+
+	// Validate based on protocol
+	protocol := c.getTestProtocol()
+
+	// Check for presence of test cases for the specified protocol
+	hasMorseCases := false
+	hasShannonCases := false
+
+	for _, tc := range c.TestCases {
+		if tc.Protocol == protocolMorse {
+			hasMorseCases = true
+		} else if tc.Protocol == protocolShannon {
+			hasShannonCases = true
+		}
+	}
+
+	if protocol == protocolMorse && !hasMorseCases {
+		return fmt.Errorf("no test cases found for Morse protocol")
+	}
+
+	if protocol == protocolShannon && !hasShannonCases {
+		return fmt.Errorf("no test cases found for Shannon protocol")
+	}
+
+	// Validate test cases
+	for i, tc := range c.TestCases {
+		if err := c.validateTestCase(tc, i); err != nil {
+			return err
+		}
+	}
+
+	// Validate default method config
+	if c.DefaultMethodConfig.TotalRequests <= 0 {
+		return fmt.Errorf("DefaultMethodConfig.TotalRequests must be greater than 0")
+	}
+
+	if c.DefaultMethodConfig.RPS <= 0 {
+		return fmt.Errorf("DefaultMethodConfig.RPS must be greater than 0")
+	}
+
+	if c.DefaultMethodConfig.SuccessRate < 0 || c.DefaultMethodConfig.SuccessRate > 1 {
+		return fmt.Errorf("DefaultMethodConfig.SuccessRate must be between 0 and 1")
+	}
+
+	// All validations passed
+	return nil
+}
+
+// validateTestCase validates an individual test case
+func (c *Config) validateTestCase(tc TestCase, index int) error {
+	// Validate required fields
+	if tc.Name == "" {
+		return fmt.Errorf("test case #%d: Name is required", index)
+	}
+
+	if tc.Protocol == "" {
+		return fmt.Errorf("test case #%d: Protocol is required", index)
+	}
+
+	if tc.Protocol != protocolMorse && tc.Protocol != protocolShannon {
+		return fmt.Errorf("test case #%d: Protocol must be either 'morse' or 'shannon'", index)
+	}
+
+	if tc.ServiceID == "" {
+		return fmt.Errorf("test case #%d: ServiceID is required", index)
+	}
+
+	// Validate service params based on protocol
+	if tc.Protocol == protocolMorse {
+		if tc.Archival && tc.ServiceParams.ContractStartBlock == 0 {
+			return fmt.Errorf("test case #%d: ContractStartBlock is required for archival Morse tests", index)
+		}
+
+		if tc.ServiceParams.ContractAddress == "" {
+			return fmt.Errorf("test case #%d: ContractAddress is required for Morse tests", index)
+		}
+
+		if tc.ServiceParams.TransactionHash == "" {
+			return fmt.Errorf("test case #%d: TransactionHash is required for Morse tests", index)
+		}
+	}
+
+	if tc.Protocol == protocolShannon {
+		if tc.ServiceParams.ContractAddress == "" {
+			return fmt.Errorf("test case #%d: ContractAddress is required for Shannon tests", index)
+		}
+	}
+
+	// Validate test case override config if present
+	if tc.TestCaseConfigOverride != nil {
+		if tc.TestCaseConfigOverride.TotalRequests <= 0 {
+			return fmt.Errorf("test case #%d: TestCaseConfigOverride.TotalRequests must be greater than 0", index)
+		}
+
+		if tc.TestCaseConfigOverride.RPS <= 0 {
+			return fmt.Errorf("test case #%d: TestCaseConfigOverride.RPS must be greater than 0", index)
+		}
+
+		if tc.TestCaseConfigOverride.SuccessRate < 0 || tc.TestCaseConfigOverride.SuccessRate > 1 {
+			return fmt.Errorf("test case #%d: TestCaseConfigOverride.SuccessRate must be between 0 and 1", index)
+		}
+	}
+
+	// Validate latency multiplier if present
+	if tc.LatencyMultiplier < 0 {
+		return fmt.Errorf("test case #%d: LatencyMultiplier must be greater than or equal to 0", index)
+	}
+
+	return nil
 }
