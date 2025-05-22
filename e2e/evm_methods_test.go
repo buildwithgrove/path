@@ -35,37 +35,8 @@ func allEVMTestMethods() []jsonrpc.Method {
 	}
 }
 
-// evmServiceParameters holds service-specific test data for all methods.
-// Allows testing specific requests that require parameters.
-type evmServiceParameters struct {
-	// For eth_getBalance, eth_getTransactionCount, eth_getTransactionReceipt
-	blockNumber string
-
-	// For eth_getBalance, eth_getTransactionCount, eth_getTransactionReceipt
-	//
-	// `contractAddress` address should match the `evmArchivalCheckConfig.contractAddress`
-	// value in `config/service_qos_config.go`
-	contractAddress string
-
-	// The minimum block number to use for archival tests.
-	// Ensures we are not fetching a block where the contract address has no balance or transactions.
-	//
-	// `contractStartBlock` should match the `evmArchivalCheckConfig.contractStartBlock`
-	// value in `config/service_qos_config.go`
-	contractStartBlock uint64
-
-	// For eth_getTransactionReceipt and eth_getTransactionByHash
-	transactionHash string
-
-	// For eth_call
-	callData string
-}
-
 // createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.
-func createEVMJsonRPCParams(
-	method jsonrpc.Method,
-	sp evmServiceParameters,
-) jsonrpc.Params {
+func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Params {
 	switch method {
 
 	// Methods with empty params
@@ -75,14 +46,14 @@ func createEVMJsonRPCParams(
 	// Methods that just need the transaction hash
 	//   Example: ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
 	case eth_getTransactionReceipt, eth_getTransactionByHash:
-		params, _ := jsonrpc.BuildParamsFromString(sp.transactionHash)
+		params, _ := jsonrpc.BuildParamsFromString(sp.TransactionHash)
 		return params
 
 	// Methods that need [address, blockNumber]
 	//   Example: ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
 	case eth_getBalance, eth_getTransactionCount:
 		params, _ := jsonrpc.BuildParamsFromStringArray([2]string{
-			sp.contractAddress,
+			sp.ContractAddress,
 			sp.blockNumber,
 		})
 		return params
@@ -101,8 +72,8 @@ func createEVMJsonRPCParams(
 	case eth_call:
 		params, _ := jsonrpc.BuildParamsFromObjectAndString(
 			map[string]string{
-				"to":   sp.contractAddress,
-				"data": sp.callData,
+				"to":   sp.ContractAddress,
+				"data": sp.CallData,
 			},
 			sp.blockNumber,
 		)

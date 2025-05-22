@@ -222,16 +222,37 @@ type (
 		TestCaseMethodOverride []string `yaml:"test_case_method_override,omitempty"`
 	}
 
-	// ServiceParams for service-specific parameters
+	// ServiceParams holds service-specific test data for all methods.
+	// Allows testing specific requests that require parameters.
 	ServiceParams struct {
-		// Contract address for eth calls
+		// `contractAddress` address should match the `evmArchivalCheckConfig.contractAddress`
+		// value in `config/service_qos_config.go`
+		// For eth_getBalance, eth_getTransactionCount, eth_getTransactionReceipt
+
 		ContractAddress string `yaml:"contract_address,omitempty"`
+
 		// Call data for eth_call
 		CallData string `yaml:"call_data,omitempty"`
-		// Minimum block number for archival tests
+
+		// The minimum block number to use for archival tests.
+		// Ensures we are not fetching a block where the contract address has no balance or transactions.
+		//
+		// `contractStartBlock` should match the `evmArchivalCheckConfig.contractStartBlock`
+		// value in `config/service_qos_config.go`
 		ContractStartBlock uint64 `yaml:"contract_start_block,omitempty"`
+
 		// Transaction hash for receipt/transaction queries
+		//
+		//	 For eth_getTransactionReceipt and eth_getTransactionByHash
 		TransactionHash string `yaml:"transaction_hash,omitempty"`
+
+		// blockNumber is set in test case.
+		// Can be one of the following:
+		// 		- "latest"
+		// 		- randomly selected archival block number based on ContractStartBlock
+		//
+		// For eth_getBalance, eth_getTransactionCount, eth_getTransactionReceipt
+		blockNumber string
 	}
 )
 

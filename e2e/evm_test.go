@@ -91,28 +91,19 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		if cfg.getTestMode() == testModeLoad && cfg.useServiceSubdomain() {
 			serviceGatewayURL = setServiceIDInGatewayURLSubdomain(serviceGatewayURL, tc.ServiceID)
 		}
-
-		// Set up service parameters
-		serviceParams := evmServiceParameters{
-			contractAddress:    tc.ServiceParams.ContractAddress,
-			contractStartBlock: tc.ServiceParams.ContractStartBlock,
-			transactionHash:    tc.ServiceParams.TransactionHash,
-			callData:           tc.ServiceParams.CallData,
-		}
-
 		// Get request headers
 		headers := getRequestHeaders(tc.ServiceID)
 
 		// Determine if test is archival
 		isArchival := tc.Archival
 		if !isArchival {
-			serviceParams.blockNumber = "latest"
+			tc.ServiceParams.blockNumber = "latest"
 		} else {
-			serviceParams.blockNumber = setTestBlockNumber(
+			tc.ServiceParams.blockNumber = setTestBlockNumber(
 				t,
 				serviceGatewayURL,
 				headers,
-				serviceParams.contractStartBlock,
+				tc.ServiceParams.ContractStartBlock,
 			)
 		}
 
@@ -147,7 +138,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			ctx,
 			tc.Name,
 			headers,
-			serviceParams,
+			tc.ServiceParams,
 			tc.LatencyMultiplier,
 			testConfig,
 			methodCount,
@@ -250,7 +241,7 @@ func runEVMServiceTest(
 	ctx context.Context,
 	testName string,
 	headers http.Header,
-	serviceParams evmServiceParameters,
+	serviceParams ServiceParams,
 	latencyMultiplier int,
 	testConfig TestConfig,
 	methodCount int,
@@ -332,7 +323,7 @@ func runMethodAttack(
 	methodConfig TestConfig,
 	methodCount int,
 	headers http.Header,
-	serviceParams evmServiceParameters,
+	serviceParams ServiceParams,
 	gatewayURL string,
 	progBar *pb.ProgressBar,
 ) *methodMetrics {
