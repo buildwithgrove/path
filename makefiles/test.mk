@@ -24,3 +24,10 @@ test_e2e_evm_shannon: shannon_e2e_config_warning ## Run an E2E Shannon relay tes
 .PHONY: test_load_evm_shannon
 test_load_evm_shannon: shannon_e2e_config_warning ## Run a Shannon load test
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
+
+.PHONY: copy_e2e_config
+copy_e2e_config:
+	@echo "📁 Copying e2e config template to e2e config file"
+	cp ./e2e/config/e2econfig.tmpl.yaml ./e2e/config/.e2econfig.yaml
+	@echo "✅ Successfully copied e2e config template to e2e config file"
+	@echo "  💡 To customize the e2e config, edit the YAML file at ./e2e/config/.e2econfig.yaml"

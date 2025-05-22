@@ -1,10 +1,10 @@
 ---
 sidebar_position: 7
-title: E2E Regression & Performance Tests
-description: End-to-End Tests for PATH
+title: E2E & Load Tests
+description: End-to-End & Load Tests for PATH
 ---
 
-PATH E2E (End-to-End) tests check if the full system works as expected by simulating real user traffic.
+PATH E2E (End-to-End) tests check if the full system works as expected by simulating real user traffic and performing load testing.
 
 <div align="center">
 ![E2E Test](../../../static/img/e2e_test.gif)
@@ -13,9 +13,17 @@ PATH E2E (End-to-End) tests check if the full system works as expected by simula
 ## Table of Contents <!-- omit in toc -->
 
 - [Overview](#overview)
+- [Test Modes](#test-modes)
+  - [E2E Test Mode](#e2e-test-mode)
+  - [Load Test Mode](#load-test-mode)
 - [E2E Test Configuration](#e2e-test-configuration)
-  - [Helpers to create configurations](#helpers-to-create-configurations)
+  - [Configuration File Structure](#configuration-file-structure)
 - [Helper Make Targets](#helper-make-targets)
+  - [Schema and Validation](#schema-and-validation)
+  - [E2E Configuration File](#e2e-configuration-file)
+- [Helper Make Targets](#helper-make-targets-1)
+  - [E2E Test Mode Targets](#e2e-test-mode-targets)
+  - [Load Test Mode Targets](#load-test-mode-targets)
 - [Troubleshooting](#troubleshooting)
   - [Running Binary manually (no docker)](#running-binary-manually-no-docker)
   - [Reviewing PATH Logs](#reviewing-path-logs)
@@ -33,37 +41,89 @@ PATH E2E (End-to-End) tests check if the full system works as expected by simula
 - Correct request routing
 - Service responses (data + latency)
 - System reliability under load
-- Success metrics
+- Success metrics across different protocols (Morse & Shannon)
 
 **We use the [Vegeta library](https://github.com/tsenart/vegeta) for HTTP load testing:**
 
-- Generates thousands of requests/sec
-- Collects detailed metrics
-- Supports custom configs and attack configurations
-- Measures latency (p50, p95, p99)
+- Can generate thousands of requests/sec
+- Collects detailed metrics including latency percentiles (p50, p95, p99)
+- Supports custom configurations and attack parameters
+- Validates JSON-RPC responses and success rates
 
 <div align="center">
 ![Vegeta](../../../static/img/9000.png)
 </div>
 
-## E2E Test Configuration
+## Test Modes
 
-E2E tests need a valid config file in `./e2e`:
+PATH E2E tests support two distinct modes of operation:
 
-- `./e2e/morse.config.yaml` for Morse
-- `./e2e/shannon.config.yaml` for Shannon
+### E2E Test Mode
 
-Config must match the protocol/services you want to test.
+Make Targets
+- `make test_e2e_evm_morse` - Runs E2E tests against the Morse protocol
+- `make test_e2e_evm_shannon` - Runs E2E tests against the Shannon protocol
 
-See [PATH Configuration File docs](./5_configurations_path.md) for details.
+**Purpose**: Full end-to-end testing that starts PATH in an isolated Docker container
 
-:::warning TODO: Prebuilt configs
+**How it works**:
+- Automatically spins up PATH in a Docker container using Dockertest
+- Uses appropriate protocol configuration (`.morse.config.yaml` or `.shannon.config.yaml`)
+- Runs tests against the containerized PATH instance
+- Automatically tears down the container after testing
 
-TODO(@olshansk): Provide prebuilt configs for 1-minute onboarding.
+**Use cases**:
+- Full system validation
+- Continuous integration testing
+- Regression testing
+
+### Load Test Mode
+
+Make Targets
+- `make test_load_evm_morse` - Runs load tests against the Morse protocol
+- `make test_load_evm_shannon` - Runs load tests against the Shannon protocol
+
+:::info
+
+In order to use the load test mode, you will need either:
+
+1. Access to a Portal Application ID (and Portal API Key if required).
+    - `gateway_url_override`: `https://rpc.grove.city/v1`
+    - _Visit the [Grove Portal](https://www.portal.grove.city) to get an application ID and API key._
+2. A locally [configured](./5_configurations_path.md) and running PATH instance.
+    - `gateway_url_override`: `http://localhost:3069/v1`
+    - _Run `make path_run` in another shell to start PATH._
 
 :::
 
-### Helpers to create configurations
+**Purpose**: Performance testing against existing PATH instances
+
+**How it works**:
+- Send requests to a provided gateway URL (local or remote)
+- No need for Docker container setup
+
+**Use cases**:
+- Testing production gateway
+- Testing against local PATH instances
+
+## E2E Test Configuration
+
+### Configuration File Structure
+
+The tests use a comprehensive YAML configuration system located in `./e2e/config/`:
+
+**Configuration File Priority:**
+1. `./e2e/config/.e2econfig.yaml` (custom config - if present)
+2. `./e2e/config/e2econfig.tmpl.yaml` (default template - fallback)
+
+**(E2E Test Mode Only) PATH Configuration Files**:
+
+Because E2E mode spins up a local PATH instance in Docker, you will need to provide the appropriate configuration files for the protocol you wish to test.
+
+- `./e2e/config/.morse.config.yaml` for Morse protocol testing
+- `./e2e/config/.shannon.config.yaml` for Shannon protocol testing
+
+:::tip Populate PATH Configs
 
 You can use the following commands to copy example configs and follow the instructions in your CLI:
 
@@ -71,11 +131,56 @@ You can use the following commands to copy example configs and follow the instru
 - `make shannon_prepare_e2e_config`
 
 <details>
+<summary>🌿 For Grove Employees Only</summary>
+
+Search for `E2E Config` in `1Password` and copy-paste those configs directly.
+
+</details>
+
+:::
+
+## Helper Make Targets
+
+<details>
 <summary>🌿 For Grove Employees</summary>
 
 Search for `E2E Config` in `1Password` and copy-paste those configs directly.
 
 </details>
+
+### Schema and Validation
+
+The configuration uses a formal YAML schema with validation:
+
+**Schema Location**: `./e2e/config/e2econfig.schema.yaml`
+
+:::tip VSCode Validation
+
+If you are using VSCode, we recommend using the [YAML Language Support](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension for in-editor validation of the `.config.yaml` file. Enable it by ensuring the following annotation is present at the top of your config file:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+```
+
+:::
+
+### E2E Configuration File
+
+By default, the tests will run using the template file located in `./e2e/config/e2econfig.tmpl.yaml`.
+
+:::info Create Custom Configuration
+
+If you wish to create a custom configuration, you can do so by copying the template file and editing the values to your liking.
+
+First copy the template file to a .gitignored `./e2e/config/.e2econfig.yaml` file:
+
+```bash
+make copy_e2e_config
+```
+
+Then edit the values to your liking.
+
+:::
 
 ## Helper Make Targets
 
@@ -85,49 +190,29 @@ Run `make help` to see all available make targets.
 
 :::
 
-**Only E2E tests for Shannon:**
+### E2E Test Mode Targets
+
+**Run E2E tests with Docker containers:**
 
 ```bash
+# Shannon E2E tests (local Anvil)
 make test_e2e_evm_shannon
-```
 
-**Only E2E tests for Morse:**
-
-```bash
+# Morse E2E tests (real networks)
 make test_e2e_evm_morse
 ```
 
-**Saved Log Output to a File** (useful for debugging):
+### Load Test Mode Targets
+
+**Run load tests against existing gateways:**
 
 ```bash
-make test_e2e_evm_morse_with_logs
-make test_e2e_evm_shannon_with_logs
+# Shannon load tests
+make test_load_evm_shannon
+
+# Morse load tests  
+make test_load_evm_morse
 ```
-
-**E2E for a specific service** (if you know which service ID you want to test):
-
-```bash
-make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021
-```
-
-**E2E against local PATH binary** (no Docker):
-
-```bash
-# Run make path_run in another shell
-make test_e2e_evm_morse GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
-```
-
-**Force Docker rebuild** (if you made changes to the code):
-
-```bash
-make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true
-```
-
-**Wait 30s for hydrator checks** (if you're adding a new service):
-
-```bash
-make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30
-````
 
 ---
 
@@ -178,43 +263,85 @@ The source code for E2E tests is available [here](https://github.com/buildwithgr
 
 :::info
 
-The sections below were last updated on 04/24/2025.
+The sections below were last updated on 05/22/2025.
 
 :::
 
 ### Supported Services
 
-| Protocol | Service ID | Chain Name       | Type      |
-| -------- | ---------- | ---------------- | --------- |
-| Morse    | F00C       | Ethereum         | Archival  |
-| Morse    | F021       | Polygon          | Archival  |
-| Morse    | F01C       | Oasys            | Archival  |
-| Morse    | F036       | XRPL EVM Testnet | Archival  |
-| Shannon  | anvil      | Local Ethereum   | Ephemeral |
+| Protocol | Service ID | Chain Name       | Type      | Notes                     |
+| -------- | ---------- | ---------------- | --------- | ------------------------- |
+| Morse    | F00C       | Ethereum         | Archival  | Mainnet with full history |
+| Morse    | F021       | Polygon          | Archival  | Mainnet with full history |
+| Morse    | F01C       | Oasys            | Archival  | Mainnet with full history |
+| Morse    | F036       | XRPL EVM Testnet | Archival  | Testnet with full history |
+| Shannon  | anvil      | Local Ethereum   | Ephemeral | Local development chain   |
 
 ### Environment Variables
 
-| Variable             | Description                                                                                           | Default                  | Required |
-| -------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------ | -------- |
-| GATEWAY_URL_OVERRIDE | Custom PATH gateway URL (useful for local dev). If set, skips Docker and runs tests against this URL. | http://localhost:3069/v1 | No       |
-| DOCKER_LOG           | Log Docker container output.                                                                          | false                    | No       |
-| DOCKER_FORCE_REBUILD | Force Docker image rebuild (useful after code changes).                                               | false                    | No       |
-| SERVICE_ID_OVERRIDE  | Test only a specific service ID.                                                                      | All services             | No       |
-| WAIT_FOR_HYDRATOR    | Seconds to wait for hydrator checks.                                                                  | 0                        | No       |
+These environment variables are set by the test make targets, but if you wish to set them manually, see the table below:
+
+<details>
+<summary>Env Vars Table</summary>
+| Variable      | Description                        | Values             | Required |
+| ------------- | ---------------------------------- | ------------------ | -------- |
+| TEST_MODE     | Determines the test execution mode | `e2e`, `load`      | Yes      |
+| TEST_PROTOCOL | Specifies which protocol to test   | `morse`, `shannon` | Yes      |
+</details>
+
 
 ### Extending/Updating/Adding EVM E2E Tests
 
 To add new services or methods to the E2E tests:
 
-1. Add new service definitions to the appropriate test case array in `evm_test.go`
-2. If needed, add new method definitions in `evm_methods_test.go`
-3. Configure appropriate success thresholds and latency expectations
+1. **Add new service definitions** to the `test_cases` array in your configuration file
+2. **Configure service parameters** including contract addresses, start blocks, and transaction hashes for archival tests
+3. **Set appropriate test parameters** like success thresholds, latency expectations, and request rates
+4. **Add method overrides** if you need to test specific JSON-RPC methods for the new service
+5. **Update the schema** in `e2econfig.schema.yaml` if you add new configuration fields
+
+**Example new service configuration:**
+
+```yaml
+test_cases:
+  - name: "New Chain Load Test"
+    protocol: "morse"
+    service_id: "FNEW"
+    archival: true
+    service_params:
+      contract_address: "0x..."
+      contract_start_block: 1000000
+      transaction_hash: "0x..."
+      call_data: "0x18160ddd"
+    latency_multiplier: 2  # For slower networks
+    test_case_config_override:
+      success_rate: 0.70   # Lower threshold for new networks
+```
 
 ### Test Metrics and Validation
 
-The E2E tests collect and validate various metrics:
+The E2E tests collect and validate comprehensive metrics:
 
-- HTTP success rates (percentage of successful requests)
-- Response latency percentiles (p50, p95, p99)
-- JSON-RPC response validation
-- Error rates and types
+**HTTP Metrics:**
+- Success rates (percentage of HTTP 200 responses)
+- Status code distribution
+- HTTP error categorization
+
+**Latency Metrics:**
+- P50, P95, P99 response latency percentiles
+- Average latency across all requests
+- Per-method latency analysis
+
+**JSON-RPC Validation:**
+- Response unmarshaling success rate
+- JSON-RPC error field validation
+- Result field presence validation
+- Protocol-specific response validation
+
+**Service-Level Metrics:**
+- Per-service success aggregation
+- Cross-method performance comparison
+- Service reliability scoring
+- Error categorization and reporting
+
+The tests fail if any configured thresholds are exceeded, ensuring consistent service quality and performance standards.
