@@ -139,6 +139,14 @@ var shannonServices = []ServiceQoSConfig{
 		12_300_000,
 	)),
 
+	// Fuse
+	evm.NewEVMServiceQoSConfig("fuse", "0x7a", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
+		"0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79",
+		// Contract start block
+		15_000_000,
+	)),
+
 	// Gnosis
 	evm.NewEVMServiceQoSConfig("gnosis", "0x64", evm.NewEVMArchivalCheckConfig(
 		// https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
@@ -241,9 +249,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("fraxtal", "0xfc", nil),
-
-	// Fuse
-	evm.NewEVMServiceQoSConfig("fuse", "0x7a", nil),
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("iotex", "0x1251", nil),
@@ -422,6 +427,14 @@ var morseServices = []ServiceQoSConfig{
 		12_300_000,
 	)),
 
+	// Fuse
+	evm.NewEVMServiceQoSConfig("F012", "0x7a", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
+		"0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79",
+		// Contract start block
+		15_000_000,
+	)),
+
 	// Gnosis
 	evm.NewEVMServiceQoSConfig("F013", "0x64", evm.NewEVMArchivalCheckConfig(
 		// https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
@@ -524,9 +537,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("F011", "0xfc", nil),
-
-	// Fuse
-	evm.NewEVMServiceQoSConfig("F012", "0x7a", nil),
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("F015", "0x1251", nil),

@@ -57,6 +57,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
 | Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
+| Fuse | fuse | EVM | 122 | ✅ |
 | Gnosis | gnosis | EVM | 100 | ✅ |
 | Harmony-0 | harmony | EVM | 1666600000 | ✅ |
 | Moonbeam | moonbeam | EVM | 1284 | ✅ |
@@ -75,7 +76,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Evmos | evmos | EVM | 9001 |  |
 | Fantom | fantom | EVM | 250 |  |
 | Fraxtal | fraxtal | EVM | 252 |  |
-| Fuse | fuse | EVM | 122 |  |
 | IoTeX | iotex | EVM | 4689 |  |
 | Kaia | kaia | EVM | 8217 |  |
 | Kava | kava | EVM | 2222 |  |
@@ -121,6 +121,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
 | Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
+| Fuse | F012 | EVM | 122 | ✅ |
 | Gnosis | F013 | EVM | 100 | ✅ |
 | Harmony-0 | F014 | EVM | 1666600000 | ✅ |
 | Moonbeam | F019 | EVM | 1284 | ✅ |
@@ -138,7 +139,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Evmos | F00F | EVM | 9001 |  |
 | Fantom | F010 | EVM | 250 |  |
 | Fraxtal | F011 | EVM | 252 |  |
-| Fuse | F012 | EVM | 122 |  |
 | IoTeX | F015 | EVM | 4689 |  |
 | Kaia | F016 | EVM | 8217 |  |
 | Kava | F017 | EVM | 2222 |  |
