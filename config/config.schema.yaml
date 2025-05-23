@@ -244,3 +244,7 @@ properties:
         description: "The URL where the data will be reported to."
         type: string
         pattern: "^(http|https)://.*$"
+      post_timeout_ms:
+        description: "Timeout in milliseconds for HTTP POST operations. If zero or negative, a default timeout of 10000ms (10s) is used."
+        type: integer
+        default: 10000
