@@ -179,6 +179,14 @@ var shannonServices = []ServiceQoSConfig{
 		60_000_000,
 	)),
 
+	// IoTeX
+	evm.NewEVMServiceQoSConfig("iotex", "0x1251", evm.NewEVMArchivalCheckConfig(
+		// https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
+		"0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883",
+		// Contract start block
+		6_440_916,
+	)),
+
 	// Kaia
 	evm.NewEVMServiceQoSConfig("kaia", "0x2019", evm.NewEVMArchivalCheckConfig(
 		// https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
@@ -283,9 +291,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("fraxtal", "0xfc", nil),
-
-	// IoTeX
-	evm.NewEVMServiceQoSConfig("iotex", "0x1251", nil),
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("kava", "0x8ae", nil),
@@ -492,6 +497,14 @@ var morseServices = []ServiceQoSConfig{
 		60_000_000,
 	)),
 
+	// IoTeX
+	evm.NewEVMServiceQoSConfig("F015", "0x1251", evm.NewEVMArchivalCheckConfig(
+		// https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
+		"0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883",
+		// Contract start block
+		6_440_916,
+	)),
+
 	// Kaia
 	evm.NewEVMServiceQoSConfig("F016", "0x2019", evm.NewEVMArchivalCheckConfig(
 		// https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
@@ -596,9 +609,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("F011", "0xfc", nil),
-
-	// IoTeX
-	evm.NewEVMServiceQoSConfig("F015", "0x1251", nil),
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("F017", "0x8ae", nil),
