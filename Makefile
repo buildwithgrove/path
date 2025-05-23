@@ -15,14 +15,6 @@ help: ## Prints all the targets in all the Makefiles
 #### PATH Build Targets   ###
 #############################
 
-# tl;dr Quick testing & debugging of PATH as a standalone
-# This section is intended to just build and run the PATH binary.
-# It mimics an E2E real environment.
-
-.PHONY: path_build
-path_build: ## Build the path binary locally (does not run anything)
-	go build -o bin/path ./cmd
-
 .PHONY: check_path_config
 ## Verify that path configuration file exists
 check_path_config:
@@ -82,6 +74,7 @@ include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
 include ./makefiles/test.mk
 include ./makefiles/test_requests.mk
+include ./makefiles/release.mk
 include ./makefiles/proto.mk
 include ./makefiles/debug.mk
-include ./makefiles/claude.mk
+include ./makefiles/claudesync.mk
