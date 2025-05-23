@@ -1,6 +1,8 @@
 # This schema file may be used to validate the e2e config file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
 
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "PATH E2E Testing Configuration Schema"
 description: "PATH E2E Testing Configuration YAML: this file is used to configure end-to-end tests for PATH gateways"
 type: object
 additionalProperties: false
@@ -25,20 +27,20 @@ definitions:
         minimum: 0
         maximum: 1
       max_p50_latency_ms:
-        description: "Maximum P50 latency in milliseconds"
+        description: "Maximum P50 latency in milliseconds (e.g. '2000ms')"
         type: string
-        minimum: 0
         pattern: "^[0-9]+ms$"
+        examples: ["2000ms"]
       max_p95_latency_ms:
-        description: "Maximum P95 latency in milliseconds"
+        description: "Maximum P95 latency in milliseconds (e.g. '5000ms')"
         type: string
-        minimum: 0
         pattern: "^[0-9]+ms$"
+        examples: ["5000ms"]
       max_p99_latency_ms:
-        description: "Maximum P99 latency in milliseconds"
+        description: "Maximum P99 latency in milliseconds (e.g. '10000ms')"
         type: string
-        minimum: 0
         pattern: "^[0-9]+ms$"
+        examples: ["10000ms"]
   service_params:
     description: "Service parameters for test requests"
     type: object
@@ -47,9 +49,13 @@ definitions:
       contract_address:
         description: "Contract address for eth calls"
         type: string
+        pattern: "^0x[a-fA-F0-9]{40}$"
+        examples: ["0x28C6c06298d514Db089934071355E5743bf21d60"]
       call_data:
         description: "Call data for eth_call"
         type: string
+        pattern: "^0x[a-fA-F0-9]*$"
+        examples: ["0x18160ddd"]
       contract_start_block:
         description: "Minimum block number for archival tests - ensures contract address has balance or transactions"
         type: integer
@@ -57,6 +63,9 @@ definitions:
       transaction_hash:
         description: "Transaction hash for receipt/transaction queries"
         type: string
+        pattern: "^0x[a-fA-F0-9]{64}$"
+        examples:
+          ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
 
   test_case:
     description: "Test case definition for all protocols"
@@ -76,9 +85,11 @@ definitions:
         enum:
           - morse
           - shannon
+        examples: ["morse", "shannon"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
+        examples: ["F00C", "anvil"]
       archival:
         description: "Whether this is an archival test (historical data access)"
         type: boolean
@@ -108,7 +119,7 @@ definitions:
             - eth_gasPrice
 
 properties:
-  mode_config:
+  e2e_load_test_config:
     description: "General test configuration"
     type: object
     additionalProperties: false

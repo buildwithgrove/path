@@ -19,7 +19,10 @@ const (
 
 	// Grove Portal credentials HTTP headers.
 	httpHeaderPortalAccountID = "Portal-Account-ID"
-	httpHeaderPortalAppID     = "Portal-Application-ID"
+	HttpHeaderPortalAppID     = "Portal-Application-ID"
+
+	// Portal API Key HTTP header.
+	HttpHeaderAuthorization = "Authorization"
 
 	// Region name constants and placeholders.
 	regionNamePlaceholder = "region-unspecified" // Used when no region is specified
@@ -60,7 +63,7 @@ func extractAuthObservationFromHTTPHeaders(httpReq *http.Request) *observation.R
 
 	// Extract portal credentials from headers
 	portalAccountID := httpReq.Header.Get(httpHeaderPortalAccountID)
-	portalApplicationID := httpReq.Header.Get(httpHeaderPortalAppID)
+	portalApplicationID := httpReq.Header.Get(HttpHeaderPortalAppID)
 
 	// Construct and return the RequestAuth object with extracted values
 	return &observation.RequestAuth{
