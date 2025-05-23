@@ -56,6 +56,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Base Sepolia Testnet | base-test | EVM | 84532 | ✅ |
 | Blast | blast | EVM | 81457 | ✅ |
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
+| Boba | boba | EVM | 288 | ✅ |
 | Celo | celo | EVM | 42220 | ✅ |
 | Ethereum - ETH Mainnet | eth | EVM | 1 | ✅ |
 | Fuse | fuse | EVM | 122 | ✅ |
@@ -71,7 +72,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
-| Boba | boba | EVM | 288 |  |
 | Ethereum Holesky Testnet | eth_hol_test | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | eth_sep_test | EVM | 11155111 |  |
 | Evmos | evmos | EVM | 9001 |  |
@@ -120,6 +120,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Base Sepolia Testnet | F006 | EVM | 84532 | ✅ |
 | Blast | F008 | EVM | 81457 | ✅ |
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
+| Boba | F00A | EVM | 288 | ✅ |
 | Celo | F00B | EVM | 42220 | ✅ |
 | Ethereum | F00C | EVM | 1 | ✅ |
 | Fuse | F012 | EVM | 122 | ✅ |
@@ -134,7 +135,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
 | Scroll | F024 | EVM | 534352 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
-| Boba | F00A | EVM | 288 |  |
 | Ethereum Holesky Testnet | F00D | EVM | 17000 |  |
 | Ethereum Sepolia Testnet | F00E | EVM | 11155111 |  |
 | Evmos | F00F | EVM | 9001 |  |
