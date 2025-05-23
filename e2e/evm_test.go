@@ -115,7 +115,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		// Get test config (either use default or test case override)
 		testConfig := cfg.DefaultTestConfig
 		if tc.TestCaseConfigOverride != nil {
-			testConfig = *tc.TestCaseConfigOverride
+			testConfig.MergeNonZero(tc.TestCaseConfigOverride)
 		}
 
 		fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n", BOLD_BLUE, tc.Name, RESET)

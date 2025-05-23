@@ -225,6 +225,38 @@ type (
 )
 
 // -----------------------------------------------------------------------------
+// TestConfig Methods
+// -----------------------------------------------------------------------------
+
+// MergeNonZero merges non-zero values from the override config into this config.
+// This ensures that only fields that are explicitly set in the override config are merged,
+// while preserving the default values for the other fields.
+func (tc *TestConfig) MergeNonZero(override *TestConfig) {
+	if override == nil {
+		return
+	}
+
+	if override.GlobalRPS != 0 {
+		tc.GlobalRPS = override.GlobalRPS
+	}
+	if override.RequestsPerMethod != 0 {
+		tc.RequestsPerMethod = override.RequestsPerMethod
+	}
+	if override.SuccessRate != 0 {
+		tc.SuccessRate = override.SuccessRate
+	}
+	if override.MaxP50LatencyMS != 0 {
+		tc.MaxP50LatencyMS = override.MaxP50LatencyMS
+	}
+	if override.MaxP95LatencyMS != 0 {
+		tc.MaxP95LatencyMS = override.MaxP95LatencyMS
+	}
+	if override.MaxP99LatencyMS != 0 {
+		tc.MaxP99LatencyMS = override.MaxP99LatencyMS
+	}
+}
+
+// -----------------------------------------------------------------------------
 // Config Accessors
 // -----------------------------------------------------------------------------
 
