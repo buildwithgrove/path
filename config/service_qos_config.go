@@ -243,6 +243,14 @@ var shannonServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Taiko
+	evm.NewEVMServiceQoSConfig("taiko", "0x28c58", evm.NewEVMArchivalCheckConfig(
+		// https://taikoscan.io/address/0x1670000000000000000000000000000000000001
+		"0x1670000000000000000000000000000000000001",
+		// Contract start block
+		170_163,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -302,9 +310,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
-
-	// Taiko
-	evm.NewEVMServiceQoSConfig("taiko", "0x28c58", nil),
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("taiko_hek_test", "0x28c61", nil),
@@ -559,6 +564,14 @@ var morseServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Taiko
+	evm.NewEVMServiceQoSConfig("F027", "0x28c58", evm.NewEVMArchivalCheckConfig(
+		// https://taikoscan.io/address/0x1670000000000000000000000000000000000001
+		"0x1670000000000000000000000000000000000001",
+		// Contract start block
+		170_163,
+	)),
+
 	// XRPL EVM Testnet
 	evm.NewEVMServiceQoSConfig("F036", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -607,9 +620,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),
-
-	// Taiko
-	evm.NewEVMServiceQoSConfig("F027", "0x28c58", nil),
 
 	// Taiko Hekla Testnet
 	evm.NewEVMServiceQoSConfig("F028", "0x28c61", nil),
