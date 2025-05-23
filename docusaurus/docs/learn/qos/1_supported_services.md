@@ -62,6 +62,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fuse | fuse | EVM | 122 | ✅ |
 | Gnosis | gnosis | EVM | 100 | ✅ |
 | Harmony-0 | harmony | EVM | 1666600000 | ✅ |
+| Ink | ink | EVM | 57073 | ✅ |
 | IoTeX | iotex | EVM | 4689 | ✅ |
 | Kaia | kaia | EVM | 8217 | ✅ |
 | Metis | metis | EVM | 1088 | ✅ |
@@ -95,7 +96,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sonic | sonic | EVM | 146 |  |
 | TRON | tron | EVM | 728126428 |  |
 | Linea | linea | EVM | 59144 |  |
-| Ink | ink | EVM | 57073 |  |
 | Mantle | mantle | EVM | 5000 |  |
 | Sei | sei | EVM | 1329 |  |
 | Berachain | bera | EVM | 80094 |  |
@@ -126,6 +126,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fuse | F012 | EVM | 122 | ✅ |
 | Gnosis | F013 | EVM | 100 | ✅ |
 | Harmony-0 | F014 | EVM | 1666600000 | ✅ |
+| Ink | F032 | EVM | 57073 | ✅ |
 | IoTeX | F015 | EVM | 4689 | ✅ |
 | Kaia | F016 | EVM | 8217 | ✅ |
 | Metis | F018 | EVM | 1088 | ✅ |
@@ -158,7 +159,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | TRON | F02E | EVM | 728126428 |  |
 | Linea | F030 | EVM | 59144 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |
-| Ink | F032 | EVM | 57073 |  |
 | Mantle | F033 | EVM | 5000 |  |
 | Sei | F034 | EVM | 1329 |  |
 | Berachain | F035 | EVM | 80094 |  |

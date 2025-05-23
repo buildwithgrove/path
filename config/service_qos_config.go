@@ -179,6 +179,14 @@ var shannonServices = []ServiceQoSConfig{
 		60_000_000,
 	)),
 
+	// Ink
+	evm.NewEVMServiceQoSConfig("ink", "0xdef1", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
+		"0x4200000000000000000000000000000000000006",
+		// Contract start block
+		4_500_000,
+	)),
+
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("iotex", "0x1251", evm.NewEVMArchivalCheckConfig(
 		// https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
@@ -337,9 +345,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Linea
 	evm.NewEVMServiceQoSConfig("linea", "0xe708", nil),
 
-	// Ink
-	evm.NewEVMServiceQoSConfig("ink", "0xdef1", nil),
-
 	// Mantle
 	evm.NewEVMServiceQoSConfig("mantle", "0x1388", nil),
 
@@ -495,6 +500,14 @@ var morseServices = []ServiceQoSConfig{
 		"one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a",
 		// Contract start block
 		60_000_000,
+	)),
+
+	// Ink
+	evm.NewEVMServiceQoSConfig("F032", "0xdef1", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
+		"0x4200000000000000000000000000000000000006",
+		// Contract start block
+		4_500_000,
 	)),
 
 	// IoTeX
@@ -654,9 +667,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Berachain Testnet
 	evm.NewEVMServiceQoSConfig("F031", "0x138d4", nil),
-
-	// Ink
-	evm.NewEVMServiceQoSConfig("F032", "0xdef1", nil),
 
 	// Mantle
 	evm.NewEVMServiceQoSConfig("F033", "0x1388", nil),
