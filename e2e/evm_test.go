@@ -140,7 +140,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			tc.Name,
 			headers,
 			tc.ServiceParams,
-			tc.LatencyMultiplier,
 			testConfig,
 			methodCount,
 			serviceGatewayURL,
@@ -243,7 +242,6 @@ func runEVMServiceTest(
 	testName string,
 	headers http.Header,
 	serviceParams ServiceParams,
-	latencyMultiplier int,
 	testConfig TestConfig,
 	methodCount int,
 	gatewayURL string,
@@ -299,16 +297,6 @@ func runEVMServiceTest(
 
 	if err := progBars.finish(); err != nil {
 		fmt.Printf("Error stopping progress bars: %v", err)
-	}
-
-	if latencyMultiplier != 0 {
-		fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
-			YELLOW, testName, latencyMultiplier, RESET,
-		)
-		// Apply latency multiplier to testConfig for validation
-		testConfig.MaxP50LatencyMS = testConfig.MaxP50LatencyMS * time.Duration(latencyMultiplier)
-		testConfig.MaxP95LatencyMS = testConfig.MaxP95LatencyMS * time.Duration(latencyMultiplier)
-		testConfig.MaxP99LatencyMS = testConfig.MaxP99LatencyMS * time.Duration(latencyMultiplier)
 	}
 
 	// We use the same methodConfigMap we created earlier for the summary calculation

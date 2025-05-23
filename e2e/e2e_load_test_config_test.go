@@ -209,7 +209,6 @@ type (
 		ServiceID              protocol.ServiceID `yaml:"service_id"`                          // Service ID to test (identifies the specific blockchain service)
 		Archival               bool               `yaml:"archival,omitempty"`                  // Whether this is an archival test (historical data access)
 		ServiceParams          ServiceParams      `yaml:"service_params"`                      // Service-specific parameters for test requests
-		LatencyMultiplier      int                `yaml:"latency_multiplier,omitempty"`        // Multiplier for latency thresholds for this test case
 		TestCaseConfigOverride *TestConfig        `yaml:"test_case_config_override,omitempty"` // Override default configuration for this test case
 		TestCaseMethodOverride []string           `yaml:"test_case_method_override,omitempty"` // Override methods to test for this test case
 	}
@@ -399,9 +398,6 @@ func (c *Config) validateTestCase(tc TestCase, index int) error {
 	if tc.ServiceID == "" {
 		return fmt.Errorf("test case #%d: ServiceID is required", index)
 	}
-	if tc.LatencyMultiplier < 0 {
-		return fmt.Errorf("test case #%d: LatencyMultiplier must be greater than or equal to 0", index)
-	}
 
 	// Validate Morse-specific params
 	if tc.Protocol == protocolMorse {
@@ -420,19 +416,6 @@ func (c *Config) validateTestCase(tc TestCase, index int) error {
 	if tc.Protocol == protocolShannon {
 		if tc.ServiceParams.ContractAddress == "" {
 			return fmt.Errorf("test case #%d: ContractAddress is required for Shannon tests", index)
-		}
-	}
-
-	// Validate test case override config if present
-	if tc.TestCaseConfigOverride != nil {
-		if tc.TestCaseConfigOverride.RequestsPerMethod <= 0 {
-			return fmt.Errorf("test case #%d: TestCaseConfigOverride.RequestsPerMethod must be greater than 0", index)
-		}
-		if tc.TestCaseConfigOverride.GlobalRPS <= 0 {
-			return fmt.Errorf("test case #%d: TestCaseConfigOverride.GlobalRPS must be greater than 0", index)
-		}
-		if tc.TestCaseConfigOverride.SuccessRate < 0 || tc.TestCaseConfigOverride.SuccessRate > 1 {
-			return fmt.Errorf("test case #%d: TestCaseConfigOverride.SuccessRate must be between 0 and 1", index)
 		}
 	}
 

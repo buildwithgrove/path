@@ -58,7 +58,7 @@ test_cases:
   ###########################################
 
   # Ethereum Mainnet (Archival)
-  - name: "F00C (Ethereum) Load Test"
+  - name: "Morse - F00C (Ethereum) Test"
     protocol: "morse"
     service_id: "F00C"
     archival: true
@@ -69,7 +69,7 @@ test_cases:
       call_data: "0x18160ddd"
 
   # Polygon Mainnet (Archival)
-  - name: "F021 (Polygon) Load Test"
+  - name: "Morse - F021 (Polygon) Test"
     protocol: "morse"
     service_id: "F021"
     archival: true
@@ -80,7 +80,7 @@ test_cases:
       call_data: "0x18160ddd"
 
   # Oasys Mainnet (Archival)
-  - name: "F01C (Oasys) Load Test"
+  - name: "Morse - F01C (Oasys) Test"
     protocol: "morse"
     service_id: "F01C"
     archival: true
@@ -91,7 +91,7 @@ test_cases:
       call_data: "0x18160ddd"
 
   # XRPL EVM Testnet (Archival)
-  - name: "F036 (XRPL EVM Testnet) Load Test"
+  - name: "Morse - F036 (XRPL EVM Testnet) Test"
     protocol: "morse"
     service_id: "F036"
     archival: true
@@ -105,23 +105,37 @@ test_cases:
   # ---------------- SHANNON ----------------
   ###########################################
 
+  # Ethereum Mainnet (Archival)
+  - name: "Shannon - Ethereum Test"
+    protocol: "shannon"
+    service_id: "eth"
+    archival: true 
+    service_params:
+      contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
+      contract_start_block: 12300000
+      transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
+      call_data: "0x18160ddd" 
+    # Override default configuration for this Shannon service test case
+    test_case_config_override:
+      max_p50_latency_ms: 4000ms
+      max_p95_latency_ms: 8000ms
+      max_p99_latency_ms: 12000ms
+
   # Anvil local Ethereum node (Ephemeral)
-  - name: "anvil (local Ethereum) Load Test"
+  - name: "Shannon - Anvil (local Ethereum) Test"
     protocol: "shannon"
     service_id: "anvil"
     service_params:
       contract_address: "0xdAC17F958D2ee523a2206206994597C13D831ec7"
       call_data: "0x18160ddd"
-    # Multiply latency thresholds by this value (for slower networks)
-    latency_multiplier: 10
     # Override default config for this Shannon service test case
     test_case_config_override:
       global_rps: 1
       requests_per_method: 3
       success_rate: 0.60
-      max_p50_latency_ms: 30000ms
-      max_p95_latency_ms: 60000ms
-      max_p99_latency_ms: 90000ms
+      max_p50_latency_ms: 20000ms
+      max_p95_latency_ms: 50000ms
+      max_p99_latency_ms: 100000ms
     # Only test these EVM JSON-RPC methods for this Shannon test case
     test_case_method_override:
       - eth_blockNumber

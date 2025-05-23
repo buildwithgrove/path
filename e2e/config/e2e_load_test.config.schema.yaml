@@ -95,10 +95,6 @@ definitions:
         type: boolean
       service_params:
         $ref: "#/definitions/service_params"
-      latency_multiplier:
-        description: "Multiplier for latency thresholds for this test case"
-        type: integer
-        minimum: 1
       test_case_config_override:
         description: "Override default configuration for this test case"
         $ref: "#/definitions/method_config_base"

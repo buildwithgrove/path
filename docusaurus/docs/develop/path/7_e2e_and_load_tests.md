@@ -87,9 +87,9 @@ PATH E2E tests support two distinct modes of operation:
 
 | Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅          |          ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
-| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |                     ❌                      |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅           |           ❌           |                      ❌                      |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |           ❌           |                      ❌                      |
 
 :::tip Populate PATH Configs
 
@@ -187,7 +187,6 @@ test_cases:
       contract_start_block: 1000000
       transaction_hash: "0x..."
       call_data: "0x18160ddd"
-    latency_multiplier: 2 # For slower networks
     test_case_config_override:
       success_rate: 0.70 # Lower threshold for new networks
 ```
