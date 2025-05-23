@@ -97,8 +97,10 @@ func loadE2EConfig() (*Config, error) {
 	var cfgPath string
 	// Check if custom config exists
 	if _, err := os.Stat(customConfigFile); err == nil {
+		fmt.Println("💾 Using custom config file: ", customConfigFile)
 		cfgPath = customConfigFile
 	} else {
+		fmt.Println("💾 Using default config file: ", defaultConfigFile)
 		cfgPath = defaultConfigFile
 	}
 
