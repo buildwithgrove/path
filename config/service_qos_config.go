@@ -171,6 +171,14 @@ var shannonServices = []ServiceQoSConfig{
 		60_000_000,
 	)),
 
+	// Kaia
+	evm.NewEVMServiceQoSConfig("kaia", "0x2019", evm.NewEVMArchivalCheckConfig(
+		// https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
+		"0x0051ef9259c7ec0644a80e866ab748a2f30841b3",
+		// Contract start block
+		170_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("moonbeam", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -257,9 +265,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("iotex", "0x1251", nil),
-
-	// Kaia
-	evm.NewEVMServiceQoSConfig("kaia", "0x2019", nil),
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("kava", "0x8ae", nil),
@@ -464,6 +469,14 @@ var morseServices = []ServiceQoSConfig{
 		60_000_000,
 	)),
 
+	// Kaia
+	evm.NewEVMServiceQoSConfig("F016", "0x2019", evm.NewEVMArchivalCheckConfig(
+		// https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
+		"0x0051ef9259c7ec0644a80e866ab748a2f30841b3",
+		// Contract start block
+		170_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("F019", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -550,9 +563,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// IoTeX
 	evm.NewEVMServiceQoSConfig("F015", "0x1251", nil),
-
-	// Kaia
-	evm.NewEVMServiceQoSConfig("F016", "0x2019", nil),
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("F017", "0x8ae", nil),
