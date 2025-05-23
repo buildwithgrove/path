@@ -14,6 +14,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -387,4 +388,37 @@ func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 // sessionCacheKey generates a cache key for a (serviceID, appAddr) pair
 func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
+}
+
+// GetSanctionedEndpoints returns all Morse sanctioned endpoints
+// If serviceID is provided, it returns the sanctioned endpoints for that service ID.
+// If serviceID is not provided, it returns the sanctioned endpoints for all configured service IDs.
+// It also returns the total number of endpoints, the number of valid endpoints, and the number of sanctioned endpoints.
+func (p *Protocol) GetSanctionedEndpoints(serviceID protocol.ServiceID) devtools.SanctionDetailsResponse {
+	validEndpoints := 0
+
+	var serviceIDsToCount []protocol.ServiceID
+	if serviceID == "" {
+		for serviceID := range p.ConfiguredServiceIDs() {
+			serviceIDsToCount = append(serviceIDsToCount, serviceID)
+		}
+	} else {
+		serviceIDsToCount = []protocol.ServiceID{serviceID}
+	}
+
+	for _, serviceID := range serviceIDsToCount {
+		endpoints, err := p.getEndpoints(serviceID)
+		if err != nil {
+			p.logger.Error().Err(err).Msg("GetSanctionedEndpoints: error getting endpoints")
+			continue
+		}
+		validEndpoints += len(endpoints)
+	}
+
+	sanctionDetails := p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
+
+	sanctionDetails.ValidEndpointsCount = validEndpoints
+	sanctionDetails.TotalEndpointsCount = validEndpoints + sanctionDetails.SanctionedEndpointsCount
+
+	return sanctionDetails
 }

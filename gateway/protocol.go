@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -49,6 +50,11 @@ type Protocol interface {
 	// For Shannon:
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
+
+	// GetSanctionedEndpoints returns the sanctioned endpoints for a given service ID.
+	// It is called by the router to allow quick information about currently sanctioned endpoints.
+	// This will eventually be removed in favour of a metrics-based approach.
+	GetSanctionedEndpoints(protocol.ServiceID) devtools.SanctionDetailsResponse
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

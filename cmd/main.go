@@ -115,7 +115,13 @@ func main() {
 		ServiceIDReporter: protocol,
 	}
 
-	apiRouter := router.NewRouter(logger, gateway, healthChecker, config.GetRouterConfig())
+	apiRouter := router.NewRouter(
+		logger,
+		gateway,
+		protocol,
+		healthChecker,
+		config.GetRouterConfig(),
+	)
 	if err != nil {
 		log.Fatalf("failed to create API router: %v", err)
 	}

@@ -7,10 +7,13 @@ import (
 	"strings"
 	"time"
 
+	jsonresponse "github.com/pokt-foundation/utils-go/json-response"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -49,17 +52,27 @@ type (
 
 		mux           *http.ServeMux
 		gateway       gateway
+		dataReporter  dataReporter
 		healthChecker *health.Checker
 	}
 	gateway interface {
 		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
+	}
+	dataReporter interface {
+		GetSanctionedEndpoints(protocol.ServiceID) devtools.SanctionDetailsResponse
 	}
 )
 
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Checker, config config.RouterConfig) *router {
+func NewRouter(
+	logger polylog.Logger,
+	gateway gateway,
+	dataReporter dataReporter,
+	healthChecker *health.Checker,
+	config config.RouterConfig,
+) *router {
 	r := &router{
 		logger: logger.With("package", "router"),
 
@@ -67,6 +80,7 @@ func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Che
 
 		mux:           http.NewServeMux(),
 		gateway:       gateway,
+		dataReporter:  dataReporter,
 		healthChecker: healthChecker,
 	}
 	r.handleRoutes()
@@ -76,6 +90,14 @@ func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Che
 func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
+
+	// GET /v1/sanctioned_endpoints - returns a JSON list of sanctioned endpoints
+	// This will eventually be removed in favour of a metrics-based approach.
+	r.mux.HandleFunc("GET /sanctioned_endpoints", r.handleSanctionedEndpoints)
+
+	// GET /v1/sanctioned_endpoints/{service_id} - returns a JSON list of sanctioned endpoints for a given service ID
+	// This will eventually be removed in favour of a metrics-based approach.
+	r.mux.HandleFunc("GET /sanctioned_endpoints/{service_id}", r.handleSanctionedEndpoints)
 
 	// requestHandlerFn defines the middleware chain for all service requests
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
@@ -157,6 +179,7 @@ func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc 
 }
 
 /* --------------------------------- Handlers -------------------------------- */
+
 // handleServiceRequest:
 // 1. Creates timeout context before WriteTimeout expires
 // 2. Prevents empty responses on long operations
@@ -178,4 +201,14 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 	reqCtx, cancel := context.WithTimeout(req.Context(), processingTimeout)
 	defer cancel()
 	r.gateway.HandleServiceRequest(reqCtx, req, w)
+}
+
+// handleSanctionedEndpoints returns a JSON list of sanctioned endpoints
+// This will eventually be removed in favour of a metrics-based approach.
+func (r *router) handleSanctionedEndpoints(w http.ResponseWriter, req *http.Request) {
+	serviceID := protocol.ServiceID(req.PathValue("service_id"))
+
+	sanctionedEndpointDetails := r.dataReporter.GetSanctionedEndpoints(serviceID)
+
+	jsonresponse.RespondWithJSON(w, http.StatusOK, sanctionedEndpointDetails)
 }

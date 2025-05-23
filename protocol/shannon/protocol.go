@@ -13,6 +13,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -290,4 +291,11 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	logger.With("num_endpoints", len(endpoints)).Debug().Msg("Successfully fetched endpoints for permitted apps.")
 
 	return endpoints, nil
+}
+
+// GetSanctionedEndpoints is a No-Op for Shannon protocol.
+// Here to satisfy the gateway.Protocol interface.
+func (p *Protocol) GetSanctionedEndpoints(_ protocol.ServiceID) devtools.SanctionDetailsResponse {
+	p.logger.Warn().Msg("GetSanctionedEndpoints is not implemented for Shannon protocol")
+	return devtools.SanctionDetailsResponse{}
 }
