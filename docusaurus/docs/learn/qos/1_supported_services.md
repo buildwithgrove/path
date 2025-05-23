@@ -63,6 +63,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Gnosis | gnosis | EVM | 100 | ✅ |
 | Harmony-0 | harmony | EVM | 1666600000 | ✅ |
 | Kaia | kaia | EVM | 8217 | ✅ |
+| Metis | metis | EVM | 1088 | ✅ |
 | Moonbeam | moonbeam | EVM | 1284 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
@@ -79,7 +80,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fraxtal | fraxtal | EVM | 252 |  |
 | IoTeX | iotex | EVM | 4689 |  |
 | Kava | kava | EVM | 2222 |  |
-| Metis | metis | EVM | 1088 |  |
 | Moonriver | moonriver | EVM | 1285 |  |
 | Near | near | EVM | 397 |  |
 | Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 |  |
@@ -127,6 +127,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Gnosis | F013 | EVM | 100 | ✅ |
 | Harmony-0 | F014 | EVM | 1666600000 | ✅ |
 | Kaia | F016 | EVM | 8217 | ✅ |
+| Metis | F018 | EVM | 1088 | ✅ |
 | Moonbeam | F019 | EVM | 1284 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
@@ -142,7 +143,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Fraxtal | F011 | EVM | 252 |  |
 | IoTeX | F015 | EVM | 4689 |  |
 | Kava | F017 | EVM | 2222 |  |
-| Metis | F018 | EVM | 1088 |  |
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |

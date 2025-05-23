@@ -187,6 +187,14 @@ var shannonServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Metis
+	evm.NewEVMServiceQoSConfig("metis", "0x440", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
+		"0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62",
+		// Contract start block
+		15_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("moonbeam", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -273,9 +281,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("kava", "0x8ae", nil),
-
-	// Metis
-	evm.NewEVMServiceQoSConfig("metis", "0x440", nil),
 
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("moonriver", "0x505", nil),
@@ -490,6 +495,14 @@ var morseServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Metis
+	evm.NewEVMServiceQoSConfig("F018", "0x440", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
+		"0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62",
+		// Contract start block
+		15_000_000,
+	)),
+
 	// Moonbeam
 	evm.NewEVMServiceQoSConfig("F019", "0x504", evm.NewEVMArchivalCheckConfig(
 		// https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -576,9 +589,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Kava
 	evm.NewEVMServiceQoSConfig("F017", "0x8ae", nil),
-
-	// Metis
-	evm.NewEVMServiceQoSConfig("F018", "0x440", nil),
 
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("F01A", "0x505", nil),
