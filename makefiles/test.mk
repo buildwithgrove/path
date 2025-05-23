@@ -1,3 +1,6 @@
+# DEV_NOTE: DO NOT CHANGE the (cd e2e && go test ...) to the (go test ... e2e)
+# in the helpers below. This is needed to ensure the logs are beautified as expected.
+
 #########################
 ### Test Make Targets ###
 #########################
@@ -15,11 +18,11 @@ test_unit: ## Run all unit tests
 
 .PHONY: test_e2e_evm_morse
 test_e2e_evm_morse: morse_e2e_config_warning ## Run an E2E Morse relay test
-	TEST_MODE=e2e TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 .PHONY: test_e2e_evm_shannon
 test_e2e_evm_shannon: shannon_e2e_config_warning ## Run an E2E Shannon relay test
-	TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 ##################
 ### Load Tests ###
@@ -27,11 +30,11 @@ test_e2e_evm_shannon: shannon_e2e_config_warning ## Run an E2E Shannon relay tes
 
 .PHONY: test_load_evm_morse
 test_load_evm_morse: morse_e2e_config_warning ## Run a Morse load test
-	TEST_MODE=load TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_MODE=load TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 .PHONY: test_load_evm_shannon
 test_load_evm_shannon: shannon_e2e_config_warning ## Run a Shannon load test
-	TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM ./e2e
+	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 .PHONY: copy_e2e_load_test_config
 copy_e2e_load_test_config:
