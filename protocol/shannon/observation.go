@@ -9,7 +9,7 @@ import (
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
-// builds a Morse endpoint success observation to include:
+// builds a Shannon endpoint success observation to include:
 // - endpoint details: address, url, app
 // - endpoint query and response timestamps.
 func buildEndpointSuccessObservation(
@@ -27,8 +27,8 @@ func buildEndpointSuccessObservation(
 	return endpointObs
 }
 
-// builds a Morse endpoint error observation to include:
-// - endpoint details: address, url, app, query/response timestamps.
+// builds a Shannon endpoint error observation to include:
+// - endpoint details
 // - the encountered error
 // - any sanctions resulting from the error.
 func buildEndpointErrorObservation(
@@ -55,7 +55,6 @@ func buildEndpointErrorObservation(
 }
 
 // builds a Shannon endpoint observation to include:
-// - endpoint details: supplier, url
 func buildEndpointObservation(
 	endpoint endpoint,
 ) *protocolobservations.ShannonEndpointObservation {
@@ -68,7 +67,6 @@ func buildEndpointObservation(
 }
 
 // builds an endpoint observation using session's fields.
-// - session details: key, height
 func buildEndpointObservationFromSession(
 	session sessiontypes.Session,
 ) *protocolobservations.ShannonEndpointObservation {
@@ -94,7 +92,6 @@ func buildEndpointFromObservation(
 	observation *protocolobservations.ShannonEndpointObservation,
 ) *endpoint {
 	session := buildSessionFromObservation(observation)
-
 	return &endpoint{
 		session:  session,
 		supplier: observation.GetSupplier(),

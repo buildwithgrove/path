@@ -9,7 +9,6 @@ import "google/protobuf/timestamp.proto";
 enum ShannonRequestErrorType {
   SHANNON_REQUEST_ERROR_UNSPECIFIED = 0;
   SHANNON_REQUEST_ERROR_INTERNAL = 1; // Internal error.
-  
 }
 
 // ShannonRequestError stores details of any errors encountered processing the request.
@@ -23,13 +22,10 @@ message ShannonRequestError {
 // ShannonEndpointErrorType enumerates possible relay errors when interacting with Shannon endpoints.
 enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
-  // endpoint internal error: not recognized.
-  SHANNON_ENDPOINT_ERROR_INTERNAL = 1;
-  // endpoint config error: e.g. DNS lookup error, TLS certificate error.
-  SHANNON_ENDPOINT_ERROR_CONFIG = 2;
-  // endpoint timeout on responding to relay request.
-  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3;
-  SHANNON_ENDPOINT_ERROR_MAXED_OUT = 4;
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1; // endpoint internal error: not recognized.
+  SHANNON_ENDPOINT_ERROR_CONFIG = 2; // endpoint config error: e.g. DNS lookup error, TLS certificate error.
+  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3; // endpoint timeout on responding to relay request.
+  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 4; // TODO_TECHDEBT: Uncomment when this is used.
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions
@@ -49,7 +45,7 @@ message ShannonRequestObservations {
   optional ShannonRequestError request_error = 2;
 
   // Tracks endpoint observation(s).
-  // Only set if the request did not encounter any errors, e.g. an internal error.
+  // Only set if the request did not encounter any errors (e.g. an internal error)
   // Multiple observations possible if:
   // - Original endpoint returns invalid response
   // - Retry mechanism activates
@@ -60,6 +56,7 @@ message ShannonRequestObservations {
 message ShannonEndpointObservation {
   // Supplier of the endpoint handling the request
   string supplier = 1;
+
   // URL of the endpoint handling the request
   string endpoint_url = 2;
 
@@ -80,17 +77,17 @@ message ShannonEndpointObservation {
 
   // Timestamp marking the sending of the request to the endpoint.
   google.protobuf.Timestamp endpoint_query_timestamp = 8;
-  
+
   // Timestamp marking the reception of the endpoint's response.
   // Only set if the endpoint did not timeout.
   optional google.protobuf.Timestamp endpoint_response_timestamp = 9;
 
   // Error type if relay to this endpoint failed
   optional ShannonEndpointErrorType error_type = 10;
-  
+
   // Additional error details when available
   optional string error_details = 11;
-  
+
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 12;
 }
