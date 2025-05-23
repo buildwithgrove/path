@@ -6,8 +6,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/metrics/qos"
 	"github.com/buildwithgrove/path/metrics/protocol"
+	"github.com/buildwithgrove/path/metrics/qos"
 	"github.com/buildwithgrove/path/observation"
 )
 

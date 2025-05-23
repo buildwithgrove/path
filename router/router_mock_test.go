@@ -14,6 +14,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
+	devtools "github.com/buildwithgrove/path/metrics/devtools"
+	protocol "github.com/buildwithgrove/path/protocol"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -51,4 +53,42 @@ func (m *Mockgateway) HandleServiceRequest(ctx context.Context, httpReq *http.Re
 func (mr *MockgatewayMockRecorder) HandleServiceRequest(ctx, httpReq, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), ctx, httpReq, w)
+}
+
+// MockdataReporter is a mock of dataReporter interface.
+type MockdataReporter struct {
+	ctrl     *gomock.Controller
+	recorder *MockdataReporterMockRecorder
+	isgomock struct{}
+}
+
+// MockdataReporterMockRecorder is the mock recorder for MockdataReporter.
+type MockdataReporterMockRecorder struct {
+	mock *MockdataReporter
+}
+
+// NewMockdataReporter creates a new mock instance.
+func NewMockdataReporter(ctrl *gomock.Controller) *MockdataReporter {
+	mock := &MockdataReporter{ctrl: ctrl}
+	mock.recorder = &MockdataReporterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockdataReporter) EXPECT() *MockdataReporterMockRecorder {
+	return m.recorder
+}
+
+// GetSanctionedEndpoints mocks base method.
+func (m *MockdataReporter) GetSanctionedEndpoints(arg0 protocol.ServiceID) devtools.SanctionDetailsResponse {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSanctionedEndpoints", arg0)
+	ret0, _ := ret[0].(devtools.SanctionDetailsResponse)
+	return ret0
+}
+
+// GetSanctionedEndpoints indicates an expected call of GetSanctionedEndpoints.
+func (mr *MockdataReporterMockRecorder) GetSanctionedEndpoints(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSanctionedEndpoints", reflect.TypeOf((*MockdataReporter)(nil).GetSanctionedEndpoints), arg0)
 }

@@ -21,8 +21,15 @@ import (
 func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
 	ctrl := gomock.NewController(t)
 	mockGateway := NewMockgateway(ctrl)
+	mockDataReporter := NewMockdataReporter(ctrl)
 
-	r := NewRouter(polyzero.NewLogger(), mockGateway, &health.Checker{}, config.RouterConfig{})
+	r := NewRouter(
+		polyzero.NewLogger(),
+		mockGateway,
+		mockDataReporter,
+		&health.Checker{},
+		config.RouterConfig{},
+	)
 	ts := httptest.NewServer(r.mux)
 	t.Cleanup(ts.Close)
 

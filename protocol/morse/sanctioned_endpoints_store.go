@@ -2,12 +2,14 @@ package morse
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -154,8 +156,8 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	sessionKey string,
 	sanctionData sanction,
 ) {
-	key := sessionSanctionKey(appAddr, sessionKey, string(endpointAddr))
-	ses.sessionSanctions.Set(key, sanctionData, defaultSessionSanctionExpiration)
+	key := newSessionSanctionKey(appAddr, sessionKey, endpointAddr)
+	ses.sessionSanctions.Set(key.string(), sanctionData, defaultSessionSanctionExpiration)
 }
 
 // isSanctioned checks if an endpoint has an active sanction.
@@ -175,8 +177,8 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	}
 
 	// Check session sanctions - these are specific to app+session+endpoint
-	key := sessionSanctionKey(appAddr, sessionKey, string(endpointAddr))
-	sessionSanctionObj, hasSessionSanction := ses.sessionSanctions.Get(key)
+	key := newSessionSanctionKey(appAddr, sessionKey, endpointAddr)
+	sessionSanctionObj, hasSessionSanction := ses.sessionSanctions.Get(key.string())
 	if hasSessionSanction {
 		sanctionRecord := sessionSanctionObj.(sanction)
 		return true, fmt.Sprintf("session sanction: %s", sanctionRecord.reason)
@@ -185,10 +187,101 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	return false, ""
 }
 
-// TODO_MVP(@adshmh): return an error if any of the composite key components are empty.
-//
+// --------- Session Sanction Key ---------
+
 // sessionSanctionKey creates a unique key for session-based sanctions
 // Format: app_addr:session_key:endpoint_addr
-func sessionSanctionKey(appAddr, sessionKey, endpointAddr string) string {
-	return fmt.Sprintf("%s:%s:%s", appAddr, sessionKey, endpointAddr)
+type sessionSanctionKey struct {
+	appAddr      string
+	sessionKey   string
+	endpointAddr protocol.EndpointAddr
+}
+
+// TODO_MVP(@adshmh): return an error if any of the composite key components are empty.
+func newSessionSanctionKey(appAddr, sessionKey string, endpointAddr protocol.EndpointAddr) sessionSanctionKey {
+	return sessionSanctionKey{
+		appAddr:      appAddr,
+		sessionKey:   sessionKey,
+		endpointAddr: endpointAddr,
+	}
+}
+
+func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
+	parts := strings.Split(cacheKey, ":")
+	return sessionSanctionKey{
+		appAddr:      parts[0],
+		sessionKey:   parts[1],
+		endpointAddr: protocol.EndpointAddr(parts[2]),
+	}
+}
+
+func (s sessionSanctionKey) string() string {
+	return fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionKey, s.endpointAddr)
+}
+
+// --------- Sanction Details ---------
+
+// getSanctionDetails returns the sanctioned endpoints for a given service ID.
+// It provides information about:
+//   - the currently sanctioned endpoints, including the reason
+//   - counts for valid and sanctioned endpoints
+//
+// It is called by the router to allow quick information about currently sanctioned endpoints.
+// This will eventually be removed in favour of a metrics-based approach.
+func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.SanctionDetailsResponse {
+	permanentSanctionDetails := make(map[protocol.ServiceID][]devtools.SanctionDetails)
+	permanentSanctionedEndpointsCount := 0
+
+	sessionSanctionDetails := make(map[protocol.ServiceID][]devtools.SanctionDetails)
+	sessionSanctionedEndpointsCount := 0
+
+	// First get permanent sanctions
+	for endpointAddr, sanction := range ses.permanentSanctions {
+		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
+
+		// If serviceID is provided, skip sanctions for other service IDs
+		if serviceID != "" && sanctionServiceID != serviceID {
+			continue
+		}
+
+		sanctionDetails := sanction.toSanctionDetails(
+			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
+		)
+
+		permanentSanctionDetails[sanctionServiceID] = append(permanentSanctionDetails[sanctionServiceID], sanctionDetails)
+		permanentSanctionedEndpointsCount++
+	}
+
+	// Then get session sanctions
+	for keyStr, cachedSanction := range ses.sessionSanctions.Items() {
+		key := newSessionSanctionKeyFromCacheKey(keyStr)
+
+		sanction, ok := cachedSanction.Object.(sanction)
+		if !ok {
+			ses.logger.Warn().Msg("cached sanction is not a sanction")
+			continue
+		}
+
+		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
+
+		// If serviceID is provided, skip sanctions for other service IDs
+		if serviceID != "" && sanctionServiceID != serviceID {
+			continue
+		}
+
+		sanctionDetails := sanction.toSanctionDetails(
+			key.endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+		)
+
+		sessionSanctionDetails[sanctionServiceID] = append(sessionSanctionDetails[sanctionServiceID], sanctionDetails)
+		sessionSanctionedEndpointsCount++
+	}
+
+	return devtools.SanctionDetailsResponse{
+		PermamentSanctionDetails:          permanentSanctionDetails,
+		SessionSanctionDetails:            sessionSanctionDetails,
+		SanctionedEndpointsCount:          permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount,
+		PermamentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
+		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
+	}
 }
