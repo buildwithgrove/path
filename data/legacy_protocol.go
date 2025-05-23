@@ -12,6 +12,9 @@ import (
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
 )
 
+// TODO_IN_THIS_PR: implement the following function
+// setLegacyFieldsFromShannonProtocolObservations
+
 // setLegacyFieldsFromMorseProtocolObservations populates legacy record with Morse protocol data.
 // It processes:
 // - Service ID mapping to chain ID
