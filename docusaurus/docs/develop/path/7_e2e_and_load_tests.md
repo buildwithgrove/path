@@ -85,11 +85,11 @@ PATH E2E tests support two distinct modes of operation:
 - E2E Test mode requires protocol-specific configuration because it spins up a local PATH instance.
 - Load Test mode targets an external or local PATH instance, so protocol configs are not needed.
 
-| Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |
-| -------------------------------------------------- | :------------------: | :-------------------: |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅          |          ✅           |
-| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |
+| Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
+| -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅          |          ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |                     ❌                      |
 
 :::tip Populate PATH Configs
 
