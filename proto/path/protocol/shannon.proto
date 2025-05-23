@@ -3,11 +3,96 @@ package path.protocol;
 
 option go_package = "github.com/buildwithgrove/path/observation/protocol";
 
+import "google/protobuf/timestamp.proto";
+
+// ShannonRequestErrorType enumerates possible relay request errors.
+enum ShannonRequestErrorType {
+  SHANNON_REQUEST_ERROR_UNSPECIFIED = 0;
+  SHANNON_REQUEST_ERROR_INTERNAL = 1; // Internal error.
+  
+}
+
+// ShannonRequestError stores details of any errors encountered processing the request.
+message ShannonRequestError {
+	// Type of request error, e.g. internal
+	ShannonRequestErrorType error_type = 1;
+	// Details of the request error.
+	string error_details = 2;
+}
+
+// ShannonEndpointErrorType enumerates possible relay errors when interacting with Shannon endpoints.
+enum ShannonEndpointErrorType {
+  SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
+  // endpoint internal error: not recognized.
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1;
+  // endpoint config error: e.g. DNS lookup error, TLS certificate error.
+  SHANNON_ENDPOINT_ERROR_CONFIG = 2;
+  // endpoint timeout on responding to relay request.
+  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3;
+  SHANNON_ENDPOINT_ERROR_MAXED_OUT = 4;
+}
+
+// ShannonSanctionType specifies the duration type for endpoint sanctions
+enum ShannonSanctionType {
+  SHANNON_SANCTION_UNSPECIFIED = 0;
+  SHANNON_SANCTION_SESSION = 1;  // Valid only for current session
+  SHANNON_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+}
+
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 message ShannonRequestObservations {
-  // Address of the supplier serving this request
-  string supplier_address = 1;
+  // Service ID (i.e. chain ID) for which the observation was made
+  string service_id = 1;
+
+  // Error encountered processing the request, if any.
+  optional ShannonRequestError request_error = 2;
+
+  // Tracks endpoint observation(s).
+  // Only set if the request did not encounter any errors, e.g. an internal error.
+  // Multiple observations possible if:
+  // - Original endpoint returns invalid response
+  // - Retry mechanism activates
+  repeated ShannonEndpointObservation endpoint_observations = 3;
+}
+
+// ShannonEndpointObservation stores a single observation from an endpoint
+message ShannonEndpointObservation {
+  // Supplier of the endpoint handling the request
+  string supplier = 1;
+  // URL of the endpoint handling the request
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Timestamp marking the sending of the request to the endpoint.
+  google.protobuf.Timestamp endpoint_query_timestamp = 8;
+  
+  // Timestamp marking the reception of the endpoint's response.
+  // Only set if the endpoint did not timeout.
+  optional google.protobuf.Timestamp endpoint_response_timestamp = 9;
+
+  // Error type if relay to this endpoint failed
+  optional ShannonEndpointErrorType error_type = 10;
+  
+  // Additional error details when available
+  optional string error_details = 11;
+  
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 12;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,

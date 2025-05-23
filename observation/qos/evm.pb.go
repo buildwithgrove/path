@@ -168,8 +168,8 @@ type EVMRequestObservations struct {
 	// It is the "alias" or human readable interpratation of the chain_id.
 	ServiceId string `protobuf:"bytes,7,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// The origin of the request:
-	// - Organic, i.e. User request.
-	// - Synthetic: requests built by QoS for collecting data on endpoints.
+	// - Organic: real (i.e. user) requests
+	// - Synthetic: requests built by QoS module for collecting data on endpoints (a.k.a hydrator)
 	RequestOrigin RequestOrigin `protobuf:"varint,8,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`
 	// The length of the client's request payload, in bytes.
 	RequestPayloadLength uint32 `protobuf:"varint,2,opt,name=request_payload_length,json=requestPayloadLength,proto3" json:"request_payload_length,omitempty"`

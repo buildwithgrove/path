@@ -45,50 +45,52 @@ type requestContext struct {
 	// Sending a relay will fail if this field is not set through a call to the SelectEndpoint method.
 	selectedEndpoint *endpoint
 
-	// TODO_TECHDEBT(@adshmh): add endpointObservations to the request context.
+	// tracks any errors encountered processing the request
+	requestErrorObservation *protocolobservations.ShannonRequestError
+
+	// endpointObservations captures observations about endpoints used during request handling
+	endpointObservations []*protocolobservations.ShannonEndpointObservation
 }
 
 // HandleServiceRequest satisfies the gateway package's ProtocolRequestContext interface.
 // It uses the supplied payload to send a relay request to an endpoint, and verifies and returns the response.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
-	var selectedEndpointAddr protocol.EndpointAddr
-	if rc.selectedEndpoint != nil {
-		selectedEndpointAddr = rc.selectedEndpoint.Addr()
+	// Internal error: no endpoint selected.
+	// record reuqest error due to internal error.
+	// no endpoint to sanction.
+	if rc.selectedEndpoint == nil {
+		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
 	}
 
-	// get a logger, hydrated with the selected endpoint.
-	logger := rc.getHydratedLogger()
+	// record the endpoint query time.
+	endpointQueryTime := time.Now()
 
+	// send the relay request.
 	response, err := rc.sendRelay(payload)
+
+	// Handle endpoint error:
+	// - Record observation
+	// - Return an error
 	if err != nil {
-		logger.Warn().Err(err).Msg("error sending a relay. Service request will fail.")
-
-		return protocol.Response{EndpointAddr: selectedEndpointAddr},
-			fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
-				rc.serviceID, selectedEndpointAddr, err,
-			)
+		return rc.handleEndpointError(endpointQueryTime, err)
 	}
-
-	logger = logger.With("endpoint_response_payload_len", len(response.Payload))
-	logger.Debug().Msg("Received a response from the selected endpoint.")
 
 	// The Payload field of the response received from the endpoint, i.e. the relay miner,
 	// is a serialized http.Response struct. It needs to be deserialized into an HTTP Response struct
 	// to access the Service's response body, status code, etc.
 	relayResponse, err := deserializeRelayResponse(response.Payload)
+	relayResponse.EndpointAddr = rc.selectedEndpoint.Addr()
 	if err != nil {
-		logger.Warn().Err(err).Msg("error deserializing endpoint response. Service request will fail.")
-
-		return protocol.Response{EndpointAddr: selectedEndpointAddr},
-			fmt.Errorf("relay: error unmarshaling endpoint response into a POKTHTTP response for service %s endpoint %s: %w",
-				rc.serviceID, selectedEndpointAddr, err,
-			)
+		// Wrap the error with a detailed message.
+		deserializeErr := fmt.Errorf("error deserializing endpoint into a POKTHTTP response: %w", err)
+		return rc.handleEndpointError(endpointQueryTime, deserializeErr)
 	}
 
-	relayResponse.EndpointAddr = selectedEndpointAddr
+	// Success:
+	// - Record observation
+	// - Return the response received from the endpoint.
+	return rc.handleEndpointSuccess(endpointQueryTime, relayResponse)
 
-	logger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
-	return relayResponse, nil
 }
 
 // HandleWebsocketRequest opens a persistent websocket connection to the selected endpoint.
@@ -133,16 +135,27 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 	return nil
 }
 
-// TODO_MVP(@adshmh): implement the following method to return the MVP set of Shannon protocol-level observation.
 // GetObservations returns the set of Shannon protocol-level observations for the current request context.
 // The returned observations are used to:
 // 1. Update the Shannon's endpoint store.
 // 2. Report metrics on the operation of PATH (in the metrics package)
-// 3. Share the observation on the messaging platform (NATS, REDIS, etc.) to be picked up by the data pipeline and any other interested entities.
+// 3. Report the requests to the data pipeline.
 //
 // Implements the gateway.ProtocolRequestContext interface.
 func (rc *requestContext) GetObservations() protocolobservations.Observations {
-	return protocolobservations.Observations{}
+	return protocolobservations.Observations{
+		Protocol: &protocolobservations.Observations_Shannon{
+			Shannon: &protocolobservations.ShannonObservationsList{
+				Observations: []*protocolobservations.ShannonRequestObservations{
+					{
+						ServiceId:            string(rc.serviceID),
+						RequestError:         rc.requestErrorObservation,
+						EndpointObservations: rc.endpointObservations,
+					},
+				},
+			},
+		},
+	}
 }
 
 // sendRelay sends a the supplied payload as a relay request to the endpoint selected for the request context through the SelectEndpoint method.
@@ -172,6 +185,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
 	defer cancelFn()
 
+	// TODO_MVP(@adshmh): check the HTTP status code returned by the endpoint.
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", rc.selectedEndpoint.url, err)
@@ -240,8 +254,9 @@ func buildUnsignedRelayRequest(
 	return relayRequest, nil
 }
 
-func (rc *requestContext) getHydratedLogger() polylog.Logger {
+func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 	logger := rc.logger.With(
+		"method_name", methodName,
 		"service_id", rc.serviceID,
 	)
 
@@ -266,4 +281,85 @@ func (rc *requestContext) getHydratedLogger() polylog.Logger {
 	)
 
 	return logger
+}
+
+// handleInternalError is called if the request processing fails.
+// This only happens before the request is sent to any endpoints.
+// DEV_NOTE: This should NEVER happen and any logged entries by this method should be investigated.
+// - Records an internal error on the request for observations.
+// - Logs an error entry.
+func (rc *requestContext) handleInternalError(internalErr error) (protocol.Response, error) {
+	hydratedLogger := rc.getHydratedLogger("handleInternalError")
+
+	// log the internal error.
+	hydratedLogger.Error().Err(internalErr).Msg("Internal error occurred. This should be investigated as a bug.")
+
+	// Sets the request processing error for generating observations.
+	rc.requestErrorObservation = buildInternalRequestProcessingErrorObservation(internalErr)
+
+	return protocol.Response{}, internalErr
+}
+
+// handleEndpointError records an endpoint error observation and returns the response.
+// - Tracks the endpoint error in observations
+// - Builds and returns the protocol response from the endpoint's returned data.
+func (rc *requestContext) handleEndpointError(
+	endpointQueryTime time.Time,
+	endpointErr error,
+) (protocol.Response, error) {
+	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
+	selectedEndpointAddr := rc.selectedEndpoint.Addr()
+
+	// Classify the endpoint's error for the observation.
+	// Determine any applicable sanctions.
+	endpointErrorType, recommendedSanctionType := classifyRelayError(hydratedLogger, endpointErr)
+
+	// Log the endpoint error.
+	hydratedLogger.Warn().
+		Str("error_type", endpointErrorType.String()).
+		Str("sanction_type", recommendedSanctionType.String()).
+		Err(endpointErr).
+		Msg("relay error occurred. Service request will fail.")
+
+	// Track the endpoint error observation.
+	rc.endpointObservations = append(rc.endpointObservations,
+		buildEndpointErrorObservation(
+			*rc.selectedEndpoint,
+			endpointQueryTime,
+			time.Now(), // Timestamp: endpoint query completed.
+			endpointErrorType,
+			fmt.Sprintf("relay error: %v", endpointErr),
+			recommendedSanctionType,
+		),
+	)
+
+	// Return an error
+	return protocol.Response{EndpointAddr: selectedEndpointAddr},
+		fmt.Errorf("relay: error sending relay for service %s endpoint %s: %w",
+			rc.serviceID, selectedEndpointAddr, endpointErr,
+		)
+}
+
+// handleEndpointSuccess records a successful endpoint observation and returns the response.
+// - Tracks the endpoint success in observations
+// - Builds and returns the protocol response from the endpoint's returned data.
+func (rc *requestContext) handleEndpointSuccess(
+	endpointQueryTime time.Time,
+	endpointResponse protocol.Response,
+) (protocol.Response, error) {
+	hydratedLogger := rc.getHydratedLogger("handleEndpointSuccess")
+	hydratedLogger = hydratedLogger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
+	hydratedLogger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
+
+	// Track the endpoint success observation.
+	rc.endpointObservations = append(rc.endpointObservations,
+		buildEndpointSuccessObservation(
+			*rc.selectedEndpoint,
+			endpointQueryTime,
+			time.Now(), // Timestamp: endpoint query completed.
+		),
+	)
+
+	// Return the relay response received from the endpoint.
+	return endpointResponse, nil
 }

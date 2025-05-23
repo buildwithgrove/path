@@ -2,6 +2,7 @@ package shannon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -76,6 +77,8 @@ func NewProtocol(
 		gatewayAddr:          config.GatewayAddress,
 		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
 		gatewayMode:          config.GatewayMode,
+		// tracks sanctioned endpoints
+		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
 	}
 
 	if config.GatewayMode == protocol.GatewayModeCentralized {
@@ -109,6 +112,9 @@ type Protocol struct {
 	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
 	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
 	ownedApps []ownedApp
+
+	// sanctionedEndpointsStore tracks sanctioned endpoints
+	sanctionedEndpointsStore *sanctionedEndpointsStore
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
@@ -121,13 +127,18 @@ func (p *Protocol) AvailableEndpoints(
 	httpReq *http.Request,
 ) (protocol.EndpointAddrList, error) {
 	// hydrate the logger.
-	logger := p.logger.With("service", serviceID)
+	logger := p.logger.With(
+		"service", serviceID,
+		"method", "AvailableEndpoints",
+		"gateway_mode", p.gatewayMode,
+	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msg("error getting the permitted apps list: relay request will fail.")
-		return nil, fmt.Errorf("AvailableEndpoints: error building the permitted apps list for service '%s' and gateway mode '%s': %w", serviceID, p.gatewayMode, err)
+		errMsg := "Relay request will fail: error building the permitted apps list for service."
+		logger.Error().Err(err).Msg(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	logger = logger.With("number_of_permitted_apps", len(permittedApps))
@@ -137,8 +148,9 @@ func (p *Protocol) AvailableEndpoints(
 	// owns and can send relays on behalf of.
 	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
 	if err != nil {
-		logger.Error().Err(err).Msg("error getting the set of available endpoints: relay request will fail.")
-		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
+		errMsg := "error getting the set of all endpoints: relay request will fail."
+		logger.Error().Err(err).Msg(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	logger = logger.With("number_of_unique_endpoints", len(endpoints))
@@ -204,13 +216,24 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 // - Disqualify endpoints for a time period
 //
 // Implements gateway.Protocol interface.
-func (p *Protocol) ApplyObservations(_ *protocolobservations.Observations) error {
-	// TODO_MVP(@adshmh):
-	//  1. Implement endpoint store for status tracking
-	//  2. Add validation logic to update store based on observations
-	//  3. Filter invalid endpoints before setting on requestContexts
-	//     (e.g., drop maxed-out endpoints for current session)
+func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
+	// Sanity check the input
+	if observations == nil || observations.GetShannon() == nil {
+		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil input or nil Morse observation list.")
+		return nil
+	}
+
+	shannonObservations := observations.GetShannon().GetObservations()
+	if len(shannonObservations) == 0 {
+		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil set of Morse request observations.")
+		return nil
+	}
+
+	// hand over the observations to the sanctioned endpoints store for adding any applicable sanctions.
+	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
+
 	return nil
+
 }
 
 // ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
@@ -252,6 +275,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	permittedApps []*apptypes.Application,
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
+		"method", "getAppsUniqueEndpoints",
 		"service", serviceID,
 		"num_permitted_apps", len(permittedApps),
 	)
@@ -261,25 +285,42 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		logger := logger.With("permitted_app_address", app.Address)
-		logger.Debug().Msg("getAppsUniqueEndpoints: processing app.")
+		logger.Debug().Msg("processing app.")
 
 		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
 		if err != nil {
 			logger.Warn().Err(err).Msg("Internal error: error getting a session for the app. Service request will fail.")
-			return nil, fmt.Errorf("getAppsUniqueEndpoints: could not get the session for service %s app %s", serviceID, app.Address)
+			return nil, fmt.Errorf("could not get the session for service %s app %s", serviceID, app.Address)
 		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
 			logger.Warn().Err(err).Msg("Internal error: error getting all endpoints for app and session. Service request will fail.")
-			return nil, fmt.Errorf("getAppsUniqueEndpoints: error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
+			return nil, fmt.Errorf("error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
 		}
 
-		for endpointAddr, endpoint := range appEndpoints {
+		// Filter out any sanctioned endpoints
+		filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(appEndpoints)
+
+		// Hydrate the logger with endpoint counts.
+		logger = logger.With(
+			"original_count", len(appEndpoints),
+			"filtered_count", len(filteredEndpoints),
+		)
+
+		// All endpoints are sanctioned: log a warning and skip this app.
+		if len(filteredEndpoints) == 0 {
+			logger.Warn().Msg("All app endpoints are sanctioned. Skipping the app.")
+			continue
+		}
+
+		logger.Debug().Msg("Filtered sanctioned endpoints.")
+
+		for endpointAddr, endpoint := range filteredEndpoints {
 			endpoints[endpointAddr] = endpoint
 		}
 
-		logger.With("num_endpoints", len(appEndpoints)).Info().Msg("Successfully fetched session for application.")
+		logger.Info().Msg("Successfully fetched session for application.")
 	}
 
 	if len(endpoints) == 0 {
