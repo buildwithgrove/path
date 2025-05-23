@@ -19,208 +19,139 @@ import (
 
 	"github.com/cheggaaa/pb/v3"
 
+	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
 )
 
-/*
-For full information on the test options, see `opts_test.go`
-
-Example Usage:
-- `make test_e2e_evm_morse`                           - Run all EVM tests for Morse
-- `make test_e2e_evm_shannon`                         - Run all EVM tests for Shannon
-- `make test_e2e_evm_morse SERVICE_ID_OVERRIDE=F021`  - Run only the F021 EVM test for Morse
-- `make test_e2e_evm_morse DOCKER_FORCE_REBUILD=true` - Force a rebuild of the Docker image for the EVM tests
-- `make test_e2e_evm_morse DOCKER_LOG=true`           - Log the output of the Docker container for the EVM tests
-- `make test_e2e_evm_morse WAIT_FOR_HYDRATOR=30`      - Wait for 30 seconds before starting tests to allow several rounds of hydrator checks to complete.
-*/
+// -----------------------------------------------------------------------------
+// Vegeta E2E & Load Tests
+// -----------------------------------------------------------------------------
+//
+// Documentation:
+//   https://path.grove.city/develop/path/e2e_tests
+//
+// Example Usage - E2E tests:
+//   - make test_e2e_evm_morse    # Run all EVM E2E tests for Morse
+//   - make test_e2e_evm_shannon  # Run all EVM E2E tests for Shannon
+//
+// Example Usage - Load tests:
+//   - make test_load_evm_morse   # Run all EVM load tests for Morse
+//   - make test_load_evm_shannon # Run all EVM load tests for Shannon
+// -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
 
-// Global test options
-var opts testOptions
+// Global config for this test package.
+var cfg *Config
 
-// init initializes the test options
+// init initializes the test configuration.
 func init() {
-	opts = gatherTestOptions()
-}
-
-// -------------------- Get Test Cases for Protocol --------------------
-
-// testCase represents a single service load test configuration
-//
-// Fields:
-// - name:              Descriptive name for the test case
-// - serviceID:         The service ID to test
-// - archival:          Whether to select a random historical block
-// - methods:           The methods to test for this service
-// - serviceParams:     Service-specific parameters
-// - latencyMultiplier: Multiplier for latency expectations
-type testCase struct {
-	name          string
-	serviceID     protocol.ServiceID
-	archival      bool
-	serviceParams evmServiceParameters
-	// latencyMultiplier is particularly important for dev/test chains that are slower than mainnet.
-	// For integration tests, we need complete reliability and avoid false positives.
-	latencyMultiplier int
-	methodConfigs     map[jsonrpc.Method]methodTestConfig
-}
-
-// getTestCases returns the appropriate test cases based on the protocol.
-//
-// - Filters for a specific service ID if provided.
-// - Panics if the service ID override is not found.
-func getTestCases(t *testing.T, protocolStr protocolStr, serviceIDOverride protocol.ServiceID) []testCase {
-	var testCases []testCase
-
-	// Select test cases based on protocol
-	switch protocolStr {
-	case morse:
-		testCases = morseTestCases
-	case shannon:
-		testCases = shannonTestCases
-	default:
-		t.Fatalf("Unsupported protocol: %s", protocolStr)
+	var err error
+	cfg, err = loadE2ELoadTestConfig()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to load E2E config: %v", err))
 	}
-
-	// Filter by serviceIDOverride if provided
-	if serviceIDOverride != "" {
-		for _, tc := range testCases {
-			if tc.serviceID == serviceIDOverride {
-				// Return single matching test case in a slice
-				return []testCase{tc}
-			}
-		}
-		panic(fmt.Sprintf("Service ID override %s not found", serviceIDOverride))
-	}
-
-	return testCases
 }
 
-// Shannon network test cases
-var (
-	shannonTestCases = []testCase{
-		{
-			name:      "anvil (local Ethereum) Load Test",
-			serviceID: "anvil",
-			serviceParams: evmServiceParameters{
-				contractAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-				callData:        "0x18160ddd",
-			},
-			latencyMultiplier: 10,
-			methodConfigs:     shannonBetaTestNetMethodConfigs,
-		},
-	}
-)
+// -------------------- EVM Load Test Function --------------------
 
-// Morse network test cases
-var morseTestCases = []testCase{
-	{
-		name:      "F00C (Ethereum) Load Test",
-		serviceID: "F00C",
-		archival:  true, // Use random historical block for archival service
-		serviceParams: evmServiceParameters{
-			// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
-			contractAddress:    "0x28C6c06298d514Db089934071355E5743bf21d60",
-			contractStartBlock: 12_300_000,
-			transactionHash:    "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
-			callData:           "0x18160ddd",
-		},
-		methodConfigs: defaultTestConfigAllMethods,
-	},
-	{
-		name:      "F021 (Polygon) Load Test",
-		serviceID: "F021",
-		archival:  true, // Use random historical block for archival service
-		serviceParams: evmServiceParameters{
-			// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-			contractAddress:    "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-			contractStartBlock: 5_000_000,
-			transactionHash:    "0xb4f33e8516656d513df5d827323003c7ad1dcbb5bc46dff57c9bebad676fefe4",
-			callData:           "0x18160ddd",
-		},
-		methodConfigs: defaultTestConfigAllMethods,
-	},
-	{
-		name:      "F01C (Oasys) Load Test",
-		serviceID: "F01C",
-		archival:  true, // Use random historical block for archival service
-		serviceParams: evmServiceParameters{
-			// https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
-			contractAddress:    "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
-			contractStartBlock: 424_300,
-			transactionHash:    "0x7e5904f6f566577718aa3ddfe589bb6d553daaeb183e2bdc63f5bf838fede8ee",
-			callData:           "0x18160ddd",
-		},
-		methodConfigs: defaultTestConfigAllMethods,
-	},
-	{
-		name:      "F036 (XRPL EVM Testnet) Load Test",
-		serviceID: "F036",
-		archival:  true, // Use random historical block for archival service
-		serviceParams: evmServiceParameters{
-			// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-			contractAddress:    "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-			contractStartBlock: 368_266,
-			transactionHash:    "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058",
-			callData:           "0x18160ddd",
-		},
-		methodConfigs: defaultTestConfigAllMethods,
-	},
-}
-
-/* -------------------- EVM Load Test Function -------------------- */
-
-// Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints
+// Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints.
 func Test_PATH_E2E_EVM(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	setupSIGINTHandler(ctx, cancel, t)
+	setupSIGINTHandler(cancel)
 
-	configFilePath := fmt.Sprintf(opts.configPathTemplate, opts.testProtocol)
-	if !opts.gatewayURLOverridden {
-		pathContainerPort, teardownFn := setupPathInstance(t, configFilePath, opts.docker)
+	// Get gateway URL and optional teardown function for E2E mode
+	gatewayURL, teardownFn := getGatewayURLForTestMode(t, cfg)
+	if teardownFn != nil {
 		defer teardownFn()
-		opts.gatewayURL = fmt.Sprintf(opts.gatewayURL, pathContainerPort)
 	}
 
-	logEVMTestStartInfo(opts)
-	waitForHydratorIfNeeded(opts)
+	// Get test cases from config based on `TEST_PROTOCOL` env var
+	testCases := cfg.getTestCases()
 
-	testCases := getTestCases(t, opts.testProtocol, opts.serviceIDOverride)
+	// Log test information
+	logEVMTestStartInfo(gatewayURL, testCases)
+
+	// Initialize service summaries map (will be logged out at the end of the test)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
+	// Loop through each test case
 	for _, tc := range testCases {
-		isArchival := tc.archival
+		// Make a copy to avoid appending to the original URL.
+		serviceGatewayURL := gatewayURL
+
+		// If specifying the service ID in the subdomain, set the subdomain in the gateway URL.
+		//
+		// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
+		//   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
+		if cfg.getTestMode() == testModeLoad && cfg.useServiceSubdomain() {
+			serviceGatewayURL = setServiceIDInGatewayURLSubdomain(serviceGatewayURL, tc.ServiceID)
+		}
+
+		// Get request headers
+		headers := getRequestHeaders(tc.ServiceID)
+
+		// Determine if test is archival
+		isArchival := tc.Archival
 		if !isArchival {
-			tc.serviceParams.blockNumber = "latest"
+			tc.ServiceParams.blockNumber = "latest"
 		} else {
-			tc.serviceParams.blockNumber = setTestBlockNumber(
+			tc.ServiceParams.blockNumber = setTestBlockNumber(
 				t,
-				opts.gatewayURL,
-				tc.serviceID,
-				tc.serviceParams.contractStartBlock,
+				serviceGatewayURL,
+				headers,
+				tc.ServiceParams.ContractStartBlock,
 			)
 		}
 
-		serviceSummaries[tc.serviceID] = &serviceSummary{
-			serviceID:     tc.serviceID,
-			methodConfigs: tc.methodConfigs,
+		// Get methods to test
+		methodsToTest := getMethodsToTest(tc)
+		methodCount := len(methodsToTest)
+
+		// Get test config (either use default or test case override)
+		testConfig := cfg.DefaultTestConfig
+		if tc.TestCaseConfigOverride != nil {
+			testConfig.MergeNonZero(tc.TestCaseConfigOverride)
+		}
+
+		fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n", BOLD_BLUE, tc.Name, RESET)
+		fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)
+		fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, testConfig.GlobalRPS, RESET)
+		fmt.Printf("  🚗 Total Requests per Method: %s%d%s\n\n", GREEN, testConfig.RequestsPerMethod, RESET)
+
+		// Create summary for this service
+		serviceSummaries[tc.ServiceID] = &serviceSummary{
+			serviceID:     tc.ServiceID,
+			testConfig:    testConfig,
+			methodsToTest: methodsToTest,
 			methodErrors:  make(map[jsonrpc.Method]map[string]int),
-			methodCount:   len(tc.methodConfigs),
+			methodCount:   methodCount,
 			totalErrors:   0,
 		}
 
-		serviceTestFailed := runEVMServiceTest(t, ctx, tc, opts, serviceSummaries[tc.serviceID])
+		// Run the service test
+		serviceTestFailed := runEVMServiceTest(
+			t,
+			ctx,
+			tc.Name,
+			headers,
+			tc.ServiceParams,
+			testConfig,
+			methodCount,
+			serviceGatewayURL,
+			serviceSummaries[tc.ServiceID],
+		)
+
 		if serviceTestFailed {
-			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.serviceID, RESET)
+			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, tc.ServiceID, RESET)
 			printServiceSummaries(serviceSummaries)
 			t.FailNow()
 		} else {
-			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, tc.serviceID, RESET)
+			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, tc.ServiceID, RESET)
 		}
 	}
 
@@ -228,8 +159,24 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	printServiceSummaries(serviceSummaries)
 }
 
+// getMethodsToTest determines which methods to test for a test case.
+func getMethodsToTest(tc TestCase) []jsonrpc.Method {
+	// If no override, use all methods
+	if len(tc.TestCaseMethodOverride) == 0 {
+		return allEVMTestMethods()
+	}
+
+	// Otherwise, use only the methods specified in the override
+	var methodsToTest []jsonrpc.Method
+	for _, method := range tc.TestCaseMethodOverride {
+		methodsToTest = append(methodsToTest, jsonrpc.Method(method))
+	}
+
+	return methodsToTest
+}
+
 // setupSIGINTHandler sets up a signal handler for SIGINT to cancel the test context.
-func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testing.T) {
+func setupSIGINTHandler(cancel context.CancelFunc) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 	go func() {
@@ -249,25 +196,41 @@ func setupSIGINTHandler(ctx context.Context, cancel context.CancelFunc, t *testi
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
-func logEVMTestStartInfo(opts testOptions) {
-	fmt.Println("\n🌿 Starting PATH E2E EVM test ...")
-	fmt.Printf("  🧬 Gateway URL: %s\n", opts.gatewayURL)
-	fmt.Printf("  📡 Test protocol: %s\n", opts.testProtocol)
-	if opts.serviceIDOverride != "" {
-		fmt.Printf("  ⛓️  Running tests for service ID: %s\n", opts.serviceIDOverride)
+func logEVMTestStartInfo(gatewayURL string, testCases []TestCase) {
+	if cfg.getTestMode() == testModeLoad {
+		fmt.Println("\n🔥 Starting Vegeta Load test ...")
 	} else {
-		fmt.Printf("  ⛓️  Running tests for all service IDs\n")
+		fmt.Println("\n🌿 Starting PATH E2E test ...")
 	}
+	fmt.Printf("  📡 Test protocol: %s%s%s\n", BOLD_CYAN, cfg.getTestProtocol(), RESET)
+	fmt.Printf("  🧬 Gateway URL: %s%s%s\n", BLUE, gatewayURL, RESET)
+
+	if cfg.E2ELoadTestConfig.LoadTestConfig != nil {
+		if cfg.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID != "" {
+			fmt.Printf("  🌀 Portal Application ID: %s%s%s\n", CYAN, cfg.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID, RESET)
+		}
+		if cfg.E2ELoadTestConfig.LoadTestConfig.PortalAPIKey != "" {
+			fmt.Printf("  🔑 Portal API Key: %s%s%s\n", CYAN, cfg.E2ELoadTestConfig.LoadTestConfig.PortalAPIKey, RESET)
+		}
+	}
+
+	var serviceIDs []string
+	for _, tc := range testCases {
+		serviceIDs = append(serviceIDs, string(tc.ServiceID))
+	}
+	fmt.Printf("  ⛓️  Running tests for service IDs: %s%s%s\n", GREEN, strings.Join(serviceIDs, ", "), RESET)
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
-func waitForHydratorIfNeeded(opts testOptions) {
-	fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n", opts.waitForHydrator)
-	if opts.waitForHydrator > 0 {
+func waitForHydratorIfNeeded() {
+	if waitSeconds := cfg.E2ELoadTestConfig.E2EConfig.WaitForHydrator; waitSeconds > 0 {
+		fmt.Printf("\n⏰ Waiting for %d seconds before starting tests to allow several rounds of hydrator checks to complete...\n",
+			waitSeconds,
+		)
 		if isCIEnv() {
-			<-time.After(time.Duration(opts.waitForHydrator) * time.Second)
+			<-time.After(time.Duration(waitSeconds) * time.Second)
 		} else {
-			showWaitBar(opts.waitForHydrator)
+			showWaitBar(waitSeconds)
 		}
 	}
 }
@@ -276,28 +239,27 @@ func waitForHydratorIfNeeded(opts testOptions) {
 func runEVMServiceTest(
 	t *testing.T,
 	ctx context.Context,
-	tc testCase,
-	opts testOptions,
+	testName string,
+	headers http.Header,
+	serviceParams ServiceParams,
+	testConfig TestConfig,
+	methodCount int,
+	gatewayURL string,
 	summary *serviceSummary,
 ) (serviceTestFailed bool) {
 	results := make(map[jsonrpc.Method]*methodMetrics)
 	var resultsMutex sync.Mutex
 
-	fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n\n", BOLD_BLUE, tc.name, RESET)
+	// Get methods to test from the summary
+	methods := summary.methodsToTest
 
-	// Validate that all methods have a definition
-	for method := range tc.methodConfigs {
-		if _, exists := tc.methodConfigs[method]; !exists {
-			t.Fatalf("No definition for method %s", method)
-		}
+	// Create a map for progress bars and summary calculation (with the same config for all methods)
+	methodConfigMap := make(map[jsonrpc.Method]TestConfig)
+	for _, method := range methods {
+		methodConfigMap[method] = testConfig
 	}
 
-	var methods []jsonrpc.Method
-	for method := range tc.methodConfigs {
-		methods = append(methods, method)
-	}
-
-	progBars, err := newProgressBars(methods, tc.methodConfigs)
+	progBars, err := newProgressBars(methods, methodConfigMap)
 	if err != nil {
 		t.Fatalf("Failed to create progress bars: %v", err)
 	}
@@ -308,21 +270,28 @@ func runEVMServiceTest(
 	}()
 
 	var methodWg sync.WaitGroup
-	for method := range tc.methodConfigs {
+	for _, method := range methods {
 		methodWg.Add(1)
 
-		methodDef := tc.methodConfigs[method]
-
-		go func(ctx context.Context, method jsonrpc.Method, def methodTestConfig) {
+		go func(ctx context.Context, method jsonrpc.Method, config TestConfig) {
 			defer methodWg.Done()
 
-			metrics := runMethodAttack(ctx, method, def, tc, opts, progBars.get(method))
+			metrics := runMethodAttack(
+				ctx,
+				method,
+				config,
+				methodCount,
+				headers,
+				serviceParams,
+				gatewayURL,
+				progBars.get(method),
+			)
 
 			resultsMutex.Lock()
 			results[method] = metrics
 			resultsMutex.Unlock()
 
-		}(ctx, method, methodDef)
+		}(ctx, method, testConfig)
 	}
 	methodWg.Wait()
 
@@ -330,14 +299,9 @@ func runEVMServiceTest(
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
 
-	if tc.latencyMultiplier != 0 {
-		fmt.Printf("%s⚠️  Adjusting latency expectations for %s by %dx to account for slower than average chain.%s ⚠️\n",
-			YELLOW, tc.name, tc.latencyMultiplier, RESET,
-		)
-		tc.methodConfigs = adjustLatencyForTestCase(tc.methodConfigs, tc.latencyMultiplier)
-	}
+	// We use the same methodConfigMap we created earlier for the summary calculation
 
-	calculateServiceSummary(t, tc, results, summary, &serviceTestFailed)
+	calculateServiceSummary(t, methodConfigMap, results, summary, &serviceTestFailed)
 	return serviceTestFailed
 }
 
@@ -345,9 +309,11 @@ func runEVMServiceTest(
 func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
-	def methodTestConfig,
-	tc testCase,
-	opts testOptions,
+	methodConfig TestConfig,
+	methodCount int,
+	headers http.Header,
+	serviceParams ServiceParams,
+	gatewayURL string,
 	progBar *pb.ProgressBar,
 ) *methodMetrics {
 	select {
@@ -356,20 +322,52 @@ func runMethodAttack(
 		return nil
 	default:
 	}
+
 	jsonrpcReq := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(1),
 		Method:  method,
-		Params:  createEVMJsonRPCParams(method, tc.serviceParams),
+		Params:  createEVMJsonRPCParams(method, serviceParams),
 	}
-	metrics := runAttack(ctx, opts.gatewayURL, tc.serviceID, method, def, progBar, jsonrpcReq)
+
+	metrics := runAttack(
+		ctx,
+		gatewayURL,
+		method,
+		methodConfig,
+		methodCount,
+		progBar,
+		jsonrpcReq,
+		headers,
+	)
+
 	return metrics
+}
+
+// getRequestHeaders returns the HTTP headers for a given service ID, including Portal credentials if in load test mode.
+func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
+	headers := http.Header{
+		"Content-Type":                    []string{"application/json"},
+		request.HTTPHeaderTargetServiceID: []string{string(serviceID)},
+	}
+
+	if cfg.getTestMode() == testModeLoad {
+		// Portal App ID is required for load tests
+		headers.Set(gateway.HttpHeaderPortalAppID, cfg.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID)
+
+		// Portal API Key is optional for load tests
+		if cfg.E2ELoadTestConfig.LoadTestConfig.PortalAPIKey != "" {
+			headers.Set(gateway.HttpHeaderAuthorization, cfg.E2ELoadTestConfig.LoadTestConfig.PortalAPIKey)
+		}
+	}
+
+	return headers
 }
 
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	tc testCase,
+	methodConfigs map[jsonrpc.Method]TestConfig,
 	results map[jsonrpc.Method]*methodMetrics,
 	summary *serviceSummary,
 	serviceTestFailed *bool,
@@ -379,8 +377,13 @@ func calculateServiceSummary(
 	var totalSuccessRate float64
 	var methodsWithResults int
 
+	// Track service totals
+	summary.totalRequests = 0
+	summary.totalSuccess = 0
+	summary.totalFailure = 0
+
 	// Validate results for each method and collect summary data
-	for method := range tc.methodConfigs {
+	for method := range methodConfigs {
 		methodMetrics := results[method]
 
 		// Skip methods with no data
@@ -388,12 +391,28 @@ func calculateServiceSummary(
 			continue
 		}
 
-		validateResults(t, methodMetrics, tc.methodConfigs[method])
+		// Convert TestConfig to methodTestConfig for validation
+		methodDef := methodConfigs[method]
+		testConfig := TestConfig{
+			RequestsPerMethod: methodDef.RequestsPerMethod,
+			GlobalRPS:         methodDef.GlobalRPS,
+			SuccessRate:       methodDef.SuccessRate,
+			MaxP50LatencyMS:   methodDef.MaxP50LatencyMS,
+			MaxP95LatencyMS:   methodDef.MaxP95LatencyMS,
+			MaxP99LatencyMS:   methodDef.MaxP99LatencyMS,
+		}
+
+		validateResults(t, methodMetrics, testConfig)
 
 		// If the test has failed after validation, set the service failure flag
 		if t.Failed() {
 			*serviceTestFailed = true
 		}
+
+		// Accumulate totals for the service summary
+		summary.totalRequests += methodMetrics.requestCount
+		summary.totalSuccess += methodMetrics.success
+		summary.totalFailure += methodMetrics.failed
 
 		// Extract latencies for P90 calculation
 		var latencies []time.Duration
@@ -434,37 +453,20 @@ func calculateServiceSummary(
 	}
 }
 
-// adjustLatencyForTestCase increases the latency expectations by the multiplier
-// for all methods in the test case to account for a slower than average service providers (e.g. dev/test environments)
-func adjustLatencyForTestCase(
-	testConfig map[jsonrpc.Method]methodTestConfig,
-	latencyMultiplier int,
-) map[jsonrpc.Method]methodTestConfig {
-	// Create a new map to avoid modifying the original test config
-	adjustedDefs := make(map[jsonrpc.Method]methodTestConfig, len(testConfig))
+// -----------------------------------------------------------------------------
+// Get Test Block Number helpers
+// -----------------------------------------------------------------------------
 
-	for method, def := range testConfig {
-		adjustedDef := def
-		adjustedDef.maxP50Latency = def.maxP50Latency * time.Duration(latencyMultiplier)
-		adjustedDef.maxP95Latency = def.maxP95Latency * time.Duration(latencyMultiplier)
-		adjustedDef.maxP99Latency = def.maxP99Latency * time.Duration(latencyMultiplier)
-		adjustedDefs[method] = adjustedDef
-	}
-
-	return adjustedDefs
-}
-
-/* -------------------- Get Test Block Number -------------------- */
-
-// setTestBlockNumber gets a block number for testing or fails the test
+// setTestBlockNumber gets an archival block number for testing or fails the test.
+// Selected by picking a random block number between the current block and the contract start block.
 func setTestBlockNumber(
 	t *testing.T,
 	gatewayURL string,
-	serviceID protocol.ServiceID,
+	headers http.Header,
 	contractStartBlock uint64,
 ) string {
 	// Get current block height - fail test if this doesn't work
-	currentBlock, err := getCurrentBlockNumber(gatewayURL, serviceID)
+	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
 	if err != nil {
 		t.Fatalf("FATAL: Could not get current block height: %v", err)
 	}
@@ -473,16 +475,17 @@ func setTestBlockNumber(
 	return calculateArchivalBlockNumber(currentBlock, contractStartBlock)
 }
 
-// getCurrentBlockNumber gets current block height with consensus from multiple requests
-func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
+// getCurrentBlockNumber gets current block height with consensus from multiple requests.
+func getCurrentBlockNumber(gatewayURL string, headers http.Header) (uint64, error) {
 	// Track frequency of each block height seen
 	blockHeights := make(map[uint64]int)
-	maxAttempts, requiredAgreement := 5, 3
+	maxAttempts := 10
+	requiredAgreement := 3
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Make multiple attempts to get consensus
 	for range maxAttempts {
-		blockNum, err := fetchBlockNumber(client, gatewayURL, serviceID)
+		blockNum, err := fetchBlockNumber(client, gatewayURL, headers)
 		if err != nil {
 			continue
 		}
@@ -498,10 +501,10 @@ func getCurrentBlockNumber(gatewayURL string, serviceID protocol.ServiceID) (uin
 	return 0, fmt.Errorf("failed to reach consensus on block height after %d attempts", maxAttempts)
 }
 
-// fetchBlockNumber makes a single request to get the current block number
-func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol.ServiceID) (uint64, error) {
+// fetchBlockNumber makes a single request to get the current block number.
+func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
 	// Build and send request
-	req, err := buildBlockNumberRequest(gatewayURL, serviceID)
+	req, err := buildBlockNumberRequest(gatewayURL, headers)
 	if err != nil {
 		return 0, err
 	}
@@ -538,8 +541,8 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, serviceID protocol
 	return blockNum, nil
 }
 
-// Helper to build a block number request
-func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*http.Request, error) {
+// buildBlockNumberRequest creates a JSON-RPC request for the current block number.
+func buildBlockNumberRequest(gatewayURL string, headers http.Header) (*http.Request, error) {
 	blockNumberReq := jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(1),
@@ -556,14 +559,15 @@ func buildBlockNumberRequest(gatewayURL string, serviceID protocol.ServiceID) (*
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(request.HTTPHeaderTargetServiceID, string(serviceID))
+	req.Header = headers.Clone()
 
 	return req, nil
 }
 
+// calculateArchivalBlockNumber picks a random historical block number for archival tests.
 func calculateArchivalBlockNumber(currentBlock, contractStartBlock uint64) string {
 	var blockNumHex string
+
 	// Case 1: Block number is below or equal to the archival threshold
 	if currentBlock <= evm.DefaultEVMArchivalThreshold {
 		blockNumHex = blockNumberToHex(1)
@@ -585,6 +589,32 @@ func calculateArchivalBlockNumber(currentBlock, contractStartBlock uint64) strin
 	return blockNumHex
 }
 
+// blockNumberToHex converts a block number to a hex string.
 func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
+}
+
+// getGatewayURLForTestMode returns the gateway URL based on the current test mode.
+// It also performs any necessary setup for E2E mode (e.g., Docker container startup) and calls waitForHydratorIfNeeded.
+//
+// Note: If E2E mode, the caller is responsible for deferring the returned teardown function, if not nil.
+func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, teardownFn func()) {
+	switch cfg.getTestMode() {
+
+	case testModeE2E:
+		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
+		var port string
+		port, teardownFn = setupPathInstance(t, configFilePath, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
+		gatewayURL = fmt.Sprintf("http://localhost:%s/v1", port)
+		waitForHydratorIfNeeded()
+		return gatewayURL, teardownFn
+
+	case testModeLoad:
+		gatewayURL = cfg.getGatewayURLForLoadTest()
+		return gatewayURL, nil
+
+	default:
+		t.Fatalf("Invalid test mode: %s", cfg.getTestMode())
+		return "", nil
+	}
 }
