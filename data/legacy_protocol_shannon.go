@@ -2,20 +2,13 @@ package data
 
 import (
 	"fmt"
-	"net/url"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"golang.org/x/net/publicsuffix"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
 )
 
-// TODO_IN_THIS_PR: implement the following function
-// setLegacyFieldsFromShannonProtocolObservations
-
-// setLegacyFieldsFromMorseProtocolObservations populates legacy record with Morse protocol data.
+// setLegacyFieldsFromShannonProtocolObservations populates legacy record with Shannon protocol data.
 // It processes:
 // - Service ID mapping to chain ID
 // - Request errors
@@ -26,14 +19,14 @@ import (
 // Parameters:
 // - logger: logging interface
 // - legacyRecord: the record to populate
-// - observationList: list of Morse protocol observations
+// - observationList: list of Shannon protocol observations
 // Returns: the populated legacy record
-func setLegacyFieldsFromMorseProtocolObservations(
+func setLegacyFieldsFromShannonProtocolObservations(
 	logger polylog.Logger,
 	legacyRecord *legacyRecord,
-	observationList *protocolobservation.MorseObservationsList,
+	observationList *protocolobservation.ShannonObservationsList,
 ) *legacyRecord {
-	// TODO_MVP(@adshmh): Simplify this if MorseObservationsList type is dropped in favor of using a single MorseRequestObservation per service request.
+	// TODO_MVP(@adshmh): Simplify this if ShannonObservationsList type is dropped in favor of using a single ShannonRequestObservation per service request.
 	//
 	requestObservations := observationList.GetObservations()
 	if requestObservations == nil {
@@ -58,7 +51,7 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	// No endpoint observations: this should not happen as the request has not error set.
 	// Log a warning entry.
 	if len(endpointObservations) == 0 {
-		logger.Warn().Err(fmt.Errorf("")).Msg("Received no Morse endpoint observations for a valid request.")
+		logger.Warn().Err(fmt.Errorf("")).Msg("Received no Shannon endpoint observations for a valid request.")
 		return legacyRecord
 	}
 
@@ -69,9 +62,10 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	endpointObservation := endpointObservations[len(endpointObservations)-1]
 
 	// Update error fields if an endpoint error has occurred.
-	legacyRecord = setLegacyErrFieldsFromMorseEndpointError(legacyRecord, endpointObservation)
+	legacyRecord = setLegacyErrFieldsFromShannonEndpointError(legacyRecord, endpointObservation)
 
-	legacyRecord.ProtocolAppPublicKey = endpointObservation.AppPublicKey
+	// TODO_MVP(@adshmh): surface application public key if it is a must for the data pipeline.
+	legacyRecord.ProtocolAppPublicKey = endpointObservation.GetEndpointAppAddress()
 
 	// Set endpoint query/response timestamps
 	legacyRecord.NodeQueryTimestamp = formatTimestampPbForBigQueryJSON(endpointObservation.EndpointQueryTimestamp)
@@ -81,13 +75,13 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Seconds()
 
 	// Set endpoint address
-	legacyRecord.NodeAddress = endpointObservation.EndpointAddr
+	legacyRecord.NodeAddress = endpointObservation.GetEndpointUrl()
 
 	// Extract the endpoint's domain from its URL.
 	endpointDomain, err := extractEffectiveTLDPlusOne(endpointObservation.EndpointUrl)
 	// Error extracting the endpoint domain: log the error.
 	if err != nil {
-		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Morse endpoint URL")
+		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord
 	}
 
@@ -97,7 +91,7 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	return legacyRecord
 }
 
-// setLegacyErrFieldsFromMorseEndpointError populates error fields in legacy record from endpoint error data.
+// setLegacyErrFieldsFromShannonEndpointError populates error fields in legacy record from endpoint error data.
 // It handles:
 // - Error type mapping
 // - Error message construction
@@ -107,9 +101,9 @@ func setLegacyFieldsFromMorseProtocolObservations(
 // - legacyRecord: the record to update
 // - endpointObservation: endpoint observation containing error data
 // Returns: the updated legacy record
-func setLegacyErrFieldsFromMorseEndpointError(
+func setLegacyErrFieldsFromShannonEndpointError(
 	legacyRecord *legacyRecord,
-	endpointObservation *protocolobservation.MorseEndpointObservation,
+	endpointObservation *protocolobservation.ShannonEndpointObservation,
 ) *legacyRecord {
 
 	endpointErr := endpointObservation.ErrorType
@@ -135,37 +129,4 @@ func setLegacyErrFieldsFromMorseEndpointError(
 	legacyRecord.ErrorMessage = errMsg
 
 	return legacyRecord
-}
-
-// extractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
-// Example: "https://blog.example.co.uk" → "example.co.uk"
-// - Parses the URL and validates the host.
-// - Uses publicsuffix package to determine the registrable domain.
-// - Returns an error if input is malformed or domain is not derivable.
-func extractEffectiveTLDPlusOne(rawURL string) (string, error) {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return "", err // malformed URL
-	}
-
-	host := parsedURL.Hostname()
-	if host == "" {
-		return "", fmt.Errorf("empty host") // no host in URL
-	}
-
-	etld, err := publicsuffix.EffectiveTLDPlusOne(host)
-	if err != nil {
-		return "", err // domain may not be derivable (e.g., IP, localhost)
-	}
-	return etld, nil
-}
-
-// formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.
-// BigQuery expects timestamps in RFC 3339 format: YYYY-MM-DDTHH:MM:SS[.SSSSSS]Z
-func formatTimestampPbForBigQueryJSON(pbTimestamp *timestamppb.Timestamp) string {
-	// Convert the protobuf timestamp to Go time.Time
-	goTime := pbTimestamp.AsTime()
-
-	// Format in RFC 3339 format which BigQuery expects
-	return goTime.Format(time.RFC3339Nano)
 }

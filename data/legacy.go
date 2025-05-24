@@ -62,6 +62,11 @@ func buildLegacyDataRecord(
 		legacyRecord = setLegacyFieldsFromMorseProtocolObservations(logger, legacyRecord, morseObservations)
 	}
 
+	// Update the data record from Shannonprotocol data
+	if shannonObservations := protocolObservations.GetShannon(); shannonObservations != nil {
+		legacyRecord = setLegacyFieldsFromShannonProtocolObservations(logger, legacyRecord, shannonObservations)
+	}
+
 	// Update the legacy data record from QoS observations.
 	if qosObservations := observations.GetQos(); qosObservations != nil {
 		legacyRecord = setLegacyFieldsFromQoSObservations(logger, legacyRecord, qosObservations)
