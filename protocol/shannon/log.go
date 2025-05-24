@@ -2,7 +2,6 @@ package shannon
 
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	//	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
 // hydrateLoggerWithEndpoint enhances a logger with a Shannon endpoint details.
@@ -23,14 +22,14 @@ func hydrateLoggerWithEndpoint(
 		"endpoint_url", endpoint.PublicURL(),
 	)
 
-	sessionHeader := endpoint.session.Header
 	// nil session header: skip the processing.
+	sessionHeader := endpoint.session.Header
 	if sessionHeader == nil {
 		return hydratedLogger
 	}
 
+	// Hydrate with session fields.
 	return hydratedLogger.With(
-		// Hydrate with session fields.
 		"endpoint_app_addr", sessionHeader.ApplicationAddress,
 		"endpoint_session_service_id", sessionHeader.ServiceId,
 		"endpoint_session_id", sessionHeader.SessionId,

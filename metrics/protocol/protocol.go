@@ -14,7 +14,7 @@ func PublishMetrics(
 	logger polylog.Logger,
 	protocolObservations *protocol.Observations,
 ) {
-	hydratedLogger := logger.With("method", "PublishProtocolMetrics")
+	hydratedLogger := logger.With("method", "PublishMetrics")
 	if protocolObservations == nil {
 		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: received nil set of Protocol observations.")
 		return

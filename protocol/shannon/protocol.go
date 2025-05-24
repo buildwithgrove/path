@@ -219,13 +219,13 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
 	// Sanity check the input
 	if observations == nil || observations.GetShannon() == nil {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil input or nil Morse observation list.")
+		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
 		return nil
 	}
 
 	shannonObservations := observations.GetShannon().GetObservations()
 	if len(shannonObservations) == 0 {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil set of Morse request observations.")
+		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
 		return nil
 	}
 
@@ -289,28 +289,25 @@ func (p *Protocol) getAppsUniqueEndpoints(
 
 		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
 		if err != nil {
-			logger.Warn().Err(err).Msg("Internal error: error getting a session for the app. Service request will fail.")
+			logger.Error().Err(err).Msg("Internal error: error getting a session for the app. Service request will fail.")
 			return nil, fmt.Errorf("could not get the session for service %s app %s", serviceID, app.Address)
 		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
-			logger.Warn().Err(err).Msg("Internal error: error getting all endpoints for app and session. Service request will fail.")
+			logger.Error().Err(err).Msg("Internal error: error getting all endpoints for app and session. Service request will fail.")
 			return nil, fmt.Errorf("error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
 		}
 
 		// Filter out any sanctioned endpoints
 		filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(appEndpoints)
 
-		// Hydrate the logger with endpoint counts.
-		logger = logger.With(
-			"original_count", len(appEndpoints),
-			"filtered_count", len(filteredEndpoints),
-		)
+		// Log the number of endpoints before and after filtering
+		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(filteredEndpoints))
 
 		// All endpoints are sanctioned: log a warning and skip this app.
 		if len(filteredEndpoints) == 0 {
-			logger.Warn().Msg("All app endpoints are sanctioned. Skipping the app.")
+			logger.Error().Msg("All app endpoints are sanctioned. Skipping the app.")
 			continue
 		}
 
