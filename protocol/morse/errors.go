@@ -182,10 +182,10 @@ func isEndpointHTTPContentLengthMismatchErr(errStr string) bool {
 	return matchesAllSubstrings(
 		errStr,
 		[]string{
-			strings.ToLower("Post"), // the supplied error string is lower case.
+			"post", // the supplied error string is lower case.
 			"v1/client/relay",
-			strings.ToLower("http: ContentLength="),
-			strings.ToLower("with Body length"),
+			"http: contentlength=",
+			"with body length",
 		},
 	)
 }
@@ -204,7 +204,7 @@ func isEndpointPocketCoreError(errStr string) bool {
 
 // isEndpointErrorExecutingHTTPRequest checks if the error string indicates an endpoint-reported error on executing the HTTP request.
 func isEndpointErrorExecutingHTTPRequest(errStr string) bool {
-	return strings.Contains(errStr, strings.ToLower("error executing the http request: blockchain request for CHAIN"))
+	return strings.Contains(errStr, "error executing the http request: blockchain request for chain")
 }
 
 // matchesAllSubstrings checks if all the specified substrings are present in the given string

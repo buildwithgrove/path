@@ -27,7 +27,8 @@ type MorseRequestErrorType int32
 
 const (
 	MorseRequestErrorType_MORSE_REQUEST_ERROR_UNSPECIFIED MorseRequestErrorType = 0
-	MorseRequestErrorType_MORSE_REQUEST_ERROR_INTERNAL    MorseRequestErrorType = 1 // Internal error: e.g. no endpoint selected for serving the request.
+	// Internal error: e.g. no endpoint selected for serving the request.
+	MorseRequestErrorType_MORSE_REQUEST_ERROR_INTERNAL MorseRequestErrorType = 1
 )
 
 // Enum value maps for MorseRequestErrorType.
@@ -91,8 +92,13 @@ const (
 	// This error indicates the endpoint returned an HTTP response with a mismatch between ContentLength header and actual body length.
 	// Mostly encountered as ContentLength > 0 with an actual body length of 0.
 	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH MorseEndpointErrorType = 10
-	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL                    MorseEndpointErrorType = 11 // Added for internal gateway errors
+	// Internal gateway errors
+	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_INTERNAL MorseEndpointErrorType = 11
 	// This error indicates the endpoint returned an error on executing the HTTP request.
+	// The SDK does not catch this, so the error string contains `error executing the http request: blockchain request`.
+	// NOT the same as 4xx or 5xx, which are captured and returned by the SDK:
+	// Reference:
+	// https://github.com/pokt-foundation/pocket-go/blob/0cb5a3a2ab762e7af18b3482f864d2d9d211a71f/provider/provider.go#L24-26
 	MorseEndpointErrorType_MORSE_ENDPOINT_ERROR_EXECUTING_HTTP_REQUEST MorseEndpointErrorType = 12
 )
 
@@ -170,8 +176,10 @@ type MorseSanctionType int32
 
 const (
 	MorseSanctionType_MORSE_SANCTION_UNSPECIFIED MorseSanctionType = 0
-	MorseSanctionType_MORSE_SANCTION_SESSION     MorseSanctionType = 1 // Valid only for current session
-	MorseSanctionType_MORSE_SANCTION_PERMANENT   MorseSanctionType = 2 // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	// Valid only for current session
+	MorseSanctionType_MORSE_SANCTION_SESSION MorseSanctionType = 1
+	// Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	MorseSanctionType_MORSE_SANCTION_PERMANENT MorseSanctionType = 2
 )
 
 // Enum value maps for MorseSanctionType.
@@ -353,7 +361,8 @@ type MorseEndpointObservation struct {
 	// Session information when available
 	SessionKey       string `protobuf:"bytes,5,opt,name=session_key,json=sessionKey,proto3" json:"session_key,omitempty"`
 	SessionServiceId string `protobuf:"bytes,6,opt,name=session_service_id,json=sessionServiceId,proto3" json:"session_service_id,omitempty"`
-	SessionHeight    int32  `protobuf:"varint,7,opt,name=session_height,json=sessionHeight,proto3" json:"session_height,omitempty"` // session start height
+	// Session height
+	SessionHeight int32 `protobuf:"varint,7,opt,name=session_height,json=sessionHeight,proto3" json:"session_height,omitempty"`
 	// Timestamp marking the sending of the request to the endpoint.
 	EndpointQueryTimestamp *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=endpoint_query_timestamp,json=endpointQueryTimestamp,proto3" json:"endpoint_query_timestamp,omitempty"`
 	// Timestamp marking the reception of the endpoint's response.
