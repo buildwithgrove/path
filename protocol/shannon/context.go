@@ -334,6 +334,7 @@ func (rc *requestContext) handleEndpointError(
 	// Track endpoint error observation.
 	rc.endpointObservations = append(rc.endpointObservations,
 		buildEndpointErrorObservation(
+			rc.logger,
 			*rc.selectedEndpoint,
 			endpointQueryTime,
 			time.Now(), // Timestamp: endpoint query completed.
@@ -365,6 +366,7 @@ func (rc *requestContext) handleEndpointSuccess(
 	// Track endpoint success observation.
 	rc.endpointObservations = append(rc.endpointObservations,
 		buildEndpointSuccessObservation(
+			rc.logger,
 			*rc.selectedEndpoint,
 			endpointQueryTime,
 			time.Now(), // Timestamp: endpoint query completed.

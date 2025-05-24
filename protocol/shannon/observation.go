@@ -3,6 +3,7 @@ package shannon
 import (
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -13,12 +14,13 @@ import (
 // - endpoint details: address, url, app
 // - endpoint query and response timestamps.
 func buildEndpointSuccessObservation(
+	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
 	endpointResponseTimestamp time.Time,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(endpoint)
+	endpointObs := buildEndpointObservation(logger, endpoint)
 
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -32,6 +34,7 @@ func buildEndpointSuccessObservation(
 // - the encountered error
 // - any sanctions resulting from the error.
 func buildEndpointErrorObservation(
+	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
 	endpointResponseTimestamp time.Time,
@@ -40,7 +43,7 @@ func buildEndpointErrorObservation(
 	sanctionType protocolobservations.ShannonSanctionType,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(endpoint)
+	endpointObs := buildEndpointObservation(logger, endpoint)
 
 	// Update the observation with endpoint query/response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -55,24 +58,33 @@ func buildEndpointErrorObservation(
 }
 
 // builds a Shannon endpoint observation to include:
+// endpoint: supplier, URL
+// session: app, service ID, session ID, session start and end heights (using `buildEndpointObservationFromSession`).
 func buildEndpointObservation(
+	logger polylog.Logger,
 	endpoint endpoint,
 ) *protocolobservations.ShannonEndpointObservation {
-	observation := buildEndpointObservationFromSession(endpoint.session)
+	// Add session fields to the observation:
+	// app, serviceID, session ID, session start and end heights
+	observation := buildEndpointObservationFromSession(logger, endpoint.session)
 
+	// Add endpoint-level details: supplier, URL.
 	observation.Supplier = endpoint.supplier
 	observation.EndpointUrl = endpoint.url
 
 	return observation
 }
 
-// builds an endpoint observation using session's fields.
+// builds an endpoint observation using session's fields, to include:
+// session: app, service ID, session ID, session start/end height.
 func buildEndpointObservationFromSession(
+	logger polylog.Logger,
 	session sessiontypes.Session,
 ) *protocolobservations.ShannonEndpointObservation {
 	header := session.Header
 	// Nil session: skip.
 	if header == nil {
+		logger.With("method", "buildEndpointObservationFromSession").Warn().Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
 		return &protocolobservations.ShannonEndpointObservation{}
 	}
 

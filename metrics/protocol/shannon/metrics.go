@@ -31,9 +31,7 @@ var (
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
 	//
 	// Exemplars:
-	//   - app_address: Application address that signed the relay
-	//   - endpoint_addr: Address of the endpoint (from the last entry in observations list)
-	//   - session_height: Height of the session (from the last entry in observations list)
+	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
 	//
 	// Low-cardinality labels are used for core metrics while high-cardinality data is
 	// moved to exemplars to reduce Prometheus storage and query overhead while still
@@ -59,9 +57,7 @@ var (
 	//   - sanction_type: Type of sanction recommended for this error (if any)
 	//
 	// Exemplars:
-	//   - app_address: Application address that signed the relay
-	//   - endpoint_addr: Address of the endpoint that returned an error
-	//   - session_height: Height of the session when the error occurred
+	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
 	//
 	// Use to analyze:
 	//   - Error patterns by service
