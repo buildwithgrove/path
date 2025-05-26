@@ -54,6 +54,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Avalanche-DFK | avax-dfk | EVM | 53935 | ✅ |
 | Base | base | EVM | 8453 | ✅ |
 | Base Sepolia Testnet | base-test | EVM | 84532 | ✅ |
+| Berachain | bera | EVM | 80094 | ✅ |
 | Blast | blast | EVM | 81457 | ✅ |
 | BNB Smart Chain | bsc | EVM | 56 | ✅ |
 | Boba | boba | EVM | 288 | ✅ |
@@ -98,7 +99,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | TRON | tron | EVM | 728126428 |  |
 | Linea | linea | EVM | 59144 |  |
 | Sei | sei | EVM | 1329 |  |
-| Berachain | bera | EVM | 80094 |  |
 | Celestia Archival | tia_da | CometBFT | celestia-archival |  |
 | Celestia Consensus Archival | tia_cons | CometBFT | celestia-consensus-archival |  |
 | Celestia Testnet DA Archival | tia_da_test | CometBFT | celestia-testnet-da-archival |  |
@@ -118,6 +118,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Avalanche-DFK | F004 | EVM | 53935 | ✅ |
 | Base | F005 | EVM | 8453 | ✅ |
 | Base Sepolia Testnet | F006 | EVM | 84532 | ✅ |
+| Berachain | F035 | EVM | 80094 | ✅ |
 | Blast | F008 | EVM | 81457 | ✅ |
 | BNB Smart Chain | F009 | EVM | 56 | ✅ |
 | Boba | F00A | EVM | 288 | ✅ |
@@ -161,7 +162,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Linea | F030 | EVM | 59144 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |
 | Sei | F034 | EVM | 1329 |  |
-| Berachain | F035 | EVM | 80094 |  |
 | Celestia Archival | A0CA | CometBFT | celestia-archival |  |
 | Celestia Consensus Archival | A0CB | CometBFT | celestia-consensus-archival |  |
 | Celestia Testnet DA Archival | A0CC | CometBFT | celestia-testnet-da-archival |  |

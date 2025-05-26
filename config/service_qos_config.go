@@ -115,6 +115,14 @@ var shannonServices = []ServiceQoSConfig{
 		13_000_000,
 	)),
 
+	// Berachain
+	evm.NewEVMServiceQoSConfig("bera", "0x138de", evm.NewEVMArchivalCheckConfig(
+		// https://berascan.com/address/0x6969696969696969696969696969696969696969
+		"0x6969696969696969696969696969696969696969",
+		// Contract start block
+		2_000_000,
+	)),
+
 	// Blast
 	evm.NewEVMServiceQoSConfig("blast", "0x13e31", evm.NewEVMArchivalCheckConfig(
 		// https://blastscan.io/address/0x4300000000000000000000000000000000000004
@@ -356,9 +364,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
 
-	// Berachain
-	evm.NewEVMServiceQoSConfig("bera", "0x138de", nil),
-
 	// *** CometBFT Services ***
 
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
@@ -441,6 +446,14 @@ var morseServices = []ServiceQoSConfig{
 		"0xbab76e4365a2dff89ddb2d3fc9994103b48886c0",
 		// Contract start block
 		13_000_000,
+	)),
+
+	// Berachain
+	evm.NewEVMServiceQoSConfig("F035", "0x138de", evm.NewEVMArchivalCheckConfig(
+		// https://berascan.com/address/0x6969696969696969696969696969696969696969
+		"0x6969696969696969696969696969696969696969",
+		// Contract start block
+		2_000_000,
 	)),
 
 	// Blast
@@ -683,9 +696,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("F034", "0x531", nil),
-
-	// Berachain
-	evm.NewEVMServiceQoSConfig("F035", "0x138de", nil),
 
 	// *** CometBFT Services ***
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
