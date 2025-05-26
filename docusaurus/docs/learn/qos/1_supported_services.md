@@ -42,7 +42,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-05-23**
+**🗓️ Document Last Updated: 2025-05-26**
 
 ## Shannon Protocol Services
 
@@ -65,6 +65,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Ink | ink | EVM | 57073 | ✅ |
 | IoTeX | iotex | EVM | 4689 | ✅ |
 | Kaia | kaia | EVM | 8217 | ✅ |
+| Mantle | mantle | EVM | 5000 | ✅ |
 | Metis | metis | EVM | 1088 | ✅ |
 | Moonbeam | moonbeam | EVM | 1284 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
@@ -96,7 +97,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sonic | sonic | EVM | 146 |  |
 | TRON | tron | EVM | 728126428 |  |
 | Linea | linea | EVM | 59144 |  |
-| Mantle | mantle | EVM | 5000 |  |
 | Sei | sei | EVM | 1329 |  |
 | Berachain | bera | EVM | 80094 |  |
 | Celestia Archival | tia_da | CometBFT | celestia-archival |  |
@@ -129,6 +129,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Ink | F032 | EVM | 57073 | ✅ |
 | IoTeX | F015 | EVM | 4689 | ✅ |
 | Kaia | F016 | EVM | 8217 | ✅ |
+| Mantle | F033 | EVM | 5000 | ✅ |
 | Metis | F018 | EVM | 1088 | ✅ |
 | Moonbeam | F019 | EVM | 1284 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
@@ -159,7 +160,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | TRON | F02E | EVM | 728126428 |  |
 | Linea | F030 | EVM | 59144 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |
-| Mantle | F033 | EVM | 5000 |  |
 | Sei | F034 | EVM | 1329 |  |
 | Berachain | F035 | EVM | 80094 |  |
 | Celestia Archival | A0CA | CometBFT | celestia-archival |  |

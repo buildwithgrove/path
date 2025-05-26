@@ -203,6 +203,14 @@ var shannonServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Mantle
+	evm.NewEVMServiceQoSConfig("mantle", "0x1388", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
+		"0x588846213A30fd36244e0ae0eBB2374516dA836C",
+		// Contract start block
+		60_000_000,
+	)),
+
 	// Metis
 	evm.NewEVMServiceQoSConfig("metis", "0x440", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
@@ -344,9 +352,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Linea
 	evm.NewEVMServiceQoSConfig("linea", "0xe708", nil),
-
-	// Mantle
-	evm.NewEVMServiceQoSConfig("mantle", "0x1388", nil),
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
@@ -526,6 +531,14 @@ var morseServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Mantle
+	evm.NewEVMServiceQoSConfig("F033", "0x1388", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
+		"0x588846213A30fd36244e0ae0eBB2374516dA836C",
+		// Contract start block
+		60_000_000,
+	)),
+
 	// Metis
 	evm.NewEVMServiceQoSConfig("F018", "0x440", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
@@ -667,9 +680,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Berachain Testnet
 	evm.NewEVMServiceQoSConfig("F031", "0x138d4", nil),
-
-	// Mantle
-	evm.NewEVMServiceQoSConfig("F033", "0x1388", nil),
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("F034", "0x531", nil),
