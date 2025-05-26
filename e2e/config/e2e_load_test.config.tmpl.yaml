@@ -434,7 +434,7 @@ test_cases:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
       contract_address: "0x54d03ec0c462e9a01f77579c090cde0fc2617817"
       contract_start_block: 10453569
-      transaction_hash: "0x165a3303bcdd4e8d10103fa0aed06ab71c55285a6453d02b55b0314554a7c8de"
+      transaction_hash: "0xe08fa05dab3bd47dfffab37d6e50ba0d90b20da2d13d42bee614f843e5dd50f9"
       call_data: "0x18160ddd"
 
   # Polygon zkEVM (Archival)
@@ -977,7 +977,7 @@ test_cases:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
       contract_address: "0x54d03ec0c462e9a01f77579c090cde0fc2617817"
       contract_start_block: 10453569
-      transaction_hash: "0x165a3303bcdd4e8d10103fa0aed06ab71c55285a6453d02b55b0314554a7c8de"
+      transaction_hash: "0xe08fa05dab3bd47dfffab37d6e50ba0d90b20da2d13d42bee614f843e5dd50f9"
       call_data: "0x18160ddd"
 
   # Shannon - Polygon zkEVM (Archival)
