@@ -155,12 +155,20 @@ var shannonServices = []ServiceQoSConfig{
 		20_000_000,
 	)),
 
-	// Ethereum - ETH Mainnet
+	// Ethereum
 	evm.NewEVMServiceQoSConfig("eth", defaultEVMChainID, evm.NewEVMArchivalCheckConfig(
 		// https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
 		"0x28C6c06298d514Db089934071355E5743bf21d60",
 		// Contract start block
 		12_300_000,
+	)),
+
+	// Ethereum Sepolia Testnet
+	evm.NewEVMServiceQoSConfig("eth_sep_test", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
+		// https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
+		"0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b",
+		// Contract start block
+		6_412_177,
 	)),
 
 	// Fuse
@@ -319,9 +327,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("eth_hol_test", "0x4268", nil),
-
-	// Ethereum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("eth_sep_test", "0xaa36a7", nil),
 
 	// Evmos
 	evm.NewEVMServiceQoSConfig("evmos", "0x2329", nil),
@@ -506,6 +511,14 @@ var morseServices = []ServiceQoSConfig{
 		12_300_000,
 	)),
 
+	// Ethereum Sepolia Testnet
+	evm.NewEVMServiceQoSConfig("F00E", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
+		// https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
+		"0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b",
+		// Contract start block
+		6_412_177,
+	)),
+
 	// Fuse
 	evm.NewEVMServiceQoSConfig("F012", "0x7a", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
@@ -662,9 +675,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Ethereum Holesky Testnet
 	evm.NewEVMServiceQoSConfig("F00D", "0x4268", nil),
-
-	// Ethereum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("F00E", "0xaa36a7", nil),
 
 	// Evmos
 	evm.NewEVMServiceQoSConfig("F00F", "0x2329", nil),
