@@ -74,6 +74,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
 | Polygon | poly | EVM | 137 | ✅ |
+| Polygon Amoy Testnet | poly_amoy_test | EVM | 80002 | ✅ |
 | Polygon zkEVM | poly_zkevm | EVM | 1101 | ✅ |
 | Scroll | scroll | EVM | 534352 | ✅ |
 | Sonic | sonic | EVM | 146 | ✅ |
@@ -90,7 +91,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Near | near | EVM | 397 |  |
 | Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 |  |
 | opBNB | opbnb | EVM | 204 |  |
-| Polygon Amoy Testnet | poly_amoy_test | EVM | 80002 |  |
 | Radix | radix | EVM | 4919 |  |
 | Sui | sui | EVM | 257 |  |
 | Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 |  |
@@ -139,6 +139,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Optimism | F01D | EVM | 10 | ✅ |
 | opBNB | F01F | EVM | 204 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
+| Polygon Amoy Testnet | F022 | EVM | 80002 | ✅ |
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
 | Scroll | F024 | EVM | 534352 | ✅ |
 | Sonic | F02D | EVM | 146 | ✅ |
@@ -152,7 +153,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |
-| Polygon Amoy Testnet | F022 | EVM | 80002 |  |
 | Radix | F023 | EVM | 4919 |  |
 | Sui | F026 | EVM | 257 |  |
 | Taiko Hekla Testnet | F028 | EVM | 167009 |  |
