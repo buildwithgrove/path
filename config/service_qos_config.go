@@ -12,14 +12,6 @@ import (
 // IMPORTANT: PATH requires service IDs to be registered here for Quality of Service (QoS) endpoint checks.
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
-// TODO_QOS(@commoddity): Add archival check configurations for all EVM services.
-// This includes hydrating the entire EVMArchivalCheckConfig struct.
-// See the following archival check configurations as reference:
-//   - F00C (Ethereum)
-//   - F021 (Polygon)
-//   - F01C (Oasys)
-//   - F036 (XRPL EVM Testnet)
-
 var _ ServiceQoSConfig = (evm.EVMServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (cometbft.CometBFTServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (solana.SolanaServiceQoSConfig)(nil)
@@ -275,6 +267,14 @@ var shannonServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
+	// Optimism Sepolia Testnet
+	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
+		// https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
+		"0x734d539a7efee15714a2755caa4280e12ef3d7e4",
+		// Contract start block
+		18_241_388,
+	)),
+
 	// Polygon
 	evm.NewEVMServiceQoSConfig("poly", "0x89", evm.NewEVMArchivalCheckConfig(
 		// https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -374,9 +374,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Near
 	evm.NewEVMServiceQoSConfig("near", "0x18d", nil),
-
-	// Optimism Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", nil),
 
 	// opBNB
 	evm.NewEVMServiceQoSConfig("opbnb", "0xcc", nil),
@@ -643,6 +640,14 @@ var morseServices = []ServiceQoSConfig{
 		8_121_800,
 	)),
 
+	// Optimism Sepolia Testnet
+	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
+		// https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
+		"0x734d539a7efee15714a2755caa4280e12ef3d7e4",
+		// Contract start block
+		18_241_388,
+	)),
+
 	// opBNB
 	evm.NewEVMServiceQoSConfig("F01F", "0xcc", evm.NewEVMArchivalCheckConfig(
 		// https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
@@ -742,9 +747,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Near
 	evm.NewEVMServiceQoSConfig("F01B", "0x18d", nil),
-
-	// Optimism Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("F01E", "0xAA37DC", nil),
 
 	// Radix
 	evm.NewEVMServiceQoSConfig("F023", "0x1337", nil),

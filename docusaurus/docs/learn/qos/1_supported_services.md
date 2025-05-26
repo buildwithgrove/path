@@ -74,6 +74,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonbeam | moonbeam | EVM | 1284 | ✅ |
 | Oasys | oasys | EVM | 248 | ✅ |
 | Optimism | op | EVM | 10 | ✅ |
+| Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 | ✅ |
 | Polygon | poly | EVM | 137 | ✅ |
 | Polygon Amoy Testnet | poly_amoy_test | EVM | 80002 | ✅ |
 | Polygon zkEVM | poly_zkevm | EVM | 1101 | ✅ |
@@ -91,7 +92,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Kava | kava | EVM | 2222 |  |
 | Moonriver | moonriver | EVM | 1285 |  |
 | Near | near | EVM | 397 |  |
-| Optimism Sepolia Testnet | op_sep_test | EVM | 11155420 |  |
 | opBNB | opbnb | EVM | 204 |  |
 | Radix | radix | EVM | 4919 |  |
 | Sui | sui | EVM | 257 |  |
@@ -138,6 +138,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Moonbeam | F019 | EVM | 1284 | ✅ |
 | Oasys | F01C | EVM | 248 | ✅ |
 | Optimism | F01D | EVM | 10 | ✅ |
+| Optimism Sepolia Testnet | F01E | EVM | 11155420 | ✅ |
 | opBNB | F01F | EVM | 204 | ✅ |
 | Polygon | F021 | EVM | 137 | ✅ |
 | Polygon Amoy Testnet | F022 | EVM | 80002 | ✅ |
@@ -154,7 +155,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Kava | F017 | EVM | 2222 |  |
 | Moonriver | F01A | EVM | 1285 |  |
 | Near | F01B | EVM | 397 |  |
-| Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |
 | Radix | F023 | EVM | 4919 |  |
 | Sui | F026 | EVM | 257 |  |
 | zkLink | F02A | EVM | 810180 |  |
