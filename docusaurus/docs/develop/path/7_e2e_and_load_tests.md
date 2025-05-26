@@ -156,15 +156,13 @@ Enable it by ensuring the following annotation is present at the top of your con
 
 ### Supported Services in E2E Tests
 
-| Protocol | Service ID | Chain Name       | Type      | Notes                     |
-| -------- | ---------- | ---------------- | --------- | ------------------------- |
-| Morse    | F00C       | Ethereum         | Archival  | Mainnet with full history |
-| Morse    | F021       | Polygon          | Archival  | Mainnet with full history |
-| Morse    | F01C       | Oasys            | Archival  | Mainnet with full history |
-| Morse    | F036       | XRPL EVM Testnet | Archival  | Testnet with full history |
-| Shannon  | anvil      | Local Ethereum   | Ephemeral | Local development chain   |
+**All currently supported Grove Portal services are supported in the E2E & Load tests.**
 
-<!-- TODO_TECHDEBT(@commoddity): Update this table when new services added to the `e2e_load_test.config.tmpl.yaml` file -->
+:::tip
+
+To see the list of supported services for the tests, see the `test_cases` array in the [E2E & Load Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.tmpl.yaml) file.
+
+:::
 
 ### Environment Variables
 
