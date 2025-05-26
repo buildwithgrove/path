@@ -81,6 +81,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sonic | sonic | EVM | 146 | ✅ |
 | Taiko | taiko | EVM | 167000 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
+| zkSync | zksync_era | EVM | 324 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
 | Evmos | evmos | EVM | 9001 |  |
@@ -95,7 +96,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sui | sui | EVM | 257 |  |
 | Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 |  |
 | zkLink | zklink_nova | EVM | 810180 |  |
-| zkSync | zksync_era | EVM | 324 |  |
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
 | TRON | tron | EVM | 728126428 |  |
 | Sei | sei | EVM | 1329 |  |
@@ -146,6 +146,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sonic | F02D | EVM | 146 | ✅ |
 | Taiko | F027 | EVM | 167000 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
+| zkSync | F02B | EVM | 324 | ✅ |
 | Evmos | F00F | EVM | 9001 |  |
 | Fantom | F010 | EVM | 250 |  |
 | Fraxtal | F011 | EVM | 252 |  |
@@ -157,7 +158,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sui | F026 | EVM | 257 |  |
 | Taiko Hekla Testnet | F028 | EVM | 167009 |  |
 | zkLink | F02A | EVM | 810180 |  |
-| zkSync | F02B | EVM | 324 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
 | TRON | F02E | EVM | 728126428 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |

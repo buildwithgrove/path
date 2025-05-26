@@ -331,6 +331,14 @@ var shannonServices = []ServiceQoSConfig{
 		368_266,
 	)),
 
+	// zkSync
+	evm.NewEVMServiceQoSConfig("zksync_era", "0x144", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
+		"0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C",
+		// Contract start block
+		55_405_668,
+	)),
+
 	// *** EVM Services (testing) ***
 
 	// Anvil - Ethereum development/testing
@@ -376,9 +384,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", nil),
-
-	// zkSync
-	evm.NewEVMServiceQoSConfig("zksync_era", "0x144", nil),
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_dev", "0x15f902", nil),
@@ -697,6 +702,14 @@ var morseServices = []ServiceQoSConfig{
 		368_266,
 	)),
 
+	// zkSync
+	evm.NewEVMServiceQoSConfig("F02B", "0x144", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
+		"0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C",
+		// Contract start block
+		55_405_668,
+	)),
+
 	// *** EVM Services (Non-Archival) ***
 
 	// Evmos
@@ -731,9 +744,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// zkLink
 	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", nil),
-
-	// zkSync
-	evm.NewEVMServiceQoSConfig("F02B", "0x144", nil),
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
