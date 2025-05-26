@@ -28,28 +28,48 @@ e2e_load_test_config:
   # Load Test Mode
   # Tests run against a specified gateway URL (local or public)
   # Examples:
-  #   - Local:  "http://localhost:3091/v1"
   #   - Public: "https://rpc.grove.city/v1"
+  #   - Local:  "http://localhost:3091/v1"
   load_test_config:
     # [Required] Custom PATH gateway URL
-    gateway_url_override: ""
-    # [Required] Custom user identifier for the test (i.e. portal-application-id)
-    portal_application_id: ""
+    #
+    # The default field uses the Grove Portal as the gateway URL.
+    #
+    # If you are wishing to test against a local PATH instance,
+    # you can override this field with the local PATH gateway URL 
+    # (default: "http://localhost:3069/v1")
+    gateway_url_override: "https://rpc.grove.city/v1"
+
     # [Optional] Insert service ID into subdomain per test case
-    # - Example: "F00C.rpc.grove.city/v1"
-    # - TODO_TECHDEBT(@commoddity): Remove after header-based service selection is supported
-    # - See: https://github.com/buildwithgrove/infrastructure/issues/91
-    use_service_subdomain: false
+    #     Example: "F00C.rpc.grove.city/v1"
+    #
+    # TODO_TECHDEBT(@commoddity): Remove after header-based service selection is supported
+    #     See: https://github.com/buildwithgrove/infrastructure/issues/91
+    use_service_subdomain: true
+
+    # [Required] Custom user identifier for the test (i.e. portal-application-id)
+    #
+    # DEV_NOTE: If you do not have a Grove Portal Application ID, get one by visiting:
+    #     https://www.portal.grove.city
+    #
+    # This field is NOT required if you are testing against a local PATH instance.
+    portal_application_id: ""
+
     # [Optional] Custom API key for the test (i.e. portal-api-key)
+    #
+    # DEV_NOTE: This field is required if your Grove Portal Application ID requires 
+    # an API key to be set in the `Authorization` header.
+    #
+    # This field is NOT required if you are testing against a local PATH instance.
     portal_api_key: ""
 
 # Default configuration applied to all test cases (unless overridden)
 default_test_config:
-  global_rps: 50 # Requests per second (shared across all methods)
-  requests_per_method: 50 # Number of requests per method
-  success_rate: 0.80 # Minimum required success rate (80%)
-  max_p50_latency_ms: 2000ms # Max allowed P50 latency (ms)
-  max_p95_latency_ms: 5000ms # Max allowed P95 latency (ms)
+  global_rps: 50              # Requests per second (shared across all methods)
+  requests_per_method: 50     # Number of requests per method
+  success_rate: 0.80          # Minimum required success rate (80%)
+  max_p50_latency_ms: 2000ms  # Max allowed P50 latency (ms)
+  max_p95_latency_ms: 5000ms  # Max allowed P95 latency (ms)
   max_p99_latency_ms: 10000ms # Max allowed P99 latency (ms)
 
 test_cases:
@@ -101,6 +121,8 @@ test_cases:
       transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
       call_data: "0x18160ddd"
 
+  # TODO_NEXT(@commoddity): Add test cases for all other Morse services.
+
   ###########################################
   # ---------------- SHANNON ----------------
   ###########################################
@@ -120,6 +142,8 @@ test_cases:
       max_p50_latency_ms: 4000ms
       max_p95_latency_ms: 8000ms
       max_p99_latency_ms: 12000ms
+
+  # TODO_NEXT(@commoddity): Add test cases for all other Morse services.
 
   # Anvil local Ethereum node (Ephemeral)
   - name: "Shannon - Anvil (local Ethereum) Test"

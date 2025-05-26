@@ -32,21 +32,33 @@ description: End-to-End & Load Tests for PATH
 **Run E2E tests with Docker containers:**
 
 ```bash
-# Shannon E2E tests (local Anvil)
-make test_e2e_evm_shannon
+# Shannon E2E tests with default service IDs
+make test_e2e_evm_shannon_defaults
 
-# Morse E2E tests (real networks)
+# Shannon E2E tests with specified service IDs
+make test_e2e_evm_shannon eth,anvil
+
+# Morse E2E tests with default service IDs
 make test_e2e_evm_morse
+
+# Morse E2E tests with specified service IDs
+make test_e2e_evm_morse F00C,F021
 ```
 
 **Run load tests against existing gateways:**
 
 ```bash
-# Shannon load tests
-make test_load_evm_shannon
+# Shannon load tests with default service IDs
+make test_load_evm_shannon_defaults
 
-# Morse load tests
-make test_load_evm_morse
+# Shannon load tests with specified service IDs
+make test_load_evm_shannon eth,anvil
+
+# Morse load tests with default service IDs
+make test_load_evm_morse_defaults
+
+# Morse load tests with specified service IDs
+make test_load_evm_morse F00C,F021
 ```
 
 ## Overview
@@ -152,16 +164,19 @@ Enable it by ensuring the following annotation is present at the top of your con
 | Morse    | F036       | XRPL EVM Testnet | Archival  | Testnet with full history |
 | Shannon  | anvil      | Local Ethereum   | Ephemeral | Local development chain   |
 
+<!-- TODO_TECHDEBT(@commoddity): Update this table when new services added to the `e2e_load_test.config.tmpl.yaml` file -->
+
 ### Environment Variables
 
 These environment variables are set by the test make targets, but if you wish to set them manually, see the table below:
 
 <details>
 <summary>Env Vars Table</summary>
-| Variable      | Description                        | Values             | Required |
-| ------------- | ---------------------------------- | ------------------ | -------- |
-| TEST_MODE     | Determines the test execution mode | `e2e`, `load`      | Yes      |
-| TEST_PROTOCOL | Specifies which protocol to test   | `morse`, `shannon` | Yes      |
+| Variable         | Description                                                                                             | Values                              | Required |
+| ---------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | -------- |
+| TEST_MODE        | Determines the test execution mode                                                                      | `e2e`, `load`                       | Yes      |
+| TEST_PROTOCOL    | Specifies which protocol to test                                                                        | `morse`, `shannon`                  | Yes      |
+| TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, the default service IDs for the protocol will be used. | Comma-separated list of service IDs | No       |
 </details>
 
 ### Extending/Updating/Adding EVM E2E Tests
@@ -212,7 +227,11 @@ Tests will **fail** if any configured thresholds are exceeded, ensuring consiste
 
 ### Running Binary manually (no docker)
 
-**In one shell, run:**
+Load tests may also be run against a local PATH instance.
+
+**To enable this, first set `e2e_load_test_config.load_test_config.gateway_url_override` to `http://localhost:3069/v1` in the file `./e2e/config/.e2e_load_test.config.yaml`.**
+
+**Then, in one shell, run:**
 
 ```bash
 # Replace with .morse.config.yaml for Morse
@@ -220,15 +239,21 @@ cp ./e2e/config/.shannon.config.yaml ./local/path/.config.yaml
 make path_run
 ```
 
-In another shell, run:
+**Once the PATH instance is running, in another shell, run one of the following:**
 
 ```bash
-make test_e2e_evm_shannon GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
+# Shannon load tests with default service IDs
+make test_load_evm_shannon_defaults
+
+# Shannon load tests with specified service IDs
+make test_load_evm_shannon eth,anvil
 ```
 
 ### Reviewing PATH Logs
 
-By default, the logs are written to `./path_log_e2e_test_{timestamp}.txt`.
+In E2E test mode, logs may be written to `./path_log_e2e_test_{timestamp}.txt`.
+
+**In order to enable this, set the field `e2e_load_test_config.e2e_config.docker_config.log_to_file` to `true` in the file `./e2e/config/.e2e_load_test.config.yaml`.**
 
 You should see the following log line at the bottom of the test summary:
 

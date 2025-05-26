@@ -34,12 +34,12 @@ import (
 //   https://path.grove.city/develop/path/e2e_tests
 //
 // Example Usage - E2E tests:
-//   - make test_e2e_evm_morse    # Run all EVM E2E tests for Morse
-//   - make test_e2e_evm_shannon  # Run all EVM E2E tests for Shannon
+//   - make test_e2e_evm_morse    # Run all EVM E2E tests for Morse with default service IDs
+//   - make test_e2e_evm_shannon  # Run all EVM E2E tests for Shannon with default service IDs
 //
 // Example Usage - Load tests:
-//   - make test_load_evm_morse   # Run all EVM load tests for Morse
-//   - make test_load_evm_shannon # Run all EVM load tests for Shannon
+//   - make test_load_evm_morse   # Run all EVM load tests for Morse with default service IDs
+//   - make test_load_evm_shannon # Run all EVM load tests for Shannon with default service IDs
 // -----------------------------------------------------------------------------
 
 // -------------------- Test Configuration Initialization --------------------
@@ -58,6 +58,23 @@ func init() {
 
 // -------------------- EVM Load Test Function --------------------
 
+// The default service IDs to test for each protocol.
+//
+// These services are provided to allow sensible defaults for running E2E and load tests,
+// while allowing for the user to override the service IDs to test as they see fit.
+var defaultServiceIDs = map[testProtocol][]protocol.ServiceID{
+	protocolMorse: {
+		"F00C",
+		"F021",
+		"F01C",
+		"F036",
+	},
+	protocolShannon: {
+		"eth",
+		"anvil",
+	},
+}
+
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints.
 func Test_PATH_E2E_EVM(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -71,7 +88,10 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// Get test cases from config based on `TEST_PROTOCOL` env var
-	testCases := cfg.getTestCases()
+	testCases, err := cfg.getTestCases()
+	if err != nil {
+		t.Fatalf("❌ Failed to get test cases: %v", err)
+	}
 
 	// Log test information
 	logEVMTestStartInfo(gatewayURL, testCases)
@@ -137,7 +157,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		serviceTestFailed := runEVMServiceTest(
 			t,
 			ctx,
-			tc.Name,
 			headers,
 			tc.ServiceParams,
 			testConfig,
@@ -218,7 +237,8 @@ func logEVMTestStartInfo(gatewayURL string, testCases []TestCase) {
 	for _, tc := range testCases {
 		serviceIDs = append(serviceIDs, string(tc.ServiceID))
 	}
-	fmt.Printf("  ⛓️  Running tests for service IDs: %s%s%s\n", GREEN, strings.Join(serviceIDs, ", "), RESET)
+	fmt.Printf("\n⛓️  Running tests for service IDs: %s%s%s\n", GREEN, strings.Join(serviceIDs, ", "), RESET)
+
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
@@ -239,7 +259,6 @@ func waitForHydratorIfNeeded() {
 func runEVMServiceTest(
 	t *testing.T,
 	ctx context.Context,
-	testName string,
 	headers http.Header,
 	serviceParams ServiceParams,
 	testConfig TestConfig,

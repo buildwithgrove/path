@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -17,27 +19,48 @@ import (
 // Environment Variables
 // -----------------------------------------------------------------------------
 
-// Environment variable names (must be set for tests)
+// Environment variable names
 const (
-	envTestMode     = "TEST_MODE"     // The test mode to run (e2e or load)
+	// [REQUIRED] The test mode to run (e2e or load)
+	envTestMode = "TEST_MODE" // The test mode to run (e2e or load)
+
+	// [REQUIRED] The protocol to test (morse or shannon)
 	envTestProtocol = "TEST_PROTOCOL" // The protocol to test (morse or shannon)
+
+	// [OPTIONAL] Run the test only against the specified service IDs.
+	// If not set, the default service IDs for the protocol will be used.
+	envTestServiceIDs = "TEST_SERVICE_IDS"
 )
 
 // getEnvConfig fetches and validates environment config from environment variables
-func getEnvConfig() (EnvConfig, error) {
-	mode := testMode(os.Getenv(envTestMode))
-	if err := mode.isValid(); err != nil {
-		return EnvConfig{}, err
+func getEnvConfig() (envConfig, error) {
+	testMode := testMode(os.Getenv(envTestMode))
+	if err := testMode.isValid(); err != nil {
+		return envConfig{}, err
 	}
 
-	protocol := testProtocol(os.Getenv(envTestProtocol))
-	if err := protocol.isValid(); err != nil {
-		return EnvConfig{}, err
+	testProtocol := testProtocol(os.Getenv(envTestProtocol))
+	if err := testProtocol.isValid(); err != nil {
+		return envConfig{}, err
 	}
 
-	return EnvConfig{
-		TestMode:     mode,
-		TestProtocol: protocol,
+	var testServiceIDs []protocol.ServiceID
+	if testServiceIDsEnv := os.Getenv(envTestServiceIDs); testServiceIDsEnv != "" {
+		// If TEST_SERVICE_IDS env var is set, use the provided service IDs
+		fmt.Printf("💡 Using service IDs from environment variable: %s\n", testServiceIDsEnv)
+		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
+			testServiceIDs = append(testServiceIDs, protocol.ServiceID(serviceID))
+		}
+	} else {
+		// Otherwise, use the default service IDs for the protocol
+		fmt.Printf("💡 Using default service IDs for protocol: %s\n", testProtocol)
+		testServiceIDs = defaultServiceIDs[testProtocol]
+	}
+
+	return envConfig{
+		testMode:       testMode,
+		testProtocol:   testProtocol,
+		testServiceIDs: testServiceIDs,
 	}, nil
 }
 
@@ -109,10 +132,10 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	var cfgPath string
 	// Prefer custom config if present, otherwise fall back to default
 	if _, err := os.Stat(customConfigFile); err == nil {
-		fmt.Printf("⚠️ Using custom config file: e2e/%s\n", customConfigFile)
+		fmt.Printf("💾 Using custom config file: e2e/%s\n", customConfigFile)
 		cfgPath = customConfigFile
 	} else {
-		fmt.Printf("⚠️ Using default config file: e2e/%s\n", defaultConfigFile)
+		fmt.Printf("💾 Using default config file: e2e/%s\n", defaultConfigFile)
 		cfgPath = defaultConfigFile
 	}
 
@@ -121,7 +144,12 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.EnvConfig = envConfig
+
+	// Set the config path
+	cfg.cfgPath = cfgPath
+
+	// Set the environment configuration
+	cfg.envConfig = envConfig
 
 	// Validate the configuration
 	if err := cfg.validate(); err != nil {
@@ -154,16 +182,27 @@ func loadConfig(filePath string) (*Config, error) {
 type (
 	// Config is the top-level E2E test configuration
 	Config struct {
-		EnvConfig         EnvConfig         // Loaded from environment variables, not YAML
+		// cfgPath is private because it is not loaded from YAML,
+		// so the requirement for it to be public does not apply.
+		// Can be either:
+		// 		- `config/e2e_load_test.config.tmpl.yaml`
+		// 		- `config/.e2e_load_test.config.yaml`
+		cfgPath string
+
+		// envConfig is private because it is loaded from environment variables,
+		// not YAML so the requirement for it to be public does not apply.
+		envConfig envConfig
+
 		E2ELoadTestConfig E2ELoadTestConfig `yaml:"e2e_load_test_config"`
 		DefaultTestConfig TestConfig        `yaml:"default_test_config"`
 		TestCases         []TestCase        `yaml:"test_cases"`
 	}
 
-	// EnvConfig for environment configuration (loaded from environment variables, not YAML)
-	EnvConfig struct {
-		TestMode     testMode
-		TestProtocol testProtocol
+	// envConfig for environment configuration (loaded from environment variables, not YAML)
+	envConfig struct {
+		testMode       testMode
+		testProtocol   testProtocol
+		testServiceIDs []protocol.ServiceID
 	}
 
 	// E2ELoadTestConfig for test mode configuration
@@ -214,6 +253,8 @@ type (
 	}
 
 	// ServiceParams holds service-specific test data for all methods.
+	// TODO_IMPROVE(@commoddity): Look into getting contract address and contract start block
+	// from `config/service_qos_config.go` to have only one source of truth for service params
 	ServiceParams struct {
 		ContractAddress    string `yaml:"contract_address,omitempty"`     // EVM contract address (should match service_qos_config.go)
 		CallData           string `yaml:"call_data,omitempty"`            // Call data for eth_call
@@ -262,11 +303,15 @@ func (tc *TestConfig) MergeNonZero(override *TestConfig) {
 // TODO_TECHDEBT(@commoddity): Refactor EVM Tests to avoid `if cfg.getTestMode() == ` checks.
 // Separate out load tests and E2E tests into different files.
 func (c *Config) getTestMode() testMode {
-	return c.EnvConfig.TestMode
+	return c.envConfig.testMode
 }
 
 func (c *Config) getTestProtocol() testProtocol {
-	return c.EnvConfig.TestProtocol
+	return c.envConfig.testProtocol
+}
+
+func (c *Config) getTestServiceIDs() []protocol.ServiceID {
+	return c.envConfig.testServiceIDs
 }
 
 func (c *Config) useServiceSubdomain() bool {
@@ -299,14 +344,28 @@ func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.Ser
 }
 
 // getTestCases returns test cases filtered by protocol specified in environment
-func (c *Config) getTestCases() []TestCase {
+func (c *Config) getTestCases() ([]TestCase, error) {
+	protocol := c.getTestProtocol()
+
 	var filteredTestCases []TestCase
 	for _, tc := range c.TestCases {
-		if tc.Protocol == c.getTestProtocol() {
-			filteredTestCases = append(filteredTestCases, tc)
+		// First filter by protocol
+		if tc.Protocol == protocol {
+			if slices.Contains(c.getTestServiceIDs(), tc.ServiceID) {
+				filteredTestCases = append(filteredTestCases, tc)
+			}
 		}
 	}
-	return filteredTestCases
+
+	if len(filteredTestCases) == 0 {
+		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
+			"\n"+
+			"Please refer to the `%s` file to see which test cases are configured for the `%s` protocol.",
+			envTestServiceIDs, c.cfgPath, protocol,
+		)
+	}
+
+	return filteredTestCases, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -332,13 +391,7 @@ func (c *Config) validate() error {
 
 	// Validate e2e test mode
 	if mode == testModeE2E {
-		protocol := c.getTestProtocol()
-		var configFile string
-		if protocol == protocolMorse {
-			configFile = "config/.morse.config.yaml"
-		} else if protocol == protocolShannon {
-			configFile = "config/.shannon.config.yaml"
-		}
+		configFile := fmt.Sprintf("config/.%s.config.yaml", c.getTestProtocol())
 		if _, err := os.Stat(configFile); os.IsNotExist(err) {
 			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
 		}
