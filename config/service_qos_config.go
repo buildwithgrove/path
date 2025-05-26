@@ -283,6 +283,14 @@ var shannonServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Sonic
+	evm.NewEVMServiceQoSConfig("sonic", "0x92", evm.NewEVMArchivalCheckConfig(
+		// https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
+		"0xfc00face00000000000000000000000000000000",
+		// Contract start block
+		10_769_279,
+	)),
+
 	// Taiko
 	evm.NewEVMServiceQoSConfig("taiko", "0x28c58", evm.NewEVMArchivalCheckConfig(
 		// https://taikoscan.io/address/0x1670000000000000000000000000000000000001
@@ -359,9 +367,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_dev", "0x15f902", nil),
-
-	// Sonic
-	evm.NewEVMServiceQoSConfig("sonic", "0x92", nil),
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("tron", "0x2b6653dc", nil),
@@ -629,6 +634,14 @@ var morseServices = []ServiceQoSConfig{
 		5_000_000,
 	)),
 
+	// Sonic
+	evm.NewEVMServiceQoSConfig("F02D", "0x92", evm.NewEVMArchivalCheckConfig(
+		// https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
+		"0xfc00face00000000000000000000000000000000",
+		// Contract start block
+		10_769_279,
+	)),
+
 	// Taiko
 	evm.NewEVMServiceQoSConfig("F027", "0x28c58", evm.NewEVMArchivalCheckConfig(
 		// https://taikoscan.io/address/0x1670000000000000000000000000000000000001
@@ -694,9 +707,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
-
-	// Sonic
-	evm.NewEVMServiceQoSConfig("F02D", "0x92", nil),
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("F02E", "0x2b6653dc", nil),

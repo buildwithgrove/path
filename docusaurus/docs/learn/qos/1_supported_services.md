@@ -75,6 +75,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Polygon | poly | EVM | 137 | ✅ |
 | Polygon zkEVM | poly_zkevm | EVM | 1101 | ✅ |
 | Scroll | scroll | EVM | 534352 | ✅ |
+| Sonic | sonic | EVM | 146 | ✅ |
 | Taiko | taiko | EVM | 167000 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
@@ -96,7 +97,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | zkLink | zklink_nova | EVM | 810180 |  |
 | zkSync | zksync_era | EVM | 324 |  |
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
-| Sonic | sonic | EVM | 146 |  |
 | TRON | tron | EVM | 728126428 |  |
 | Sei | sei | EVM | 1329 |  |
 | Celestia Archival | tia_da | CometBFT | celestia-archival |  |
@@ -140,6 +140,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Polygon | F021 | EVM | 137 | ✅ |
 | Polygon zkEVM | F029 | EVM | 1101 | ✅ |
 | Scroll | F024 | EVM | 534352 | ✅ |
+| Sonic | F02D | EVM | 146 | ✅ |
 | Taiko | F027 | EVM | 167000 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
 | Ethereum Holesky Testnet | F00D | EVM | 17000 |  |
@@ -158,7 +159,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | zkLink | F02A | EVM | 810180 |  |
 | zkSync | F02B | EVM | 324 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
-| Sonic | F02D | EVM | 146 |  |
 | TRON | F02E | EVM | 728126428 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |
 | Sei | F034 | EVM | 1329 |  |
