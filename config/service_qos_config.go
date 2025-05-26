@@ -211,6 +211,14 @@ var shannonServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Linea
+	evm.NewEVMServiceQoSConfig("linea", "0xe708", evm.NewEVMArchivalCheckConfig(
+		// https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
+		"0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+		// Contract start block
+		10_000_000,
+	)),
+
 	// Mantle
 	evm.NewEVMServiceQoSConfig("mantle", "0x1388", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
@@ -357,9 +365,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("tron", "0x2b6653dc", nil),
-
-	// Linea
-	evm.NewEVMServiceQoSConfig("linea", "0xe708", nil),
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
@@ -544,6 +549,14 @@ var morseServices = []ServiceQoSConfig{
 		170_000_000,
 	)),
 
+	// Linea
+	evm.NewEVMServiceQoSConfig("F030", "0xe708", evm.NewEVMArchivalCheckConfig(
+		// https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
+		"0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+		// Contract start block
+		10_000_000,
+	)),
+
 	// Mantle
 	evm.NewEVMServiceQoSConfig("F033", "0x1388", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
@@ -687,9 +700,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("F02E", "0x2b6653dc", nil),
-
-	// Linea
-	evm.NewEVMServiceQoSConfig("F030", "0xe708", nil),
 
 	// Berachain Testnet
 	evm.NewEVMServiceQoSConfig("F031", "0x138d4", nil),

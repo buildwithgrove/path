@@ -66,6 +66,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Ink | ink | EVM | 57073 | ✅ |
 | IoTeX | iotex | EVM | 4689 | ✅ |
 | Kaia | kaia | EVM | 8217 | ✅ |
+| Linea | linea | EVM | 59144 | ✅ |
 | Mantle | mantle | EVM | 5000 | ✅ |
 | Metis | metis | EVM | 1088 | ✅ |
 | Moonbeam | moonbeam | EVM | 1284 | ✅ |
@@ -97,7 +98,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
 | Sonic | sonic | EVM | 146 |  |
 | TRON | tron | EVM | 728126428 |  |
-| Linea | linea | EVM | 59144 |  |
 | Sei | sei | EVM | 1329 |  |
 | Celestia Archival | tia_da | CometBFT | celestia-archival |  |
 | Celestia Consensus Archival | tia_cons | CometBFT | celestia-consensus-archival |  |
@@ -130,6 +130,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Ink | F032 | EVM | 57073 | ✅ |
 | IoTeX | F015 | EVM | 4689 | ✅ |
 | Kaia | F016 | EVM | 8217 | ✅ |
+| Linea | F030 | EVM | 59144 | ✅ |
 | Mantle | F033 | EVM | 5000 | ✅ |
 | Metis | F018 | EVM | 1088 | ✅ |
 | Moonbeam | F019 | EVM | 1284 | ✅ |
@@ -159,7 +160,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
 | Sonic | F02D | EVM | 146 |  |
 | TRON | F02E | EVM | 728126428 |  |
-| Linea | F030 | EVM | 59144 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |
 | Sei | F034 | EVM | 1329 |  |
 | Celestia Archival | A0CA | CometBFT | celestia-archival |  |
