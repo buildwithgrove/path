@@ -50,16 +50,16 @@ type (
 
 		config config.RouterConfig
 
-		mux           *http.ServeMux
-		gateway       gateway
-		dataReporter  dataReporter
-		healthChecker *health.Checker
+		mux                      *http.ServeMux
+		gateway                  gateway
+		invalidEndpointsReporter invalidEndpointsReporter
+		healthChecker            *health.Checker
 	}
 	gateway interface {
 		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
-	dataReporter interface {
-		GetSanctionedEndpoints(protocol.ServiceID) devtools.SanctionDetailsResponse
+	invalidEndpointsReporter interface {
+		Report(serviceID protocol.ServiceID) devtools.InvalidEndpointResponses
 	}
 )
 
@@ -69,7 +69,7 @@ type (
 func NewRouter(
 	logger polylog.Logger,
 	gateway gateway,
-	dataReporter dataReporter,
+	invalidEndpointsReporter invalidEndpointsReporter,
 	healthChecker *health.Checker,
 	config config.RouterConfig,
 ) *router {
@@ -78,10 +78,10 @@ func NewRouter(
 
 		config: config,
 
-		mux:           http.NewServeMux(),
-		gateway:       gateway,
-		dataReporter:  dataReporter,
-		healthChecker: healthChecker,
+		mux:                      http.NewServeMux(),
+		gateway:                  gateway,
+		invalidEndpointsReporter: invalidEndpointsReporter,
+		healthChecker:            healthChecker,
 	}
 	r.handleRoutes()
 	return r
@@ -208,7 +208,7 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 func (r *router) handleSanctionedEndpoints(w http.ResponseWriter, req *http.Request) {
 	serviceID := protocol.ServiceID(req.PathValue("service_id"))
 
-	sanctionedEndpointDetails := r.dataReporter.GetSanctionedEndpoints(serviceID)
+	invalidEndpointResponses := r.invalidEndpointsReporter.Report(serviceID)
 
-	jsonresponse.RespondWithJSON(w, http.StatusOK, sanctionedEndpointDetails)
+	jsonresponse.RespondWithJSON(w, http.StatusOK, invalidEndpointResponses)
 }

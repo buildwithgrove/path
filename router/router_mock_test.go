@@ -55,40 +55,40 @@ func (mr *MockgatewayMockRecorder) HandleServiceRequest(ctx, httpReq, w any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), ctx, httpReq, w)
 }
 
-// MockdataReporter is a mock of dataReporter interface.
-type MockdataReporter struct {
+// MockinvalidEndpointsReporter is a mock of invalidEndpointsReporter interface.
+type MockinvalidEndpointsReporter struct {
 	ctrl     *gomock.Controller
-	recorder *MockdataReporterMockRecorder
+	recorder *MockinvalidEndpointsReporterMockRecorder
 	isgomock struct{}
 }
 
-// MockdataReporterMockRecorder is the mock recorder for MockdataReporter.
-type MockdataReporterMockRecorder struct {
-	mock *MockdataReporter
+// MockinvalidEndpointsReporterMockRecorder is the mock recorder for MockinvalidEndpointsReporter.
+type MockinvalidEndpointsReporterMockRecorder struct {
+	mock *MockinvalidEndpointsReporter
 }
 
-// NewMockdataReporter creates a new mock instance.
-func NewMockdataReporter(ctrl *gomock.Controller) *MockdataReporter {
-	mock := &MockdataReporter{ctrl: ctrl}
-	mock.recorder = &MockdataReporterMockRecorder{mock}
+// NewMockinvalidEndpointsReporter creates a new mock instance.
+func NewMockinvalidEndpointsReporter(ctrl *gomock.Controller) *MockinvalidEndpointsReporter {
+	mock := &MockinvalidEndpointsReporter{ctrl: ctrl}
+	mock.recorder = &MockinvalidEndpointsReporterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockdataReporter) EXPECT() *MockdataReporterMockRecorder {
+func (m *MockinvalidEndpointsReporter) EXPECT() *MockinvalidEndpointsReporterMockRecorder {
 	return m.recorder
 }
 
-// GetSanctionedEndpoints mocks base method.
-func (m *MockdataReporter) GetSanctionedEndpoints(arg0 protocol.ServiceID) devtools.SanctionDetailsResponse {
+// Report mocks base method.
+func (m *MockinvalidEndpointsReporter) Report(serviceID protocol.ServiceID) devtools.InvalidEndpointResponses {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSanctionedEndpoints", arg0)
-	ret0, _ := ret[0].(devtools.SanctionDetailsResponse)
+	ret := m.ctrl.Call(m, "Report", serviceID)
+	ret0, _ := ret[0].(devtools.InvalidEndpointResponses)
 	return ret0
 }
 
-// GetSanctionedEndpoints indicates an expected call of GetSanctionedEndpoints.
-func (mr *MockdataReporterMockRecorder) GetSanctionedEndpoints(arg0 any) *gomock.Call {
+// Report indicates an expected call of Report.
+func (mr *MockinvalidEndpointsReporterMockRecorder) Report(serviceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSanctionedEndpoints", reflect.TypeOf((*MockdataReporter)(nil).GetSanctionedEndpoints), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockinvalidEndpointsReporter)(nil).Report), serviceID)
 }

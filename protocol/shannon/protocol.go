@@ -293,9 +293,8 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	return endpoints, nil
 }
 
-// GetSanctionedEndpoints is a No-Op for Shannon protocol.
+// GetInvalidEndpointResponses is a No-Op for Shannon protocol.
 // Here to satisfy the gateway.Protocol interface.
-func (p *Protocol) GetSanctionedEndpoints(_ protocol.ServiceID) devtools.SanctionDetailsResponse {
-	p.logger.Warn().Msg("GetSanctionedEndpoints is not implemented for Shannon protocol")
-	return devtools.SanctionDetailsResponse{}
+func (p *Protocol) GetInvalidEndpointResponses(_ protocol.ServiceID, _ protocol.EndpointAddrList, _ *devtools.InvalidEndpointResponses) {
+	p.logger.Warn().Msg("GetInvalidEndpointResponses is not implemented for Shannon protocol")
 }

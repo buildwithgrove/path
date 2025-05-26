@@ -161,6 +161,8 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
+	fmt.Println("DEBUG ------- BuildProtocolContextFromHTTP ------ availableEndpoints", len(availableEndpoints))
+
 	// Ensure at least one endpoint is available for the requested service.
 	if len(availableEndpoints) == 0 {
 		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints available for service %s", rc.serviceID)

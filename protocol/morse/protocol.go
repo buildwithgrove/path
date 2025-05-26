@@ -390,11 +390,15 @@ func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
 }
 
-// GetSanctionedEndpoints returns all Morse sanctioned endpoints
+// GetInvalidEndpointResponses returns all Morse sanctioned endpoints
 // If serviceID is provided, it returns the sanctioned endpoints for that service ID.
 // If serviceID is not provided, it returns the sanctioned endpoints for all configured service IDs.
 // It also returns the total number of endpoints, the number of valid endpoints, and the number of sanctioned endpoints.
-func (p *Protocol) GetSanctionedEndpoints(serviceID protocol.ServiceID) devtools.SanctionDetailsResponse {
+func (p *Protocol) GetInvalidEndpointResponses(
+	serviceID protocol.ServiceID,
+	_ protocol.EndpointAddrList,
+	invalidEndpointResponses *devtools.InvalidEndpointResponses,
+) {
 	validEndpoints := 0
 
 	var serviceIDsToCount []protocol.ServiceID
@@ -420,5 +424,5 @@ func (p *Protocol) GetSanctionedEndpoints(serviceID protocol.ServiceID) devtools
 	sanctionDetails.ValidEndpointsCount = validEndpoints
 	sanctionDetails.TotalEndpointsCount = validEndpoints + sanctionDetails.SanctionedEndpointsCount
 
-	return sanctionDetails
+	invalidEndpointResponses.ProtocolLevelDataResponse = sanctionDetails
 }

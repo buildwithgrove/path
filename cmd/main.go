@@ -15,6 +15,8 @@ import (
 	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
+	protocolPkg "github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
 )
@@ -49,7 +51,7 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
-	qosInstances, err := getServiceQoSInstances(logger, config)
+	qosInstances, err := getServiceQoSInstances(logger, config, protocol)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
@@ -115,10 +117,21 @@ func main() {
 		ServiceIDReporter: protocol,
 	}
 
+	// Convert qosInstances to DataReporter map
+	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.DataReporter)
+	for serviceID, qosService := range qosInstances {
+		qosLevelReporters[serviceID] = qosService
+	}
+
+	invalidEndpointsReporter := &devtools.InvalidEndpointsReporter{
+		ProtocolLevelReporter: protocol,
+		QoSLevelReporters:     qosLevelReporters,
+	}
+
 	apiRouter := router.NewRouter(
 		logger,
 		gateway,
-		protocol,
+		invalidEndpointsReporter,
 		healthChecker,
 		config.GetRouterConfig(),
 	)

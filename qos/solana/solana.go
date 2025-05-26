@@ -8,7 +8,9 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // QoS implements gateway.QoSService by providing:
@@ -66,4 +68,9 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 
 	// update the perceived current state of the blockchain.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+}
+
+// GetInvalidEndpointResponses is a no-op for the Solana QoS.
+// TODO_IN_THIS_PR: implement this
+func (QoS) GetInvalidEndpointResponses(_ protocol.ServiceID, _ protocol.EndpointAddrList, _ *devtools.InvalidEndpointResponses) {
 }

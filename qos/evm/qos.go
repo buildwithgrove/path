@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -94,4 +95,13 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 		logger:       qos.logger,
 		serviceState: qos.serviceState,
 	}, true
+}
+
+// GetInvalidEndpointResponses returns all Morse sanctioned endpoints
+func (qos *QoS) GetInvalidEndpointResponses(
+	serviceID protocol.ServiceID,
+	availableEndpoints protocol.EndpointAddrList,
+	invalidEndpointResponses *devtools.InvalidEndpointResponses,
+) {
+	invalidEndpointResponses.QoSLevelDataResponse = qos.serviceState.getSanctionDetails(serviceID, availableEndpoints)
 }

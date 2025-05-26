@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -161,4 +162,55 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	}
 
 	return nil
+}
+
+func (ss *serviceState) getSanctionDetails(
+	serviceID protocol.ServiceID,
+	availableEndpoints protocol.EndpointAddrList,
+) devtools.QoSLevelDataResponse {
+	response := devtools.QoSLevelDataResponse{
+		InvalidEndpoints:        make(map[protocol.ServiceID]map[protocol.EndpointAddr]devtools.SanctionDetails),
+		AvailableEndpointsCount: len(availableEndpoints),
+	}
+
+	// Get all endpoints in the store
+	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
+		if err := ss.validateEndpoint(endpoint); err != nil {
+			if _, ok := response.InvalidEndpoints[serviceID]; !ok {
+				response.InvalidEndpoints[serviceID] = make(map[protocol.EndpointAddr]devtools.SanctionDetails)
+			}
+
+			response.InvalidEndpoints[serviceID][endpointAddr] = devtools.SanctionDetails{
+				EndpointAddr: endpointAddr,
+				Reason:       err.Error(),
+				ServiceID:    serviceID,
+			}
+
+			switch {
+			case errors.Is(err, errEmptyResponseObs):
+				response.EmptyResponseCount++
+
+			case errors.Is(err, errNoBlockNumberObs),
+				errors.Is(err, errInvalidBlockNumberObs):
+				response.BlockNumberCheckErrorsCount++
+
+			case errors.Is(err, errNoChainIDObs),
+				errors.Is(err, errInvalidChainIDObs):
+				response.ChainIDCheckErrorsCount++
+
+			case errors.Is(err, errNoArchivalBalanceObs),
+				errors.Is(err, errInvalidArchivalBalanceObs):
+				response.ArchivalCheckErrorsCount++
+			}
+
+			continue
+		}
+	}
+
+	response.InvalidEndpointsCount = response.EmptyResponseCount + response.BlockNumberCheckErrorsCount +
+		response.ChainIDCheckErrorsCount + response.ArchivalCheckErrorsCount
+
+	response.ValidEndpointsCount = len(ss.endpointStore.endpoints) - response.InvalidEndpointsCount
+
+	return response
 }

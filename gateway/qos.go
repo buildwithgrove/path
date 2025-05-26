@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -104,4 +105,8 @@ type QoSService interface {
 	// 	- "local": from requests sent to an endpoint by **THIS** PATH instance
 	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
 	ApplyObservations(*qos.Observations) error
+
+	// GetInvalidEndpointResponses returns the sanctioned endpoints for a given service ID.
+	// This will eventually be removed in favour of a metrics-based approach.
+	GetInvalidEndpointResponses(protocol.ServiceID, protocol.EndpointAddrList, *devtools.InvalidEndpointResponses)
 }

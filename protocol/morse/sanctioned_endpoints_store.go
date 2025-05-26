@@ -228,11 +228,11 @@ func (s sessionSanctionKey) string() string {
 //
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 // This will eventually be removed in favour of a metrics-based approach.
-func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.SanctionDetailsResponse {
-	permanentSanctionDetails := make(map[protocol.ServiceID][]devtools.SanctionDetails)
+func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
+	permanentSanctionDetails := make(map[protocol.ServiceID]map[protocol.EndpointAddr]devtools.SanctionDetails)
 	permanentSanctionedEndpointsCount := 0
 
-	sessionSanctionDetails := make(map[protocol.ServiceID][]devtools.SanctionDetails)
+	sessionSanctionDetails := make(map[protocol.ServiceID]map[protocol.EndpointAddr]devtools.SanctionDetails)
 	sessionSanctionedEndpointsCount := 0
 
 	// First get permanent sanctions
@@ -248,7 +248,10 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
 		)
 
-		permanentSanctionDetails[sanctionServiceID] = append(permanentSanctionDetails[sanctionServiceID], sanctionDetails)
+		if _, ok := permanentSanctionDetails[sanctionServiceID]; !ok {
+			permanentSanctionDetails[sanctionServiceID] = make(map[protocol.EndpointAddr]devtools.SanctionDetails)
+		}
+		permanentSanctionDetails[sanctionServiceID][endpointAddr] = sanctionDetails
 		permanentSanctionedEndpointsCount++
 	}
 
@@ -273,11 +276,15 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			key.endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
 		)
 
-		sessionSanctionDetails[sanctionServiceID] = append(sessionSanctionDetails[sanctionServiceID], sanctionDetails)
+		if _, ok := sessionSanctionDetails[sanctionServiceID]; !ok {
+			sessionSanctionDetails[sanctionServiceID] = make(map[protocol.EndpointAddr]devtools.SanctionDetails)
+		}
+
+		sessionSanctionDetails[sanctionServiceID][key.endpointAddr] = sanctionDetails
 		sessionSanctionedEndpointsCount++
 	}
 
-	return devtools.SanctionDetailsResponse{
+	return devtools.ProtocolLevelDataResponse{
 		PermamentSanctionDetails:          permanentSanctionDetails,
 		SessionSanctionDetails:            sessionSanctionDetails,
 		SanctionedEndpointsCount:          permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount,
