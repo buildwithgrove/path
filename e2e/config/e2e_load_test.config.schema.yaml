@@ -49,7 +49,7 @@ definitions:
       contract_address:
         description: "Contract address for eth calls"
         type: string
-        pattern: "^0x[a-fA-F0-9]{40}$"
+        pattern: "^[a-zA-Z0-9]{42}$"
         examples: ["0x28C6c06298d514Db089934071355E5743bf21d60"]
       call_data:
         description: "Call data for eth_call"
@@ -98,21 +98,6 @@ definitions:
       test_case_config_override:
         description: "Override default configuration for this test case"
         $ref: "#/definitions/method_config_base"
-      test_case_method_override:
-        description: "Override methods to test for this test case"
-        type: array
-        items:
-          type: string
-          enum:
-            - eth_blockNumber
-            - eth_call
-            - eth_getTransactionReceipt
-            - eth_getBlockByNumber
-            - eth_getBalance
-            - eth_chainId
-            - eth_getTransactionCount
-            - eth_getTransactionByHash
-            - eth_gasPrice
 
 properties:
   e2e_load_test_config:

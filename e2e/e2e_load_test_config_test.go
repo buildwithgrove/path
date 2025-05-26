@@ -249,7 +249,6 @@ type (
 		Archival               bool               `yaml:"archival,omitempty"`                  // Whether this is an archival test (historical data access)
 		ServiceParams          ServiceParams      `yaml:"service_params"`                      // Service-specific parameters for test requests
 		TestCaseConfigOverride *TestConfig        `yaml:"test_case_config_override,omitempty"` // Override default configuration for this test case
-		TestCaseMethodOverride []string           `yaml:"test_case_method_override,omitempty"` // Override methods to test for this test case
 	}
 
 	// ServiceParams holds service-specific test data for all methods.
@@ -452,23 +451,16 @@ func (c *Config) validateTestCase(tc TestCase, index int) error {
 		return fmt.Errorf("test case #%d: ServiceID is required", index)
 	}
 
-	// Validate Morse-specific params
-	if tc.Protocol == protocolMorse {
-		if tc.Archival && tc.ServiceParams.ContractStartBlock == 0 {
-			return fmt.Errorf("test case #%d: ContractStartBlock is required for archival Morse tests", index)
+	// Validate service params for archival tests
+	if tc.Archival {
+		if tc.ServiceParams.ContractStartBlock == 0 {
+			return fmt.Errorf("test case #%d: ContractStartBlock is required for archival tests", index)
 		}
 		if tc.ServiceParams.ContractAddress == "" {
-			return fmt.Errorf("test case #%d: ContractAddress is required for Morse tests", index)
+			return fmt.Errorf("test case #%d: ContractAddress is required for archival tests", index)
 		}
 		if tc.ServiceParams.TransactionHash == "" {
-			return fmt.Errorf("test case #%d: TransactionHash is required for Morse tests", index)
-		}
-	}
-
-	// Validate Shannon-specific params
-	if tc.Protocol == protocolShannon {
-		if tc.ServiceParams.ContractAddress == "" {
-			return fmt.Errorf("test case #%d: ContractAddress is required for Shannon tests", index)
+			return fmt.Errorf("test case #%d: TransactionHash is required for archival tests", index)
 		}
 	}
 

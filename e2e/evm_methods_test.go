@@ -2,37 +2,57 @@
 
 package e2e
 
-import "github.com/buildwithgrove/path/qos/jsonrpc"
+import (
+	"slices"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+)
 
 /* -------------------- EVM JSON-RPC Method Definitions -------------------- */
 
 // Reference for all EVM JSON-RPC methods:
 // - https://ethereum.org/en/developers/docs/apis/json-rpc/
 const (
-	eth_blockNumber           jsonrpc.Method = "eth_blockNumber"
+	// Non-Archival Methods
+	eth_blockNumber jsonrpc.Method = "eth_blockNumber"
+	eth_chainId     jsonrpc.Method = "eth_chainId"
+	eth_gasPrice    jsonrpc.Method = "eth_gasPrice"
+
+	// Archival Methods
 	eth_call                  jsonrpc.Method = "eth_call"
 	eth_getTransactionReceipt jsonrpc.Method = "eth_getTransactionReceipt"
 	eth_getBlockByNumber      jsonrpc.Method = "eth_getBlockByNumber"
 	eth_getBalance            jsonrpc.Method = "eth_getBalance"
-	eth_chainId               jsonrpc.Method = "eth_chainId"
 	eth_getTransactionCount   jsonrpc.Method = "eth_getTransactionCount"
 	eth_getTransactionByHash  jsonrpc.Method = "eth_getTransactionByHash"
-	eth_gasPrice              jsonrpc.Method = "eth_gasPrice"
 )
 
-// allEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
-func allEVMTestMethods() []jsonrpc.Method {
-	return []jsonrpc.Method{
+var (
+	// Non-Archival Methods will always return a valid answer, whether the node is pruned or not.
+	nonArchivalMethods = []jsonrpc.Method{
 		eth_blockNumber,
-		eth_call,
-		eth_getTransactionReceipt,
-		eth_getBlockByNumber,
-		eth_getBalance,
 		eth_chainId,
-		eth_getTransactionCount,
-		eth_getTransactionByHash,
 		eth_gasPrice,
 	}
+	// Archival Methods are only guaranteed to return a valid answer if the node is pruned.
+	archivalMethods = []jsonrpc.Method{
+		eth_getTransactionReceipt,
+		eth_getTransactionByHash,
+		eth_getBlockByNumber,
+		eth_call,
+		eth_getBalance,
+		eth_getTransactionCount,
+	}
+)
+
+// getEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
+// If archival is true, all methods are returned.
+// If archival is false, only non-archival methods are returned.
+func getEVMTestMethods(archival bool) []jsonrpc.Method {
+	if archival {
+		return slices.Concat(nonArchivalMethods, archivalMethods)
+	}
+	return nonArchivalMethods
 }
 
 // createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.

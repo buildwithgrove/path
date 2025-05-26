@@ -129,7 +129,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		}
 
 		// Get methods to test
-		methodsToTest := getMethodsToTest(tc)
+		methodsToTest := getEVMTestMethods(isArchival)
 		methodCount := len(methodsToTest)
 
 		// Get test config (either use default or test case override)
@@ -178,22 +178,6 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	printServiceSummaries(serviceSummaries)
 }
 
-// getMethodsToTest determines which methods to test for a test case.
-func getMethodsToTest(tc TestCase) []jsonrpc.Method {
-	// If no override, use all methods
-	if len(tc.TestCaseMethodOverride) == 0 {
-		return allEVMTestMethods()
-	}
-
-	// Otherwise, use only the methods specified in the override
-	var methodsToTest []jsonrpc.Method
-	for _, method := range tc.TestCaseMethodOverride {
-		methodsToTest = append(methodsToTest, jsonrpc.Method(method))
-	}
-
-	return methodsToTest
-}
-
 // setupSIGINTHandler sets up a signal handler for SIGINT to cancel the test context.
 func setupSIGINTHandler(cancel context.CancelFunc) {
 	sigCh := make(chan os.Signal, 1)
@@ -233,12 +217,14 @@ func logEVMTestStartInfo(gatewayURL string, testCases []TestCase) {
 		}
 	}
 
-	var serviceIDs []string
+	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
 	for _, tc := range testCases {
-		serviceIDs = append(serviceIDs, string(tc.ServiceID))
+		if tc.Archival {
+			fmt.Printf("  🔗 %s%s%s (Archival)\n", GREEN, tc.ServiceID, RESET)
+		} else {
+			fmt.Printf("  🔗 %s%s%s (Not configured for archival; only non-archival methods will be tested)\n", GREEN, tc.ServiceID, RESET)
+		}
 	}
-	fmt.Printf("\n⛓️  Running tests for service IDs: %s%s%s\n", GREEN, strings.Join(serviceIDs, ", "), RESET)
-
 }
 
 // waitForHydratorIfNeeded waits for several rounds of hydrator checks if configured.
