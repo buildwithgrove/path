@@ -80,6 +80,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Scroll | scroll | EVM | 534352 | ✅ |
 | Sonic | sonic | EVM | 146 | ✅ |
 | Taiko | taiko | EVM | 167000 | ✅ |
+| Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
 | zkSync | zksync_era | EVM | 324 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
@@ -94,7 +95,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | opBNB | opbnb | EVM | 204 |  |
 | Radix | radix | EVM | 4919 |  |
 | Sui | sui | EVM | 257 |  |
-| Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 |  |
 | zkLink | zklink_nova | EVM | 810180 |  |
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
 | TRON | tron | EVM | 728126428 |  |
@@ -145,6 +145,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Scroll | F024 | EVM | 534352 | ✅ |
 | Sonic | F02D | EVM | 146 | ✅ |
 | Taiko | F027 | EVM | 167000 | ✅ |
+| Taiko Hekla Testnet | F028 | EVM | 167009 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
 | zkSync | F02B | EVM | 324 | ✅ |
 | Evmos | F00F | EVM | 9001 |  |
@@ -156,7 +157,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Optimism Sepolia Testnet | F01E | EVM | 11155420 |  |
 | Radix | F023 | EVM | 4919 |  |
 | Sui | F026 | EVM | 257 |  |
-| Taiko Hekla Testnet | F028 | EVM | 167009 |  |
 | zkLink | F02A | EVM | 810180 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
 | TRON | F02E | EVM | 728126428 |  |
