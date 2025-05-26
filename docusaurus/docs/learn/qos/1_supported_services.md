@@ -83,6 +83,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Taiko | taiko | EVM | 167000 | ✅ |
 | Taiko Hekla Testnet | taiko_hek_test | EVM | 167009 | ✅ |
 | XRPL EVM Testnet | xrpl_evm_testnet | EVM | 1449000 | ✅ |
+| zkLink | zklink_nova | EVM | 810180 | ✅ |
 | zkSync | zksync_era | EVM | 324 | ✅ |
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
@@ -95,7 +96,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | opBNB | opbnb | EVM | 204 |  |
 | Radix | radix | EVM | 4919 |  |
 | Sui | sui | EVM | 257 |  |
-| zkLink | zklink_nova | EVM | 810180 |  |
 | XRPL EVM Devnet | xrpl_evm_dev | EVM | 1440002 |  |
 | TRON | tron | EVM | 728126428 |  |
 | Sei | sei | EVM | 1329 |  |
@@ -148,6 +148,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Taiko | F027 | EVM | 167000 | ✅ |
 | Taiko Hekla Testnet | F028 | EVM | 167009 | ✅ |
 | XRPL EVM Testnet | F036 | EVM | 1449000 | ✅ |
+| zkLink | F02A | EVM | 810180 | ✅ |
 | zkSync | F02B | EVM | 324 | ✅ |
 | Evmos | F00F | EVM | 9001 |  |
 | Fantom | F010 | EVM | 250 |  |
@@ -157,7 +158,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Near | F01B | EVM | 397 |  |
 | Radix | F023 | EVM | 4919 |  |
 | Sui | F026 | EVM | 257 |  |
-| zkLink | F02A | EVM | 810180 |  |
 | XRPL EVM Devnet | F02C | EVM | 1440002 |  |
 | TRON | F02E | EVM | 728126428 |  |
 | Berachain Testnet | F031 | EVM | 80084 |  |

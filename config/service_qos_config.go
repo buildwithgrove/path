@@ -339,6 +339,14 @@ var shannonServices = []ServiceQoSConfig{
 		368_266,
 	)),
 
+	// zkLink
+	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
+		"0xa3cb8648d12bD36e713af27D92968B370D7A9546",
+		// Contract start block
+		5_004_627,
+	)),
+
 	// zkSync
 	evm.NewEVMServiceQoSConfig("zksync_era", "0x144", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -383,9 +391,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
-
-	// zkLink
-	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", nil),
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_dev", "0x15f902", nil),
@@ -720,6 +725,14 @@ var morseServices = []ServiceQoSConfig{
 		368_266,
 	)),
 
+	// zkLink
+	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
+		"0xa3cb8648d12bD36e713af27D92968B370D7A9546",
+		// Contract start block
+		5_004_627,
+	)),
+
 	// zkSync
 	evm.NewEVMServiceQoSConfig("F02B", "0x144", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -753,9 +766,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Sui
 	evm.NewEVMServiceQoSConfig("F026", "0x101", nil),
-
-	// zkLink
-	evm.NewEVMServiceQoSConfig("F02A", "0xc5cc4", nil),
 
 	// XRPL EVM Devnet
 	evm.NewEVMServiceQoSConfig("F02C", "0x15f902", nil),
