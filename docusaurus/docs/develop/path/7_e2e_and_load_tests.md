@@ -87,9 +87,9 @@ PATH E2E tests support two distinct modes of operation:
 
 | Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
-| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅           |           ❌           |                      ❌                      |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |           ❌           |                      ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅          |          ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |                     ❌                      |
 
 :::tip Populate PATH Configs
 
@@ -230,7 +230,7 @@ make test_e2e_evm_shannon GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
 
 By default, the logs are written to `./path_log_e2e_test_{timestamp}.txt`.
 
-You should see the following log line winat the bottom of the test summary:
+You should see the following log line at the bottom of the test summary:
 
 ```bash
 ===== 👀 LOGS 👀 =====
