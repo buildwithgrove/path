@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./services.schema.yaml
 
 # TODO_IMPROVE(@commoddity): Once Shannon migration is complete:
-#   1. Move this file to to-level `config` package 
+#   1. Move this file to top-level `config` package 
 #   2. Use it as the source of truth for service QoS configs by embedding and YAML unmarshalling
 #   3. Remove the `config/service_qos_config.go` file in favour of using this file
 
