@@ -103,10 +103,9 @@ func (p testProtocol) isValid() error {
 }
 
 // -----------------------------------------------------------------------------
-// Config Files
+// Config Loading
 // -----------------------------------------------------------------------------
 
-// TODO_TECHDEBT(@commoddity): Making this configurable via a flag or env var.
 // Config file paths relative to the e2e directory
 const (
 	// Expected name and location of custom config file
@@ -114,6 +113,12 @@ const (
 
 	// Default config file (used if custom config file is not found)
 	defaultConfigFile = "config/e2e_load_test.config.tmpl.yaml"
+
+	// Template for services file path
+	// One of:
+	//   - `config/services_morse.yaml`
+	//   - `config/services_shannon.yaml`
+	servicesFileTemplate = "config/services_%s.yaml"
 )
 
 // loadE2ELoadTestConfig loads the E2E configuration in the following order:
@@ -147,7 +152,9 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	// Set the environment configuration
 	cfg.envConfig = envConfig
 
-	// Load test services based on protocol
+	// Load test services from one of the following files:
+	//   - `config/services_morse.yaml`
+	//   - `config/services_shannon.yaml`
 	services, err := loadTestServices(cfg.getTestProtocol())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load test services: %w", err)
@@ -179,9 +186,7 @@ func loadConfig(filePath string) (*Config, error) {
 
 // loadTestServices loads test services based on the protocol
 func loadTestServices(protocol testProtocol) (TestServices, error) {
-	const servicesFileTemplate = "config/services_%s.yaml"
-
-	// eg. `config/services_morse.yaml` or `config/services_shannon.yaml`
+	// `config/services_morse.yaml` or `config/services_shannon.yaml`
 	servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
 
 	data, err := os.ReadFile(servicesFile)
@@ -198,7 +203,11 @@ func loadTestServices(protocol testProtocol) (TestServices, error) {
 }
 
 // -----------------------------------------------------------------------------
-// Config Structs
+// Config Struct - Configures the test case
+//
+// Public fields are unmarshalled from the YAML files:
+//   - `config/e2e_load_test.config.tmpl.yaml`
+//   - `config/.e2e_load_test.config.yaml`
 // -----------------------------------------------------------------------------
 
 // DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`
@@ -217,11 +226,11 @@ type (
 		envConfig envConfig
 
 		// services are set after being unmarshalled from either:
-		// - `config/services.morse.yaml`
-		// - `config/services.shannon.yaml`
+		// - `config/services_morse.yaml`
+		// - `config/services_shannon.yaml`
 		services TestServices
 
-		// E2ELoadTestConfig for test mode configuration
+		// Below fields are
 		E2ELoadTestConfig      E2ELoadTestConfig                    `yaml:"e2e_load_test_config"`
 		DefaultServiceConfig   ServiceConfig                        `yaml:"default_service_config"`
 		ServiceConfigOverrides map[protocol.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
@@ -255,9 +264,9 @@ type (
 	// LoadTestConfig for load test mode configuration
 	LoadTestConfig struct {
 		GatewayURLOverride  string `yaml:"gateway_url_override"`  // [REQUIRED] Custom PATH gateway URL
-		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // Whether to specify the service using the subdomain per-test case
-		PortalApplicationID string `yaml:"portal_application_id"` // [REQUIRED] Portal Application ID for the test
-		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Portal API key for the test
+		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // [OPTIONAL] Whether to specify the service using the subdomain per-test case
+		PortalApplicationID string `yaml:"portal_application_id"` // [OPTIONAL] Grove Portal Application ID for the test. Required if using the Grove Portal.
+		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Grove Portal API key for the test. Required if Grove Portal Application requires API key.
 	}
 
 	// ServiceConfig for common service configuration options
@@ -270,110 +279,6 @@ type (
 		MaxP99LatencyMS   time.Duration `yaml:"max_p99_latency_ms"`  // Maximum P99 latency in milliseconds
 	}
 )
-
-// TestServices and TestService for service configuration
-type (
-	TestServices struct {
-		Services []TestService `yaml:"services"`
-	}
-
-	TestService struct {
-		Name          string             `yaml:"name"`               // Name of the service
-		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
-		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
-		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
-	}
-
-	// ServiceParams holds service-specific test data for all methods.
-	// TODO_IMPROVE(@commoddity): Look into getting contract address and contract start block
-	// from `config/service_qos_config.go` to have only one source of truth for service params
-	ServiceParams struct {
-		ContractAddress    string `yaml:"contract_address,omitempty"`     // EVM contract address (should match service_qos_config.go)
-		CallData           string `yaml:"call_data,omitempty"`            // Call data for eth_call
-		ContractStartBlock uint64 `yaml:"contract_start_block,omitempty"` // Minimum block number to use for archival tests
-		TransactionHash    string `yaml:"transaction_hash,omitempty"`     // Transaction hash for receipt/transaction queries
-		blockNumber        string // Not marshaled; set in test case. Can be "latest" or an archival block number
-	}
-)
-
-// -----------------------------------------------------------------------------
-// ServiceConfig Methods
-// -----------------------------------------------------------------------------
-
-// applyOverrides merges non-zero values from the override config into this config.
-// This ensures that only fields that are explicitly set in the override config are merged,
-// while preserving the default values for the other fields.
-func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
-	if override == nil {
-		return
-	}
-
-	if override.GlobalRPS != 0 {
-		sc.GlobalRPS = override.GlobalRPS
-	}
-	if override.RequestsPerMethod != 0 {
-		sc.RequestsPerMethod = override.RequestsPerMethod
-	}
-	if override.SuccessRate != 0 {
-		sc.SuccessRate = override.SuccessRate
-	}
-	if override.MaxP50LatencyMS != 0 {
-		sc.MaxP50LatencyMS = override.MaxP50LatencyMS
-	}
-	if override.MaxP95LatencyMS != 0 {
-		sc.MaxP95LatencyMS = override.MaxP95LatencyMS
-	}
-	if override.MaxP99LatencyMS != 0 {
-		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Config Accessors
-// -----------------------------------------------------------------------------
-
-// TODO_TECHDEBT(@commoddity): Refactor EVM Tests to avoid `if cfg.getTestMode() == ` checks.
-// Separate out load tests and E2E tests into different files.
-func (c *Config) getTestMode() testMode {
-	return c.envConfig.testMode
-}
-
-func (c *Config) getTestProtocol() testProtocol {
-	return c.envConfig.testProtocol
-}
-
-func (c *Config) getTestServiceIDs() []protocol.ServiceID {
-	return c.envConfig.testServiceIDs
-}
-
-func (c *Config) useServiceSubdomain() bool {
-	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
-}
-
-func (c *Config) getGatewayURLForLoadTest() string {
-	return c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride
-}
-
-// -----------------------------------------------------------------------------
-// Utility Functions
-// -----------------------------------------------------------------------------
-
-// setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL.
-//   - https://rpc.grove.city/v1 → https://F00C.rpc.grove.city/v1
-//   - http://localhost:3091/v1 → http://F00C.localhost:3091/v1
-//   - https://api.example.com/path?query=param → https://F00C.api.example.com/path?query=param
-//
-// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
-//   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
-func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.ServiceID) string {
-	parsedURL, err := url.Parse(gatewayURL)
-	if err != nil {
-		// If parsing fails, fall back to simple string insertion
-		return gatewayURL
-	}
-	parsedURL.Host = fmt.Sprintf("%s.%s", serviceID, parsedURL.Host)
-	return parsedURL.String()
-}
 
 // getTestServices returns test services filtered by protocol specified in environment
 func (c *Config) getTestServices() ([]TestService, error) {
@@ -399,9 +304,27 @@ func (c *Config) getTestServices() ([]TestService, error) {
 	return filteredTestCases, nil
 }
 
-// -----------------------------------------------------------------------------
-// Config Validation
-// -----------------------------------------------------------------------------
+// TODO_TECHDEBT(@commoddity): Refactor EVM Tests to avoid `if cfg.getTestMode() == ` checks.
+// Separate out load tests and E2E tests into different files.
+func (c *Config) getTestMode() testMode {
+	return c.envConfig.testMode
+}
+
+func (c *Config) getTestProtocol() testProtocol {
+	return c.envConfig.testProtocol
+}
+
+func (c *Config) getTestServiceIDs() []protocol.ServiceID {
+	return c.envConfig.testServiceIDs
+}
+
+func (c *Config) useServiceSubdomain() bool {
+	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
+}
+
+func (c *Config) getGatewayURLForLoadTest() string {
+	return c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride
+}
 
 // validate performs configuration validation based on schema and runtime requirements
 func (c *Config) validate() error {
@@ -448,8 +371,86 @@ func (c *Config) validate() error {
 }
 
 // -----------------------------------------------------------------------------
-// TestServices Validation
+// TestServices Struct - Configures the services to test against.
+//
+// Unmarshalled from the YAML files:
+//   - `config/services_morse.yaml`
+//   - `config/services_shannon.yaml`
 // -----------------------------------------------------------------------------
+
+// DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`
+type (
+	TestServices struct {
+		Services []TestService `yaml:"services"` // List of test services to run the tests against
+	}
+
+	TestService struct {
+		Name          string             `yaml:"name"`               // Name of the service
+		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
+		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
+		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
+	}
+
+	// ServiceParams holds service-specific test data for all methods.
+	// TODO_IMPROVE(@commoddity): Look into getting contract address and contract start block
+	// from `config/service_qos_config.go` to have only one source of truth for service params
+	ServiceParams struct {
+		ContractAddress    string `yaml:"contract_address,omitempty"`     // EVM contract address (should match service_qos_config.go)
+		ContractStartBlock uint64 `yaml:"contract_start_block,omitempty"` // Minimum block number to use for archival tests
+		TransactionHash    string `yaml:"transaction_hash,omitempty"`     // Transaction hash for receipt/transaction queries
+		CallData           string `yaml:"call_data,omitempty"`            // Call data for eth_call
+		blockNumber        string // Not marshaled from YAML; set in test case. Can be "latest" or an archival block number
+	}
+)
+
+// applyOverrides merges non-zero values from the override config into this config.
+// This ensures that only fields that are explicitly set in the override config are merged,
+// while preserving the default values for the other fields.
+func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
+	if override == nil {
+		return
+	}
+
+	if override.GlobalRPS != 0 {
+		sc.GlobalRPS = override.GlobalRPS
+	}
+	if override.RequestsPerMethod != 0 {
+		sc.RequestsPerMethod = override.RequestsPerMethod
+	}
+	if override.SuccessRate != 0 {
+		sc.SuccessRate = override.SuccessRate
+	}
+	if override.MaxP50LatencyMS != 0 {
+		sc.MaxP50LatencyMS = override.MaxP50LatencyMS
+	}
+	if override.MaxP95LatencyMS != 0 {
+		sc.MaxP95LatencyMS = override.MaxP95LatencyMS
+	}
+	if override.MaxP99LatencyMS != 0 {
+		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Utility Functions
+// -----------------------------------------------------------------------------
+
+// setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL.
+//   - https://rpc.grove.city/v1 → https://F00C.rpc.grove.city/v1
+//   - http://localhost:3091/v1 → http://F00C.localhost:3091/v1
+//   - https://api.example.com/path?query=param → https://F00C.api.example.com/path?query=param
+//
+// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
+//   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
+func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.ServiceID) string {
+	parsedURL, err := url.Parse(gatewayURL)
+	if err != nil {
+		// If parsing fails, fall back to simple string insertion
+		return gatewayURL
+	}
+	parsedURL.Host = fmt.Sprintf("%s.%s", serviceID, parsedURL.Host)
+	return parsedURL.String()
+}
 
 // validate validates all test services
 func (ts *TestServices) validate() error {
