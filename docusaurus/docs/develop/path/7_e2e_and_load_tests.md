@@ -13,6 +13,8 @@ description: End-to-End & Load Tests for PATH
 ## Table of Contents <!-- omit in toc -->
 
 - [tl;dr How do I run the tests?](#tldr-how-do-i-run-the-tests)
+  - [1. **Run E2E tests**](#1-run-e2e-tests)
+  - [2. **Run load tests**](#2-run-load-tests)
 - [Overview](#overview)
 - [E2E \& Load Test Modes](#e2e--load-test-modes)
   - [E2E Test Config Files](#e2e-test-config-files)
@@ -29,36 +31,46 @@ description: End-to-End & Load Tests for PATH
 
 ## tl;dr How do I run the tests?
 
-**Run E2E tests with Docker containers:**
+### 1. **Run E2E tests** 
 
 ```bash
-# Shannon E2E tests with default service IDs
-make test_e2e_evm_shannon_defaults
+# Shannon E2E tests with all service IDs
+make e2e_test_all
 
-# Shannon E2E tests with specified service IDs
-make test_e2e_evm_shannon eth,anvil
+# Shannon E2E tests with specified service IDs only
+make e2e_test eth,anvil
 
-# Morse E2E tests with default service IDs
-make test_e2e_evm_morse
+# Morse E2E tests with all service IDs
+make morse_e2e_test_all
 
-# Morse E2E tests with specified service IDs
-make test_e2e_evm_morse F00C,F021
+# Morse E2E tests with specified service IDs only
+make morse_e2e_test F00C,F021
 ```
 
-**Run load tests against existing gateways:**
+### 2. **Run load tests**
+
+:::info 🔑 Grove Portal Credentials
+
+A Grove Portal Application ID and API Key are required to run load tests against the Grove Portal.
+
+Run `make copy_e2e_load_test_config` to copy and populate the load test config file with your Portal credentials.
+
+You will be prompted to enter your Grove Portal Application ID and API Key. If you do not have these, you can get them by visiting the [Grove Portal](https://www.portal.grove.city).
+
+:::
 
 ```bash
-# Shannon load tests with default service IDs
-make test_load_evm_shannon_defaults
+# Shannon load tests with all service IDs
+make load_test_all
 
-# Shannon load tests with specified service IDs
-make test_load_evm_shannon eth,anvil
+# Shannon load tests with specified service IDs only
+make load_test eth,anvil
 
-# Morse load tests with default service IDs
-make test_load_evm_morse_defaults
+# Morse load tests with all service IDs
+make morse_load_test_all
 
-# Morse load tests with specified service IDs
-make test_load_evm_morse F00C,F021
+# Morse load tests with specified service IDs only
+make morse_load_test F00C,F021
 ```
 
 ## Overview
@@ -85,10 +97,10 @@ make test_load_evm_morse F00C,F021
 
 PATH E2E tests support two distinct modes of operation:
 
-| Mode          | Make Targets                                                  | Purpose                                                                  | How it Works                                                                                                                                                                             | Use Cases                                                                          |
-| ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **E2E Test**  | `make test_e2e_evm_morse` <br/> `make test_e2e_evm_shannon`   | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.morse.config.yaml` or `.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
-| **Load Test** | `make test_load_evm_morse` <br/> `make test_load_evm_shannon` | Performance testing against existing PATH instances                      | 1. Sends requests to a provided gateway URL (local or remote) <br/> 2. No Docker container setup required                                                                                | - Testing production gateway <br/> - Testing local PATH instances                  |
+| Mode          | Make Targets                                  | Purpose                                                                  | How it Works                                                                                                                                                                             | Use Cases                                                                          |
+| ------------- | --------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **E2E Test**  | `make e2e_test` <br/> `make morse_e2e_test`   | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.morse.config.yaml` or `.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
+| **Load Test** | `make load_test` <br/> `make morse_load_test` | Performance testing against existing PATH instances                      | 1. Sends requests to a provided gateway URL (local or remote) <br/> 2. No Docker container setup required                                                                                | - Testing production gateway <br/> - Testing local PATH instances                  |
 
 ### E2E Test Config Files
 
@@ -99,24 +111,22 @@ PATH E2E tests support two distinct modes of operation:
 
 | Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ✅           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 | `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅           |           ❌           |                      ❌                      |
 | `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |           ❌           |                      ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
-:::tip Populate PATH Configs
+:::tip Populate Configs
 
 You can use the following commands to copy example configs and follow the instructions in your CLI:
 
+For E2E tests:
+
 - `make morse_prepare_e2e_config`
 - `make shannon_prepare_e2e_config`
+
+For Load tests:
+
 - `make copy_e2e_load_test_config`
-
-<details>
-<summary>🌿 For Grove Employees Only</summary>
-
-Search for `E2E Config` in `1Password` and copy-paste those configs directly.
-
-</details>
 
 :::
 
@@ -170,27 +180,26 @@ These environment variables are set by the test make targets, but if you wish to
 
 <details>
 <summary>Env Vars Table</summary>
-| Variable         | Description                                                                                             | Values                              | Required |
-| ---------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | -------- |
-| TEST_MODE        | Determines the test execution mode                                                                      | `e2e`, `load`                       | Yes      |
-| TEST_PROTOCOL    | Specifies which protocol to test                                                                        | `morse`, `shannon`                  | Yes      |
-| TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, the default service IDs for the protocol will be used. | Comma-separated list of service IDs | No       |
+| Variable         | Description                                                                                       | Values                              | Required |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------- |
+| TEST_MODE        | Determines the test execution mode                                                                | `e2e`, `load`                       | Yes      |
+| TEST_PROTOCOL    | Specifies which protocol to test                                                                  | `morse`, `shannon`                  | Yes      |
+| TEST_SERVICE_IDS | Specifies which service IDs to test. If not set, all service IDs for the protocol will be tested. | Comma-separated list of service IDs | No       |
 </details>
 
 ### Extending/Updating/Adding EVM E2E Tests
 
-To add new services or methods to the E2E tests:
+To add new services or methods to the E2E tests, you will need to open a new PR to PATH's `main` branch.
 
-1. **Add new service definitions** to the `test_cases` array in your configuration file
+1. **Add new service definitions** to the `services` array in the `e2e/config/services_shannon.yaml` or `e2e/config/services_morse.yaml` configuration file
 2. **Configure service parameters** including contract addresses, start blocks, and transaction hashes for archival tests
-3. **Set appropriate test parameters** like success thresholds, latency expectations, and request rates
-4. **Add method overrides** if you need to test specific JSON-RPC methods for the new service
-5. **Update the schema** in `e2e_load_test.config.schema.yaml` if you add new configuration fields
 
 **Example new service configuration:**
 
+_`./config/services_morse.yaml`_
+
 ```yaml
-test_cases:
+services:
   - name: "New Chain Load Test"
     protocol: "morse"
     service_id: "FNEW"
@@ -200,8 +209,6 @@ test_cases:
       contract_start_block: 1000000
       transaction_hash: "0x..."
       call_data: "0x18160ddd"
-    test_case_config_override:
-      success_rate: 0.70 # Lower threshold for new networks
 ```
 
 ### Test Metrics and Validation
@@ -239,12 +246,11 @@ make path_run
 
 **Once the PATH instance is running, in another shell, run one of the following:**
 
-```bash
-# Shannon load tests with default service IDs
-make test_load_evm_shannon_defaults
+_Assuming you have configured PATH for the `eth` service ID on the `shannon` protocol._
 
-# Shannon load tests with specified service IDs
-make test_load_evm_shannon eth,anvil
+```bash
+# Shannon load test for `eth` service ID
+make load_test eth
 ```
 
 ### Reviewing PATH Logs

@@ -16,26 +16,12 @@ test_unit: ## Run all unit tests
 ### E2E Tests ###
 #################
 
-.PHONY: morse_test_e2e_all
-test_e2e_all: morse_e2e_config_warning ## Run an E2E Morse relay test for all service IDs
-	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
-
-.PHONY: morse_test_e2e
-morse_test_e2e: morse_e2e_config_warning ## Run an E2E Morse relay test with specified service IDs (e.g. make morse_test_e2e F00C,F021)
-	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
-		echo "❌ Error: Service IDs are required (comma-separated list)"; \
-		echo "  👀 Example: make test_e2e_evm_morse F00C,F021"; \
-		echo "  💡 To run with default service IDs, use: make test_e2e_evm_morse_defaults"; \
-		exit 1; \
-	fi
-	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=morse TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
-
-.PHONY: shannon_test_e2e_all
-shannon_test_e2e_all: shannon_e2e_config_warning ## Run an E2E Shannon relay test for all service IDs
+.PHONY: e2e_test_all
+e2e_test_all: shannon_e2e_config_warning ## Run an E2E Shannon relay test for all service IDs
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
-.PHONY: shannon_test_e2e
-shannon_test_e2e: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,anvil)
+.PHONY: e2e_test
+e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,anvil)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
 		echo "  👀 Example: make test_e2e_evm_shannon eth,anvil"; \
@@ -43,6 +29,20 @@ shannon_test_e2e: shannon_e2e_config_warning ## Run an E2E Shannon relay test wi
 		exit 1; \
 	fi
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
+
+.PHONY: morse_e2e_test_all
+morse_e2e_test_all: morse_e2e_config_warning ## Run an E2E Morse relay test for all service IDs
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=morse go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
+
+.PHONY: morse_e2e_test
+morse_e2e_test: morse_e2e_config_warning ## Run an E2E Morse relay test with specified service IDs (e.g. make morse_test_e2e F00C,F021)
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "❌ Error: Service IDs are required (comma-separated list)"; \
+		echo "  👀 Example: make test_e2e_evm_morse F00C,F021"; \
+		echo "  💡 To run with default service IDs, use: make test_e2e_evm_morse_defaults"; \
+		exit 1; \
+	fi
+	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=morse TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 ##################
 ### Load Tests ###
@@ -81,11 +81,8 @@ morse_load_test: morse_e2e_config_warning ## Run a Morse load test with specifie
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=morse TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E_EVM)
 
 .PHONY: copy_e2e_load_test_config
-copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml
-	@echo "📁 Copying e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml"
-	cp ./e2e/config/e2e_load_test.config.tmpl.yaml ./e2e/config/.e2e_load_test.config.yaml
-	@echo "✅ Successfully copied e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml"
-	@echo "💡 To customize the load test config, edit the YAML file at ./e2e/config/.e2e_load_test.config.yaml"
+copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials
+	@./e2e/scripts/copy_load_test_config.sh
 
 # Rule to handle arbitrary targets (service IDs)
 %:
