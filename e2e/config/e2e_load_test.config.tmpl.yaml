@@ -35,9 +35,8 @@ e2e_load_test_config:
     #
     # The default value uses the Grove Portal as the gateway URL.
     #
-    # If you are wishing to test against a local PATH instance,
-    # you can override this field with the local PATH gateway URL 
-    # (default: "http://localhost:3069/v1")
+    # To test against a local PATH instance, use the following URL instead:
+    # gateway_url_override: "http://localhost:3069/v1"
     gateway_url_override: "https://rpc.grove.city/v1"
 
     # [Optional] Insert service ID into subdomain per test case
