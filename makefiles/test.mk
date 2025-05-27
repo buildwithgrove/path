@@ -83,7 +83,3 @@ morse_load_test: morse_e2e_config_warning ## Run a Morse load test with specifie
 .PHONY: copy_e2e_load_test_config
 copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials
 	@./e2e/scripts/copy_load_test_config.sh
-
-# Rule to handle arbitrary targets (service IDs)
-%:
-	@:
