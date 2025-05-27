@@ -58,23 +58,6 @@ func init() {
 
 // -------------------- EVM Load Test Function --------------------
 
-// The default service IDs to test for each protocol.
-//
-// These services are provided to allow sensible defaults for running E2E and load tests,
-// while allowing for the user to override the service IDs to test as they see fit.
-var defaultServiceIDs = map[testProtocol][]protocol.ServiceID{
-	protocolMorse: {
-		"F00C",
-		"F021",
-		"F01C",
-		"F036",
-	},
-	protocolShannon: {
-		"eth",
-		"anvil",
-	},
-}
-
 // Test_PATH_E2E_EVM runs an E2E load test against the EVM JSON-RPC endpoints.
 func Test_PATH_E2E_EVM(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

@@ -51,10 +51,6 @@ func getEnvConfig() (envConfig, error) {
 		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
 			testServiceIDs = append(testServiceIDs, protocol.ServiceID(serviceID))
 		}
-	} else {
-		// Otherwise, use the default service IDs for the protocol
-		fmt.Printf("💡 Using default service IDs for protocol: %s\n", testProtocol)
-		testServiceIDs = defaultServiceIDs[testProtocol]
 	}
 
 	return envConfig{
@@ -350,7 +346,9 @@ func (c *Config) getTestCases() ([]TestCase, error) {
 	for _, tc := range c.TestCases {
 		// First filter by protocol
 		if tc.Protocol == protocol {
-			if slices.Contains(c.getTestServiceIDs(), tc.ServiceID) {
+			// If no service IDs are specified, include all test cases
+			// Otherwise, only include test cases for the specified service IDs
+			if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
 				filteredTestCases = append(filteredTestCases, tc)
 			}
 		}
