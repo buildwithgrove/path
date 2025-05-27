@@ -101,7 +101,7 @@ func (i *EVMObservationInterpreter) GetServiceID() (string, bool) {
 func (i *EVMObservationInterpreter) GetRequestOrigin() string {
 	// Nil observations: log a warning and skip further processing.
 	if i.Observations == nil {
-		i.Logger.Warn().Msg("SHOULD HAPPEN VERY RARELY: got nil EVM QoS observations.")
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: got nil EVM QoS observations.")
 		return RequestOrigin_REQUEST_ORIGIN_UNSPECIFIED.String()
 	}
 

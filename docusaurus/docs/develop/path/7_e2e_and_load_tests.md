@@ -230,7 +230,7 @@ make test_e2e_evm_shannon GATEWAY_URL_OVERRIDE=http://localhost:3069/v1
 
 By default, the logs are written to `./path_log_e2e_test_{timestamp}.txt`.
 
-You should see the following log line at the bottom of the test summary:
+You should see the following log line winat the bottom of the test summary:
 
 ```bash
 ===== 👀 LOGS 👀 =====

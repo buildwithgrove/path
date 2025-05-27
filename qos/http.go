@@ -26,7 +26,7 @@ func BuildHTTPResponseFromJSONRPCResponse(
 	bz, err := json.Marshal(jsonrpcResp)
 	// Failed to marshal the JSONRPC response.
 	if err != nil {
-		logger.Error().Err(err).Msg("SHOULD HAPPEN VERY RARELY: failed to marshal the JSONRPC response.")
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msg("SHOULD RARELY HAPPEN: failed to marshal the JSONRPC response.")
 	}
 
 	return HTTPResponse{
