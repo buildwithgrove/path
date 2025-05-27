@@ -1,0 +1,325 @@
+//go:build e2e
+
+package e2e
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/buildwithgrove/path/qos/evm"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
+	vegeta "github.com/tsenart/vegeta/lib"
+)
+
+/* -------------------- EVM JSON-RPC Method Definitions -------------------- */
+
+// Reference for all EVM JSON-RPC methods:
+// - https://ethereum.org/en/developers/docs/apis/json-rpc/
+const (
+	eth_blockNumber           jsonrpc.Method = "eth_blockNumber"
+	eth_chainId               jsonrpc.Method = "eth_chainId"
+	eth_gasPrice              jsonrpc.Method = "eth_gasPrice"
+	eth_getBalance            jsonrpc.Method = "eth_getBalance"
+	eth_getBlockByNumber      jsonrpc.Method = "eth_getBlockByNumber"
+	eth_getTransactionCount   jsonrpc.Method = "eth_getTransactionCount"
+	eth_getTransactionReceipt jsonrpc.Method = "eth_getTransactionReceipt"
+	eth_getTransactionByHash  jsonrpc.Method = "eth_getTransactionByHash"
+	eth_call                  jsonrpc.Method = "eth_call"
+)
+
+// getEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
+// If archival is true, all methods are returned.
+// If archival is false, only non-archival methods are returned.
+func getEVMTestMethods() []jsonrpc.Method {
+	return []jsonrpc.Method{
+		eth_blockNumber,
+		eth_chainId,
+		eth_gasPrice,
+		eth_getBalance,
+		eth_getBlockByNumber,
+		eth_getTransactionCount,
+		eth_getTransactionReceipt,
+		eth_getTransactionByHash,
+		eth_call,
+	}
+}
+
+// createEVMJsonRPCParams builds RPC params for each EVM method using the provided service parameters.
+func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Params {
+	switch method {
+
+	// Methods with empty params
+	case eth_blockNumber, eth_chainId, eth_gasPrice:
+		return jsonrpc.Params{}
+
+	// Methods that just need the transaction hash
+	//   Example: ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
+	case eth_getTransactionReceipt, eth_getTransactionByHash:
+		params, _ := jsonrpc.BuildParamsFromString(sp.TransactionHash)
+		return params
+
+	// Methods that need [address, blockNumber]
+	//   Example: ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "latest"]
+	case eth_getBalance, eth_getTransactionCount:
+		params, _ := jsonrpc.BuildParamsFromStringArray([2]string{
+			sp.ContractAddress,
+			sp.blockNumber,
+		})
+		return params
+
+	// eth_getBlockByNumber needs [blockNumber, <boolean>]
+	//   Example: ["0xe71e1d", false]
+	case eth_getBlockByNumber:
+		params, _ := jsonrpc.BuildParamsFromStringAndBool(
+			sp.blockNumber,
+			false,
+		)
+		return params
+
+	// eth_call needs [{ to: address, data: calldata }, blockNumber]
+	//   Example: [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
+	case eth_call:
+		params, _ := jsonrpc.BuildParamsFromObjectAndString(
+			map[string]string{
+				"to":   sp.ContractAddress,
+				"data": sp.CallData,
+			},
+			sp.blockNumber,
+		)
+		return params
+
+	default:
+		return jsonrpc.Params{}
+	}
+}
+
+func getEVMVegetaTargets(
+	ts *TestService,
+	methods []jsonrpc.Method,
+	gatewayURL string,
+) ([]vegeta.Target, error) {
+	headers := getRequestHeaders(ts.ServiceID)
+
+	blockNumber, err := getEVMBlockNumber(ts, headers, gatewayURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get EVM block number: %w", err)
+	}
+	ts.ServiceParams.blockNumber = blockNumber
+
+	targets := make([]vegeta.Target, 0, len(methods))
+	for _, method := range methods {
+		// Create JSON-RPC request with appropriate parameters
+		jsonrpcReq := jsonrpc.Request{
+			JSONRPC: jsonrpc.Version2,
+			ID:      jsonrpc.IDFromInt(1),
+			Method:  method,
+			Params:  createEVMJsonRPCParams(method, ts.ServiceParams),
+		}
+
+		// Marshal the request body
+		body, err := json.Marshal(jsonrpcReq)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal JSON-RPC request for method %s: %w", method, err)
+		}
+
+		// Create vegeta target
+		target := vegeta.Target{
+			Method: http.MethodPost,
+			URL:    gatewayURL,
+			Body:   body,
+			Header: headers,
+		}
+
+		targets = append(targets, target)
+	}
+
+	return targets, nil
+}
+
+// -----------------------------------------------------------------------------
+// Get Test Block Number helpers - User for EVM archival services
+// -----------------------------------------------------------------------------
+
+func getEVMBlockNumber(testService *TestService, headers http.Header, gatewayURL string) (string, error) {
+	if !testService.Archival {
+		return "latest", nil
+	} else {
+		blockNumber, err := setTestBlockNumber(
+			gatewayURL,
+			headers,
+			testService.ServiceParams.ContractStartBlock,
+		)
+		if err != nil {
+			return "", fmt.Errorf("Could not get archival block number: %v", err)
+		}
+		return blockNumber, nil
+	}
+}
+
+// setTestBlockNumber gets an archival block number for testing or fails the test.
+// Selected by picking a random block number between the current block and the contract start block.
+func setTestBlockNumber(
+	gatewayURL string,
+	headers http.Header,
+	contractStartBlock uint64,
+) (string, error) {
+	// Get current block height - fail test if this doesn't work
+	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
+	if err != nil {
+		return "", fmt.Errorf("Could not get current block height: %v", err)
+	}
+
+	// Get random historical block number
+	return calculateArchivalBlockNumber(currentBlock, contractStartBlock), nil
+}
+
+// getCurrentBlockNumber gets current block height with consensus from multiple requests.
+func getCurrentBlockNumber(gatewayURL string, headers http.Header) (uint64, error) {
+	// Track frequency of each block height seen
+	blockHeights := make(map[uint64]int)
+	maxAttempts := 10
+	requiredAgreement := 3
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	// Make multiple attempts to get consensus
+	for range maxAttempts {
+		blockNum, err := fetchBlockNumber(client, gatewayURL, headers)
+		if err != nil {
+			continue
+		}
+
+		// Update consensus tracking
+		blockHeights[blockNum]++
+		if blockHeights[blockNum] >= requiredAgreement {
+			return blockNum, nil
+		}
+	}
+
+	// If we get here, we didn't reach consensus
+	return 0, fmt.Errorf("failed to reach consensus on block height after %d attempts", maxAttempts)
+}
+
+// fetchBlockNumber makes a single request to get the current block number.
+func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
+	// Build and send request
+	req, err := buildBlockNumberRequest(gatewayURL, headers)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("bad status code: %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var jsonRPC jsonrpc.Response
+	if err := json.NewDecoder(resp.Body).Decode(&jsonRPC); err != nil {
+		return 0, err
+	}
+
+	// Process hex string result
+	hexString, ok := jsonRPC.Result.(string)
+	if !ok {
+		return 0, fmt.Errorf("expected string result, got %T", jsonRPC.Result)
+	}
+
+	// Parse hex (remove "0x" prefix if present)
+	hexStr := strings.TrimPrefix(hexString, "0x")
+	blockNum, err := strconv.ParseUint(hexStr, 16, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return blockNum, nil
+}
+
+// buildBlockNumberRequest creates a JSON-RPC request for the current block number.
+func buildBlockNumberRequest(gatewayURL string, headers http.Header) (*http.Request, error) {
+	blockNumberReq := jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(1),
+		Method:  jsonrpc.Method(eth_blockNumber),
+	}
+
+	blockNumberReqBytes, err := json.Marshal(blockNumberReq)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, gatewayURL, bytes.NewReader(blockNumberReqBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header = headers.Clone()
+
+	return req, nil
+}
+
+// calculateArchivalBlockNumber picks a random historical block number for archival tests.
+func calculateArchivalBlockNumber(currentBlock, contractStartBlock uint64) string {
+	var blockNumHex string
+
+	// Case 1: Block number is below or equal to the archival threshold
+	if currentBlock <= evm.DefaultEVMArchivalThreshold {
+		blockNumHex = blockNumberToHex(1)
+	} else {
+		// Case 2: Block number is above the archival threshold
+		maxBlockNumber := currentBlock - evm.DefaultEVMArchivalThreshold
+
+		// Ensure we don't go below the minimum archival block
+		if maxBlockNumber < contractStartBlock {
+			blockNumHex = blockNumberToHex(contractStartBlock)
+		} else {
+			// Generate a random block number within valid range
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			rangeSize := maxBlockNumber - contractStartBlock + 1
+			blockNumHex = blockNumberToHex(contractStartBlock + (r.Uint64() % rangeSize))
+		}
+	}
+
+	return blockNumHex
+}
+
+// blockNumberToHex converts a block number to a hex string.
+func blockNumberToHex(blockNumber uint64) string {
+	return fmt.Sprintf("0x%x", blockNumber)
+}
+
+// getGatewayURLForTestMode returns the gateway URL based on the current test mode.
+// It also performs any necessary setup for E2E mode (e.g., Docker container startup) and calls waitForHydratorIfNeeded.
+//
+// Note: If E2E mode, the caller is responsible for deferring the returned teardown function, if not nil.
+func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, teardownFn func()) {
+	switch cfg.getTestMode() {
+
+	case testModeE2E:
+		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
+		var port string
+		port, teardownFn = setupPathInstance(t, configFilePath, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
+		gatewayURL = fmt.Sprintf("http://localhost:%s/v1", port)
+		waitForHydratorIfNeeded()
+		return gatewayURL, teardownFn
+
+	case testModeLoad:
+		gatewayURL = cfg.getGatewayURLForLoadTest()
+		return gatewayURL, nil
+
+	default:
+		t.Fatalf("Invalid test mode: %s", cfg.getTestMode())
+		return "", nil
+	}
+}

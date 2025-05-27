@@ -7,6 +7,7 @@ services:
   # Arbitrum One (Archival)
   - name: "Morse - F001 (Arbitrum One) Test"
     service_id: "F001"
+    service_type: "evm"
     archival: true
     service_params:
       # https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
@@ -18,6 +19,7 @@ services:
   # Arbitrum Sepolia Testnet (Archival)
   - name: "Morse - F002 (Arbitrum Sepolia Testnet) Test"
     service_id: "F002"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
@@ -29,6 +31,7 @@ services:
   # Avalanche (Archival)
   - name: "Morse - F003 (Avalanche) Test"
     service_id: "F003"
+    service_type: "evm"
     archival: true
     service_params:
       # https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
@@ -40,6 +43,7 @@ services:
   # Avalanche-DFK (Archival)
   - name: "Morse - F004 (Avalanche-DFK) Test"
     service_id: "F004"
+    service_type: "evm"
     archival: true
     service_params:
       # https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
@@ -51,6 +55,7 @@ services:
   # Base (Archival)
   - name: "Morse - F005 (Base) Test"
     service_id: "F005"
+    service_type: "evm"
     archival: true
     service_params:
       # https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
@@ -62,6 +67,7 @@ services:
   # Base Sepolia Testnet (Archival)
   - name: "Morse - F006 (Base Sepolia Testnet) Test"
     service_id: "F006"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
@@ -73,6 +79,7 @@ services:
   # Berachain (Archival)
   - name: "Morse - F035 (Berachain) Test"
     service_id: "F035"
+    service_type: "evm"
     archival: true
     service_params:
       # https://berascan.com/address/0x6969696969696969696969696969696969696969
@@ -84,6 +91,7 @@ services:
   # Blast (Archival)
   - name: "Morse - F008 (Blast) Test"
     service_id: "F008"
+    service_type: "evm"
     archival: true
     service_params:
       # https://blastscan.io/address/0x4300000000000000000000000000000000000004
@@ -95,6 +103,7 @@ services:
   # BNB Smart Chain (Archival)
   - name: "Morse - F009 (BNB Smart Chain) Test"
     service_id: "F009"
+    service_type: "evm"
     archival: true
     service_params:
       # https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
@@ -106,6 +115,7 @@ services:
   # Boba (Archival)
   - name: "Morse - F00A (Boba) Test"
     service_id: "F00A"
+    service_type: "evm"
     archival: true
     service_params:
       # https://bobascan.com/address/0x3A92cA39476fF84Dc579C868D4D7dE125513B034
@@ -117,6 +127,7 @@ services:
   # Celo (Archival)
   - name: "Morse - F00B (Celo) Test"
     service_id: "F00B"
+    service_type: "evm"
     archival: true
     service_params:
       # https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -128,6 +139,7 @@ services:
   # Ethereum Mainnet (Archival)
   - name: "Morse - F00C (Ethereum) Test"
     service_id: "F00C"
+    service_type: "evm"
     archival: true
     service_params:
       # https://etherscan.io/address/0x28C6c06298d514Db089934071355E5743bf21d60
@@ -139,6 +151,7 @@ services:
   # Ethereum Holesky Testnet (Archival)
   - name: "Morse - F00D (Ethereum Holesky Testnet) Test"
     service_id: "F00D"
+    service_type: "evm"
     archival: true
     service_params:
       # https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
@@ -150,6 +163,7 @@ services:
   # Ethereum Sepolia Testnet (Archival)
   - name: "Morse - F00E (Ethereum Sepolia Testnet) Test"
     service_id: "F00E"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
@@ -161,6 +175,7 @@ services:
   # Fuse (Archival)
   - name: "Morse - F012 (Fuse) Test"
     service_id: "F012"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
@@ -172,6 +187,7 @@ services:
   # Gnosis (Archival)
   - name: "Morse - F013 (Gnosis) Test"
     service_id: "F013"
+    service_type: "evm"
     archival: true
     service_params:
       # https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
@@ -183,6 +199,7 @@ services:
   # Harmony-0 (Archival)
   - name: "Morse - F014 (Harmony-0) Test"
     service_id: "F014"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
@@ -194,6 +211,7 @@ services:
   # Ink (Archival)
   - name: "Morse - F032 (Ink) Test"
     service_id: "F032"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
@@ -205,6 +223,7 @@ services:
   # IoTeX (Archival)
   - name: "Morse - F015 (IoTeX) Test"
     service_id: "F015"
+    service_type: "evm"
     archival: true
     service_params:
       # https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
@@ -216,6 +235,7 @@ services:
   # Kaia (Archival)
   - name: "Morse - F016 (Kaia) Test"
     service_id: "F016"
+    service_type: "evm"
     archival: true
     service_params:
       # https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
@@ -227,6 +247,7 @@ services:
   # Linea (Archival)
   - name: "Morse - F030 (Linea) Test"
     service_id: "F030"
+    service_type: "evm"
     archival: true
     service_params:
       # https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -238,6 +259,7 @@ services:
   # Mantle (Archival)
   - name: "Morse - F033 (Mantle) Test"
     service_id: "F033"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
@@ -249,6 +271,7 @@ services:
   # Metis (Archival)
   - name: "Morse - F018 (Metis) Test"
     service_id: "F018"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
@@ -260,6 +283,7 @@ services:
   # Moonbeam (Archival)
   - name: "Morse - F019 (Moonbeam) Test"
     service_id: "F019"
+    service_type: "evm"
     archival: true
     service_params:
       # https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -271,6 +295,7 @@ services:
   # Oasys Mainnet (Archival)
   - name: "Morse - F01C (Oasys) Test"
     service_id: "F01C"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -282,6 +307,7 @@ services:
   # Optimism (Archival)
   - name: "Morse - F01D (Optimism) Test"
     service_id: "F01D"
+    service_type: "evm"
     archival: true
     service_params:
       # https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
@@ -293,6 +319,7 @@ services:
   # Optimism Sepolia Testnet (Archival)
   - name: "Morse - F01E (Optimism Sepolia Testnet) Test"
     service_id: "F01E"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
@@ -304,6 +331,7 @@ services:
   # opBNB (Archival)
   - name: "Morse - F01F (opBNB) Test"
     service_id: "F01F"
+    service_type: "evm"
     archival: true
     service_params:
       # https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
@@ -315,6 +343,7 @@ services:
   # Polygon Mainnet (Archival)
   - name: "Morse - F021 (Polygon) Test"
     service_id: "F021"
+    service_type: "evm"
     archival: true
     service_params:
       # https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -326,6 +355,7 @@ services:
   # Polygon Amoy Testnet (Archival)
   - name: "Morse - F022 (Polygon Amoy Testnet) Test"
     service_id: "F022"
+    service_type: "evm"
     archival: true
     service_params:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
@@ -337,6 +367,7 @@ services:
   # Polygon zkEVM (Archival)
   - name: "Morse - F029 (Polygon zkEVM) Test"
     service_id: "F029"
+    service_type: "evm"
     archival: true
     service_params:
       # https://zkevm.polygonscan.com/address/0xee1727f5074E747716637e1776B7F7C7133f16b1
@@ -348,6 +379,7 @@ services:
   # Scroll (Archival)
   - name: "Morse - F024 (Scroll) Test"
     service_id: "F024"
+    service_type: "evm"
     archival: true
     service_params:
       # https://scrollscan.com/address/0x5300000000000000000000000000000000000004
@@ -359,6 +391,7 @@ services:
   # Sonic (Archival)
   - name: "Morse - F02D (Sonic) Test"
     service_id: "F02D"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
@@ -370,6 +403,7 @@ services:
   # Taiko (Archival)
   - name: "Morse - F027 (Taiko) Test"
     service_id: "F027"
+    service_type: "evm"
     archival: true
     service_params:
       # https://taikoscan.io/address/0x1670000000000000000000000000000000000001
@@ -381,6 +415,7 @@ services:
   # Taiko Hekla Testnet (Archival)
   - name: "Morse - F028 (Taiko Hekla Testnet) Test"
     service_id: "F028"
+    service_type: "evm"
     archival: true
     service_params:
       # https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
@@ -392,6 +427,7 @@ services:
   # XRPL EVM Testnet (Archival)
   - name: "Morse - F036 (XRPL EVM Testnet) Test"
     service_id: "F036"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -403,6 +439,7 @@ services:
   # zkLink (Archival)
   - name: "Morse - F02A (zkLink) Test"
     service_id: "F02A"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
@@ -414,6 +451,7 @@ services:
   # zkSync (Archival)
   - name: "Morse - F02B (zkSync) Test"
     service_id: "F02B"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -428,47 +466,59 @@ services:
   # Berachain Testnet
   - name: "Morse - F031 (Berachain Testnet) Test"
     service_id: "F031"
+    service_type: "evm"
 
   # Evmos
   - name: "Morse - F00F (Evmos) Test"
     service_id: "F00F"
+    service_type: "evm"
 
   # Fantom
   - name: "Morse - F010 (Fantom) Test"
     service_id: "F010"
+    service_type: "evm"
 
   # Fraxtal
   - name: "Morse - F011 (Fraxtal) Test"
     service_id: "F011"
+    service_type: "evm"
 
   # Kava
   - name: "Morse - F017 (Kava) Test"
     service_id: "F017"
+    service_type: "evm"
 
   # Moonriver
   - name: "Morse - F01A (Moonriver) Test"
     service_id: "F01A"
+    service_type: "evm"
 
   # Near
   - name: "Morse - F01B (Near) Test"
     service_id: "F01B"
+    service_type: "evm"
 
   # Radix
   - name: "Morse - F023 (Radix) Test"
     service_id: "F023"
+    service_type: "evm"
 
   # Sei
   - name: "Morse - F034 (Sei) Test"
     service_id: "F034"
+    service_type: "evm"
 
   # Sui
   - name: "Morse - F026 (Sui) Test"
     service_id: "F026"
+    service_type: "evm"
 
   # TRON
   - name: "Morse - F02E (TRON) Test"
     service_id: "F02E"
+    service_type: "evm"
 
   # XRPL EVM Devnet
   - name: "Morse - F02C (XRPL EVM Devnet) Test"
     service_id: "F02C"
+    service_type: "evm"

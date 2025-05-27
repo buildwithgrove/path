@@ -10,12 +10,14 @@
 ####################################################
 services:
   # Shannon - Anvil local Ethereum node (Ephemeral)
-  - name: "Shannon - Anvil (local Ethereum) Test"
+  - name: "Shannon - anvil (local Ethereum) Test"
     service_id: "anvil"
+    service_type: "evm"
 
   # Shannon - Arbitrum One (Archival)
-  - name: "Shannon - F001 (Arbitrum One) Test"
+  - name: "Shannon - arb_one (Arbitrum One) Test"
     service_id: "arb_one"
+    service_type: "evm"
     archival: true
     service_params:
       # https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
@@ -25,8 +27,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Arbitrum Sepolia Testnet (Archival)
-  - name: "Shannon - F002 (Arbitrum Sepolia Testnet) Test"
+  - name: "Shannon - arb_sep_test (Arbitrum Sepolia Testnet) Test"
     service_id: "arb_sep_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
@@ -36,8 +39,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Avalanche (Archival)
-  - name: "Shannon - F003 (Avalanche) Test"
+  - name: "Shannon - avax (Avalanche) Test"
     service_id: "avax"
+    service_type: "evm"
     archival: true
     service_params:
       # https://avascan.info/blockchain/c/address/0x9f8c163cBA728e99993ABe7495F06c0A3c8Ac8b9
@@ -47,8 +51,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Avalanche-DFK (Archival)
-  - name: "Shannon - F004 (Avalanche-DFK) Test"
+  - name: "Shannon - avax (Avalanche-DFK) Test"
     service_id: "avax-dfk"
+    service_type: "evm"
     archival: true
     service_params:
       # https://avascan.info/blockchain/dfk/address/0xCCb93dABD71c8Dad03Fc4CE5559dC3D89F67a260
@@ -58,8 +63,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Base (Archival)
-  - name: "Shannon - F005 (Base) Test"
+  - name: "Shannon - base (Base) Test"
     service_id: "base"
+    service_type: "evm"
     archival: true
     service_params:
       # https://basescan.org/address/0x3304e22ddaa22bcdc5fca2269b418046ae7b566a
@@ -69,8 +75,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Base Sepolia Testnet (Archival)
-  - name: "Shannon - F006 (Base Sepolia Testnet) Test"
+  - name: "Shannon - base (Base Sepolia Testnet) Test"
     service_id: "base-test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
@@ -80,8 +87,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Berachain (Archival)
-  - name: "Shannon - F035 (Berachain) Test"
+  - name: "Shannon - bera (Berachain) Test"
     service_id: "bera"
+    service_type: "evm"
     archival: true
     service_params:
       # https://berascan.com/address/0x6969696969696969696969696969696969696969
@@ -91,8 +99,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Blast (Archival)
-  - name: "Shannon - F008 (Blast) Test"
+  - name: "Shannon - blast (Blast) Test"
     service_id: "blast"
+    service_type: "evm"
     archival: true
     service_params:
       # https://blastscan.io/address/0x4300000000000000000000000000000000000004
@@ -102,8 +111,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - BNB Smart Chain (Archival)
-  - name: "Shannon - F009 (BNB Smart Chain) Test"
+  - name: "Shannon - bsc (BNB Smart Chain) Test"
     service_id: "bsc"
+    service_type: "evm"
     archival: true
     service_params:
       # https://bsctrace.com/address/0xfb50526f49894b78541b776f5aaefe43e3bd8590
@@ -113,8 +123,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Boba (Archival)
-  - name: "Shannon - F00A (Boba) Test"
+  - name: "Shannon - boba (Boba) Test"
     service_id: "boba"
+    service_type: "evm"
     archival: true
     service_params:
       # https://bobascan.com/address/0x3A92cA39476fF84Dc579C868D4D7dE125513B034
@@ -124,8 +135,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Celo (Archival)
-  - name: "Shannon - F00B (Celo) Test"
+  - name: "Shannon - celo (Celo) Test"
     service_id: "celo"
+    service_type: "evm"
     archival: true
     service_params:
       # https://celo.blockscout.com/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -135,8 +147,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Ethereum Mainnet (Archival)
-  - name: "Shannon - Ethereum Test"
+  - name: "Shannon - eth Test"
     service_id: "eth"
+    service_type: "evm"
     archival: true 
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
@@ -145,8 +158,9 @@ services:
       call_data: "0x18160ddd" 
 
   # Shannon - Ethereum Holesky Testnet (Archival)
-  - name: "Shannon - F00D (Ethereum Holesky Testnet) Test"
+  - name: "Shannon - eth_hol_test (Ethereum Holesky Testnet) Test"
     service_id: "eth_hol_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
@@ -156,8 +170,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Ethereum Sepolia Testnet (Archival)
-  - name: "Shannon - F00E (Ethereum Sepolia Testnet) Test"
+  - name: "Shannon - eth_sep_test (Ethereum Sepolia Testnet) Test"
     service_id: "eth_sep_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
@@ -167,8 +182,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Fuse (Archival)
-  - name: "Shannon - F012 (Fuse) Test"
+  - name: "Shannon - fuse (Fuse) Test"
     service_id: "fuse"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
@@ -178,8 +194,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Gnosis (Archival)
-  - name: "Shannon - F013 (Gnosis) Test"
+  - name: "Shannon - gnosis (Gnosis) Test"
     service_id: "gnosis"
+    service_type: "evm"
     archival: true
     service_params:
       # https://gnosisscan.io/address/0xe91d153e0b41518a2ce8dd3d7944fa863463a97d
@@ -189,8 +206,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Harmony-0 (Archival)
-  - name: "Shannon - F014 (Harmony-0) Test"
+  - name: "Shannon - harmony (Harmony-0) Test"
     service_id: "harmony"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.harmony.one/address/one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a?shard=0
@@ -200,8 +218,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Ink (Archival)
-  - name: "Shannon - F032 (Ink) Test"
+  - name: "Shannon - ink (Ink) Test"
     service_id: "ink"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.inkonchain.com/address/0x4200000000000000000000000000000000000006
@@ -211,8 +230,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - IoTeX (Archival)
-  - name: "Shannon - F015 (IoTeX) Test"
+  - name: "Shannon - iotex (IoTeX) Test"
     service_id: "iotex"
+    service_type: "evm"
     archival: true
     service_params:
       # https://iotexscan.io/address/0x0a7f9ea31ca689f346e1661cf73a47c69d4bd883#transactions
@@ -222,8 +242,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Kaia (Archival)
-  - name: "Shannon - F016 (Kaia) Test"
+  - name: "Shannon - kaia (Kaia) Test"
     service_id: "kaia"
+    service_type: "evm"
     archival: true
     service_params:
       # https://www.kaiascan.io/address/0x0051ef9259c7ec0644a80e866ab748a2f30841b3
@@ -233,8 +254,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Linea (Archival)
-  - name: "Shannon - F030 (Linea) Test"
+  - name: "Shannon - linea (Linea) Test"
     service_id: "linea"
+    service_type: "evm"
     archival: true
     service_params:
       # https://lineascan.build/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -244,8 +266,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Mantle (Archival)
-  - name: "Shannon - F033 (Mantle) Test"
+  - name: "Shannon - mantle (Mantle) Test"
     service_id: "mantle"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.mantle.xyz/address/0x588846213A30fd36244e0ae0eBB2374516dA836C
@@ -255,8 +278,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Metis (Archival)
-  - name: "Shannon - F018 (Metis) Test"
+  - name: "Shannon - metis (Metis) Test"
     service_id: "metis"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.metis.io/address/0xfad31cd4d45Ac7C4B5aC6A0044AA05Ca7C017e62
@@ -266,8 +290,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Moonbeam (Archival)
-  - name: "Shannon - F019 (Moonbeam) Test"
+  - name: "Shannon - moonbeam (Moonbeam) Test"
     service_id: "moonbeam"
+    service_type: "evm"
     archival: true
     service_params:
       # https://moonscan.io/address/0xf89d7b9c864f589bbf53a82105107622b35eaa40
@@ -277,8 +302,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Oasys Mainnet (Archival)
-  - name: "Shannon - F01C (Oasys) Test"
+  - name: "Shannon - oasys (Oasys) Test"
     service_id: "oasys"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.oasys.games/address/0xf89d7b9c864f589bbF53a82105107622B35EaA40
@@ -288,8 +314,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Optimism (Archival)
-  - name: "Shannon - F01D (Optimism) Test"
+  - name: "Shannon - optimism (Optimism) Test"
     service_id: "optimism"
+    service_type: "evm"
     archival: true
     service_params:
       # https://optimistic.etherscan.io/address/0xacd03d601e5bb1b275bb94076ff46ed9d753435a
@@ -299,8 +326,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Optimism Sepolia Testnet (Archival)
-  - name: "Shannon - F01E (Optimism Sepolia Testnet) Test"
+  - name: "Shannon - optimism_sep_test (Optimism Sepolia Testnet) Test"
     service_id: "optimism_sep_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
@@ -310,8 +338,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - opBNB (Archival)
-  - name: "Shannon - F01F (opBNB) Test"
+  - name: "Shannon - opbnb (opBNB) Test"
     service_id: "opbnb"
+    service_type: "evm"
     archival: true
     service_params:
       # https://opbnbscan.com/address/0x001ceb373c83ae75b9f5cf78fc2aba3e185d09e2
@@ -321,8 +350,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Polygon Mainnet (Archival)
-  - name: "Shannon - F021 (Polygon) Test"
+  - name: "Shannon - polygon (Polygon) Test"
     service_id: "polygon"
+    service_type: "evm"
     archival: true
     service_params:
       # https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -332,8 +362,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Polygon Amoy Testnet (Archival)
-  - name: "Shannon - F022 (Polygon Amoy Testnet) Test"
+  - name: "Shannon - polygon_amoy_test (Polygon Amoy Testnet) Test"
     service_id: "polygon_amoy_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
@@ -343,8 +374,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Polygon zkEVM (Archival)
-  - name: "Shannon - F029 (Polygon zkEVM) Test"
+  - name: "Shannon - polygon_zkevm (Polygon zkEVM) Test"
     service_id: "polygon_zkevm"
+    service_type: "evm"
     archival: true
     service_params:
       # https://zkevm.polygonscan.com/address/0xee1727f5074E747716637e1776B7F7C7133f16b1
@@ -354,8 +386,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Scroll (Archival)
-  - name: "Shannon - F024 (Scroll) Test"
+  - name: "Shannon - scroll (Scroll) Test"
     service_id: "scroll"
+    service_type: "evm"
     archival: true
     service_params:
       # https://scrollscan.com/address/0x5300000000000000000000000000000000000004
@@ -365,8 +398,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Sonic (Archival)
-  - name: "Shannon - F02D (Sonic) Test"
+  - name: "Shannon - sonic (Sonic) Test"
     service_id: "sonic"
+    service_type: "evm"
     archival: true
     service_params:
       # https://sonicscan.org/address/0xfc00face00000000000000000000000000000000
@@ -376,8 +410,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Taiko (Archival)
-  - name: "Shannon - F027 (Taiko) Test"
+  - name: "Shannon - taiko (Taiko) Test"
     service_id: "taiko"
+    service_type: "evm"
     archival: true
     service_params:
       # https://taikoscan.io/address/0x1670000000000000000000000000000000000001
@@ -387,8 +422,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Taiko Hekla Testnet (Archival)
-  - name: "Shannon - F028 (Taiko Hekla Testnet) Test"
+  - name: "Shannon - taiko_hekla_test (Taiko Hekla Testnet) Test"
     service_id: "taiko_hekla_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
@@ -398,8 +434,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - XRPL EVM Testnet (Archival)
-  - name: "Shannon - F036 (XRPL EVM Testnet) Test"
+  - name: "Shannon - xrpl_evm_test (XRPL EVM Testnet) Test"
     service_id: "xrpl_evm_test"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -409,8 +446,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - zkLink (Archival)
-  - name: "Shannon - F02A (zkLink) Test"
+  - name: "Shannon - zklink (zkLink) Test"
     service_id: "zklink"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
@@ -420,8 +458,9 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - zkSync (Archival)
-  - name: "Shannon - F02B (zkSync) Test"
+  - name: "Shannon - zksync (zkSync) Test"
     service_id: "zksync"
+    service_type: "evm"
     archival: true
     service_params:
       # https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -434,49 +473,62 @@ services:
   # for archival once configuration is updated in `service_qos_config.go`
 
   # Shannon - Berachain Testnet
-  - name: "Shannon - F031 (Berachain Testnet) Test"
+  - name: "Shannon - bera_test (Berachain Testnet) Test"
     service_id: "bera_test"
+    service_type: "evm"
+    
 
   # Shannon - Evmos
-  - name: "Shannon - F00F (Evmos) Test"
+  - name: "Shannon - evmos (Evmos) Test"
     service_id: "evmos"
+    service_type: "evm"
 
   # Shannon - Fantom
-  - name: "Shannon - F010 (Fantom) Test"
+  - name: "Shannon - fantom (Fantom) Test"
     service_id: "fantom"
+    service_type: "evm"
 
   # Shannon - Fraxtal
-  - name: "Shannon - F011 (Fraxtal) Test"
+  - name: "Shannon - fraxtal (Fraxtal) Test"
     service_id: "fraxtal"
+    service_type: "evm"
 
   # Shannon - Kava
-  - name: "Shannon - F017 (Kava) Test"
+  - name: "Shannon - kava (Kava) Test"
     service_id: "kava"
+    service_type: "evm"
 
   # Shannon - Moonriver
-  - name: "Shannon - F01A (Moonriver) Test"
+  - name: "Shannon - moonriver (Moonriver) Test"
     service_id: "moonriver"
+    service_type: "evm"
 
   # Shannon - Near
-  - name: "Shannon - F01B (Near) Test"
+  - name: "Shannon - near (Near) Test"
     service_id: "near"
+    service_type: "evm"
 
   # Shannon - Radix
-  - name: "Shannon - F023 (Radix) Test"
+  - name: "Shannon - radix (Radix) Test"
     service_id: "radix"
+    service_type: "evm"
 
   # Shannon - Sei
-  - name: "Shannon - F034 (Sei) Test"
+  - name: "Shannon - sei (Sei) Test"
     service_id: "sei"
+    service_type: "evm"
 
   # Shannon - Sui
-  - name: "Shannon - F026 (Sui) Test"
+  - name: "Shannon - sui (Sui) Test"
     service_id: "sui"
+    service_type: "evm"
 
   # Shannon - TRON
-  - name: "Shannon - F02E (TRON) Test"
+  - name: "Shannon - tron (TRON) Test"
     service_id: "tron"
+    service_type: "evm"
 
   # Shannon - XRPL EVM Devnet
-  - name: "Shannon - F02C (XRPL EVM Devnet) Test"
+  - name: "Shannon - xrpl_evm_dev (XRPL EVM Devnet) Test"
     service_id: "xrpl_evm_dev"
+    service_type: "evm"

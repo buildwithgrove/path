@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
 	"slices"
 	"sort"
 	"strings"
@@ -39,25 +38,111 @@ const (
 
 // ===== Vegeta Helper Functions =====
 
-// createRPCTarget
-// • Returns a vegeta.Targeter for the specified RPC method
-func createRPCTarget(
-	gatewayURL string,
-	jsonrpcReq jsonrpc.Request,
-	headers http.Header,
-) vegeta.Targeter {
-	return func(tgt *vegeta.Target) error {
-		body, err := json.Marshal(jsonrpcReq)
-		if err != nil {
-			return err
+// runServiceTest runs the E2E test for a single EVM service in a test case.
+func runServiceTest(
+	t *testing.T,
+	ctx context.Context,
+	targets []vegeta.Target,
+	serviceConfig ServiceConfig,
+	methodCount int,
+	summary *serviceSummary,
+) (serviceTestFailed bool) {
+	results := make(map[jsonrpc.Method]*methodMetrics)
+	var resultsMutex sync.Mutex
+
+	// Get methods to test from the summary
+	methods := summary.methodsToTest
+
+	// Create a map for progress bars and summary calculation (with the same config for all methods)
+	methodConfigMap := make(map[jsonrpc.Method]ServiceConfig)
+	// Create a map to associate methods with their targets
+	methodTargets := make(map[jsonrpc.Method]vegeta.Target)
+
+	for i, method := range methods {
+		methodConfigMap[method] = serviceConfig
+		if i < len(targets) {
+			methodTargets[method] = targets[i]
 		}
-		// Set up the HTTP POST target
-		tgt.Method = http.MethodPost
-		tgt.URL = gatewayURL
-		tgt.Body = body
-		tgt.Header = headers
-		return nil
 	}
+
+	progBars, err := newProgressBars(methods, methodConfigMap)
+	if err != nil {
+		t.Fatalf("Failed to create progress bars: %v", err)
+	}
+	defer func() {
+		if err := progBars.finish(); err != nil {
+			fmt.Printf("Error stopping progress bars: %v", err)
+		}
+	}()
+
+	var methodWg sync.WaitGroup
+	for _, method := range methods {
+		methodWg.Add(1)
+
+		target, exists := methodTargets[method]
+		if !exists {
+			fmt.Printf("Warning: No target found for method %s, skipping...\n", method)
+			methodWg.Done()
+			continue
+		}
+
+		go func(ctx context.Context, method jsonrpc.Method, config ServiceConfig, target vegeta.Target) {
+			defer methodWg.Done()
+
+			metrics := runMethodAttack(
+				ctx,
+				method,
+				config,
+				methodCount,
+				target,
+				progBars.get(method),
+			)
+
+			resultsMutex.Lock()
+			results[method] = metrics
+			resultsMutex.Unlock()
+
+		}(ctx, method, serviceConfig, target)
+	}
+	methodWg.Wait()
+
+	if err := progBars.finish(); err != nil {
+		fmt.Printf("Error stopping progress bars: %v", err)
+	}
+
+	// We use the same methodConfigMap we created earlier for the summary calculation
+
+	calculateServiceSummary(t, methodConfigMap, results, summary, &serviceTestFailed)
+	return serviceTestFailed
+}
+
+// runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
+func runMethodAttack(
+	ctx context.Context,
+	method jsonrpc.Method,
+	methodConfig ServiceConfig,
+	methodCount int,
+	target vegeta.Target,
+	progBar *pb.ProgressBar,
+) *methodMetrics {
+	select {
+	case <-ctx.Done():
+		fmt.Printf("Method %s cancelled", method)
+		return nil
+	default:
+	}
+
+	// We don't need to extract or modify the target anymore, just pass it through
+	metrics := runAttack(
+		ctx,
+		target,
+		string(method), // Pass method name as string for metrics
+		methodConfig,
+		methodCount,
+		progBar,
+	)
+
+	return metrics
 }
 
 // runAttack
@@ -67,19 +152,23 @@ func createRPCTarget(
 // • See: https://github.com/tsenart/vegeta
 func runAttack(
 	ctx context.Context,
-	gatewayURL string,
-	method jsonrpc.Method,
+	target vegeta.Target,
+	methodName string, // Method name used for metrics and reporting
 	serviceConfig ServiceConfig,
 	methodCount int,
 	progressBar *pb.ProgressBar,
-	jsonrpcReq jsonrpc.Request,
-	headers http.Header,
 ) *methodMetrics {
 	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
 	attackRPS := max((serviceConfig.GlobalRPS+methodCount-1)/methodCount, 1)
 
-	metrics := initMethodMetrics(method, serviceConfig.RequestsPerMethod)
-	target := createRPCTarget(gatewayURL, jsonrpcReq, headers)
+	metrics := initMethodMetrics(jsonrpc.Method(methodName), serviceConfig.RequestsPerMethod)
+
+	// Use the target directly, no need to recreate it
+	targeter := func(tgt *vegeta.Target) error {
+		*tgt = target
+		return nil
+	}
+
 	maxDuration := time.Duration(2*serviceConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
 
 	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
@@ -89,25 +178,28 @@ func runAttack(
 
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d GlobalRPS)...\n",
-			method, serviceConfig.RequestsPerMethod, attackRPS,
+			methodName, serviceConfig.RequestsPerMethod, attackRPS,
 		)
 	}
 
 	resultsChan := make(chan *vegeta.Result, serviceConfig.RequestsPerMethod)
 	var resultsWg sync.WaitGroup
 	processedCount := 0
-	startResultsCollector(&resultsWg, resultsChan, metrics, method, serviceConfig, progressBar, &processedCount)
+	startResultsCollector(
+		&resultsWg,
+		resultsChan,
+		metrics, jsonrpc.Method(methodName), serviceConfig, progressBar, &processedCount)
 
 	requestSlots := serviceConfig.RequestsPerMethod
-	targeter := makeTargeter(&requestSlots, target)
+	targeterWithLimit := makeTargeter(&requestSlots, targeter)
 	attackCh := attacker.Attack(
-		targeter,
+		targeterWithLimit,
 		vegeta.Rate{
 			Freq: attackRPS,
 			Per:  time.Second,
 		},
 		maxDuration,
-		string(method),
+		methodName,
 	)
 	runVegetaAttackLoop(ctx, attackCh, resultsChan)
 

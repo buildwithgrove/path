@@ -41,6 +41,7 @@ definitions:
     required:
       - name
       - service_id
+      - service_type
     properties:
       name:
         description: "Name of the service"
@@ -50,6 +51,11 @@ definitions:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
         examples: ["F00C", "anvil", "eth", "arb_one"]
+      service_type:
+        description: "Type of service to test (evm, cometbft, solana)"
+        type: string
+        enum: ["evm", "cometbft", "solana"]
+        examples: ["evm", "cometbft", "solana"]
       archival:
         description: "Whether this is an archival test (historical data access)"
         type: boolean
