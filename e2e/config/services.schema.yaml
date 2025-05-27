@@ -40,20 +40,12 @@ definitions:
     additionalProperties: false
     required:
       - name
-      - protocol
       - service_id
     properties:
       name:
         description: "Name of the service"
         type: string
         examples: ["Morse - F00C (Ethereum) Test", "Shannon - Ethereum Test"]
-      protocol:
-        description: "Protocol name (morse or shannon)"
-        type: string
-        enum:
-          - morse
-          - shannon
-        examples: ["morse", "shannon"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
@@ -66,7 +58,7 @@ definitions:
 
 properties:
   services:
-    description: "Array of services to run for the protocol"
+    description: "Array of services to run the tests against"
     type: array
     items:
       $ref: "#/definitions/service"

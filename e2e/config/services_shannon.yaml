@@ -11,12 +11,10 @@
 services:
   # Shannon - Anvil local Ethereum node (Ephemeral)
   - name: "Shannon - Anvil (local Ethereum) Test"
-    protocol: "shannon"
     service_id: "anvil"
 
   # Shannon - Arbitrum One (Archival)
   - name: "Shannon - F001 (Arbitrum One) Test"
-    protocol: "shannon"
     service_id: "arb_one"
     archival: true
     service_params:
@@ -28,7 +26,6 @@ services:
 
   # Shannon - Arbitrum Sepolia Testnet (Archival)
   - name: "Shannon - F002 (Arbitrum Sepolia Testnet) Test"
-    protocol: "shannon"
     service_id: "arb_sep_test"
     archival: true
     service_params:
@@ -40,7 +37,6 @@ services:
 
   # Shannon - Avalanche (Archival)
   - name: "Shannon - F003 (Avalanche) Test"
-    protocol: "shannon"
     service_id: "avax"
     archival: true
     service_params:
@@ -52,7 +48,6 @@ services:
 
   # Shannon - Avalanche-DFK (Archival)
   - name: "Shannon - F004 (Avalanche-DFK) Test"
-    protocol: "shannon"
     service_id: "avax-dfk"
     archival: true
     service_params:
@@ -64,7 +59,6 @@ services:
 
   # Shannon - Base (Archival)
   - name: "Shannon - F005 (Base) Test"
-    protocol: "shannon"
     service_id: "base"
     archival: true
     service_params:
@@ -76,7 +70,6 @@ services:
 
   # Shannon - Base Sepolia Testnet (Archival)
   - name: "Shannon - F006 (Base Sepolia Testnet) Test"
-    protocol: "shannon"
     service_id: "base-test"
     archival: true
     service_params:
@@ -88,7 +81,6 @@ services:
 
   # Shannon - Berachain (Archival)
   - name: "Shannon - F035 (Berachain) Test"
-    protocol: "shannon"
     service_id: "bera"
     archival: true
     service_params:
@@ -100,7 +92,6 @@ services:
 
   # Shannon - Blast (Archival)
   - name: "Shannon - F008 (Blast) Test"
-    protocol: "shannon"
     service_id: "blast"
     archival: true
     service_params:
@@ -112,7 +103,6 @@ services:
 
   # Shannon - BNB Smart Chain (Archival)
   - name: "Shannon - F009 (BNB Smart Chain) Test"
-    protocol: "shannon"
     service_id: "bsc"
     archival: true
     service_params:
@@ -124,7 +114,6 @@ services:
 
   # Shannon - Boba (Archival)
   - name: "Shannon - F00A (Boba) Test"
-    protocol: "shannon"
     service_id: "boba"
     archival: true
     service_params:
@@ -136,7 +125,6 @@ services:
 
   # Shannon - Celo (Archival)
   - name: "Shannon - F00B (Celo) Test"
-    protocol: "shannon"
     service_id: "celo"
     archival: true
     service_params:
@@ -148,7 +136,6 @@ services:
 
   # Shannon - Ethereum Mainnet (Archival)
   - name: "Shannon - Ethereum Test"
-    protocol: "shannon"
     service_id: "eth"
     archival: true 
     service_params:
@@ -159,7 +146,6 @@ services:
 
   # Shannon - Ethereum Holesky Testnet (Archival)
   - name: "Shannon - F00D (Ethereum Holesky Testnet) Test"
-    protocol: "shannon"
     service_id: "eth_hol_test"
     archival: true
     service_params:
@@ -171,7 +157,6 @@ services:
 
   # Shannon - Ethereum Sepolia Testnet (Archival)
   - name: "Shannon - F00E (Ethereum Sepolia Testnet) Test"
-    protocol: "shannon"
     service_id: "eth_sep_test"
     archival: true
     service_params:
@@ -183,7 +168,6 @@ services:
 
   # Shannon - Fuse (Archival)
   - name: "Shannon - F012 (Fuse) Test"
-    protocol: "shannon"
     service_id: "fuse"
     archival: true
     service_params:
@@ -195,7 +179,6 @@ services:
 
   # Shannon - Gnosis (Archival)
   - name: "Shannon - F013 (Gnosis) Test"
-    protocol: "shannon"
     service_id: "gnosis"
     archival: true
     service_params:
@@ -207,7 +190,6 @@ services:
 
   # Shannon - Harmony-0 (Archival)
   - name: "Shannon - F014 (Harmony-0) Test"
-    protocol: "shannon"
     service_id: "harmony"
     archival: true
     service_params:
@@ -219,7 +201,6 @@ services:
 
   # Shannon - Ink (Archival)
   - name: "Shannon - F032 (Ink) Test"
-    protocol: "shannon"
     service_id: "ink"
     archival: true
     service_params:
@@ -231,7 +212,6 @@ services:
 
   # Shannon - IoTeX (Archival)
   - name: "Shannon - F015 (IoTeX) Test"
-    protocol: "shannon"
     service_id: "iotex"
     archival: true
     service_params:
@@ -243,7 +223,6 @@ services:
 
   # Shannon - Kaia (Archival)
   - name: "Shannon - F016 (Kaia) Test"
-    protocol: "shannon"
     service_id: "kaia"
     archival: true
     service_params:
@@ -255,7 +234,6 @@ services:
 
   # Shannon - Linea (Archival)
   - name: "Shannon - F030 (Linea) Test"
-    protocol: "shannon"
     service_id: "linea"
     archival: true
     service_params:
@@ -267,7 +245,6 @@ services:
 
   # Shannon - Mantle (Archival)
   - name: "Shannon - F033 (Mantle) Test"
-    protocol: "shannon"
     service_id: "mantle"
     archival: true
     service_params:
@@ -279,7 +256,6 @@ services:
 
   # Shannon - Metis (Archival)
   - name: "Shannon - F018 (Metis) Test"
-    protocol: "shannon"
     service_id: "metis"
     archival: true
     service_params:
@@ -291,7 +267,6 @@ services:
 
   # Shannon - Moonbeam (Archival)
   - name: "Shannon - F019 (Moonbeam) Test"
-    protocol: "shannon"
     service_id: "moonbeam"
     archival: true
     service_params:
@@ -303,7 +278,6 @@ services:
 
   # Shannon - Oasys Mainnet (Archival)
   - name: "Shannon - F01C (Oasys) Test"
-    protocol: "shannon"
     service_id: "oasys"
     archival: true
     service_params:
@@ -315,7 +289,6 @@ services:
 
   # Shannon - Optimism (Archival)
   - name: "Shannon - F01D (Optimism) Test"
-    protocol: "shannon"
     service_id: "optimism"
     archival: true
     service_params:
@@ -327,7 +300,6 @@ services:
 
   # Shannon - Optimism Sepolia Testnet (Archival)
   - name: "Shannon - F01E (Optimism Sepolia Testnet) Test"
-    protocol: "shannon"
     service_id: "optimism_sep_test"
     archival: true
     service_params:
@@ -339,7 +311,6 @@ services:
 
   # Shannon - opBNB (Archival)
   - name: "Shannon - F01F (opBNB) Test"
-    protocol: "shannon"
     service_id: "opbnb"
     archival: true
     service_params:
@@ -351,7 +322,6 @@ services:
 
   # Shannon - Polygon Mainnet (Archival)
   - name: "Shannon - F021 (Polygon) Test"
-    protocol: "shannon"
     service_id: "polygon"
     archival: true
     service_params:
@@ -363,7 +333,6 @@ services:
 
   # Shannon - Polygon Amoy Testnet (Archival)
   - name: "Shannon - F022 (Polygon Amoy Testnet) Test"
-    protocol: "shannon"
     service_id: "polygon_amoy_test"
     archival: true
     service_params:
@@ -375,7 +344,6 @@ services:
 
   # Shannon - Polygon zkEVM (Archival)
   - name: "Shannon - F029 (Polygon zkEVM) Test"
-    protocol: "shannon"
     service_id: "polygon_zkevm"
     archival: true
     service_params:
@@ -387,7 +355,6 @@ services:
 
   # Shannon - Scroll (Archival)
   - name: "Shannon - F024 (Scroll) Test"
-    protocol: "shannon"
     service_id: "scroll"
     archival: true
     service_params:
@@ -399,7 +366,6 @@ services:
 
   # Shannon - Sonic (Archival)
   - name: "Shannon - F02D (Sonic) Test"
-    protocol: "shannon"
     service_id: "sonic"
     archival: true
     service_params:
@@ -411,7 +377,6 @@ services:
 
   # Shannon - Taiko (Archival)
   - name: "Shannon - F027 (Taiko) Test"
-    protocol: "shannon"
     service_id: "taiko"
     archival: true
     service_params:
@@ -423,7 +388,6 @@ services:
 
   # Shannon - Taiko Hekla Testnet (Archival)
   - name: "Shannon - F028 (Taiko Hekla Testnet) Test"
-    protocol: "shannon"
     service_id: "taiko_hekla_test"
     archival: true
     service_params:
@@ -435,7 +399,6 @@ services:
 
   # Shannon - XRPL EVM Testnet (Archival)
   - name: "Shannon - F036 (XRPL EVM Testnet) Test"
-    protocol: "shannon"
     service_id: "xrpl_evm_test"
     archival: true
     service_params:
@@ -447,7 +410,6 @@ services:
 
   # Shannon - zkLink (Archival)
   - name: "Shannon - F02A (zkLink) Test"
-    protocol: "shannon"
     service_id: "zklink"
     archival: true
     service_params:
@@ -459,7 +421,6 @@ services:
 
   # Shannon - zkSync (Archival)
   - name: "Shannon - F02B (zkSync) Test"
-    protocol: "shannon"
     service_id: "zksync"
     archival: true
     service_params:
@@ -474,60 +435,48 @@ services:
 
   # Shannon - Berachain Testnet
   - name: "Shannon - F031 (Berachain Testnet) Test"
-    protocol: "shannon"
     service_id: "bera_test"
 
   # Shannon - Evmos
   - name: "Shannon - F00F (Evmos) Test"
-    protocol: "shannon"
     service_id: "evmos"
 
   # Shannon - Fantom
   - name: "Shannon - F010 (Fantom) Test"
-    protocol: "shannon"
     service_id: "fantom"
 
   # Shannon - Fraxtal
   - name: "Shannon - F011 (Fraxtal) Test"
-    protocol: "shannon"
     service_id: "fraxtal"
 
   # Shannon - Kava
   - name: "Shannon - F017 (Kava) Test"
-    protocol: "shannon"
     service_id: "kava"
 
   # Shannon - Moonriver
   - name: "Shannon - F01A (Moonriver) Test"
-    protocol: "shannon"
     service_id: "moonriver"
 
   # Shannon - Near
   - name: "Shannon - F01B (Near) Test"
-    protocol: "shannon"
     service_id: "near"
 
   # Shannon - Radix
   - name: "Shannon - F023 (Radix) Test"
-    protocol: "shannon"
     service_id: "radix"
 
   # Shannon - Sei
   - name: "Shannon - F034 (Sei) Test"
-    protocol: "shannon"
     service_id: "sei"
 
   # Shannon - Sui
   - name: "Shannon - F026 (Sui) Test"
-    protocol: "shannon"
     service_id: "sui"
 
   # Shannon - TRON
   - name: "Shannon - F02E (TRON) Test"
-    protocol: "shannon"
     service_id: "tron"
 
   # Shannon - XRPL EVM Devnet
   - name: "Shannon - F02C (XRPL EVM Devnet) Test"
-    protocol: "shannon"
     service_id: "xrpl_evm_dev"

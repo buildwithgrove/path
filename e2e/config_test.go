@@ -279,7 +279,6 @@ type (
 
 	TestService struct {
 		Name          string             `yaml:"name"`               // Name of the service
-		Protocol      testProtocol       `yaml:"protocol"`           // Protocol name (morse or shannon)
 		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
 		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
 		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
@@ -472,12 +471,6 @@ func (ts *TestServices) validateTestService(tc TestService, index int) error {
 	// Validate common fields
 	if tc.Name == "" {
 		return fmt.Errorf("test service #%d: Name is required", index)
-	}
-	if tc.Protocol == "" {
-		return fmt.Errorf("test service #%d: Protocol is required", index)
-	}
-	if tc.Protocol != protocolMorse && tc.Protocol != protocolShannon {
-		return fmt.Errorf("test service #%d: Protocol must be either 'morse' or 'shannon'", index)
 	}
 	if tc.ServiceID == "" {
 		return fmt.Errorf("test service #%d: ServiceID is required", index)

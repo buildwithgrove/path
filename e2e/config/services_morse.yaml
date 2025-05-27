@@ -6,7 +6,6 @@
 services:
   # Arbitrum One (Archival)
   - name: "Morse - F001 (Arbitrum One) Test"
-    protocol: "morse"
     service_id: "F001"
     archival: true
     service_params:
@@ -18,7 +17,6 @@ services:
 
   # Arbitrum Sepolia Testnet (Archival)
   - name: "Morse - F002 (Arbitrum Sepolia Testnet) Test"
-    protocol: "morse"
     service_id: "F002"
     archival: true
     service_params:
@@ -30,7 +28,6 @@ services:
 
   # Avalanche (Archival)
   - name: "Morse - F003 (Avalanche) Test"
-    protocol: "morse"
     service_id: "F003"
     archival: true
     service_params:
@@ -42,7 +39,6 @@ services:
 
   # Avalanche-DFK (Archival)
   - name: "Morse - F004 (Avalanche-DFK) Test"
-    protocol: "morse"
     service_id: "F004"
     archival: true
     service_params:
@@ -54,7 +50,6 @@ services:
 
   # Base (Archival)
   - name: "Morse - F005 (Base) Test"
-    protocol: "morse"
     service_id: "F005"
     archival: true
     service_params:
@@ -66,7 +61,6 @@ services:
 
   # Base Sepolia Testnet (Archival)
   - name: "Morse - F006 (Base Sepolia Testnet) Test"
-    protocol: "morse"
     service_id: "F006"
     archival: true
     service_params:
@@ -78,7 +72,6 @@ services:
 
   # Berachain (Archival)
   - name: "Morse - F035 (Berachain) Test"
-    protocol: "morse"
     service_id: "F035"
     archival: true
     service_params:
@@ -90,7 +83,6 @@ services:
 
   # Blast (Archival)
   - name: "Morse - F008 (Blast) Test"
-    protocol: "morse"
     service_id: "F008"
     archival: true
     service_params:
@@ -102,7 +94,6 @@ services:
 
   # BNB Smart Chain (Archival)
   - name: "Morse - F009 (BNB Smart Chain) Test"
-    protocol: "morse"
     service_id: "F009"
     archival: true
     service_params:
@@ -114,7 +105,6 @@ services:
 
   # Boba (Archival)
   - name: "Morse - F00A (Boba) Test"
-    protocol: "morse"
     service_id: "F00A"
     archival: true
     service_params:
@@ -126,7 +116,6 @@ services:
 
   # Celo (Archival)
   - name: "Morse - F00B (Celo) Test"
-    protocol: "morse"
     service_id: "F00B"
     archival: true
     service_params:
@@ -138,7 +127,6 @@ services:
 
   # Ethereum Mainnet (Archival)
   - name: "Morse - F00C (Ethereum) Test"
-    protocol: "morse"
     service_id: "F00C"
     archival: true
     service_params:
@@ -150,7 +138,6 @@ services:
 
   # Ethereum Holesky Testnet (Archival)
   - name: "Morse - F00D (Ethereum Holesky Testnet) Test"
-    protocol: "morse"
     service_id: "F00D"
     archival: true
     service_params:
@@ -162,7 +149,6 @@ services:
 
   # Ethereum Sepolia Testnet (Archival)
   - name: "Morse - F00E (Ethereum Sepolia Testnet) Test"
-    protocol: "morse"
     service_id: "F00E"
     archival: true
     service_params:
@@ -174,7 +160,6 @@ services:
 
   # Fuse (Archival)
   - name: "Morse - F012 (Fuse) Test"
-    protocol: "morse"
     service_id: "F012"
     archival: true
     service_params:
@@ -186,7 +171,6 @@ services:
 
   # Gnosis (Archival)
   - name: "Morse - F013 (Gnosis) Test"
-    protocol: "morse"
     service_id: "F013"
     archival: true
     service_params:
@@ -198,7 +182,6 @@ services:
 
   # Harmony-0 (Archival)
   - name: "Morse - F014 (Harmony-0) Test"
-    protocol: "morse"
     service_id: "F014"
     archival: true
     service_params:
@@ -210,7 +193,6 @@ services:
 
   # Ink (Archival)
   - name: "Morse - F032 (Ink) Test"
-    protocol: "morse"
     service_id: "F032"
     archival: true
     service_params:
@@ -222,7 +204,6 @@ services:
 
   # IoTeX (Archival)
   - name: "Morse - F015 (IoTeX) Test"
-    protocol: "morse"
     service_id: "F015"
     archival: true
     service_params:
@@ -234,7 +215,6 @@ services:
 
   # Kaia (Archival)
   - name: "Morse - F016 (Kaia) Test"
-    protocol: "morse"
     service_id: "F016"
     archival: true
     service_params:
@@ -246,7 +226,6 @@ services:
 
   # Linea (Archival)
   - name: "Morse - F030 (Linea) Test"
-    protocol: "morse"
     service_id: "F030"
     archival: true
     service_params:
@@ -258,7 +237,6 @@ services:
 
   # Mantle (Archival)
   - name: "Morse - F033 (Mantle) Test"
-    protocol: "morse"
     service_id: "F033"
     archival: true
     service_params:
@@ -270,7 +248,6 @@ services:
 
   # Metis (Archival)
   - name: "Morse - F018 (Metis) Test"
-    protocol: "morse"
     service_id: "F018"
     archival: true
     service_params:
@@ -282,7 +259,6 @@ services:
 
   # Moonbeam (Archival)
   - name: "Morse - F019 (Moonbeam) Test"
-    protocol: "morse"
     service_id: "F019"
     archival: true
     service_params:
@@ -294,7 +270,6 @@ services:
 
   # Oasys Mainnet (Archival)
   - name: "Morse - F01C (Oasys) Test"
-    protocol: "morse"
     service_id: "F01C"
     archival: true
     service_params:
@@ -306,7 +281,6 @@ services:
 
   # Optimism (Archival)
   - name: "Morse - F01D (Optimism) Test"
-    protocol: "morse"
     service_id: "F01D"
     archival: true
     service_params:
@@ -318,7 +292,6 @@ services:
 
   # Optimism Sepolia Testnet (Archival)
   - name: "Morse - F01E (Optimism Sepolia Testnet) Test"
-    protocol: "morse"
     service_id: "F01E"
     archival: true
     service_params:
@@ -330,7 +303,6 @@ services:
 
   # opBNB (Archival)
   - name: "Morse - F01F (opBNB) Test"
-    protocol: "morse"
     service_id: "F01F"
     archival: true
     service_params:
@@ -342,7 +314,6 @@ services:
 
   # Polygon Mainnet (Archival)
   - name: "Morse - F021 (Polygon) Test"
-    protocol: "morse"
     service_id: "F021"
     archival: true
     service_params:
@@ -354,7 +325,6 @@ services:
 
   # Polygon Amoy Testnet (Archival)
   - name: "Morse - F022 (Polygon Amoy Testnet) Test"
-    protocol: "morse"
     service_id: "F022"
     archival: true
     service_params:
@@ -366,7 +336,6 @@ services:
 
   # Polygon zkEVM (Archival)
   - name: "Morse - F029 (Polygon zkEVM) Test"
-    protocol: "morse"
     service_id: "F029"
     archival: true
     service_params:
@@ -378,7 +347,6 @@ services:
 
   # Scroll (Archival)
   - name: "Morse - F024 (Scroll) Test"
-    protocol: "morse"
     service_id: "F024"
     archival: true
     service_params:
@@ -390,7 +358,6 @@ services:
 
   # Sonic (Archival)
   - name: "Morse - F02D (Sonic) Test"
-    protocol: "morse"
     service_id: "F02D"
     archival: true
     service_params:
@@ -402,7 +369,6 @@ services:
 
   # Taiko (Archival)
   - name: "Morse - F027 (Taiko) Test"
-    protocol: "morse"
     service_id: "F027"
     archival: true
     service_params:
@@ -414,7 +380,6 @@ services:
 
   # Taiko Hekla Testnet (Archival)
   - name: "Morse - F028 (Taiko Hekla Testnet) Test"
-    protocol: "morse"
     service_id: "F028"
     archival: true
     service_params:
@@ -426,7 +391,6 @@ services:
 
   # XRPL EVM Testnet (Archival)
   - name: "Morse - F036 (XRPL EVM Testnet) Test"
-    protocol: "morse"
     service_id: "F036"
     archival: true
     service_params:
@@ -438,7 +402,6 @@ services:
 
   # zkLink (Archival)
   - name: "Morse - F02A (zkLink) Test"
-    protocol: "morse"
     service_id: "F02A"
     archival: true
     service_params:
@@ -450,7 +413,6 @@ services:
 
   # zkSync (Archival)
   - name: "Morse - F02B (zkSync) Test"
-    protocol: "morse"
     service_id: "F02B"
     archival: true
     service_params:
@@ -465,60 +427,48 @@ services:
 
   # Berachain Testnet
   - name: "Morse - F031 (Berachain Testnet) Test"
-    protocol: "morse"
     service_id: "F031"
 
   # Evmos
   - name: "Morse - F00F (Evmos) Test"
-    protocol: "morse"
     service_id: "F00F"
 
   # Fantom
   - name: "Morse - F010 (Fantom) Test"
-    protocol: "morse"
     service_id: "F010"
 
   # Fraxtal
   - name: "Morse - F011 (Fraxtal) Test"
-    protocol: "morse"
     service_id: "F011"
 
   # Kava
   - name: "Morse - F017 (Kava) Test"
-    protocol: "morse"
     service_id: "F017"
 
   # Moonriver
   - name: "Morse - F01A (Moonriver) Test"
-    protocol: "morse"
     service_id: "F01A"
 
   # Near
   - name: "Morse - F01B (Near) Test"
-    protocol: "morse"
     service_id: "F01B"
 
   # Radix
   - name: "Morse - F023 (Radix) Test"
-    protocol: "morse"
     service_id: "F023"
 
   # Sei
   - name: "Morse - F034 (Sei) Test"
-    protocol: "morse"
     service_id: "F034"
 
   # Sui
   - name: "Morse - F026 (Sui) Test"
-    protocol: "morse"
     service_id: "F026"
 
   # TRON
   - name: "Morse - F02E (TRON) Test"
-    protocol: "morse"
     service_id: "F02E"
 
   # XRPL EVM Devnet
   - name: "Morse - F02C (XRPL EVM Devnet) Test"
-    protocol: "morse"
     service_id: "F02C"
