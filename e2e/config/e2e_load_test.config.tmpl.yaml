@@ -33,7 +33,7 @@ e2e_load_test_config:
   load_test_config:
     # [Required] Custom PATH gateway URL
     #
-    # The default field uses the Grove Portal as the gateway URL.
+    # The default value uses the Grove Portal as the gateway URL.
     #
     # If you are wishing to test against a local PATH instance,
     # you can override this field with the local PATH gateway URL 
