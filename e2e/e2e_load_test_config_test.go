@@ -147,6 +147,13 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	// Set the environment configuration
 	cfg.envConfig = envConfig
 
+	// Load test services based on protocol
+	services, err := loadTestServices(cfg.getTestProtocol())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load test services: %w", err)
+	}
+	cfg.services = services
+
 	// Validate the configuration
 	if err := cfg.validate(); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
@@ -170,6 +177,26 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
+// loadTestServices loads test services based on the protocol
+func loadTestServices(protocol testProtocol) (TestServices, error) {
+	const servicesFileTemplate = "config/services_%s.yaml"
+
+	// eg. `config/services_morse.yaml` or `config/services_shannon.yaml`
+	servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
+
+	data, err := os.ReadFile(servicesFile)
+	if err != nil {
+		return TestServices{}, fmt.Errorf("failed to read services file %s: %w", servicesFile, err)
+	}
+
+	var services TestServices
+	if err := yaml.Unmarshal(data, &services); err != nil {
+		return TestServices{}, fmt.Errorf("failed to unmarshal services from %s: %w", servicesFile, err)
+	}
+
+	return services, nil
+}
+
 // -----------------------------------------------------------------------------
 // Config Structs
 // -----------------------------------------------------------------------------
@@ -189,9 +216,15 @@ type (
 		// not YAML so the requirement for it to be public does not apply.
 		envConfig envConfig
 
-		E2ELoadTestConfig E2ELoadTestConfig `yaml:"e2e_load_test_config"`
-		DefaultTestConfig TestConfig        `yaml:"default_test_config"`
-		TestCases         []TestCase        `yaml:"test_cases"`
+		// services are set after being unmarshalled from either:
+		// - `config/services.morse.yaml`
+		// - `config/services.shannon.yaml`
+		services TestServices
+
+		// E2ELoadTestConfig for test mode configuration
+		E2ELoadTestConfig      E2ELoadTestConfig                    `yaml:"e2e_load_test_config"`
+		DefaultServiceConfig   ServiceConfig                        `yaml:"default_service_config"`
+		ServiceConfigOverrides map[protocol.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
 	}
 
 	// envConfig for environment configuration (loaded from environment variables, not YAML)
@@ -227,8 +260,8 @@ type (
 		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Portal API key for the test
 	}
 
-	// TestConfig for common test configuration options
-	TestConfig struct {
+	// ServiceConfig for common service configuration options
+	ServiceConfig struct {
 		GlobalRPS         int           `yaml:"global_rps"`          // Requests per second (shared by all methods)
 		RequestsPerMethod int           `yaml:"requests_per_method"` // Total number of requests to send for each method
 		SuccessRate       float64       `yaml:"success_rate"`        // Minimum success rate required (0-1)
@@ -236,15 +269,20 @@ type (
 		MaxP95LatencyMS   time.Duration `yaml:"max_p95_latency_ms"`  // Maximum P95 latency in milliseconds
 		MaxP99LatencyMS   time.Duration `yaml:"max_p99_latency_ms"`  // Maximum P99 latency in milliseconds
 	}
+)
 
-	// TestCase for test case configuration
-	TestCase struct {
-		Name                   string             `yaml:"name"`                                // Name of the test case
-		Protocol               testProtocol       `yaml:"protocol"`                            // Protocol name (morse or shannon)
-		ServiceID              protocol.ServiceID `yaml:"service_id"`                          // Service ID to test (identifies the specific blockchain service)
-		Archival               bool               `yaml:"archival,omitempty"`                  // Whether this is an archival test (historical data access)
-		ServiceParams          ServiceParams      `yaml:"service_params"`                      // Service-specific parameters for test requests
-		TestCaseConfigOverride *TestConfig        `yaml:"test_case_config_override,omitempty"` // Override default configuration for this test case
+// TestServices and TestService for service configuration
+type (
+	TestServices struct {
+		Services []TestService `yaml:"services"`
+	}
+
+	TestService struct {
+		Name          string             `yaml:"name"`               // Name of the service
+		Protocol      testProtocol       `yaml:"protocol"`           // Protocol name (morse or shannon)
+		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
+		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
+		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
 	}
 
 	// ServiceParams holds service-specific test data for all methods.
@@ -260,34 +298,34 @@ type (
 )
 
 // -----------------------------------------------------------------------------
-// TestConfig Methods
+// ServiceConfig Methods
 // -----------------------------------------------------------------------------
 
-// MergeNonZero merges non-zero values from the override config into this config.
+// applyOverrides merges non-zero values from the override config into this config.
 // This ensures that only fields that are explicitly set in the override config are merged,
 // while preserving the default values for the other fields.
-func (tc *TestConfig) MergeNonZero(override *TestConfig) {
+func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
 	if override == nil {
 		return
 	}
 
 	if override.GlobalRPS != 0 {
-		tc.GlobalRPS = override.GlobalRPS
+		sc.GlobalRPS = override.GlobalRPS
 	}
 	if override.RequestsPerMethod != 0 {
-		tc.RequestsPerMethod = override.RequestsPerMethod
+		sc.RequestsPerMethod = override.RequestsPerMethod
 	}
 	if override.SuccessRate != 0 {
-		tc.SuccessRate = override.SuccessRate
+		sc.SuccessRate = override.SuccessRate
 	}
 	if override.MaxP50LatencyMS != 0 {
-		tc.MaxP50LatencyMS = override.MaxP50LatencyMS
+		sc.MaxP50LatencyMS = override.MaxP50LatencyMS
 	}
 	if override.MaxP95LatencyMS != 0 {
-		tc.MaxP95LatencyMS = override.MaxP95LatencyMS
+		sc.MaxP95LatencyMS = override.MaxP95LatencyMS
 	}
 	if override.MaxP99LatencyMS != 0 {
-		tc.MaxP99LatencyMS = override.MaxP99LatencyMS
+		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
 	}
 }
 
@@ -338,19 +376,16 @@ func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.Ser
 	return parsedURL.String()
 }
 
-// getTestCases returns test cases filtered by protocol specified in environment
-func (c *Config) getTestCases() ([]TestCase, error) {
+// getTestServices returns test services filtered by protocol specified in environment
+func (c *Config) getTestServices() ([]TestService, error) {
 	protocol := c.getTestProtocol()
 
-	var filteredTestCases []TestCase
-	for _, tc := range c.TestCases {
-		// First filter by protocol
-		if tc.Protocol == protocol {
-			// If no service IDs are specified, include all test cases
-			// Otherwise, only include test cases for the specified service IDs
-			if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
-				filteredTestCases = append(filteredTestCases, tc)
-			}
+	var filteredTestCases []TestService
+	for _, tc := range c.services.Services {
+		// If no service IDs are specified, include all test cases
+		// Otherwise, only include test cases for the specified service IDs
+		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
+			filteredTestCases = append(filteredTestCases, tc)
 		}
 	}
 
@@ -366,7 +401,7 @@ func (c *Config) getTestCases() ([]TestCase, error) {
 }
 
 // -----------------------------------------------------------------------------
-// Validation
+// Config Validation
 // -----------------------------------------------------------------------------
 
 // validate performs configuration validation based on schema and runtime requirements
@@ -394,71 +429,70 @@ func (c *Config) validate() error {
 		}
 	}
 
-	// Protocol-specific test case presence
-	protocol := c.getTestProtocol()
-	hasMorseCases := false
-	hasShannonCases := false
-	for _, tc := range c.TestCases {
-		if tc.Protocol == protocolMorse {
-			hasMorseCases = true
-		} else if tc.Protocol == protocolShannon {
-			hasShannonCases = true
-		}
-	}
-	if protocol == protocolMorse && !hasMorseCases {
-		return fmt.Errorf("no test cases found for Morse protocol")
-	}
-	if protocol == protocolShannon && !hasShannonCases {
-		return fmt.Errorf("no test cases found for Shannon protocol")
+	// Validate test services
+	if err := c.services.validate(); err != nil {
+		return fmt.Errorf("test services validation failed: %w", err)
 	}
 
-	// Validate all test cases
-	for i, tc := range c.TestCases {
-		if err := c.validateTestCase(tc, i); err != nil {
-			return err
-		}
+	// Validate default service config
+	if c.DefaultServiceConfig.RequestsPerMethod <= 0 {
+		return fmt.Errorf("DefaultServiceConfig.RequestsPerMethod must be greater than 0")
 	}
-
-	// Validate default test config
-	if c.DefaultTestConfig.RequestsPerMethod <= 0 {
-		return fmt.Errorf("DefaultTestConfig.RequestsPerMethod must be greater than 0")
+	if c.DefaultServiceConfig.GlobalRPS <= 0 {
+		return fmt.Errorf("DefaultServiceConfig.GlobalRPS must be greater than 0")
 	}
-	if c.DefaultTestConfig.GlobalRPS <= 0 {
-		return fmt.Errorf("DefaultTestConfig.GlobalRPS must be greater than 0")
-	}
-	if c.DefaultTestConfig.SuccessRate < 0 || c.DefaultTestConfig.SuccessRate > 1 {
-		return fmt.Errorf("DefaultTestConfig.SuccessRate must be between 0 and 1")
+	if c.DefaultServiceConfig.SuccessRate < 0 || c.DefaultServiceConfig.SuccessRate > 1 {
+		return fmt.Errorf("DefaultServiceConfig.SuccessRate must be between 0 and 1")
 	}
 
 	return nil
 }
 
-// validateTestCase validates an individual test case and its config
-func (c *Config) validateTestCase(tc TestCase, index int) error {
+// -----------------------------------------------------------------------------
+// TestServices Validation
+// -----------------------------------------------------------------------------
+
+// validate validates all test services
+func (ts *TestServices) validate() error {
+	if len(ts.Services) == 0 {
+		return fmt.Errorf("no test services configured")
+	}
+
+	for i, service := range ts.Services {
+		if err := ts.validateTestService(service, i); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateTestService validates an individual test service and its config
+func (ts *TestServices) validateTestService(tc TestService, index int) error {
 	// Validate common fields
 	if tc.Name == "" {
-		return fmt.Errorf("test case #%d: Name is required", index)
+		return fmt.Errorf("test service #%d: Name is required", index)
 	}
 	if tc.Protocol == "" {
-		return fmt.Errorf("test case #%d: Protocol is required", index)
+		return fmt.Errorf("test service #%d: Protocol is required", index)
 	}
 	if tc.Protocol != protocolMorse && tc.Protocol != protocolShannon {
-		return fmt.Errorf("test case #%d: Protocol must be either 'morse' or 'shannon'", index)
+		return fmt.Errorf("test service #%d: Protocol must be either 'morse' or 'shannon'", index)
 	}
 	if tc.ServiceID == "" {
-		return fmt.Errorf("test case #%d: ServiceID is required", index)
+		return fmt.Errorf("test service #%d: ServiceID is required", index)
 	}
 
 	// Validate service params for archival tests
 	if tc.Archival {
 		if tc.ServiceParams.ContractStartBlock == 0 {
-			return fmt.Errorf("test case #%d: ContractStartBlock is required for archival tests", index)
+			return fmt.Errorf("test service #%d: ContractStartBlock is required for archival tests", index)
 		}
 		if tc.ServiceParams.ContractAddress == "" {
-			return fmt.Errorf("test case #%d: ContractAddress is required for archival tests", index)
+			return fmt.Errorf("test service #%d: ContractAddress is required for archival tests", index)
 		}
 		if tc.ServiceParams.TransactionHash == "" {
-			return fmt.Errorf("test case #%d: TransactionHash is required for archival tests", index)
+			return fmt.Errorf("test service #%d: TransactionHash is required for archival tests", index)
 		}
 	}
 

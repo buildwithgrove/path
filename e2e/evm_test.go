@@ -71,7 +71,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 	}
 
 	// Get test cases from config based on `TEST_PROTOCOL` env var
-	testCases, err := cfg.getTestCases()
+	testCases, err := cfg.getTestServices()
 	if err != nil {
 		t.Fatalf("❌ Failed to get test cases: %v", err)
 	}
@@ -116,20 +116,20 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 		methodCount := len(methodsToTest)
 
 		// Get test config (either use default or test case override)
-		testConfig := cfg.DefaultTestConfig
-		if tc.TestCaseConfigOverride != nil {
-			testConfig.MergeNonZero(tc.TestCaseConfigOverride)
+		serviceConfig := cfg.DefaultServiceConfig
+		if override, exists := cfg.ServiceConfigOverrides[tc.ServiceID]; exists {
+			serviceConfig.applyOverride(&override)
 		}
 
 		fmt.Printf("\n🛠️  Running EVM test: %s%s%s\n", BOLD_BLUE, tc.Name, RESET)
 		fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)
-		fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, testConfig.GlobalRPS, RESET)
-		fmt.Printf("  🚗 Total Requests per Method: %s%d%s\n\n", GREEN, testConfig.RequestsPerMethod, RESET)
+		fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, serviceConfig.GlobalRPS, RESET)
+		fmt.Printf("  🚗 Total Requests per Method: %s%d%s\n\n", GREEN, serviceConfig.RequestsPerMethod, RESET)
 
 		// Create summary for this service
 		serviceSummaries[tc.ServiceID] = &serviceSummary{
 			serviceID:     tc.ServiceID,
-			testConfig:    testConfig,
+			serviceConfig: serviceConfig,
 			methodsToTest: methodsToTest,
 			methodErrors:  make(map[jsonrpc.Method]map[string]int),
 			methodCount:   methodCount,
@@ -142,7 +142,7 @@ func Test_PATH_E2E_EVM(t *testing.T) {
 			ctx,
 			headers,
 			tc.ServiceParams,
-			testConfig,
+			serviceConfig,
 			methodCount,
 			serviceGatewayURL,
 			serviceSummaries[tc.ServiceID],
@@ -182,7 +182,7 @@ func setupSIGINTHandler(cancel context.CancelFunc) {
 }
 
 // logEVMTestStartInfo logs the test start information for the user.
-func logEVMTestStartInfo(gatewayURL string, testCases []TestCase) {
+func logEVMTestStartInfo(gatewayURL string, testServices []TestService) {
 	if cfg.getTestMode() == testModeLoad {
 		fmt.Println("\n🔥 Starting Vegeta Load test ...")
 	} else {
@@ -201,7 +201,7 @@ func logEVMTestStartInfo(gatewayURL string, testCases []TestCase) {
 	}
 
 	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
-	for _, tc := range testCases {
+	for _, tc := range testServices {
 		if tc.Archival {
 			fmt.Printf("  🔗 %s%s%s (Archival)\n", GREEN, tc.ServiceID, RESET)
 		} else {
@@ -230,7 +230,7 @@ func runEVMServiceTest(
 	ctx context.Context,
 	headers http.Header,
 	serviceParams ServiceParams,
-	testConfig TestConfig,
+	serviceConfig ServiceConfig,
 	methodCount int,
 	gatewayURL string,
 	summary *serviceSummary,
@@ -242,9 +242,9 @@ func runEVMServiceTest(
 	methods := summary.methodsToTest
 
 	// Create a map for progress bars and summary calculation (with the same config for all methods)
-	methodConfigMap := make(map[jsonrpc.Method]TestConfig)
+	methodConfigMap := make(map[jsonrpc.Method]ServiceConfig)
 	for _, method := range methods {
-		methodConfigMap[method] = testConfig
+		methodConfigMap[method] = serviceConfig
 	}
 
 	progBars, err := newProgressBars(methods, methodConfigMap)
@@ -261,7 +261,7 @@ func runEVMServiceTest(
 	for _, method := range methods {
 		methodWg.Add(1)
 
-		go func(ctx context.Context, method jsonrpc.Method, config TestConfig) {
+		go func(ctx context.Context, method jsonrpc.Method, config ServiceConfig) {
 			defer methodWg.Done()
 
 			metrics := runMethodAttack(
@@ -279,7 +279,7 @@ func runEVMServiceTest(
 			results[method] = metrics
 			resultsMutex.Unlock()
 
-		}(ctx, method, testConfig)
+		}(ctx, method, serviceConfig)
 	}
 	methodWg.Wait()
 
@@ -297,7 +297,7 @@ func runEVMServiceTest(
 func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
-	methodConfig TestConfig,
+	methodConfig ServiceConfig,
 	methodCount int,
 	headers http.Header,
 	serviceParams ServiceParams,
@@ -355,7 +355,7 @@ func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[jsonrpc.Method]TestConfig,
+	methodConfigs map[jsonrpc.Method]ServiceConfig,
 	results map[jsonrpc.Method]*methodMetrics,
 	summary *serviceSummary,
 	serviceTestFailed *bool,
@@ -379,9 +379,9 @@ func calculateServiceSummary(
 			continue
 		}
 
-		// Convert TestConfig to methodTestConfig for validation
+		// Convert ServiceConfig to methodTestConfig for validation
 		methodDef := methodConfigs[method]
-		testConfig := TestConfig{
+		serviceConfig := ServiceConfig{
 			RequestsPerMethod: methodDef.RequestsPerMethod,
 			GlobalRPS:         methodDef.GlobalRPS,
 			SuccessRate:       methodDef.SuccessRate,
@@ -390,7 +390,7 @@ func calculateServiceSummary(
 			MaxP99LatencyMS:   methodDef.MaxP99LatencyMS,
 		}
 
-		validateResults(t, methodMetrics, testConfig)
+		validateResults(t, methodMetrics, serviceConfig)
 
 		// If the test has failed after validation, set the service failure flag
 		if t.Failed() {

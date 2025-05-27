@@ -1,0 +1,72 @@
+# This schema file may be used to validate the services config files using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "PATH Services Configuration Schema"
+description: "PATH Services Configuration YAML: this file is used to configure services for end-to-end tests for PATH gateways"
+type: object
+additionalProperties: false
+
+definitions:
+  service_params:
+    description: "Service parameters for test requests"
+    type: object
+    additionalProperties: false
+    properties:
+      contract_address:
+        description: "Contract address for eth calls"
+        type: string
+        pattern: "^(0x[a-fA-F0-9]{40}|one[a-z0-9]{39})$"
+        examples: ["0x28C6c06298d514Db089934071355E5743bf21d60", "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a"]
+      call_data:
+        description: "Call data for eth_call"
+        type: string
+        pattern: "^0x[a-fA-F0-9]*$"
+        examples: ["0x18160ddd"]
+      contract_start_block:
+        description: "Minimum block number for archival tests - ensures contract address has balance or transactions"
+        type: integer
+        minimum: 0
+      transaction_hash:
+        description: "Transaction hash for receipt/transaction queries"
+        type: string
+        pattern: "^0x[a-fA-F0-9]{64}$"
+        examples:
+          ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
+
+  service:
+    description: "Service definition for protocols"
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - protocol
+      - service_id
+    properties:
+      name:
+        description: "Name of the service"
+        type: string
+        examples: ["Morse - F00C (Ethereum) Test", "Shannon - Ethereum Test"]
+      protocol:
+        description: "Protocol name (morse or shannon)"
+        type: string
+        enum:
+          - morse
+          - shannon
+        examples: ["morse", "shannon"]
+      service_id:
+        description: "Service ID to test - identifies the specific blockchain service"
+        type: string
+        examples: ["F00C", "anvil", "eth", "arb_one"]
+      archival:
+        description: "Whether this is an archival test (historical data access)"
+        type: boolean
+      service_params:
+        $ref: "#/definitions/service_params"
+
+properties:
+  services:
+    description: "Array of services to run for the protocol"
+    type: array
+    items:
+      $ref: "#/definitions/service"
