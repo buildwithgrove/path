@@ -234,7 +234,11 @@ Tests will **fail** if any configured thresholds are exceeded, ensuring consiste
 
 Load tests may also be run against a local PATH instance.
 
-**To enable this, first set `e2e_load_test_config.load_test_config.gateway_url_override` to `http://localhost:3069/v1` in the file `./e2e/config/.e2e_load_test.config.yaml`.**
+**To enable this, first set the gateway URL override:**
+
+```bash
+yq eval '.e2e_load_test_config.load_test_config.gateway_url_override = "http://localhost:3069/v1"' -i ./e2e/config/.e2e_load_test.config.yaml
+```
 
 **Then, in one shell, run:**
 
@@ -257,7 +261,11 @@ make load_test eth
 
 In E2E test mode, logs may be written to `./path_log_e2e_test_{timestamp}.txt`.
 
-**In order to enable this, set the field `e2e_load_test_config.e2e_config.docker_config.log_to_file` to `true` in the file `./e2e/config/.e2e_load_test.config.yaml`.**
+**In order to enable this, set the log_to_file field:**
+
+```bash
+yq eval '.e2e_load_test_config.e2e_config.docker_config.log_to_file = true' -i ./e2e/config/.e2e_load_test.config.yaml
+```
 
 You should see the following log line at the bottom of the test summary:
 
