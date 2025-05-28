@@ -63,7 +63,7 @@ func setLegacyFieldsFromGatewayObservations(
 	legacyRecord.RequestTimestamp = formatTimestampPbForBigQueryJSON(observations.ReceivedTime)
 
 	// Request processing time, in seconds.
-	legacyRecord.RequestRoundTripTime = observations.CompletedTime.AsTime().Sub(observations.ReceivedTime.AsTime()).Milliseconds()
+	legacyRecord.RequestRoundTripTime = float64(observations.CompletedTime.AsTime().Sub(observations.ReceivedTime.AsTime()).Milliseconds())
 
 	return legacyRecord
 }
