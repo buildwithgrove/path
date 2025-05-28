@@ -8,7 +8,8 @@ import "google/protobuf/timestamp.proto";
 // MorseRequestErrorType enumerates possible relay request errors.
 enum MorseRequestErrorType {
   MORSE_REQUEST_ERROR_UNSPECIFIED = 0;
-  MORSE_REQUEST_ERROR_INTERNAL = 1; // Internal error: e.g. no endpoint selected for serving the request.
+  // Internal error: e.g. no endpoint selected for serving the request.
+  MORSE_REQUEST_ERROR_INTERNAL = 1;
 }
 
 // MorseEndpointErrorType enumerates possible relay errors when interacting with Morse endpoints
@@ -32,7 +33,16 @@ enum MorseEndpointErrorType {
   // This error indicates the endpoint returned an HTTP response with a mismatch between ContentLength header and actual body length.
   // Mostly encountered as ContentLength > 0 with an actual body length of 0.
   MORSE_ENDPOINT_ERROR_HTTP_LENGTH_HEADER_MISMATCH = 10;
-  MORSE_ENDPOINT_ERROR_INTERNAL = 11;  // Added for internal gateway errors
+
+  // Internal gateway errors
+  MORSE_ENDPOINT_ERROR_INTERNAL = 11;
+
+  // This error indicates the endpoint returned an error on executing the HTTP request.
+  // The SDK does not catch this, so the error string contains `error executing the http request: blockchain request`.
+  // NOT the same as 4xx or 5xx, which are captured and returned by the SDK:
+  // Reference:
+  // https://github.com/pokt-foundation/pocket-go/blob/0cb5a3a2ab762e7af18b3482f864d2d9d211a71f/provider/provider.go#L24-26
+  MORSE_ENDPOINT_ERROR_EXECUTING_HTTP_REQUEST = 12;
 }
 
 // TODO_DOCUMENT(@adshmh): Document the sanction system in the Morse protocol implementation:
@@ -46,8 +56,10 @@ enum MorseEndpointErrorType {
 // MorseSanctionType specifies the duration type for endpoint sanctions
 enum MorseSanctionType {
   MORSE_SANCTION_UNSPECIFIED = 0;
-  MORSE_SANCTION_SESSION = 1;  // Valid only for current session
-  MORSE_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+  // Valid only for current session
+  MORSE_SANCTION_SESSION = 1;
+ // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+  MORSE_SANCTION_PERMANENT = 2;
 }
 
 // MorseRequestObservations contains Morse-specific observations collected from relays
@@ -90,7 +102,8 @@ message MorseEndpointObservation {
   // Session information when available
   string session_key = 5;
   string session_service_id = 6;
-  int32 session_height = 7; // session start height
+  // Session height
+  int32 session_height = 7;
 
   // Timestamp marking the sending of the request to the endpoint.
   google.protobuf.Timestamp endpoint_query_timestamp = 8;

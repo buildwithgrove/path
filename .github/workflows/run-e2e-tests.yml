@@ -65,7 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
 
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
@@ -99,14 +99,14 @@ jobs:
     strategy:
       matrix:
         # DEV_NOTE: Add new services here if they should be tested as part of the E2E CI suite
-        service_id: [anvil]
+        service_id: [eth, anvil]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
 
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
