@@ -56,19 +56,20 @@ type (
 	}
 )
 
-func (ts *TestService) getTestMethods() []jsonrpc.Method {
+func (ts *TestService) getTestMethods() []string {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
 		return getEVMTestMethods()
 	case serviceTypeSolana:
 		return getSolanaTestMethods()
 	case serviceTypeCometBFT:
+		// CometBFT uses REST-like endpoints, not JSON-RPC methods
 		return getCometBFTTestEndpoints()
 	}
 	return nil
 }
 
-func (ts *TestService) getVegetaTargets(methods []jsonrpc.Method, gatewayURL string) ([]vegeta.Target, error) {
+func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) ([]vegeta.Target, error) {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
 		return getEVMVegetaTargets(ts, methods, gatewayURL)

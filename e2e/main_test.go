@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // -----------------------------------------------------------------------------
@@ -104,7 +103,7 @@ func Test_PATH_E2E(t *testing.T) {
 			serviceID:     ts.ServiceID,
 			serviceConfig: serviceConfig,
 			methodsToTest: methodsToTest,
-			methodErrors:  make(map[jsonrpc.Method]map[string]int),
+			methodErrors:  make(map[string]map[string]int),
 			methodCount:   methodCount,
 			totalErrors:   0,
 		}
@@ -236,8 +235,8 @@ func waitForHydratorIfNeeded() {
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[jsonrpc.Method]ServiceConfig,
-	results map[jsonrpc.Method]*methodMetrics,
+	methodConfigs map[string]ServiceConfig,
+	results map[string]*methodMetrics,
 	summary *serviceSummary,
 	serviceTestFailed *bool,
 ) {

@@ -24,22 +24,22 @@ var evmExpectedID = jsonrpc.IDFromInt(1)
 // Reference for all EVM JSON-RPC methods:
 // - https://ethereum.org/en/developers/docs/apis/json-rpc/
 const (
-	eth_blockNumber           jsonrpc.Method = "eth_blockNumber"
-	eth_chainId               jsonrpc.Method = "eth_chainId"
-	eth_gasPrice              jsonrpc.Method = "eth_gasPrice"
-	eth_getBalance            jsonrpc.Method = "eth_getBalance"
-	eth_getBlockByNumber      jsonrpc.Method = "eth_getBlockByNumber"
-	eth_getTransactionCount   jsonrpc.Method = "eth_getTransactionCount"
-	eth_getTransactionReceipt jsonrpc.Method = "eth_getTransactionReceipt"
-	eth_getTransactionByHash  jsonrpc.Method = "eth_getTransactionByHash"
-	eth_call                  jsonrpc.Method = "eth_call"
+	eth_blockNumber           = "eth_blockNumber"
+	eth_chainId               = "eth_chainId"
+	eth_gasPrice              = "eth_gasPrice"
+	eth_getBalance            = "eth_getBalance"
+	eth_getBlockByNumber      = "eth_getBlockByNumber"
+	eth_getTransactionCount   = "eth_getTransactionCount"
+	eth_getTransactionReceipt = "eth_getTransactionReceipt"
+	eth_getTransactionByHash  = "eth_getTransactionByHash"
+	eth_call                  = "eth_call"
 )
 
 // getEVMTestMethods returns all EVM JSON-RPC methods for a service load test.
 // If archival is true, all methods are returned.
 // If archival is false, only non-archival methods are returned.
-func getEVMTestMethods() []jsonrpc.Method {
-	return []jsonrpc.Method{
+func getEVMTestMethods() []string {
+	return []string{
 		eth_blockNumber,
 		eth_chainId,
 		eth_gasPrice,
@@ -103,7 +103,7 @@ func createEVMJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.Par
 
 func getEVMVegetaTargets(
 	ts *TestService,
-	methods []jsonrpc.Method,
+	methods []string,
 	gatewayURL string,
 ) ([]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -120,8 +120,8 @@ func getEVMVegetaTargets(
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,
 			ID:      jsonrpc.IDFromInt(1),
-			Method:  method,
-			Params:  createEVMJsonRPCParams(method, ts.ServiceParams),
+			Method:  jsonrpc.Method(method),
+			Params:  createEVMJsonRPCParams(jsonrpc.Method(method), ts.ServiceParams),
 		}
 
 		// Marshal the request body

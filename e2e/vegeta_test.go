@@ -48,16 +48,16 @@ func runServiceTest(
 	methodCount int,
 	summary *serviceSummary,
 ) (serviceTestFailed bool) {
-	results := make(map[jsonrpc.Method]*methodMetrics)
+	results := make(map[string]*methodMetrics)
 	var resultsMutex sync.Mutex
 
 	// Get methods to test from the summary
 	methods := summary.methodsToTest
 
 	// Create a map for progress bars and summary calculation (with the same config for all methods)
-	methodConfigMap := make(map[jsonrpc.Method]ServiceConfig)
+	methodConfigMap := make(map[string]ServiceConfig)
 	// Create a map to associate methods with their targets
-	methodTargets := make(map[jsonrpc.Method]vegeta.Target)
+	methodTargets := make(map[string]vegeta.Target)
 
 	for i, method := range methods {
 		methodConfigMap[method] = serviceConfig
@@ -87,7 +87,7 @@ func runServiceTest(
 			continue
 		}
 
-		go func(ctx context.Context, method jsonrpc.Method, serviceConfig ServiceConfig, target vegeta.Target) {
+		go func(ctx context.Context, method string, serviceConfig ServiceConfig, target vegeta.Target) {
 			defer methodWg.Done()
 
 			metrics := runMethodAttack(
@@ -121,7 +121,7 @@ func runServiceTest(
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
 func runMethodAttack(
 	ctx context.Context,
-	method jsonrpc.Method,
+	method string,
 	serviceConfig ServiceConfig,
 	serviceType serviceType,
 	methodCount int,
@@ -166,7 +166,7 @@ func runAttack(
 	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
 	attackRPS := max((serviceConfig.GlobalRPS+methodCount-1)/methodCount, 1)
 
-	metrics := initMethodMetrics(jsonrpc.Method(methodName), serviceConfig.RequestsPerMethod)
+	metrics := initMethodMetrics(string(methodName), serviceConfig.RequestsPerMethod)
 
 	// Use the target directly, no need to recreate it
 	targeter := func(tgt *vegeta.Target) error {
@@ -194,7 +194,7 @@ func runAttack(
 		&resultsWg,
 		resultsChan,
 		metrics,
-		jsonrpc.Method(methodName),
+		string(methodName),
 		serviceConfig,
 		serviceType,
 		progressBar,
@@ -224,7 +224,7 @@ func runAttack(
 
 // initMethodMetrics
 // • Initializes methodMetrics struct for a method
-func initMethodMetrics(method jsonrpc.Method, totalRequests int) *methodMetrics {
+func initMethodMetrics(method string, totalRequests int) *methodMetrics {
 	return &methodMetrics{
 		method:      method,
 		statusCodes: make(map[int]int),
@@ -250,7 +250,7 @@ func startResultsCollector(
 	resultsWg *sync.WaitGroup,
 	resultsChan <-chan *vegeta.Result,
 	metrics *methodMetrics,
-	method jsonrpc.Method,
+	method string,
 	serviceConfig ServiceConfig,
 	serviceType serviceType,
 	progressBar *pb.ProgressBar,
@@ -368,7 +368,7 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 // • Tracks HTTP and JSON-RPC results and derived rates
 // • Used for assertion and reporting
 type methodMetrics struct {
-	method       jsonrpc.Method   // RPC method name
+	method       string           // RPC method name
 	success      int              // Number of successful requests
 	failed       int              // Number of failed requests
 	statusCodes  map[int]int      // Count of each status code
@@ -409,8 +409,8 @@ type serviceSummary struct {
 	totalFailure  int
 
 	serviceConfig ServiceConfig
-	methodsToTest []jsonrpc.Method
-	methodErrors  map[jsonrpc.Method]map[string]int
+	methodsToTest []string
+	methodErrors  map[string]map[string]int
 	methodCount   int
 	totalErrors   int
 }
@@ -804,7 +804,7 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 // • Holds and manages progress bars for all methods in a test
 // • Used to visualize test progress interactively
 type progressBars struct {
-	bars    map[jsonrpc.Method]*pb.ProgressBar
+	bars    map[string]*pb.ProgressBar
 	pool    *pb.Pool
 	enabled bool
 }
@@ -812,18 +812,18 @@ type progressBars struct {
 // newProgressBars
 // • Creates a set of progress bars for all methods in a test
 // • Disables progress bars in CI/non-interactive environments
-func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]ServiceConfig) (*progressBars, error) {
+func newProgressBars(methods []string, testConfigs map[string]ServiceConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
 	if isCIEnv() {
 		fmt.Println("Running in CI environment - progress bars disabled")
 		return &progressBars{
-			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			bars:    make(map[string]*pb.ProgressBar),
 			enabled: false,
 		}, nil
 	}
 
 	// Sort methods for consistent display order
-	sortedMethods := make([]jsonrpc.Method, len(methods))
+	sortedMethods := make([]string, len(methods))
 	copy(sortedMethods, methods)
 	sort.Slice(sortedMethods, func(i, j int) bool {
 		return string(sortedMethods[i]) < string(sortedMethods[j])
@@ -838,7 +838,7 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Se
 	}
 
 	// Create a progress bar for each method
-	bars := make(map[jsonrpc.Method]*pb.ProgressBar)
+	bars := make(map[string]*pb.ProgressBar)
 	barList := make([]*pb.ProgressBar, 0, len(methods))
 
 	for _, method := range sortedMethods {
@@ -876,7 +876,7 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Se
 		// If we fail to create progress bars, fall back to simple output
 		fmt.Printf("Warning: Could not create progress bars: %v\n", err)
 		return &progressBars{
-			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			bars:    make(map[string]*pb.ProgressBar),
 			enabled: false,
 		}, nil
 	}
@@ -897,7 +897,7 @@ func (p *progressBars) finish() error {
 }
 
 // get returns the progress bar for a specific method
-func (p *progressBars) get(method jsonrpc.Method) *pb.ProgressBar {
+func (p *progressBars) get(method string) *pb.ProgressBar {
 	if !p.enabled {
 		return nil
 	}

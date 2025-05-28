@@ -21,19 +21,19 @@ var solanaExpectedID = jsonrpc.IDFromInt(1)
 // Reference for all Solana JSON-RPC methods:
 // - https://solana.com/docs/rpc/http
 const (
-	getEpochInfo            jsonrpc.Method = "getEpochInfo"
-	getHealth               jsonrpc.Method = "getHealth"
-	getBalance              jsonrpc.Method = "getBalance"
-	getGenesisHash          jsonrpc.Method = "getGenesisHash"
-	getSignaturesForAddress jsonrpc.Method = "getSignaturesForAddress"
-	getSlot                 jsonrpc.Method = "getSlot"
-	getTransaction          jsonrpc.Method = "getTransaction"
-	getBlock                jsonrpc.Method = "getBlock"
+	getEpochInfo            = "getEpochInfo"
+	getHealth               = "getHealth"
+	getBalance              = "getBalance"
+	getGenesisHash          = "getGenesisHash"
+	getSignaturesForAddress = "getSignaturesForAddress"
+	getSlot                 = "getSlot"
+	getTransaction          = "getTransaction"
+	getBlock                = "getBlock"
 )
 
 // getSolanaTestMethods returns all Solana JSON-RPC methods for a service load test.
-func getSolanaTestMethods() []jsonrpc.Method {
-	return []jsonrpc.Method{
+func getSolanaTestMethods() []string {
+	return []string{
 		getEpochInfo,
 		getHealth,
 		getBalance,
@@ -107,7 +107,7 @@ func createSolanaJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.
 
 func getSolanaVegetaTargets(
 	ts *TestService,
-	methods []jsonrpc.Method,
+	methods []string,
 	gatewayURL string,
 ) ([]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -125,8 +125,8 @@ func getSolanaVegetaTargets(
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,
 			ID:      jsonrpc.IDFromInt(1),
-			Method:  method,
-			Params:  createSolanaJsonRPCParams(method, ts.ServiceParams),
+			Method:  jsonrpc.Method(method),
+			Params:  createSolanaJsonRPCParams(jsonrpc.Method(method), ts.ServiceParams),
 		}
 
 		// Marshal the request body

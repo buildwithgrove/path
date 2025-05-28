@@ -17,21 +17,20 @@ var cometbftExpectedID = jsonrpc.IDFromInt(-1)
 // Reference for all CometBFT RPC endpoints:
 // - https://docs.cometbft.com/v0.38/rpc/
 const (
-	// TODO_IN_THIS_PR(@commoddity): Address inconsistency of using jsonrpc.Method type for REST endpoints
-	cometbftEndpointStatus         jsonrpc.Method = "/status"          // Get node status
-	cometbftEndpointHealth         jsonrpc.Method = "/health"          // Get node health
-	cometbftEndpointNetInfo        jsonrpc.Method = "/net_info"        // Get network info
-	cometbftEndpointConsensusState jsonrpc.Method = "/consensus_state" // Get consensus state
-	cometbftEndpointCommit         jsonrpc.Method = "/commit"          // Get commit
-	cometbftEndpointABCIInfo       jsonrpc.Method = "/abci_info"       // Get ABCI info
-	cometbftEndpointBlock          jsonrpc.Method = "/block"           // Get block at height
-	cometbftEndpointBlockResults   jsonrpc.Method = "/block_results"   // Get block results
-	cometbftEndpointValidators     jsonrpc.Method = "/validators"      // Get validators
+	cometbftEndpointStatus         = "/status"          // Get node status
+	cometbftEndpointHealth         = "/health"          // Get node health
+	cometbftEndpointNetInfo        = "/net_info"        // Get network info
+	cometbftEndpointConsensusState = "/consensus_state" // Get consensus state
+	cometbftEndpointCommit         = "/commit"          // Get commit
+	cometbftEndpointABCIInfo       = "/abci_info"       // Get ABCI info
+	cometbftEndpointBlock          = "/block"           // Get block at height
+	cometbftEndpointBlockResults   = "/block_results"   // Get block results
+	cometbftEndpointValidators     = "/validators"      // Get validators
 )
 
 // getCometBFTTestEndpoints returns all CometBFT endpoints for a service load test.
-func getCometBFTTestEndpoints() []jsonrpc.Method {
-	return []jsonrpc.Method{
+func getCometBFTTestEndpoints() []string {
+	return []string{
 		cometbftEndpointStatus,
 		cometbftEndpointHealth,
 		cometbftEndpointNetInfo,
@@ -46,7 +45,7 @@ func getCometBFTTestEndpoints() []jsonrpc.Method {
 
 func getCometBFTVegetaTargets(
 	ts *TestService,
-	endpoints []jsonrpc.Method,
+	endpoints []string,
 	gatewayURL string,
 ) ([]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
