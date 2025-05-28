@@ -27,7 +27,7 @@ const (
 	envTestProtocol = "TEST_PROTOCOL" // The protocol to test (morse or shannon)
 
 	// [OPTIONAL] Run the test only against the specified service IDs.
-	// If not set, the default service IDs for the protocol will be used.
+	// If not set, all service IDs for the protocol will be used.
 	envTestServiceIDs = "TEST_SERVICE_IDS"
 )
 
