@@ -19,7 +19,7 @@ services:
       # TODO_IN_THIS_PR(@commoddity): Add correct `service_params` for `anvil`
       # https://anvilscan.com/address/0x0000000000000000000000000000000000000000
       contract_address: "0x0000000000000000000000000000000000000000"
-      contract_start_block: 0
+      contract_start_block: 123
       transaction_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
       call_data: "0x18160ddd"
 

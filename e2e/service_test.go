@@ -147,18 +147,38 @@ func (ts *TestServices) validateTestService(tc TestService, index int) error {
 	if tc.ServiceID == "" {
 		return fmt.Errorf("test service #%d: ServiceID is required", index)
 	}
+	if tc.ServiceType == "" {
+		return fmt.Errorf("test service #%d: ServiceType is required", index)
+	}
 
-	// Validate service params for archival tests
-	if tc.Archival {
-		if tc.ServiceParams.ContractStartBlock == 0 {
-			return fmt.Errorf("test service #%d: ContractStartBlock is required for archival tests", index)
-		}
+	// Validate service params based on service type
+	switch tc.ServiceType {
+	case serviceTypeEVM:
+		// EVM services require all four parameters
 		if tc.ServiceParams.ContractAddress == "" {
-			return fmt.Errorf("test service #%d: ContractAddress is required for archival tests", index)
+			return fmt.Errorf("test service #%d: ContractAddress is required for EVM services", index)
+		}
+		if tc.ServiceParams.ContractStartBlock == 0 {
+			return fmt.Errorf("test service #%d: ContractStartBlock is required for EVM services", index)
 		}
 		if tc.ServiceParams.TransactionHash == "" {
-			return fmt.Errorf("test service #%d: TransactionHash is required for archival tests", index)
+			return fmt.Errorf("test service #%d: TransactionHash is required for EVM services", index)
 		}
+		if tc.ServiceParams.CallData == "" {
+			return fmt.Errorf("test service #%d: CallData is required for EVM services", index)
+		}
+	case serviceTypeSolana:
+		// Solana services require only contract_address and transaction_hash
+		if tc.ServiceParams.ContractAddress == "" {
+			return fmt.Errorf("test service #%d: ContractAddress is required for Solana services", index)
+		}
+		if tc.ServiceParams.TransactionHash == "" {
+			return fmt.Errorf("test service #%d: TransactionHash is required for Solana services", index)
+		}
+	case serviceTypeCometBFT:
+		// No specific validation for CometBFT yet
+	default:
+		return fmt.Errorf("test service #%d: Unsupported service type: %s", index, tc.ServiceType)
 	}
 
 	return nil

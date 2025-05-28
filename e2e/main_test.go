@@ -186,7 +186,7 @@ func logTestStartInfo(gatewayURL string, testServices []TestService) {
 		if ts.Archival {
 			fmt.Printf("  🔗 %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
 		} else {
-			fmt.Printf("  🔗 %s%s%s (Non-archival. Will use \"latest\" for block number param.)\n", GREEN, ts.ServiceID, RESET)
+			fmt.Printf("  🔗 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
 		}
 	}
 }
