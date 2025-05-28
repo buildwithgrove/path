@@ -21,11 +21,11 @@ import (
 //   https://path.grove.city/develop/path/e2e_tests
 //
 // Example Usage - E2E tests:
-//   - make e2e_test_all    # Run all E2E tests for all services
-//   - make e2e_test <service IDs>  # Run all E2E tests for the specified services
+//   - make e2e_test_all             # Run all E2E tests for all services
+//   - make e2e_test <service IDs>   # Run all E2E tests for the specified services
 //
 // Example Usage - Load tests:
-//   - make load_test_all    # Run all load tests for all services
+//   - make load_test_all            # Run all load tests for all services
 //   - make load_test <service IDs>  # Run all load tests for the specified services
 // -----------------------------------------------------------------------------
 
@@ -134,6 +134,8 @@ func Test_PATH_E2E(t *testing.T) {
 	fmt.Printf("\n%s✅ Test Success: All %d services passed%s\n", GREEN, len(testServices), RESET)
 	printServiceSummaries(serviceSummaries)
 }
+
+// -------------------- Helper Functions --------------------
 
 // TODO_TECHDEBT(@commoddity): Separate E2E and Load test modes into separate files and `Test_PATH_E2E` and `Test_PATH_Load` functions.
 //
