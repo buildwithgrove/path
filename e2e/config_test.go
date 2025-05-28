@@ -80,6 +80,7 @@ func (t testMode) isValid() error {
 	return nil
 }
 
+// TODO_TECHDEBT(@commoddity): Remove this enum after Shannon migration.
 // testProtocol determines whether to test PATH with Morse or Shannon
 // Valid values: "morse" or "shannon"
 type testProtocol string
