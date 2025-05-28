@@ -4,6 +4,8 @@
 # ---------------- Morse Services ---------------- #
 ####################################################
 services:
+  # ------------- EVM Services -------------
+
   # Arbitrum One (Archival)
   - name: "Morse - F001 (Arbitrum One) Test"
     service_id: "F001"
@@ -460,6 +462,8 @@ services:
       transaction_hash: "0xc65cff6db22a350d39d9154be650cd10bd0ca1c143402c51b3c7802f702328b0"
       call_data: "0x18160ddd"
 
+  # ------------- Solana Services -------------
+
   # Solana
   - name: "Morse - F025 (Solana) Test"
     service_id: "F025"
@@ -469,65 +473,64 @@ services:
       contract_address: "FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a"
       transaction_hash: "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"
 
-  # TODO_IMPROVE(@commoddity): Update the below chains to test for 
-  # for archival once configuration is updated in `service_qos_config.go`
+  # TODO_NEXT(@commoddity): Add `service_params` for the below services
 
-  # Berachain Testnet
-  - name: "Morse - F031 (Berachain Testnet) Test"
-    service_id: "F031"
-    service_type: "evm"
+  # # Berachain Testnet
+  # - name: "Morse - F031 (Berachain Testnet) Test"
+  #   service_id: "F031"
+  #   service_type: "evm"
 
-  # Evmos
-  - name: "Morse - F00F (Evmos) Test"
-    service_id: "F00F"
-    service_type: "evm"
+  # # Evmos
+  # - name: "Morse - F00F (Evmos) Test"
+  #   service_id: "F00F"
+  #   service_type: "evm"
 
-  # Fantom
-  - name: "Morse - F010 (Fantom) Test"
-    service_id: "F010"
-    service_type: "evm"
+  # # Fantom
+  # - name: "Morse - F010 (Fantom) Test"
+  #   service_id: "F010"
+  #   service_type: "evm"
 
-  # Fraxtal
-  - name: "Morse - F011 (Fraxtal) Test"
-    service_id: "F011"
-    service_type: "evm"
+  # # Fraxtal
+  # - name: "Morse - F011 (Fraxtal) Test"
+  #   service_id: "F011"
+  #   service_type: "evm"
 
-  # Kava
-  - name: "Morse - F017 (Kava) Test"
-    service_id: "F017"
-    service_type: "evm"
+  # # Kava
+  # - name: "Morse - F017 (Kava) Test"
+  #   service_id: "F017"
+  #   service_type: "evm"
 
-  # Moonriver
-  - name: "Morse - F01A (Moonriver) Test"
-    service_id: "F01A"
-    service_type: "evm"
+  # # Moonriver
+  # - name: "Morse - F01A (Moonriver) Test"
+  #   service_id: "F01A"
+  #   service_type: "evm"
 
-  # Near
-  - name: "Morse - F01B (Near) Test"
-    service_id: "F01B"
-    service_type: "evm"
+  # # Near
+  # - name: "Morse - F01B (Near) Test"
+  #   service_id: "F01B"
+  #   service_type: "evm"
 
-  # Radix
-  - name: "Morse - F023 (Radix) Test"
-    service_id: "F023"
-    service_type: "evm"
+  # # Radix
+  # - name: "Morse - F023 (Radix) Test"
+  #   service_id: "F023"
+  #   service_type: "evm"
 
-  # Sei
-  - name: "Morse - F034 (Sei) Test"
-    service_id: "F034"
-    service_type: "evm"
+  # # Sei
+  # - name: "Morse - F034 (Sei) Test"
+  #   service_id: "F034"
+  #   service_type: "evm"
 
-  # Sui
-  - name: "Morse - F026 (Sui) Test"
-    service_id: "F026"
-    service_type: "evm"
+  # # Sui
+  # - name: "Morse - F026 (Sui) Test"
+  #   service_id: "F026"
+  #   service_type: "evm"
 
-  # TRON
-  - name: "Morse - F02E (TRON) Test"
-    service_id: "F02E"
-    service_type: "evm"
+  # # TRON
+  # - name: "Morse - F02E (TRON) Test"
+  #   service_id: "F02E"
+  #   service_type: "evm"
 
-  # XRPL EVM Devnet
-  - name: "Morse - F02C (XRPL EVM Devnet) Test"
-    service_id: "F02C"
-    service_type: "evm"
+  # # XRPL EVM Devnet
+  # - name: "Morse - F02C (XRPL EVM Devnet) Test"
+  #   service_id: "F02C"
+  #   service_type: "evm"

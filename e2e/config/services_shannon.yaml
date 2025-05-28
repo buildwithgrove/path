@@ -9,10 +9,19 @@
 # ---------------- Shannon Services -------------- #
 ####################################################
 services:
+  # ------------- EVM Services -------------
+
   # Shannon - Anvil local Ethereum node (Ephemeral)
   - name: "Shannon - anvil (local Ethereum) Test"
     service_id: "anvil"
     service_type: "evm"
+    service_params:
+      # TODO_IN_THIS_PR(@commoddity): Add correct `service_params` for `anvil`
+      # https://anvilscan.com/address/0x0000000000000000000000000000000000000000
+      contract_address: "0x0000000000000000000000000000000000000000"
+      contract_start_block: 0
+      transaction_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+      call_data: "0x18160ddd"
 
   # Shannon - Arbitrum One (Archival)
   - name: "Shannon - arb_one (Arbitrum One) Test"
@@ -469,6 +478,8 @@ services:
       transaction_hash: "0xc65cff6db22a350d39d9154be650cd10bd0ca1c143402c51b3c7802f702328b0"
       call_data: "0x18160ddd"
 
+  # ------------- Solana Services -------------
+
   # Shannon - Solana
   - name: "Shannon - solana (Solana) Test"
     service_id: "solana"
@@ -478,65 +489,64 @@ services:
       contract_address: "FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a"
       transaction_hash: "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"
 
-  # TODO_IMPROVE(@commoddity): Update the below chains to test for 
-  # for archival once configuration is updated in `service_qos_config.go`
+  # TODO_NEXT(@commoddity): Add `service_params` for the below services
 
-  # Shannon - Berachain Testnet
-  - name: "Shannon - bera_test (Berachain Testnet) Test"
-    service_id: "bera_test"
-    service_type: "evm"
+  # # Shannon - Berachain Testnet
+  # - name: "Shannon - bera_test (Berachain Testnet) Test"
+  #   service_id: "bera_test"
+  #   service_type: "evm"
 
-  # Shannon - Evmos
-  - name: "Shannon - evmos (Evmos) Test"
-    service_id: "evmos"
-    service_type: "evm"
+  # # Shannon - Evmos
+  # - name: "Shannon - evmos (Evmos) Test"
+  #   service_id: "evmos"
+  #   service_type: "evm"
 
-  # Shannon - Fantom
-  - name: "Shannon - fantom (Fantom) Test"
-    service_id: "fantom"
-    service_type: "evm"
+  # # Shannon - Fantom
+  # - name: "Shannon - fantom (Fantom) Test"
+  #   service_id: "fantom"
+  #   service_type: "evm"
 
-  # Shannon - Fraxtal
-  - name: "Shannon - fraxtal (Fraxtal) Test"
-    service_id: "fraxtal"
-    service_type: "evm"
+  # # Shannon - Fraxtal
+  # - name: "Shannon - fraxtal (Fraxtal) Test"
+  #   service_id: "fraxtal"
+  #   service_type: "evm"
 
-  # Shannon - Kava
-  - name: "Shannon - kava (Kava) Test"
-    service_id: "kava"
-    service_type: "evm"
+  # # Shannon - Kava
+  # - name: "Shannon - kava (Kava) Test"
+  #   service_id: "kava"
+  #   service_type: "evm"
 
-  # Shannon - Moonriver
-  - name: "Shannon - moonriver (Moonriver) Test"
-    service_id: "moonriver"
-    service_type: "evm"
+  # # Shannon - Moonriver
+  # - name: "Shannon - moonriver (Moonriver) Test"
+  #   service_id: "moonriver"
+  #   service_type: "evm"
 
-  # Shannon - Near
-  - name: "Shannon - near (Near) Test"
-    service_id: "near"
-    service_type: "evm"
+  # # Shannon - Near
+  # - name: "Shannon - near (Near) Test"
+  #   service_id: "near"
+  #   service_type: "evm"
 
-  # Shannon - Radix
-  - name: "Shannon - radix (Radix) Test"
-    service_id: "radix"
-    service_type: "evm"
+  # # Shannon - Radix
+  # - name: "Shannon - radix (Radix) Test"
+  #   service_id: "radix"
+  #   service_type: "evm"
 
-  # Shannon - Sei
-  - name: "Shannon - sei (Sei) Test"
-    service_id: "sei"
-    service_type: "evm"
+  # # Shannon - Sei
+  # - name: "Shannon - sei (Sei) Test"
+  #   service_id: "sei"
+  #   service_type: "evm"
 
-  # Shannon - Sui
-  - name: "Shannon - sui (Sui) Test"
-    service_id: "sui"
-    service_type: "evm"
+  # # Shannon - Sui
+  # - name: "Shannon - sui (Sui) Test"
+  #   service_id: "sui"
+  #   service_type: "evm"
 
-  # Shannon - TRON
-  - name: "Shannon - tron (TRON) Test"
-    service_id: "tron"
-    service_type: "evm"
+  # # Shannon - TRON
+  # - name: "Shannon - tron (TRON) Test"
+  #   service_id: "tron"
+  #   service_type: "evm"
 
-  # Shannon - XRPL EVM Devnet
-  - name: "Shannon - xrpl_evm_dev (XRPL EVM Devnet) Test"
-    service_id: "xrpl_evm_dev"
-    service_type: "evm"
+  # # Shannon - XRPL EVM Devnet
+  # - name: "Shannon - xrpl_evm_dev (XRPL EVM Devnet) Test"
+  #   service_id: "xrpl_evm_dev"
+  #   service_type: "evm"
