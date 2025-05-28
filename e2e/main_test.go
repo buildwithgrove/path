@@ -69,6 +69,7 @@ func Test_PATH_E2E(t *testing.T) {
 	// Initialize service summaries map (will be logged out at the end of the test)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
+	allPassed := true
 	// Loop through each test case
 	for _, ts := range testServices {
 		// Make a copy to avoid appending to the original URL.
@@ -125,13 +126,18 @@ func Test_PATH_E2E(t *testing.T) {
 		if serviceTestFailed {
 			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, ts.ServiceID, RESET)
 			printServiceSummaries(serviceSummaries)
+			allPassed = false
 			t.FailNow()
 		} else {
 			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, ts.ServiceID, RESET)
 		}
 	}
 
-	fmt.Printf("\n%s✅ Test Success: All %d services passed%s\n", GREEN, len(testServices), RESET)
+	if allPassed {
+		fmt.Printf("\n%s✅ Test Success: All %d services passed%s\n", GREEN, len(testServices), RESET)
+	} else {
+		fmt.Printf("\n%s❌ Test Failure: One or more services failed%s\n", RED, RESET)
+	}
 	printServiceSummaries(serviceSummaries)
 }
 
