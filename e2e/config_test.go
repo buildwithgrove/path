@@ -61,6 +61,7 @@ func getEnvConfig() (envConfig, error) {
 // Enums
 // -----------------------------------------------------------------------------
 
+// TODO_TECHDEBT(@commoddity): Separate E2E and Load test modes into separate files and remove the need for this enum.
 type testMode string
 
 const (
