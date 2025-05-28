@@ -63,8 +63,7 @@ func (ts *TestService) getTestMethods() []jsonrpc.Method {
 	case serviceTypeSolana:
 		return getSolanaTestMethods()
 	case serviceTypeCometBFT:
-		// TODO_IN_THIS_PR(@commoddity): Implement CometBFT test methods
-		// return getCometBFTTestMethods(ts.Archival)
+		return getCometBFTTestEndpoints()
 	}
 	return nil
 }
@@ -76,10 +75,22 @@ func (ts *TestService) getVegetaTargets(methods []jsonrpc.Method, gatewayURL str
 	case serviceTypeSolana:
 		return getSolanaVegetaTargets(ts, methods, gatewayURL)
 	case serviceTypeCometBFT:
-		// TODO_IN_THIS_PR(@commoddity): Implement CometBFT vegeta targets
-		// return ts.getCometBFTVegetaTarget(method, gatewayURL)
+		return getCometBFTVegetaTargets(ts, methods, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
+}
+
+func getExpectedID(serviceType serviceType) jsonrpc.ID {
+	switch serviceType {
+	case serviceTypeEVM:
+		return evmExpectedID
+	case serviceTypeSolana:
+		return solanaExpectedID
+	case serviceTypeCometBFT:
+		return cometbftExpectedID
+	default:
+		return jsonrpc.IDFromInt(1)
+	}
 }
 
 // -----------------------------------------------------------------------------

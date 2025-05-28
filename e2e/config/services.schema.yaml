@@ -98,9 +98,6 @@ definitions:
         type: string
         enum: ["solana"]
         examples: ["solana"]
-      archival:
-        description: "Whether this is an archival test (historical data access)"
-        type: boolean
       service_params:
         $ref: "#/definitions/solana_service_params"
   solana_service_params:
@@ -140,9 +137,4 @@ definitions:
         type: string
         enum: ["cometbft"]
         examples: ["cometbft"]
-      archival:
-        description: "Whether this is an archival test (historical data access)"
-        type: boolean
-      service_params:
-        type: object
-  # TODO_IN_THIS_PR(@commoddity): Add `service_params` for `cometbft`
+

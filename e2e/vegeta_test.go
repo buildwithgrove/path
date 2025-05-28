@@ -44,6 +44,7 @@ func runServiceTest(
 	ctx context.Context,
 	targets []vegeta.Target,
 	serviceConfig ServiceConfig,
+	serviceType serviceType,
 	methodCount int,
 	summary *serviceSummary,
 ) (serviceTestFailed bool) {
@@ -86,13 +87,14 @@ func runServiceTest(
 			continue
 		}
 
-		go func(ctx context.Context, method jsonrpc.Method, config ServiceConfig, target vegeta.Target) {
+		go func(ctx context.Context, method jsonrpc.Method, serviceConfig ServiceConfig, target vegeta.Target) {
 			defer methodWg.Done()
 
 			metrics := runMethodAttack(
 				ctx,
 				method,
-				config,
+				serviceConfig,
+				serviceType,
 				methodCount,
 				target,
 				progBars.get(method),
@@ -120,7 +122,8 @@ func runServiceTest(
 func runMethodAttack(
 	ctx context.Context,
 	method jsonrpc.Method,
-	methodConfig ServiceConfig,
+	serviceConfig ServiceConfig,
+	serviceType serviceType,
 	methodCount int,
 	target vegeta.Target,
 	progBar *pb.ProgressBar,
@@ -137,7 +140,8 @@ func runMethodAttack(
 		ctx,
 		target,
 		string(method), // Pass method name as string for metrics
-		methodConfig,
+		serviceConfig,
+		serviceType,
 		methodCount,
 		progBar,
 	)
@@ -155,6 +159,7 @@ func runAttack(
 	target vegeta.Target,
 	methodName string, // Method name used for metrics and reporting
 	serviceConfig ServiceConfig,
+	serviceType serviceType,
 	methodCount int,
 	progressBar *pb.ProgressBar,
 ) *methodMetrics {
@@ -188,7 +193,13 @@ func runAttack(
 	startResultsCollector(
 		&resultsWg,
 		resultsChan,
-		metrics, jsonrpc.Method(methodName), serviceConfig, progressBar, &processedCount)
+		metrics,
+		jsonrpc.Method(methodName),
+		serviceConfig,
+		serviceType,
+		progressBar,
+		&processedCount,
+	)
 
 	requestSlots := serviceConfig.RequestsPerMethod
 	targeterWithLimit := makeTargeter(&requestSlots, targeter)
@@ -241,6 +252,7 @@ func startResultsCollector(
 	metrics *methodMetrics,
 	method jsonrpc.Method,
 	serviceConfig ServiceConfig,
+	serviceType serviceType,
 	progressBar *pb.ProgressBar,
 	processedCount *int,
 ) {
@@ -252,7 +264,7 @@ func startResultsCollector(
 				continue
 			}
 			if *processedCount < serviceConfig.RequestsPerMethod {
-				processResult(metrics, res)
+				processResult(metrics, res, serviceType)
 				(*processedCount)++
 				if progressBar != nil && progressBar.Current() < int64(serviceConfig.RequestsPerMethod) {
 					progressBar.Increment()
@@ -310,7 +322,7 @@ attackLoop:
 
 // processResult
 // • Updates metrics based on a single result
-func processResult(m *methodMetrics, result *vegeta.Result) {
+func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceType) {
 	// Skip "no targets to attack" errors (not actual requests)
 	if result.Error == "no targets to attack" {
 		return
@@ -341,8 +353,7 @@ func processResult(m *methodMetrics, result *vegeta.Result) {
 			m.jsonRPCNilResult++
 		}
 		// Validate the response
-		expectedID := jsonrpc.IDFromInt(1) // Expected ID from our request
-		if err := rpcResponse.Validate(expectedID); err != nil {
+		if err := rpcResponse.Validate(getExpectedID(serviceType)); err != nil {
 			m.jsonRPCValidateErrors++
 		}
 	}
@@ -745,18 +756,18 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
 		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
-		methodConfig := summary.serviceConfig
+		serviceConfig := summary.serviceConfig
 
 		// Header with service ID
 		fmt.Printf("\n%s⛓️  Service: %s%s\n", BOLD_BLUE, svcID, RESET)
 
 		// Use helpers for coloring based on method config
-		successColor := getRateColor(summary.avgSuccessRate, methodConfig.SuccessRate)
-		p90Color := getLatencyColor(summary.avgP90Latency, methodConfig.MaxP95LatencyMS) // P90 closest to P95
-		avgColor := getLatencyColor(summary.avgLatency, methodConfig.MaxP50LatencyMS)    // Avg closest to P50
+		successColor := getRateColor(summary.avgSuccessRate, serviceConfig.SuccessRate)
+		p90Color := getLatencyColor(summary.avgP90Latency, serviceConfig.MaxP95LatencyMS) // P90 closest to P95
+		avgColor := getLatencyColor(summary.avgLatency, serviceConfig.MaxP50LatencyMS)    // Avg closest to P50
 
 		// Calculate allowed failure rate
-		maxFailureRate := 1.0 - methodConfig.SuccessRate
+		maxFailureRate := 1.0 - serviceConfig.SuccessRate
 		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
 
 		// Color for failures based on whether they exceed the allowed threshold

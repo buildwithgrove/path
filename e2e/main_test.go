@@ -118,6 +118,7 @@ func Test_PATH_E2E(t *testing.T) {
 			ctx,
 			targets,
 			serviceConfig,
+			ts.ServiceType,
 			methodCount,
 			serviceSummaries[ts.ServiceID],
 		)

@@ -19,6 +19,8 @@ import (
 
 /* -------------------- EVM JSON-RPC Method Definitions -------------------- */
 
+var evmExpectedID = jsonrpc.IDFromInt(1)
+
 // Reference for all EVM JSON-RPC methods:
 // - https://ethereum.org/en/developers/docs/apis/json-rpc/
 const (

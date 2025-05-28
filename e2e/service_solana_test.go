@@ -16,6 +16,8 @@ import (
 
 /* -------------------- Solana JSON-RPC Method Definitions -------------------- */
 
+var solanaExpectedID = jsonrpc.IDFromInt(1)
+
 // Reference for all Solana JSON-RPC methods:
 // - https://solana.com/docs/rpc/http
 const (
@@ -181,7 +183,7 @@ func getCurrentSlotNumber(gatewayURL string, headers http.Header) (uint64, error
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Make multiple attempts to get consensus
-	for i := 0; i < maxAttempts; i++ {
+	for range maxAttempts {
 		slotNum, err := fetchSlotNumber(client, gatewayURL, headers)
 		if err != nil {
 			continue
