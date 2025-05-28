@@ -5,8 +5,12 @@
 ### Test Make Targets ###
 #########################
 
-.PHONY: test_all ## Run all tests
-test_all: test_unit test_e2e_evm_shannon_defaults test_e2e_evm_morse_defaults
+# TODO_TECHDEBT(@commoddity): Remove Morse test targets after Shannon migration.
+
+.PHONY: test_all ## Run all unit tests and E2E test a subset of key services.
+test_all: test_unit
+	@$(MAKE) e2e_test eth,poly,xrpl_evm_test,oasys
+	@$(MAKE) morse_e2e_test F00C,F021,F036,F01C
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
