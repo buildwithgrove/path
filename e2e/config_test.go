@@ -229,7 +229,7 @@ type (
 		// - `config/services_shannon.yaml`
 		services TestServices
 
-		// Below fields are
+		// Below fields are all unmarshalled from the YAML files
 		E2ELoadTestConfig      E2ELoadTestConfig                    `yaml:"e2e_load_test_config"`
 		DefaultServiceConfig   ServiceConfig                        `yaml:"default_service_config"`
 		ServiceConfigOverrides map[protocol.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
