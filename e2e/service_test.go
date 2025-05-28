@@ -60,12 +60,11 @@ func (ts *TestService) getTestMethods() []jsonrpc.Method {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
 		return getEVMTestMethods()
+	case serviceTypeSolana:
+		return getSolanaTestMethods()
 	case serviceTypeCometBFT:
 		// TODO_IN_THIS_PR(@commoddity): Implement CometBFT test methods
 		// return getCometBFTTestMethods(ts.Archival)
-	case serviceTypeSolana:
-		// TODO_IN_THIS_PR(@commoddity): Implement Solana test methods
-		// return getSolanaTestMethods(ts.Archival)
 	}
 	return nil
 }
@@ -74,12 +73,11 @@ func (ts *TestService) getVegetaTargets(methods []jsonrpc.Method, gatewayURL str
 	switch ts.ServiceType {
 	case serviceTypeEVM:
 		return getEVMVegetaTargets(ts, methods, gatewayURL)
+	case serviceTypeSolana:
+		return getSolanaVegetaTargets(ts, methods, gatewayURL)
 	case serviceTypeCometBFT:
 		// TODO_IN_THIS_PR(@commoddity): Implement CometBFT vegeta targets
 		// return ts.getCometBFTVegetaTarget(method, gatewayURL)
-	case serviceTypeSolana:
-		// TODO_IN_THIS_PR(@commoddity): Implement Solana vegeta targets
-		// return ts.getSolanaVegetaTarget(method, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
 }

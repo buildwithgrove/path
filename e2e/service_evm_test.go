@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/buildwithgrove/path/qos/evm"
@@ -144,7 +143,7 @@ func getEVMVegetaTargets(
 }
 
 // -----------------------------------------------------------------------------
-// Get Test Block Number helpers - User for EVM archival services
+// Get Test Block Number helpers - Used for EVM archival services
 // -----------------------------------------------------------------------------
 
 func getEVMBlockNumber(testService *TestService, headers http.Header, gatewayURL string) (string, error) {
@@ -297,29 +296,4 @@ func calculateArchivalBlockNumber(currentBlock, contractStartBlock uint64) strin
 // blockNumberToHex converts a block number to a hex string.
 func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
-}
-
-// getGatewayURLForTestMode returns the gateway URL based on the current test mode.
-// It also performs any necessary setup for E2E mode (e.g., Docker container startup) and calls waitForHydratorIfNeeded.
-//
-// Note: If E2E mode, the caller is responsible for deferring the returned teardown function, if not nil.
-func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, teardownFn func()) {
-	switch cfg.getTestMode() {
-
-	case testModeE2E:
-		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
-		var port string
-		port, teardownFn = setupPathInstance(t, configFilePath, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
-		gatewayURL = fmt.Sprintf("http://localhost:%s/v1", port)
-		waitForHydratorIfNeeded()
-		return gatewayURL, teardownFn
-
-	case testModeLoad:
-		gatewayURL = cfg.getGatewayURLForLoadTest()
-		return gatewayURL, nil
-
-	default:
-		t.Fatalf("Invalid test mode: %s", cfg.getTestMode())
-		return "", nil
-	}
 }

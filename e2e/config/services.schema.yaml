@@ -14,10 +14,14 @@ definitions:
     additionalProperties: false
     properties:
       contract_address:
-        description: "Contract address for eth calls"
+        description: "Contract/account address for blockchain calls (supports EVM, Harmony, and Solana formats)"
         type: string
-        pattern: "^(0x[a-fA-F0-9]{40}|one[a-z0-9]{39})$"
-        examples: ["0x28C6c06298d514Db089934071355E5743bf21d60", "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a"]
+        pattern: "^(0x[a-fA-F0-9]{40}|one[a-z0-9]{39}|[1-9A-HJ-NP-Za-km-z]{32,44})$"
+        examples: [
+          "0x28C6c06298d514Db089934071355E5743bf21d60", 
+          "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a",
+          "FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a"
+        ]
       call_data:
         description: "Call data for eth_call"
         type: string
@@ -28,11 +32,13 @@ definitions:
         type: integer
         minimum: 0
       transaction_hash:
-        description: "Transaction hash for receipt/transaction queries"
+        description: "Transaction hash/signature for receipt/transaction queries (supports EVM and Solana formats)"
         type: string
-        pattern: "^0x[a-fA-F0-9]{64}$"
-        examples:
-          ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
+        pattern: "^(0x[a-fA-F0-9]{64}|[1-9A-HJ-NP-Za-km-z]{88})$"
+        examples: [
+          "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f",
+          "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"
+        ]
 
   service:
     description: "Service definition for protocols"

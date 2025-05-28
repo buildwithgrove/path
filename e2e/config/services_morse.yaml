@@ -460,6 +460,15 @@ services:
       transaction_hash: "0xc65cff6db22a350d39d9154be650cd10bd0ca1c143402c51b3c7802f702328b0"
       call_data: "0x18160ddd"
 
+  # Solana
+  - name: "Morse - F025 (Solana) Test"
+    service_id: "F025"
+    service_type: "solana"
+    service_params:
+      # https://solscan.io/account/FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a
+      contract_address: "FxteHmLwG9nk1eL4pjNve3Eub2goGkkz6g6TbvdmW46a"
+      transaction_hash: "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"
+
   # TODO_IMPROVE(@commoddity): Update the below chains to test for 
   # for archival once configuration is updated in `service_qos_config.go`
 

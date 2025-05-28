@@ -62,7 +62,7 @@ func (r Request) MarshalJSON() ([]byte, error) {
 
 // BuildParamsFromString builds a Params object from a single string.
 //
-// For example, for an `eth_getBalance` request, the params would look like:
+// For example, for an EVM `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60"]
 //
 // Used for eth_getTransactionReceipt and eth_getTransactionByHash
@@ -79,7 +79,7 @@ func BuildParamsFromString(stringParam string) (Params, error) {
 
 // BuildParamsFromStringArray builds a Params object from an array of strings.
 //
-// For example, for an `eth_getBalance` request, the params would look like:å
+// For example, for an EVM `eth_getBalance` request, the params would look like:
 // params - ["0x28C6c06298d514Db089934071355E5743bf21d60", "0xe71e1d"]]
 //
 // Used for eth_getBalance, eth_getTransactionCount, and eth_getTransactionReceipt
@@ -98,7 +98,7 @@ func BuildParamsFromStringArray(params [2]string) (Params, error) {
 
 // BuildParamsFromStringAndBool builds a Params object from a single string and a boolean.
 //
-// For example, for an `eth_getBlockByNumber` request, the params would look like:
+// For example, for an EVM `eth_getBlockByNumber` request, the params would look like:
 // params - ["0xe71e1d", false]
 //
 // Used for eth_getBlockByNumber
@@ -115,7 +115,7 @@ func BuildParamsFromStringAndBool(stringParam string, boolParam bool) (Params, e
 
 // BuildParamsFromObjectAndString builds a Params object from a map and a string.
 //
-// For example, for an `eth_call` request, the params would look like:
+// For example, for an EVM `eth_call` request, the params would look like:
 // params - [{"to":"0xdAC17F958D2ee523a2206206994597C13D831ec7","data":"0x18160ddd"}, "latest"]
 //
 // Used for eth_call
@@ -124,6 +124,40 @@ func BuildParamsFromObjectAndString(objectParam map[string]string, stringParam s
 		return Params{}, fmt.Errorf("string param is empty")
 	}
 	jsonParams, err := json.Marshal([2]any{objectParam, stringParam})
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
+}
+
+// BuildParamsFromStringAndObject builds a Params object from a single string and a map.
+//
+// For example, for a Solana `getSignaturesForAddress` request, the params would look like:
+// params - ["Vote111111111111111111111111111111111111111",{"limit":1}]
+//
+// Used for getSignaturesForAddress
+func BuildParamsFromStringAndObject(stringParam string, objectParam map[string]any) (Params, error) {
+	if stringParam == "" {
+		return Params{}, fmt.Errorf("string param is empty")
+	}
+	jsonParams, err := json.Marshal([2]any{stringParam, objectParam})
+	if err != nil {
+		return Params{}, err
+	}
+	return Params{rawMessage: jsonParams}, nil
+}
+
+// BuildParamsFromUint64AndObject builds a Params object from a single uint64 and a map.
+//
+// For example, for a Solana `getBlock` request, the params would look like:
+// params - [430, {"encoding": "json", "transactionDetails": "full", "maxSupportedTransactionVersion": 0}]
+//
+// Used for getBlock
+func BuildParamsFromUint64AndObject(uint64Param uint64, objectParam map[string]any) (Params, error) {
+	if uint64Param == 0 {
+		return Params{}, fmt.Errorf("uint64 param is empty")
+	}
+	jsonParams, err := json.Marshal([2]any{uint64Param, objectParam})
 	if err != nil {
 		return Params{}, err
 	}
