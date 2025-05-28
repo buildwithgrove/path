@@ -480,7 +480,7 @@ services:
     service_id: "F020"
     service_type: "cometbft"
 
-  # TODO_NEXT(@commoddity): Add `service_params` for the below services
+  # TODO_IN_THIS_PR(@commoddity): Add `service_params` for the below services
 
   # # Berachain Testnet
   # - name: "Morse - F031 (Berachain Testnet) Test"
