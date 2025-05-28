@@ -45,8 +45,6 @@ func getEnvConfig() (envConfig, error) {
 
 	var testServiceIDs []protocol.ServiceID
 	if testServiceIDsEnv := os.Getenv(envTestServiceIDs); testServiceIDsEnv != "" {
-		// If TEST_SERVICE_IDS env var is set, use the provided service IDs
-		fmt.Printf("💡 Using service IDs from environment variable: %s\n", testServiceIDsEnv)
 		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
 			testServiceIDs = append(testServiceIDs, protocol.ServiceID(serviceID))
 		}
