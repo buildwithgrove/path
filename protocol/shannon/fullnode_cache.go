@@ -31,9 +31,16 @@ import (
 const (
 	// Applications may be cached indefinitely, as they become invalidated only when they unstake.
 	defaultAppCacheTTL = 5 * time.Minute
+	// Cleanup interval is twice the TTL - standard practice for balancing
+	// timely cleanup with minimal processing overhead
+	defaultAppCacheCleanupInterval = defaultAppCacheTTL * 2
+
 	// A session is 10 blocks * 30 seconds, after that it is in grace period for 1 block (30 seconds).
 	// So it should be cached for - at most - 30 seconds.
 	defaultSessionCacheTTL = 30 * time.Second
+	// Cleanup interval is twice the TTL - standard practice for balancing
+	// timely cleanup with minimal processing overhead
+	defaultSessionCacheCleanupInterval = defaultSessionCacheTTL * 2
 
 	// Cache key prefixes to avoid collisions
 	appCacheKeyPrefix     = "app"
@@ -62,8 +69,8 @@ type cachingFullNode struct {
 func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 	return &cachingFullNode{
 		lazyFullNode: lazyFullNode,
-		appCache:     cache.New(defaultAppCacheTTL, defaultAppCacheTTL*2),
-		sessionCache: cache.New(defaultSessionCacheTTL, defaultSessionCacheTTL*2),
+		appCache:     cache.New(defaultAppCacheTTL, defaultAppCacheCleanupInterval),
+		sessionCache: cache.New(defaultSessionCacheTTL, defaultSessionCacheCleanupInterval),
 	}
 }
 
