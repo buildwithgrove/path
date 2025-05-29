@@ -39,34 +39,11 @@ const (
 // ===== Vegeta Helper Functions =====
 
 // runServiceTest runs the E2E test for a single EVM service in a test case.
-func runServiceTest(
-	t *testing.T,
-	ctx context.Context,
-	targets []vegeta.Target,
-	serviceConfig ServiceConfig,
-	serviceType serviceType,
-	methodCount int,
-	summary *serviceSummary,
-) (serviceTestFailed bool) {
+func runServiceTest(t *testing.T, ctx context.Context, ts TestService) (serviceTestFailed bool) {
 	results := make(map[string]*methodMetrics)
 	var resultsMutex sync.Mutex
 
-	// Get methods to test from the summary
-	methods := summary.methodsToTest
-
-	// Create a map for progress bars and summary calculation (with the same config for all methods)
-	methodConfigMap := make(map[string]ServiceConfig)
-	// Create a map to associate methods with their targets
-	methodTargets := make(map[string]vegeta.Target)
-
-	for i, method := range methods {
-		methodConfigMap[method] = serviceConfig
-		if i < len(targets) {
-			methodTargets[method] = targets[i]
-		}
-	}
-
-	progBars, err := newProgressBars(methods, methodConfigMap)
+	progBars, err := newProgressBars(ts.testMethodsMap)
 	if err != nil {
 		t.Fatalf("Failed to create progress bars: %v", err)
 	}
@@ -77,34 +54,19 @@ func runServiceTest(
 	}()
 
 	var methodWg sync.WaitGroup
-	for _, method := range methods {
+	for method := range ts.testMethodsMap {
 		methodWg.Add(1)
 
-		target, exists := methodTargets[method]
-		if !exists {
-			fmt.Printf("Warning: No target found for method %s, skipping...\n", method)
-			methodWg.Done()
-			continue
-		}
-
-		go func(ctx context.Context, method string, serviceConfig ServiceConfig, target vegeta.Target) {
+		go func(ctx context.Context, method string, methodConfig testMethodConfig) {
 			defer methodWg.Done()
 
-			metrics := runMethodAttack(
-				ctx,
-				method,
-				serviceConfig,
-				serviceType,
-				methodCount,
-				target,
-				progBars.get(method),
-			)
+			metrics := runMethodAttack(ctx, method, ts, progBars.get(method))
 
 			resultsMutex.Lock()
 			results[method] = metrics
 			resultsMutex.Unlock()
 
-		}(ctx, method, serviceConfig, target)
+		}(ctx, method, ts.testMethodsMap[method])
 	}
 	methodWg.Wait()
 
@@ -112,22 +74,12 @@ func runServiceTest(
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
 
-	// We use the same methodConfigMap we created earlier for the summary calculation
-
-	calculateServiceSummary(t, methodConfigMap, results, summary, &serviceTestFailed)
+	calculateServiceSummary(t, ts.testMethodsMap, results, ts.summary, &serviceTestFailed)
 	return serviceTestFailed
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
-func runMethodAttack(
-	ctx context.Context,
-	method string,
-	serviceConfig ServiceConfig,
-	serviceType serviceType,
-	methodCount int,
-	target vegeta.Target,
-	progBar *pb.ProgressBar,
-) *methodMetrics {
+func runMethodAttack(ctx context.Context, method string, ts TestService, progBar *pb.ProgressBar) *methodMetrics {
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Method %s cancelled", method)
@@ -136,15 +88,7 @@ func runMethodAttack(
 	}
 
 	// We don't need to extract or modify the target anymore, just pass it through
-	metrics := runAttack(
-		ctx,
-		target,
-		string(method), // Pass method name as string for metrics
-		serviceConfig,
-		serviceType,
-		methodCount,
-		progBar,
-	)
+	metrics := runAttack(ctx, method, ts, progBar)
 
 	return metrics
 }
@@ -154,64 +98,58 @@ func runMethodAttack(
 // • Sends `serviceConfig.totalRequests` requests at `serviceConfig.rps` requests/sec
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
-func runAttack(
-	ctx context.Context,
-	target vegeta.Target,
-	methodName string, // Method name used for metrics and reporting
-	serviceConfig ServiceConfig,
-	serviceType serviceType,
-	methodCount int,
-	progressBar *pb.ProgressBar,
-) *methodMetrics {
-	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
-	attackRPS := max((serviceConfig.GlobalRPS+methodCount-1)/methodCount, 1)
+func runAttack(ctx context.Context, method string, ts TestService, progressBar *pb.ProgressBar) *methodMetrics {
+	methodConfig := ts.testMethodsMap[method]
 
-	metrics := initMethodMetrics(string(methodName), serviceConfig.RequestsPerMethod)
+	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
+	attackRPS := max((methodConfig.serviceConfig.GlobalRPS+len(ts.testMethodsMap)-1)/len(ts.testMethodsMap), 1)
+
+	// Initialize the method metrics
+	metrics := initMethodMetrics(method, methodConfig.serviceConfig.RequestsPerMethod)
 
 	// Use the target directly, no need to recreate it
 	targeter := func(tgt *vegeta.Target) error {
-		*tgt = target
+		*tgt = methodConfig.target
 		return nil
 	}
 
-	maxDuration := time.Duration(2*serviceConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
+	maxDuration := time.Duration(2*methodConfig.serviceConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
 
 	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
 	// This is because the P99 latency is the highest latency band for test assertions.
 	// We add 5 seconds to account for any unexpected delays.
-	attacker := createVegetaAttacker(attackRPS, serviceConfig.MaxP99LatencyMS+5*time.Second)
+	attacker := createVegetaAttacker(attackRPS, methodConfig.serviceConfig.MaxP99LatencyMS+5*time.Second)
 
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d GlobalRPS)...\n",
-			methodName, serviceConfig.RequestsPerMethod, attackRPS,
+			method, methodConfig.serviceConfig.RequestsPerMethod, attackRPS,
 		)
 	}
 
-	resultsChan := make(chan *vegeta.Result, serviceConfig.RequestsPerMethod)
+	// Create a channel to collect results
+	resultsChan := make(chan *vegeta.Result, methodConfig.serviceConfig.RequestsPerMethod)
+
+	// Start a goroutine to process results
 	var resultsWg sync.WaitGroup
-	processedCount := 0
 	startResultsCollector(
-		&resultsWg,
-		resultsChan,
+		ts,
+		method,
+		methodConfig,
 		metrics,
-		string(methodName),
-		serviceConfig,
-		serviceType,
+		resultsChan,
+		&resultsWg,
 		progressBar,
-		&processedCount,
 	)
 
-	requestSlots := serviceConfig.RequestsPerMethod
-	targeterWithLimit := makeTargeter(&requestSlots, targeter)
+	// Run the Vegeta attack
 	attackCh := attacker.Attack(
-		targeterWithLimit,
-		vegeta.Rate{
-			Freq: attackRPS,
-			Per:  time.Second,
-		},
+		makeTargeter(methodConfig, targeter),
+		vegeta.Rate{Freq: attackRPS, Per: time.Second},
 		maxDuration,
-		methodName,
+		method,
 	)
+
+	// Run the attack loop, sending results to the channel and handling cancellation
 	runVegetaAttackLoop(ctx, attackCh, resultsChan)
 
 	close(resultsChan)
@@ -223,7 +161,7 @@ func runAttack(
 }
 
 // initMethodMetrics
-// • Initializes methodMetrics struct for a method
+// • Initializes serviceConfig struct for a method
 func initMethodMetrics(method string, totalRequests int) *methodMetrics {
 	return &methodMetrics{
 		method:      method,
@@ -247,15 +185,15 @@ func createVegetaAttacker(rps int, timeout time.Duration) *vegeta.Attacker {
 // startResultsCollector
 // • Launches a goroutine to process results, update progress bar, print status
 func startResultsCollector(
-	resultsWg *sync.WaitGroup,
-	resultsChan <-chan *vegeta.Result,
-	metrics *methodMetrics,
+	ts TestService,
 	method string,
-	serviceConfig ServiceConfig,
-	serviceType serviceType,
+	methodConfig testMethodConfig,
+	metrics *methodMetrics,
+	resultsChan <-chan *vegeta.Result,
+	resultsWg *sync.WaitGroup,
 	progressBar *pb.ProgressBar,
-	processedCount *int,
 ) {
+	processedCount := 0
 	resultsWg.Add(1)
 	go func() {
 		defer resultsWg.Done()
@@ -263,38 +201,41 @@ func startResultsCollector(
 			if res.Error == "no targets to attack" {
 				continue
 			}
-			if *processedCount < serviceConfig.RequestsPerMethod {
-				processResult(metrics, res, serviceType)
-				(*processedCount)++
-				if progressBar != nil && progressBar.Current() < int64(serviceConfig.RequestsPerMethod) {
+			if processedCount < methodConfig.serviceConfig.RequestsPerMethod {
+				processResult(metrics, res, ts.serviceType)
+				processedCount++
+				if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
 					progressBar.Increment()
 				}
-				if progressBar == nil && *processedCount%50 == 0 {
-					percent := float64(*processedCount) / float64(serviceConfig.RequestsPerMethod) * 100
+				if progressBar == nil && processedCount%50 == 0 {
+					percent := float64(processedCount) / float64(methodConfig.serviceConfig.RequestsPerMethod) * 100
 					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
-						method, *processedCount, serviceConfig.RequestsPerMethod, percent)
+						method, processedCount, methodConfig.serviceConfig.RequestsPerMethod, percent)
 				}
 			}
 		}
-		if progressBar != nil && progressBar.Current() < int64(serviceConfig.RequestsPerMethod) {
-			remaining := int64(serviceConfig.RequestsPerMethod) - progressBar.Current()
+		if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
+			remaining := int64(methodConfig.serviceConfig.RequestsPerMethod) - progressBar.Current()
 			progressBar.Add64(remaining)
 		}
 		if progressBar == nil {
 			fmt.Printf("  %s: test completed (%d/%d requests)\n",
-				method, *processedCount, serviceConfig.RequestsPerMethod)
+				method, processedCount, methodConfig.serviceConfig.RequestsPerMethod,
+			)
 		}
 	}()
 }
 
 // makeTargeter
 // • Returns a vegeta.Targeter that enforces the request limit
-func makeTargeter(requestSlots *int, target vegeta.Targeter) vegeta.Targeter {
+func makeTargeter(methodConfig testMethodConfig, target vegeta.Targeter) vegeta.Targeter {
+	requestSlots := methodConfig.serviceConfig.RequestsPerMethod
+
 	return func(tgt *vegeta.Target) error {
-		if *requestSlots <= 0 {
+		if requestSlots <= 0 {
 			return vegeta.ErrNoTargets
 		}
-		(*requestSlots)--
+		requestSlots--
 		return target(tgt)
 	}
 }
@@ -415,10 +356,20 @@ type serviceSummary struct {
 	totalErrors   int
 }
 
+func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, methodsToTest []string) *serviceSummary {
+	return &serviceSummary{
+		serviceID:     serviceID,
+		serviceConfig: serviceConfig,
+		methodsToTest: methodsToTest,
+		methodErrors:  make(map[string]map[string]int),
+		methodCount:   len(methodsToTest),
+	}
+}
+
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[string]ServiceConfig,
+	methodConfigs map[string]testMethodConfig,
 	results map[string]*methodMetrics,
 	summary *serviceSummary,
 	serviceTestFailed *bool,
@@ -435,25 +386,25 @@ func calculateServiceSummary(
 
 	// Validate results for each method and collect summary data
 	for method := range methodConfigs {
-		methodMetrics := results[method]
+		serviceConfig := results[method]
 
 		// Skip methods with no data
-		if methodMetrics == nil || len(methodMetrics.results) == 0 {
+		if serviceConfig == nil || len(serviceConfig.results) == 0 {
 			continue
 		}
 
 		// Convert ServiceConfig to methodTestConfig for validation
 		methodDef := methodConfigs[method]
-		serviceConfig := ServiceConfig{
-			RequestsPerMethod: methodDef.RequestsPerMethod,
-			GlobalRPS:         methodDef.GlobalRPS,
-			SuccessRate:       methodDef.SuccessRate,
-			MaxP50LatencyMS:   methodDef.MaxP50LatencyMS,
-			MaxP95LatencyMS:   methodDef.MaxP95LatencyMS,
-			MaxP99LatencyMS:   methodDef.MaxP99LatencyMS,
+		methodTestConfig := ServiceConfig{
+			RequestsPerMethod: methodDef.serviceConfig.RequestsPerMethod,
+			GlobalRPS:         methodDef.serviceConfig.GlobalRPS,
+			SuccessRate:       methodDef.serviceConfig.SuccessRate,
+			MaxP50LatencyMS:   methodDef.serviceConfig.MaxP50LatencyMS,
+			MaxP95LatencyMS:   methodDef.serviceConfig.MaxP95LatencyMS,
+			MaxP99LatencyMS:   methodDef.serviceConfig.MaxP99LatencyMS,
 		}
 
-		validateResults(t, methodMetrics, serviceConfig)
+		validateResults(t, serviceConfig, methodTestConfig)
 
 		// If the test has failed after validation, set the service failure flag
 		if t.Failed() {
@@ -461,13 +412,13 @@ func calculateServiceSummary(
 		}
 
 		// Accumulate totals for the service summary
-		summary.totalRequests += methodMetrics.requestCount
-		summary.totalSuccess += methodMetrics.success
-		summary.totalFailure += methodMetrics.failed
+		summary.totalRequests += serviceConfig.requestCount
+		summary.totalSuccess += serviceConfig.success
+		summary.totalFailure += serviceConfig.failed
 
 		// Extract latencies for P90 calculation
 		var latencies []time.Duration
-		for _, res := range methodMetrics.results {
+		for _, res := range serviceConfig.results {
 			latencies = append(latencies, res.Latency)
 		}
 
@@ -478,18 +429,18 @@ func calculateServiceSummary(
 		// Add to summary totals
 		totalLatency += avgLatency
 		totalP90Latency += p90
-		totalSuccessRate += methodMetrics.successRate
+		totalSuccessRate += serviceConfig.successRate
 		methodsWithResults++
 
 		// Collect errors for the summary
-		if len(methodMetrics.errors) > 0 {
+		if len(serviceConfig.errors) > 0 {
 			// Initialize method errors map if not already created
 			if summary.methodErrors[method] == nil {
 				summary.methodErrors[method] = make(map[string]int)
 			}
 
 			// Copy errors to summary
-			for errMsg, count := range methodMetrics.errors {
+			for errMsg, count := range serviceConfig.errors {
 				summary.methodErrors[method][errMsg] = count
 				summary.totalErrors += count
 			}
@@ -507,7 +458,7 @@ func calculateServiceSummary(
 // ===== Metric Calculation Helpers =====
 
 // calculateSuccessRate
-// • Computes all success rates for a methodMetrics struct
+// • Computes all success rates for a serviceConfig struct
 func calculateSuccessRate(m *methodMetrics) {
 	// Overall HTTP success rate
 	m.requestCount = m.success + m.failed
@@ -901,7 +852,7 @@ type progressBars struct {
 // newProgressBars
 // • Creates a set of progress bars for all methods in a test
 // • Disables progress bars in CI/non-interactive environments
-func newProgressBars(methods []string, testConfigs map[string]ServiceConfig) (*progressBars, error) {
+func newProgressBars(testMethodsMap map[string]testMethodConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
 	if isCIEnv() {
 		fmt.Println("Running in CI environment - progress bars disabled")
@@ -912,8 +863,10 @@ func newProgressBars(methods []string, testConfigs map[string]ServiceConfig) (*p
 	}
 
 	// Sort methods for consistent display order
-	sortedMethods := make([]string, len(methods))
-	copy(sortedMethods, methods)
+	var sortedMethods []string
+	for method := range testMethodsMap {
+		sortedMethods = append(sortedMethods, method)
+	}
 	sort.Slice(sortedMethods, func(i, j int) bool {
 		return string(sortedMethods[i]) < string(sortedMethods[j])
 	})
@@ -928,10 +881,10 @@ func newProgressBars(methods []string, testConfigs map[string]ServiceConfig) (*p
 
 	// Create a progress bar for each method
 	bars := make(map[string]*pb.ProgressBar)
-	barList := make([]*pb.ProgressBar, 0, len(methods))
+	barList := make([]*pb.ProgressBar, 0, len(testMethodsMap))
 
 	for _, method := range sortedMethods {
-		def := testConfigs[method]
+		def := testMethodsMap[method]
 
 		// Store the method name with padding for display
 		padding := longestLen - len(string(method))
@@ -947,7 +900,7 @@ func newProgressBars(methods []string, testConfigs map[string]ServiceConfig) (*p
 			methodWithPadding, customCounterFormat)
 
 		// Create the bar with the template and start it
-		bar := pb.ProgressBarTemplate(tmpl).New(def.RequestsPerMethod)
+		bar := pb.ProgressBarTemplate(tmpl).New(def.serviceConfig.RequestsPerMethod)
 
 		// Ensure we're not using byte formatting
 		bar.Set(pb.Bytes, false)

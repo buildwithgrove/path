@@ -85,7 +85,6 @@ func Test_PATH_E2E(t *testing.T) {
 
 		// Get methods to test
 		methodsToTest := ts.getTestMethods()
-		methodCount := len(methodsToTest)
 
 		// Generate targets for this service
 		targets, err := ts.getVegetaTargets(methodsToTest, serviceGatewayURL)
@@ -100,28 +99,16 @@ func Test_PATH_E2E(t *testing.T) {
 		}
 
 		// Create summary for this service
-		serviceSummaries[ts.ServiceID] = &serviceSummary{
-			serviceID:     ts.ServiceID,
-			serviceConfig: serviceConfig,
-			methodsToTest: methodsToTest,
-			methodErrors:  make(map[string]map[string]int),
-			methodCount:   methodCount,
-			totalErrors:   0,
-		}
+		serviceSummaries[ts.ServiceID] = newServiceSummary(ts.ServiceID, serviceConfig, methodsToTest)
+
+		// Assign all relevant fields to the test service
+		ts.hydrate(serviceConfig, ts.ServiceType, targets, serviceSummaries[ts.ServiceID])
 
 		// Log service specific info
 		logTestServiceInfo(ts, serviceGatewayURL, serviceConfig)
 
 		// Run the service test
-		serviceTestFailed := runServiceTest(
-			t,
-			ctx,
-			targets,
-			serviceConfig,
-			ts.ServiceType,
-			methodCount,
-			serviceSummaries[ts.ServiceID],
-		)
+		serviceTestFailed := runServiceTest(t, ctx, ts)
 
 		if serviceTestFailed {
 			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, ts.ServiceID, RESET)

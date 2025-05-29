@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"net/url"
 
+	vegeta "github.com/tsenart/vegeta/lib"
+
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
-	vegeta "github.com/tsenart/vegeta/lib"
 )
 
 type serviceType string
@@ -42,8 +43,11 @@ type (
 		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana)
 		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
 		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
+		// Not marshaled from YAML; set in test case.
+		serviceType    serviceType
+		testMethodsMap map[string]testMethodConfig
+		summary        *serviceSummary
 	}
-
 	// ServiceParams holds service-specific test data for all methods.
 	// TODO_IMPROVE(@commoddity): Look into getting contract address and contract start block
 	// from `config/service_qos_config.go` to have only one source of truth for service params
@@ -52,9 +56,29 @@ type (
 		ContractStartBlock uint64 `yaml:"contract_start_block,omitempty"` // Minimum block number to use for archival tests
 		TransactionHash    string `yaml:"transaction_hash,omitempty"`     // Transaction hash for receipt/transaction queries
 		CallData           string `yaml:"call_data,omitempty"`            // Call data for eth_call
-		blockNumber        string // Not marshaled from YAML; set in test case. Can be "latest" or an archival block number
+		// Not marshaled from YAML; set in test case.
+		blockNumber string // Can be "latest" or an archival block number
+	}
+	testMethodConfig struct {
+		target        vegeta.Target // Used to send the request to the service
+		serviceConfig ServiceConfig // Used to calculate the test metrics for the method
 	}
 )
+
+func (ts *TestService) hydrate(serviceConfig ServiceConfig, serviceType serviceType, targets map[string]vegeta.Target, summary *serviceSummary) {
+	ts.serviceType = serviceType
+	ts.summary = summary
+
+	// Set up the test methods map
+	testMethodsMap := make(map[string]testMethodConfig)
+	for method, target := range targets {
+		testMethodsMap[method] = testMethodConfig{
+			target:        target,
+			serviceConfig: serviceConfig,
+		}
+	}
+	ts.testMethodsMap = testMethodsMap
+}
 
 func (ts *TestService) getTestMethods() []string {
 	switch ts.ServiceType {
@@ -63,13 +87,13 @@ func (ts *TestService) getTestMethods() []string {
 	case serviceTypeSolana:
 		return getSolanaTestMethods()
 	case serviceTypeCometBFT:
-		// CometBFT uses REST-like endpoints, not JSON-RPC methods
-		return getCometBFTTestEndpoints()
+		// CometBFT uses REST-like URL paths, not JSON-RPC methods
+		return getCometBFTTestURLPaths()
 	}
 	return nil
 }
 
-func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) ([]vegeta.Target, error) {
+func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) (map[string]vegeta.Target, error) {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
 		return getEVMVegetaTargets(ts, methods, gatewayURL)

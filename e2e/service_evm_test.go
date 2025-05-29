@@ -12,10 +12,23 @@ import (
 	"strings"
 	"time"
 
+	vegeta "github.com/tsenart/vegeta/lib"
+
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	vegeta "github.com/tsenart/vegeta/lib"
 )
+
+// TODO_TECHDEBT(@commoddity): The service_<SERVICE_TYPE>_test.go files in this package
+// are essentially encapsulating knowledge about specific services.
+//
+// As part of the JUDGE refactor of the QoS packages, we should move some/all of
+// service-specific knowledge to the qos package and create method-specific handling.
+// This will centralize the measures taken related to an endpoint quality in one place.
+//
+// Examples:
+// - Request/Response validation for a specific JSONRPC method.
+// - Format of params field for a specific JSONRPC method.
+// - JSONRPC methods an endpoint should support.
 
 /* -------------------- EVM JSON-RPC Method Definitions -------------------- */
 
@@ -105,7 +118,7 @@ func getEVMVegetaTargets(
 	ts *TestService,
 	methods []string,
 	gatewayURL string,
-) ([]vegeta.Target, error) {
+) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
 
 	blockNumber, err := getEVMBlockNumber(ts, headers, gatewayURL)
@@ -114,7 +127,7 @@ func getEVMVegetaTargets(
 	}
 	ts.ServiceParams.blockNumber = blockNumber
 
-	targets := make([]vegeta.Target, 0, len(methods))
+	targets := make(map[string]vegeta.Target)
 	for _, method := range methods {
 		// Create JSON-RPC request with appropriate parameters
 		jsonrpcReq := jsonrpc.Request{
@@ -138,7 +151,7 @@ func getEVMVegetaTargets(
 			Header: headers,
 		}
 
-		targets = append(targets, target)
+		targets[method] = target
 	}
 
 	return targets, nil

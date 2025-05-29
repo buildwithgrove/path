@@ -14,7 +14,7 @@ import (
 
 var cometbftExpectedID = jsonrpc.IDFromInt(-1)
 
-// Reference for all CometBFT RPC endpoints:
+// Reference for all CometBFT RPC URL paths:
 // - https://docs.cometbft.com/v0.38/rpc/
 const (
 	cometbftEndpointStatus         = "/status"          // Get node status
@@ -28,8 +28,8 @@ const (
 	cometbftEndpointValidators     = "/validators"      // Get validators
 )
 
-// getCometBFTTestEndpoints returns all CometBFT endpoints for a service load test.
-func getCometBFTTestEndpoints() []string {
+// getCometBFTTestURLPaths returns all CometBFT URL paths for a service load test.
+func getCometBFTTestURLPaths() []string {
 	return []string{
 		cometbftEndpointStatus,
 		cometbftEndpointHealth,
@@ -45,15 +45,15 @@ func getCometBFTTestEndpoints() []string {
 
 func getCometBFTVegetaTargets(
 	ts *TestService,
-	endpoints []string,
+	urlPaths []string,
 	gatewayURL string,
-) ([]vegeta.Target, error) {
+) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
 
-	targets := make([]vegeta.Target, 0, len(endpoints))
-	for _, endpoint := range endpoints {
-		// Create URL with endpoint
-		url := gatewayURL + string(endpoint)
+	targets := make(map[string]vegeta.Target)
+	for _, urlPath := range urlPaths {
+		// Create URL with URL path
+		url := gatewayURL + string(urlPath)
 
 		// Create vegeta target
 		target := vegeta.Target{
@@ -62,7 +62,7 @@ func getCometBFTVegetaTargets(
 			Header: headers,
 		}
 
-		targets = append(targets, target)
+		targets[urlPath] = target
 	}
 
 	return targets, nil

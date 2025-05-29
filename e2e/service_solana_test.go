@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 	vegeta "github.com/tsenart/vegeta/lib"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 /* -------------------- Solana JSON-RPC Method Definitions -------------------- */
@@ -109,7 +110,7 @@ func getSolanaVegetaTargets(
 	ts *TestService,
 	methods []string,
 	gatewayURL string,
-) ([]vegeta.Target, error) {
+) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
 
 	// Get the appropriate block number for the test
@@ -119,7 +120,7 @@ func getSolanaVegetaTargets(
 	}
 	ts.ServiceParams.blockNumber = blockNumber
 
-	targets := make([]vegeta.Target, 0, len(methods))
+	targets := make(map[string]vegeta.Target)
 	for _, method := range methods {
 		// Create JSON-RPC request with appropriate parameters
 		jsonrpcReq := jsonrpc.Request{
@@ -143,7 +144,7 @@ func getSolanaVegetaTargets(
 			Header: headers,
 		}
 
-		targets = append(targets, target)
+		targets[method] = target
 	}
 
 	return targets, nil

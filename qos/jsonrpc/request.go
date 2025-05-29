@@ -53,12 +53,20 @@ func (r Request) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+// SetParams sets the params field directly from a byte array
+func (r *Request) SetParams(params []byte) {
+	r.Params = Params{rawMessage: params}
+}
+
 // -----------------
 // The following functions build Params objects from various input types.
 // These are individually defined in order to allow type-safe param construction.
 //
 // JSON-RPC spec reference: https://www.jsonrpc.org/specification#parameter_structures
 // -----------------
+
+// TODO_TECHDEBT(@commoddity): A single method on Request, e.g. SetParams([]byte), should be sufficient.
+// These special case methods can then live in the client code.
 
 // BuildParamsFromString builds a Params object from a single string.
 //
