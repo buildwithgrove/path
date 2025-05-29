@@ -293,10 +293,11 @@ func (c *Config) getTestServices() ([]TestService, error) {
 	}
 
 	if len(filteredTestCases) == 0 {
+		servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
 		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
 			"\n"+
-			"Please refer to the `%s` file to see which test cases are configured for the `%s` protocol.",
-			envTestServiceIDs, c.cfgPath, protocol,
+			"Please refer to the `%s` file to see which services are configured for the `%s` protocol.",
+			envTestServiceIDs, servicesFile, protocol,
 		)
 	}
 
