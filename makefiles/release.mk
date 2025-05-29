@@ -62,18 +62,40 @@ release_tag_dev: ## Tag a new dev release (e.g. v1.0.1 -> v1.0.1-dev1, v1.0.1-de
 release_tag_bug_fix: ## Tag a new bug fix release (e.g. v1.0.1 -> v1.0.2)
 	@$(eval LATEST_TAG=$(shell git tag --sort=-v:refname | head -n 1))
 	@$(eval NEW_TAG=$(shell echo $(LATEST_TAG) | awk -F. -v OFS=. '{ $$NF = sprintf("%d", $$NF + 1); print }'))
-	@git tag $(NEW_TAG)
-	@echo "New bug fix version tagged: $(NEW_TAG)"
-	@echo "Run the following commands to push the new tag:"
-	@echo "  git push origin $(NEW_TAG)"
-	@echo "And draft a new release at https://github.com/buildwithgrove/path/releases/new"
+	echo "########"; \
+	git tag $(NEW_TAG); \
+	echo "########"; \
+	echo "New bug fix version tagged: $$NEW_TAG"; \
+	echo ""; \
+	echo "Next, do the following:"; \
+	echo "1. Run the following commands to push the new tag:"; \
+	echo "   git push origin $$NEW_TAG"; \
+	echo "2. And draft a new release at https://github.com/buildwithgrove/path/releases/new"
+	echo ""; \
+	echo "If you need to delete a tag, run:"; \
+	echo "  git tag -d $$NEW_TAG"; \
+	echo "If you need to delete a tag remotely, run:"; \
+	echo "  git push origin --delete $$NEW_TAG"; \
+	echo ""; \
+	echo "########"
+
 
 .PHONY: release_tag_minor_release
 release_tag_minor_release: ## Tag a new minor release (e.g. v1.0.0 -> v1.1.0)
 	@$(eval LATEST_TAG=$(shell git tag --sort=-v:refname | head -n 1))
 	@$(eval NEW_TAG=$(shell echo $(LATEST_TAG) | awk -F. '{$$2 += 1; $$3 = 0; print $$1 "." $$2 "." $$3}'))
 	@git tag $(NEW_TAG)
-	@echo "New minor release version tagged: $(NEW_TAG)"
-	@echo "Run the following commands to push the new tag:"
-	@echo "  git push origin $(NEW_TAG)"
-	@echo "And draft a new release at https://github.com/buildwithgrove/path/releases/new"
+	echo "########"; \
+	echo "New minor release version tagged: $$NEW_TAG"; \
+	echo ""; \
+	echo "Next, do the following:"; \
+	echo "1. Run the following commands to push the new tag:"; \
+	echo "   git push origin $$NEW_TAG"; \
+	echo "2. And draft a new release at https://github.com/buildwithgrove/path/releases/new"; \
+	echo ""; \
+	echo "If you need to delete a tag, run:"; \
+	echo "  git tag -d $$NEW_TAG"; \
+	echo "If you need to delete a tag remotely, run:"; \
+	echo "  git push origin --delete $$NEW_TAG"; \
+	echo ""; \
+	echo "########"
