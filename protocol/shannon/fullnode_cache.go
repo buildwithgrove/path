@@ -26,10 +26,14 @@ import (
 //
 // - 3. Add more documentation around lazy mode
 // - 4. Test the performance of a caching node vs lazy node.
+//
+// TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
 const (
-	// TODO_IMPROVE(@commoddity): make the cache TTL configurable in config YAML file.
-	defaultCacheTTL             = 30 * time.Second
-	defaultCacheCleanupInterval = 1 * time.Minute
+	// Applications may be cached indefinitely, as they become invalidated only when they unstake.
+	defaultAppCacheTTL = 5 * time.Minute
+	// A session is 10 blocks * 30 seconds, after that it is in grace period for 1 block (30 seconds).
+	// So it should be cached for - at most - 30 seconds.
+	defaultSessionCacheTTL = 30 * time.Second
 
 	// Cache key prefixes to avoid collisions
 	appCacheKeyPrefix     = "app"
@@ -58,9 +62,8 @@ type cachingFullNode struct {
 func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 	return &cachingFullNode{
 		lazyFullNode: lazyFullNode,
-
-		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+		appCache:     cache.New(defaultAppCacheTTL, defaultAppCacheTTL*2),
+		sessionCache: cache.New(defaultSessionCacheTTL, defaultSessionCacheTTL*2),
 	}
 }
 
@@ -177,8 +180,8 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 
 // createCacheKey creates a cache key for the given prefix and key.
 //
-//	eg. createCacheKey("app", "0x123") -> "app/0x123"
-//	eg. createCacheKey("session", "anvil:0x456") -> "session/anvil:0x456"
+//	eg. createCacheKey("app", "0x123") -> "app-0x123"
+//	eg. createCacheKey("session", "anvil:0x456") -> "session-anvil:0x456"
 func createCacheKey(prefix string, key string) string {
-	return fmt.Sprintf("%s/%s", prefix, key)
+	return fmt.Sprintf("%s-%s", prefix, key)
 }
