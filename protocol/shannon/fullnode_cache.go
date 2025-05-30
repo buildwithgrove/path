@@ -187,8 +187,8 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 
 // createCacheKey creates a cache key for the given prefix and key.
 //
-//	eg. createCacheKey("app", "0x123") -> "app-0x123"
-//	eg. createCacheKey("session", "anvil:0x456") -> "session-anvil:0x456"
+//	eg. createCacheKey("app", "0x123") -> "app:0x123"
+//	eg. createCacheKey("session", "anvil:0x456") -> "session:anvil:0x456"
 func createCacheKey(prefix string, key string) string {
-	return fmt.Sprintf("%s-%s", prefix, key)
+	return fmt.Sprintf("%s:%s", prefix, key)
 }
