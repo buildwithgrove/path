@@ -165,12 +165,18 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 }
 
 func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
-	var response devtools.QoSLevelDataResponse
+	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s", serviceID)
+
+	disqualifiedEndpoints := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
+	emptyResponseCount := 0
+	blockNumberCheckErrorsCount := 0
+	chainIDCheckErrorsCount := 0
+	archivalCheckErrorsCount := 0
 
 	// Get all endpoints in the store
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
 		if err := ss.validateEndpoint(endpoint); err != nil {
-			response.DisqualifiedEndpoints[endpointAddr] = devtools.DisqualifiedEndpoint{
+			disqualifiedEndpoints[endpointAddr] = devtools.DisqualifiedEndpoint{
 				EndpointAddr: endpointAddr,
 				Reason:       err.Error(),
 				ServiceID:    serviceID,
@@ -178,24 +184,32 @@ func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.
 
 			switch {
 			case errors.Is(err, errEmptyResponseObs):
-				response.EmptyResponseCount++
+				emptyResponseCount++
 
 			case errors.Is(err, errNoBlockNumberObs),
 				errors.Is(err, errInvalidBlockNumberObs):
-				response.BlockNumberCheckErrorsCount++
+				blockNumberCheckErrorsCount++
 
 			case errors.Is(err, errNoChainIDObs),
 				errors.Is(err, errInvalidChainIDObs):
-				response.ChainIDCheckErrorsCount++
+				chainIDCheckErrorsCount++
 
 			case errors.Is(err, errNoArchivalBalanceObs),
 				errors.Is(err, errInvalidArchivalBalanceObs):
-				response.ArchivalCheckErrorsCount++
+				archivalCheckErrorsCount++
 			}
 
 			continue
 		}
 	}
 
-	return response
+	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s: %v", serviceID, disqualifiedEndpoints)
+
+	return devtools.QoSLevelDataResponse{
+		DisqualifiedEndpoints:       disqualifiedEndpoints,
+		EmptyResponseCount:          emptyResponseCount,
+		BlockNumberCheckErrorsCount: blockNumberCheckErrorsCount,
+		ChainIDCheckErrorsCount:     chainIDCheckErrorsCount,
+		ArchivalCheckErrorsCount:    archivalCheckErrorsCount,
+	}
 }

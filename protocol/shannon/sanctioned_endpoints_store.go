@@ -246,11 +246,13 @@ func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
 //
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
-	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
+	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 	permanentSanctionedEndpointsCount := 0
 
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
+	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 	sessionSanctionedEndpointsCount := 0
+
+	ses.logger.Info().Msgf("Getting sanction details for service ID: %s", serviceID)
 
 	// First get permanent sanctions
 	for endpointAddr, sanction := range ses.permanentSanctions {
@@ -296,6 +298,8 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		sessionSanctionDetails[endpointAddr] = sanctionDetails
 		sessionSanctionedEndpointsCount++
 	}
+
+	ses.logger.Info().Msgf("Returning sanction details for service ID: %s", serviceID)
 
 	return devtools.ProtocolLevelDataResponse{
 		PermanentlySanctionedEndpoints:    permanentSanctionDetails,

@@ -124,6 +124,7 @@ func main() {
 	}
 
 	disqualifiedEndpointsReporter := &devtools.DisqualifiedEndpointReporter{
+		Logger:                logger,
 		ProtocolLevelReporter: protocol,
 		QoSLevelReporters:     qosLevelReporters,
 	}

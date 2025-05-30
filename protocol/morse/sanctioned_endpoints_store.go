@@ -9,7 +9,6 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -217,70 +216,4 @@ func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
 
 func (s sessionSanctionKey) string() string {
 	return fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionKey, s.endpointAddr)
-}
-
-// --------- Sanction Details ---------
-
-// getSanctionDetails returns the sanctioned endpoints for a given service ID.
-// It provides information about:
-//   - the currently sanctioned endpoints, including the reason
-//   - counts for valid and sanctioned endpoints
-//
-// It is called by the router to allow quick information about currently sanctioned endpoints.
-func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
-	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
-	permanentSanctionedEndpointsCount := 0
-
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
-	sessionSanctionedEndpointsCount := 0
-
-	// First get permanent sanctions
-	for endpointAddr, sanction := range ses.permanentSanctions {
-		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
-
-		// If serviceID is provided, skip sanctions for other service IDs
-		if serviceID != "" && sanctionServiceID != serviceID {
-			continue
-		}
-
-		sanctionDetails := sanction.toSanctionDetails(
-			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
-		)
-
-		permanentSanctionDetails[endpointAddr] = sanctionDetails
-		permanentSanctionedEndpointsCount++
-	}
-
-	// Then get session sanctions
-	for keyStr, cachedSanction := range ses.sessionSanctions.Items() {
-		key := newSessionSanctionKeyFromCacheKey(keyStr)
-
-		sanction, ok := cachedSanction.Object.(sanction)
-		if !ok {
-			ses.logger.Warn().Msg("cached sanction is not a sanction")
-			continue
-		}
-
-		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
-
-		// If serviceID is provided, skip sanctions for other service IDs
-		if serviceID != "" && sanctionServiceID != serviceID {
-			continue
-		}
-
-		sanctionDetails := sanction.toSanctionDetails(
-			key.endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
-		)
-
-		sessionSanctionDetails[key.endpointAddr] = sanctionDetails
-		sessionSanctionedEndpointsCount++
-	}
-
-	return devtools.ProtocolLevelDataResponse{
-		PermanentlySanctionedEndpoints:    permanentSanctionDetails,
-		SessionSanctionedEndpoints:        sessionSanctionDetails,
-		SanctionedEndpointsCount:          permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount,
-		PermamentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
-		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
-	}
 }

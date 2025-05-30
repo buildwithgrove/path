@@ -45,8 +45,8 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 // toSanctionDetails converts a sanction to a devtools.DisqualifiedEndpoint struct.
 // It is called by the sanctionedEndpointsStore to return the sanctioned endpoints for a given service ID.
 // This will eventually be removed in favour of a metrics-based approach.
-func (s sanction) toSanctionDetails(endpointAddr protocol.EndpointAddr, sanctionType protocolobservations.MorseSanctionType) devtools.DisqualifiedEndpoint {
-	return devtools.DisqualifiedEndpoint{
+func (s sanction) toSanctionDetails(endpointAddr protocol.EndpointAddr, sanctionType protocolobservations.MorseSanctionType) devtools.SanctionedEndpoint {
+	return devtools.SanctionedEndpoint{
 		EndpointAddr:  endpointAddr,
 		Reason:        s.reason,
 		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],

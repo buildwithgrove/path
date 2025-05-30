@@ -44,15 +44,15 @@ func (m *Mockgateway) EXPECT() *MockgatewayMockRecorder {
 }
 
 // HandleServiceRequest mocks base method.
-func (m *Mockgateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+func (m *Mockgateway) HandleServiceRequest(arg0 context.Context, arg1 *http.Request, arg2 http.ResponseWriter) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleServiceRequest", ctx, httpReq, w)
+	m.ctrl.Call(m, "HandleServiceRequest", arg0, arg1, arg2)
 }
 
 // HandleServiceRequest indicates an expected call of HandleServiceRequest.
-func (mr *MockgatewayMockRecorder) HandleServiceRequest(ctx, httpReq, w any) *gomock.Call {
+func (mr *MockgatewayMockRecorder) HandleServiceRequest(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), ctx, httpReq, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), arg0, arg1, arg2)
 }
 
 // MockdisqualifiedEndpointsReporter is a mock of disqualifiedEndpointsReporter interface.
@@ -80,16 +80,16 @@ func (m *MockdisqualifiedEndpointsReporter) EXPECT() *MockdisqualifiedEndpointsR
 }
 
 // Report mocks base method.
-func (m *MockdisqualifiedEndpointsReporter) Report(serviceID protocol.ServiceID) (devtools.DisqualifiedEndpointResponse, error) {
+func (m *MockdisqualifiedEndpointsReporter) Report(arg0 protocol.ServiceID, arg1 *http.Request) (devtools.DisqualifiedEndpointResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Report", serviceID)
+	ret := m.ctrl.Call(m, "Report", arg0, arg1)
 	ret0, _ := ret[0].(devtools.DisqualifiedEndpointResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Report indicates an expected call of Report.
-func (mr *MockdisqualifiedEndpointsReporterMockRecorder) Report(serviceID any) *gomock.Call {
+func (mr *MockdisqualifiedEndpointsReporterMockRecorder) Report(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockdisqualifiedEndpointsReporter)(nil).Report), serviceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockdisqualifiedEndpointsReporter)(nil).Report), arg0, arg1)
 }

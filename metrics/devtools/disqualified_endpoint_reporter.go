@@ -1,21 +1,16 @@
 package devtools
 
 import (
-	"context"
 	"net/http"
 
-	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	"github.com/buildwithgrove/path/protocol"
 )
 
 type (
 	ProtocolDataReporter interface {
-		// AvailableEndpoints returns the list of available endpoints matching both the service ID
-		AvailableEndpoints(
-			context.Context,
-			protocol.ServiceID,
-			*http.Request,
-		) (protocol.EndpointAddrList, protocolobservations.Observations, error)
+		GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
 
 		HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *DisqualifiedEndpointResponse)
 	}
@@ -25,32 +20,42 @@ type (
 )
 
 type DisqualifiedEndpointReporter struct {
+	Logger                polylog.Logger
 	ProtocolLevelReporter ProtocolDataReporter
 	QoSLevelReporters     map[protocol.ServiceID]QoSDataReporter
 }
 
-func (r *DisqualifiedEndpointReporter) Report(serviceID protocol.ServiceID) (DisqualifiedEndpointResponse, error) {
-	availableEndpoints, _, err := r.ProtocolLevelReporter.AvailableEndpoints(context.Background(), serviceID, nil)
+func (r *DisqualifiedEndpointReporter) Report(serviceID protocol.ServiceID, httpReq *http.Request) (DisqualifiedEndpointResponse, error) {
+	r.Logger.Info().Msgf("Reporting disqualified endpoints for service ID: %s", serviceID)
+
+	var serviceEndpointsCount int
+	serviceEndpointsCount, err := r.ProtocolLevelReporter.GetTotalServiceEndpointsCount(serviceID, httpReq)
 	if err != nil {
 		return DisqualifiedEndpointResponse{}, err
 	}
 
-	disqualifiedEndpointDetails := DisqualifiedEndpointResponse{
-		AvailableEndpointsCount: len(availableEndpoints),
+	r.Logger.Info().Msgf("DisqualifiedEndpointReporter.Report: Successfully got available endpoints for service ID: %s", serviceID)
+
+	details := DisqualifiedEndpointResponse{
+		TotalServiceEndpointsCount: serviceEndpointsCount,
 	}
 
-	r.ProtocolLevelReporter.HydrateDisqualifiedEndpointsResponse(serviceID, &disqualifiedEndpointDetails)
+	// Get Protocol-level sanctioned endpoints
+	r.ProtocolLevelReporter.HydrateDisqualifiedEndpointsResponse(serviceID, &details)
 
+	// Get QoS-level sanctioned endpoints
 	for qosServiceID, qoSLevelReporter := range r.QoSLevelReporters {
 		if serviceID != "" && qosServiceID != serviceID {
 			continue
 		}
 
-		qoSLevelReporter.HydrateDisqualifiedEndpointsResponse(qosServiceID, &disqualifiedEndpointDetails)
+		qoSLevelReporter.HydrateDisqualifiedEndpointsResponse(qosServiceID, &details)
 	}
 
-	disqualifiedEndpointDetails.InvalidEndpointsCount = disqualifiedEndpointDetails.GetDisqualifiedEndpointsCount()
-	disqualifiedEndpointDetails.ValidEndpointsCount = disqualifiedEndpointDetails.AvailableEndpointsCount - disqualifiedEndpointDetails.InvalidEndpointsCount
+	r.Logger.Info().Msgf("DisqualifiedEndpointReporter.Report: Successfully hydrated disqualified endpoint details for service ID: %s", serviceID)
 
-	return disqualifiedEndpointDetails, nil
+	details.InvalidServiceEndpointsCount = details.GetDisqualifiedEndpointsCount()
+	details.ValidServiceEndpointsCount = details.GetValidServiceEndpointsCount()
+
+	return details, nil
 }

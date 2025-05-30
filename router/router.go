@@ -56,10 +56,10 @@ type (
 		healthChecker                 *health.Checker
 	}
 	gateway interface {
-		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
+		HandleServiceRequest(context.Context, *http.Request, http.ResponseWriter)
 	}
 	disqualifiedEndpointsReporter interface {
-		Report(serviceID protocol.ServiceID) (devtools.DisqualifiedEndpointResponse, error)
+		Report(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
 
@@ -91,13 +91,9 @@ func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
-	// GET /v1/sanctioned_endpoints - returns a JSON list of sanctioned endpoints
+	// GET /v1/disqualified_endpoints/{service_id} - returns a JSON list of disqualified endpoints for a given service ID
 	// This will eventually be removed in favour of a metrics-based approach.
-	r.mux.HandleFunc("GET /sanctioned_endpoints", r.handleSanctionedEndpoints)
-
-	// GET /v1/sanctioned_endpoints/{service_id} - returns a JSON list of sanctioned endpoints for a given service ID
-	// This will eventually be removed in favour of a metrics-based approach.
-	r.mux.HandleFunc("GET /sanctioned_endpoints/{service_id}", r.handleSanctionedEndpoints)
+	r.mux.HandleFunc("GET /disqualified_endpoints/{service_id}", r.handleDisqualifiedEndpoints)
 
 	// requestHandlerFn defines the middleware chain for all service requests
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
@@ -203,15 +199,22 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 	r.gateway.HandleServiceRequest(reqCtx, req, w)
 }
 
-// handleSanctionedEndpoints returns a JSON list of sanctioned endpoints
+// handleDisqualifiedEndpoints returns a JSON list of disqualified endpoints
 // This will eventually be removed in favour of a metrics-based approach.
-func (r *router) handleSanctionedEndpoints(w http.ResponseWriter, req *http.Request) {
+func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Request) {
 	serviceID := protocol.ServiceID(req.PathValue("service_id"))
+	if serviceID == "" {
+		errMsg := "Service ID is required"
+		r.logger.Error().Msg(errMsg)
+		http.Error(w, errMsg, http.StatusBadRequest)
+		return
+	}
 
-	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.Report(serviceID)
+	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.Report(serviceID, req)
 	if err != nil {
-		r.logger.Error().Err(err).Msg("Failed to get disqualified endpoints")
-		http.Error(w, "Failed to get disqualified endpoints", http.StatusInternalServerError)
+		errMsg := fmt.Sprintf("Failed to get disqualified endpoints for service ID: %s. Err: %v", serviceID, err)
+		r.logger.Error().Msg(errMsg)
+		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
