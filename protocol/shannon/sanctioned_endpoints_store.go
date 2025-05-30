@@ -213,7 +213,8 @@ func newSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
 }
 
 func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
-	parts := strings.Split(cacheKey, ":")
+	// Only split for 4 parts, as final part is URL which contains a ":" character.
+	parts := strings.SplitN(cacheKey, ":", 4)
 	return sessionSanctionKey{
 		appAddr:   parts[0],
 		sessionID: parts[1],
@@ -234,7 +235,7 @@ func (s sessionSanctionKey) string() string {
 
 // TODO_IN_THIS_PR(@commoddity): confirm this is the correct way to form a Shannon endpoint address.
 func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
-	return protocol.EndpointAddr(fmt.Sprintf("%s:%s", s.appAddr, s.url))
+	return protocol.EndpointAddr(fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionID, s.url))
 }
 
 // --------- Sanction Details ---------
@@ -246,13 +247,10 @@ func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
 //
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
-	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
-	permanentSanctionedEndpointsCount := 0
-
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
-	sessionSanctionedEndpointsCount := 0
-
 	ses.logger.Info().Msgf("Getting sanction details for service ID: %s", serviceID)
+
+	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
+	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
 	for endpointAddr, sanction := range ses.permanentSanctions {
@@ -268,7 +266,6 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		)
 
 		permanentSanctionDetails[endpointAddr] = sanctionDetails
-		permanentSanctionedEndpointsCount++
 	}
 
 	// Then get session sanctions
@@ -289,23 +286,26 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		}
 
 		// Append the appAddr and url to form the endpoint address
-		endpointAddr := key.endpointAddr()
+		endpointAddr := protocol.EndpointAddr(key.string())
 
 		sanctionDetails := sanction.toSanctionDetails(
 			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
 		)
 
 		sessionSanctionDetails[endpointAddr] = sanctionDetails
-		sessionSanctionedEndpointsCount++
 	}
+
+	permanentSanctionedEndpointsCount := len(permanentSanctionDetails)
+	sessionSanctionedEndpointsCount := len(sessionSanctionDetails)
+	totalSanctionedEndpointsCount := permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount
 
 	ses.logger.Info().Msgf("Returning sanction details for service ID: %s", serviceID)
 
 	return devtools.ProtocolLevelDataResponse{
 		PermanentlySanctionedEndpoints:    permanentSanctionDetails,
 		SessionSanctionedEndpoints:        sessionSanctionDetails,
-		SanctionedEndpointsCount:          permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount,
 		PermamentSanctionedEndpointsCount: permanentSanctionedEndpointsCount,
 		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
+		TotalSanctionedEndpointsCount:     totalSanctionedEndpointsCount,
 	}
 }

@@ -26,6 +26,8 @@ import (
 const defaultConfigPath = "config/.config.yaml"
 
 func main() {
+	log.Printf("🌿 PATH gateway starting...")
+
 	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)

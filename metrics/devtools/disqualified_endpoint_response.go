@@ -29,9 +29,9 @@ type (
 	ProtocolLevelDataResponse struct {
 		PermanentlySanctionedEndpoints    map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
 		SessionSanctionedEndpoints        map[protocol.EndpointAddr]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
-		SanctionedEndpointsCount          int                                          `json:"sanctioned_endpoints_count"`
 		PermamentSanctionedEndpointsCount int                                          `json:"permanent_sanctioned_endpoints_count"`
 		SessionSanctionedEndpointsCount   int                                          `json:"session_sanctioned_endpoints_count"`
+		TotalSanctionedEndpointsCount     int                                          `json:"total_sanctioned_endpoints_count"`
 	}
 
 	QoSLevelDataResponse struct {
