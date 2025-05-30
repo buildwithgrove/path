@@ -110,9 +110,9 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 	//   - request_error_kind: any gateway-level request errors: e.g. no service ID specified in request's HTTP headers.
 	relaysTotal.With(
 		prometheus.Labels{
-			"service_id":        serviceID,
-			"request_type":      observation.RequestType_name[int32(gatewayObservations.GetRequestType())],
-			"requst_error_kind": requestErrorKind,
+			"service_id":         serviceID,
+			"request_type":       observation.RequestType_name[int32(gatewayObservations.GetRequestType())],
+			"request_error_kind": requestErrorKind,
 		},
 	).Inc()
 
