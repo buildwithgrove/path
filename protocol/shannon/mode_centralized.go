@@ -94,6 +94,10 @@ func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Applicati
 	return false
 }
 
+// TODO_IMPROVE(@commoddity, @adshmh): This function currently loops through all apps owned by the gateway.
+// Without a caching FullNode, this results in extremely slow behaviour. We should look into improving the
+// efficiency of this lookup to get the list of apps owned by the gateway.
+//
 // getCentralizedGatewayModeApps returns the set of permitted apps under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeApps(
 	ctx context.Context,
