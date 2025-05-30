@@ -89,7 +89,7 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
 }
 
-// GetInvalidEndpointResponses is a no-op for the CometBFT QoS.
+// HydrateDisqualifiedEndpointsResponse is a no-op for the CometBFT QoS.
 // TODO_IN_THIS_PR: implement this
-func (QoS) GetInvalidEndpointResponses(_ protocol.ServiceID, _ protocol.EndpointAddrList, _ *devtools.InvalidEndpointResponses) {
+func (QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 }

@@ -44,17 +44,17 @@ func buildSanctionFromObservation(observation *protocolobservations.MorseEndpoin
 	}
 }
 
-// toSanctionDetails converts a sanction to a devtools.SanctionDetails struct.
+// toSanctionDetails converts a sanction to a devtools.DisqualifiedEndpoint struct.
 // It is called by the sanctionedEndpointsStore to return the sanctioned endpoints for a given service ID.
 // This will eventually be removed in favour of a metrics-based approach.
-func (s sanction) toSanctionDetails(endpointAddr protocol.EndpointAddr, sanctionType protocolobservations.MorseSanctionType) devtools.SanctionDetails {
-	return devtools.SanctionDetails{
+func (s sanction) toSanctionDetails(endpointAddr protocol.EndpointAddr, sanctionType protocolobservations.MorseSanctionType) devtools.DisqualifiedEndpoint {
+	return devtools.DisqualifiedEndpoint{
 		EndpointAddr:  endpointAddr,
 		Reason:        s.reason,
 		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
 		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
 		ServiceID:     protocol.ServiceID(s.sessionServiceID),
-		SessionHeight: s.sessionHeight,
+		SessionHeight: int64(s.sessionHeight),
 		CreatedAt:     s.createdAt,
 	}
 }

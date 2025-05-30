@@ -55,40 +55,41 @@ func (mr *MockgatewayMockRecorder) HandleServiceRequest(ctx, httpReq, w any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), ctx, httpReq, w)
 }
 
-// MockinvalidEndpointsReporter is a mock of invalidEndpointsReporter interface.
-type MockinvalidEndpointsReporter struct {
+// MockdisqualifiedEndpointsReporter is a mock of disqualifiedEndpointsReporter interface.
+type MockdisqualifiedEndpointsReporter struct {
 	ctrl     *gomock.Controller
-	recorder *MockinvalidEndpointsReporterMockRecorder
+	recorder *MockdisqualifiedEndpointsReporterMockRecorder
 	isgomock struct{}
 }
 
-// MockinvalidEndpointsReporterMockRecorder is the mock recorder for MockinvalidEndpointsReporter.
-type MockinvalidEndpointsReporterMockRecorder struct {
-	mock *MockinvalidEndpointsReporter
+// MockdisqualifiedEndpointsReporterMockRecorder is the mock recorder for MockdisqualifiedEndpointsReporter.
+type MockdisqualifiedEndpointsReporterMockRecorder struct {
+	mock *MockdisqualifiedEndpointsReporter
 }
 
-// NewMockinvalidEndpointsReporter creates a new mock instance.
-func NewMockinvalidEndpointsReporter(ctrl *gomock.Controller) *MockinvalidEndpointsReporter {
-	mock := &MockinvalidEndpointsReporter{ctrl: ctrl}
-	mock.recorder = &MockinvalidEndpointsReporterMockRecorder{mock}
+// NewMockdisqualifiedEndpointsReporter creates a new mock instance.
+func NewMockdisqualifiedEndpointsReporter(ctrl *gomock.Controller) *MockdisqualifiedEndpointsReporter {
+	mock := &MockdisqualifiedEndpointsReporter{ctrl: ctrl}
+	mock.recorder = &MockdisqualifiedEndpointsReporterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockinvalidEndpointsReporter) EXPECT() *MockinvalidEndpointsReporterMockRecorder {
+func (m *MockdisqualifiedEndpointsReporter) EXPECT() *MockdisqualifiedEndpointsReporterMockRecorder {
 	return m.recorder
 }
 
 // Report mocks base method.
-func (m *MockinvalidEndpointsReporter) Report(serviceID protocol.ServiceID) devtools.InvalidEndpointResponses {
+func (m *MockdisqualifiedEndpointsReporter) Report(serviceID protocol.ServiceID) (devtools.DisqualifiedEndpointResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Report", serviceID)
-	ret0, _ := ret[0].(devtools.InvalidEndpointResponses)
-	return ret0
+	ret0, _ := ret[0].(devtools.DisqualifiedEndpointResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Report indicates an expected call of Report.
-func (mr *MockinvalidEndpointsReporterMockRecorder) Report(serviceID any) *gomock.Call {
+func (mr *MockdisqualifiedEndpointsReporterMockRecorder) Report(serviceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockinvalidEndpointsReporter)(nil).Report), serviceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockdisqualifiedEndpointsReporter)(nil).Report), serviceID)
 }

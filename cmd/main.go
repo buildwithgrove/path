@@ -118,12 +118,12 @@ func main() {
 	}
 
 	// Convert qosInstances to DataReporter map
-	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.DataReporter)
+	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.QoSDataReporter)
 	for serviceID, qosService := range qosInstances {
 		qosLevelReporters[serviceID] = qosService
 	}
 
-	invalidEndpointsReporter := &devtools.InvalidEndpointsReporter{
+	disqualifiedEndpointsReporter := &devtools.DisqualifiedEndpointReporter{
 		ProtocolLevelReporter: protocol,
 		QoSLevelReporters:     qosLevelReporters,
 	}
@@ -131,7 +131,7 @@ func main() {
 	apiRouter := router.NewRouter(
 		logger,
 		gateway,
-		invalidEndpointsReporter,
+		disqualifiedEndpointsReporter,
 		healthChecker,
 		config.GetRouterConfig(),
 	)

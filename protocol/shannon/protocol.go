@@ -354,8 +354,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	return endpoints, nil
 }
 
-// GetInvalidEndpointResponses is a No-Op for Shannon protocol.
-// Here to satisfy the gateway.Protocol interface.
-func (p *Protocol) GetInvalidEndpointResponses(_ protocol.ServiceID, _ protocol.EndpointAddrList, _ *devtools.InvalidEndpointResponses) {
-	p.logger.Warn().Msg("GetInvalidEndpointResponses is not implemented for Shannon protocol")
+// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
+func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	details.ProtocolLevelDataResponse = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
 }

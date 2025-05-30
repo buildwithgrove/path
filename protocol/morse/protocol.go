@@ -401,35 +401,6 @@ func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 // If serviceID is provided, it returns the sanctioned endpoints for that service ID.
 // If serviceID is not provided, it returns the sanctioned endpoints for all configured service IDs.
 // It also returns the total number of endpoints, the number of valid endpoints, and the number of sanctioned endpoints.
-func (p *Protocol) GetInvalidEndpointResponses(
-	serviceID protocol.ServiceID,
-	_ protocol.EndpointAddrList,
-	invalidEndpointResponses *devtools.InvalidEndpointResponses,
-) {
-	validEndpoints := 0
-
-	var serviceIDsToCount []protocol.ServiceID
-	if serviceID == "" {
-		for serviceID := range p.ConfiguredServiceIDs() {
-			serviceIDsToCount = append(serviceIDsToCount, serviceID)
-		}
-	} else {
-		serviceIDsToCount = []protocol.ServiceID{serviceID}
-	}
-
-	for _, serviceID := range serviceIDsToCount {
-		endpoints, err := p.getEndpoints(serviceID)
-		if err != nil {
-			p.logger.Error().Err(err).Msg("GetSanctionedEndpoints: error getting endpoints")
-			continue
-		}
-		validEndpoints += len(endpoints)
-	}
-
-	sanctionDetails := p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
-
-	sanctionDetails.ValidEndpointsCount = validEndpoints
-	sanctionDetails.TotalEndpointsCount = validEndpoints + sanctionDetails.SanctionedEndpointsCount
-
-	invalidEndpointResponses.ProtocolLevelDataResponse = sanctionDetails
+func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	details.ProtocolLevelDataResponse = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
 }

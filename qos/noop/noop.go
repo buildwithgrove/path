@@ -70,6 +70,6 @@ func requestContextFromError(err error) *requestContext {
 	}
 }
 
-// GetInvalidEndpointResponses is a no-op for the noop QoS.
-func (NoOpQoS) GetInvalidEndpointResponses(_ protocol.ServiceID, _ protocol.EndpointAddrList, _ *devtools.InvalidEndpointResponses) {
+// HydrateDisqualifiedEndpointsResponse is a no-op for the noop QoS.
+func (NoOpQoS) HydrateDisqualifiedEndpointsResponse(_ protocol.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
 }

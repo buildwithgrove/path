@@ -50,16 +50,16 @@ type (
 
 		config config.RouterConfig
 
-		mux                      *http.ServeMux
-		gateway                  gateway
-		invalidEndpointsReporter invalidEndpointsReporter
-		healthChecker            *health.Checker
+		mux                           *http.ServeMux
+		gateway                       gateway
+		disqualifiedEndpointsReporter disqualifiedEndpointsReporter
+		healthChecker                 *health.Checker
 	}
 	gateway interface {
 		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
 	}
-	invalidEndpointsReporter interface {
-		Report(serviceID protocol.ServiceID) devtools.InvalidEndpointResponses
+	disqualifiedEndpointsReporter interface {
+		Report(serviceID protocol.ServiceID) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
 
@@ -69,7 +69,7 @@ type (
 func NewRouter(
 	logger polylog.Logger,
 	gateway gateway,
-	invalidEndpointsReporter invalidEndpointsReporter,
+	disqualifiedEndpointsReporter disqualifiedEndpointsReporter,
 	healthChecker *health.Checker,
 	config config.RouterConfig,
 ) *router {
@@ -78,10 +78,10 @@ func NewRouter(
 
 		config: config,
 
-		mux:                      http.NewServeMux(),
-		gateway:                  gateway,
-		invalidEndpointsReporter: invalidEndpointsReporter,
-		healthChecker:            healthChecker,
+		mux:                           http.NewServeMux(),
+		gateway:                       gateway,
+		disqualifiedEndpointsReporter: disqualifiedEndpointsReporter,
+		healthChecker:                 healthChecker,
 	}
 	r.handleRoutes()
 	return r
@@ -208,7 +208,12 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 func (r *router) handleSanctionedEndpoints(w http.ResponseWriter, req *http.Request) {
 	serviceID := protocol.ServiceID(req.PathValue("service_id"))
 
-	invalidEndpointResponses := r.invalidEndpointsReporter.Report(serviceID)
+	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.Report(serviceID)
+	if err != nil {
+		r.logger.Error().Err(err).Msg("Failed to get disqualified endpoints")
+		http.Error(w, "Failed to get disqualified endpoints", http.StatusInternalServerError)
+		return
+	}
 
-	jsonresponse.RespondWithJSON(w, http.StatusOK, invalidEndpointResponses)
+	jsonresponse.RespondWithJSON(w, http.StatusOK, disqualifiedEndpointResponses)
 }

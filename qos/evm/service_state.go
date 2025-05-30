@@ -164,23 +164,13 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	return nil
 }
 
-func (ss *serviceState) getSanctionDetails(
-	serviceID protocol.ServiceID,
-	availableEndpoints protocol.EndpointAddrList,
-) devtools.QoSLevelDataResponse {
-	response := devtools.QoSLevelDataResponse{
-		InvalidEndpoints:        make(map[protocol.ServiceID]map[protocol.EndpointAddr]devtools.SanctionDetails),
-		AvailableEndpointsCount: len(availableEndpoints),
-	}
+func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
+	var response devtools.QoSLevelDataResponse
 
 	// Get all endpoints in the store
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
 		if err := ss.validateEndpoint(endpoint); err != nil {
-			if _, ok := response.InvalidEndpoints[serviceID]; !ok {
-				response.InvalidEndpoints[serviceID] = make(map[protocol.EndpointAddr]devtools.SanctionDetails)
-			}
-
-			response.InvalidEndpoints[serviceID][endpointAddr] = devtools.SanctionDetails{
+			response.DisqualifiedEndpoints[endpointAddr] = devtools.DisqualifiedEndpoint{
 				EndpointAddr: endpointAddr,
 				Reason:       err.Error(),
 				ServiceID:    serviceID,
@@ -206,11 +196,6 @@ func (ss *serviceState) getSanctionDetails(
 			continue
 		}
 	}
-
-	response.InvalidEndpointsCount = response.EmptyResponseCount + response.BlockNumberCheckErrorsCount +
-		response.ChainIDCheckErrorsCount + response.ArchivalCheckErrorsCount
-
-	response.ValidEndpointsCount = len(ss.endpointStore.endpoints) - response.InvalidEndpointsCount
 
 	return response
 }

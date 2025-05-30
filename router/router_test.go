@@ -21,12 +21,12 @@ import (
 func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
 	ctrl := gomock.NewController(t)
 	mockGateway := NewMockgateway(ctrl)
-	mockInvalidEndpointsReporter := NewMockinvalidEndpointsReporter(ctrl)
+	mockDisqualifiedEndpointsReporter := NewMockdisqualifiedEndpointsReporter(ctrl)
 
 	r := NewRouter(
 		polyzero.NewLogger(),
 		mockGateway,
-		mockInvalidEndpointsReporter,
+		mockDisqualifiedEndpointsReporter,
 		&health.Checker{},
 		config.RouterConfig{},
 	)

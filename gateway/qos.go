@@ -106,7 +106,6 @@ type QoSService interface {
 	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
 	ApplyObservations(*qos.Observations) error
 
-	// GetInvalidEndpointResponses returns the sanctioned endpoints for a given service ID.
-	// This will eventually be removed in favour of a metrics-based approach.
-	GetInvalidEndpointResponses(protocol.ServiceID, protocol.EndpointAddrList, *devtools.InvalidEndpointResponses)
+	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
+	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 }

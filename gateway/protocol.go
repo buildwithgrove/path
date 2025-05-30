@@ -62,9 +62,8 @@ type Protocol interface {
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 
-	// GetInvalidEndpointResponses returns the sanctioned endpoints for a given service ID.
-	// This will eventually be removed in favour of a metrics-based approach.
-	GetInvalidEndpointResponses(protocol.ServiceID, protocol.EndpointAddrList, *devtools.InvalidEndpointResponses)
+	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
+	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

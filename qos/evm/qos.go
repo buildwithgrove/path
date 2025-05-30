@@ -97,11 +97,7 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 	}, true
 }
 
-// GetInvalidEndpointResponses returns all Morse sanctioned endpoints
-func (qos *QoS) GetInvalidEndpointResponses(
-	serviceID protocol.ServiceID,
-	availableEndpoints protocol.EndpointAddrList,
-	invalidEndpointResponses *devtools.InvalidEndpointResponses,
-) {
-	invalidEndpointResponses.QoSLevelDataResponse = qos.serviceState.getSanctionDetails(serviceID, availableEndpoints)
+// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
+func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	details.QoSLevelDataResponse = qos.serviceState.hydrateDisqualifiedEndpointsResponse(serviceID)
 }
