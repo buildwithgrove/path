@@ -484,7 +484,7 @@ services:
     service_id: "osmosis"
     service_type: "cometbft"
 
-  # TODO_IN_THIS_PR(@commoddity): Add `service_params` for the below services
+  # TODO_NEXT(@commoddity): Add `service_params` for the below services
 
   # # Shannon - Berachain Testnet
   # - name: "Shannon - bera_test (Berachain Testnet) Test"
