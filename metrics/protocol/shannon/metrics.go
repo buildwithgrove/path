@@ -29,6 +29,7 @@ var (
 	// Labels:
 	//   - service_id: Target service identifier (i.e. chain id in Shannon)
 	//   - success: Whether the relay was successful (true if at least one endpoint had no error)
+	//   - error_type: type of error encountered processing the request
 	//
 	// Exemplars:
 	//   - endpoint_url: URL of the endpoint (from the last entry in observations list)
@@ -47,7 +48,7 @@ var (
 			Name:      relaysTotalMetric,
 			Help:      "Total number of relays processed by Shannon protocol instance(s)",
 		},
-		[]string{"service_id", "success"},
+		[]string{"service_id", "success", "error_type"},
 	)
 
 	// relaysErrorsTotal tracks relay errors by error type.
