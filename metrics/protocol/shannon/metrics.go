@@ -151,6 +151,7 @@ func recordRelayTotal(
 		prometheus.Labels{
 			"service_id": serviceID,
 			"success":    fmt.Sprintf("%t", success),
+			"error_type": "",
 		},
 	// This dynamic type cast is safe:
 	// https://pkg.go.dev/github.com/prometheus/client_golang@v1.22.0/prometheus#NewCounter
