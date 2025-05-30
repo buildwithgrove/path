@@ -33,8 +33,10 @@ type RequestType int32
 
 const (
 	RequestType_REQUEST_TYPE_UNSPECIFIED RequestType = 0
-	RequestType_REQUEST_TYPE_ORGANIC     RequestType = 1 // Service request sent by a user.
-	RequestType_REQUEST_TYPE_SYNTHETIC   RequestType = 2 // Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+	// Organic: Service request sent by a user.
+	RequestType_REQUEST_TYPE_ORGANIC RequestType = 1
+	// Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+	RequestType_REQUEST_TYPE_SYNTHETIC RequestType = 2
 )
 
 // Enum value maps for RequestType.
@@ -78,13 +80,60 @@ func (RequestType) EnumDescriptor() ([]byte, []int) {
 	return file_path_gateway_proto_rawDescGZIP(), []int{0}
 }
 
+type GatewayRequestErrorKind int32
+
+const (
+	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED GatewayRequestErrorKind = 0
+	// Service ID not specified.
+	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID GatewayRequestErrorKind = 1
+)
+
+// Enum value maps for GatewayRequestErrorKind.
+var (
+	GatewayRequestErrorKind_name = map[int32]string{
+		0: "GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED",
+		1: "GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID",
+	}
+	GatewayRequestErrorKind_value = map[string]int32{
+		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":        0,
+		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID": 1,
+	}
+)
+
+func (x GatewayRequestErrorKind) Enum() *GatewayRequestErrorKind {
+	p := new(GatewayRequestErrorKind)
+	*p = x
+	return p
+}
+
+func (x GatewayRequestErrorKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GatewayRequestErrorKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_path_gateway_proto_enumTypes[1].Descriptor()
+}
+
+func (GatewayRequestErrorKind) Type() protoreflect.EnumType {
+	return &file_path_gateway_proto_enumTypes[1]
+}
+
+func (x GatewayRequestErrorKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GatewayRequestErrorKind.Descriptor instead.
+func (GatewayRequestErrorKind) EnumDescriptor() ([]byte, []int) {
+	return file_path_gateway_proto_rawDescGZIP(), []int{1}
+}
+
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
 // Examples include the geographic region of the request, the request type, etc.
 type GatewayObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// request_auth stores any fields related to the identification/authentication of the request.
 	RequestAuth *RequestAuth `protobuf:"bytes,1,opt,name=request_auth,json=requestAuth,proto3" json:"request_auth,omitempty"`
-	// Specifies the request type.
+	// Specifies the request origin.
 	// For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
 	RequestType RequestType `protobuf:"varint,2,opt,name=request_type,json=requestType,proto3,enum=path.RequestType" json:"request_type,omitempty"`
 	// service_id is the identifier specified via custom HTTP header.
@@ -95,7 +144,10 @@ type GatewayObservations struct {
 	// completed_time is when request processing finished and response was returned
 	CompletedTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=completed_time,json=completedTime,proto3" json:"completed_time,omitempty"`
 	// response_size is the size in bytes of the response payload
-	ResponseSize  uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
+	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
+	// gateway-level request error, if any.
+	// e.g. no service ID specified.
+	RequestError  *GatewayRequestError `protobuf:"bytes,7,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,11 +224,74 @@ func (x *GatewayObservations) GetResponseSize() uint64 {
 	return 0
 }
 
+func (x *GatewayObservations) GetRequestError() *GatewayRequestError {
+	if x != nil {
+		return x.RequestError
+	}
+	return nil
+}
+
+// Tracks any errors encountered at the gateway level.
+// e.g.: No Service ID specified by the request's HTTP headers.
+type GatewayRequestError struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Categorizes the error
+	ErrorKind GatewayRequestErrorKind `protobuf:"varint,1,opt,name=error_kind,json=errorKind,proto3,enum=path.GatewayRequestErrorKind" json:"error_kind,omitempty"`
+	// Detailed reason
+	Details       string `protobuf:"bytes,2,opt,name=details,proto3" json:"details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewayRequestError) Reset() {
+	*x = GatewayRequestError{}
+	mi := &file_path_gateway_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewayRequestError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayRequestError) ProtoMessage() {}
+
+func (x *GatewayRequestError) ProtoReflect() protoreflect.Message {
+	mi := &file_path_gateway_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayRequestError.ProtoReflect.Descriptor instead.
+func (*GatewayRequestError) Descriptor() ([]byte, []int) {
+	return file_path_gateway_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GatewayRequestError) GetErrorKind() GatewayRequestErrorKind {
+	if x != nil {
+		return x.ErrorKind
+	}
+	return GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED
+}
+
+func (x *GatewayRequestError) GetDetails() string {
+	if x != nil {
+		return x.Details
+	}
+	return ""
+}
+
 var File_path_gateway_proto protoreflect.FileDescriptor
 
 const file_path_gateway_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\xc9\x02\n" +
+	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\xa0\x03\n" +
 	"\x13GatewayObservations\x124\n" +
 	"\frequest_auth\x18\x01 \x01(\v2\x11.path.RequestAuthR\vrequestAuth\x124\n" +
 	"\frequest_type\x18\x02 \x01(\x0e2\x11.path.RequestTypeR\vrequestType\x12\x1d\n" +
@@ -184,11 +299,20 @@ const file_path_gateway_proto_rawDesc = "" +
 	"service_id\x18\x03 \x01(\tR\tserviceId\x12?\n" +
 	"\rreceived_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\freceivedTime\x12A\n" +
 	"\x0ecompleted_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rcompletedTime\x12#\n" +
-	"\rresponse_size\x18\x06 \x01(\x04R\fresponseSize*a\n" +
+	"\rresponse_size\x18\x06 \x01(\x04R\fresponseSize\x12C\n" +
+	"\rrequest_error\x18\a \x01(\v2\x19.path.GatewayRequestErrorH\x00R\frequestError\x88\x01\x01B\x10\n" +
+	"\x0e_request_error\"m\n" +
+	"\x13GatewayRequestError\x12<\n" +
+	"\n" +
+	"error_kind\x18\x01 \x01(\x0e2\x1d.path.GatewayRequestErrorKindR\terrorKind\x12\x18\n" +
+	"\adetails\x18\x02 \x01(\tR\adetails*a\n" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
-	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
+	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*x\n" +
+	"\x17GatewayRequestErrorKind\x12*\n" +
+	"&GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED\x10\x00\x121\n" +
+	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
 
 var (
 	file_path_gateway_proto_rawDescOnce sync.Once
@@ -202,24 +326,28 @@ func file_path_gateway_proto_rawDescGZIP() []byte {
 	return file_path_gateway_proto_rawDescData
 }
 
-var file_path_gateway_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_path_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_path_gateway_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_path_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_path_gateway_proto_goTypes = []any{
 	(RequestType)(0),              // 0: path.RequestType
-	(*GatewayObservations)(nil),   // 1: path.GatewayObservations
-	(*RequestAuth)(nil),           // 2: path.RequestAuth
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(GatewayRequestErrorKind)(0),  // 1: path.GatewayRequestErrorKind
+	(*GatewayObservations)(nil),   // 2: path.GatewayObservations
+	(*GatewayRequestError)(nil),   // 3: path.GatewayRequestError
+	(*RequestAuth)(nil),           // 4: path.RequestAuth
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_path_gateway_proto_depIdxs = []int32{
-	2, // 0: path.GatewayObservations.request_auth:type_name -> path.RequestAuth
+	4, // 0: path.GatewayObservations.request_auth:type_name -> path.RequestAuth
 	0, // 1: path.GatewayObservations.request_type:type_name -> path.RequestType
-	3, // 2: path.GatewayObservations.received_time:type_name -> google.protobuf.Timestamp
-	3, // 3: path.GatewayObservations.completed_time:type_name -> google.protobuf.Timestamp
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 2: path.GatewayObservations.received_time:type_name -> google.protobuf.Timestamp
+	5, // 3: path.GatewayObservations.completed_time:type_name -> google.protobuf.Timestamp
+	3, // 4: path.GatewayObservations.request_error:type_name -> path.GatewayRequestError
+	1, // 5: path.GatewayRequestError.error_kind:type_name -> path.GatewayRequestErrorKind
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_path_gateway_proto_init() }
@@ -228,13 +356,14 @@ func file_path_gateway_proto_init() {
 		return
 	}
 	file_path_auth_proto_init()
+	file_path_gateway_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_gateway_proto_rawDesc), len(file_path_gateway_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   1,
+			NumEnums:      2,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

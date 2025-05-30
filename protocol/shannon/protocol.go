@@ -2,7 +2,6 @@ package shannon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -126,7 +125,7 @@ func (p *Protocol) AvailableEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
-) (protocol.EndpointAddrList, error) {
+) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
 	// hydrate the logger.
 	logger := p.logger.With(
 		"service", serviceID,
@@ -137,9 +136,8 @@ func (p *Protocol) AvailableEndpoints(
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
-		errMsg := "Relay request will fail: error building the permitted apps list for service."
-		logger.Error().Err(err).Msg(errMsg)
-		return nil, errors.New(errMsg)
+		logger.Error().Err(err).Msg("Relay request will fail: error building the permitted apps list for service.")
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	logger = logger.With("number_of_permitted_apps", len(permittedApps))
@@ -149,9 +147,8 @@ func (p *Protocol) AvailableEndpoints(
 	// owns and can send relays on behalf of.
 	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
 	if err != nil {
-		errMsg := "error getting the set of all endpoints: relay request will fail."
-		logger.Error().Err(err).Msg(errMsg)
-		return nil, errors.New(errMsg)
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	logger = logger.With("number_of_unique_endpoints", len(endpoints))
@@ -163,11 +160,15 @@ func (p *Protocol) AvailableEndpoints(
 		endpointAddrs = append(endpointAddrs, endpointAddr)
 	}
 
-	return endpointAddrs, nil
+	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }
 
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // Takes the HTTP request as an argument for Delegate mode to get permitted apps from the HTTP request's headers.
+// Returns:
+// - An initialized request context.
+// - An observation to use if the context initialization failed.
+// - An error if the context initialization failed.
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
@@ -175,30 +176,45 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	httpReq *http.Request,
-) (gateway.ProtocolRequestContext, error) {
+) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
+	logger := p.logger.With(
+		"method", "BuildRequestContextForEndpoint",
+		"service_id", serviceID,
+		"endpoint_addr", selectedEndpointAddr,
+	)
+
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error building the permitted apps list for service %s gateway mode %s: %w", serviceID, p.gatewayMode, err)
+		logger.Error().Err(err).Msg("BuildRequestContextForEndpoint: error building the permitted apps list for service. Relay request will fail")
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
 	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Select the endpoint that matches the pre-selected address.
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err := fmt.Errorf("%w: service %s endpoint %s", errRequestContextSetupInvalidEndpointSelected, serviceID, selectedEndpointAddr)
+		logger.Error().Err(err).Msg("Selected endpoint is not available.")
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Retrieve the relay request signer for the current gateway mode.
 	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting the permitted signer for gateway mode %s: %w", p.gatewayMode, err)
+		// Wrap the context setup error.
+		// Used to generate the observation.
+		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.gatewayMode, err)
+		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Return new request context for the pre-selected endpoint
@@ -208,7 +224,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
-	}, nil
+	}, protocolobservations.Observations{}, nil
 }
 
 // ApplyObservations updates protocol instance state based on endpoint observations.
@@ -289,15 +305,18 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		logger.Debug().Msg("processing app.")
 
 		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
+		// error fetching a session:
+		// Log an error
+		// skip current app.
 		if err != nil {
-			logger.Error().Err(err).Msg("Internal error: error getting a session for the app. Service request will fail.")
-			return nil, fmt.Errorf("could not get the session for service %s app %s", serviceID, app.Address)
+			logger.Error().Err(err).Msg("Internal error: error getting a session for the app: skipping the app.")
+			continue
 		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
-			logger.Error().Err(err).Msg("Internal error: error getting all endpoints for app and session. Service request will fail.")
-			return nil, fmt.Errorf("error getting all endpoints for app %s session %s: %w", app.Address, session.SessionId, err)
+			logger.Error().Err(err).Msg("Internal error: error getting all endpoints for app and session: skipping the app.")
+			continue
 		}
 
 		// Filter out any sanctioned endpoints
@@ -321,9 +340,13 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		logger.Info().Msg("Successfully fetched session for application.")
 	}
 
+	// Ensure at least one endpoint is available for the requested service.
 	if len(endpoints) == 0 {
-		logger.Warn().Msg("Internal error: no endpoints available for permitted apps. Service request will fail.")
-		return nil, fmt.Errorf("getAppsUniqueEndpoints: no endpoints found for service %s", serviceID)
+		// Wrap the context setup error.
+		// Used for generating observations.
+		err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
+		logger.Warn().Err(err).Msg("No endpoints available after filtering sanctioned endpoints: relay request will fail.")
+		return nil, err
 	}
 
 	logger.With("num_endpoints", len(endpoints)).Debug().Msg("Successfully fetched endpoints for permitted apps.")

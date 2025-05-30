@@ -95,7 +95,10 @@ func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Applicati
 }
 
 // getCentralizedGatewayModeApps returns the set of permitted apps under the Centralized gateway mode.
-func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID protocol.ServiceID) ([]*apptypes.Application, error) {
+func (p *Protocol) getCentralizedGatewayModeApps(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+) ([]*apptypes.Application, error) {
 	logger := p.logger.With(
 		"method", "getCentralizedGatewayModeApps",
 		"service_id", string(serviceID),
@@ -111,8 +114,10 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 		app, err := p.FullNode.GetApp(ctx, ownedAppAddr)
 		if err != nil {
-			logger.Error().Err(err).Msgf("error getting onchain data for app %s owned by the gateway", ownedAppAddr)
-			return nil, fmt.Errorf("error getting onchain data for app %s owned by the gateway: %w", ownedAppAddr, err)
+			// Wrap the protocol context setup error.
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
+			logger.Error().Err(err).Msg(err.Error())
+			return nil, err
 		}
 
 		// Skip the app if it is not staked for the requested service.
@@ -123,8 +128,10 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 		// Verify the app delegates to the gateway.
 		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
-			logger.Error().Msgf("owned app %s does not delegate to gateway %s", app.Address, p.gatewayAddr)
-			return nil, fmt.Errorf("owned app %s does not delegate to gateway %s", app.Address, p.gatewayAddr)
+			// Wrap the protocol context setup error.
+			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, app.Address, p.gatewayAddr)
+			logger.Error().Msg(err.Error())
+			return nil, err
 		}
 
 		permittedApps = append(permittedApps, app)
@@ -132,8 +139,9 @@ func (p *Protocol) getCentralizedGatewayModeApps(ctx context.Context, serviceID 
 
 	// If no apps matched the request, return an error.
 	if len(permittedApps) == 0 {
-		logger.Error().Msgf("No apps matched the request for service %s.", serviceID)
-		return nil, fmt.Errorf("no apps matched the request for service %s", serviceID)
+		err := fmt.Errorf("%w: service %s.", errProtocolContextSetupCentralizedNoApps, serviceID)
+		logger.Error().Msg(err.Error())
+		return nil, err
 	}
 
 	logger.Debug().Msgf("Successfully fetched the list of %d owned apps for service %s.", len(permittedApps), serviceID)

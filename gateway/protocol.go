@@ -20,7 +20,12 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	AvailableEndpoints(context.Context, protocol.ServiceID, *http.Request) (protocol.EndpointAddrList, error)
+	// Should return an observation to use if the endpoint lookup fails.
+	AvailableEndpoints(
+		context.Context,
+		protocol.ServiceID,
+		*http.Request,
+	) (protocol.EndpointAddrList, protocolobservations.Observations, error)
 
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
@@ -28,7 +33,13 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	BuildRequestContextForEndpoint(context.Context, protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
+	// Should return an observation to use if the context setup fails.
+	BuildRequestContextForEndpoint(
+		context.Context,
+		protocol.ServiceID,
+		protocol.EndpointAddr,
+		*http.Request,
+	) (ProtocolRequestContext, protocolobservations.Observations, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
