@@ -134,8 +134,8 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	}
 
 	// As of PR #273 the only error is "missing service ID".
-	switch err {
-	case GatewayErrNoServiceIDProvided:
+	switch {
+	case errors.Is(err, GatewayErrNoServiceIDProvided):
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// Set the error kind
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
@@ -367,8 +367,11 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// update protocol-level observations: no errors encountered setting up the protocol context.
 		rc.updateProtocolObservations(nil)
 
-		if err := rc.protocol.ApplyObservations(rc.protocolObservations); err != nil {
-			rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
+		if rc.protocolObservations != nil {
+			err := rc.protocol.ApplyObservations(rc.protocolObservations)
+			if err != nil {
+				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
+			}
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
