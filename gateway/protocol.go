@@ -62,6 +62,10 @@ type Protocol interface {
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 
+	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
+	// without filtering sanctioned endpoints.
+	GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
+
 	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
 	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
