@@ -76,6 +76,8 @@ type requestContext struct {
 	httpObservations observation.HTTPRequestObservations
 	// gatewayObservations stores gateway related observations.
 	gatewayObservations *observation.GatewayObservations
+	// Tracks protocol observations.
+	protocolObservations *protocolobservations.Observations
 
 	// Enforces request completion deadline.
 	// Passed to potentially long-running operations like protocol interactions.
@@ -93,16 +95,64 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
 	// Extract the service ID and find the target service's corresponding QoS instance.
 	serviceID, serviceQoS, err := rc.httpRequestParser.GetQoSService(rc.context, httpReq)
+	rc.serviceID = serviceID
 	if err != nil {
+		// TODO_MVP(@adshmh): consolidate gateway-level observations in one location.
+		// Update gateway observations
+		rc.updateGatewayObservations(err)
+
+		// set an error response
 		rc.presetFailureHTTPResponse = rc.httpRequestParser.GetHTTPErrorResponse(rc.context, err)
+
+		// log the error
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
 		return errHTTPRequestRejectedByParser
 	}
 
-	rc.serviceID = serviceID
-	rc.gatewayObservations.ServiceId = string(serviceID)
 	rc.serviceQoS = serviceQoS
 	return nil
+}
+
+// updateGatewayObservations updates gateway-level observations by setting:
+// - Service ID
+// - Request error, if any.
+func (rc *requestContext) updateGatewayObservations(err error) {
+	// set the service ID on the gateway observations.
+	rc.gatewayObservations.ServiceId = string(rc.serviceID)
+
+	// Update the request completion time on the gateway observation
+	rc.gatewayObservations.CompletedTime = timestamppb.Now()
+
+	// No errors: skip.
+	if err == nil {
+		return
+	}
+
+	// Request error already set: skip.
+	if rc.gatewayObservations.GetRequestError() != nil {
+		return
+	}
+
+	// As of PR #273 the only error is "missing service ID".
+	switch err {
+	case GatewayErrNoServiceIDProvided:
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+	default:
+		// Log a warning
+		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
+		// Set a generic request error observation
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// unspecified error kind: this should not happen
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+	}
 }
 
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
@@ -156,27 +206,29 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 //   - Getting the list of protocol-level observations.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	// Retrieve the list of available endpoints for the requested service.
-	availableEndpoints, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
+	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
+		// error encountered: use the supplied observations as protocol observations.
+		rc.updateProtocolObservations(&endpointLookupObs)
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Ensure at least one endpoint is available for the requested service.
-	if len(availableEndpoints) == 0 {
-		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints available for service %s", rc.serviceID)
-	}
-
-	// Use the QoS ctx to select one endpoint to be used for relaying the request.
+	// Use the QoS context to select one endpoint to be used for relaying the request.
 	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
 	if err != nil {
+		// no protocol context will be built: use the endpointLookup observation.
+		rc.updateProtocolObservations(&endpointLookupObs)
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
 	// Prepare the Protocol ctx for the selected endpoint.
-	protocolCtx, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
+	protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
 	if err != nil {
 		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
 		// This will enable debugging of any potential issues (i.e. tracing)
+		//
+		// error encountered: use the supplied observations as protocol observations.
+		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
 		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
@@ -303,22 +355,20 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 //   - Protocol-level observations; e.g. "maxed-out" endpoints.
 //   - Gateway-level observations; e.g. the request ID.
 func (rc *requestContext) BroadcastAllObservations() {
-
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
 		var (
-			protocolObservations protocolobservations.Observations
-			qosObservations      qosobservations.Observations
+			qosObservations qosobservations.Observations
 		)
 
-		// Update the request completion time on the gateway observation
-		rc.gatewayObservations.CompletedTime = timestamppb.Now()
+		// update gateway-level observations: no request error encountered.
+		rc.updateGatewayObservations(nil)
 
-		if rc.protocolCtx != nil {
-			protocolObservations = rc.protocolCtx.GetObservations()
-			if err := rc.protocol.ApplyObservations(&protocolObservations); err != nil {
-				rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
-			}
+		// update protocol-level observations: no errors encountered setting up the protocol context.
+		rc.updateProtocolObservations(nil)
+
+		if err := rc.protocol.ApplyObservations(rc.protocolObservations); err != nil {
+			rc.logger.Warn().Err(err).Msg("error applying protocol observations.")
 		}
 
 		// The service request context contains all the details the QoS needs to update its internal metrics about endpoint(s), which it should use to build
@@ -335,7 +385,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		observations := &observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
 			Gateway:     rc.gatewayObservations,
-			Protocol:    &protocolObservations,
+			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
 
@@ -362,4 +412,28 @@ func (rc *requestContext) getHTTPRequestLogger(httpReq *http.Request) polylog.Lo
 		"http_req_remote_addr", httpReq.RemoteAddr,
 		"http_req_content_length", httpReq.ContentLength,
 	)
+}
+
+// updateProtocolObservations updates the stored protocol-level observations.
+// It is called at:
+// - Protocol context setup error.
+// - When broadcasting observations.
+func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorObservation *protocolobservations.Observations) {
+	// protocol observation already set: skip.
+	// This happens when a protocol context setup was reported earlier.
+	if rc.protocolObservations != nil {
+		return
+	}
+
+	// protocol context setup error observation is set: skip.
+	if protocolContextSetupErrorObservation != nil {
+		rc.protocolObservations = protocolContextSetupErrorObservation
+		return
+	}
+
+	// Protocol context is setup: fetch and use observations.
+	if rc.protocolCtx != nil {
+		observations := rc.protocolCtx.GetObservations()
+		rc.protocolObservations = &observations
+	}
 }

@@ -28,6 +28,7 @@ var (
 	// Increment on each service request with labels:
 	//   - service_id: Identifies the service
 	//   - request_type: "organic" or "synthetic"
+	//   - request_error_kind: request error kind, if any.
 	//
 	// Usage:
 	// - Monitor total request load.
@@ -38,7 +39,7 @@ var (
 			Name:      requestsTotal,
 			Help:      "Total number of requests processed, labeled by service ID.",
 		},
-		[]string{"service_id", "request_type"},
+		[]string{"service_id", "request_type", "request_error_kind"},
 	)
 
 	// relaysDurationSeconds measures request processing duration with the service_id label.
@@ -91,16 +92,27 @@ var (
 )
 
 // publishGatewayMetrics publishes all metrics related to gateway-level observations.
-func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations) {
+// Returns:
+// - true if the request was valid.
+// - false otherwise.
+func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations) bool {
 	serviceID := gatewayObservations.GetServiceId()
+
+	var requestErrorKind string
+	requestErr := gatewayObservations.GetRequestError()
+	if requestErr != nil {
+		requestErrorKind = requestErr.GetErrorKind().String()
+	}
 
 	// Increment on each service request with labels:
 	//   - service_id: Identifies the service
 	//   - request_type: "organic" or "synthetic"
+	//   - request_error_kind: any gateway-level request errors: e.g. no service ID specified in request's HTTP headers.
 	relaysTotal.With(
 		prometheus.Labels{
-			"service_id":   serviceID,
-			"request_type": observation.RequestType_name[int32(gatewayObservations.GetRequestType())],
+			"service_id":        serviceID,
+			"request_type":      observation.RequestType_name[int32(gatewayObservations.GetRequestType())],
+			"requst_error_kind": requestErrorKind,
 		},
 	).Inc()
 
@@ -120,4 +132,7 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 			"service_id": serviceID,
 		},
 	).Observe(float64(gatewayObservations.GetResponseSize()))
+
+	// Return the validity status of the request.
+	return requestErr == nil
 }
