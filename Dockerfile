@@ -13,8 +13,6 @@ RUN go mod download && go mod verify
 
 # Set build flags for faster compilation
 ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
 ENV GO111MODULE=on
 
 # Copy the entire codebase in one layer
@@ -22,7 +20,9 @@ ENV GO111MODULE=on
 COPY . .
 
 # Build with optimization flags
-RUN go build -ldflags="-s -w" -o /go/bin/path ./cmd
+ARG TARGETOS
+ARG TARGETARCH
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /go/bin/path ./cmd
 
 # Final stage
 FROM alpine:3.19 AS final
