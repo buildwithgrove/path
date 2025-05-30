@@ -3,9 +3,7 @@ package morse
 import (
 	"time"
 
-	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_FUTURE: Consider expanding sanctions to apply across PATH instances and persist across gateway restarts.
@@ -41,20 +39,5 @@ func buildSanctionFromObservation(observation *protocolobservations.MorseEndpoin
 		createdAt:        time.Now(),
 		sessionServiceID: observation.GetSessionServiceId(),
 		sessionHeight:    int(observation.GetSessionHeight()),
-	}
-}
-
-// toSanctionDetails converts a sanction to a devtools.DisqualifiedEndpoint struct.
-// It is called by the sanctionedEndpointsStore to return the sanctioned endpoints for a given service ID.
-// This will eventually be removed in favour of a metrics-based approach.
-func (s sanction) toSanctionDetails(endpointAddr protocol.EndpointAddr, sanctionType protocolobservations.MorseSanctionType) devtools.DisqualifiedEndpoint {
-	return devtools.DisqualifiedEndpoint{
-		EndpointAddr:  endpointAddr,
-		Reason:        s.reason,
-		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
-		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
-		ServiceID:     protocol.ServiceID(s.sessionServiceID),
-		SessionHeight: int64(s.sessionHeight),
-		CreatedAt:     s.createdAt,
 	}
 }

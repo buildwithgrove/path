@@ -397,10 +397,15 @@ func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
 }
 
-// GetInvalidEndpointResponses returns all Morse sanctioned endpoints
-// If serviceID is provided, it returns the sanctioned endpoints for that service ID.
-// If serviceID is not provided, it returns the sanctioned endpoints for all configured service IDs.
-// It also returns the total number of endpoints, the number of valid endpoints, and the number of sanctioned endpoints.
+// GetTotalProtocolEndpointsCount is a no-op for Morse.
+// Here to satisfy the gateway.Protocol interface.
+func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
+	// No-op for Morse
+	return 0, nil
+}
+
+// HydrateDisqualifiedEndpointsResponse is a no-op for Morse.
+// Here to satisfy the gateway.Protocol interface.
 func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
-	details.ProtocolLevelDataResponse = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
+	// No-op for Morse
 }

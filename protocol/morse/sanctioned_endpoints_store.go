@@ -2,7 +2,6 @@ package morse
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -155,8 +154,8 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	sessionKey string,
 	sanctionData sanction,
 ) {
-	key := newSessionSanctionKey(appAddr, sessionKey, endpointAddr)
-	ses.sessionSanctions.Set(key.string(), sanctionData, defaultSessionSanctionExpiration)
+	key := sessionSanctionKey(appAddr, sessionKey, string(endpointAddr))
+	ses.sessionSanctions.Set(key, sanctionData, defaultSessionSanctionExpiration)
 }
 
 // isSanctioned checks if an endpoint has an active sanction.
@@ -176,8 +175,8 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	}
 
 	// Check session sanctions - these are specific to app+session+endpoint
-	key := newSessionSanctionKey(appAddr, sessionKey, endpointAddr)
-	sessionSanctionObj, hasSessionSanction := ses.sessionSanctions.Get(key.string())
+	key := sessionSanctionKey(appAddr, sessionKey, string(endpointAddr))
+	sessionSanctionObj, hasSessionSanction := ses.sessionSanctions.Get(key)
 	if hasSessionSanction {
 		sanctionRecord := sessionSanctionObj.(sanction)
 		return true, fmt.Sprintf("session sanction: %s", sanctionRecord.reason)
@@ -186,34 +185,10 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	return false, ""
 }
 
-// --------- Session Sanction Key ---------
-
+// TODO_MVP(@adshmh): return an error if any of the composite key components are empty.
+//
 // sessionSanctionKey creates a unique key for session-based sanctions
 // Format: app_addr:session_key:endpoint_addr
-type sessionSanctionKey struct {
-	appAddr      string
-	sessionKey   string
-	endpointAddr protocol.EndpointAddr
-}
-
-// TODO_MVP(@adshmh): return an error if any of the composite key components are empty.
-func newSessionSanctionKey(appAddr, sessionKey string, endpointAddr protocol.EndpointAddr) sessionSanctionKey {
-	return sessionSanctionKey{
-		appAddr:      appAddr,
-		sessionKey:   sessionKey,
-		endpointAddr: endpointAddr,
-	}
-}
-
-func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
-	parts := strings.Split(cacheKey, ":")
-	return sessionSanctionKey{
-		appAddr:      parts[0],
-		sessionKey:   parts[1],
-		endpointAddr: protocol.EndpointAddr(parts[2]),
-	}
-}
-
-func (s sessionSanctionKey) string() string {
-	return fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionKey, s.endpointAddr)
+func sessionSanctionKey(appAddr, sessionKey, endpointAddr string) string {
+	return fmt.Sprintf("%s:%s:%s", appAddr, sessionKey, endpointAddr)
 }
