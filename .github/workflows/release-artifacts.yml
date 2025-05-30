@@ -2,9 +2,20 @@ name: Tag and Release
 
 on:
   push:
+    tags:
+      - "v*.*.*"
     branches:
-      - main
-  workflow_dispatch: # Added to enable manual trigger via GitHub UI
+      - "main"
+  workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: "Optional custom tag to add to the image (will be prefixed with branch name)"
+        type: string
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   release-on-push:
