@@ -29,17 +29,24 @@ import (
 //
 // TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
 const (
-	// Applications may be cached indefinitely, as they become invalidated only when they unstake.
+	// Applications can be cached indefinitely.
+	// They're invalidated only when they unstake.
+	// TODO_MAINNET_MIGRATION: Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
 	defaultAppCacheTTL = 5 * time.Minute
-	// Cleanup interval is twice the TTL - standard practice for balancing
-	// timely cleanup with minimal processing overhead
+
+	// Cleanup interval is twice the TTL.
+	// standard practice to balancing cleanup with minimal processing overhead
 	defaultAppCacheCleanupInterval = defaultAppCacheTTL * 2
 
-	// A session is 10 blocks * 30 seconds, after that it is in grace period for 1 block (30 seconds).
-	// So it should be cached for - at most - 30 seconds.
+	// As of #275, on Beta TestNet.
+	// - Blocks are 30 seconds
+	// - A session is 50 blocks
+	// - A grace period is 1 block (i.e. 30 seconds)
+	// TODO_MAINNET_MIGRATION: Revisit these values after mainnet migration to ensure no race conditions.
 	defaultSessionCacheTTL = 30 * time.Second
-	// Cleanup interval is twice the TTL - standard practice for balancing
-	// timely cleanup with minimal processing overhead
+	
+	// Cleanup interval is twice the TTL.
+	// Standard practice for balancing cleanup with minimal processing overhead
 	defaultSessionCacheCleanupInterval = defaultSessionCacheTTL * 2
 
 	// Cache key prefixes to avoid collisions
