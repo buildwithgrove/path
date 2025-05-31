@@ -365,11 +365,13 @@ func (p *Protocol) getAppsUniqueEndpoints(
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()
 
+	// Get the list of permitted apps for the service ID.
 	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}
 
+	// Get all endpoints for the service ID without filtering sanctioned endpoints.
 	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, false)
 	if err != nil {
 		return 0, err

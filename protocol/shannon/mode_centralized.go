@@ -143,7 +143,7 @@ func (p *Protocol) getCentralizedGatewayModeApps(
 
 	// If no apps matched the request, return an error.
 	if len(permittedApps) == 0 {
-		err := fmt.Errorf("%w: service %s.", errProtocolContextSetupCentralizedNoApps, serviceID)
+		err := fmt.Errorf("%w: %s", errProtocolContextSetupCentralizedNoApps, serviceID)
 		logger.Error().Msg(err.Error())
 		return nil, err
 	}

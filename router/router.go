@@ -14,6 +14,7 @@ import (
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -92,8 +93,7 @@ func (r *router) handleRoutes() {
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
 
 	// GET /v1/disqualified_endpoints/{service_id} - returns a JSON list of disqualified endpoints for a given service ID
-	// This will eventually be removed in favour of a metrics-based approach.
-	r.mux.HandleFunc("GET /disqualified_endpoints/{service_id}", r.handleDisqualifiedEndpoints)
+	r.mux.HandleFunc("GET /disqualified_endpoints", methodCheckMiddleware(r.handleDisqualifiedEndpoints))
 
 	// requestHandlerFn defines the middleware chain for all service requests
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
@@ -200,11 +200,10 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 }
 
 // handleDisqualifiedEndpoints returns a JSON list of disqualified endpoints
-// This will eventually be removed in favour of a metrics-based approach.
 func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Request) {
-	serviceID := protocol.ServiceID(req.PathValue("service_id"))
+	serviceID := protocol.ServiceID(req.Header.Get(request.HTTPHeaderTargetServiceID))
 	if serviceID == "" {
-		errMsg := "Service ID is required"
+		errMsg := `{"error": "400 Bad Request", "message": "Target-Service-Id header is required"}`
 		r.logger.Error().Msg(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
@@ -212,9 +211,9 @@ func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Re
 
 	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.Report(serviceID, req)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to get disqualified endpoints for service ID: %s. Err: %v", serviceID, err)
+		errMsg := fmt.Sprintf(`{"error": "400 Bad Request", "message": "invalid service ID: %v"}`, err)
 		r.logger.Error().Msg(errMsg)
-		http.Error(w, errMsg, http.StatusInternalServerError)
+		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
 
