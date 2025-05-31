@@ -23,6 +23,12 @@ description: Description of how we implement EVM Archival checks
 Archival checks verify that nodes can provide accurate historical blockchain data beyond the recent blocks.
 This is crucial for applications requiring historical state information and ensures that node providers maintain complete blockchain history.
 
+:::tip How can you add new archival checks?
+
+Check out the easy to follow instructions in the [How to Add Archival Configs](./3_adding_new_archival.md) page.
+
+:::
+
 ## How It Works
 
 The EVM archival validation process in PATH follows these steps as of #194:

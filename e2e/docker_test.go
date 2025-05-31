@@ -21,7 +21,9 @@ import (
 
 /* -------------------- Dockertest Ephemeral PATH Container Setup -------------------- */
 
-// These variables reference the testOptions struct defined in evm_test.go
+// --- USED ONLY FOR E2E TEST MODE ---
+
+// This file is used to setup and tear down an ephemeral PATH container using Dockertest.
 
 const (
 	imageName            = "path-image"
