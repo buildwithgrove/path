@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -161,4 +162,54 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	}
 
 	return nil
+}
+
+func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
+	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s", serviceID)
+
+	disqualifiedEndpoints := make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint)
+	emptyResponseCount := 0
+	blockNumberCheckErrorsCount := 0
+	chainIDCheckErrorsCount := 0
+	archivalCheckErrorsCount := 0
+
+	// Get all endpoints in the store
+	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
+		if err := ss.validateEndpoint(endpoint); err != nil {
+			disqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
+				EndpointAddr: endpointAddr,
+				Reason:       err.Error(),
+				ServiceID:    serviceID,
+			}
+
+			switch {
+			case errors.Is(err, errEmptyResponseObs):
+				emptyResponseCount++
+
+			case errors.Is(err, errNoBlockNumberObs),
+				errors.Is(err, errInvalidBlockNumberObs):
+				blockNumberCheckErrorsCount++
+
+			case errors.Is(err, errNoChainIDObs),
+				errors.Is(err, errInvalidChainIDObs):
+				chainIDCheckErrorsCount++
+
+			case errors.Is(err, errNoArchivalBalanceObs),
+				errors.Is(err, errInvalidArchivalBalanceObs):
+				archivalCheckErrorsCount++
+			}
+
+			continue
+		}
+	}
+
+	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s: %v", serviceID, disqualifiedEndpoints)
+
+	return devtools.QoSLevelDataResponse{
+		DisqualifiedEndpoints:       disqualifiedEndpoints,
+		EmptyResponseCount:          emptyResponseCount,
+		BlockNumberCheckErrorsCount: blockNumberCheckErrorsCount,
+		ChainIDCheckErrorsCount:     chainIDCheckErrorsCount,
+		ArchivalCheckErrorsCount:    archivalCheckErrorsCount,
+	}
 }

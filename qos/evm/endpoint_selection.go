@@ -8,6 +8,8 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+var errEmptyResponseObs = errors.New("endpoint is invalid: history of empty responses")
+
 /* -------------------- QoS Valid Endpoint Selector -------------------- */
 // This section contains methods for the `serviceState` struct
 // but are kept in a separate file for clarity and readability.
@@ -98,7 +100,7 @@ func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
 
 	// Ensure the endpoint has not returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
-		return fmt.Errorf("endpoint is invalid: history of empty responses")
+		return errEmptyResponseObs
 	}
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.

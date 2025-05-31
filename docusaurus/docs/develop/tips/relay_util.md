@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 title: Relay Util
 description: Simple Load Testing Tool
 ---

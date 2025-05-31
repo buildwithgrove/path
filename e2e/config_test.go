@@ -276,6 +276,7 @@ type (
 		MaxP50LatencyMS   time.Duration `yaml:"max_p50_latency_ms"`  // Maximum P50 latency in milliseconds
 		MaxP95LatencyMS   time.Duration `yaml:"max_p95_latency_ms"`  // Maximum P95 latency in milliseconds
 		MaxP99LatencyMS   time.Duration `yaml:"max_p99_latency_ms"`  // Maximum P99 latency in milliseconds
+		Archival          *bool         `yaml:"archival"`            // Whether the service is archival, used to override the default service config
 	}
 )
 
@@ -373,7 +374,7 @@ func (c *Config) validate() error {
 // applyOverrides merges non-zero values from the override config into this config.
 // This ensures that only fields that are explicitly set in the override config are merged,
 // while preserving the default values for the other fields.
-func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
+func (sc *ServiceConfig) applyOverride(ts *TestService, override *ServiceConfig) {
 	if override == nil {
 		return
 	}
@@ -395,5 +396,9 @@ func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
 	}
 	if override.MaxP99LatencyMS != 0 {
 		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
+	}
+	// If archival override is set, set it on the test service
+	if override.Archival != nil {
+		ts.Archival = *override.Archival
 	}
 }

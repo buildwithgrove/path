@@ -38,6 +38,7 @@ func sendHttpRelay(
 
 	relayHTTPRequest.Header.Add("Content-Type", "application/json")
 
+	// TODO_IMPROVE(@commoddity): Use a custom HTTP client.
 	relayHTTPResponse, err := http.DefaultClient.Do(relayHTTPRequest)
 	if err != nil {
 		return nil, err

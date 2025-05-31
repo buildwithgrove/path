@@ -4,7 +4,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -37,44 +36,7 @@ func setupEndpointHydrator(
 		"method", "setupEndpointHydrator",
 	)
 
-	// Wait for the protocol to become healthy BEFORE configuring and starting the hydrator.
-	// - Ensures the protocol instance's configured service IDs are available before hydrator startup.
-	err := waitForProtocolHealth(logger, protocolInstance, defaultProtocolHealthTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get configured service IDs from the protocol instance.
-	// - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
-	configuredServiceIDs := protocolInstance.ConfiguredServiceIDs()
-
-	// Remove any service IDs that are manually disabled by the user.
-	for _, disabledServiceID := range hydratorConfig.QoSDisabledServiceIDs {
-		// Throw error if any manually disabled service IDs are not found in the protocol's configured service IDs.
-		if _, found := configuredServiceIDs[disabledServiceID]; !found {
-			return nil, fmt.Errorf("invalid configuration: QoS manually disabled for service ID: %s, but not found in protocol's configured service IDs", disabledServiceID)
-		}
-		logger.Info().Msgf("QoS manually disabled for service ID: %s", disabledServiceID)
-		delete(configuredServiceIDs, disabledServiceID)
-	}
-
-	// Ensures the same QoS instance is used by:
-	// - Hydrator: generates observations on endpoints
-	// - Gateway: selects endpoints (validated using Hydrator's observations)
-	hydratorQoSServices := make(map[protocol.ServiceID]gateway.QoSService)
-	for serviceID := range configuredServiceIDs {
-		logger := logger.With("service_id", serviceID)
-		logger.Debug().Msg("Processing service ID for the Endpoint Hydrator.")
-
-		serviceQoS, found := qosServices[serviceID]
-		if !found {
-			logger.Warn().Msgf("QoS service not found for the service ID %s. NoOp QoS will be used for this service.", serviceID)
-			continue
-		}
-		hydratorQoSServices[serviceID] = serviceQoS
-	}
-
-	if len(hydratorQoSServices) == 0 {
+	if len(qosServices) == 0 {
 		logger.Warn().Msg("endpoint hydrator is fully disabled: no (zero) active service QoS instances are specified")
 		return nil, nil
 	}
@@ -86,7 +48,7 @@ func setupEndpointHydrator(
 	endpointHydrator := gateway.EndpointHydrator{
 		Logger:                  cmdLogger,
 		Protocol:                protocolInstance,
-		ActiveQoSServices:       hydratorQoSServices,
+		ActiveQoSServices:       qosServices,
 		RunInterval:             hydratorConfig.RunInterval,
 		MaxEndpointCheckWorkers: hydratorConfig.MaxEndpointCheckWorkers,
 		MetricsReporter:         metricsReporter,

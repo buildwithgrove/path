@@ -15,6 +15,7 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
+	github.com/pokt-foundation/utils-go v0.7.0
 	github.com/pokt-network/poktroll v0.1.1
 	github.com/pokt-network/shannon-sdk v0.0.0-20250521155351-880e37eedabd
 	github.com/prometheus/client_golang v1.20.1
@@ -192,7 +193,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/petermattis/goid v0.0.0-20231207134359-e60b3f734c67 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pokt-foundation/utils-go v0.7.0 // indirect
 	github.com/pokt-network/ring-go v0.1.0 // indirect
 	github.com/pokt-network/smt v0.13.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect

@@ -19,32 +19,32 @@ var (
 	// There is no request context to provide observations.
 	//
 	// Unsupported gateway mode
-	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode.")
+	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
 	// Centralized gateway mode: Error getting onchain data for app
-	errProtocolContextSetupCentralizedAppFetchErr = errors.New("error getting onchain data for app owned by the gateway.")
+	errProtocolContextSetupCentralizedAppFetchErr = errors.New("error getting onchain data for app owned by the gateway")
 	// Centralized gateway mode app does not delegate to the gateway.
-	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway.")
+	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway")
 	// Centralized gateway mode: no permitted apps found for service.
-	errProtocolContextSetupCentralizedNoApps = errors.New("No apps mathed the request for service.")
+	errProtocolContextSetupCentralizedNoApps = errors.New("no apps matched the request for service")
 
 	// Delegated gateway mode: could not extract app from HTTP request.
-	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request.")
+	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
 	// Delegated gateway mode: could not fetch app using the SDK
-	errProtocolContextSetupFetchApp = errors.New("error getting the selected app data from the SDK.")
+	errProtocolContextSetupFetchApp = errors.New("error getting the selected app data from the SDK")
 	// Delegated gateway mode: gateway does not have delegation for the app.
-	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app.")
+	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app")
 	// No endpoints available for the service.
 	// Can be due to one or more of the following:
 	// - Any of the gateway mode errors above.
 	// - Error fetching a session for an app.
-	errProtocolContextSetupNoEndpoints = errors.New("no endpoints found for service: relay request will fail.")
+	errProtocolContextSetupNoEndpoints = errors.New("no endpoints found for service: relay request will fail")
 	// Selected endpoint is no longer available.
 	// Can happen due to:
 	// - Bug in endpoint selection logic.
 	// - Endpoint sanctioned due to an observation while selection logic was running.
-	errRequestContextSetupInvalidEndpointSelected = errors.New("selected endpoint is not available: relay request will fail.")
+	errRequestContextSetupInvalidEndpointSelected = errors.New("selected endpoint is not available: relay request will fail")
 	// Error initializing a signer for the current gateway mode.
-	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signe: relay request will fail.")
+	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signe: relay request will fail")
 )
 
 // extractErrFromRelayError:
