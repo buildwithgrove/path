@@ -553,34 +553,38 @@ paths:
                 disqualifiedEndpointsExample:
                   summary: Response with disqualified endpoints
                   value:
-                    protocol_level_data_response:
+                    protocol_level_disqualified_endpoints:
                       permanently_sanctioned_endpoints: {}
                       session_sanctioned_endpoints:
-                        "node123abc:8f5b84bd49057:node456def:https://endpoint.the-expanse.io":
-                          endpoint_addr: "node123abc:8f5b84bd49057:node456def:https://endpoint.the-expanse.io"
-                          reason: "relay error: relay: error sending request to endpoint https://endpoint.the-expanse.io: Post \"https://endpoint.the-expanse.io\": dial tcp: lookup endpoint.the-expanse.io: no such host"
-                          service_id: "avax"
-                          sanction_type: "SANCTION_SESSION"
-                          error_type: "ENDPOINT_ERROR_TIMEOUT"
-                          session_height: 12345
-                          created_at: "2023-01-15T10:41:37.94993+01:00"
+                        "https://us-west-test-endpoint-1.demo":
+                          supplier_addresses:
+                            pokt13771d0a403a599ee4a3812321e2fabc509e7f3: {}
+                            pokt183e1d77fc8a0a4a36f4deb5557553e55fe391c: {}
+                          endpoint_url: "https://us-west-test-endpoint-1.demo"
+                          reason: "relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host"
+                          service_id: "base"
+                          session_id: "5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8"
+                          app_addr: "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412"
+                          sanction_type: "SHANNON_SANCTION_SESSION"
+                          error_type: "SHANNON_ENDPOINT_ERROR_TIMEOUT"
+                          session_height: 23951
+                          created_at: "2025-05-31T14:57:41.484372+01:00"
                       permanent_sanctioned_endpoints_count: 0
                       session_sanctioned_endpoints_count: 1
                       total_sanctioned_endpoints_count: 1
-                    # TODO_IN_THIS_PR(@commoddity): add example of QoS-level disqualified endpoints
-                    qos_level_data_response:
+                    qos_level_disqualified_endpoints:
                       disqualified_endpoints:
-                        "node789xyz:8f5b84bd49057:nodeabc123:https://endpoint.the-expanse.io":
-                          endpoint_addr: "node789xyz:8f5b84bd49057:nodeabc123:https://endpoint.the-expanse.io"
+                        "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo":
+                          endpoint_addr: "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo"
                           reason: "endpoint has not returned an archival balance response to a \"eth_getBalance\" request"
-                          service_id: "avax"
+                          service_id: "base"
                       empty_response_count: 0
                       chain_id_check_errors_count: 0
                       archival_check_errors_count: 1
                       block_number_check_errors_count: 0
-                    total_service_endpoints_count: 10
-                    valid_service_endpoints_count: 8
-                    invalid_service_endpoints_count: 2
+                    total_service_endpoints_count: 11
+                    qualified_service_endpoints_count: 9
+                    disqualified_service_endpoints_count: 2
         "400":
           description: Bad request - Target-Service-Id header is required or invalid
           content:

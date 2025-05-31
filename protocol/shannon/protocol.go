@@ -382,5 +382,5 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, h
 
 // HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
 func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
-	details.ProtocolLevelDataResponse = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
+	details.ProtocolLevelDisqualifiedEndpoints = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
 }

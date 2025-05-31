@@ -16,55 +16,62 @@ The `/disqualified_endpoints` endpoint is a powerful diagnostic tool that provid
 
 The Disqualified Endpoints API returns a comprehensive list of endpoints that have been temporarily or permanently excluded from serving requests for a given service. This includes:
 
-- **Protocol-level sanctions**: Endpoints that have been sanctioned due to errors or poor behavior
-- **QoS-level disqualifications**: Endpoints failing quality-of-service checks
+- **Protocol-level sanctions**: Endpoints sanctioned due to relay errors or poor behavior (managed by Shannon protocol)
+- **QoS-level disqualifications**: Endpoints failing quality-of-service checks (managed by EVM QoS service)
 
 #### Why use it?
 
 When developing or debugging PATH integrations, you may notice that certain endpoints aren't receiving traffic. This API helps you understand:
 
-- Which endpoints are currently disqualified
-- The specific reasons for disqualification
+- Which endpoints are currently disqualified and why
 - Whether the disqualification is temporary (session-based) or permanent
-- Aggregate statistics about endpoint health
+- Aggregate statistics about endpoint health across your service
+- Which suppliers are affected by sanctions
 
 #### How to use it
 
 **Endpoint**: `GET /disqualified_endpoints`
 
 **Required Headers**:
-- `Target-Service-Id`: The service ID to query (e.g., `avax`, `eth`, `polygon`)
+- `Target-Service-Id`: The service ID to query (e.g., `base`, `eth`, `polygon`)
 
 **Example Request**:
 ```bash
-curl -X GET http://localhost:3001/disqualified_endpoints \
-  -H "Target-Service-Id: avax"
+curl http://localhost:3069/disqualified_endpoints \
+  -H "Target-Service-Id: base" | jq
 ```
 
 #### Response Structure
 
 The response contains three main sections:
 
-##### 1. Protocol Level Data
+##### 1. Protocol Level Disqualified Endpoints
 
-Information about endpoints sanctioned by the protocol layer:
+Information about endpoints sanctioned by the Shannon protocol layer:
 
 ```json
 {
-  "protocol_level_data_response": {
+  "protocol_level_disqualified_endpoints": {
     "permanently_sanctioned_endpoints": {
-      // Map of permanently sanctioned endpoints
+      // Map of permanently sanctioned endpoints (keyed by endpoint URL)
     },
     "session_sanctioned_endpoints": {
-      // Map of temporarily sanctioned endpoints
-      "node123abc:8f5b84bd49057:node456def:https://endpoint.example.com": {
-        "endpoint_addr": "node123abc:8f5b84bd49057:node456def:https://endpoint.example.com",
-        "reason": "relay error: relay: error sending request to endpoint",
-        "service_id": "avax",
-        "sanction_type": "SANCTION_SESSION",
-        "error_type": "ENDPOINT_ERROR_TIMEOUT",
-        "session_height": 12345,
-        "created_at": "2023-01-15T10:41:37.94993+01:00"
+      // Map of temporarily sanctioned endpoints (keyed by endpoint URL)
+      "https://us-west-test-endpoint-1.demo": {
+        "supplier_addresses": {
+          "pokt13771d0a403a599ee4a3812321e2fabc509e7f3": {},
+          "pokt183e1d77fc8a0a4a36f4deb5557553e55fe391c": {},
+          // ... more supplier addresses
+        },
+        "endpoint_url": "https://us-west-test-endpoint-1.demo",
+        "reason": "relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host",
+        "service_id": "base",
+        "session_id": "5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8",
+        "app_addr": "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412",
+        "sanction_type": "SHANNON_SANCTION_SESSION",
+        "error_type": "SHANNON_ENDPOINT_ERROR_TIMEOUT",
+        "session_height": 23951,
+        "created_at": "2025-05-31T14:57:41.484372+01:00"
       }
     },
     "permanent_sanctioned_endpoints_count": 0,
@@ -74,41 +81,43 @@ Information about endpoints sanctioned by the protocol layer:
 }
 ```
 
-**Sanction Types**:
-- `SANCTION_SESSION`: Temporary sanction for the current session
-- `SANCTION_PERMANENT`: Permanent sanction until gateway restart
+**Key Fields**:
+- `supplier_addresses`: Map of all supplier addresses using this endpoint URL
+- `endpoint_url`: The sanctioned endpoint URL
+- `reason`: Detailed error message explaining why the endpoint was sanctioned
+- `session_id`: The session ID when the sanction was applied
+- `app_addr`: The application address that triggered the sanction
+- `sanction_type`: Type of sanction (SHANNON_SANCTION_SESSION or SHANNON_SANCTION_PERMANENT)
+- `error_type`: Specific error type that caused the sanction
+- `session_height`: Blockchain height when the session started
+- `created_at`: Timestamp when the sanction was created
 
-**Common Error Types**:
-- `ENDPOINT_ERROR_TIMEOUT`: Request timeout
-- `ENDPOINT_ERROR_CONNECTION`: Connection failure
-- `ENDPOINT_ERROR_INVALID_RESPONSE`: Invalid or malformed response
+##### 2. QoS Level Disqualified Endpoints
 
-##### 2. QoS Level Data
-
-Information about endpoints failing quality-of-service checks:
+Information about endpoints failing EVM-specific quality-of-service checks:
 
 ```json
 {
-  "qos_level_data_response": {
+  "qos_level_disqualified_endpoints": {
     "disqualified_endpoints": {
-      "node789xyz:a1b2c3d4e5f6:node012abc:https://rpc.example.com": {
-        "endpoint_addr": "node789xyz:a1b2c3d4e5f6:node012abc:https://rpc.example.com",
-        "reason": "invalid block number: endpoint returned block 12345, expected >= 12350",
-        "service_id": "eth"
+      "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo": {
+        "endpoint_addr": "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo",
+        "reason": "endpoint has not returned an archival balance response to a \"eth_getBalance\" request",
+        "service_id": "base"
       }
     },
     "empty_response_count": 0,
     "chain_id_check_errors_count": 0,
-    "archival_check_errors_count": 0,
-    "block_number_check_errors_count": 1
+    "archival_check_errors_count": 1,
+    "block_number_check_errors_count": 0
   }
 }
 ```
 
 **QoS Check Types**:
 - **Empty Response**: Endpoint returned no data
-- **Chain ID Check**: Endpoint is on wrong chain
-- **Archival Check**: Endpoint doesn't support historical queries
+- **Chain ID Check**: Endpoint is on wrong chain (mismatched chain ID)
+- **Archival Check**: Endpoint doesn't support historical/archival queries
 - **Block Number Check**: Endpoint is behind on block height
 
 ##### 3. Summary Statistics
@@ -117,58 +126,27 @@ Overall endpoint health metrics:
 
 ```json
 {
-  "total_service_endpoints_count": 10,
-  "valid_service_endpoints_count": 8,
-  "invalid_service_endpoints_count": 2
+  "total_service_endpoints_count": 11,
+  "qualified_service_endpoints_count": 9,
+  "disqualified_service_endpoints_count": 2
 }
 ```
 
-#### Common Use Cases
+#### Implementation Details
 
-##### 1. Debugging Missing Endpoints
+The disqualified endpoints system has two main components:
 
-If you've added a new endpoint but it's not receiving traffic:
+1. **Protocol Level (Shannon)**:
+   - Managed by `sanctionedEndpointsStore` in the Shannon protocol
+   - Tracks both permanent and session-based sanctions
+   - Session sanctions expire after 1 hour by default
+   - Sanctions are applied based on relay errors and endpoint behavior
 
-```bash
-# Check if your endpoint is disqualified
-curl -X GET http://localhost:3001/disqualified_endpoints \
-  -H "Target-Service-Id: your-service-id" | jq '.'
-```
-
-##### 2. Monitoring Endpoint Health
-
-Create a monitoring script to track endpoint health over time:
-
-```bash
-#!/bin/bash
-while true; do
-  echo "=== Endpoint Status at $(date) ==="
-  curl -s http://localhost:3001/disqualified_endpoints \
-    -H "Target-Service-Id: eth" | \
-    jq '{
-      total: .total_service_endpoints_count,
-      valid: .valid_service_endpoints_count,
-      invalid: .invalid_service_endpoints_count
-    }'
-  sleep 60
-done
-```
-
-##### 3. Troubleshooting Specific Errors
-
-When an endpoint is disqualified, check the reason to understand the issue:
-
-- **Connection errors**: Check network connectivity and firewall rules
-- **Timeout errors**: Endpoint may be overloaded or slow
-- **Block height errors**: Endpoint may be out of sync
-- **Chain ID errors**: Endpoint may be configured for wrong network
-
-#### Best Practices
-
-1. **Regular Monitoring**: Check disqualified endpoints regularly during development
-2. **Automated Alerts**: Set up alerts when critical endpoints are disqualified
-3. **Session vs Permanent**: Session sanctions clear on new sessions; permanent sanctions require gateway restart
-4. **Root Cause Analysis**: Use the detailed error messages to fix underlying issues
+2. **QoS Level (EVM)**:
+   - Managed by `serviceState` in the EVM QoS service
+   - Performs synthetic checks: block number, chain ID, and archival support
+   - Updates endpoint quality data based on responses
+   - Filters out endpoints that don't meet quality requirements
 
 #### Error Responses
 

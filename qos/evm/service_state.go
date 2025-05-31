@@ -167,7 +167,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
 	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s", serviceID)
 
-	disqualifiedEndpoints := make(map[protocol.EndpointAddr]devtools.DisqualifiedEndpoint)
+	disqualifiedEndpoints := make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint)
 	emptyResponseCount := 0
 	blockNumberCheckErrorsCount := 0
 	chainIDCheckErrorsCount := 0
@@ -176,7 +176,7 @@ func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.
 	// Get all endpoints in the store
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
 		if err := ss.validateEndpoint(endpoint); err != nil {
-			disqualifiedEndpoints[endpointAddr] = devtools.DisqualifiedEndpoint{
+			disqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
 				EndpointAddr: endpointAddr,
 				Reason:       err.Error(),
 				ServiceID:    serviceID,

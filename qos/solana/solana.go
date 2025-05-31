@@ -71,6 +71,6 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 }
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for the Solana QoS.
-// TODO_IN_THIS_PR: implement this
+// TODO_TECHDEBT(@commoddity): implement this for Solana to enable debugging QoS results.
 func (QoS) HydrateDisqualifiedEndpointsResponse(_ protocol.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
 }

@@ -99,5 +99,5 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 
 // HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
 func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
-	details.QoSLevelDataResponse = qos.serviceState.hydrateDisqualifiedEndpointsResponse(serviceID)
+	details.QoSLevelDisqualifiedEndpoints = qos.serviceState.hydrateDisqualifiedEndpointsResponse(serviceID)
 }

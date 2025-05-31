@@ -75,19 +75,16 @@ default_service_config:
 
 # Override default configuration for specific services
 service_config_overrides:
-  # Shannon - Anvil local Ethereum node (Ephemeral)
-  # "anvil" is an ephemeral test chain and requires lower RPS and higher latency
-  "anvil":
-    global_rps: 1
-    requests_per_method: 3
-    success_rate: 0.60
-    max_p50_latency_ms: 20000ms
-    max_p95_latency_ms: 50000ms
-    max_p99_latency_ms: 100000ms
-
   # Shannon - Ethereum Mainnet (Archival)
   # "eth" is not yet fully supplied so may require higher latency thresholds
   "eth":
+    max_p50_latency_ms: 4000ms
+    max_p95_latency_ms: 8000ms
+    max_p99_latency_ms: 12000ms
+  # Base - Base Mainnet (Archival)
+  # "base" is not yet fully supplied so may require higher latency thresholds
+  "base":
+    archival: false
     max_p50_latency_ms: 4000ms
     max_p95_latency_ms: 8000ms
     max_p99_latency_ms: 12000ms
