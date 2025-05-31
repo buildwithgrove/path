@@ -178,6 +178,18 @@ services:
       transaction_hash: "0x1a82131a2caa0f4964661fd6316f2ff16c9a195e9c9befc14766956f957a2e40"
       call_data: "0x18160ddd"
 
+  # Shannon - Fantom (Archival)
+  - name: "Shannon - fantom (Fantom) Test"
+    service_id: "fantom"
+    service_type: "evm"
+    archival: true
+    service_params:
+      # https://explorer.fantom.network/address/0xaabf86ab3646a7064aa2f61e5959e39129ca46b6
+      contract_address: "0xaabf86ab3646a7064aa2f61e5959e39129ca46b6"
+      contract_start_block: 110633000
+      transaction_hash: "0x4c18f777ac522f7362e4918b89fee24b553e4b3693688a56fc4dd39a57ac343a"
+      call_data: "0x18160ddd"
+
   # Shannon - Fuse (Archival)
   - name: "Shannon - fuse (Fuse) Test"
     service_id: "fuse"
@@ -494,11 +506,6 @@ services:
   # # Shannon - Evmos
   # - name: "Shannon - evmos (Evmos) Test"
   #   service_id: "evmos"
-  #   service_type: "evm"
-
-  # # Shannon - Fantom
-  # - name: "Shannon - fantom (Fantom) Test"
-  #   service_id: "fantom"
   #   service_type: "evm"
 
   # # Shannon - Fraxtal
