@@ -1,0 +1,399 @@
+//go:build e2e
+
+package e2e
+
+import (
+	"fmt"
+	"os"
+	"slices"
+	"strings"
+	"time"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/buildwithgrove/path/protocol"
+)
+
+// -----------------------------------------------------------------------------
+// Environment Variables
+// -----------------------------------------------------------------------------
+
+// Environment variable names
+const (
+	// [REQUIRED] The test mode to run (e2e or load)
+	envTestMode = "TEST_MODE" // The test mode to run (e2e or load)
+
+	// [REQUIRED] The protocol to test (morse or shannon)
+	envTestProtocol = "TEST_PROTOCOL" // The protocol to test (morse or shannon)
+
+	// [OPTIONAL] Run the test only against the specified service IDs.
+	// If not set, all service IDs for the protocol will be used.
+	envTestServiceIDs = "TEST_SERVICE_IDS"
+)
+
+// getEnvConfig fetches and validates environment config from environment variables
+func getEnvConfig() (envConfig, error) {
+	testMode := testMode(os.Getenv(envTestMode))
+	if err := testMode.isValid(); err != nil {
+		return envConfig{}, err
+	}
+
+	testProtocol := testProtocol(os.Getenv(envTestProtocol))
+	if err := testProtocol.isValid(); err != nil {
+		return envConfig{}, err
+	}
+
+	var testServiceIDs []protocol.ServiceID
+	if testServiceIDsEnv := os.Getenv(envTestServiceIDs); testServiceIDsEnv != "" {
+		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
+			testServiceIDs = append(testServiceIDs, protocol.ServiceID(serviceID))
+		}
+	}
+
+	return envConfig{
+		testMode:       testMode,
+		testProtocol:   testProtocol,
+		testServiceIDs: testServiceIDs,
+	}, nil
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+// TODO_TECHDEBT(@commoddity): Separate E2E and Load test modes into separate files and remove the need for this enum.
+type testMode string
+
+const (
+	testModeE2E  testMode = "e2e"  // Run E2E tests
+	testModeLoad testMode = "load" // Run load tests
+)
+
+// isValid checks if testMode is valid and set
+func (t testMode) isValid() error {
+	if t == "" {
+		return fmt.Errorf("[REQUIRED] %s environment variable is not set", envTestMode)
+	}
+	if t != testModeE2E && t != testModeLoad {
+		return fmt.Errorf("invalid test mode %s", t)
+	}
+	return nil
+}
+
+// TODO_TECHDEBT(@commoddity): Remove this enum after Shannon migration.
+// testProtocol determines whether to test PATH with Morse or Shannon
+// Valid values: "morse" or "shannon"
+type testProtocol string
+
+const (
+	protocolMorse   testProtocol = "morse"   // Run tests against Morse
+	protocolShannon testProtocol = "shannon" // Run tests against Shannon
+)
+
+// isValid checks if testProtocol is valid and set
+func (p testProtocol) isValid() error {
+	if p == "" {
+		return fmt.Errorf("[REQUIRED] %s environment variable is not set", envTestProtocol)
+	}
+	if p != protocolMorse && p != protocolShannon {
+		return fmt.Errorf("invalid protocol %s", p)
+	}
+	return nil
+}
+
+// -----------------------------------------------------------------------------
+// Config Loading
+// -----------------------------------------------------------------------------
+
+// Config file paths relative to the e2e directory
+const (
+	// Expected name and location of custom config file
+	customConfigFile = "config/.e2e_load_test.config.yaml"
+
+	// Default config file (used if custom config file is not found)
+	defaultConfigFile = "config/e2e_load_test.config.tmpl.yaml"
+
+	// Template for services file path
+	// One of:
+	//   - `config/services_morse.yaml`
+	//   - `config/services_shannon.yaml`
+	servicesFileTemplate = "config/services_%s.yaml"
+)
+
+// loadE2ELoadTestConfig loads the E2E configuration in the following order:
+//  1. Custom config in e2e/config/.e2e_load_test.config.yaml
+//  2. Default config in e2e/config/e2e_load_test.config.tmpl.yaml
+func loadE2ELoadTestConfig() (*Config, error) {
+	envConfig, err := getEnvConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	var cfgPath string
+	// Prefer custom config if present, otherwise fall back to default
+	if _, err := os.Stat(customConfigFile); err == nil {
+		fmt.Printf("💾 Using custom config file: e2e/%s\n", customConfigFile)
+		cfgPath = customConfigFile
+	} else {
+		fmt.Printf("💾 Using default config file: e2e/%s\n", defaultConfigFile)
+		cfgPath = defaultConfigFile
+	}
+
+	// Load the config
+	cfg, err := loadConfig(cfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the config path
+	cfg.cfgPath = cfgPath
+
+	// Set the environment configuration
+	cfg.envConfig = envConfig
+
+	// Load test services from one of the following files:
+	//   - `config/services_morse.yaml`
+	//   - `config/services_shannon.yaml`
+	services, err := loadTestServices(cfg.getTestProtocol())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load test services: %w", err)
+	}
+	cfg.services = services
+
+	// Validate the configuration
+	if err := cfg.validate(); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
+	}
+
+	return cfg, nil
+}
+
+// loadConfig loads the E2E configuration from the specified YAML file
+func loadConfig(filePath string) (*Config, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// loadTestServices loads test services based on the protocol
+func loadTestServices(protocol testProtocol) (TestServices, error) {
+	// `config/services_morse.yaml` or `config/services_shannon.yaml`
+	servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
+
+	data, err := os.ReadFile(servicesFile)
+	if err != nil {
+		return TestServices{}, fmt.Errorf("failed to read services file %s: %w", servicesFile, err)
+	}
+
+	var services TestServices
+	if err := yaml.Unmarshal(data, &services); err != nil {
+		return TestServices{}, fmt.Errorf("failed to unmarshal services from %s: %w", servicesFile, err)
+	}
+
+	return services, nil
+}
+
+// -----------------------------------------------------------------------------
+// Config Struct - Configures the test case
+//
+// Public fields are unmarshalled from the YAML files:
+//   - `config/e2e_load_test.config.tmpl.yaml`
+//   - `config/.e2e_load_test.config.yaml`
+// -----------------------------------------------------------------------------
+
+// DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`
+type (
+	// Config is the top-level E2E test configuration
+	Config struct {
+		// cfgPath is private because it is not loaded from YAML,
+		// so the requirement for it to be public does not apply.
+		// Can be either:
+		// 		- `config/e2e_load_test.config.tmpl.yaml`
+		// 		- `config/.e2e_load_test.config.yaml`
+		cfgPath string
+
+		// envConfig is private because it is loaded from environment variables,
+		// not YAML so the requirement for it to be public does not apply.
+		envConfig envConfig
+
+		// services are set after being unmarshalled from either:
+		// - `config/services_morse.yaml`
+		// - `config/services_shannon.yaml`
+		services TestServices
+
+		// Below fields are all unmarshalled from the YAML files
+		E2ELoadTestConfig      E2ELoadTestConfig                    `yaml:"e2e_load_test_config"`
+		DefaultServiceConfig   ServiceConfig                        `yaml:"default_service_config"`
+		ServiceConfigOverrides map[protocol.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
+	}
+
+	// envConfig for environment configuration (loaded from environment variables, not YAML)
+	envConfig struct {
+		testMode       testMode
+		testProtocol   testProtocol
+		testServiceIDs []protocol.ServiceID
+	}
+
+	// E2ELoadTestConfig for test mode configuration
+	E2ELoadTestConfig struct {
+		E2EConfig      E2EConfig       `yaml:"e2e_config"`       // E2E test mode configuration
+		LoadTestConfig *LoadTestConfig `yaml:"load_test_config"` // Load test mode configuration (pointer, may be nil)
+	}
+
+	// E2EConfig for E2E test mode configuration
+	E2EConfig struct {
+		WaitForHydrator int          `yaml:"wait_for_hydrator"` // Seconds to wait for hydrator checks
+		DockerConfig    DockerConfig `yaml:"docker_config"`     // Docker configuration
+	}
+
+	// DockerConfig for Docker configuration
+	DockerConfig struct {
+		LogToFile         bool `yaml:"log_to_file"`         // Log Docker container output
+		ForceRebuildImage bool `yaml:"force_rebuild_image"` // Force Docker image rebuild (useful after code changes)
+	}
+
+	// LoadTestConfig for load test mode configuration
+	LoadTestConfig struct {
+		GatewayURLOverride  string `yaml:"gateway_url_override"`  // [REQUIRED] Custom PATH gateway URL
+		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // [OPTIONAL] Whether to specify the service using the subdomain per-test case
+		PortalApplicationID string `yaml:"portal_application_id"` // [OPTIONAL] Grove Portal Application ID for the test. Required if using the Grove Portal.
+		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Grove Portal API key for the test. Required if Grove Portal Application requires API key.
+	}
+
+	// ServiceConfig for common service configuration options
+	ServiceConfig struct {
+		GlobalRPS         int           `yaml:"global_rps"`          // Requests per second (shared by all methods)
+		RequestsPerMethod int           `yaml:"requests_per_method"` // Total number of requests to send for each method
+		SuccessRate       float64       `yaml:"success_rate"`        // Minimum success rate required (0-1)
+		MaxP50LatencyMS   time.Duration `yaml:"max_p50_latency_ms"`  // Maximum P50 latency in milliseconds
+		MaxP95LatencyMS   time.Duration `yaml:"max_p95_latency_ms"`  // Maximum P95 latency in milliseconds
+		MaxP99LatencyMS   time.Duration `yaml:"max_p99_latency_ms"`  // Maximum P99 latency in milliseconds
+	}
+)
+
+// getTestServices returns test services filtered by protocol specified in environment
+func (c *Config) getTestServices() ([]TestService, error) {
+	protocol := c.getTestProtocol()
+
+	var filteredTestCases []TestService
+	for _, tc := range c.services.Services {
+		// If no service IDs are specified, include all test cases
+		// Otherwise, only include test cases for the specified service IDs
+		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
+			filteredTestCases = append(filteredTestCases, tc)
+		}
+	}
+
+	if len(filteredTestCases) == 0 {
+		servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
+		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
+			"\n"+
+			"Please refer to the `%s` file to see which services are configured for the `%s` protocol.",
+			envTestServiceIDs, servicesFile, protocol,
+		)
+	}
+
+	return filteredTestCases, nil
+}
+
+// TODO_TECHDEBT(@commoddity): Refactor EVM Tests to avoid `if cfg.getTestMode() == ` checks.
+// Separate out load tests and E2E tests into different files.
+func (c *Config) getTestMode() testMode {
+	return c.envConfig.testMode
+}
+
+func (c *Config) getTestProtocol() testProtocol {
+	return c.envConfig.testProtocol
+}
+
+func (c *Config) getTestServiceIDs() []protocol.ServiceID {
+	return c.envConfig.testServiceIDs
+}
+
+func (c *Config) useServiceSubdomain() bool {
+	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
+}
+
+func (c *Config) getGatewayURLForLoadTest() string {
+	return c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride
+}
+
+// validate performs configuration validation based on schema and runtime requirements
+func (c *Config) validate() error {
+	mode := c.getTestMode()
+
+	// Validate load test mode
+	if mode == testModeLoad {
+		if c.E2ELoadTestConfig.LoadTestConfig == nil {
+			return fmt.Errorf("load test mode requires loadTestConfig to be set")
+		}
+		if c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride == "" {
+			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
+		}
+		if c.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID == "" {
+			return fmt.Errorf("load test mode requires PortalApplicationID to be set")
+		}
+	}
+
+	// Validate e2e test mode
+	if mode == testModeE2E {
+		configFile := fmt.Sprintf("config/.%s.config.yaml", c.getTestProtocol())
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
+		}
+	}
+
+	// Validate test services
+	if err := c.services.validate(); err != nil {
+		return fmt.Errorf("test services validation failed: %w", err)
+	}
+
+	// Validate default service config
+	if c.DefaultServiceConfig.RequestsPerMethod <= 0 {
+		return fmt.Errorf("DefaultServiceConfig.RequestsPerMethod must be greater than 0")
+	}
+	if c.DefaultServiceConfig.GlobalRPS <= 0 {
+		return fmt.Errorf("DefaultServiceConfig.GlobalRPS must be greater than 0")
+	}
+	if c.DefaultServiceConfig.SuccessRate < 0 || c.DefaultServiceConfig.SuccessRate > 1 {
+		return fmt.Errorf("DefaultServiceConfig.SuccessRate must be between 0 and 1")
+	}
+
+	return nil
+}
+
+// applyOverrides merges non-zero values from the override config into this config.
+// This ensures that only fields that are explicitly set in the override config are merged,
+// while preserving the default values for the other fields.
+func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
+	if override == nil {
+		return
+	}
+
+	if override.GlobalRPS != 0 {
+		sc.GlobalRPS = override.GlobalRPS
+	}
+	if override.RequestsPerMethod != 0 {
+		sc.RequestsPerMethod = override.RequestsPerMethod
+	}
+	if override.SuccessRate != 0 {
+		sc.SuccessRate = override.SuccessRate
+	}
+	if override.MaxP50LatencyMS != 0 {
+		sc.MaxP50LatencyMS = override.MaxP50LatencyMS
+	}
+	if override.MaxP95LatencyMS != 0 {
+		sc.MaxP95LatencyMS = override.MaxP95LatencyMS
+	}
+	if override.MaxP99LatencyMS != 0 {
+		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
+	}
+}
