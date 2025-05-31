@@ -16,7 +16,7 @@ func PublishMetrics(
 ) {
 	hydratedLogger := logger.With("method", "PublishMetrics")
 	if protocolObservations == nil {
-		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: received nil set of Protocol observations.")
+		hydratedLogger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: received nil set of Protocol observations.")
 		return
 	}
 
