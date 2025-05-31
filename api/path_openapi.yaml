@@ -569,14 +569,18 @@ paths:
                       total_sanctioned_endpoints_count: 1
                     # TODO_IN_THIS_PR(@commoddity): add example of QoS-level disqualified endpoints
                     qos_level_data_response:
-                      disqualified_endpoints: {}
+                      disqualified_endpoints:
+                        "node789xyz:8f5b84bd49057:nodeabc123:https://endpoint.the-expanse.io":
+                          endpoint_addr: "node789xyz:8f5b84bd49057:nodeabc123:https://endpoint.the-expanse.io"
+                          reason: "endpoint has not returned an archival balance response to a \"eth_getBalance\" request"
+                          service_id: "avax"
                       empty_response_count: 0
                       chain_id_check_errors_count: 0
-                      archival_check_errors_count: 0
+                      archival_check_errors_count: 1
                       block_number_check_errors_count: 0
                     total_service_endpoints_count: 10
-                    valid_service_endpoints_count: 9
-                    invalid_service_endpoints_count: 1
+                    valid_service_endpoints_count: 8
+                    invalid_service_endpoints_count: 2
         "400":
           description: Bad request - Target-Service-Id header is required or invalid
           content:

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 title: Troubleshooting & FAQ
 description: Tips & Tricks for Troubleshooting with FAQ
 ---

@@ -2,7 +2,6 @@ package shannon
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -37,7 +36,7 @@ type sanctionedEndpointsStore struct {
 	//   - In-memory map of endpoints with permanent sanctions
 	//   - Persists for process lifetime (not on disk)
 	//   - Lost on PATH process restart; not shared across instances
-	permanentSanctions      map[protocol.EndpointAddr]sanction
+	permanentSanctions      map[string]sanction
 	permanentSanctionsMutex sync.RWMutex
 
 	// sessionSanctionsCache:
@@ -53,7 +52,7 @@ type sanctionedEndpointsStore struct {
 func newSanctionedEndpointsStore(logger polylog.Logger) *sanctionedEndpointsStore {
 	return &sanctionedEndpointsStore{
 		logger:                logger,
-		permanentSanctions:    make(map[protocol.EndpointAddr]sanction),
+		permanentSanctions:    make(map[string]sanction),
 		sessionSanctionsCache: cache.New(defaultSessionSanctionExpiration, defaultSanctionCacheCleanupInterval),
 	}
 }
@@ -96,7 +95,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 				//   - Persists for process lifetime (not on disk)
 				//   - Lost on PATH restart; not shared
 				logger.Info().Msg("Adding permanent sanction for endpoint")
-				ses.addPermanentSanction(endpoint.Addr(), sanctionData)
+				ses.addPermanentSanction(endpoint.PublicURL(), sanctionData)
 
 			case protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION:
 				// Session-based sanction:
@@ -141,12 +140,12 @@ func (ses *sanctionedEndpointsStore) FilterSanctionedEndpoints(
 //   - Never expires; requires manual removal
 //   - Used for serious errors (e.g., validation failures, suspected malicious behavior)
 func (ses *sanctionedEndpointsStore) addPermanentSanction(
-	endpointAddr protocol.EndpointAddr,
+	endpointURL string,
 	sanctionData sanction,
 ) {
 	ses.permanentSanctionsMutex.Lock()
 	defer ses.permanentSanctionsMutex.Unlock()
-	ses.permanentSanctions[endpointAddr] = sanctionData
+	ses.permanentSanctions[endpointURL] = sanctionData
 }
 
 // addSessionSanction:
@@ -157,8 +156,7 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	endpoint *endpoint,
 	sanction sanction,
 ) {
-	key := newSessionSanctionKey(endpoint)
-	ses.sessionSanctionsCache.Set(key.string(), sanction, defaultSessionSanctionExpiration)
+	ses.sessionSanctionsCache.Set(endpoint.PublicURL(), sanction, defaultSessionSanctionExpiration)
 }
 
 // isSanctioned checks if an endpoint has any active sanction (permanent or session-based)
@@ -168,15 +166,14 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 	// Check permanent sanctions first - these apply regardless of session
 	ses.permanentSanctionsMutex.RLock()
 	defer ses.permanentSanctionsMutex.RUnlock()
-	sanctionRecord, hasPermanentSanction := ses.permanentSanctions[endpoint.Addr()]
+	sanctionRecord, hasPermanentSanction := ses.permanentSanctions[endpoint.PublicURL()]
 
 	if hasPermanentSanction {
 		return true, fmt.Sprintf("permanent sanction: %s", sanctionRecord.reason)
 	}
 
 	// Check session sanctions - these are specific to app+session+endpoint
-	key := newSessionSanctionKey(endpoint)
-	sessionSanctionObj, hasSessionSanction := ses.sessionSanctionsCache.Get(key.string())
+	sessionSanctionObj, hasSessionSanction := ses.sessionSanctionsCache.Get(endpoint.PublicURL())
 	if hasSessionSanction {
 		sanctionRecord := sessionSanctionObj.(sanction)
 		return true, fmt.Sprintf("session sanction: %s", sanctionRecord.reason)
@@ -187,56 +184,56 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 
 // --------- Session Sanction Key ---------
 
-// sessionSanctionKey:
-//   - Creates a unique key for session-based sanctions
-//   - Format: appAddr:sessionID:supplier:endpoint_url
-type sessionSanctionKey struct {
-	appAddr   string
-	sessionID string
-	supplier  string
-	url       string
-}
+// // sessionSanctionKey:
+// //   - Creates a unique key for session-based sanctions
+// //   - Format: appAddr:sessionID:supplier:endpoint_url
+// type sessionSanctionKey struct {
+// 	appAddr   string
+// 	sessionID string
+// 	supplier  string
+// 	url       string
+// }
 
-func newSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
-	// Session header is never nil:
-	// Ref: https://github.com/pokt-network/shannon-sdk/blob/64d83f85e7e3f8e7d6ddee98ced276203cf5475f/session.go#L134
-	header := endpoint.session.Header
+// func newSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
+// 	// Session header is never nil:
+// 	// Ref: https://github.com/pokt-network/shannon-sdk/blob/64d83f85e7e3f8e7d6ddee98ced276203cf5475f/session.go#L134
+// 	header := endpoint.session.Header
 
-	appAddr := header.ApplicationAddress
-	sessionID := header.SessionId
-	return sessionSanctionKey{
-		appAddr:   appAddr,
-		sessionID: sessionID,
-		supplier:  endpoint.supplier,
-		url:       endpoint.url,
-	}
-}
+// 	appAddr := header.ApplicationAddress
+// 	sessionID := header.SessionId
+// 	return sessionSanctionKey{
+// 		appAddr:   appAddr,
+// 		sessionID: sessionID,
+// 		supplier:  endpoint.supplier,
+// 		url:       endpoint.url,
+// 	}
+// }
 
-func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
-	// Only split for 4 parts, as final part is URL which contains a ":" character.
-	parts := strings.SplitN(cacheKey, ":", 4)
-	return sessionSanctionKey{
-		appAddr:   parts[0],
-		sessionID: parts[1],
-		supplier:  parts[2],
-		url:       parts[3],
-	}
-}
+// func newSessionSanctionKeyFromCacheKey(cacheKey string) sessionSanctionKey {
+// 	// Only split for 4 parts, as final part is URL which contains a ":" character.
+// 	parts := strings.SplitN(cacheKey, ":", 4)
+// 	return sessionSanctionKey{
+// 		appAddr:   parts[0],
+// 		sessionID: parts[1],
+// 		supplier:  parts[2],
+// 		url:       parts[3],
+// 	}
+// }
 
-func (s sessionSanctionKey) string() string {
-	return fmt.Sprintf(
-		"%s:%s:%s:%s",
-		s.appAddr,
-		s.sessionID,
-		s.supplier,
-		s.url,
-	)
-}
+// func (s sessionSanctionKey) string() string {
+// 	return fmt.Sprintf(
+// 		"%s:%s:%s:%s",
+// 		s.appAddr,
+// 		s.sessionID,
+// 		s.supplier,
+// 		s.url,
+// 	)
+// }
 
-// TODO_IN_THIS_PR(@commoddity): confirm this is the correct way to form a Shannon endpoint address.
-func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
-	return protocol.EndpointAddr(fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionID, s.url))
-}
+// // TODO_IN_THIS_PR(@commoddity): confirm this is the correct way to form a Shannon endpoint address.
+// func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
+// 	return protocol.EndpointAddr(fmt.Sprintf("%s:%s:%s", s.appAddr, s.sessionID, s.url))
+// }
 
 // --------- Sanction Details ---------
 
@@ -249,11 +246,11 @@ func (s sessionSanctionKey) endpointAddr() protocol.EndpointAddr {
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
 	ses.logger.Info().Msgf("Getting sanction details for service ID: %s", serviceID)
 
-	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
-	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
+	permanentSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
+	sessionSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
-	for endpointAddr, sanction := range ses.permanentSanctions {
+	for endpointURL, sanction := range ses.permanentSanctions {
 		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
 
 		// If serviceID is provided, skip sanctions for other service IDs
@@ -262,16 +259,14 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		}
 
 		sanctionDetails := sanction.toSanctionDetails(
-			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
+			endpointURL, protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
 		)
 
-		permanentSanctionDetails[endpointAddr] = sanctionDetails
+		permanentSanctionDetails[endpointURL] = sanctionDetails
 	}
 
 	// Then get session sanctions
-	for keyStr, cachedSanction := range ses.sessionSanctionsCache.Items() {
-		key := newSessionSanctionKeyFromCacheKey(keyStr)
-
+	for endpointURL, cachedSanction := range ses.sessionSanctionsCache.Items() {
 		sanction, ok := cachedSanction.Object.(sanction)
 		if !ok {
 			ses.logger.Warn().Msg("cached sanction is not a sanction")
@@ -286,13 +281,11 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		}
 
 		// Append the appAddr and url to form the endpoint address
-		endpointAddr := protocol.EndpointAddr(key.string())
-
 		sanctionDetails := sanction.toSanctionDetails(
-			endpointAddr, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+			endpointURL, protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
 		)
 
-		sessionSanctionDetails[endpointAddr] = sanctionDetails
+		sessionSanctionDetails[endpointURL] = sanctionDetails
 	}
 
 	permanentSanctionedEndpointsCount := len(permanentSanctionDetails)

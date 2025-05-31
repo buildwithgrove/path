@@ -27,11 +27,11 @@ func (r *DisqualifiedEndpointResponse) GetValidServiceEndpointsCount() int {
 // ProtocolLevelDataResponse is the response from the GetSanctionedEndpoints function.
 type (
 	ProtocolLevelDataResponse struct {
-		PermanentlySanctionedEndpoints    map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
-		SessionSanctionedEndpoints        map[protocol.EndpointAddr]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
-		PermamentSanctionedEndpointsCount int                                          `json:"permanent_sanctioned_endpoints_count"`
-		SessionSanctionedEndpointsCount   int                                          `json:"session_sanctioned_endpoints_count"`
-		TotalSanctionedEndpointsCount     int                                          `json:"total_sanctioned_endpoints_count"`
+		PermanentlySanctionedEndpoints    map[string]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
+		SessionSanctionedEndpoints        map[string]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
+		PermamentSanctionedEndpointsCount int                           `json:"permanent_sanctioned_endpoints_count"`
+		SessionSanctionedEndpointsCount   int                           `json:"session_sanctioned_endpoints_count"`
+		TotalSanctionedEndpointsCount     int                           `json:"total_sanctioned_endpoints_count"`
 	}
 
 	QoSLevelDataResponse struct {
