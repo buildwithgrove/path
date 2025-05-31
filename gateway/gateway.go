@@ -102,16 +102,9 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 		gatewayRequestCtx.WriteHTTPUserResponse(w)
 	}()
 
-	// Initialize the GatewayRequestContext struct using the HTTP request.
-	// e.g. extract the target service ID from the HTTP request.
-	err := gatewayRequestCtx.InitFromHTTPRequest(httpReq)
-	if err != nil {
-		return
-	}
-
 	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
-	err = gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
+	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}

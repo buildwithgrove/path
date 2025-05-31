@@ -50,7 +50,7 @@ func (p *Protocol) getGatewayModePermittedApps(
 	//	return getPermissionlessGatewayModeApps(p.ownedAppsAddr), nil
 
 	default:
-		return nil, fmt.Errorf("unsupported gateway mode: %s", p.gatewayMode)
+		return nil, fmt.Errorf("%w: %s", errProtocolContextSetupUnsupportedGatewayMode, p.gatewayMode)
 	}
 }
 

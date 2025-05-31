@@ -97,13 +97,19 @@ type Protocol struct {
 // TODO_TECHDEBT(@adshmh): Enforce the deadline from the supplied context.
 // This is needed to avoid triggering a timeout on the HTTP server handling the service request.
 //
+// TODO_TECHDEBT(@adshmh): Return observations to be used if endpoint lookup fails.
+//
 // AvailableEndpoints returns the list of available endpoints for a given service ID.
 //
 // Implements the gateway.Protocol interface.
-func (p *Protocol) AvailableEndpoints(_ context.Context, serviceID protocol.ServiceID, _ *http.Request) (protocol.EndpointAddrList, error) {
+func (p *Protocol) AvailableEndpoints(
+	_ context.Context,
+	serviceID protocol.ServiceID,
+	_ *http.Request,
+) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, protocolobservations.Observations{}, fmt.Errorf("AvailableEndpoints: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	// Convert the list of endpoints to a list of endpoint addresses
@@ -112,9 +118,10 @@ func (p *Protocol) AvailableEndpoints(_ context.Context, serviceID protocol.Serv
 		endpointAddrs = append(endpointAddrs, endpointAddr)
 	}
 
-	return endpointAddrs, nil
+	return endpointAddrs, protocolobservations.Observations{}, nil
 }
 
+// TODO_TECHDEBT(@adshmh): Return observations to be used if context initialization fails.
 // TODO_TECHDEBT(@adshmh): Enforce the deadline from the supplied context.
 //
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
@@ -124,7 +131,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	_ *http.Request,
-) (gateway.ProtocolRequestContext, error) {
+) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
 	// Create a logger specifically for this request context
 	ctxLogger := p.logger.With(
 		"service_id", string(serviceID),
@@ -135,14 +142,14 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// that can service RPC requests for the given service ID.
 	endpoints, err := p.getEndpoints(serviceID)
 	if err != nil {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
+		return nil, protocolobservations.Observations{}, fmt.Errorf("BuildRequestContextForEndpoint: error getting endpoints for service %s: %w", serviceID, err)
 	}
 
 	// Select the endpoint that matches the pre-selected address.
 	// This ensures QoS checks are performed on the selected endpoint.
 	selectedEndpoint, ok := endpoints[selectedEndpointAddr]
 	if !ok {
-		return nil, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
+		return nil, protocolobservations.Observations{}, fmt.Errorf("BuildRequestContextForEndpoint: could not find endpoint for service %s and endpoint address %s", serviceID, selectedEndpointAddr)
 	}
 
 	// Return new request context for the pre-selected endpoint
@@ -151,7 +158,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		fullNode:         p.fullNode,
 		selectedEndpoint: &selectedEndpoint,
 		serviceID:        serviceID,
-	}, nil
+	}, protocolobservations.Observations{}, nil
 }
 
 // ApplyObservations updates the Morse protocol instance's internal state using the supplied observations.

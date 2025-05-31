@@ -9,6 +9,26 @@ import "google/protobuf/timestamp.proto";
 enum ShannonRequestErrorType {
   SHANNON_REQUEST_ERROR_UNSPECIFIED = 0;
   SHANNON_REQUEST_ERROR_INTERNAL = 1; // Internal error.
+  // No endpoints available for the service
+  // Due to one or more of the following:
+  // - Any of the gateway mode errors above
+  // - Error fetching a session for one or more apps.
+  // - One or more available endpoints are sanctioned.
+  SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE = 2;
+  // Centralized gateway mode: Error fetching the app.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR = 3;
+  // Centralized gateway mode app does not delegate to the gateway.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION = 4;
+  // Centralized gateway mode: no permitted apps found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS = 5;
+  // Delegated gateway mode: could not extract app address from HTTP request
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP = 6;
+  // Delegated gateway mode: error fetching the app
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP = 7;
+  // Delegated gateway mode: app does not delegate to the gateway
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE = 8;
+  // Error initializing a signer for the selected gateway mode.
+  SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR = 9;
 }
 
 // ShannonRequestError stores details of any errors encountered processing the request.

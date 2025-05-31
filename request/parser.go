@@ -57,8 +57,14 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol
 		return serviceID, qosService, nil
 	}
 
-	// If the service does not have a corresponding QoS implementation,
-	// return the NoOp QoS service, which will select a random endpoint.
+	// No matching QoS implementation.
+	// Log a warning.
+	// Return a NoOp QoS implementation.
+	p.Logger.With(
+		"method", "GetQoSService",
+		"service_id", serviceID,
+	).Warn().Msg("No matching QoS implementations found. Using NoOp QoS.")
+
 	return serviceID, noop.NoOpQoS{}, nil
 }
 
