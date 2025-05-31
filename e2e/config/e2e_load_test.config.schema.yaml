@@ -41,78 +41,6 @@ definitions:
         type: string
         pattern: "^[0-9]+ms$"
         examples: ["10000ms"]
-  service_params:
-    description: "Service parameters for test requests"
-    type: object
-    additionalProperties: false
-    properties:
-      contract_address:
-        description: "Contract address for eth calls"
-        type: string
-        pattern: "^0x[a-fA-F0-9]{40}$"
-        examples: ["0x28C6c06298d514Db089934071355E5743bf21d60"]
-      call_data:
-        description: "Call data for eth_call"
-        type: string
-        pattern: "^0x[a-fA-F0-9]*$"
-        examples: ["0x18160ddd"]
-      contract_start_block:
-        description: "Minimum block number for archival tests - ensures contract address has balance or transactions"
-        type: integer
-        minimum: 0
-      transaction_hash:
-        description: "Transaction hash for receipt/transaction queries"
-        type: string
-        pattern: "^0x[a-fA-F0-9]{64}$"
-        examples:
-          ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
-
-  test_case:
-    description: "Test case definition for all protocols"
-    type: object
-    additionalProperties: false
-    required:
-      - name
-      - protocol
-      - service_id
-    properties:
-      name:
-        description: "Name of the test case"
-        type: string
-      protocol:
-        description: "Protocol name (morse or shannon)"
-        type: string
-        enum:
-          - morse
-          - shannon
-        examples: ["morse", "shannon"]
-      service_id:
-        description: "Service ID to test - identifies the specific blockchain service"
-        type: string
-        examples: ["F00C", "anvil"]
-      archival:
-        description: "Whether this is an archival test (historical data access)"
-        type: boolean
-      service_params:
-        $ref: "#/definitions/service_params"
-      test_case_config_override:
-        description: "Override default configuration for this test case"
-        $ref: "#/definitions/method_config_base"
-      test_case_method_override:
-        description: "Override methods to test for this test case"
-        type: array
-        items:
-          type: string
-          enum:
-            - eth_blockNumber
-            - eth_call
-            - eth_getTransactionReceipt
-            - eth_getBlockByNumber
-            - eth_getBalance
-            - eth_chainId
-            - eth_getTransactionCount
-            - eth_getTransactionByHash
-            - eth_gasPrice
 
 properties:
   e2e_load_test_config:
@@ -161,12 +89,12 @@ properties:
             description: "Portal API key for the test"
             type: string
 
-  default_test_config:
+  default_service_config:
     $ref: "#/definitions/method_config_base"
-    description: "Default configuration for all test cases"
+    description: "Default configuration for all services"
 
-  test_cases:
-    description: "Array of test cases to run for both Morse and Shannon protocols"
-    type: array
-    items:
-      $ref: "#/definitions/test_case"
+  service_config_overrides:
+    description: "Override default configuration for specific services"
+    type: object
+    additionalProperties:
+      $ref: "#/definitions/method_config_base"
