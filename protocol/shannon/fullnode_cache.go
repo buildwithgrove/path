@@ -26,10 +26,28 @@ import (
 //
 // - 3. Add more documentation around lazy mode
 // - 4. Test the performance of a caching node vs lazy node.
+//
+// TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
 const (
-	// TODO_IMPROVE(@commoddity): make the cache TTL configurable in config YAML file.
-	defaultCacheTTL             = 30 * time.Second
-	defaultCacheCleanupInterval = 1 * time.Minute
+	// Applications can be cached indefinitely.
+	// They're invalidated only when they unstake.
+	// TODO_MAINNET_MIGRATION: Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
+	defaultAppCacheTTL = 5 * time.Minute
+
+	// Cleanup interval is twice the TTL.
+	// standard practice to balancing cleanup with minimal processing overhead
+	defaultAppCacheCleanupInterval = defaultAppCacheTTL * 2
+
+	// As of #275, on Beta TestNet.
+	// - Blocks are 30 seconds
+	// - A session is 50 blocks
+	// - A grace period is 1 block (i.e. 30 seconds)
+	// TODO_MAINNET_MIGRATION: Revisit these values after mainnet migration to ensure no race conditions.
+	defaultSessionCacheTTL = 30 * time.Second
+	
+	// Cleanup interval is twice the TTL.
+	// Standard practice for balancing cleanup with minimal processing overhead
+	defaultSessionCacheCleanupInterval = defaultSessionCacheTTL * 2
 
 	// Cache key prefixes to avoid collisions
 	appCacheKeyPrefix     = "app"
@@ -58,9 +76,8 @@ type cachingFullNode struct {
 func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 	return &cachingFullNode{
 		lazyFullNode: lazyFullNode,
-
-		appCache:     cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
-		sessionCache: cache.New(defaultCacheTTL, defaultCacheCleanupInterval),
+		appCache:     cache.New(defaultAppCacheTTL, defaultAppCacheCleanupInterval),
+		sessionCache: cache.New(defaultSessionCacheTTL, defaultSessionCacheCleanupInterval),
 	}
 }
 
@@ -177,8 +194,8 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 
 // createCacheKey creates a cache key for the given prefix and key.
 //
-//	eg. createCacheKey("app", "0x123") -> "app/0x123"
-//	eg. createCacheKey("session", "anvil:0x456") -> "session/anvil:0x456"
+//	eg. createCacheKey("app", "0x123") -> "app:0x123"
+//	eg. createCacheKey("session", "anvil:0x456") -> "session:anvil:0x456"
 func createCacheKey(prefix string, key string) string {
-	return fmt.Sprintf("%s/%s", prefix, key)
+	return fmt.Sprintf("%s:%s", prefix, key)
 }

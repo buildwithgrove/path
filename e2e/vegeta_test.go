@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
 	"slices"
 	"sort"
 	"strings"
@@ -39,76 +38,118 @@ const (
 
 // ===== Vegeta Helper Functions =====
 
-// createRPCTarget
-// • Returns a vegeta.Targeter for the specified RPC method
-func createRPCTarget(
-	gatewayURL string,
-	jsonrpcReq jsonrpc.Request,
-	headers http.Header,
-) vegeta.Targeter {
-	return func(tgt *vegeta.Target) error {
-		body, err := json.Marshal(jsonrpcReq)
-		if err != nil {
-			return err
-		}
-		// Set up the HTTP POST target
-		tgt.Method = http.MethodPost
-		tgt.URL = gatewayURL
-		tgt.Body = body
-		tgt.Header = headers
-		return nil
+// runServiceTest runs the E2E test for a single EVM service in a test case.
+func runServiceTest(t *testing.T, ctx context.Context, ts TestService) (serviceTestFailed bool) {
+	results := make(map[string]*methodMetrics)
+	var resultsMutex sync.Mutex
+
+	progBars, err := newProgressBars(ts.testMethodsMap)
+	if err != nil {
+		t.Fatalf("Failed to create progress bars: %v", err)
 	}
+	defer func() {
+		if err := progBars.finish(); err != nil {
+			fmt.Printf("Error stopping progress bars: %v", err)
+		}
+	}()
+
+	var methodWg sync.WaitGroup
+	for method := range ts.testMethodsMap {
+		methodWg.Add(1)
+
+		go func(ctx context.Context, method string, methodConfig testMethodConfig) {
+			defer methodWg.Done()
+
+			metrics := runMethodAttack(ctx, method, ts, progBars.get(method))
+
+			resultsMutex.Lock()
+			results[method] = metrics
+			resultsMutex.Unlock()
+
+		}(ctx, method, ts.testMethodsMap[method])
+	}
+	methodWg.Wait()
+
+	if err := progBars.finish(); err != nil {
+		fmt.Printf("Error stopping progress bars: %v", err)
+	}
+
+	calculateServiceSummary(t, ts.testMethodsMap, results, ts.summary, &serviceTestFailed)
+	return serviceTestFailed
+}
+
+// runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
+func runMethodAttack(ctx context.Context, method string, ts TestService, progBar *pb.ProgressBar) *methodMetrics {
+	select {
+	case <-ctx.Done():
+		fmt.Printf("Method %s cancelled", method)
+		return nil
+	default:
+	}
+
+	// We don't need to extract or modify the target anymore, just pass it through
+	metrics := runAttack(ctx, method, ts, progBar)
+
+	return metrics
 }
 
 // runAttack
 // • Executes a load test for a given method
-// • Sends `testConfig.totalRequests` requests at `testConfig.rps` requests/sec
+// • Sends `serviceConfig.totalRequests` requests at `serviceConfig.rps` requests/sec
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
-func runAttack(
-	ctx context.Context,
-	gatewayURL string,
-	method jsonrpc.Method,
-	testConfig TestConfig,
-	methodCount int,
-	progressBar *pb.ProgressBar,
-	jsonrpcReq jsonrpc.Request,
-	headers http.Header,
-) *methodMetrics {
-	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
-	attackRPS := max((testConfig.GlobalRPS+methodCount-1)/methodCount, 1)
+func runAttack(ctx context.Context, method string, ts TestService, progressBar *pb.ProgressBar) *methodMetrics {
+	methodConfig := ts.testMethodsMap[method]
 
-	metrics := initMethodMetrics(method, testConfig.RequestsPerMethod)
-	target := createRPCTarget(gatewayURL, jsonrpcReq, headers)
-	maxDuration := time.Duration(2*testConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
+	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
+	attackRPS := max((methodConfig.serviceConfig.GlobalRPS+len(ts.testMethodsMap)-1)/len(ts.testMethodsMap), 1)
+
+	// Initialize the method metrics
+	metrics := initMethodMetrics(method, methodConfig.serviceConfig.RequestsPerMethod)
+
+	// Use the target directly, no need to recreate it
+	targeter := func(tgt *vegeta.Target) error {
+		*tgt = methodConfig.target
+		return nil
+	}
+
+	maxDuration := time.Duration(2*methodConfig.serviceConfig.RequestsPerMethod/attackRPS)*time.Second + 5*time.Second
 
 	// Vegeta timeout is set to the 99th percentile latency of the method + 5 seconds
 	// This is because the P99 latency is the highest latency band for test assertions.
 	// We add 5 seconds to account for any unexpected delays.
-	attacker := createVegetaAttacker(attackRPS, testConfig.MaxP99LatencyMS+5*time.Second)
+	attacker := createVegetaAttacker(attackRPS, methodConfig.serviceConfig.MaxP99LatencyMS+5*time.Second)
 
 	if progressBar == nil {
 		fmt.Printf("Starting test for method %s (%d requests at %d GlobalRPS)...\n",
-			method, testConfig.RequestsPerMethod, attackRPS,
+			method, methodConfig.serviceConfig.RequestsPerMethod, attackRPS,
 		)
 	}
 
-	resultsChan := make(chan *vegeta.Result, testConfig.RequestsPerMethod)
-	var resultsWg sync.WaitGroup
-	processedCount := 0
-	startResultsCollector(&resultsWg, resultsChan, metrics, method, testConfig, progressBar, &processedCount)
+	// Create a channel to collect results
+	resultsChan := make(chan *vegeta.Result, methodConfig.serviceConfig.RequestsPerMethod)
 
-	requestSlots := testConfig.RequestsPerMethod
-	targeter := makeTargeter(&requestSlots, target)
-	attackCh := attacker.Attack(
-		targeter,
-		vegeta.Rate{
-			Freq: attackRPS,
-			Per:  time.Second,
-		},
-		maxDuration,
-		string(method),
+	// Start a goroutine to process results
+	var resultsWg sync.WaitGroup
+	startResultsCollector(
+		ts,
+		method,
+		methodConfig,
+		metrics,
+		resultsChan,
+		&resultsWg,
+		progressBar,
 	)
+
+	// Run the Vegeta attack
+	attackCh := attacker.Attack(
+		makeTargeter(methodConfig, targeter),
+		vegeta.Rate{Freq: attackRPS, Per: time.Second},
+		maxDuration,
+		method,
+	)
+
+	// Run the attack loop, sending results to the channel and handling cancellation
 	runVegetaAttackLoop(ctx, attackCh, resultsChan)
 
 	close(resultsChan)
@@ -120,8 +161,8 @@ func runAttack(
 }
 
 // initMethodMetrics
-// • Initializes methodMetrics struct for a method
-func initMethodMetrics(method jsonrpc.Method, totalRequests int) *methodMetrics {
+// • Initializes serviceConfig struct for a method
+func initMethodMetrics(method string, totalRequests int) *methodMetrics {
 	return &methodMetrics{
 		method:      method,
 		statusCodes: make(map[int]int),
@@ -144,14 +185,15 @@ func createVegetaAttacker(rps int, timeout time.Duration) *vegeta.Attacker {
 // startResultsCollector
 // • Launches a goroutine to process results, update progress bar, print status
 func startResultsCollector(
-	resultsWg *sync.WaitGroup,
-	resultsChan <-chan *vegeta.Result,
+	ts TestService,
+	method string,
+	methodConfig testMethodConfig,
 	metrics *methodMetrics,
-	method jsonrpc.Method,
-	testConfig TestConfig,
+	resultsChan <-chan *vegeta.Result,
+	resultsWg *sync.WaitGroup,
 	progressBar *pb.ProgressBar,
-	processedCount *int,
 ) {
+	processedCount := 0
 	resultsWg.Add(1)
 	go func() {
 		defer resultsWg.Done()
@@ -159,38 +201,41 @@ func startResultsCollector(
 			if res.Error == "no targets to attack" {
 				continue
 			}
-			if *processedCount < testConfig.RequestsPerMethod {
-				processResult(metrics, res)
-				(*processedCount)++
-				if progressBar != nil && progressBar.Current() < int64(testConfig.RequestsPerMethod) {
+			if processedCount < methodConfig.serviceConfig.RequestsPerMethod {
+				processResult(metrics, res, ts.serviceType)
+				processedCount++
+				if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
 					progressBar.Increment()
 				}
-				if progressBar == nil && *processedCount%50 == 0 {
-					percent := float64(*processedCount) / float64(testConfig.RequestsPerMethod) * 100
+				if progressBar == nil && processedCount%50 == 0 {
+					percent := float64(processedCount) / float64(methodConfig.serviceConfig.RequestsPerMethod) * 100
 					fmt.Printf("  %s: %d/%d requests completed (%.1f%%)\n",
-						method, *processedCount, testConfig.RequestsPerMethod, percent)
+						method, processedCount, methodConfig.serviceConfig.RequestsPerMethod, percent)
 				}
 			}
 		}
-		if progressBar != nil && progressBar.Current() < int64(testConfig.RequestsPerMethod) {
-			remaining := int64(testConfig.RequestsPerMethod) - progressBar.Current()
+		if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
+			remaining := int64(methodConfig.serviceConfig.RequestsPerMethod) - progressBar.Current()
 			progressBar.Add64(remaining)
 		}
 		if progressBar == nil {
 			fmt.Printf("  %s: test completed (%d/%d requests)\n",
-				method, *processedCount, testConfig.RequestsPerMethod)
+				method, processedCount, methodConfig.serviceConfig.RequestsPerMethod,
+			)
 		}
 	}()
 }
 
 // makeTargeter
 // • Returns a vegeta.Targeter that enforces the request limit
-func makeTargeter(requestSlots *int, target vegeta.Targeter) vegeta.Targeter {
+func makeTargeter(methodConfig testMethodConfig, target vegeta.Targeter) vegeta.Targeter {
+	requestSlots := methodConfig.serviceConfig.RequestsPerMethod
+
 	return func(tgt *vegeta.Target) error {
-		if *requestSlots <= 0 {
+		if requestSlots <= 0 {
 			return vegeta.ErrNoTargets
 		}
-		(*requestSlots)--
+		requestSlots--
 		return target(tgt)
 	}
 }
@@ -218,7 +263,7 @@ attackLoop:
 
 // processResult
 // • Updates metrics based on a single result
-func processResult(m *methodMetrics, result *vegeta.Result) {
+func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceType) {
 	// Skip "no targets to attack" errors (not actual requests)
 	if result.Error == "no targets to attack" {
 		return
@@ -249,8 +294,7 @@ func processResult(m *methodMetrics, result *vegeta.Result) {
 			m.jsonRPCNilResult++
 		}
 		// Validate the response
-		expectedID := jsonrpc.IDFromInt(1) // Expected ID from our request
-		if err := rpcResponse.Validate(expectedID); err != nil {
+		if err := rpcResponse.Validate(getExpectedID(serviceType)); err != nil {
 			m.jsonRPCValidateErrors++
 		}
 	}
@@ -265,7 +309,7 @@ func processResult(m *methodMetrics, result *vegeta.Result) {
 // • Tracks HTTP and JSON-RPC results and derived rates
 // • Used for assertion and reporting
 type methodMetrics struct {
-	method       jsonrpc.Method   // RPC method name
+	method       string           // RPC method name
 	success      int              // Number of successful requests
 	failed       int              // Number of failed requests
 	statusCodes  map[int]int      // Count of each status code
@@ -305,17 +349,116 @@ type serviceSummary struct {
 	totalSuccess  int
 	totalFailure  int
 
-	testConfig    TestConfig
-	methodsToTest []jsonrpc.Method
-	methodErrors  map[jsonrpc.Method]map[string]int
+	serviceConfig ServiceConfig
+	methodsToTest []string
+	methodErrors  map[string]map[string]int
 	methodCount   int
 	totalErrors   int
+}
+
+func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, methodsToTest []string) *serviceSummary {
+	return &serviceSummary{
+		serviceID:     serviceID,
+		serviceConfig: serviceConfig,
+		methodsToTest: methodsToTest,
+		methodErrors:  make(map[string]map[string]int),
+		methodCount:   len(methodsToTest),
+	}
+}
+
+// calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
+func calculateServiceSummary(
+	t *testing.T,
+	methodConfigs map[string]testMethodConfig,
+	results map[string]*methodMetrics,
+	summary *serviceSummary,
+	serviceTestFailed *bool,
+) {
+	var totalLatency time.Duration
+	var totalP90Latency time.Duration
+	var totalSuccessRate float64
+	var methodsWithResults int
+
+	// Track service totals
+	summary.totalRequests = 0
+	summary.totalSuccess = 0
+	summary.totalFailure = 0
+
+	// Validate results for each method and collect summary data
+	for method := range methodConfigs {
+		serviceConfig := results[method]
+
+		// Skip methods with no data
+		if serviceConfig == nil || len(serviceConfig.results) == 0 {
+			continue
+		}
+
+		// Convert ServiceConfig to methodTestConfig for validation
+		methodDef := methodConfigs[method]
+		methodTestConfig := ServiceConfig{
+			RequestsPerMethod: methodDef.serviceConfig.RequestsPerMethod,
+			GlobalRPS:         methodDef.serviceConfig.GlobalRPS,
+			SuccessRate:       methodDef.serviceConfig.SuccessRate,
+			MaxP50LatencyMS:   methodDef.serviceConfig.MaxP50LatencyMS,
+			MaxP95LatencyMS:   methodDef.serviceConfig.MaxP95LatencyMS,
+			MaxP99LatencyMS:   methodDef.serviceConfig.MaxP99LatencyMS,
+		}
+
+		validateResults(t, serviceConfig, methodTestConfig)
+
+		// If the test has failed after validation, set the service failure flag
+		if t.Failed() {
+			*serviceTestFailed = true
+		}
+
+		// Accumulate totals for the service summary
+		summary.totalRequests += serviceConfig.requestCount
+		summary.totalSuccess += serviceConfig.success
+		summary.totalFailure += serviceConfig.failed
+
+		// Extract latencies for P90 calculation
+		var latencies []time.Duration
+		for _, res := range serviceConfig.results {
+			latencies = append(latencies, res.Latency)
+		}
+
+		// Calculate P90 for this method
+		p90 := calculateP90(latencies)
+		avgLatency := calculateAvgLatency(latencies)
+
+		// Add to summary totals
+		totalLatency += avgLatency
+		totalP90Latency += p90
+		totalSuccessRate += serviceConfig.successRate
+		methodsWithResults++
+
+		// Collect errors for the summary
+		if len(serviceConfig.errors) > 0 {
+			// Initialize method errors map if not already created
+			if summary.methodErrors[method] == nil {
+				summary.methodErrors[method] = make(map[string]int)
+			}
+
+			// Copy errors to summary
+			for errMsg, count := range serviceConfig.errors {
+				summary.methodErrors[method][errMsg] = count
+				summary.totalErrors += count
+			}
+		}
+	}
+
+	// Calculate averages if we have methods with results
+	if methodsWithResults > 0 {
+		summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
+		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
+		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
+	}
 }
 
 // ===== Metric Calculation Helpers =====
 
 // calculateSuccessRate
-// • Computes all success rates for a methodMetrics struct
+// • Computes all success rates for a serviceConfig struct
 func calculateSuccessRate(m *methodMetrics) {
 	// Overall HTTP success rate
 	m.requestCount = m.success + m.failed
@@ -386,7 +529,7 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 }
 
 // validateResults performs assertions on test metrics
-func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
+func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig) {
 	// Create a slice to collect all assertion failures
 	var failures []string
 
@@ -407,9 +550,9 @@ func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
 		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
 
 	// Print latencies (yellow if close to limit, green if well below)
-	p50Color := getLatencyColor(m.p50, testConfig.MaxP50LatencyMS)
-	p95Color := getLatencyColor(m.p95, testConfig.MaxP95LatencyMS)
-	p99Color := getLatencyColor(m.p99, testConfig.MaxP99LatencyMS)
+	p50Color := getLatencyColor(m.p50, serviceConfig.MaxP50LatencyMS)
+	p95Color := getLatencyColor(m.p95, serviceConfig.MaxP95LatencyMS)
+	p99Color := getLatencyColor(m.p99, serviceConfig.MaxP99LatencyMS)
 	fmt.Printf("%sLatency P50%s: %s%s%s\n", BOLD, RESET, p50Color, formatLatency(m.p50), RESET)
 	fmt.Printf("%sLatency P95%s: %s%s%s\n", BOLD, RESET, p95Color, formatLatency(m.p95), RESET)
 	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
@@ -420,19 +563,19 @@ func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
 
 		if m.jsonRPCResponses > 0 {
 			// Unmarshal success rate
-			color := getRateColor(m.jsonRPCSuccessRate, testConfig.SuccessRate)
+			color := getRateColor(m.jsonRPCSuccessRate, serviceConfig.SuccessRate)
 			fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCSuccessRate*100, RESET, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
 			// Validation success rate
-			color = getRateColor(m.jsonRPCValidateRate, testConfig.SuccessRate)
+			color = getRateColor(m.jsonRPCValidateRate, serviceConfig.SuccessRate)
 			fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCValidateRate*100, RESET, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
 			// Non-nil result rate
-			color = getRateColor(m.jsonRPCResultRate, testConfig.SuccessRate)
+			color = getRateColor(m.jsonRPCResultRate, serviceConfig.SuccessRate)
 			fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCResultRate*100, RESET, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
 			// Error field absent rate
-			color = getRateColor(m.jsonRPCErrorFieldRate, testConfig.SuccessRate)
+			color = getRateColor(m.jsonRPCErrorFieldRate, serviceConfig.SuccessRate)
 			fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n",
 				color, m.jsonRPCErrorFieldRate*100, RESET, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
 		}
@@ -454,10 +597,10 @@ func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
 	}
 
 	// Determine if the test passed based on our metrics
-	testPassed := m.successRate >= testConfig.SuccessRate &&
-		m.p50 <= testConfig.MaxP50LatencyMS &&
-		m.p95 <= testConfig.MaxP95LatencyMS &&
-		m.p99 <= testConfig.MaxP99LatencyMS
+	testPassed := m.successRate >= serviceConfig.SuccessRate &&
+		m.p50 <= serviceConfig.MaxP50LatencyMS &&
+		m.p95 <= serviceConfig.MaxP95LatencyMS &&
+		m.p99 <= serviceConfig.MaxP99LatencyMS
 
 	// Choose error color based on test passing status
 	errorColor := YELLOW // Yellow for warnings (test passed despite errors)
@@ -484,9 +627,9 @@ func validateResults(t *testing.T, m *methodMetrics, testConfig TestConfig) {
 	}
 
 	// Collect assertion failures
-	failures = append(failures, collectHTTPSuccessRateFailures(m, testConfig.SuccessRate)...)
-	failures = append(failures, collectJSONRPCRatesFailures(m, testConfig.SuccessRate)...)
-	failures = append(failures, collectLatencyFailures(m, testConfig)...)
+	failures = append(failures, collectHTTPSuccessRateFailures(m, serviceConfig.SuccessRate)...)
+	failures = append(failures, collectJSONRPCRatesFailures(m, serviceConfig.SuccessRate)...)
+	failures = append(failures, collectLatencyFailures(m, serviceConfig)...)
 
 	// If there are failures, report them all at once at the end
 	if len(failures) > 0 {
@@ -556,27 +699,27 @@ func collectJSONRPCRatesFailures(m *methodMetrics, requiredRate float64) []strin
 }
 
 // collectLatencyFailures checks latency metrics and returns failure messages
-func collectLatencyFailures(m *methodMetrics, testConfig TestConfig) []string {
+func collectLatencyFailures(m *methodMetrics, serviceConfig ServiceConfig) []string {
 	var failures []string
 
 	// P50 latency check
-	if m.p50 > testConfig.MaxP50LatencyMS {
+	if m.p50 > serviceConfig.MaxP50LatencyMS {
 		msg := fmt.Sprintf("P50 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p50), formatLatency(testConfig.MaxP50LatencyMS))
+			formatLatency(m.p50), formatLatency(serviceConfig.MaxP50LatencyMS))
 		failures = append(failures, msg)
 	}
 
 	// P95 latency check
-	if m.p95 > testConfig.MaxP95LatencyMS {
+	if m.p95 > serviceConfig.MaxP95LatencyMS {
 		msg := fmt.Sprintf("P95 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p95), formatLatency(testConfig.MaxP95LatencyMS))
+			formatLatency(m.p95), formatLatency(serviceConfig.MaxP95LatencyMS))
 		failures = append(failures, msg)
 	}
 
 	// P99 latency check
-	if m.p99 > testConfig.MaxP99LatencyMS {
+	if m.p99 > serviceConfig.MaxP99LatencyMS {
 		msg := fmt.Sprintf("P99 latency %s exceeds maximum allowed %s",
-			formatLatency(m.p99), formatLatency(testConfig.MaxP99LatencyMS))
+			formatLatency(m.p99), formatLatency(serviceConfig.MaxP99LatencyMS))
 		failures = append(failures, msg)
 	}
 
@@ -653,18 +796,18 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
 		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
-		methodConfig := summary.testConfig
+		serviceConfig := summary.serviceConfig
 
 		// Header with service ID
 		fmt.Printf("\n%s⛓️  Service: %s%s\n", BOLD_BLUE, svcID, RESET)
 
 		// Use helpers for coloring based on method config
-		successColor := getRateColor(summary.avgSuccessRate, methodConfig.SuccessRate)
-		p90Color := getLatencyColor(summary.avgP90Latency, methodConfig.MaxP95LatencyMS) // P90 closest to P95
-		avgColor := getLatencyColor(summary.avgLatency, methodConfig.MaxP50LatencyMS)    // Avg closest to P50
+		successColor := getRateColor(summary.avgSuccessRate, serviceConfig.SuccessRate)
+		p90Color := getLatencyColor(summary.avgP90Latency, serviceConfig.MaxP95LatencyMS) // P90 closest to P95
+		avgColor := getLatencyColor(summary.avgLatency, serviceConfig.MaxP50LatencyMS)    // Avg closest to P50
 
 		// Calculate allowed failure rate
-		maxFailureRate := 1.0 - methodConfig.SuccessRate
+		maxFailureRate := 1.0 - serviceConfig.SuccessRate
 		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
 
 		// Color for failures based on whether they exceed the allowed threshold
@@ -701,7 +844,7 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 // • Holds and manages progress bars for all methods in a test
 // • Used to visualize test progress interactively
 type progressBars struct {
-	bars    map[jsonrpc.Method]*pb.ProgressBar
+	bars    map[string]*pb.ProgressBar
 	pool    *pb.Pool
 	enabled bool
 }
@@ -709,19 +852,21 @@ type progressBars struct {
 // newProgressBars
 // • Creates a set of progress bars for all methods in a test
 // • Disables progress bars in CI/non-interactive environments
-func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]TestConfig) (*progressBars, error) {
+func newProgressBars(testMethodsMap map[string]testMethodConfig) (*progressBars, error) {
 	// Check if we're running in CI or non-interactive environment
 	if isCIEnv() {
 		fmt.Println("Running in CI environment - progress bars disabled")
 		return &progressBars{
-			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			bars:    make(map[string]*pb.ProgressBar),
 			enabled: false,
 		}, nil
 	}
 
 	// Sort methods for consistent display order
-	sortedMethods := make([]jsonrpc.Method, len(methods))
-	copy(sortedMethods, methods)
+	var sortedMethods []string
+	for method := range testMethodsMap {
+		sortedMethods = append(sortedMethods, method)
+	}
 	sort.Slice(sortedMethods, func(i, j int) bool {
 		return string(sortedMethods[i]) < string(sortedMethods[j])
 	})
@@ -735,11 +880,11 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Te
 	}
 
 	// Create a progress bar for each method
-	bars := make(map[jsonrpc.Method]*pb.ProgressBar)
-	barList := make([]*pb.ProgressBar, 0, len(methods))
+	bars := make(map[string]*pb.ProgressBar)
+	barList := make([]*pb.ProgressBar, 0, len(testMethodsMap))
 
 	for _, method := range sortedMethods {
-		def := testConfigs[method]
+		def := testMethodsMap[method]
 
 		// Store the method name with padding for display
 		padding := longestLen - len(string(method))
@@ -755,7 +900,7 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Te
 			methodWithPadding, customCounterFormat)
 
 		// Create the bar with the template and start it
-		bar := pb.ProgressBarTemplate(tmpl).New(def.RequestsPerMethod)
+		bar := pb.ProgressBarTemplate(tmpl).New(def.serviceConfig.RequestsPerMethod)
 
 		// Ensure we're not using byte formatting
 		bar.Set(pb.Bytes, false)
@@ -773,7 +918,7 @@ func newProgressBars(methods []jsonrpc.Method, testConfigs map[jsonrpc.Method]Te
 		// If we fail to create progress bars, fall back to simple output
 		fmt.Printf("Warning: Could not create progress bars: %v\n", err)
 		return &progressBars{
-			bars:    make(map[jsonrpc.Method]*pb.ProgressBar),
+			bars:    make(map[string]*pb.ProgressBar),
 			enabled: false,
 		}, nil
 	}
@@ -794,7 +939,7 @@ func (p *progressBars) finish() error {
 }
 
 // get returns the progress bar for a specific method
-func (p *progressBars) get(method jsonrpc.Method) *pb.ProgressBar {
+func (p *progressBars) get(method string) *pb.ProgressBar {
 	if !p.enabled {
 		return nil
 	}
