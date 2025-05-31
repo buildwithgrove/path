@@ -1,6 +1,6 @@
 module github.com/buildwithgrove/path
 
-go 1.23.0
+go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
 // replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
@@ -16,11 +16,12 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
 	github.com/pokt-network/poktroll v0.1.1
-	github.com/pokt-network/shannon-sdk v0.0.0-20250417224837-efd370a75d51
+	github.com/pokt-network/shannon-sdk v0.0.0-20250521155351-880e37eedabd
 	github.com/prometheus/client_golang v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tsenart/vegeta v12.7.0+incompatible
 	go.uber.org/mock v0.5.0
+	golang.org/x/net v0.36.0
 	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.35.1
 )
@@ -235,7 +236,6 @@ require (
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
-	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect

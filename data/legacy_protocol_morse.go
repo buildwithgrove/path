@@ -3,10 +3,10 @@ package data
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"golang.org/x/net/publicsuffix"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
@@ -75,17 +75,19 @@ func setLegacyFieldsFromMorseProtocolObservations(
 	legacyRecord.NodeReceiveTimestamp = formatTimestampPbForBigQueryJSON(endpointObservation.EndpointResponseTimestamp)
 
 	// track time spent waiting for the endpoint: required for calculating the `PortalTripTime` legacy field.
-	legacyRecord.endpointTripTime = endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Seconds()
+	legacyRecord.endpointTripTime = float64(endpointObservation.EndpointResponseTimestamp.AsTime().Sub(endpointObservation.EndpointQueryTimestamp.AsTime()).Milliseconds())
 
 	// Set endpoint address
 	legacyRecord.NodeAddress = endpointObservation.EndpointAddr
 
 	// Extract the endpoint's domain from its URL.
-	endpointDomain, err := extractEndpointDomainFromURL(endpointObservation.EndpointUrl)
+	endpointDomain, err := extractEffectiveTLDPlusOne(endpointObservation.EndpointUrl)
 	// Error extracting the endpoint domain: log the error.
 	if err != nil {
-		logger.Warn().Err(fmt.Errorf("")).Msg("Received no Morse endpoint observations for a valid request.")
+		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Morse endpoint URL")
+		return legacyRecord
 	}
+
 	// Set the endpoint domain field: empty value if parsing the URL above failed.
 	legacyRecord.NodeDomain = endpointDomain
 
@@ -132,32 +134,27 @@ func setLegacyErrFieldsFromMorseEndpointError(
 	return legacyRecord
 }
 
-// extractEndpointDomainFromURL extracts the domain name from a URL string.
-// It handles various URL formats including those with or without protocol,
-// subdomains, ports, paths, queries, and fragments.
-// Returns the domain without protocol, path, query parameters, or fragments.
-// Returns an empty string and error if the URL is invalid.
-func extractEndpointDomainFromURL(rawURL string) (string, error) {
-	// If the URL doesn't have a scheme, add one to make it parseable
-	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
-		rawURL = "https://" + rawURL
-	}
-
-	// Parse the URL
+// extractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
+// Example: "https://blog.example.co.uk" → "example.co.uk"
+// - Parses the URL and validates the host.
+// - Uses publicsuffix package to determine the registrable domain.
+// - Returns an error if input is malformed or domain is not derivable.
+func extractEffectiveTLDPlusOne(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse URL: %w", err)
+		return "", err // malformed URL
 	}
 
-	// Extract just the host part (domain + port if present)
-	host := parsedURL.Host
-
-	// Remove port number if present
-	if strings.Contains(host, ":") {
-		host = strings.Split(host, ":")[0]
+	host := parsedURL.Hostname()
+	if host == "" {
+		return "", fmt.Errorf("empty host") // no host in URL
 	}
 
-	return host, nil
+	etld, err := publicsuffix.EffectiveTLDPlusOne(host)
+	if err != nil {
+		return "", err // domain may not be derivable (e.g., IP, localhost)
+	}
+	return etld, nil
 }
 
 // formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.

@@ -58,6 +58,9 @@ var (
 	// - The ContentLength HTTP header
 	// - Actual body length
 	ErrHTTPContentLengthIncorrect = errors.New("endpoint returned HTTP response with ContentLength mismatching the actual length.")
+
+	// ErrExecutingHTTPRequest is returned when an endpoint returned an error indicating it encountered an error executing the HTTP request.
+	ErrExecutingHTTPRequest = errors.New("endpoint indicated error executing the HTTP request.")
 )
 
 // NewNoEndpointsError creates a formatted error for when no endpoints are available
@@ -128,6 +131,10 @@ func extractErrFromRelayError(err error) error {
 		return ErrHTTPContentLengthIncorrect
 	}
 
+	if isEndpointErrorExecutingHTTPRequest(errStr) {
+		return ErrExecutingHTTPRequest
+	}
+
 	// Check for TLS certificate verification errors
 	if strings.Contains(errStr, "tls: failed to verify certificate") {
 		return ErrTLSCertificateVerificationFailed
@@ -175,10 +182,10 @@ func isEndpointHTTPContentLengthMismatchErr(errStr string) bool {
 	return matchesAllSubstrings(
 		errStr,
 		[]string{
-			"Post",
+			"post", // the supplied error string is lower case.
 			"v1/client/relay",
-			"http: ContentLength=",
-			"with Body length",
+			"http: contentlength=",
+			"with body length",
 		},
 	)
 }
@@ -191,9 +198,13 @@ func isEndpointPocketCoreError(errStr string) bool {
 		[]string{
 			"codespace: sdk",
 			"code: 1",
-			"Codespace: sdk",
 		},
 	)
+}
+
+// isEndpointErrorExecutingHTTPRequest checks if the error string indicates an endpoint-reported error on executing the HTTP request.
+func isEndpointErrorExecutingHTTPRequest(errStr string) bool {
+	return strings.Contains(errStr, "error executing the http request: blockchain request for chain")
 }
 
 // matchesAllSubstrings checks if all the specified substrings are present in the given string

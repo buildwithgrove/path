@@ -57,15 +57,15 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
-        # DEV_NOTE: Add new services here if they should be tested as part of the E2E CI suite
-        service_id: [F00C, F01C, F036]
+        # DEV_NOTE: Add new services here if they should be tested as part of the Morse E2E CI suite
+        service_id: [F00C, F021, F01C, F036]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
 
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
@@ -89,7 +89,8 @@ jobs:
         run: ./e2e/scripts/update_morse_config_from_secrets.sh
 
       - name: Run Morse E2E Tests with Service ID ${{ matrix.service_id }}
-        run: make test_e2e_evm_morse SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40 DOCKER_LOG=false
+        # eg. make test_e2e_evm_morse F00C
+        run: make test_e2e_evm_morse ${{ matrix.service_id }}
 
   run-e2e-tests-shannon:
     name: Run E2E tests - Shannon
@@ -98,15 +99,15 @@ jobs:
       - build-and-test-docker-image
     strategy:
       matrix:
-        # DEV_NOTE: Add new services here if they should be tested as part of the E2E CI suite
-        service_id: [anvil]
+        # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
+        service_id: [eth, anvil]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
 
       - name: Download Docker image artifact from previous job
         uses: actions/download-artifact@v4
@@ -129,4 +130,5 @@ jobs:
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
       - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}
-        run: make test_e2e_evm_shannon SERVICE_ID_OVERRIDE=${{ matrix.service_id }} WAIT_FOR_HYDRATOR=40 DOCKER_LOG=false
+        # eg. make test_e2e_evm_shannon eth
+        run: make test_e2e_evm_shannon ${{ matrix.service_id }}
