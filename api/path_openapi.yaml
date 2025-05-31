@@ -1,3 +1,5 @@
+# TODO_DOCUMENT(@commoddity): Add a docs page that embeds the PATH OpenAPI spec into the docs.
+# Use this repo: https://github.com/PaloAltoNetworks/docusaurus-openapi-docs
 openapi: 3.0.3
 info:
   title: PATH - Path API & Toolkit Harness
