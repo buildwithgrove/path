@@ -44,20 +44,22 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 
 // toSanctionDetails converts a sanction to a devtools.SanctionedEndpoint struct.
 func (s sanction) toSanctionDetails(
+	supplierAddress string,
+	endpointURL string,
 	appAddr string,
 	sessionID string,
-	endpointURL string,
 	sanctionType protocolobservations.MorseSanctionType,
 ) devtools.SanctionedEndpoint {
 	return devtools.SanctionedEndpoint{
-		AppAddr:       appAddr,
-		SessionID:     sessionID,
-		EndpointURL:   endpointURL,
-		Reason:        s.reason,
-		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
-		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
-		ServiceID:     protocol.ServiceID(s.sessionServiceID),
-		SessionHeight: s.sessionStartHeight,
-		CreatedAt:     s.createdAt,
+		SupplierAddress: supplierAddress,
+		EndpointURL:     endpointURL,
+		AppAddr:         appAddr,
+		SessionID:       sessionID,
+		ServiceID:       protocol.ServiceID(s.sessionServiceID),
+		Reason:          s.reason,
+		SanctionType:    protocolobservations.MorseSanctionType_name[int32(sanctionType)],
+		ErrorType:       protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
+		SessionHeight:   s.sessionStartHeight,
+		CreatedAt:       s.createdAt,
 	}
 }

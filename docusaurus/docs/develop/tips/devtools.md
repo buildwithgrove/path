@@ -55,11 +55,8 @@ The response from the disqualified endpoints API contains details about endpoint
   "protocol_level_disqualified_endpoints": {
     "permanently_sanctioned_endpoints": {},
     "session_sanctioned_endpoints": {
-      "https://us-west-test-endpoint-1.demo": {
-        "supplier_addresses": {
-          "pokt13771d0a403a599ee4a3812321e2fabc509e7f3": {},
-          "pokt183e1d77fc8a0a4a36f4deb5557553e55fe391c": {}
-        },
+      "pokt13771d0a403a599ee4a3812321e2fabc509e7f3-https://us-west-test-endpoint-1.demo": {
+        "supplier_address": "pokt13771d0a403a599ee4a3812321e2fabc509e7f3",
         "endpoint_url": "https://us-west-test-endpoint-1.demo",
         "reason": "relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-test-endpoint-1.demo: no such host",
         "service_id": "base",

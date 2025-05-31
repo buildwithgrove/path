@@ -39,11 +39,11 @@ type (
 	// ProtocolLevelDataResponse contains data about sanctioned endpoints at the protocol level.
 	// It reports the number of permanently sanctioned endpoints, the number of session sanctioned endpoints, and the total number of sanctioned endpoints.
 	ProtocolLevelDataResponse struct {
-		PermanentlySanctionedEndpoints    map[string]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
-		SessionSanctionedEndpoints        map[string]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
-		PermamentSanctionedEndpointsCount int                           `json:"permanent_sanctioned_endpoints_count"`
-		SessionSanctionedEndpointsCount   int                           `json:"session_sanctioned_endpoints_count"`
-		TotalSanctionedEndpointsCount     int                           `json:"total_sanctioned_endpoints_count"`
+		PermanentlySanctionedEndpoints    map[protocol.EndpointAddr]SanctionedEndpoint `json:"permanently_sanctioned_endpoints"`
+		SessionSanctionedEndpoints        map[protocol.EndpointAddr]SanctionedEndpoint `json:"session_sanctioned_endpoints"`
+		PermamentSanctionedEndpointsCount int                                          `json:"permanent_sanctioned_endpoints_count"`
+		SessionSanctionedEndpointsCount   int                                          `json:"session_sanctioned_endpoints_count"`
+		TotalSanctionedEndpointsCount     int                                          `json:"total_sanctioned_endpoints_count"`
 	}
 
 	// QoSLevelDataResponse contains data about disqualified endpoints at the QoS level.
@@ -58,17 +58,16 @@ type (
 
 	// SanctionedEndpoint represents an endpoint sanctioned at the protocol level.
 	SanctionedEndpoint struct {
-		// One endpoint URL can be used by multiple suppliers.
-		SupplierAddresses map[string]struct{} `json:"supplier_addresses"`
-		EndpointURL       string              `json:"endpoint_url"`
-		Reason            string              `json:"reason"`
-		ServiceID         protocol.ServiceID  `json:"service_id"`
-		SessionID         string              `json:"session_id"`
-		AppAddr           string              `json:"app_addr"`
-		SanctionType      string              `json:"sanction_type"`
-		ErrorType         string              `json:"error_type"`
-		SessionHeight     int64               `json:"session_height"`
-		CreatedAt         time.Time           `json:"created_at"`
+		SupplierAddress string             `json:"supplier_address"`
+		EndpointURL     string             `json:"endpoint_url"`
+		AppAddr         string             `json:"app_addr"`
+		SessionID       string             `json:"session_id"`
+		ServiceID       protocol.ServiceID `json:"service_id"`
+		Reason          string             `json:"reason"`
+		SanctionType    string             `json:"sanction_type"`
+		ErrorType       string             `json:"error_type"`
+		SessionHeight   int64              `json:"session_height"`
+		CreatedAt       time.Time          `json:"created_at"`
 	}
 
 	// QoSDisqualifiedEndpoint represents an endpoint disqualified at the QoS level.
@@ -78,12 +77,3 @@ type (
 		ServiceID    protocol.ServiceID    `json:"service_id"`
 	}
 )
-
-// AddSupplierAddress adds a supplier address to the SanctionedEndpoint.
-// One endpoint URL can be used by multiple suppliers, so we need to add the supplier address to the sanction details.
-func (s *SanctionedEndpoint) AddSupplierAddress(supplierAddr string) {
-	if s.SupplierAddresses == nil {
-		s.SupplierAddresses = make(map[string]struct{})
-	}
-	s.SupplierAddresses[supplierAddr] = struct{}{}
-}

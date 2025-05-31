@@ -162,9 +162,7 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 }
 
 // isSanctioned checks if an endpoint has any active sanction (permanent or session-based)
-func (ses *sanctionedEndpointsStore) isSanctioned(
-	endpoint *endpoint,
-) (bool, string) {
+func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, string) {
 	// Check permanent sanctions first - these apply regardless of session
 	ses.permanentSanctionsMutex.RLock()
 	defer ses.permanentSanctionsMutex.RUnlock()
@@ -187,14 +185,19 @@ func (ses *sanctionedEndpointsStore) isSanctioned(
 
 // --------- Session Sanction Key ---------
 
+// TODO_TECHDEBT(@commoddity,adshmh): update this to be composed of only
+//     - endpoint URL
+//     - either supplier address or session ID
+// Discord conversation: https://discord.com/channels/824324475256438814/1273320783547990160/1378346761151844465
+
 // sanctionKey:
 //   - Creates a unique key for session-based sanctions
 //   - Format: appAddr:sessionID:supplier:endpoint_url
 type sanctionKey struct {
-	appAddr   string
-	sessionID string
-	supplier  string
-	url       string
+	supplier    string
+	endpointURL string
+	appAddr     string
+	sessionID   string
 }
 
 func newSanctionKey(endpoint *endpoint) sanctionKey {
@@ -205,26 +208,22 @@ func newSanctionKey(endpoint *endpoint) sanctionKey {
 	appAddr := header.ApplicationAddress
 	sessionID := header.SessionId
 	return sanctionKey{
-		appAddr:   appAddr,
-		sessionID: sessionID,
-		supplier:  endpoint.supplier,
-		url:       endpoint.url,
+		supplier:    endpoint.supplier,
+		endpointURL: endpoint.url,
+		appAddr:     appAddr,
+		sessionID:   sessionID,
 	}
 }
 
-func decomposeSanctionKeyString(cacheKey string) (
-	appAddr string,
-	sessionID string,
-	supplier string,
-	url string,
-) {
+func sanctionKeyFromCacheKeyString(cacheKey string) sanctionKey {
 	// Only split for 4 parts, as final part is URL which contains a ":" character.
 	parts := strings.SplitN(cacheKey, ":", 4)
-	appAddr = parts[0]
-	sessionID = parts[1]
-	supplier = parts[2]
-	url = parts[3]
-	return appAddr, sessionID, supplier, url
+	return sanctionKey{
+		appAddr:     parts[0],
+		sessionID:   parts[1],
+		supplier:    parts[2],
+		endpointURL: parts[3],
+	}
 }
 
 // string returns the string representation of the sanction key.
@@ -235,8 +234,12 @@ func (s sanctionKey) string() string {
 		s.appAddr,
 		s.sessionID,
 		s.supplier,
-		s.url,
+		s.endpointURL,
 	)
+}
+
+func (s sanctionKey) endpointAddr() protocol.EndpointAddr {
+	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", s.supplier, s.endpointURL))
 }
 
 // --------- Sanction Details ---------
@@ -250,8 +253,8 @@ func (s sanctionKey) string() string {
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
 	ses.logger.Info().Msgf("Getting sanction details for service ID: %s", serviceID)
 
-	permanentSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
-	sessionSanctionDetails := make(map[string]devtools.SanctionedEndpoint)
+	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
+	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
 	for key, sanction := range ses.permanentSanctions {
@@ -300,28 +303,17 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 
 // processSanctionIntoDetailsMap processes a sanction and adds it to the provided details map
 func (ses *sanctionedEndpointsStore) processSanctionIntoDetailsMap(
-	key string,
+	cacheKey string,
 	sanction sanction,
-	detailsMap map[string]devtools.SanctionedEndpoint,
+	detailsMap map[protocol.EndpointAddr]devtools.SanctionedEndpoint,
 ) {
-	appAddr, sessionID, supplier, endpointURL := decomposeSanctionKeyString(key)
+	sanctionKey := sanctionKeyFromCacheKeyString(cacheKey)
 
-	var sanctionDetails devtools.SanctionedEndpoint
-	if savedSanctionDetails, ok := detailsMap[endpointURL]; ok {
-		sanctionDetails = savedSanctionDetails
-	} else {
-		sanctionDetails = sanction.toSanctionDetails(
-			appAddr,
-			sessionID,
-			endpointURL,
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
-		)
-	}
-
-	// A single endpoint URL can be used by multiple suppliers, so we need to add the supplier address to the sanction details.
-	sanctionDetails.AddSupplierAddress(supplier)
-
-	// Store by URL rather than sanction key to avoid duplicate entries
-	// when a single endpoint URL is used by multiple suppliers.
-	detailsMap[endpointURL] = sanctionDetails
+	detailsMap[sanctionKey.endpointAddr()] = sanction.toSanctionDetails(
+		sanctionKey.supplier,
+		sanctionKey.endpointURL,
+		sanctionKey.appAddr,
+		sanctionKey.sessionID,
+		protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+	)
 }

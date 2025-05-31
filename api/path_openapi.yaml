@@ -558,15 +558,13 @@ paths:
                     protocol_level_disqualified_endpoints:
                       permanently_sanctioned_endpoints: {}
                       session_sanctioned_endpoints:
-                        "https://us-west-test-endpoint-1.demo":
-                          supplier_addresses:
-                            pokt13771d0a403a599ee4a3812321e2fabc509e7f3: {}
-                            pokt183e1d77fc8a0a4a36f4deb5557553e55fe391c: {}
+                        "pokt13771d0a403a599ee4a3812321e2fabc509e7f3-https://us-west-test-endpoint-1.demo":
+                          supplier_address: "pokt13771d0a403a599ee4a3812321e2fabc509e7f3"
                           endpoint_url: "https://us-west-test-endpoint-1.demo"
-                          reason: "relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host"
-                          service_id: "base"
-                          session_id: "5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8"
                           app_addr: "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412"
+                          session_id: "5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8"
+                          service_id: "base"
+                          reason: "relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host"
                           sanction_type: "SHANNON_SANCTION_SESSION"
                           error_type: "SHANNON_ENDPOINT_ERROR_TIMEOUT"
                           session_height: 23951
