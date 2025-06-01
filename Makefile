@@ -23,26 +23,28 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
+CONFIG_PATH ?= ./local/path/.config.yaml
+
 .PHONY: check_path_config
 ## Verify that path configuration file exists
 check_path_config:
-	@if [ ! -f ./local/path/.config.yaml ]; then \
+	@if [ -z "$(CONFIG_PATH)" ]; then \
 		echo "################################################################"; \
-   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
-   		echo ""; \
-   		echo "Initialize using either:"; \
-   		echo "  make shannon_prepare_e2e_config"; \
-   		echo "  make morse_prepare_e2e_config "; \
-   		echo "################################################################"; \
-   		exit 1; \
-   fi
-
-# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
-CONFIG_PATH ?= ../local/path/.config.yaml
+		echo "Error: CONFIG_PATH is not set."; \
+		echo ""; \
+		echo "Set CONFIG_PATH to your config file, e.g.:"; \
+		echo "  export CONFIG_PATH=./local/path/.config.yaml"; \
+		echo "Or initialize using either:"; \
+		echo "  make shannon_prepare_e2e_config"; \
+		echo "  make morse_prepare_e2e_config "; \
+		echo "################################################################"; \
+		exit 1; \
+	fi
 
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ${CONFIG_PATH})
+	(cd bin; ./path -config ../${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###
