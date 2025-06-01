@@ -324,7 +324,7 @@ services:
 
   # Shannon - Optimism (Archival)
   - name: "Shannon - optimism (Optimism) Test"
-    service_id: "optimism"
+    service_id: "op"
     service_type: "evm"
     archival: true
     service_params:
@@ -336,7 +336,7 @@ services:
 
   # Shannon - Optimism Sepolia Testnet (Archival)
   - name: "Shannon - optimism_sep_test (Optimism Sepolia Testnet) Test"
-    service_id: "optimism_sep_test"
+    service_id: "op_sep_test"
     service_type: "evm"
     archival: true
     service_params:
