@@ -143,7 +143,6 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 			Details: err.Error(),
 		}
 	default:
-		// Log a warning
 		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
 		// Set a generic request error observation
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
