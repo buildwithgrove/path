@@ -15,18 +15,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IMPROVE(@commoddity): Implement a FullNode interface that adapts caching strategy based on GatewayMode:
-// - 1. Centralized Mode:
-//   - List of owned apps is predefined.
-//   - Onchain data can be proactively cached before any user requests.
-//
-// - 2. Delegated Mode:
-//   - Apps are specified dynamically by incoming user requests.
-//   - Cache must be built incrementally (lazy-loading) as new apps are requested.
-//
-// - 3. Add more documentation around lazy mode
-// - 4. Test the performance of a caching node vs lazy node.
-//
 // TODO_IMPROVE: Implement interface to adapt caching strategy based on GatewayMode
 // TODO_IMPROVE: Make cache TTLs configurable in config YAML file
 const (
@@ -54,6 +42,10 @@ type cachingFullNode struct {
 	appCache     *cache.Cache
 	sessionCache *cache.Cache
 
+	// Mutexes to prevent thundering herd on cache misses
+	appMutex     sync.Mutex
+	sessionMutex sync.Mutex
+
 	// Track ongoing refresh operations to prevent duplicates
 	appRefreshInProgress     map[string]bool
 	appRefreshMutex          sync.Mutex
@@ -74,6 +66,7 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	key := createCacheKey(appCacheKeyPrefix, appAddr)
 
+	// First check cache
 	if cached, expiration, found := cfn.appCache.GetWithExpiration(key); found {
 		app := cached.(*apptypes.Application)
 
@@ -84,7 +77,22 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		return app, nil
 	}
 
-	// Cache miss - fetch and store
+	// Cache miss - use double-check locking to prevent thundering herd
+	cfn.appMutex.Lock()
+	defer cfn.appMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	if cached, expiration, found := cfn.appCache.GetWithExpiration(key); found {
+		app := cached.(*apptypes.Application)
+
+		if cfn.shouldRefresh(expiration, appRefreshThreshold) {
+			cfn.refreshAppAsync(ctx, appAddr, key)
+		}
+
+		return app, nil
+	}
+
+	// Fetch and store
 	app, err := cfn.lazyFullNode.GetApp(ctx, appAddr)
 	if err != nil {
 		return nil, err
@@ -97,6 +105,7 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 func (cfn *cachingFullNode) GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
 	key := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
 
+	// First check cache
 	if cached, expiration, found := cfn.sessionCache.GetWithExpiration(key); found {
 		session := cached.(sessiontypes.Session)
 
@@ -107,7 +116,22 @@ func (cfn *cachingFullNode) GetSession(ctx context.Context, serviceID protocol.S
 		return session, nil
 	}
 
-	// Cache miss - fetch and store
+	// Cache miss - use double-check locking to prevent thundering herd
+	cfn.sessionMutex.Lock()
+	defer cfn.sessionMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	if cached, expiration, found := cfn.sessionCache.GetWithExpiration(key); found {
+		session := cached.(sessiontypes.Session)
+
+		if cfn.shouldRefresh(expiration, sessionRefreshThreshold) {
+			cfn.refreshSessionAsync(ctx, serviceID, appAddr, key)
+		}
+
+		return session, nil
+	}
+
+	// Fetch and store
 	session, err := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
 		return sessiontypes.Session{}, err
