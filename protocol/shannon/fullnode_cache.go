@@ -27,175 +27,171 @@ import (
 // - 3. Add more documentation around lazy mode
 // - 4. Test the performance of a caching node vs lazy node.
 //
-// TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
+// TODO_IMPROVE: Implement interface to adapt caching strategy based on GatewayMode
+// TODO_IMPROVE: Make cache TTLs configurable in config YAML file
 const (
-	// Applications can be cached indefinitely.
-	// They're invalidated only when they unstake.
-	// TODO_MAINNET_MIGRATION: Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
-	defaultAppCacheTTL = 5 * time.Minute
-
-	// Cleanup interval is twice the TTL.
-	// standard practice to balancing cleanup with minimal processing overhead
-	defaultAppCacheCleanupInterval = defaultAppCacheTTL * 2
-
-	// As of #275, on Beta TestNet.
-	// - Blocks are 30 seconds
-	// - A session is 50 blocks
-	// - A grace period is 1 block (i.e. 30 seconds)
-	// TODO_MAINNET_MIGRATION: Revisit these values after mainnet migration to ensure no race conditions.
+	// Cache TTLs and cleanup intervals
+	defaultAppCacheTTL     = 5 * time.Minute
 	defaultSessionCacheTTL = 30 * time.Second
-	
-	// Cleanup interval is twice the TTL.
-	// Standard practice for balancing cleanup with minimal processing overhead
+
+	defaultAppCacheCleanupInterval     = defaultAppCacheTTL * 2
 	defaultSessionCacheCleanupInterval = defaultSessionCacheTTL * 2
 
-	// Cache key prefixes to avoid collisions
+	// Preemptive refresh thresholds (20% of TTL)
+	appRefreshThreshold     = 1 * time.Minute
+	sessionRefreshThreshold = 6 * time.Second
+
+	// Cache key prefixes
 	appCacheKeyPrefix     = "app"
 	sessionCacheKeyPrefix = "session"
 )
 
 var _ FullNode = &cachingFullNode{}
 
-// cachingFullNode implements the FullNode interface by wrapping a LazyFullNode
-// and caching results to improve performance.
 type cachingFullNode struct {
-	// Use a LazyFullNode as the underlying node
-	// for fetching data from the protocol.
 	lazyFullNode *lazyFullNode
 
-	// Caches for applications and mutexes to protect cache access.
-	appCache *cache.Cache
-	appMutex sync.Mutex
-
-	// Caches for sessions and mutexes to protect cache access.
+	appCache     *cache.Cache
 	sessionCache *cache.Cache
-	sessionMutex sync.Mutex
+
+	// Track ongoing refresh operations to prevent duplicates
+	appRefreshInProgress     map[string]bool
+	appRefreshMutex          sync.Mutex
+	sessionRefreshInProgress map[string]bool
+	sessionRefreshMutex      sync.Mutex
 }
 
-// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
 func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 	return &cachingFullNode{
-		lazyFullNode: lazyFullNode,
-		appCache:     cache.New(defaultAppCacheTTL, defaultAppCacheCleanupInterval),
-		sessionCache: cache.New(defaultSessionCacheTTL, defaultSessionCacheCleanupInterval),
+		lazyFullNode:             lazyFullNode,
+		appCache:                 cache.New(defaultAppCacheTTL, defaultAppCacheCleanupInterval),
+		sessionCache:             cache.New(defaultSessionCacheTTL, defaultSessionCacheCleanupInterval),
+		appRefreshInProgress:     make(map[string]bool),
+		sessionRefreshInProgress: make(map[string]bool),
 	}
 }
 
-// GetApp returns the application with the given address, using a cached version if available.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	appCacheKey := createCacheKey(appCacheKeyPrefix, appAddr)
+	key := createCacheKey(appCacheKeyPrefix, appAddr)
 
-	// Try to get app from cache with double-check locking pattern
-	if cachedApp, found := cfn.getFromAppCache(appCacheKey); found {
-		return cachedApp, nil
+	if cached, expiration, found := cfn.appCache.GetWithExpiration(key); found {
+		app := cached.(*apptypes.Application)
+
+		if cfn.shouldRefresh(expiration, appRefreshThreshold) {
+			cfn.refreshAppAsync(ctx, appAddr, key)
+		}
+
+		return app, nil
 	}
 
-	// Cache miss - get from underlying node
+	// Cache miss - fetch and store
 	app, err := cfn.lazyFullNode.GetApp(ctx, appAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store in cache if the app is found.
-	cfn.appCache.Set(appCacheKey, app, cache.DefaultExpiration)
-
+	cfn.appCache.Set(key, app, cache.DefaultExpiration)
 	return app, nil
 }
 
-// getFromAppCache retrieves an application from the cache using double-check locking pattern.
-// It returns the cached application and a boolean indicating if it was found.
-func (cfn *cachingFullNode) getFromAppCache(cacheKey string) (*apptypes.Application, bool) {
-	// Check cache first
-	if cachedApp, found := cfn.appCache.Get(cacheKey); found {
-		return cachedApp.(*apptypes.Application), true
+func (cfn *cachingFullNode) GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error) {
+	key := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
+
+	if cached, expiration, found := cfn.sessionCache.GetWithExpiration(key); found {
+		session := cached.(sessiontypes.Session)
+
+		if cfn.shouldRefresh(expiration, sessionRefreshThreshold) {
+			cfn.refreshSessionAsync(ctx, serviceID, appAddr, key)
+		}
+
+		return session, nil
 	}
 
-	// Use mutex to prevent multiple concurrent cache updates for the same app
-	cfn.appMutex.Lock()
-	defer cfn.appMutex.Unlock()
-
-	// Double-check cache after acquiring lock
-	if cachedApp, found := cfn.appCache.Get(cacheKey); found {
-		return cachedApp.(*apptypes.Application), true
-	}
-
-	return nil, false
-}
-
-// GetSession returns the session for the given service and app, using a cached version if available.
-func (cfn *cachingFullNode) GetSession(
-	ctx context.Context,
-	serviceID protocol.ServiceID,
-	appAddr string,
-) (sessiontypes.Session, error) {
-	// Create a unique cache key for this service+app combination
-	sessionCacheKey := createCacheKey(sessionCacheKeyPrefix, fmt.Sprintf("%s:%s", serviceID, appAddr))
-
-	// Try to get session from cache with double-check locking pattern
-	if cachedSession, found := cfn.getFromSessionCache(sessionCacheKey); found {
-		return cachedSession, nil
-	}
-
-	// Cache miss - get from underlying node
+	// Cache miss - fetch and store
 	session, err := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
 		return sessiontypes.Session{}, err
 	}
 
-	// Store in cache if the session is found.
-	cfn.sessionCache.Set(sessionCacheKey, session, cache.DefaultExpiration)
-
+	cfn.sessionCache.Set(key, session, cache.DefaultExpiration)
 	return session, nil
 }
 
-// getFromSessionCache retrieves a session from the cache using double-check locking pattern.
-// It returns the cached session and a boolean indicating if it was found.
-func (cfn *cachingFullNode) getFromSessionCache(cacheKey string) (sessiontypes.Session, bool) {
-	// Check cache first
-	if cachedSession, found := cfn.sessionCache.Get(cacheKey); found {
-		return cachedSession.(sessiontypes.Session), true
+// shouldRefresh determines if a cache entry should be refreshed preemptively
+func (cfn *cachingFullNode) shouldRefresh(expiration time.Time, threshold time.Duration) bool {
+	if expiration.IsZero() {
+		return false
 	}
 
-	// Use mutex to prevent multiple concurrent cache updates for the same session
-	cfn.sessionMutex.Lock()
-	defer cfn.sessionMutex.Unlock()
-
-	// Double-check cache after acquiring lock
-	if cachedSession, found := cfn.sessionCache.Get(cacheKey); found {
-		return cachedSession.(sessiontypes.Session), true
-	}
-
-	return sessiontypes.Session{}, false
+	timeUntilExpiry := time.Until(expiration)
+	return timeUntilExpiry <= threshold && timeUntilExpiry > 0
 }
 
-// ValidateRelayResponse delegates to the underlying node.
-func (cfn *cachingFullNode) ValidateRelayResponse(
-	supplierAddr sdk.SupplierAddress,
-	responseBz []byte,
-) (*servicetypes.RelayResponse, error) {
+// refreshAppAsync triggers background refresh for app cache entry
+func (cfn *cachingFullNode) refreshAppAsync(_ context.Context, appAddr, key string) {
+	cfn.appRefreshMutex.Lock()
+	if cfn.appRefreshInProgress[key] {
+		cfn.appRefreshMutex.Unlock()
+		return
+	}
+	cfn.appRefreshInProgress[key] = true
+	cfn.appRefreshMutex.Unlock()
+
+	go func() {
+		defer func() {
+			cfn.appRefreshMutex.Lock()
+			delete(cfn.appRefreshInProgress, key)
+			cfn.appRefreshMutex.Unlock()
+		}()
+
+		refreshCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if app, err := cfn.lazyFullNode.GetApp(refreshCtx, appAddr); err == nil {
+			cfn.appCache.Set(key, app, cache.DefaultExpiration)
+		}
+	}()
+}
+
+// refreshSessionAsync triggers background refresh for session cache entry
+func (cfn *cachingFullNode) refreshSessionAsync(_ context.Context, serviceID protocol.ServiceID, appAddr, key string) {
+	cfn.sessionRefreshMutex.Lock()
+	if cfn.sessionRefreshInProgress[key] {
+		cfn.sessionRefreshMutex.Unlock()
+		return
+	}
+	cfn.sessionRefreshInProgress[key] = true
+	cfn.sessionRefreshMutex.Unlock()
+
+	go func() {
+		defer func() {
+			cfn.sessionRefreshMutex.Lock()
+			delete(cfn.sessionRefreshInProgress, key)
+			cfn.sessionRefreshMutex.Unlock()
+		}()
+
+		refreshCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if session, err := cfn.lazyFullNode.GetSession(refreshCtx, serviceID, appAddr); err == nil {
+			cfn.sessionCache.Set(key, session, cache.DefaultExpiration)
+		}
+	}()
+}
+
+// Delegate methods to underlying lazy full node
+func (cfn *cachingFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	return cfn.lazyFullNode.ValidateRelayResponse(supplierAddr, responseBz)
 }
 
-// IsHealthy delegates to the underlying node.
-//
-// TODO_IMPROVE(@commoddity):
-// - Implement a more sophisticated health check
-// - Check for the presence of cached apps and sessions (when the TODO_IMPROVE at the top of this file is addressed)
-// - For now, always returns true because:
-//   - The cache is populated incrementally as new apps and sessions are requested.
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
 }
 
-// GetAccountClient delegates to the underlying node.
 func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 	return cfn.lazyFullNode.GetAccountClient()
 }
 
-// createCacheKey creates a cache key for the given prefix and key.
-//
-//	eg. createCacheKey("app", "0x123") -> "app:0x123"
-//	eg. createCacheKey("session", "anvil:0x456") -> "session:anvil:0x456"
-func createCacheKey(prefix string, key string) string {
+func createCacheKey(prefix, key string) string {
 	return fmt.Sprintf("%s:%s", prefix, key)
 }
