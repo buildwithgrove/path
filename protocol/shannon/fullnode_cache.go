@@ -25,28 +25,39 @@ import (
 //
 // - 3. Add more documentation around lazy mode
 // - 4. Test the performance of a caching node vs lazy node.
-//
-// TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
 const (
 	// Applications can be cached indefinitely.
 	// They're invalidated only when they unstake.
-	// TODO_MAINNET_MIGRATION: Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
+	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
 	defaultAppCacheTTL = 5 * time.Minute
 
 	// As of #275, on Beta TestNet.
 	// - Blocks are 30 seconds
 	// - A session is 50 blocks
 	// - A grace period is 1 block (i.e. 30 seconds)
-	// TODO_MAINNET_MIGRATION: Revisit these values after mainnet migration to ensure no race conditions.
+	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
+	// TODO_TECHDEBT(@Olshansk): Update this cache refresh time if onchain block time changes.
 	defaultSessionCacheTTL = 30 * time.Second
 
+	// "Refreshing" in SturdyC means proactively fetching fresh data in the background
+	// BEFORE the cached entry expires. This prevents cache misses and eliminates latency
+	// spikes by ensuring hot data is always available immediately.
+	//
+	// Apps refresh timing (4-4.5 minutes for 5-minute TTL = 80-90% of TTL):
+	// 	- Chosen to balance data freshness with background load
+	// 	- Apps change infrequently, so refreshing near expiry is sufficient
+	// 	- Random jitter prevents thundering herd on the FullNode
+	//
+	// TODO_TECHDEBT(@Olshansk): Revisit these early refresh timings and percentages.
+	// Consider making them configurable and validate against real-world traffic patterns.
+	//
+	// Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
+
 	// Early refresh configuration for apps
-	// Apps will start refreshing when they're between 4-4.5 minutes old
 	appMinRefreshDelay = 4 * time.Minute
 	appMaxRefreshDelay = 4*time.Minute + 30*time.Second
 
 	// Early refresh configuration for sessions
-	// Sessions will start refreshing when they're between 20-25 seconds old
 	sessionMinRefreshDelay = 20 * time.Second
 	sessionMaxRefreshDelay = 25 * time.Second
 
@@ -54,8 +65,28 @@ const (
 	retryBaseDelay = 100 * time.Millisecond
 
 	// Cache configuration
-	cacheCapacity      = 100_000
-	numShards          = 10
+	//
+	// cacheCapacity: Maximum number of entries the cache can hold across all shards.
+	// This is the total capacity, not per-shard. When capacity is exceeded, the cache
+	// will evict a percentage of the least recently used entries from each shard.
+	// 100k entries should handle a large number of apps and sessions for most deployments.
+	//
+	// TODO_TECHDEBT(@commoddity): Revisit cache capacity based on real-world usage patterns.
+	// Consider making this configurable and potentially different for apps vs sessions.
+	cacheCapacity = 100_000
+
+	// numShards: Number of independent cache shards for concurrent access.
+	// SturdyC divides the cache into multiple shards to reduce lock contention and
+	// improve performance under concurrent read/write operations. Each shard operates
+	// independently with its own mutex, allowing parallel operations across shards.
+	// 10 shards provides good balance between concurrency and memory overhead.
+	numShards = 10
+
+	// evictionPercentage: Percentage of entries to evict from each shard when capacity is reached.
+	// When a shard reaches its capacity limit, this percentage of the least recently used (LRU)
+	// entries will be removed to make space for new entries. 10% provides incremental cleanup
+	// without causing large memory spikes during eviction cycles.
+	// SturdyC also runs background eviction jobs to remove expired entries automatically.
 	evictionPercentage = 10
 )
 
@@ -73,6 +104,7 @@ var _ FullNode = &cachingFullNode{}
 // Uses SturdyC's early refresh to prevent thundering herd and eliminate latency spikes.
 // Background refreshes happen before entries expire, so GetApp/GetSession never block.
 //
+// Example times (values may change):
 //   - Apps: 5min TTL, refresh at 4-4.5min (80-90% of TTL)
 //   - Sessions: 30sec TTL, refresh at 20-25sec (67-83% of TTL)
 //
