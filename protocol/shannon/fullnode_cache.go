@@ -26,6 +26,8 @@ import (
 // - 3. Add more documentation around lazy mode
 // - 4. Test the performance of a caching node vs lazy node.
 const (
+	// ---------------- Cache TTLs ----------------
+
 	// Applications can be cached indefinitely.
 	// They're invalidated only when they unstake.
 	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
@@ -38,6 +40,8 @@ const (
 	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
 	// TODO_TECHDEBT(@Olshansk): Update this cache refresh time if onchain block time changes.
 	defaultSessionCacheTTL = 30 * time.Second
+
+	// ---------------- Early Refresh Strategy ----------------
 
 	// "Refreshing" in SturdyC means proactively fetching fresh data in the background
 	// BEFORE the cached entry expires. This prevents cache misses and eliminates latency
@@ -64,7 +68,7 @@ const (
 	// Retry base delay for exponential backoff on failed refreshes
 	retryBaseDelay = 100 * time.Millisecond
 
-	// Cache configuration
+	// ---------------- Cache Configuration ----------------
 
 	// cacheCapacity: Maximum number of entries the cache can hold across all shards.
 	// This is the total capacity, not per-shard. When capacity is exceeded, the cache
