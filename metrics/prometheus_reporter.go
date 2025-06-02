@@ -26,7 +26,14 @@ func (pmr *PrometheusMetricsReporter) Publish(observations *observation.RequestR
 	// https://www.notion.so/buildwithgrove/PATH-Metrics-130a36edfff680febab5d31ee871af87
 
 	// Publish Gateway observations
-	publishGatewayMetrics(observations.GetGateway())
+	gatewayObservations := observations.GetGateway()
+	isRequestValid := publishGatewayMetrics(pmr.Logger, gatewayObservations)
+
+	// Request was invalid: skip Protocol and QoS observations.
+	// e.g.: no service ID was specified by the HTTP header.
+	if !isRequestValid {
+		return
+	}
 
 	// Publish QoS observations
 	qos.PublishQoSMetrics(pmr.Logger, observations.GetQos())

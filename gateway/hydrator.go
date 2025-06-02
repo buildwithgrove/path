@@ -135,7 +135,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// Passing a nil as the HTTP request, because we assume the hydrator uses "Centralized Operation Mode".
 	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	availableEndpoints, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
+	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
+	availableEndpoints, _, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
 	if err != nil || len(availableEndpoints) == 0 {
 		// No session found or no endpoints available for service: skip.
 		logger.Warn().Msg("no session found or no endpoints available for service when running hydrator checks.")
@@ -176,7 +177,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// Passing a nil as the HTTP request, because we assume the Centralized Operation Mode being used by the hydrator,
 					// which means there is no need for specifying a specific app.
 					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-					hydratorRequestCtx, err := eph.Protocol.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
+					// TODO_FUTURE(@adshmh): consider publishing observations here.
+					hydratorRequestCtx, _, err := eph.Protocol.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
