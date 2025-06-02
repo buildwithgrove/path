@@ -70,3 +70,5 @@ install.log
 # Config Backup files
 *.backup
 
+# Supplier Report JSON File
+supplier_report_*.json
