@@ -86,6 +86,9 @@ const (
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED GatewayRequestErrorKind = 0
 	// Service ID not specified.
 	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID GatewayRequestErrorKind = 1
+	// QoS rejected the request.
+	// e.g. malformed payload could not be unmarshaled into JSONRPC
+	GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS GatewayRequestErrorKind = 2
 )
 
 // Enum value maps for GatewayRequestErrorKind.
@@ -93,10 +96,12 @@ var (
 	GatewayRequestErrorKind_name = map[int32]string{
 		0: "GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED",
 		1: "GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID",
+		2: "GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS",
 	}
 	GatewayRequestErrorKind_value = map[string]int32{
 		"GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED":        0,
 		"GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID": 1,
+		"GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS":    2,
 	}
 )
 
@@ -309,10 +314,11 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
-	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*x\n" +
+	"\x16REQUEST_TYPE_SYNTHETIC\x10\x02*\xa8\x01\n" +
 	"\x17GatewayRequestErrorKind\x12*\n" +
 	"&GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED\x10\x00\x121\n" +
-	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
+	"-GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID\x10\x01\x12.\n" +
+	"*GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS\x10\x02B,Z*github.com/buildwithgrove/path/observationb\x06proto3"
 
 var (
 	file_path_gateway_proto_rawDescOnce sync.Once
