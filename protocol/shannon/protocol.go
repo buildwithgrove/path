@@ -325,17 +325,17 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		qualifiedEndpoints := appEndpoints
 		if filterSanctioned {
 			// Filter out any sanctioned endpoints
-			qualifiedEndpoints = p.sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
+			filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
+			// All endpoints are sanctioned: log a warning and skip this app.
+			if len(filteredEndpoints) == 0 {
+				logger.Error().Msgf("All app endpoints are sanctioned on service %s, app %s. Skipping the app.", serviceID, app.Address)
+				continue
+			}
+			qualifiedEndpoints = filteredEndpoints
 		}
 
 		// Log the number of endpoints before and after filtering
 		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(qualifiedEndpoints))
-
-		// All endpoints are sanctioned: log a warning and skip this app.
-		if len(filteredEndpoints) == 0 {
-			logger.Error().Msgf("All app endpoints are sanctioned on service %s, app %s. Skipping the app.", serviceID, app.Address)
-			continue
-		}
 
 		logger.Debug().Msg("Filtered sanctioned endpoints.")
 

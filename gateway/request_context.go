@@ -434,11 +434,7 @@ func (rc *requestContext) getHTTPRequestLogger(httpReq *http.Request) polylog.Lo
 // - When broadcasting observations.
 func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorObservation *protocolobservations.Observations) {
 	// protocol observation already set: skip.
-<<<<<<< HEAD
-	// This happens when a protocol context setup was reported earlier.
-=======
 	// This happens when a protocol context setup observation was reported earlier.
->>>>>>> origin/main
 	if rc.protocolObservations != nil {
 		return
 	}
@@ -454,13 +450,10 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		observations := rc.protocolCtx.GetObservations()
 		rc.protocolObservations = &observations
 	}
-<<<<<<< HEAD
-=======
 
 	// This should never happen: either protocol context is setup, or an observation is reported to use directly for the request.
 	rc.logger.
 		With("service_id", rc.serviceID).
 		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 		Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
->>>>>>> origin/main
 }
