@@ -2,12 +2,12 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	jsonresponse "github.com/pokt-foundation/utils-go/json-response"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
@@ -217,5 +217,16 @@ func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	jsonresponse.RespondWithJSON(w, http.StatusOK, disqualifiedEndpointResponses)
+	// Set content type header
+	w.Header().Set("Content-Type", "application/json")
+
+	// Set status code
+	w.WriteHeader(http.StatusOK)
+
+	// Marshal and write JSON response
+	if err := json.NewEncoder(w).Encode(disqualifiedEndpointResponses); err != nil {
+		// If encoding fails, log the error but we can't change the status code since it's already written
+		r.logger.Error().Err(err).Msg("failed to encode JSON response")
+		return
+	}
 }

@@ -312,13 +312,13 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		// Log an error
 		// skip current app.
 		if err != nil {
-			logger.Error().Err(err).Msg("Internal error: error getting a session for the app: skipping the app.")
+			logger.Error().Err(err).Msgf("Internal error: error getting a session for service %s app %s: skipping the app.", serviceID, app.Address)
 			continue
 		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
-			logger.Error().Err(err).Msg("Internal error: error getting all endpoints for app and session: skipping the app.")
+			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
 			continue
 		}
 
@@ -332,8 +332,8 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(qualifiedEndpoints))
 
 		// All endpoints are sanctioned: log a warning and skip this app.
-		if len(qualifiedEndpoints) == 0 {
-			logger.Error().Msg("All app endpoints are sanctioned. Skipping the app.")
+		if len(filteredEndpoints) == 0 {
+			logger.Error().Msgf("All app endpoints are sanctioned on service %s, app %s. Skipping the app.", serviceID, app.Address)
 			continue
 		}
 

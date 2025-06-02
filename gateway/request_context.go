@@ -113,9 +113,9 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
-// updateGatewayObservations updates gateway-level observations by setting:
-// - Service ID
-// - Request error, if any.
+// hydrateGatewayObservations
+// - updates the gateway-level observations in the request context with other metadata in the request context.
+// - sets the gateway observation error with the one provided, if not already set
 func (rc *requestContext) updateGatewayObservations(err error) {
 	// set the service ID on the gateway observations.
 	rc.gatewayObservations.ServiceId = string(rc.serviceID)
@@ -136,6 +136,7 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 	// As of PR #273 the only error is "missing service ID".
 	switch {
 	case errors.Is(err, GatewayErrNoServiceIDProvided):
+		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// Set the error kind
 			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
@@ -143,7 +144,6 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 			Details: err.Error(),
 		}
 	default:
-		// Log a warning
 		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
 		// Set a generic request error observation
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
@@ -210,6 +210,10 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&endpointLookupObs)
+		rc.logger.
+			With("service_id", rc.serviceID).
+			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+			Err(err).Msg("error getting available endpoints for the service request. Request will fail.")
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
@@ -218,6 +222,10 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	if err != nil {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
+		rc.logger.
+			With("service_id", rc.serviceID).
+			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+			Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
@@ -229,7 +237,10 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		//
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
-		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
+		rc.logger.
+			With("service_id", rc.serviceID).
+			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+			Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
 
@@ -423,7 +434,11 @@ func (rc *requestContext) getHTTPRequestLogger(httpReq *http.Request) polylog.Lo
 // - When broadcasting observations.
 func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorObservation *protocolobservations.Observations) {
 	// protocol observation already set: skip.
+<<<<<<< HEAD
 	// This happens when a protocol context setup was reported earlier.
+=======
+	// This happens when a protocol context setup observation was reported earlier.
+>>>>>>> origin/main
 	if rc.protocolObservations != nil {
 		return
 	}
@@ -439,4 +454,13 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		observations := rc.protocolCtx.GetObservations()
 		rc.protocolObservations = &observations
 	}
+<<<<<<< HEAD
+=======
+
+	// This should never happen: either protocol context is setup, or an observation is reported to use directly for the request.
+	rc.logger.
+		With("service_id", rc.serviceID).
+		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+		Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
+>>>>>>> origin/main
 }

@@ -46,7 +46,7 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: gateway %s app %s. Relay request will fail.", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
-		logger.Error().Err(err).Msg("Gateway does noth ave deletation for the app. Relay request will fail.")
+		logger.Error().Err(err).Msg("Gateway does not have delegation for the app. Relay request will fail.")
 		return nil, err
 	}
 

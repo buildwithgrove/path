@@ -25,7 +25,7 @@ var (
 	// Centralized gateway mode app does not delegate to the gateway.
 	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway")
 	// Centralized gateway mode: no permitted apps found for service.
-	errProtocolContextSetupCentralizedNoApps = errors.New("no apps matched the request for service")
+	errProtocolContextSetupCentralizedNoApps = errors.New("No apps mathed the request for service")
 
 	// Delegated gateway mode: could not extract app from HTTP request.
 	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")

@@ -143,7 +143,7 @@ func recordRelayTotal(
 		"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
 	}
 
-	// Determine if any of the observations were successful (no error)
+	// Determine if any of the observations were successful.
 	success := isAnyObservationSuccessful(endpointObservations)
 
 	// Increment the relay total counter with exemplars

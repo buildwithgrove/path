@@ -62,21 +62,27 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 	// Centralized gateway mode: error fetching app
 	case errors.Is(err, errProtocolContextSetupCentralizedAppFetchErr):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR
+
 	// Centralized gateway mode: app does not delegate to the gateway
 	case errors.Is(err, errProtocolContextSetupCentralizedAppDelegation):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION
+
 	// Centralized gateway mode: no apps found for service
 	case errors.Is(err, errProtocolContextSetupCentralizedNoApps):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS
+
 	// Delegated gateway mode: could not extract app from HTTP request.
 	case errors.Is(err, errProtocolContextSetupGetAppFromHTTPReq):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP
+
 	// Delegated gateway mode: error fetching onchain app data
 	case errors.Is(err, errProtocolContextSetupFetchApp):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP
+
 	// Delegated gateway mode: pp does not delegate to the gateway
 	case errors.Is(err, errProtocolContextSetupAppDoesNotDelegate):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE
+
 	// No endpoints available for the service
 	// Due to one or more of the following:
 	// - Any of the gateway mode errors above
@@ -84,8 +90,10 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 	// - One or more available endpoints are sanctioned.
 	case errors.Is(err, errProtocolContextSetupNoEndpoints):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE
+
 	case errors.Is(err, errRequestContextSetupErrSignerSetup):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR
+
 	// Should NOT happen: use the INTERNAL type to track and resolve via metrics.
 	default:
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL
