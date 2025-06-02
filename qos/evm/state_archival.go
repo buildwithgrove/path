@@ -171,7 +171,7 @@ func (as *archivalState) isArchivalBalanceValid(check endpointCheckArchival) err
 		return errNoArchivalBalanceObs
 	}
 	if check.observedArchivalBalance != as.expectedBalance {
-		return fmt.Errorf(errInvalidArchivalBalanceObs.Error(), check.observedArchivalBalance, as.expectedBalance)
+		return errInvalidArchivalBalanceObs
 	}
 
 	return nil
