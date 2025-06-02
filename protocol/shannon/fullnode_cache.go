@@ -132,12 +132,13 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 // GetApp returns the application with the given address, using a cached version if available.
 // The cache will automatically refresh the app in the background before it expires.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+	// eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 	appCacheKey := fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
 
+	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 	return cfn.appCache.GetOrFetch(
 		ctx,
 		appCacheKey,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
 		},
@@ -151,12 +152,13 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	// eg. "session:eth:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 	sessionCacheKey := fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 
+	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 	return cfn.sessionCache.GetOrFetch(
 		ctx,
 		sessionCacheKey,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
