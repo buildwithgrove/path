@@ -65,7 +65,7 @@ const (
 	retryBaseDelay = 100 * time.Millisecond
 
 	// Cache configuration
-	//
+
 	// cacheCapacity: Maximum number of entries the cache can hold across all shards.
 	// This is the total capacity, not per-shard. When capacity is exceeded, the cache
 	// will evict a percentage of the least recently used entries from each shard.
