@@ -113,9 +113,9 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
-// updateGatewayObservations updates gateway-level observations by setting:
-// - Service ID
-// - Request error, if any.
+// hydrateGatewayObservations
+// - updates the gateway-level observations in the request context with other metadata in the request context.
+// - sets the gateway observation error with the one provided, if not already set
 func (rc *requestContext) updateGatewayObservations(err error) {
 	// set the service ID on the gateway observations.
 	rc.gatewayObservations.ServiceId = string(rc.serviceID)
@@ -144,7 +144,6 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 			Details: err.Error(),
 		}
 	default:
-		// Log a warning
 		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
 		// Set a generic request error observation
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
