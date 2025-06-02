@@ -25,6 +25,9 @@ enum GatewayRequestErrorKind {
   GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED = 0;
   // Service ID not specified.
   GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID = 1;
+  // QoS rejected the request.
+  // e.g. malformed payload could not be unmarshaled into JSONRPC
+  GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
