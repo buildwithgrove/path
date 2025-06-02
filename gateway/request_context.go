@@ -224,9 +224,9 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
 		rc.logger.
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			With("service_id", rc.serviceID).
-			Warn().Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
+			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+			Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
@@ -239,9 +239,9 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
 		rc.logger.
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			With("service_id", rc.serviceID).
-			Warn().Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
+			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+			Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
 
@@ -454,7 +454,7 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 
 	// This should never happen: either protocol context is setup, or an observation is reported to use directly for the request.
 	rc.logger.
-		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 		With("service_id", rc.serviceID).
-		Warn().Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
+		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+		Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
 }
