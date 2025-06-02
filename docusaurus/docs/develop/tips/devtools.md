@@ -168,16 +168,6 @@ The disqualified endpoints system has two main components:
    - Updates endpoint quality data based on responses
    - Filters out endpoints that don't meet quality requirements
 
-#### Best Practices
-
-1. **Regular Monitoring**: Check disqualified endpoints regularly during development
-2. **Automated Alerts**: Set up alerts when critical endpoints are disqualified
-3. **Session vs Permanent**: 
-   - Session sanctions clear after 1 hour or on new sessions
-   - Permanent sanctions persist until gateway restart
-4. **Root Cause Analysis**: Use the detailed error messages to fix underlying issues
-5. **Supplier Communication**: If multiple suppliers use the same endpoint, coordinate fixes
-
 #### Error Responses
 
 **400 Bad Request** - Missing or invalid headers:
