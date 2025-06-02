@@ -20,6 +20,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tsenart/vegeta v12.7.0+incompatible
+	github.com/viccon/sturdyc v1.1.5
 	go.uber.org/mock v0.5.2
 	golang.org/x/net v0.40.0
 	google.golang.org/grpc v1.72.0
