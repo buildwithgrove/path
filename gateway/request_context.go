@@ -449,6 +449,7 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 	if rc.protocolCtx != nil {
 		observations := rc.protocolCtx.GetObservations()
 		rc.protocolObservations = &observations
+		return
 	}
 
 	// This should never happen: either protocol context is setup, or an observation is reported to use directly for the request.
