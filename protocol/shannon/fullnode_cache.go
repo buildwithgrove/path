@@ -15,8 +15,19 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IMPROVE: Implement interface to adapt caching strategy based on GatewayMode
-// TODO_IMPROVE: Make cache TTLs configurable in config YAML file
+// TODO_IMPROVE(@commoddity): Implement a FullNode interface that adapts caching strategy based on GatewayMode:
+// - 1. Centralized Mode:
+//   - List of owned apps is predefined.
+//   - Onchain data can be proactively cached before any user requests.
+//
+// - 2. Delegated Mode:
+//   - Apps are specified dynamically by incoming user requests.
+//   - Cache must be built incrementally (lazy-loading) as new apps are requested.
+//
+// - 3. Add more documentation around lazy mode
+// - 4. Test the performance of a caching node vs lazy node.
+//
+// TODO_IMPROVE(@commoddity): make the cache TTLs configurable in config YAML file.
 const (
 	// Cache TTLs and cleanup intervals
 	defaultAppCacheTTL     = 5 * time.Minute
