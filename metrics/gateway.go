@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/buildwithgrove/path/observation"
@@ -95,7 +96,10 @@ var (
 // Returns:
 // - true if the request was valid.
 // - false otherwise.
-func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations) bool {
+func publishGatewayMetrics(
+	logger polylog.Logger,
+	gatewayObservations *observation.GatewayObservations,
+) bool {
 	serviceID := gatewayObservations.GetServiceId()
 
 	var requestErrorKind string
@@ -104,6 +108,7 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 		requestErrorKind = requestErr.GetErrorKind().String()
 	}
 
+	requestType := observation.RequestType_name[int32(gatewayObservations.GetRequestType())]
 	// Increment on each service request with labels:
 	//   - service_id: Identifies the service
 	//   - request_type: "organic" or "synthetic"
@@ -111,7 +116,7 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 	relaysTotal.With(
 		prometheus.Labels{
 			"service_id":         serviceID,
-			"request_type":       observation.RequestType_name[int32(gatewayObservations.GetRequestType())],
+			"request_type":       requestType,
 			"request_error_kind": requestErrorKind,
 		},
 	).Inc()
@@ -132,6 +137,16 @@ func publishGatewayMetrics(gatewayObservations *observation.GatewayObservations)
 			"service_id": serviceID,
 		},
 	).Observe(float64(gatewayObservations.GetResponseSize()))
+
+	// log a meessage if there were any request errors.
+	if requestErr != nil {
+		logger.With(
+			"service_id", serviceID,
+			"request_type", requestType,
+			"reques_error_kind", requestErrorKind,
+			"request_error_details", requestErr.GetDetails(),
+		).Error().Msg("Invalid request: No Protocol or QoS observations were made.")
+	}
 
 	// Return the validity status of the request.
 	return requestErr == nil

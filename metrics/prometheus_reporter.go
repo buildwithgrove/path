@@ -27,12 +27,11 @@ func (pmr *PrometheusMetricsReporter) Publish(observations *observation.RequestR
 
 	// Publish Gateway observations
 	gatewayObservations := observations.GetGateway()
-	isRequestValid := publishGatewayMetrics(gatewayObservations)
+	isRequestValid := publishGatewayMetrics(pmr.Logger, gatewayObservations)
 
 	// Request was invalid: skip Protocol and QoS observations.
 	// e.g.: no service ID was specified by the HTTP header.
 	if !isRequestValid {
-		pmr.Logger.Info().Msg("Invalid request: No Protocol or QoS observations were made.")
 		return
 	}
 

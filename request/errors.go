@@ -12,6 +12,8 @@ var (
 	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header: %w", HTTPHeaderTargetServiceID, gateway.GatewayErrNoServiceIDProvided)
 )
 
+// Use JSON-formatted HTTP payload for user errors.
+// Not spec-required but expected by Gateway users.
 const parserErrorTemplate = `{"code":%d,"message":"%s"}`
 
 /* Parser Error Response */

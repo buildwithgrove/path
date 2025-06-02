@@ -19,7 +19,8 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	// Should return an observation to use if the endpoint lookup fails.
+	// Return observation if endpoint lookup fails.
+	// Used as protocol observation for the request when no protocol context exists.
 	AvailableEndpoints(
 		context.Context,
 		protocol.ServiceID,
@@ -32,7 +33,8 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	// Should return an observation to use if the context setup fails.
+	// Return observation if the context setup fails.
+	// Used as protocol observation for the request when no protocol context exists.
 	BuildRequestContextForEndpoint(
 		context.Context,
 		protocol.ServiceID,
