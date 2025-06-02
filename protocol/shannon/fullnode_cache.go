@@ -142,7 +142,6 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 	return cfn.appCache.GetOrFetch(
 		ctx,
 		appCacheKey,
-		// The following function is called when the cached
 		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
