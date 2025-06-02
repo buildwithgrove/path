@@ -133,8 +133,8 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 		return
 	}
 
-	// As of PR #273 the only error is "missing service ID".
 	switch {
+	// Service ID not specified
 	case errors.Is(err, GatewayErrNoServiceIDProvided):
 		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
@@ -143,6 +143,18 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 			// Use the error message as error details.
 			Details: err.Error(),
 		}
+
+	// Request was rejected by the QoS instance.
+	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
+	case errors.Is(err, GatewayErrRejectedByQoS):
+		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
 	default:
 		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
 		// Set a generic request error observation
@@ -169,6 +181,8 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	rc.qosCtx = qosCtx
 
 	if !isValid {
+		// Update gateway observations
+		rc.updateGatewayObservations(GatewayErrRejectedByQoS)
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
 		return errHTTPRequestRejectedByQoS
 	}
