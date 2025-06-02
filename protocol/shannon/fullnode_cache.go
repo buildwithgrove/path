@@ -59,10 +59,27 @@ const (
 	evictionPercentage = 10
 )
 
+const (
+	appCacheKeyPrefix     = "app"
+	sessionCacheKeyPrefix = "session"
+)
+
 var _ FullNode = &cachingFullNode{}
 
 // cachingFullNode implements the FullNode interface by wrapping a LazyFullNode
 // and caching results to improve performance with automatic refresh-ahead.
+//
+// Early Refresh Strategy:
+// Uses SturdyC's early refresh to prevent thundering herd and eliminate latency spikes.
+// Background refreshes happen before entries expire, so GetApp/GetSession never block.
+//
+//   - Apps: 5min TTL, refresh at 4-4.5min (80-90% of TTL)
+//   - Sessions: 30sec TTL, refresh at 20-25sec (67-83% of TTL)
+//
+// Benefits: Zero-latency reads for active traffic, thundering herd protection,
+// automatic load balancing, and graceful degradation. Can reduce P99 from 50ms+ to 1ms.
+//
+// Docs reference: https://github.com/viccon/sturdyc
 type cachingFullNode struct {
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
@@ -81,6 +98,7 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 		numShards,
 		defaultAppCacheTTL,
 		evictionPercentage,
+		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 		sturdyc.WithEarlyRefreshes(
 			appMinRefreshDelay,
 			appMaxRefreshDelay,
@@ -95,6 +113,7 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 		numShards,
 		defaultSessionCacheTTL,
 		evictionPercentage,
+		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 		sturdyc.WithEarlyRefreshes(
 			sessionMinRefreshDelay,
 			sessionMaxRefreshDelay,
@@ -113,14 +132,22 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 // GetApp returns the application with the given address, using a cached version if available.
 // The cache will automatically refresh the app in the background before it expires.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+	appCacheKey := fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
+
 	// SturdyC handles all the caching logic including:
 	// 		- Checking if the value exists in cache
 	// 		- Calling the fetch function if needed
 	// 		- Background refreshes when approaching TTL
 	// 		- Stampede protection
-	return cfn.appCache.GetOrFetch(ctx, appAddr, func(fetchCtx context.Context) (*apptypes.Application, error) {
-		return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
-	})
+	return cfn.appCache.GetOrFetch(
+		ctx,
+		appCacheKey,
+		// The following function is called when the cached
+		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
+		func(fetchCtx context.Context) (*apptypes.Application, error) {
+			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
+		},
+	)
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.
@@ -131,12 +158,21 @@ func (cfn *cachingFullNode) GetSession(
 	appAddr string,
 ) (sessiontypes.Session, error) {
 	// Create a unique cache key for this service+app combination
-	sessionCacheKey := fmt.Sprintf("%s:%s", serviceID, appAddr)
+	sessionCacheKey := fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 
-	// SturdyC handles all the caching logic
-	return cfn.sessionCache.GetOrFetch(ctx, sessionCacheKey, func(fetchCtx context.Context) (sessiontypes.Session, error) {
-		return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
-	})
+	// SturdyC handles all the caching logic including:
+	// 		- Checking if the value exists in cache
+	// 		- Calling the fetch function if needed
+	// 		- Background refreshes when approaching TTL
+	// 		- Stampede protection
+	return cfn.sessionCache.GetOrFetch(
+		ctx,
+		sessionCacheKey,
+		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
+		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+		},
+	)
 }
 
 // ValidateRelayResponse delegates to the underlying node.
