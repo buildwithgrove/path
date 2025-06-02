@@ -164,17 +164,22 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 // GetApp returns the application with the given address, using a cached version if available.
 // The cache will automatically refresh the app in the background before it expires.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	// eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
-	appCacheKey := fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
-
 	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 	return cfn.appCache.GetOrFetch(
 		ctx,
-		appCacheKey,
+		getAppCacheKey(appAddr),
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
 		},
 	)
+}
+
+// getAppCacheKey returns the cache key for the given app address.
+// It uses the appCacheKeyPrefix and the app address to create a unique key.
+//
+// eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+func getAppCacheKey(appAddr string) string {
+	return fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.
@@ -184,17 +189,22 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	// eg. "session:eth:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
-	sessionCacheKey := fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
-
 	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
 	return cfn.sessionCache.GetOrFetch(
 		ctx,
-		sessionCacheKey,
+		getSessionCacheKey(serviceID, appAddr),
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
 	)
+}
+
+// getSessionCacheKey returns the cache key for the given service and app address.
+// It uses the sessionCacheKeyPrefix, service ID, and app address to create a unique key.
+//
+// eg. "session:eth:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
+func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
+	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 }
 
 // ValidateRelayResponse delegates to the underlying node.
