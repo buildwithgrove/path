@@ -134,11 +134,6 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	appCacheKey := fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
 
-	// SturdyC handles all the caching logic including:
-	// 		- Checking if the value exists in cache
-	// 		- Calling the fetch function if needed
-	// 		- Background refreshes when approaching TTL
-	// 		- Stampede protection
 	return cfn.appCache.GetOrFetch(
 		ctx,
 		appCacheKey,
@@ -156,14 +151,8 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	// Create a unique cache key for this service+app combination
 	sessionCacheKey := fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 
-	// SturdyC handles all the caching logic including:
-	// 		- Checking if the value exists in cache
-	// 		- Calling the fetch function if needed
-	// 		- Background refreshes when approaching TTL
-	// 		- Stampede protection
 	return cfn.sessionCache.GetOrFetch(
 		ctx,
 		sessionCacheKey,
@@ -182,6 +171,11 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 	return cfn.lazyFullNode.ValidateRelayResponse(supplierAddr, responseBz)
 }
 
+// GetAccountClient delegates to the underlying node.
+func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
+	return cfn.lazyFullNode.GetAccountClient()
+}
+
 // IsHealthy delegates to the underlying node.
 //
 // TODO_IMPROVE(@commoddity):
@@ -190,9 +184,4 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 //   - For now, always returns true because the cache is populated incrementally as new apps and sessions are requested.
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
-}
-
-// GetAccountClient delegates to the underlying node.
-func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
-	return cfn.lazyFullNode.GetAccountClient()
 }
