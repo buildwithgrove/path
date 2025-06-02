@@ -94,6 +94,8 @@ const (
 	evictionPercentage = 10
 )
 
+// Use cache prefixes to avoid collisions with other cache keys.
+// This is a simple way to namespace the cache keys.
 const (
 	appCacheKeyPrefix     = "app"
 	sessionCacheKeyPrefix = "session"
