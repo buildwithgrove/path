@@ -83,6 +83,11 @@ type requestContext struct {
 	// Passed to potentially long-running operations like protocol interactions.
 	// Prevents HTTP handler timeouts that would return empty responses to clients.
 	context context.Context
+
+	// TODO_TECHDEBT(@adshmh): refactor the interfaces and interactions with Protocol and QoS, to remove the need for this field.
+	// Tracks whether the request was rejected by the QoS.
+	// This is needed for handling the observations: there will be no protocol context/observations in this case.
+	requestRejectedByQoS bool
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -181,6 +186,9 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	rc.qosCtx = qosCtx
 
 	if !isValid {
+		// mark the request was rejected by the QoS
+		rc.requestRejectedByQoS = true
+
 		// Update gateway observations
 		rc.updateGatewayObservations(GatewayErrRejectedByQoS)
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
@@ -463,6 +471,11 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 	if rc.protocolCtx != nil {
 		observations := rc.protocolCtx.GetObservations()
 		rc.protocolObservations = &observations
+		return
+	}
+
+	// QoS rejected the request: there is no protocol context/observation.
+	if rc.requestRejectedByQoS {
 		return
 	}
 
