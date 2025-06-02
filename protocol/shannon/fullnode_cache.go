@@ -77,7 +77,7 @@ var _ FullNode = &cachingFullNode{}
 //   - Sessions: 30sec TTL, refresh at 20-25sec (67-83% of TTL)
 //
 // Benefits: Zero-latency reads for active traffic, thundering herd protection,
-// automatic load balancing, and graceful degradation. Can reduce P99 from 50ms+ to 1ms.
+// automatic load balancing, and graceful degradation.
 //
 // Docs reference: https://github.com/viccon/sturdyc
 type cachingFullNode struct {
