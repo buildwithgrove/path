@@ -25,22 +25,29 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 
 	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msgf("error extracting the selected app from the HTTP request. Relay request will fail: %+v", httpReq)
-		return nil, fmt.Errorf("error getting the selected app from the HTTP request: %w", err)
+		// Wrap the context setup error: used for observations.
+		err = fmt.Errorf("%w: %+v: %w. ", errProtocolContextSetupGetAppFromHTTPReq, httpReq, err)
+		logger.Error().Err(err).Msg("error getting the app address from the HTTP request. Relay request will fail.")
+		return nil, err
 	}
 
 	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
 
 	selectedApp, err := p.FullNode.GetApp(ctx, selectedAppAddr)
 	if err != nil {
-		logger.Error().Err(err).Msgf("error fetching the selected app %s: relay request will fail.", selectedAppAddr)
-		return nil, fmt.Errorf("error getting the selected app %s data from the SDK: %w", selectedAppAddr, err)
+		// Wrap the context setup error: used for observations.
+		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchApp, selectedAppAddr, err)
+		logger.Error().Err(err).Msg("error fetching the app. Relay request will fail.")
+		return nil, err
 	}
+
 	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
-		logger.Error().Msgf("gateway %s does not have delegation for app %s: relay request will fail.", p.gatewayAddr, selectedApp.Address)
-		return nil, fmt.Errorf("gateway %s does not have delegation for app %s", p.gatewayAddr, selectedApp.Address)
+		// Wrap the context setup error: used for observations.
+		err = fmt.Errorf("%w: gateway %s app %s. Relay request will fail.", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
+		logger.Error().Err(err).Msg("Gateway does not have delegation for the app. Relay request will fail.")
+		return nil, err
 	}
 
 	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
