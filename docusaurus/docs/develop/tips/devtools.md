@@ -171,7 +171,7 @@ The disqualified endpoints system has two main components:
 #### Error Responses
 
 **400 Bad Request** - Missing or invalid headers:
-```json
+```**json**
 {
   "error": "400 Bad Request",
   "message": "Target-Service-Id header is required"

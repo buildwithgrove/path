@@ -80,6 +80,7 @@ include ./makefiles/configs.mk
 include ./makefiles/configs_morse.mk
 include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk
+include ./makefiles/devtools.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
 include ./makefiles/test.mk
