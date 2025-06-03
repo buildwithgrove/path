@@ -43,6 +43,8 @@ type sanctionedEndpointsStore struct {
 	//   - Key: app address + session key + endpoint address
 	//   - Expire after defaultSessionSanctionExpiration
 	//   - Lost on PATH process restart; not shared across instances
+	// TODO_IMPROVE(@commoddity): Update this cache to use SturdyC.
+	//   - https://github.com/viccon/sturdyc
 	sessionSanctionsCache *cache.Cache
 }
 
