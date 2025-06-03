@@ -71,6 +71,8 @@ func Test_PATH_E2E(t *testing.T) {
 
 	allPassed := true
 	// Loop through each test case
+
+	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
 	for _, ts := range testServices {
 		// Make a copy to avoid appending to the original URL.
 		serviceGatewayURL := gatewayURL
@@ -86,16 +88,16 @@ func Test_PATH_E2E(t *testing.T) {
 		// Get methods to test
 		methodsToTest := ts.getTestMethods()
 
+		// Get test config (either use default or test case override)
+		serviceConfig := cfg.DefaultServiceConfig
+		if override, exists := cfg.ServiceConfigOverrides[ts.ServiceID]; exists {
+			serviceConfig.applyOverride(&ts, &override)
+		}
+
 		// Generate targets for this service
 		targets, err := ts.getVegetaTargets(methodsToTest, serviceGatewayURL)
 		if err != nil {
 			t.Fatalf("❌ Failed to get vegeta targets: %v", err)
-		}
-
-		// Get test config (either use default or test case override)
-		serviceConfig := cfg.DefaultServiceConfig
-		if override, exists := cfg.ServiceConfigOverrides[ts.ServiceID]; exists {
-			serviceConfig.applyOverride(&override)
 		}
 
 		// Create summary for this service
@@ -175,18 +177,14 @@ func logTestStartInfo(gatewayURL string, testServices []TestService) {
 			fmt.Printf("  🔑 Portal API Key: %s%s%s\n", CYAN, cfg.E2ELoadTestConfig.LoadTestConfig.PortalAPIKey, RESET)
 		}
 	}
-
-	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
-	for _, ts := range testServices {
-		if ts.Archival {
-			fmt.Printf("  🔗 %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
-		} else {
-			fmt.Printf("  🔗 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
-		}
-	}
 }
 
 func logTestServiceInfo(ts TestService, serviceGatewayURL string, serviceConfig ServiceConfig) {
+	if ts.Archival {
+		fmt.Printf("  🗄️ %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
+	} else {
+		fmt.Printf("  📝 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
+	}
 	fmt.Printf("\n🛠️  Running test: %s%s%s\n", BOLD_BLUE, ts.Name, RESET)
 	fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)
 	fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, serviceConfig.GlobalRPS, RESET)

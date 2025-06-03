@@ -8,13 +8,20 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // QoS implements gateway.QoSService by providing:
 //  1. QoSRequestParser - Builds Solana-specific RequestQoSContext objects from HTTP requests
 //  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
+
+// devtools.QoSDisqualifiedEndpointsReporter is fulfilled by the QoS struct below.
+// This allows the QoS service to report its disqualified endpoints data to the devtools.DisqualifiedEndpointReporter.
+// TODO_TECHDEBT(@commoddity): implement this for Solana to enable debugging QoS results.
+var _ devtools.QoSDisqualifiedEndpointsReporter = &QoS{}
 
 // QoS implements ServiceQoS for Solana-based chains.
 // It handles chain-specific:
@@ -66,4 +73,9 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 
 	// update the perceived current state of the blockchain.
 	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+}
+
+// HydrateDisqualifiedEndpointsResponse is a no-op for the Solana QoS.
+// TODO_TECHDEBT(@commoddity): implement this for Solana to enable debugging QoS results.
+func (QoS) HydrateDisqualifiedEndpointsResponse(_ protocol.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
 }

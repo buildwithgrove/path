@@ -42,7 +42,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-05-26**
+**🗓️ Document Last Updated: 2025-06-03**
 
 ## Shannon Protocol Services
 
@@ -62,6 +62,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Ethereum | eth | EVM | 1 | ✅ |
 | Ethereum Holesky Testnet | eth_hol_test | EVM | 17000 | ✅ |
 | Ethereum Sepolia Testnet | eth_sep_test | EVM | 11155111 | ✅ |
+| Fantom | fantom | EVM | 250 | ✅ |
 | Fuse | fuse | EVM | 122 | ✅ |
 | Gnosis | gnosis | EVM | 100 | ✅ |
 | Harmony-0 | harmony | EVM | 1666600000 | ✅ |
@@ -88,7 +89,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Anvil - Ethereum development/testing | anvil | EVM | 31337 |  |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws | EVM | 31337 |  |
 | Evmos | evmos | EVM | 9001 |  |
-| Fantom | fantom | EVM | 250 |  |
 | Fraxtal | fraxtal | EVM | 252 |  |
 | Kava | kava | EVM | 2222 |  |
 | Moonriver | moonriver | EVM | 1285 |  |

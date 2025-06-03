@@ -5,8 +5,8 @@
 ################################################################################
 #
 # DESCRIPTION:
-#   This script queries supplier counts for a predefined list of service IDs and
-#   optionally tests each service with suppliers using curl requests. It generates
+#   This script queries supplier counts for a predefined list of service IDs and 
+#   optionally tests each service with suppliers using curl requests. It generates 
 #   both console output and a detailed CSV report. With the --disqualified_endpoints
 #   flag, it also queries and stores disqualified endpoints data in JSON format.
 #
@@ -40,7 +40,7 @@
 #   service_id, suppliers, test_result, error_message, endpoint_response, unmarshaling_error
 #
 # JSON STRUCTURE (with -d flag):
-#   {"suppliers_passed": {services with working JSON-RPC and suppliers},
+#   {"suppliers_passed": {services with working JSON-RPC and suppliers}, 
 #    "suppliers_failed": {services with failed JSON-RPC but suppliers, includes errors array},
 #    "no_suppliers": {services with no suppliers}}
 #
@@ -136,18 +136,18 @@ QUERY_DISQUALIFIED=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-    -n | --network)
-        NETWORK="$2"
-        shift 2
-        ;;
-    -d | --disqualified_endpoints)
-        QUERY_DISQUALIFIED=true
-        shift
-        ;;
-    *)
-        echo "Error: Unknown argument '$1'"
-        usage
-        ;;
+        -n|--network)
+            NETWORK="$2"
+            shift 2
+            ;;
+        -d|--disqualified_endpoints)
+            QUERY_DISQUALIFIED=true
+            shift
+            ;;
+        *)
+            echo "Error: Unknown argument '$1'"
+            usage
+            ;;
     esac
 done
 
@@ -171,21 +171,21 @@ fi
 
 # Check if PATH service is running via health endpoint
 echo ""
-echo "ðŸ¥ Checking if PATH service is running..."
+echo "🏥 Checking if PATH service is running..."
 health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
 
 if [ "$health_response" != "200" ]; then
     echo ""
-    echo "âŒ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
+    echo "❌ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
     echo ""
-    echo "âš ï¸ IMPORTANT: Ensure you are running PATH locally before proceeding."
-    echo "    ðŸ‘€ See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
+    echo "⚠️ IMPORTANT: Ensure you are running PATH locally before proceeding."
+    echo "    👀 See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
     echo ""
-    echo "ðŸšª Exiting without testing services."
+    echo "🚪 Exiting without testing services."
     exit 1
 fi
 
-echo "âœ… PATH service is healthy - proceeding with service tests"
+echo "✅ PATH service is healthy - proceeding with service tests"
 echo ""
 
 # Initialize temporary files for storing results
@@ -201,9 +201,9 @@ echo "=== SUPPLIER COUNT REPORT ==="
 echo "Generated: $(date)"
 echo "Network: $NETWORK"
 if [ "$QUERY_DISQUALIFIED" = true ]; then
-    echo "Mode: Including disqualified endpoints analysis ðŸ“Š"
+    echo "Mode: Including disqualified endpoints analysis 📊"
 else
-    echo "Mode: Basic supplier count and testing only ðŸ“ˆ"
+    echo "Mode: Basic supplier count and testing only 📈"
 fi
 echo "=============================="
 echo ""
@@ -215,7 +215,7 @@ for service in "${SERVICES[@]}"; do
         continue
     fi
 
-    echo "ðŸ” Querying service: $service..."
+    echo "🔍 Querying service: $service..."
 
     # Run the command and capture output
     output=$(pocketd q supplier list-suppliers --service-id "$service" $NODE_FLAG 2>/dev/null)
@@ -225,20 +225,20 @@ for service in "${SERVICES[@]}"; do
         total=$(echo "$output" | grep -E "^\s*total:" | sed 's/.*total: *"\([0-9]*\)".*/\1/')
 
         if [[ "$total" =~ ^[0-9]+$ ]]; then
-            echo "$service:$total" >>"$RESULTS_FILE"
-            echo "  âœ… Found $total suppliers"
-
+            echo "$service:$total" >> "$RESULTS_FILE"
+            echo "  ✅ Found $total suppliers"
+            
             # Only add to array if suppliers were found
             if [ "$total" -gt 0 ]; then
                 services_with_suppliers+=("$service:$total")
             fi
         else
-            echo "$service:ERROR" >>"$RESULTS_FILE"
-            echo "  ðŸš« Found 0 suppliers for $service, skipping..."
+            echo "$service:ERROR" >> "$RESULTS_FILE"
+            echo "  🚫 Found 0 suppliers for $service, skipping..."
         fi
     else
-        echo "$service:FAILED" >>"$RESULTS_FILE"
-        echo "  ðŸ’¥ Command failed"
+        echo "$service:FAILED" >> "$RESULTS_FILE"
+        echo "  💥 Command failed"
     fi
 
 done
@@ -247,32 +247,32 @@ done
 if [ ${#services_with_suppliers[@]} -gt 0 ]; then
     echo ""
     echo "=============================="
-    echo "ðŸ‘¥ SERVICES WITH SUPPLIERS:"
+    echo "👥 SERVICES WITH SUPPLIERS:"
     echo "=============================="
     printf "%-20s | %s\n" "SERVICE ID" "SUPPLIERS"
     printf "%-20s-+-%s\n" "--------------------" "----------"
-
+    
     for item in "${services_with_suppliers[@]}"; do
-        IFS=':' read -r service count <<<"$item"
+        IFS=':' read -r service count <<< "$item"
         printf "%-20s | %s\n" "$service" "$count"
     done
-
+    
     echo "=============================="
-
+    
     echo "=============================="
-    echo "ðŸ§ª TESTING SERVICES..."
+    echo "🧪 TESTING SERVICES..."
     echo "=============================="
-
+    
     # Initialize JSON report structure with three categories
-    echo '{"suppliers_failed": {}, "suppliers_passed": {}, "no_suppliers": [], "summary": {}}' >"$TEMP_DIR/json_report.json"
-
+    echo '{"suppliers_failed": {}, "suppliers_passed": {}, "no_suppliers": [], "summary": {}}' > "$TEMP_DIR/json_report.json"
+    
     # Array to store all results for sorting
     declare -a all_results
-
+    
     for item in "${services_with_suppliers[@]}"; do
-        IFS=':' read -r service count <<<"$item"
-        echo "ðŸš€ Testing $service..."
-
+        IFS=':' read -r service count <<< "$item"
+        echo "🚀 Testing $service..."
+        
         # Execute 5 curl requests and require ALL to succeed
         request_count=0
         successful_requests=0
@@ -280,20 +280,20 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
         max_requests=5
         declare -a error_responses=()
         declare -a detailed_errors=()
-
+        
         while [ $request_count -lt $max_requests ]; do
             request_count=$((request_count + 1))
-            echo "    ðŸ“¡ Request $request_count/$max_requests..."
-
+            echo "    📡 Request $request_count/$max_requests..."
+            
             curl_result=$(curl -s "$PATH_URL" \
                 -H "$TARGET_SERVICE_HEADER: $service" \
                 -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
-
+            
             # Check if curl was successful and returned valid JSON
             if [ $? -eq 0 ] && echo "$curl_result" | jq -e . >/dev/null 2>&1; then
                 # Check if response contains an error field
                 if echo "$curl_result" | jq -e '.error' >/dev/null 2>&1; then
-                    echo "      âŒ Failed (JSON-RPC error)"
+                    echo "      ❌ Failed (JSON-RPC error)"
                     failed_requests=$((failed_requests + 1))
                     # Collect error response
                     error_response=$(echo "$curl_result" | jq -c '.error')
@@ -304,62 +304,62 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
                     unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""')
                     detailed_errors+=("{\"error_message\":\"$error_message\",\"endpoint_response\":\"$endpoint_response\",\"unmarshaling_error\":\"$unmarshaling_error\"}")
                 else
-                    echo "      âœ… Success"
+                    echo "      ✅ Success"
                     successful_requests=$((successful_requests + 1))
                 fi
             else
-                echo "      âŒ Failed (connection/invalid JSON)"
+                echo "      ❌ Failed (connection/invalid JSON)"
                 failed_requests=$((failed_requests + 1))
                 # Create error object for connection/JSON parsing failures
                 error_response='{"code":-32700,"message":"Connection error or invalid JSON response"}'
                 error_responses+=("$error_response")
                 detailed_errors+=("{\"error_message\":\"Connection error or invalid JSON response\",\"endpoint_response\":\"\",\"unmarshaling_error\":\"\"}")
             fi
-
+            
             # Brief pause between requests
             if [ $request_count -lt $max_requests ]; then
                 sleep $RETRY_SLEEP_DURATION
             fi
         done
-
+        
         # Determine overall result - ALL requests must succeed
         if [ $successful_requests -eq $max_requests ]; then
-            echo "  ðŸŽ‰ SUCCESS ($successful_requests/$max_requests requests succeeded)"
-            test_result="âœ…"
+            echo "  🎉 SUCCESS ($successful_requests/$max_requests requests succeeded)"
+            test_result="✅"
             overall_status="success"
         else
-            echo "  ðŸ’” FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
-            test_result="âŒ"
+            echo "  💔 FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
+            test_result="❌"
             overall_status="failed"
         fi
-
+        
         # If disqualified endpoints flag is set, query disqualified endpoints
         disqualified_response=""
         if [ "$QUERY_DISQUALIFIED" = true ]; then
-            echo "    ðŸ“Š Querying disqualified endpoints for $service..."
+            echo "    📊 Querying disqualified endpoints for $service..."
             disqualified_response=$(curl -s "$DISQUALIFIED_API_URL" -H "Target-Service-Id: $service" 2>/dev/null)
             curl_exit_code=$?
-
+            
             if [ $curl_exit_code -eq 0 ] && [ -n "$disqualified_response" ]; then
                 # Check if response is valid JSON
                 if echo "$disqualified_response" | jq empty 2>/dev/null; then
-                    echo "    âœ… Successfully retrieved disqualified endpoints data"
+                    echo "    ✅ Successfully retrieved disqualified endpoints data"
                 else
-                    echo "    âŒ Invalid JSON from disqualified endpoints"
+                    echo "    ❌ Invalid JSON from disqualified endpoints"
                     disqualified_response=""
                 fi
             else
-                echo "    ðŸ’¥ Disqualified endpoints call failed"
+                echo "    💥 Disqualified endpoints call failed"
                 disqualified_response=""
             fi
         fi
-
+        
         # Create JSON entry for this service
         errors_json="[]"
         for error_detail in "${detailed_errors[@]}"; do
             errors_json=$(echo "$errors_json" | jq --argjson err "$error_detail" '. += [$err]')
         done
-
+        
         # Build service JSON with optional disqualified endpoints response
         if [ "$QUERY_DISQUALIFIED" = true ] && [ -n "$disqualified_response" ]; then
             service_json=$(jq -n \
@@ -404,49 +404,49 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
                     errors: $errors
                 }')
         fi
-
+        
         # Add to appropriate category in JSON report based on test results
         if [ "$overall_status" = "success" ]; then
-            jq --arg service "$service" --argjson data "$service_json" '.suppliers_passed[$service] = $data' "$TEMP_DIR/json_report.json" >"$TEMP_DIR/temp_report.json" &&
-                mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
+            jq --arg service "$service" --argjson data "$service_json" '.suppliers_passed[$service] = $data' "$TEMP_DIR/json_report.json" > "$TEMP_DIR/temp_report.json" && \
+               mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
         else
-            jq --arg service "$service" --argjson data "$service_json" '.suppliers_failed[$service] = $data' "$TEMP_DIR/json_report.json" >"$TEMP_DIR/temp_report.json" &&
-                mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
+            jq --arg service "$service" --argjson data "$service_json" '.suppliers_failed[$service] = $data' "$TEMP_DIR/json_report.json" > "$TEMP_DIR/temp_report.json" && \
+               mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
         fi
-
+        
         # Keep track for console output
         all_results+=("$service,$count,$test_result")
-
+        
         # Clear the error arrays for next service
         unset error_responses
         unset detailed_errors
     done
-
+    
     # Add services with no suppliers to the no_suppliers array
     for service in "${SERVICES[@]}"; do
         # Check if this service is in our services_with_suppliers array
         found=false
         for item in "${services_with_suppliers[@]}"; do
-            IFS=':' read -r service_with_suppliers count <<<"$item"
+            IFS=':' read -r service_with_suppliers count <<< "$item"
             if [ "$service" = "$service_with_suppliers" ]; then
                 found=true
                 break
             fi
         done
-
+        
         # If not found in services_with_suppliers, add to no_suppliers
         if [ "$found" = false ]; then
-            jq --arg service "$service" '.no_suppliers += [$service]' "$TEMP_DIR/json_report.json" >"$TEMP_DIR/temp_report.json" &&
-                mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
+            jq --arg service "$service" '.no_suppliers += [$service]' "$TEMP_DIR/json_report.json" > "$TEMP_DIR/temp_report.json" && \
+               mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
         fi
     done
-
+    
     # Add summary to JSON report
     total_services=${#services_with_suppliers[@]}
     successful_services=$(jq '.suppliers_passed | length' "$TEMP_DIR/json_report.json")
     failed_services=$(jq '.suppliers_failed | length' "$TEMP_DIR/json_report.json")
     no_suppliers_count=$(jq '.no_suppliers | length' "$TEMP_DIR/json_report.json")
-
+    
     summary_json=$(jq -n \
         --arg total "$total_services" \
         --arg successful "$successful_services" \
@@ -462,47 +462,47 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
             timestamp: $timestamp,
             includes_disqualified_endpoints: ($disqualified_flag == "true")
         }')
-
-    jq --argjson summary "$summary_json" '.summary = $summary' "$TEMP_DIR/json_report.json" >"$TEMP_DIR/temp_report.json" &&
-        mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
-
+    
+    jq --argjson summary "$summary_json" '.summary = $summary' "$TEMP_DIR/json_report.json" > "$TEMP_DIR/temp_report.json" && \
+       mv "$TEMP_DIR/temp_report.json" "$TEMP_DIR/json_report.json"
+    
     # Sort suppliers_passed and suppliers_failed by service_id, and sort no_suppliers array
-    jq '.suppliers_passed = (.suppliers_passed | to_entries | sort_by(.key) | from_entries) |
+    jq '.suppliers_passed = (.suppliers_passed | to_entries | sort_by(.key) | from_entries) | 
         .suppliers_failed = (.suppliers_failed | to_entries | sort_by(.key) | from_entries) |
-        .no_suppliers = (.no_suppliers | sort)' "$TEMP_DIR/json_report.json" >"$JSON_REPORT_FILE"
-
+        .no_suppliers = (.no_suppliers | sort)' "$TEMP_DIR/json_report.json" > "$JSON_REPORT_FILE"
+    
     echo ""
     echo "=============================="
-    echo "ðŸ“‹ FINAL REPORT"
+    echo "📋 FINAL REPORT"
     echo "=============================="
-    echo "ðŸ’¾ Report saved to: $JSON_REPORT_FILE"
-
+    echo "💾 Report saved to: $JSON_REPORT_FILE"
+    
     if [ "$QUERY_DISQUALIFIED" = true ]; then
-        echo "ðŸ“Š Report includes disqualified endpoints data for each service"
+        echo "📊 Report includes disqualified endpoints data for each service"
     fi
-
+    
     echo ""
-
+    
     # Display as a nice table
     printf "%-20s | %-9s | %s\n" "SERVICE ID" "SUPPLIERS" "RESULT"
     printf "%-20s-+-%9s-+-%s\n" "--------------------" "---------" "-------"
-
+    
     # Sort and display the results from the all_results array
     printf '%s\n' "${all_results[@]}" | sort -t, -k3,3r -k1,1 | while IFS=, read -r service count result; do
         printf "%-20s | %-9s | %s\n" "$service" "$count" "$result"
     done
-
+    
     echo "=============================="
 else
     echo ""
-    echo "ðŸš« No services with suppliers found. Skipping tests."
-
+    echo "🚫 No services with suppliers found. Skipping tests."
+    
     # Add all services to no_suppliers since none have suppliers
     no_suppliers_json="[]"
     for service in "${SERVICES[@]}"; do
         no_suppliers_json=$(echo "$no_suppliers_json" | jq --arg service "$service" '. += [$service]')
     done
-
+    
     # Create JSON report with all services in no_suppliers
     summary_json=$(jq -n \
         --arg no_suppliers_count "${#SERVICES[@]}" \
@@ -516,7 +516,7 @@ else
             timestamp: $timestamp,
             includes_disqualified_endpoints: ($disqualified_flag == "true")
         }')
-
+    
     jq -n \
         --argjson no_suppliers "$no_suppliers_json" \
         --argjson summary "$summary_json" \
@@ -525,7 +525,7 @@ else
             suppliers_passed: {},
             no_suppliers: ($no_suppliers | sort),
             summary: $summary
-        }' >"$JSON_REPORT_FILE"
-
-    echo "ðŸ’¾ Empty report saved to: $JSON_REPORT_FILE"
+        }' > "$JSON_REPORT_FILE"
+    
+    echo "💾 Empty report saved to: $JSON_REPORT_FILE"
 fi

@@ -38,6 +38,12 @@ func sendHttpRelay(
 
 	relayHTTPRequest.Header.Add("Content-Type", "application/json")
 
+	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
+	//  - allow configuring the defaultTransport.
+	//  - allow PATH users to override default transport config.
+	//
+	// Best practice in Go is to use a custom HTTP client Transport.
+	// See: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
 	relayHTTPResponse, err := http.DefaultClient.Do(relayHTTPRequest)
 	if err != nil {
 		return nil, err
