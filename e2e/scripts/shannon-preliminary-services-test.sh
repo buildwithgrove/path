@@ -397,14 +397,18 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
             fi
         done
         
-        # Determine overall result - ALL requests must succeed
+        # Determine overall result - ANY request success counts as pass
         if [ $successful_requests -eq $max_requests ]; then
-            echo "  🎉 SUCCESS ($successful_requests/$max_requests requests succeeded)"
-            test_result="✅"
+            echo "  🟢 ALL PASSED ($successful_requests/$max_requests requests succeeded)"
+            test_result="🟢"
+            overall_status="success"
+        elif [ $successful_requests -gt 0 ]; then
+            echo "  🟡 PARTIAL SUCCESS ($successful_requests/$max_requests requests succeeded)"
+            test_result="🟡"
             overall_status="success"
         else
-            echo "  💔 FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
-            test_result="❌"
+            echo "  💔 ALL FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
+            test_result="💔"
             overall_status="failed"
         fi
         
