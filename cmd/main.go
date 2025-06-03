@@ -96,8 +96,7 @@ func main() {
 
 	// NOTE: the gateway uses the requestParser to get the correct QoS instance for any incoming request.
 	gateway := &gateway.Gateway{
-		Logger: logger,
-
+		Logger:            logger,
 		HTTPRequestParser: requestParser,
 		Protocol:          protocol,
 		MetricsReporter:   metricsReporter,
@@ -112,25 +111,27 @@ func main() {
 	if hydrator != nil {
 		components = append(components, hydrator)
 	}
-
 	healthChecker := &health.Checker{
 		Logger:            logger,
 		Components:        components,
 		ServiceIDReporter: protocol,
 	}
 
-	// Convert qosInstances to DataReporter map
-	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.QoSDataReporter)
+	// Convert qosInstances to DataReporter map to satisfy the QoSDisqualifiedEndpointsReporter interface.
+	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.QoSDisqualifiedEndpointsReporter)
 	for serviceID, qosService := range qosInstances {
 		qosLevelReporters[serviceID] = qosService
 	}
 
+	// Create the disqualified endpoints reporter to report data on disqualified endpoints
+	// through the `/disqualified_endpoints` route for real time QoS data on service endpoints.
 	disqualifiedEndpointsReporter := &devtools.DisqualifiedEndpointReporter{
 		Logger:                logger,
 		ProtocolLevelReporter: protocol,
 		QoSLevelReporters:     qosLevelReporters,
 	}
 
+	// Initialize the API router to serve requests to the PATH API.
 	apiRouter := router.NewRouter(
 		logger,
 		gateway,
@@ -138,9 +139,8 @@ func main() {
 		healthChecker,
 		config.GetRouterConfig(),
 	)
-	if err != nil {
-		log.Fatalf("failed to create API router: %v", err)
-	}
+
+	// -------------------- Start PATH API Router -------------------- */
 
 	// Log out some basic info about the running PATH instance.
 	configuredServiceIDs := make([]string, 0, len(protocol.ConfiguredServiceIDs()))

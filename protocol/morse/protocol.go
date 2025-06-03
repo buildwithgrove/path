@@ -30,6 +30,10 @@ var (
 	_ health.ServiceIDReporter = &Protocol{}
 )
 
+// devtools.ProtocolDisqualifiedEndpointsReporter is fulfilled by the Protocol struct below.
+// NOTE: methods are no-ops for Morse.
+var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
+
 // TODO_TECHDEBT(@adshmh): make the apps and sessions cache refresh interval configurable.
 var appsAndSessionsCacheRefreshInterval = time.Minute
 

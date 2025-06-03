@@ -181,9 +181,9 @@ func logTestStartInfo(gatewayURL string, testServices []TestService) {
 
 func logTestServiceInfo(ts TestService, serviceGatewayURL string, serviceConfig ServiceConfig) {
 	if ts.Archival {
-		fmt.Printf("  🔗 %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
+		fmt.Printf("  🗄️ %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
 	} else {
-		fmt.Printf("  🔗 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
+		fmt.Printf("  📝 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
 	}
 	fmt.Printf("\n🛠️  Running test: %s%s%s\n", BOLD_BLUE, ts.Name, RESET)
 	fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)

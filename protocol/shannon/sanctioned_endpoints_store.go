@@ -189,12 +189,13 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 
 // TODO_TECHDEBT(@commoddity,adshmh): update this to be composed of only
 //     - endpoint URL
+//     AND
 //     - either supplier address or session ID
 // Discord conversation: https://discord.com/channels/824324475256438814/1273320783547990160/1378346761151844465
 
 // sanctionKey:
 //   - Creates a unique key for session-based sanctions
-//   - Format: appAddr:sessionID:supplier:endpoint_url
+//   - Format: "<app_address>:<session_id>:<supplier_address>:<endpoint_url>"
 type sanctionKey struct {
 	supplier    string
 	endpointURL string
@@ -217,6 +218,8 @@ func newSanctionKey(endpoint *endpoint) sanctionKey {
 	}
 }
 
+// sanctionKeyFromCacheKeyString decomposes the cache key into its components
+// in order to populate the details map with the data required.
 func sanctionKeyFromCacheKeyString(cacheKey string) sanctionKey {
 	// Only split for 4 parts, as final part is URL which contains a ":" character.
 	parts := strings.SplitN(cacheKey, ":", 4)
@@ -229,7 +232,7 @@ func sanctionKeyFromCacheKeyString(cacheKey string) sanctionKey {
 }
 
 // string returns the string representation of the sanction key.
-// Example: "appAddr:sessionID:supplier:endpointURL"
+//   - Format: "<app_address>:<session_id>:<supplier_address>:<endpoint_url>"
 func (s sanctionKey) string() string {
 	return fmt.Sprintf(
 		"%s:%s:%s:%s",
@@ -240,6 +243,9 @@ func (s sanctionKey) string() string {
 	)
 }
 
+// endpointAddr returns the endpoint address for the sanction key.
+//   - Format: "<supplier_address>-<endpoint_url>"
+//   - Example: "pokt13771d0a403a599ee4a3812321e2fabc509e7f3-https://us-west-test-endpoint-1.demo"
 func (s sanctionKey) endpointAddr() protocol.EndpointAddr {
 	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", s.supplier, s.endpointURL))
 }
@@ -253,8 +259,6 @@ func (s sanctionKey) endpointAddr() protocol.EndpointAddr {
 //
 // It is called by the router to allow quick information about currently sanctioned endpoints.
 func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
-	ses.logger.Info().Msgf("Getting sanction details for service ID: %s", serviceID)
-
 	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 
@@ -262,7 +266,8 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	for key, sanction := range ses.permanentSanctions {
 		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
 
-		// Skip sanctions for service IDS other than the provided service ID
+		// Only return sanctions for the provided service ID
+		// Filter out all sanctions for other service IDs.
 		if sanctionServiceID != serviceID {
 			continue
 		}
@@ -274,13 +279,14 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	for key, cachedSanction := range ses.sessionSanctionsCache.Items() {
 		sanction, ok := cachedSanction.Object.(sanction)
 		if !ok {
-			ses.logger.Warn().Msg("cached sanction is not a sanction")
+			ses.logger.Error().Msg("SHOULD NEVER HAPPEN: cached sanction is not a sanction")
 			continue
 		}
 
 		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
 
-		// Skip sanctions for service IDs other than the provided service ID
+		// Only return sanctions for the provided service ID
+		// Filter out all sanctions for other service IDs.
 		if sanctionServiceID != serviceID {
 			continue
 		}
@@ -292,8 +298,6 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	sessionSanctionedEndpointsCount := len(sessionSanctionDetails)
 	totalSanctionedEndpointsCount := permanentSanctionedEndpointsCount + sessionSanctionedEndpointsCount
 
-	ses.logger.Info().Msgf("Returning sanction details for service ID: %s", serviceID)
-
 	return devtools.ProtocolLevelDataResponse{
 		PermanentlySanctionedEndpoints:    permanentSanctionDetails,
 		SessionSanctionedEndpoints:        sessionSanctionDetails,
@@ -303,7 +307,8 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 	}
 }
 
-// processSanctionIntoDetailsMap processes a sanction and adds it to the provided details map
+// processSanctionIntoDetailsMap decomposes the sanction key into its components
+// in order to populate the details map with the data required for the devtools.ProtocolLevelDataResponse.
 func (ses *sanctionedEndpointsStore) processSanctionIntoDetailsMap(
 	cacheKey string,
 	sanction sanction,

@@ -18,6 +18,11 @@ import (
 //  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
+// devtools.QoSDisqualifiedEndpointsReporter is fulfilled by the QoS struct below.
+// This allows the QoS service to report its disqualified endpoints data to the devtools.DisqualifiedEndpointReporter.
+// TODO_TECHDEBT(@commoddity): implement this for Solana to enable debugging QoS results.
+var _ devtools.QoSDisqualifiedEndpointsReporter = &QoS{}
+
 // QoS implements ServiceQoS for Solana-based chains.
 // It handles chain-specific:
 //   - Request parsing

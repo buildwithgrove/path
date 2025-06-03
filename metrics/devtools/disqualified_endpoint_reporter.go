@@ -9,16 +9,16 @@ import (
 )
 
 type (
-	// ProtocolDataReporter is an interface that provides data about sanctioned endpoints at the protocol level.
-	ProtocolDataReporter interface {
+	// ProtocolDisqualifiedEndpointsReporter is an interface that provides data about sanctioned endpoints at the protocol level.
+	ProtocolDisqualifiedEndpointsReporter interface {
 		// GetTotalServiceEndpointsCount returns the total number of service endpoints for a given service ID.
 		GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
 		// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
 		HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *DisqualifiedEndpointResponse)
 	}
 
-	// QoSDataReporter is an interface that provides data about disqualified endpoints at the QoS level.
-	QoSDataReporter interface {
+	// QoSDisqualifiedEndpointsReporter is an interface that provides data about disqualified endpoints at the QoS level.
+	QoSDisqualifiedEndpointsReporter interface {
 		// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
 		HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *DisqualifiedEndpointResponse)
 	}
@@ -31,8 +31,8 @@ type (
 // useful information about currently disqualified endpoints for development and debugging.
 type DisqualifiedEndpointReporter struct {
 	Logger                polylog.Logger
-	ProtocolLevelReporter ProtocolDataReporter
-	QoSLevelReporters     map[protocol.ServiceID]QoSDataReporter
+	ProtocolLevelReporter ProtocolDisqualifiedEndpointsReporter
+	QoSLevelReporters     map[protocol.ServiceID]QoSDisqualifiedEndpointsReporter
 }
 
 // Report collects data about disqualified endpoints from both the protocol and QoS levels.

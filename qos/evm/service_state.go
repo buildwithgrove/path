@@ -164,52 +164,51 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	return nil
 }
 
-func (ss *serviceState) hydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
-	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s", serviceID)
+// getDisqualifiedEndpointsResponse gets the QoSLevelDisqualifiedEndpoints map for a devtools.DisqualifiedEndpointResponse.
+// It checks the current service state and populates a map with QoS-level disqualified endpoints.
+// This data is useful for creating a snapshot of the current QoS state for a given service.
+func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
+	qosLevelDataResponse := devtools.QoSLevelDataResponse{
+		DisqualifiedEndpoints: make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint),
+	}
 
-	disqualifiedEndpoints := make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint)
-	emptyResponseCount := 0
-	blockNumberCheckErrorsCount := 0
-	chainIDCheckErrorsCount := 0
-	archivalCheckErrorsCount := 0
-
-	// Get all endpoints in the store
+	// Populate the data response object using the endpoints in the endpoint store.
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
 		if err := ss.validateEndpoint(endpoint); err != nil {
-			disqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
+			qosLevelDataResponse.DisqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
 				EndpointAddr: endpointAddr,
 				Reason:       err.Error(),
 				ServiceID:    serviceID,
 			}
 
+			// DEV_NOTE: if new checks are added to a service, we need to add them here.
 			switch {
+			// Endpoint is disqualified due to an empty qosLevelDataResponse.
 			case errors.Is(err, errEmptyResponseObs):
-				emptyResponseCount++
+				qosLevelDataResponse.EmptyResponseCount++
 
+			// Endpoint is disqualified due to a missing or invalid block number.
 			case errors.Is(err, errNoBlockNumberObs),
 				errors.Is(err, errInvalidBlockNumberObs):
-				blockNumberCheckErrorsCount++
+				qosLevelDataResponse.BlockNumberCheckErrorsCount++
 
+			// Endpoint is disqualified due to a missing or invalid chain ID.
 			case errors.Is(err, errNoChainIDObs),
 				errors.Is(err, errInvalidChainIDObs):
-				chainIDCheckErrorsCount++
+				qosLevelDataResponse.ChainIDCheckErrorsCount++
 
+			// Endpoint is disqualified due to a missing or invalid archival balance.
 			case errors.Is(err, errNoArchivalBalanceObs),
 				errors.Is(err, errInvalidArchivalBalanceObs):
-				archivalCheckErrorsCount++
+				qosLevelDataResponse.ArchivalCheckErrorsCount++
+
+			default:
+				ss.logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: unknown error for endpoint: %s", endpointAddr)
 			}
 
 			continue
 		}
 	}
 
-	ss.logger.Info().Msgf("Hydrating disqualified endpoints response for service ID: %s: %v", serviceID, disqualifiedEndpoints)
-
-	return devtools.QoSLevelDataResponse{
-		DisqualifiedEndpoints:       disqualifiedEndpoints,
-		EmptyResponseCount:          emptyResponseCount,
-		BlockNumberCheckErrorsCount: blockNumberCheckErrorsCount,
-		ChainIDCheckErrorsCount:     chainIDCheckErrorsCount,
-		ArchivalCheckErrorsCount:    archivalCheckErrorsCount,
-	}
+	return qosLevelDataResponse
 }

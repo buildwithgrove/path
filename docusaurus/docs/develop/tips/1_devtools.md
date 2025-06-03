@@ -4,6 +4,8 @@ title: DevTools
 description: Developer Tools for Developing PATH
 ---
 
+<!--TODO_TECHDEBT(@Olshansk): Re-review this document when time permits-->
+
 ## DevTools
 
 PATH provides developer tools to help diagnose and debug endpoint behavior in real-time.
@@ -11,6 +13,25 @@ PATH provides developer tools to help diagnose and debug endpoint behavior in re
 ### Disqualified Endpoints API
 
 The `/disqualified_endpoints` endpoint is a powerful diagnostic tool that provides visibility into why certain endpoints are not being used by PATH for relay requests.
+
+### Quickstart
+See the disqualified endpoints of your PATH gateway on base :
+
+```bash
+curl http://localhost:3069/disqualified_endpoints \
+  -H "Target-Service-Id: base" | jq
+```
+
+:::tip 🌿 GROVE EMPLOYEES ONLY
+To see data on Grove's Portal, you can use the following command:
+
+```bash
+curl https://base.rpc.grove.city/disqualified_endpoints | jq
+```
+
+_Note: GUARD will assign the service ID from the subdomain to the `Target-Service-Id` header._
+
+:::
 
 #### What is it?
 
@@ -48,7 +69,10 @@ make disqualified_endpoints SERVICE_ID=base
 
 #### Response Structure
 
-The response from the disqualified endpoints API contains details about endpoints that have been excluded from serving requests. Here's an example response:
+The response from the disqualified endpoints API contains details about endpoints that have been excluded from serving requests. 
+
+<details>
+<summary><b>Example Response JSON</b></summary>
 
 ```json
 {
@@ -90,8 +114,10 @@ The response from the disqualified endpoints API contains details about endpoint
   "disqualified_service_endpoints_count": 2
 }
 ```
+</details>
 
-#### Field Descriptions
+<details>
+<summary><b>JSON Field Descriptions</b></summary>
 
 The response contains three main sections:
 
@@ -152,21 +178,7 @@ These fields provide an overview of endpoint health:
 | `qualified_service_endpoints_count`    | Number of endpoints passing all checks              |
 | `disqualified_service_endpoints_count` | Number of endpoints failing one or more checks      |
 
-#### Implementation Details
-
-The disqualified endpoints system has two main components:
-
-1. **Protocol Level (Shannon)**:
-   - Managed by `sanctionedEndpointsStore` in the Shannon protocol
-   - Tracks both permanent and session-based sanctions
-   - Session sanctions expire after 1 hour by default
-   - Sanctions are applied based on relay errors and endpoint behavior
-
-2. **QoS Level (EVM)**:
-   - Managed by `serviceState` in the EVM QoS service
-   - Performs synthetic checks: block number, chain ID, and archival support
-   - Updates endpoint quality data based on responses
-   - Filters out endpoints that don't meet quality requirements
+</details>
 
 #### Error Responses
 
