@@ -69,11 +69,19 @@ func Test_PATH_E2E(t *testing.T) {
 	// Initialize service summaries map (will be logged out at the end of the test)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
 
-	allPassed := true
-	// Loop through each test case
+	// Assign test service configs to each test service
+	testServiceConfigs := setTestServiceConfigs(testServices)
 
-	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
+	// Log the test service IDs
+	logTestServiceIDs(testServices)
+
+	allPassed := true
 	for _, ts := range testServices {
+		serviceConfig, exists := testServiceConfigs[ts.ServiceID]
+		if !exists {
+			t.Fatalf("❌ Failed to get test service config for service ID: %s", ts.ServiceID)
+		}
+
 		// Make a copy to avoid appending to the original URL.
 		serviceGatewayURL := gatewayURL
 
@@ -87,12 +95,6 @@ func Test_PATH_E2E(t *testing.T) {
 
 		// Get methods to test
 		methodsToTest := ts.getTestMethods()
-
-		// Get test config (either use default or test case override)
-		serviceConfig := cfg.DefaultServiceConfig
-		if override, exists := cfg.ServiceConfigOverrides[ts.ServiceID]; exists {
-			serviceConfig.applyOverride(&ts, &override)
-		}
 
 		// Generate targets for this service
 		targets, err := ts.getVegetaTargets(methodsToTest, serviceGatewayURL)
@@ -116,7 +118,6 @@ func Test_PATH_E2E(t *testing.T) {
 			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, ts.ServiceID, RESET)
 			printServiceSummaries(serviceSummaries)
 			allPassed = false
-			t.FailNow()
 		} else {
 			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, ts.ServiceID, RESET)
 		}
@@ -159,8 +160,23 @@ func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, tea
 	}
 }
 
+// setTestServiceConfigs sets the test service configs for the test services.
+func setTestServiceConfigs(testServices []*TestService) map[protocol.ServiceID]ServiceConfig {
+	serviceConfigs := make(map[protocol.ServiceID]ServiceConfig)
+	for _, ts := range testServices {
+		serviceConfig := cfg.DefaultServiceConfig
+		if override, exists := cfg.ServiceConfigOverrides[ts.ServiceID]; exists {
+			serviceConfig.applyOverride(ts, &override)
+		}
+		serviceConfigs[ts.ServiceID] = serviceConfig
+	}
+	return serviceConfigs
+}
+
+// -------------------- Log Functions --------------------
+
 // logTestStartInfo logs the test start information for the user.
-func logTestStartInfo(gatewayURL string, testServices []TestService) {
+func logTestStartInfo(gatewayURL string, testServices []*TestService) {
 	if cfg.getTestMode() == testModeLoad {
 		fmt.Println("\n🔥 Starting Vegeta Load test ...")
 	} else {
@@ -179,12 +195,18 @@ func logTestStartInfo(gatewayURL string, testServices []TestService) {
 	}
 }
 
-func logTestServiceInfo(ts TestService, serviceGatewayURL string, serviceConfig ServiceConfig) {
-	if ts.Archival {
-		fmt.Printf("  🗄️ %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
-	} else {
-		fmt.Printf("  📝 %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
+func logTestServiceIDs(testServices []*TestService) {
+	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
+	for _, ts := range testServices {
+		if ts.Archival {
+			fmt.Printf("  🗄️  %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
+		} else {
+			fmt.Printf("  📝  %s%s%s (Non-archival)\n", GREEN, ts.ServiceID, RESET)
+		}
 	}
+}
+
+func logTestServiceInfo(ts *TestService, serviceGatewayURL string, serviceConfig ServiceConfig) {
 	fmt.Printf("\n🛠️  Running test: %s%s%s\n", BOLD_BLUE, ts.Name, RESET)
 	fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)
 	fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, serviceConfig.GlobalRPS, RESET)

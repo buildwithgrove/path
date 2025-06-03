@@ -281,15 +281,15 @@ type (
 )
 
 // getTestServices returns test services filtered by protocol specified in environment
-func (c *Config) getTestServices() ([]TestService, error) {
+func (c *Config) getTestServices() ([]*TestService, error) {
 	protocol := c.getTestProtocol()
 
-	var filteredTestCases []TestService
+	var filteredTestCases []*TestService
 	for _, tc := range c.services.Services {
 		// If no service IDs are specified, include all test cases
 		// Otherwise, only include test cases for the specified service IDs
 		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
-			filteredTestCases = append(filteredTestCases, tc)
+			filteredTestCases = append(filteredTestCases, &tc)
 		}
 	}
 
