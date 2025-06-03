@@ -80,6 +80,7 @@ var (
 	//   - service_id: Target service identifier
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - sanction_type: Type of sanction (session, permanent)
+	//   - sanction_reason: The endpoint error type that caused the sanction
 	//
 	// This counter is incremented each time a sanction is applied to an endpoint.
 	// Provides insight into sanction patterns by domain without high-cardinality supplier addresses.
@@ -89,13 +90,14 @@ var (
 	//   - Sanction rate by endpoint domain and service
 	//   - Endpoint domain-level reliability trends
 	//   - Provider performance analysis over time
+	//   - Root cause analysis of sanctions by error type
 	sanctionsByDomain = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      sanctionsByDomainMetric,
-			Help:      "Total sanctions by service, endpoint domain (TLD+1) and sanction type",
+			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type and reason",
 		},
-		[]string{"service_id", "endpoint_domain", "sanction_type"},
+		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
 	)
 )
 
@@ -280,12 +282,19 @@ func processSanctionsByDomain(
 			continue
 		}
 
+		// Extract the sanction reason from the endpoint error type
+		var sanctionReason string
+		if endpointObs.ErrorType != nil {
+			sanctionReason = endpointObs.GetErrorType().String()
+		}
+
 		// Increment the sanctions counter for this domain
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
 				"endpoint_domain": endpointTLDPlusOne,
 				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
+				"sanction_reason": sanctionReason,
 			},
 		).Inc()
 	}
