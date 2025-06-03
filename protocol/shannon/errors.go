@@ -14,6 +14,20 @@ var (
 	// endpoint timeout
 	RelayErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
+	// endpoint unexpected EOF error:
+	// - Connection closed unexpectedly during relay
+	RelayErrEndpointUnexpectedEOF = errors.New("endpoint connection closed unexpectedly")
+
+	// endpoint protocol error:
+	// - Protocol parsing/decoding errors
+	// - Invalid protobuf wireType or format errors
+	RelayErrEndpointProtocolError = errors.New("endpoint protocol parsing error")
+
+	// endpoint invalid session error:
+	// - Invalid or malformed session headers
+	// - Empty or invalid application addresses in session
+	RelayErrEndpointInvalidSession = errors.New("endpoint invalid session header")
+
 	// Request context setup errors.
 	// Used to build observations:
 	// There is no request context to provide observations.
@@ -62,6 +76,21 @@ func extractErrFromRelayError(err error) error {
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
 		return RelayErrEndpointTimeout
+	}
+
+	// endpoint unexpected EOF
+	if strings.Contains(err.Error(), "unexpected EOF") {
+		return RelayErrEndpointUnexpectedEOF
+	}
+
+	// endpoint protocol parsing errors
+	if strings.Contains(err.Error(), "proto: illegal wireType") {
+		return RelayErrEndpointProtocolError
+	}
+
+	// endpoint invalid session header errors
+	if strings.Contains(err.Error(), "invalid session header") {
+		return RelayErrEndpointInvalidSession
 	}
 
 	// No known patterns matched.
