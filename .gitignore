@@ -32,9 +32,6 @@ localnet_config.yaml-e
 .*.yaml
 .config.yaml
 .config.*.yaml
-# Morse E2E config
-.morse.config.yaml
-.config.morse.yaml
 # Shannon E2E config
 .shannon.config.yaml
 .config.shannon.yaml

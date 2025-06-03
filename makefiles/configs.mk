@@ -8,7 +8,6 @@ CONFIG_FILES := \
 	./config/.config.yaml \
 	./local/path/.config.yaml \
 	./e2e/config/.shannon.config.yaml \
-	./e2e/config/.morse.config.yaml \
 	./e2e/config/.e2e_load_test.config.yaml \
 	./local/path/envoy/.envoy.yaml
 

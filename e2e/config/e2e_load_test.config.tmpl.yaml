@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
 
-# Default Load test configuration for Morse and Shannon
+# Default Load test configuration for Shannon
 #
 # Usage:
 # - Expected config location: `.e2e_load_test.config.yaml`
@@ -40,7 +40,7 @@ e2e_load_test_config:
     gateway_url_override: "https://rpc.grove.city/v1"
 
     # [Optional] Insert service ID into subdomain per test case
-    #     Example: "F00C.rpc.grove.city/v1"
+    #     Example: "eth.rpc.grove.city/v1"
     #
     # TODO_TECHDEBT(@commoddity): Remove after header-based service selection is supported.
     #     See: https://github.com/buildwithgrove/infrastructure/issues/91

@@ -35,9 +35,8 @@ check_path_config:
 		echo ""; \
 		echo "Set CONFIG_PATH to your config file, e.g.:"; \
 		echo "  export CONFIG_PATH=./local/path/.config.yaml"; \
-		echo "Or initialize using either:"; \
+		echo "Or initialize using:"; \
 		echo "  make shannon_prepare_e2e_config"; \
-		echo "  make morse_prepare_e2e_config "; \
 		echo "################################################################"; \
 		exit 1; \
 	fi
@@ -77,7 +76,6 @@ path_help: ## Prints help commands if you cannot start path
 ###############################
 
 include ./makefiles/configs.mk
-include ./makefiles/configs_morse.mk
 include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk
 include ./makefiles/docs.mk

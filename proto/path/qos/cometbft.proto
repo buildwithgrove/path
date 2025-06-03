@@ -21,7 +21,7 @@ message CometBFTRequestObservations {
 // CometBFTEndpointObservation stores a single observation from an endpoint servicing the protocol response.
 // Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
 message CometBFTEndpointObservation {
-    // Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
+    // Address of the endpoint handling the request (e.g., onchain address of a Pocket Shannon node)
     string endpoint_addr = 1;
 
     // Details of the response received from the endpoint

@@ -4,7 +4,7 @@ title: Quick Start Guide (<10 minutes)
 description: Guide to get a PATH instance up and running.
 ---
 
-This guide will help you set up and run PATH to serve requests using Morse or Shannon protocol in under 10 minutes.
+This guide will help you set up and run PATH to serve requests using the Shannon protocol in under 10 minutes.
 
 :::note No Authentication / Authorization
 
@@ -91,34 +91,18 @@ TODO_IMPROVE: Replace `main` with `latest` once the artifact release CI is compl
      "imageTag": "development",
      "readyStates": {
        "endpoint-hydrator": true,
-       "pokt-morse": true
+       "pokt-shannon": true
      },
-     "configuredServiceIDs": ["F00C", "F021"]
+     "configuredServiceIDs": ["eth", "poly"]
    }
    ```
 
 ## 4. Test Relays
 
-### A) If using `Shannon` protocol
-
 ```bash
 curl http://localhost:3069/v1 \
- -H "Target-Service-Id: anvil" \
+ -H "Target-Service-Id: eth" \
  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
-```
-
-You should expect to see a response similar to the following:
-
-```json
-{ "id": 1, "jsonrpc": "2.0", "result": "0x2f01a" }
-```
-
-### B) If using `Morse` protocol
-
-```bash
-curl http://localhost:3069/v1 \
-  -H "Target-Service-Id: F00C" \
-  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
 You should expect to see a response similar to the following:

@@ -140,9 +140,8 @@ func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, tea
 	switch cfg.getTestMode() {
 
 	case testModeE2E:
-		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
 		var port string
-		port, teardownFn = setupPathInstance(t, configFilePath, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
+		port, teardownFn = setupPathInstance(t, shannonConfigFile, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
 		gatewayURL = fmt.Sprintf("http://localhost:%s/v1", port)
 		waitForHydratorIfNeeded()
 		return gatewayURL, teardownFn
@@ -164,7 +163,7 @@ func logTestStartInfo(gatewayURL string, testServices []TestService) {
 	} else {
 		fmt.Println("\n🌿 Starting PATH E2E test ...")
 	}
-	fmt.Printf("  📡 Test protocol: %s%s%s\n", BOLD_CYAN, cfg.getTestProtocol(), RESET)
+	fmt.Printf("  📡 Test protocol: %sShannon%s\n", BOLD_CYAN, RESET)
 	fmt.Printf("  🧬 Gateway URL: %s%s%s\n", BLUE, gatewayURL, RESET)
 
 	if cfg.E2ELoadTestConfig.LoadTestConfig != nil {

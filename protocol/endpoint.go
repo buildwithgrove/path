@@ -2,11 +2,9 @@ package protocol
 
 import "strings"
 
-// EndpointAddr is used as the unique identifier for a service endpoint.
-// Each protocol interface implementation needs to define an endpoint address which uniquely identifies a service endpoint.
+// EndpointAddr uniquely identifies a service endpoint.
 // As of writing this comment(#50):
-// - Morse (POKT): uses a node's public key as its endpoint address
-// - Shannon (POKT): appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
+//   - Shannon (POKT): appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
 type EndpointAddr string
 
 type EndpointAddrList []EndpointAddr
@@ -14,7 +12,7 @@ type EndpointAddrList []EndpointAddr
 // Endpoint represents an entity which serves relay requests.
 type Endpoint interface {
 	// Addr is used to uniquely identify an endpoint.
-	// Defining this as an interface allows each protocol interface implementation (e.g. Pocket's Morse and Shannon) to
+	// Defining this as an interface allows Shannon to
 	// define its own service endpoint address scheme.
 	// See the comment on EndpointAddr type for more details.
 	Addr() EndpointAddr

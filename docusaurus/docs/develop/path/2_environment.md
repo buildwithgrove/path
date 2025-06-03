@@ -7,10 +7,9 @@ description: Pre-requisite to setup your local environment
 This guide provides instructions required to setup your environment for local development.
 locally in a development environment.
 
-It is a pre-requisite for both the:
+It is a pre-requisite for the:
 
 - [**Shannon Protocol Guide**](3_cheatsheet_shannon.md): Pocket Network v1 (Private MainNet as of 04/2025)
-- [**Morse Protocol Guide**](4_cheatsheet_morse.md): For the original Morse protocol (Public MainNet as of 2020)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -91,7 +90,7 @@ make install_optional_tools
 
 Pick one of these protocols and follow the respective guide.
 
-| Protocol | Version (aka) | Status (04/2025)       | Network | Documentation                                     |
-| -------- | ------------- | ---------------------- | ------- | ------------------------------------------------- |
-| Shannon  | v1            | Beta & Private MainNet | TestNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
-| Morse    | v0            | MainNet (2020)         | MainNet | [Morse Protocol Guide](4_cheatsheet_morse.md)     |
+| Protocol           | Version (aka) | Status (04/2025)       | Network | Documentation                                     |
+| ------------------ | ------------- | ---------------------- | ------- | ------------------------------------------------- |
+| Shannon            | v1            | Beta & Private MainNet | TestNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
+| Morse (deprecated) | v0            | MainNet (2020)         | MainNet | N/A                                               |
