@@ -13,6 +13,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -27,6 +28,10 @@ var (
 	_ health.Check             = &Protocol{}
 	_ health.ServiceIDReporter = &Protocol{}
 )
+
+// devtools.ProtocolDisqualifiedEndpointsReporter is fulfilled by the Protocol struct below.
+// This allows the protocol to report its sanctioned endpoints data to the devtools.DisqualifiedEndpointReporter.
+var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
 // FullNode defines the set of capabilities the Shannon protocol integration needs
 // from a fullnode for sending relays.
@@ -144,7 +149,8 @@ func (p *Protocol) AvailableEndpoints(
 
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -190,7 +196,8 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps)
+	// The final boolean parameter sets whether to filter out sanctioned endpoints.
+	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -289,6 +296,7 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	permittedApps []*apptypes.Application,
+	filterSanctioned bool, // will be true for calls to getAppsUniqueEndpoints made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getAppsUniqueEndpoints",
@@ -318,21 +326,29 @@ func (p *Protocol) getAppsUniqueEndpoints(
 			continue
 		}
 
-		// Filter out any sanctioned endpoints
-		filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(appEndpoints)
+		qualifiedEndpoints := appEndpoints
+		// In calls to getAppsUniqueEndpoints made by service request handling, we filter out sanctioned endpoints.
+		if filterSanctioned {
+			logger.Debug().Msgf("app %s has %d endpoints before filtering sanctioned endpoints.", app.Address, len(appEndpoints))
 
-		// Log the number of endpoints before and after filtering
-		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(filteredEndpoints))
+			// Filter out any sanctioned endpoints
+			filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
+			// All endpoints are sanctioned: log a warning and skip this app.
+			if len(filteredEndpoints) == 0 {
+				logger.Error().Msgf("All %d app endpoints are sanctioned on service %s, app %s. Skipping the app.",
+					len(appEndpoints), serviceID, app.Address,
+				)
+				continue
+			}
+			qualifiedEndpoints = filteredEndpoints
 
-		// All endpoints are sanctioned: log a warning and skip this app.
-		if len(filteredEndpoints) == 0 {
-			logger.Error().Msgf("All app endpoints are sanctioned on service %s, app %s. Skipping the app.", serviceID, app.Address)
-			continue
+			logger.Debug().Msgf("app %s has %d endpoints after filtering sanctioned endpoints.", app.Address, len(qualifiedEndpoints))
 		}
 
-		logger.Debug().Msg("Filtered sanctioned endpoints.")
+		// Log the number of endpoints before and after filtering
+		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(qualifiedEndpoints))
 
-		for endpointAddr, endpoint := range filteredEndpoints {
+		for endpointAddr, endpoint := range qualifiedEndpoints {
 			endpoints[endpointAddr] = endpoint
 		}
 
@@ -351,4 +367,32 @@ func (p *Protocol) getAppsUniqueEndpoints(
 	logger.With("num_endpoints", len(endpoints)).Debug().Msg("Successfully fetched endpoints for permitted apps.")
 
 	return endpoints, nil
+}
+
+// GetTotalProtocolEndpointsCount returns the count of all unique endpoints for a service ID
+// without filtering sanctioned endpoints.
+func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
+	ctx := context.Background()
+
+	// Get the list of permitted apps for the service ID.
+	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get all endpoints for the service ID without filtering sanctioned endpoints.
+	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, false)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(endpoints), nil
+}
+
+// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
+//   - takes a pointer to the DisqualifiedEndpointResponse
+//   - called by the devtools.DisqualifiedEndpointReporter to fill it with the protocol-specific data.
+func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	p.logger.Info().Msgf("hydrating disqualified endpoints response for service ID: %s", serviceID)
+	details.ProtocolLevelDisqualifiedEndpoints = p.sanctionedEndpointsStore.getSanctionDetails(serviceID)
 }

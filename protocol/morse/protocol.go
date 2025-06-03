@@ -14,6 +14,7 @@ import (
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -28,6 +29,10 @@ var (
 	_ health.Check             = &Protocol{}
 	_ health.ServiceIDReporter = &Protocol{}
 )
+
+// devtools.ProtocolDisqualifiedEndpointsReporter is fulfilled by the Protocol struct below.
+// NOTE: methods are no-ops for Morse.
+var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
 // TODO_TECHDEBT(@adshmh): make the apps and sessions cache refresh interval configurable.
 var appsAndSessionsCacheRefreshInterval = time.Minute
@@ -394,4 +399,17 @@ func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 // sessionCacheKey generates a cache key for a (serviceID, appAddr) pair
 func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
+}
+
+// GetTotalProtocolEndpointsCount is a no-op for Morse.
+// Here to satisfy the gateway.Protocol interface.
+func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
+	// No-op for Morse
+	return 0, nil
+}
+
+// HydrateDisqualifiedEndpointsResponse is a no-op for Morse.
+// Here to satisfy the gateway.Protocol interface.
+func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	// No-op for Morse
 }
