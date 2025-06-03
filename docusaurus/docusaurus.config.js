@@ -75,6 +75,7 @@ const config = {
               groupPathsBy: "tag",
             },
             downloadUrl: "../api/path_openapi.yaml",
+            // Required to allow requests to production Grove Portal from the browser.
             proxy: "https://corsproxy.io/",
             hideSendButton: false,
           },
