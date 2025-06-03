@@ -60,7 +60,7 @@ type (
 		HandleServiceRequest(context.Context, *http.Request, http.ResponseWriter)
 	}
 	disqualifiedEndpointsReporter interface {
-		Report(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
+		ReportEndpointStatus(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
 
@@ -209,7 +209,7 @@ func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.Report(serviceID, req)
+	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.ReportEndpointStatus(serviceID, req)
 	if err != nil {
 		errMsg := fmt.Sprintf(`{"error": "400 Bad Request", "message": "invalid service ID: %v"}`, err)
 		r.logger.Error().Msg(errMsg)

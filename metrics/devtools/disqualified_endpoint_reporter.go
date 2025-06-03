@@ -35,10 +35,10 @@ type DisqualifiedEndpointReporter struct {
 	QoSLevelReporters     map[protocol.ServiceID]QoSDisqualifiedEndpointsReporter
 }
 
-// Report collects data about disqualified endpoints from both the protocol and QoS levels.
+// ReportEndpointStatus collects data about disqualified endpoints from both the protocol and QoS levels.
 // It is used by the `/disqualified_endpoints` URL path in the router to provide
 // useful information about currently disqualified endpoints for development and debugging.
-func (r *DisqualifiedEndpointReporter) Report(serviceID protocol.ServiceID, httpReq *http.Request) (DisqualifiedEndpointResponse, error) {
+func (r *DisqualifiedEndpointReporter) ReportEndpointStatus(serviceID protocol.ServiceID, httpReq *http.Request) (DisqualifiedEndpointResponse, error) {
 	r.Logger.Info().Msgf("Reporting disqualified endpoints for service ID: %s", serviceID)
 
 	var serviceEndpointsCount int

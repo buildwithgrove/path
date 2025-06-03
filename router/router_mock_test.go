@@ -79,17 +79,17 @@ func (m *MockdisqualifiedEndpointsReporter) EXPECT() *MockdisqualifiedEndpointsR
 	return m.recorder
 }
 
-// Report mocks base method.
-func (m *MockdisqualifiedEndpointsReporter) Report(arg0 protocol.ServiceID, arg1 *http.Request) (devtools.DisqualifiedEndpointResponse, error) {
+// ReportEndpointStatus mocks base method.
+func (m *MockdisqualifiedEndpointsReporter) ReportEndpointStatus(arg0 protocol.ServiceID, arg1 *http.Request) (devtools.DisqualifiedEndpointResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Report", arg0, arg1)
+	ret := m.ctrl.Call(m, "ReportEndpointStatus", arg0, arg1)
 	ret0, _ := ret[0].(devtools.DisqualifiedEndpointResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Report indicates an expected call of Report.
-func (mr *MockdisqualifiedEndpointsReporterMockRecorder) Report(arg0, arg1 any) *gomock.Call {
+// ReportEndpointStatus indicates an expected call of ReportEndpointStatus.
+func (mr *MockdisqualifiedEndpointsReporterMockRecorder) ReportEndpointStatus(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Report", reflect.TypeOf((*MockdisqualifiedEndpointsReporter)(nil).Report), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportEndpointStatus", reflect.TypeOf((*MockdisqualifiedEndpointsReporter)(nil).ReportEndpointStatus), arg0, arg1)
 }
