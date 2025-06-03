@@ -11,16 +11,23 @@
 #   flag, it also queries and stores disqualified endpoints data in JSON format.
 #
 # USAGE:
-#   ./services-shannon.sh --network <beta|mainnet> [--disqualified_endpoints]
+#   ./services-shannon.sh --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
 #
 # ARGUMENTS:
 #   -n, --network              Network to use: 'beta' or 'mainnet' (required)
+#   -e, --environment          Environment to use: 'local' or 'production' (required)
 #   -d, --disqualified_endpoints  Also query disqualified endpoints and update JSON file (optional)
+#   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
+#   -k, --api_key              API Key for production (required when environment=production)
 #
 # EXAMPLE USAGE:
-#   ./services-shannon.sh --network beta
-#   ./services-shannon.sh --network mainnet
-#   ./services-shannon.sh --network beta --disqualified_endpoints
+#   ./services-shannon.sh --network beta --environment local
+#   ./services-shannon.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+#   ./services-shannon.sh --network beta --environment local --disqualified_endpoints
+#
+# ENVIRONMENT BEHAVIOR:
+#   local:      Uses http://localhost:3069 with Target-Service-Id header
+#   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
 #
 # OUTPUT:
 #   - Console: Summary table showing service IDs, supplier counts, and test results
@@ -108,7 +115,6 @@ SERVICES=(
 )
 
 # Configuration Variables
-PATH_URL="http://localhost:3069/v1"
 TARGET_SERVICE_HEADER="Target-Service-Id"
 JSONRPC_TEST_PAYLOAD='{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}'
 MAX_RETRIES=5
@@ -119,20 +125,26 @@ DISQUALIFIED_API_URL="http://localhost:3069/disqualified_endpoints"
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --network <beta|mainnet> [--disqualified_endpoints]"
+    echo "Usage: $0 --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]"
     echo "  -n, --network              Network to use: 'beta' or 'mainnet' (required)"
+    echo "  -e, --environment          Environment to use: 'local' or 'production' (required)"
     echo "  -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)"
+    echo "  -p, --portal_app_id        Portal Application ID for production (required when environment=production)"
+    echo "  -k, --api_key              API Key for production (required when environment=production)"
     echo ""
     echo "Examples:"
-    echo "  $0 --network beta"
-    echo "  $0 --network mainnet"
-    echo "  $0 --network beta --disqualified_endpoints"
+    echo "  $0 --network beta --environment local"
+    echo "  $0 --network mainnet --environment production --portal_app_id your_app_id --api_key your_api_key"
+    echo "  $0 --network beta --environment local --disqualified_endpoints"
     exit 1
 }
 
 # Parse command line arguments
 NETWORK=""
+ENVIRONMENT=""
 QUERY_DISQUALIFIED=false
+PORTAL_APP_ID=""
+API_KEY=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -140,9 +152,21 @@ while [[ $# -gt 0 ]]; do
             NETWORK="$2"
             shift 2
             ;;
+        -e|--environment)
+            ENVIRONMENT="$2"
+            shift 2
+            ;;
         -d|--disqualified_endpoints)
             QUERY_DISQUALIFIED=true
             shift
+            ;;
+        -p|--portal_app_id)
+            PORTAL_APP_ID="$2"
+            shift 2
+            ;;
+        -k|--api_key)
+            API_KEY="$2"
+            shift 2
             ;;
         *)
             echo "Error: Unknown argument '$1'"
@@ -162,6 +186,41 @@ if [[ "$NETWORK" != "beta" && "$NETWORK" != "mainnet" ]]; then
     usage
 fi
 
+# Check if environment was provided and valid
+if [ -z "$ENVIRONMENT" ]; then
+    echo "Error: --environment flag is required"
+    usage
+fi
+
+if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
+    echo "Error: --environment must be either 'local' or 'production'"
+    usage
+fi
+
+# Check if production-specific parameters are provided when needed
+if [ "$ENVIRONMENT" = "production" ]; then
+    if [ -z "$PORTAL_APP_ID" ]; then
+        echo "Error: --portal_app_id is required when environment is production"
+        usage
+    fi
+    
+    if [ -z "$API_KEY" ]; then
+        echo "Error: --api_key is required when environment is production"
+        usage
+    fi
+fi
+
+# Configure URLs and headers based on environment
+if [ "$ENVIRONMENT" = "local" ]; then
+    BASE_PATH_URL="http://localhost:3069/v1"
+    BASE_DISQUALIFIED_URL="http://localhost:3069/disqualified_endpoints"
+    USE_SUBDOMAIN=false
+elif [ "$ENVIRONMENT" = "production" ]; then
+    BASE_PATH_URL="https://rpc.grove.city/v1"
+    BASE_DISQUALIFIED_URL="https://rpc.grove.city/disqualified_endpoints"
+    USE_SUBDOMAIN=true
+fi
+
 # Set node flag based on network
 if [ "$NETWORK" = "beta" ]; then
     NODE_FLAG="--node https://shannon-testnet-grove-rpc.beta.poktroll.com"
@@ -171,21 +230,25 @@ fi
 
 # Check if PATH service is running via health endpoint
 echo ""
-echo "🏥 Checking if PATH service is running..."
-health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
+if [ "$ENVIRONMENT" = "local" ]; then
+    echo "🏥 Checking if PATH service is running..."
+    health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
 
-if [ "$health_response" != "200" ]; then
-    echo ""
-    echo "❌ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
-    echo ""
-    echo "⚠️ IMPORTANT: Ensure you are running PATH locally before proceeding."
-    echo "    👀 See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
-    echo ""
-    echo "🚪 Exiting without testing services."
-    exit 1
+    if [ "$health_response" != "200" ]; then
+        echo ""
+        echo "❌ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
+        echo ""
+        echo "⚠️ IMPORTANT: Ensure you are running PATH locally before proceeding."
+        echo "    👀 See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
+        echo ""
+        echo "🚪 Exiting without testing services."
+        exit 1
+    fi
+
+    echo "✅ PATH service is healthy - proceeding with service tests"
+else
+    echo "🌍 Using production environment - skipping local health check"
 fi
-
-echo "✅ PATH service is healthy - proceeding with service tests"
 echo ""
 
 # Initialize temporary files for storing results
@@ -200,6 +263,7 @@ declare -a services_with_suppliers
 echo "=== SUPPLIER COUNT REPORT ==="
 echo "Generated: $(date)"
 echo "Network: $NETWORK"
+echo "Environment: $ENVIRONMENT"
 if [ "$QUERY_DISQUALIFIED" = true ]; then
     echo "Mode: Including disqualified endpoints analysis 📊"
 else
@@ -285,9 +349,20 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
             request_count=$((request_count + 1))
             echo "    📡 Request $request_count/$max_requests..."
             
-            curl_result=$(curl -s "$PATH_URL" \
-                -H "$TARGET_SERVICE_HEADER: $service" \
-                -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            # Construct URL and headers based on environment
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                service_url="https://${service}.rpc.grove.city/v1"
+                curl_result=$(curl -s "$service_url" \
+                    -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                    -H "Authorization: $API_KEY" \
+                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            else
+                # Local: use header format
+                curl_result=$(curl -s "$BASE_PATH_URL" \
+                    -H "$TARGET_SERVICE_HEADER: $service" \
+                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            fi
             
             # Check if curl was successful and returned valid JSON
             if [ $? -eq 0 ] && echo "$curl_result" | jq -e . >/dev/null 2>&1; then
@@ -298,10 +373,10 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
                     # Collect error response
                     error_response=$(echo "$curl_result" | jq -c '.error')
                     error_responses+=("$error_response")
-                    # Collect detailed error for JSON report
-                    error_message=$(echo "$curl_result" | jq -r '.error.message // ""')
-                    endpoint_response=$(echo "$curl_result" | jq -r '.error.data.endpoint_response // ""')
-                    unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""')
+                    # Collect detailed error for JSON report - with safe parsing
+                    error_message=$(echo "$curl_result" | jq -r '.error.message // .error // "Unknown error"' 2>/dev/null || echo "Parse error")
+                    endpoint_response=$(echo "$curl_result" | jq -r '.error.data.endpoint_response // ""' 2>/dev/null || echo "")
+                    unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
                     detailed_errors+=("{\"error_message\":\"$error_message\",\"endpoint_response\":\"$endpoint_response\",\"unmarshaling_error\":\"$unmarshaling_error\"}")
                 else
                     echo "      ✅ Success"
@@ -337,7 +412,18 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
         disqualified_response=""
         if [ "$QUERY_DISQUALIFIED" = true ]; then
             echo "    📊 Querying disqualified endpoints for $service..."
-            disqualified_response=$(curl -s "$DISQUALIFIED_API_URL" -H "Target-Service-Id: $service" 2>/dev/null)
+            
+            # Construct URL and headers based on environment
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                disqualified_url="https://${service}.rpc.grove.city/disqualified_endpoints"
+                disqualified_response=$(curl -s "$disqualified_url" \
+                    -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                    -H "Authorization: $API_KEY" 2>/dev/null)
+            else
+                # Local: use header format
+                disqualified_response=$(curl -s "$BASE_DISQUALIFIED_URL" -H "Target-Service-Id: $service" 2>/dev/null)
+            fi
             curl_exit_code=$?
             
             if [ $curl_exit_code -eq 0 ] && [ -n "$disqualified_response" ]; then
