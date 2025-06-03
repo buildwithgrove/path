@@ -17,11 +17,13 @@ const (
 	// The list of metrics being tracked for Shannon protocol
 	relaysTotalMetric       = "shannon_relays_total"
 	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 )
 
 func init() {
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+	prometheus.MustRegister(sanctionsByDomain)
 }
 
 var (
@@ -72,6 +74,29 @@ var (
 		},
 		[]string{"service_id", "error_type", "sanction_type"},
 	)
+
+	// sanctionsByDomain tracks sanctions applied by domain.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - sanction_type: Type of sanction (session, permanent)
+	//
+	// This counter is incremented each time a sanction is applied to an endpoint.
+	// Provides insight into sanction patterns by domain without high-cardinality supplier addresses.
+	// Use Grafana time series functions (rate, increase) to analyze sanction trends.
+	//
+	// Use to analyze:
+	//   - Sanction rate by endpoint domain and service
+	//   - Endpoint domain-level reliability trends
+	//   - Provider performance analysis over time
+	sanctionsByDomain = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      sanctionsByDomainMetric,
+			Help:      "Total sanctions by service, endpoint domain (TLD+1) and sanction type",
+		},
+		[]string{"service_id", "endpoint_domain", "sanction_type"},
+	)
 )
 
 // PublishMetrics exports all Shannon-related Prometheus metrics using observations
@@ -92,8 +117,11 @@ func PublishMetrics(
 		// Record the relay total with success/failure status
 		recordRelayTotal(logger, observationSet)
 
-		// Process each endpoint observation for errors
+		// Process each endpoint observation for errors and sanctions
 		processEndpointErrors(observationSet.GetServiceId(), observationSet.GetEndpointObservations())
+
+		// Process sanctions by domain
+		processSanctionsByDomain(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
 	}
 }
 
@@ -220,5 +248,45 @@ func processEndpointErrors(serviceID string, observations []*protocol.ShannonEnd
 		// This dynamic type cast is safe:
 		// https://pkg.go.dev/github.com/prometheus/client_golang@v1.22.0/prometheus#NewCounter
 		).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
+	}
+}
+
+// processSanctionsByDomain records sanction events by domain using a counter.
+// This function tracks sanctions at the domain level to provide operational visibility
+// without the high cardinality of individual supplier addresses.
+// Use Grafana time series functions to analyze trends and rates.
+func processSanctionsByDomain(
+	logger polylog.Logger,
+	serviceID string,
+	observations []*protocol.ShannonEndpointObservation,
+) {
+	for _, endpointObs := range observations {
+		// Skip if there's no recommended sanction
+		if endpointObs.RecommendedSanction == nil {
+			continue
+		}
+
+		// Extract effective TLD+1 from endpoint URL
+		// This function handles edge cases like IP addresses, localhost, invalid URLs
+		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		// error extracting TLD+1, skip.
+		if err != nil {
+			logger.With(
+				"endpoint_url", endpointObs.GetEndpointUrl(),
+			).
+				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL")
+
+			continue
+		}
+
+		// Increment the sanctions counter for this domain
+		sanctionsByDomain.With(
+			prometheus.Labels{
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
+			},
+		).Inc()
 	}
 }
