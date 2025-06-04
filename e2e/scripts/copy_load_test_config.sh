@@ -19,7 +19,9 @@ echo ""
 
 # Check if config file already exists
 if [ -f "$CONFIG_FILE" ]; then
-    echo -e "${YELLOW}⚠️  Configuration file already exists at $CONFIG_FILE${NC}"
+    echo -e "${YELLOW}⚠️ Configuration file already exists at $CONFIG_FILE${NC}"
+    echo -e " 👀 You can verify the existing config by running: \n     cat ./e2e/config/.e2e_load_test.config.yaml"
+    echo ""
     read -p "🤔 Do you want to overwrite it? (y/N): " OVERWRITE
     if [[ ! "$OVERWRITE" =~ ^[Yy]$ ]]; then
         echo -e "ℹ️  Keeping existing configuration file"
@@ -35,7 +37,7 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
 fi
 
 # Check if yq is installed
-if ! command -v yq &> /dev/null; then
+if ! command -v yq &>/dev/null; then
     echo -e "${RED}❌ Error: yq is not installed${NC}"
     echo -e "${YELLOW}💡 Please install yq to continue:${NC}"
     echo -e "${WHITE}   • macOS: brew install yq${NC}"
@@ -48,7 +50,7 @@ fi
 echo -e "${BLUE}🔑 Portal Configuration Setup${NC}"
 echo ""
 echo -e "${BLUE}📝 Step 1: Portal Application ID${NC}"
-echo -e "${WHITE}   This is required if you're testing against the Grove Portal.${NC}"
+echo -e "${WHITE}   This is REQUIRED if you're testing against the Grove Portal.${NC}"
 echo -e "${WHITE}   If you don't have one, get it at: https://www.portal.grove.city${NC}"
 echo ""
 read -p "🆔 Enter your Portal Application ID (or press Enter to skip): " PORTAL_APP_ID
@@ -56,7 +58,7 @@ read -p "🆔 Enter your Portal Application ID (or press Enter to skip): " PORTA
 # Step 2: Prompt for Portal API Key
 echo ""
 echo -e "${BLUE}📝 Step 2: Portal API Key${NC}"
-echo -e "${WHITE}   This is required if your Portal Application ID requires an API key.${NC}"
+echo -e "${WHITE}   This is REQUIRED if your Portal Application ID requires an API key.${NC}"
 echo -e "${WHITE}   You can find this in your Grove Portal dashboard: https://www.portal.grove.city${NC}"
 echo ""
 read -p "🔐 Enter your Portal API Key (or press Enter to skip): " PORTAL_API_KEY
@@ -65,6 +67,7 @@ echo ""
 
 # Step 3: Copy the template file (only after prompts are complete)
 echo "📁 Copying e2e_load_test.config.tmpl.yaml to .e2e_load_test.config.yaml"
+echo "\n 👀 You can verify the new config by running:\n    cat ./e2e/config/.e2e_load_test.config.yaml\n"
 cp "$TEMPLATE_FILE" "$CONFIG_FILE"
 echo -e "${GREEN}✅ Successfully copied template to config file${NC}"
 
@@ -83,9 +86,12 @@ fi
 
 echo ""
 echo -e "${GREEN}🎉 Configuration setup complete!${NC}"
+echo ""
 echo -e "${WHITE}💡 To customize the load test config further, edit: $CONFIG_FILE${NC}"
 echo ""
 echo -e "${BLUE}🚀 You can now run load tests with:${NC}"
 echo -e "${WHITE}   • make load_test${NC}"
 echo -e "${WHITE}   • make load_test eth,anvil${NC}"
+echo ""
+echo -e "${WHITE} For a full list of all available services to run load tests on, see: ./config/service_qos_config.go"
 echo ""

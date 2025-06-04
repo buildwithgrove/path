@@ -42,6 +42,7 @@ check_path_config:
 		exit 1; \
 	fi
 
+
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
 	(cd bin; ./path -config ../${CONFIG_PATH})
@@ -55,7 +56,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
 .PHONY: path_up
-path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_up: check_docker check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 	tilt up
 
 .PHONY: path_down
@@ -89,3 +90,4 @@ include ./makefiles/proto.mk
 include ./makefiles/debug.mk
 include ./makefiles/claude.mk
 include ./makefiles/release.mk
+include ./makefiles/helpers.mk
