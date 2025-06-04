@@ -26,7 +26,7 @@ morse_prepare_e2e_config: ## Setup Morse E2E test config file from the example t
 		echo "  make test_e2e_evm_morse"; \
 		echo ""; \
 		echo "🧑‍💻 Alternatively, for local development: "; \
-		echo "  make morse_copy_e2e_load_test_config_to_local"; \
+		echo "  make morse_prepare_e2e_load_test_config_to_local"; \
 		echo "  make path_up"; \
 		echo "################################################################"; \
 	else \
@@ -38,8 +38,8 @@ morse_prepare_e2e_config: ## Setup Morse E2E test config file from the example t
 		echo "################################################################"; \
 	fi
 
-.PHONY: morse_copy_e2e_load_test_config_to_local
-morse_copy_e2e_load_test_config_to_local: ## Copy Morse E2E config to local/path/ directory
+.PHONY: morse_prepare_e2e_load_test_config_to_local
+morse_prepare_e2e_load_test_config_to_local: ## Copy Morse E2E config to local/path/ directory
 	$(call check_config_exists,./e2e/config/.morse.config.yaml,morse_prepare_e2e_config)
 	$(call warn_file_exists,./local/path/.config.yaml)
 	@cp ./e2e/config/.morse.config.yaml ./local/path/.config.yaml

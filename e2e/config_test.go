@@ -297,7 +297,7 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 		servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
 		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
 			"\n"+
-			"Please refer to the `%s` file to see which services are configured for the `%s` protocol.",
+			"Please refer to the `e2e/%s` file to see which services are configured for the `%s` protocol.",
 			envTestServiceIDs, servicesFile, protocol,
 		)
 	}
@@ -334,13 +334,13 @@ func (c *Config) validate() error {
 	// Validate load test mode
 	if mode == testModeLoad {
 		if c.E2ELoadTestConfig.LoadTestConfig == nil {
-			return fmt.Errorf("load test mode requires loadTestConfig to be set")
+			return fmt.Errorf("load test mode requires loadTestConfig to be set. \n💡 To walk through generating a new config, run `make prepare_e2e_load_test_config`")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride == "" {
-			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
+			return fmt.Errorf("load test mode requires GatewayURLOverride to be set. \n💡 To walk through generating a new config, run `make prepare_e2e_load_test_config`")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID == "" {
-			return fmt.Errorf("load test mode requires PortalApplicationID to be set")
+			return fmt.Errorf("load test mode requires PortalApplicationID to be set. \n💡 To walk through generating a new config, run `make prepare_e2e_load_test_config`")
 		}
 	}
 

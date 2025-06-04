@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./services.schema.yaml
 
 # TODO_IMPROVE(@commoddity): Once Shannon migration is complete:
-#   1. Move this file to top-level `config` package 
+#   1. Move this file to top-level `config` package
 #   2. Use it as the source of truth for service QoS configs by embedding and YAML unmarshalling
 #   3. Remove the `config/service_qos_config.go` file in favour of using this file
 
@@ -147,12 +147,12 @@ services:
   - name: "Shannon - eth Test"
     service_id: "eth"
     service_type: "evm"
-    archival: true 
+    archival: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000
       transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
-      call_data: "0x18160ddd" 
+      call_data: "0x18160ddd"
 
   # Shannon - Ethereum Holesky Testnet (Archival)
   - name: "Shannon - eth_hol_test (Ethereum Holesky Testnet) Test"

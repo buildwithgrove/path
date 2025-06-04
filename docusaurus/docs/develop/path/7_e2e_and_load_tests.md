@@ -31,7 +31,7 @@ description: End-to-End & Load Tests for PATH
 
 ## tl;dr How do I run the tests?
 
-### 1. **Run E2E tests** 
+### 1. **Run E2E tests**
 
 ```bash
 # Shannon E2E tests with all service IDs
@@ -53,7 +53,7 @@ make morse_e2e_test F00C,F021
 
 A Grove Portal Application ID and API Key are required to run load tests against the Grove Portal.
 
-Run `make copy_e2e_load_test_config` to copy and populate the load test config file with your Portal credentials.
+Run `make prepare_e2e_load_test_config` to copy and populate the load test config file with your Portal credentials.
 
 You will be prompted to enter your Grove Portal Application ID and API Key. If you do not have these, you can get them by visiting the [Grove Portal](https://www.portal.grove.city).
 
@@ -111,9 +111,9 @@ PATH E2E tests support two distinct modes of operation:
 
 | Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
-| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅           |           ❌           |                      ❌                      |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |           ❌           |                      ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌          |          ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
 :::tip Populate Configs
 
@@ -126,7 +126,7 @@ For E2E tests:
 
 For Load tests:
 
-- `make copy_e2e_load_test_config`
+- `make prepare_e2e_load_test_config`
 
 :::
 

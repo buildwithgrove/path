@@ -25,7 +25,7 @@ shannon_prepare_e2e_config: ## Setup Shannon E2E test config file from the examp
 		echo "  make test_e2e_evm_shannon"; \
 		echo ""; \
 		echo "🧑‍💻 For local dev:"; \
-		echo "  make shannon_populate_config OR make shannon_copy_e2e_load_test_config_to_local"; \
+		echo "  make shannon_populate_config OR make shannon_prepare_e2e_load_test_config_to_local"; \
 		echo "  make path_up"; \
 		echo "################################################################"; \
 	else \
@@ -37,8 +37,8 @@ shannon_prepare_e2e_config: ## Setup Shannon E2E test config file from the examp
 		echo "################################################################"; \
 	fi
 
-.PHONY: shannon_copy_e2e_load_test_config_to_local
-shannon_copy_e2e_load_test_config_to_local: ## Copy Shannon E2E config to local/path/ directory
+.PHONY: shannon_prepare_e2e_load_test_config_to_local
+shannon_prepare_e2e_load_test_config_to_local: ## Copy Shannon E2E config to local/path/ directory
 	$(call check_config_exists,./e2e/config/.shannon.config.yaml,shannon_prepare_e2e_config)
 	$(call warn_file_exists,./local/path/.config.yaml)
 	@cp ./e2e/config/.shannon.config.yaml ./local/path/.config.yaml
