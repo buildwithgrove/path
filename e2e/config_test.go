@@ -263,7 +263,6 @@ type (
 	// LoadTestConfig for load test mode configuration
 	LoadTestConfig struct {
 		GatewayURLOverride  string `yaml:"gateway_url_override"`  // [REQUIRED] Custom PATH gateway URL
-		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // [OPTIONAL] Whether to specify the service using the subdomain per-test case
 		PortalApplicationID string `yaml:"portal_application_id"` // [OPTIONAL] Grove Portal Application ID for the test. Required if using the Grove Portal.
 		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Grove Portal API key for the test. Required if Grove Portal Application requires API key.
 	}
@@ -320,7 +319,7 @@ func (c *Config) getTestServiceIDs() []protocol.ServiceID {
 }
 
 func (c *Config) useServiceSubdomain() bool {
-	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
+	return !strings.Contains(c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride, "localhost")
 }
 
 func (c *Config) getGatewayURLForLoadTest() string {

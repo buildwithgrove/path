@@ -39,13 +39,6 @@ e2e_load_test_config:
     # gateway_url_override: "http://localhost:3069/v1"
     gateway_url_override: "https://rpc.grove.city/v1"
 
-    # [Optional] Insert service ID into subdomain per test case
-    #     Example: "F00C.rpc.grove.city/v1"
-    #
-    # TODO_TECHDEBT(@commoddity): Remove after header-based service selection is supported.
-    #     See: https://github.com/buildwithgrove/infrastructure/issues/91
-    use_service_subdomain: true
-
     # [Optional] Custom user identifier for the test (i.e. portal-application-id)
     #
     # DEV_NOTE: This field IS required if you are testing against the Grove Portal.
