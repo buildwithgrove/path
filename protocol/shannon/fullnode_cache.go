@@ -2,7 +2,6 @@ package shannon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -26,8 +25,6 @@ import (
 //   - Cache must be built incrementally (lazy-loading) as new apps are requested.
 //
 // - 3. Add more documentation around lazy mode
-
-var ErrShannonCacheConfigSetForLazyMode = errors.New("cache config cannot be set for lazy mode")
 
 // ---------------- Cache Configuration ----------------
 const (
@@ -64,10 +61,7 @@ const (
 // BEFORE the cached entry expires. This prevents cache misses and eliminates latency
 // spikes by ensuring hot data is always available immediately.
 //
-// Apps refresh timing  (80-90% of TTL, e.g. 4-4.5 minutes for 5-minute TTL):
-//   - Chosen to balance data freshness with background load
-//   - Apps change infrequently, so refreshing near expiry is sufficient
-//   - Random jitter prevents thundering herd on the FullNode
+// Cache refresh timing is 80-90% of TTL (e.g. 4-4.5 minutes for 5-minute TTL).
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 func getCacheDelays(ttl time.Duration) (min, max time.Duration) {

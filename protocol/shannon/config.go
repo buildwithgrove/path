@@ -29,6 +29,7 @@ var (
 	ErrShannonInvalidGrpcHostPort                     = errors.New("invalid shannon grpc host:port")
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
+	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
 )
 
 type (
