@@ -181,9 +181,8 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		ctx,
 		getAppCacheKey(appAddr),
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
-			cfn.logger.Debug().Msgf(
-				"cachingFullNode.GetApp: Making request to full node for app %s",
-				getAppCacheKey(appAddr),
+			cfn.logger.Debug().Str("app_key", getAppCacheKey(appAddr)).Msgf(
+				"[cachingFullNode.GetApp] Making request to full node",
 			)
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
 		},
@@ -210,9 +209,8 @@ func (cfn *cachingFullNode) GetSession(
 		ctx,
 		getSessionCacheKey(serviceID, appAddr),
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
-			cfn.logger.Debug().Msgf(
-				"cachingFullNode.GetSession: Making request to full node for session %s",
-				getSessionCacheKey(serviceID, appAddr),
+			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
+				"[cachingFullNode.GetSession] Making request to full node",
 			)
 			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
