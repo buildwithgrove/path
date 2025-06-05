@@ -37,7 +37,7 @@ sources without sacrificing enterprise-grade SLAs.
 If you're unsure of where to start, we recommend the following:
 
 1. [**Environment Setup**](2_environment.md): Prepare your environment for running PATH
-2. [**Configuration Files**](6_configurations_helm.md): Explore other PATH configuration files
+2. [**Configuration Files**](4_configurations_path.md): Explore other PATH configuration files
 3. [**Shannon Cheat Sheet**](3_cheatsheet_shannon.md): Get up and running with a Gateway to Shannon
 
 ## Special Thanks
