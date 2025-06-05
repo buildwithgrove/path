@@ -61,11 +61,12 @@ const (
 // BEFORE the cached entry expires. This prevents cache misses and eliminates latency
 // spikes by ensuring hot data is always available immediately.
 //
-// Cache refresh timing is 80-90% of TTL (e.g. 4-4.5 minutes for 5-minute TTL).
+// Cache refresh timing is 60-90% of TTL (e.g. 3-4.5 minutes for 5-minute TTL).
+// This spread is to avoid thundering herd on the full node.
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
-	minFloat := float64(ttl) * 0.8
+	minFloat := float64(ttl) * 0.6
 	maxFloat := float64(ttl) * 0.9
 
 	// Round to the nearest second
