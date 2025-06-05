@@ -25,7 +25,6 @@ shannon_config:
 
     # Setting this to true disables all caching of full node data.
     lazy_mode: false
-    # If lazy_mode is false, the cache_config is required.
     # If lazy_mode is true, the cache_config may not be set.
     cache_config: 
       # The TTL for the app cache.
