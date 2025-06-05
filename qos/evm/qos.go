@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -14,6 +15,10 @@ import (
 //  1. QoSRequestParser - Builds EVM-specific RequestQoSContext objects from HTTP requests
 //  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
+
+// devtools.QoSDisqualifiedEndpointsReporter is fulfilled by the QoS struct below.
+// This allows the QoS service to report its disqualified endpoints data to the devtools.DisqualifiedEndpointReporter.
+var _ devtools.QoSDisqualifiedEndpointsReporter = &QoS{}
 
 // QoS implements ServiceQoS for EVM-based chains.
 // It handles chain-specific:
@@ -94,4 +99,12 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 		logger:       qos.logger,
 		serviceState: qos.serviceState,
 	}, true
+}
+
+// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
+//   - takes a pointer to the DisqualifiedEndpointResponse
+//   - called by the devtools.DisqualifiedEndpointReporter to fill it with the QoS-specific data.
+func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+	qos.logger.Info().Msgf("hydrating disqualified endpoints response for service ID: %s", serviceID)
+	details.QoSLevelDisqualifiedEndpoints = qos.serviceState.getDisqualifiedEndpointsResponse(serviceID)
 }

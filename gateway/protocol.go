@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -58,6 +59,13 @@ type Protocol interface {
 	//
 	// ConfiguredServiceIDs returns the list of service IDs that the protocol instance is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
+
+	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
+	// without filtering sanctioned endpoints.
+	GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
+
+	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
+	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

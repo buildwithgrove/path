@@ -69,6 +69,20 @@ properties:
             description: "Indicates if lazy mode is enabled for full node connections."
             type: boolean
             default: true
+          cache_config:
+            description: "Configuration for the cache."
+            type: object
+            additionalProperties: false
+            properties:
+              app_ttl:
+                description: "TTL for the app cache."
+                type: string
+                pattern: "^[0-9]+[smh]$"
+              session_ttl:
+                description: "TTL for the session cache."
+                type: string
+                pattern: "^[0-9]+[smh]$"
+
       gateway_config:
         description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
         type: object

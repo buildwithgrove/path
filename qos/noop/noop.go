@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -67,4 +68,8 @@ func requestContextFromError(err error) *requestContext {
 			payload:        []byte(fmt.Sprintf("Error processing the request: %v", err)),
 		},
 	}
+}
+
+// HydrateDisqualifiedEndpointsResponse is a no-op for the noop QoS.
+func (NoOpQoS) HydrateDisqualifiedEndpointsResponse(_ protocol.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
 }

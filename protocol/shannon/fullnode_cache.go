@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -24,51 +25,11 @@ import (
 //   - Cache must be built incrementally (lazy-loading) as new apps are requested.
 //
 // - 3. Add more documentation around lazy mode
-// - 4. Test the performance of a caching node vs lazy node.
+
+// ---------------- Cache Configuration ----------------
 const (
-	// ---------------- Cache TTLs ----------------
-
-	// Applications can be cached indefinitely.
-	// They're invalidated only when they unstake.
-	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking. Revisit these values after mainnet migration to ensure no race conditions.
-	defaultAppCacheTTL = 5 * time.Minute
-
-	// As of #275, on Beta TestNet.
-	// - Blocks are 30 seconds
-	// - A session is 50 blocks
-	// - A grace period is 1 block (i.e. 30 seconds)
-	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
-	// TODO_TECHDEBT(@Olshansk): Update this cache refresh time if onchain block time changes.
-	defaultSessionCacheTTL = 30 * time.Second
-
-	// ---------------- Early Refresh Strategy ----------------
-
-	// "Refreshing" in SturdyC means proactively fetching fresh data in the background
-	// BEFORE the cached entry expires. This prevents cache misses and eliminates latency
-	// spikes by ensuring hot data is always available immediately.
-	//
-	// Apps refresh timing (4-4.5 minutes for 5-minute TTL = 80-90% of TTL):
-	// 	- Chosen to balance data freshness with background load
-	// 	- Apps change infrequently, so refreshing near expiry is sufficient
-	// 	- Random jitter prevents thundering herd on the FullNode
-	//
-	// TODO_TECHDEBT(@Olshansk): Revisit these early refresh timings and percentages.
-	// Consider making them configurable and validate against real-world traffic patterns.
-	//
-	// Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-
-	// Early refresh configuration for apps
-	appMinRefreshDelay = 4 * time.Minute
-	appMaxRefreshDelay = 4*time.Minute + 30*time.Second
-
-	// Early refresh configuration for sessions
-	sessionMinRefreshDelay = 20 * time.Second
-	sessionMaxRefreshDelay = 25 * time.Second
-
 	// Retry base delay for exponential backoff on failed refreshes
 	retryBaseDelay = 100 * time.Millisecond
-
-	// ---------------- Cache Configuration ----------------
 
 	// cacheCapacity: Maximum number of entries the cache can hold across all shards.
 	// This is the total capacity, not per-shard. When capacity is exceeded, the cache
@@ -94,6 +55,26 @@ const (
 	evictionPercentage = 10
 )
 
+// getCacheDelays gets the delays for the SturdyC Early Refresh Strategy.
+//
+// "Refreshing" in SturdyC means proactively fetching fresh data in the background
+// BEFORE the cached entry expires. This prevents cache misses and eliminates latency
+// spikes by ensuring hot data is always available immediately.
+//
+// Cache refresh timing is 30-90% of TTL (e.g. 1.2-3.6 minutes for 4-minute TTL).
+// This spread is to avoid overloading the full node with too many simultaneous requests.
+//
+// Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
+func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
+	minFloat := float64(ttl) * 0.3
+	maxFloat := float64(ttl) * 0.9
+
+	// Round to the nearest second
+	min = time.Duration(minFloat/float64(time.Second)+0.5) * time.Second
+	max = time.Duration(maxFloat/float64(time.Second)+0.5) * time.Second
+	return
+}
+
 // Use cache prefixes to avoid collisions with other cache keys.
 // This is a simple way to namespace the cache keys.
 const (
@@ -111,56 +92,76 @@ var _ FullNode = &cachingFullNode{}
 // Background refreshes happen before entries expire, so GetApp/GetSession never block.
 //
 // Example times (values may change):
-//   - Apps: 5min TTL, refresh at 4-4.5min (80-90% of TTL)
-//   - Sessions: 30sec TTL, refresh at 20-25sec (67-83% of TTL)
+//   - 4min TTL, refresh at 1.2-3.6min (30-90% of TTL)
 //
 // Benefits: Zero-latency reads for active traffic, thundering herd protection,
 // automatic load balancing, and graceful degradation.
 //
 // Docs reference: https://github.com/viccon/sturdyc
 type cachingFullNode struct {
+	logger polylog.Logger
+
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
 	lazyFullNode *lazyFullNode
 
-	// Separate SturdyC caches for applications and sessions
-	appCache     *sturdyc.Client[*apptypes.Application]
+	// Applications can be cached indefinitely. They're invalidated only when they unstake.
+	//
+	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking.
+	//   Revisit these values after mainnet migration to ensure no race conditions.
+	appCache *sturdyc.Client[*apptypes.Application]
+
+	// As of #275, on Beta TestNet, sessions are 5 minutes.
+	//
+	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
 	sessionCache *sturdyc.Client[sessiontypes.Session]
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
-func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
+func NewCachingFullNode(
+	logger polylog.Logger,
+	lazyFullNode *lazyFullNode,
+	cacheConfig CacheConfig,
+) *cachingFullNode {
+	// Set default TTLs if not set
+	cacheConfig.hydrateDefaults()
+
 	// Configure app cache with early refreshes
+	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
+
 	appCache := sturdyc.New[*apptypes.Application](
 		cacheCapacity,
 		numShards,
-		defaultAppCacheTTL,
+		cacheConfig.AppTTL,
 		evictionPercentage,
 		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 		sturdyc.WithEarlyRefreshes(
 			appMinRefreshDelay,
 			appMaxRefreshDelay,
-			defaultAppCacheTTL,
+			cacheConfig.AppTTL,
 			retryBaseDelay,
 		),
 	)
 
 	// Configure session cache with early refreshes
+	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
+
 	sessionCache := sturdyc.New[sessiontypes.Session](
 		cacheCapacity,
 		numShards,
-		defaultSessionCacheTTL,
+		cacheConfig.SessionTTL,
 		evictionPercentage,
 		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 		sturdyc.WithEarlyRefreshes(
 			sessionMinRefreshDelay,
 			sessionMaxRefreshDelay,
-			defaultSessionCacheTTL,
+			cacheConfig.SessionTTL,
 			retryBaseDelay,
 		),
 	)
 
 	return &cachingFullNode{
+		logger:       logger,
 		lazyFullNode: lazyFullNode,
 		appCache:     appCache,
 		sessionCache: sessionCache,
@@ -175,6 +176,9 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		ctx,
 		getAppCacheKey(appAddr),
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
+			cfn.logger.Debug().Str("app_key", getAppCacheKey(appAddr)).Msgf(
+				"[cachingFullNode.GetApp] Making request to full node",
+			)
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
 		},
 	)
@@ -200,6 +204,9 @@ func (cfn *cachingFullNode) GetSession(
 		ctx,
 		getSessionCacheKey(serviceID, appAddr),
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
+				"[cachingFullNode.GetSession] Making request to full node",
+			)
 			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
 	)

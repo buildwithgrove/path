@@ -30,6 +30,10 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
 						LazyMode: false,
+						CacheConfig: shannonprotocol.CacheConfig{
+							AppTTL:     12 * time.Minute,
+							SessionTTL: 4 * time.Minute,
+						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,

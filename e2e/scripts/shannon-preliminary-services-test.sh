@@ -11,16 +11,23 @@
 #   flag, it also queries and stores disqualified endpoints data in JSON format.
 #
 # USAGE:
-#   ./services-shannon.sh --network <beta|mainnet> [--disqualified_endpoints]
+#   ./services-shannon.sh --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
 #
 # ARGUMENTS:
 #   -n, --network              Network to use: 'beta' or 'mainnet' (required)
+#   -e, --environment          Environment to use: 'local' or 'production' (required)
 #   -d, --disqualified_endpoints  Also query disqualified endpoints and update JSON file (optional)
+#   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
+#   -k, --api_key              API Key for production (required when environment=production)
 #
 # EXAMPLE USAGE:
-#   ./services-shannon.sh --network beta
-#   ./services-shannon.sh --network mainnet
-#   ./services-shannon.sh --network beta --disqualified_endpoints
+#   ./services-shannon.sh --network beta --environment local
+#   ./services-shannon.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+#   ./services-shannon.sh --network beta --environment local --disqualified_endpoints
+#
+# ENVIRONMENT BEHAVIOR:
+#   local:      Uses http://localhost:3069 with Target-Service-Id header
+#   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
 #
 # OUTPUT:
 #   - Console: Summary table showing service IDs, supplier counts, and test results
@@ -108,7 +115,6 @@ SERVICES=(
 )
 
 # Configuration Variables
-PATH_URL="http://localhost:3069/v1"
 TARGET_SERVICE_HEADER="Target-Service-Id"
 JSONRPC_TEST_PAYLOAD='{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}'
 MAX_RETRIES=5
@@ -117,22 +123,106 @@ RETRY_SLEEP_DURATION=1
 # Disqualified endpoints configuration
 DISQUALIFIED_API_URL="http://localhost:3069/disqualified_endpoints"
 
-# Function to display usage
+# Function to display usage/help, including tl;dr and script docstring
+print_help() {
+    cat <<'EOF'
+**tl;dr This script tests service availability on Shannon** by:
+
+- Finding all services with >=1 supplier on Shannon using 'pocketd'
+- Confirming that at least 1 'eth_blockNumber' request returns a 200 using PATH
+
+It then outputs results in 2 places:
+
+1. Logs
+2. A JSON file with the format supplier_report_<YYYY-MM-DD>_....json
+
+################################################################################
+# Shannon Services Supplier Report Generator
+################################################################################
+#
+# DESCRIPTION:
+#   This script queries supplier counts for a predefined list of service IDs and
+#   optionally tests each service with suppliers using curl requests. It generates
+#   both console output and a detailed CSV report. With the --disqualified_endpoints
+#   flag, it also queries and stores disqualified endpoints data in JSON format.
+#
+# USAGE:
+#   ./services-shannon.sh --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
+#
+# ARGUMENTS:
+#   -n, --network              Network to use: 'beta' or 'mainnet' (required)
+#   -e, --environment          Environment to use: 'local' or 'production' (required)
+#   -d, --disqualified_endpoints  Also query disqualified endpoints and update JSON file (optional)
+#   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
+#   -k, --api_key              API Key for production (required when environment=production)
+#
+# EXAMPLE USAGE:
+#   ./services-shannon.sh --network beta --environment local
+#   ./services-shannon.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+#   ./services-shannon.sh --network beta --environment local --disqualified_endpoints
+#
+# ENVIRONMENT BEHAVIOR:
+#   local:      Uses http://localhost:3069 with Target-Service-Id header
+#   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
+#
+# OUTPUT:
+#   - Console: Summary table showing service IDs, supplier counts, and test results
+#   - JSON File: Detailed report with test results (supplier_report_YYYY-MM-DD_HH:MM:SS.json)
+#   - JSON File: (with -d flag) Disqualified endpoints data (sanctioned-endpoint-results.json)
+#
+# FEATURES:
+#   - Embedded service list for easy maintenance
+#   - Automatic network node configuration
+#   - Skips services with 0 suppliers
+#   - Tests services with curl requests (5 retries per service)
+#   - Captures detailed error information in CSV
+#   - Optional disqualified endpoints querying and JSON storage
+#   - Clean console output for quick scanning
+#
+# CSV COLUMNS:
+#   service_id, suppliers, test_result, error_message, endpoint_response, unmarshaling_error
+#
+# JSON STRUCTURE (with -d flag):
+#   {"suppliers_passed": {services with working JSON-RPC and suppliers},
+#    "suppliers_failed": {services with failed JSON-RPC but suppliers, includes errors array},
+#    "no_suppliers": {services with no suppliers}}
+#
+################################################################################
+
+Usage: $0 --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
+  -n, --network              Network to use: 'beta' or 'mainnet' (required)
+  -e, --environment          Environment to use: 'local' or 'production' (required)
+  -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)
+  -p, --portal_app_id        Portal Application ID for production (required when environment=production)
+  -k, --api_key              API Key for production (required when environment=production)
+  -h, --help                 Show this help message and exit
+
+Examples:
+  $0 --network beta --environment local
+  $0 --network mainnet --environment production --portal_app_id your_app_id --api_key your_api_key
+  $0 --network beta --environment local --disqualified_endpoints
+EOF
+    exit 0
+}
+
+# Alias usage() to print_help for backwards compatibility
 usage() {
-    echo "Usage: $0 --network <beta|mainnet> [--disqualified_endpoints]"
-    echo "  -n, --network              Network to use: 'beta' or 'mainnet' (required)"
-    echo "  -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)"
-    echo ""
-    echo "Examples:"
-    echo "  $0 --network beta"
-    echo "  $0 --network mainnet"
-    echo "  $0 --network beta --disqualified_endpoints"
-    exit 1
+    print_help
 }
 
 # Parse command line arguments
 NETWORK=""
+ENVIRONMENT=""
 QUERY_DISQUALIFIED=false
+PORTAL_APP_ID=""
+API_KEY=""
+
+# Check for --help or -h anywhere in the arguments
+for arg in "$@"; do
+    if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
+        print_help
+    fi
+done
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -140,26 +230,77 @@ while [[ $# -gt 0 ]]; do
         NETWORK="$2"
         shift 2
         ;;
+    -e | --environment)
+        ENVIRONMENT="$2"
+        shift 2
+        ;;
     -d | --disqualified_endpoints)
         QUERY_DISQUALIFIED=true
         shift
         ;;
+    -p | --portal_app_id)
+        PORTAL_APP_ID="$2"
+        shift 2
+        ;;
+    -k | --api_key)
+        API_KEY="$2"
+        shift 2
+        ;;
+    -h | --help)
+        print_help
+        ;;
     *)
+        print_help
         echo "Error: Unknown argument '$1'"
-        usage
+        exit 1
         ;;
     esac
 done
 
 # Check if network was provided and valid
 if [ -z "$NETWORK" ]; then
-    echo "Error: --network flag is required"
     usage
+    echo "Error: --network flag is required"
 fi
 
 if [[ "$NETWORK" != "beta" && "$NETWORK" != "mainnet" ]]; then
-    echo "Error: --network must be either 'beta' or 'mainnet'"
     usage
+    echo "Error: --network must be either 'beta' or 'mainnet'"
+fi
+
+# Check if environment was provided and valid
+if [ -z "$ENVIRONMENT" ]; then
+    echo "Error: --environment flag is required"
+    usage
+fi
+
+if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
+    echo "Error: --environment must be either 'local' or 'production'"
+    usage
+fi
+
+# Check if production-specific parameters are provided when needed
+if [ "$ENVIRONMENT" = "production" ]; then
+    if [ -z "$PORTAL_APP_ID" ]; then
+        echo "Error: --portal_app_id is required when environment is production"
+        usage
+    fi
+
+    if [ -z "$API_KEY" ]; then
+        echo "Error: --api_key is required when environment is production"
+        usage
+    fi
+fi
+
+# Configure URLs and headers based on environment
+if [ "$ENVIRONMENT" = "local" ]; then
+    BASE_PATH_URL="http://localhost:3069/v1"
+    BASE_DISQUALIFIED_URL="http://localhost:3069/disqualified_endpoints"
+    USE_SUBDOMAIN=false
+elif [ "$ENVIRONMENT" = "production" ]; then
+    BASE_PATH_URL="https://rpc.grove.city/v1"
+    BASE_DISQUALIFIED_URL="https://rpc.grove.city/disqualified_endpoints"
+    USE_SUBDOMAIN=true
 fi
 
 # Set node flag based on network
@@ -171,21 +312,25 @@ fi
 
 # Check if PATH service is running via health endpoint
 echo ""
-echo "ðŸ¥ Checking if PATH service is running..."
-health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
+if [ "$ENVIRONMENT" = "local" ]; then
+    echo "🏥 Checking if PATH service is running..."
+    health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
 
-if [ "$health_response" != "200" ]; then
-    echo ""
-    echo "âŒ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
-    echo ""
-    echo "âš ï¸ IMPORTANT: Ensure you are running PATH locally before proceeding."
-    echo "    ðŸ‘€ See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
-    echo ""
-    echo "ðŸšª Exiting without testing services."
-    exit 1
+    if [ "$health_response" != "200" ]; then
+        echo ""
+        echo "❌ ERROR: PATH service is not running or not healthy (HTTP $health_response)"
+        echo ""
+        echo "⚠️ IMPORTANT: Ensure you are running PATH locally before proceeding."
+        echo "    👀 See instructions here: https://www.notion.so/buildwithgrove/PATH-on-Shannon-Load-Tests-200a36edfff6805296c9ce10f2066de6?source=copy_link#205a36edfff68087b27dd086a28f21e9"
+        echo ""
+        echo "🚪 Exiting without testing services."
+        exit 1
+    fi
+
+    echo "✅ PATH service is healthy - proceeding with service tests"
+else
+    echo "🌍 Using production environment - skipping local health check"
 fi
-
-echo "âœ… PATH service is healthy - proceeding with service tests"
 echo ""
 
 # Initialize temporary files for storing results
@@ -200,10 +345,11 @@ declare -a services_with_suppliers
 echo "=== SUPPLIER COUNT REPORT ==="
 echo "Generated: $(date)"
 echo "Network: $NETWORK"
+echo "Environment: $ENVIRONMENT"
 if [ "$QUERY_DISQUALIFIED" = true ]; then
-    echo "Mode: Including disqualified endpoints analysis ðŸ“Š"
+    echo "Mode: Including disqualified endpoints analysis 📊"
 else
-    echo "Mode: Basic supplier count and testing only ðŸ“ˆ"
+    echo "Mode: Basic supplier count and testing only 📈"
 fi
 echo "=============================="
 echo ""
@@ -215,7 +361,7 @@ for service in "${SERVICES[@]}"; do
         continue
     fi
 
-    echo "ðŸ” Querying service: $service..."
+    echo "🔍 Querying service: $service..."
 
     # Run the command and capture output
     output=$(pocketd q supplier list-suppliers --service-id "$service" $NODE_FLAG 2>/dev/null)
@@ -226,7 +372,7 @@ for service in "${SERVICES[@]}"; do
 
         if [[ "$total" =~ ^[0-9]+$ ]]; then
             echo "$service:$total" >>"$RESULTS_FILE"
-            echo "  âœ… Found $total suppliers"
+            echo "  ✅ Found $total suppliers"
 
             # Only add to array if suppliers were found
             if [ "$total" -gt 0 ]; then
@@ -234,11 +380,11 @@ for service in "${SERVICES[@]}"; do
             fi
         else
             echo "$service:ERROR" >>"$RESULTS_FILE"
-            echo "  ðŸš« Found 0 suppliers for $service, skipping..."
+            echo "  🚫 Found 0 suppliers for $service, skipping..."
         fi
     else
         echo "$service:FAILED" >>"$RESULTS_FILE"
-        echo "  ðŸ’¥ Command failed"
+        echo "  💥 Command failed"
     fi
 
 done
@@ -247,7 +393,7 @@ done
 if [ ${#services_with_suppliers[@]} -gt 0 ]; then
     echo ""
     echo "=============================="
-    echo "ðŸ‘¥ SERVICES WITH SUPPLIERS:"
+    echo "👥 SERVICES WITH SUPPLIERS:"
     echo "=============================="
     printf "%-20s | %s\n" "SERVICE ID" "SUPPLIERS"
     printf "%-20s-+-%s\n" "--------------------" "----------"
@@ -260,7 +406,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
     echo "=============================="
 
     echo "=============================="
-    echo "ðŸ§ª TESTING SERVICES..."
+    echo "🧪 TESTING SERVICES..."
     echo "=============================="
 
     # Initialize JSON report structure with three categories
@@ -271,7 +417,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
 
     for item in "${services_with_suppliers[@]}"; do
         IFS=':' read -r service count <<<"$item"
-        echo "ðŸš€ Testing $service..."
+        echo "🚀 Testing $service..."
 
         # Execute 5 curl requests and require ALL to succeed
         request_count=0
@@ -283,32 +429,43 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
 
         while [ $request_count -lt $max_requests ]; do
             request_count=$((request_count + 1))
-            echo "    ðŸ“¡ Request $request_count/$max_requests..."
+            echo "    📡 Request $request_count/$max_requests..."
 
-            curl_result=$(curl -s "$PATH_URL" \
-                -H "$TARGET_SERVICE_HEADER: $service" \
-                -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            # Construct URL and headers based on environment
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                service_url="https://${service}.rpc.grove.city/v1"
+                curl_result=$(curl -s "$service_url" \
+                    -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                    -H "Authorization: $API_KEY" \
+                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            else
+                # Local: use header format
+                curl_result=$(curl -s "$BASE_PATH_URL" \
+                    -H "$TARGET_SERVICE_HEADER: $service" \
+                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+            fi
 
             # Check if curl was successful and returned valid JSON
             if [ $? -eq 0 ] && echo "$curl_result" | jq -e . >/dev/null 2>&1; then
                 # Check if response contains an error field
                 if echo "$curl_result" | jq -e '.error' >/dev/null 2>&1; then
-                    echo "      âŒ Failed (JSON-RPC error)"
+                    echo "      ❌ Failed (JSON-RPC error)"
                     failed_requests=$((failed_requests + 1))
                     # Collect error response
                     error_response=$(echo "$curl_result" | jq -c '.error')
                     error_responses+=("$error_response")
-                    # Collect detailed error for JSON report
-                    error_message=$(echo "$curl_result" | jq -r '.error.message // ""')
-                    endpoint_response=$(echo "$curl_result" | jq -r '.error.data.endpoint_response // ""')
-                    unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""')
+                    # Collect detailed error for JSON report - with safe parsing
+                    error_message=$(echo "$curl_result" | jq -r '.error.message // .error // "Unknown error"' 2>/dev/null || echo "Parse error")
+                    endpoint_response=$(echo "$curl_result" | jq -r '.error.data.endpoint_response // ""' 2>/dev/null || echo "")
+                    unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
                     detailed_errors+=("{\"error_message\":\"$error_message\",\"endpoint_response\":\"$endpoint_response\",\"unmarshaling_error\":\"$unmarshaling_error\"}")
                 else
-                    echo "      âœ… Success"
+                    echo "      ✅ Success"
                     successful_requests=$((successful_requests + 1))
                 fi
             else
-                echo "      âŒ Failed (connection/invalid JSON)"
+                echo "      ❌ Failed (connection/invalid JSON)"
                 failed_requests=$((failed_requests + 1))
                 # Create error object for connection/JSON parsing failures
                 error_response='{"code":-32700,"message":"Connection error or invalid JSON response"}'
@@ -322,34 +479,49 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
             fi
         done
 
-        # Determine overall result - ALL requests must succeed
+        # Determine overall result - ANY request success counts as pass
         if [ $successful_requests -eq $max_requests ]; then
-            echo "  ðŸŽ‰ SUCCESS ($successful_requests/$max_requests requests succeeded)"
-            test_result="âœ…"
+            echo "  🟢 ALL PASSED ($successful_requests/$max_requests requests succeeded)"
+            test_result="🟢"
+            overall_status="success"
+        elif [ $successful_requests -gt 0 ]; then
+            echo "  🟡 PARTIAL SUCCESS ($successful_requests/$max_requests requests succeeded)"
+            test_result="🟡"
             overall_status="success"
         else
-            echo "  ðŸ’” FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
-            test_result="âŒ"
+            echo "  💔 ALL FAILED ($successful_requests/$max_requests requests succeeded, $failed_requests failed)"
+            test_result="💔"
             overall_status="failed"
         fi
 
         # If disqualified endpoints flag is set, query disqualified endpoints
         disqualified_response=""
         if [ "$QUERY_DISQUALIFIED" = true ]; then
-            echo "    ðŸ“Š Querying disqualified endpoints for $service..."
-            disqualified_response=$(curl -s "$DISQUALIFIED_API_URL" -H "Target-Service-Id: $service" 2>/dev/null)
+            echo "    📊 Querying disqualified endpoints for $service..."
+
+            # Construct URL and headers based on environment
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                disqualified_url="https://${service}.rpc.grove.city/disqualified_endpoints"
+                disqualified_response=$(curl -s "$disqualified_url" \
+                    -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                    -H "Authorization: $API_KEY" 2>/dev/null)
+            else
+                # Local: use header format
+                disqualified_response=$(curl -s "$BASE_DISQUALIFIED_URL" -H "Target-Service-Id: $service" 2>/dev/null)
+            fi
             curl_exit_code=$?
 
             if [ $curl_exit_code -eq 0 ] && [ -n "$disqualified_response" ]; then
                 # Check if response is valid JSON
                 if echo "$disqualified_response" | jq empty 2>/dev/null; then
-                    echo "    âœ… Successfully retrieved disqualified endpoints data"
+                    echo "    ✅ Successfully retrieved disqualified endpoints data"
                 else
-                    echo "    âŒ Invalid JSON from disqualified endpoints"
+                    echo "    ❌ Invalid JSON from disqualified endpoints"
                     disqualified_response=""
                 fi
             else
-                echo "    ðŸ’¥ Disqualified endpoints call failed"
+                echo "    💥 Disqualified endpoints call failed"
                 disqualified_response=""
             fi
         fi
@@ -473,12 +645,12 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
 
     echo ""
     echo "=============================="
-    echo "ðŸ“‹ FINAL REPORT"
+    echo "📋 FINAL REPORT"
     echo "=============================="
-    echo "ðŸ’¾ Report saved to: $JSON_REPORT_FILE"
+    echo "💾 Report saved to: $JSON_REPORT_FILE"
 
     if [ "$QUERY_DISQUALIFIED" = true ]; then
-        echo "ðŸ“Š Report includes disqualified endpoints data for each service"
+        echo "📊 Report includes disqualified endpoints data for each service"
     fi
 
     echo ""
@@ -495,7 +667,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
     echo "=============================="
 else
     echo ""
-    echo "ðŸš« No services with suppliers found. Skipping tests."
+    echo "🚫 No services with suppliers found. Skipping tests."
 
     # Add all services to no_suppliers since none have suppliers
     no_suppliers_json="[]"
@@ -527,5 +699,5 @@ else
             summary: $summary
         }' >"$JSON_REPORT_FILE"
 
-    echo "ðŸ’¾ Empty report saved to: $JSON_REPORT_FILE"
+    echo "💾 Empty report saved to: $JSON_REPORT_FILE"
 fi
