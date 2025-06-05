@@ -1,6 +1,6 @@
 // Package gateway implements components for operating a gateway service.
 //
-// Protocols (Morse, Shannon):
+// Protocol (Shannon):
 // - Provide available endpoints for a service
 // - Send relays to specific endpoints
 //

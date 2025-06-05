@@ -4,7 +4,6 @@ package protocol
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/metrics/protocol/morse"
 	"github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation/protocol"
 )
@@ -17,12 +16,6 @@ func PublishMetrics(
 	hydratedLogger := logger.With("method", "PublishMetrics")
 	if protocolObservations == nil {
 		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: received nil set of Protocol observations.")
-		return
-	}
-
-	// Publish Morse metrics.
-	if morseObservations := protocolObservations.GetMorse(); morseObservations != nil {
-		morse.PublishMetrics(morseObservations)
 		return
 	}
 

@@ -310,7 +310,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 // HandleWebsocketRequest handles a websocket request.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
-	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err

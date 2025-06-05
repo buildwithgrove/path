@@ -48,7 +48,7 @@ func (s sanction) toSanctionDetails(
 	endpointURL string,
 	appAddr string,
 	sessionID string,
-	sanctionType protocolobservations.MorseSanctionType,
+	sanctionType protocolobservations.ShannonSanctionType,
 ) devtools.SanctionedEndpoint {
 	return devtools.SanctionedEndpoint{
 		SupplierAddress: supplierAddress,
@@ -57,8 +57,8 @@ func (s sanction) toSanctionDetails(
 		SessionID:       sessionID,
 		ServiceID:       protocol.ServiceID(s.sessionServiceID),
 		Reason:          s.reason,
-		SanctionType:    protocolobservations.MorseSanctionType_name[int32(sanctionType)],
-		ErrorType:       protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
+		SanctionType:    protocolobservations.ShannonSanctionType_name[int32(sanctionType)],
+		ErrorType:       protocolobservations.ShannonEndpointErrorType_name[int32(s.errorType)],
 		SessionHeight:   s.sessionStartHeight,
 		CreatedAt:       s.createdAt,
 	}

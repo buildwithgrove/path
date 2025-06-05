@@ -218,7 +218,7 @@ feature unless you are customizing QoS modules yourself.
 
 For more information, see:
 
-- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [PATH Configuration File](./4_configurations_path.md#hydrator_config-optional)
 - [Supported QoS Services](../../learn/qos/1_supported_services.md)
 
 :::tip

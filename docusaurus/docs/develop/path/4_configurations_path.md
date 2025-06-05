@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 title: PATH Config File (`.config.yaml`)
 description: PATH Configurations
 ---
@@ -10,8 +10,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅        | PATH **gateway** configurations               |
+| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
 
 :::
 
@@ -20,7 +20,6 @@ A `PATH` stack is configured via two files:
 - [Config File Validation](#config-file-validation)
 - [Config File Location (Local Development)](#config-file-location-local-development)
 - [`shannon_config` (required)](#shannon_config-required)
-- [`morse_config` (required)](#morse_config-required)
 - [`hydrator_config` (optional)](#hydrator_config-optional)
   - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
@@ -29,7 +28,7 @@ A `PATH` stack is configured via two files:
 
 All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
 
-Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This field determines the protocol that the gateway will use.
+`shannon_config` **MUST** be provided. This field configures the protocol that the gateway will use.
 
 <details>
 
@@ -50,33 +49,6 @@ shannon_config:
     gateway_private_key_hex: 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
     owned_apps_private_keys_hex:
       - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
-
-# (Optional) Logger Configuration
-logger_config:
-  level: "info" # Valid values: debug, info, warn, error
-```
-
-</details>
-
-<details>
-
-<summary>Example **Morse** Config (click to expand)</summary>
-
-```yaml
-# (Required) Morse Protocol Configuration
-morse_config:
-  full_node_config:
-    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
-    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
-    http_config: # Optional
-      retries: 3 # Default: 3
-      timeout: "5000ms" # Default: "5000ms"
-
-  signed_aats: # Required
-    "<40-char-app-address>": # Application address (hex)
-      client_public_key: "<64-char-hex>" # Client public key
-      application_public_key: "<64-char-hex>" # Application public key
-      application_signature: "<128-char-hex>" # Application signature
 
 # (Optional) Logger Configuration
 logger_config:
@@ -107,10 +79,7 @@ In development mode, the config file must be located at:
 
 ## Protocol Selection <!-- omit in toc -->
 
-The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
-
-- `morse_config`
-- `shannon_config`
+The config file **MUST** contain `shannon_config`.
 
 ---
 
@@ -184,50 +153,6 @@ shannon_config:
 
 ---
 
-## `morse_config` (required)
-
-Configuration for the Morse protocol gateway.
-
-```yaml
-morse_config:
-  full_node_config:
-    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
-    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
-    http_config: # Optional
-      retries: 3 # Default: 3
-      timeout: "5000ms" # Default: "5000ms"
-
-  signed_aats: # Required
-    "<40-char-app-address>": # Application address (hex)
-      client_public_key: "<64-char-hex>" # Client public key
-      application_public_key: "<64-char-hex>" # Application public key
-      application_signature: "<128-char-hex>" # Application signature
-```
-
-**`full_node_config`**
-
-| Field               | Type   | Required | Default | Description                                              |
-| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
-| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
-| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
-
-**`full_node_config.http_config`**
-
-| Field     | Type    | Required | Default  | Description                           |
-| --------- | ------- | -------- | -------- | ------------------------------------- |
-| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
-| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
-
-**`signed_aats`**
-
-| Field                    | Type   | Required | Default | Description                                     |
-| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
-| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
-| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
-| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
-
----
-
 ## `hydrator_config` (optional)
 
 :::info
@@ -236,18 +161,18 @@ For a full list of supported QoS service implementations, refer to the [QoS Docu
 
 :::
 
-Configures the QoS hydrator. By default, all services configured in the `shannon_config` or `morse_config` sections will have QoS checks run against them.
+Configures the QoS hydrator. By default, all services configured in the `shannon_config` section will have QoS checks run against them.
 
 ### Manually Disable QoS Checks for a Service
 
 To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
 
-For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
+For example, to disable QoS checks for the Ethereum service on a Shannon PATH instance, the following configuration would be added to the `.config.yaml` file:
 
 ```yaml
 hydrator_config:
   qos_disabled_service_ids:
-    - "F00C"
+    - "eth"
 ```
 
 | Field                        | Type          | Required | Default   | Description                                                                                                                                                 |
@@ -299,10 +224,10 @@ data_reporter_config:
   post_timeout_ms: 5000
 ```
 
-| Field            | Type    | Required | Default | Description                                                                                         |
-| ---------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
-| `target_url`     | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)                 |
-| `post_timeout_ms`| integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used   |
+| Field             | Type    | Required | Default | Description                                                                                       |
+| ----------------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `target_url`      | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)               |
+| `post_timeout_ms` | integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used |
 
 :::info
 Currently, only JSON-accepting data pipelines are supported as of PR #215.

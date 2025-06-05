@@ -26,9 +26,7 @@ const (
 // -----------------------------------------------------------------------------
 // TestServices Struct - Configures the services to test against.
 //
-// Unmarshalled from the YAML files:
-//   - `config/services_morse.yaml`
-//   - `config/services_shannon.yaml`
+// Unmarshalled from the YAML file `config/services_shannon.yaml`
 // -----------------------------------------------------------------------------
 
 // DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`
@@ -143,9 +141,9 @@ func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 }
 
 // setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL.
-//   - https://rpc.grove.city/v1 → https://F00C.rpc.grove.city/v1
-//   - http://localhost:3091/v1 → http://F00C.localhost:3091/v1
-//   - https://api.example.com/path?query=param → https://F00C.api.example.com/path?query=param
+//   - https://rpc.grove.city/v1 → https://eth.rpc.grove.city/v1
+//   - http://localhost:3091/v1 → http://eth.localhost:3091/v1
+//   - https://api.example.com/path?query=param → https://eth.api.example.com/path?query=param
 //
 // TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 //   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91

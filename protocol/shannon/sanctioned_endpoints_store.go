@@ -321,6 +321,6 @@ func (ses *sanctionedEndpointsStore) processSanctionIntoDetailsMap(
 		sanctionKey.endpointURL,
 		sanctionKey.appAddr,
 		sanctionKey.sessionID,
-		protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION,
 	)
 }

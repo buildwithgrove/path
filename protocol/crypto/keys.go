@@ -1,4 +1,4 @@
-// package crypto contains all the cryptographic functionality required by Morse and Shannon.
+// package crypto contains all the cryptographic functionality required by Shannon.
 package crypto
 
 import (

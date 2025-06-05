@@ -37,9 +37,8 @@ sources without sacrificing enterprise-grade SLAs.
 If you're unsure of where to start, we recommend the following:
 
 1. [**Environment Setup**](2_environment.md): Prepare your environment for running PATH
-2. [**Configuration Files**](6_configurations_helm.md): Explore other PATH configuration files
+2. [**Configuration Files**](4_configurations_path.md): Explore other PATH configuration files
 3. [**Shannon Cheat Sheet**](3_cheatsheet_shannon.md): Get up and running with a Gateway to Shannon
-4. [**Morse Cheat Sheet**](4_cheatsheet_morse.md): Get up and running with a Gateway to Morse if you're feeling adventurous
 
 ## Special Thanks
 
@@ -52,8 +51,6 @@ However, after a week-long sprint, the team deemed that starting from scratch wa
 - Set a foundation to migrate Grove's quality of service and data pipelineta
 - Integrating with web2 standards like [Envoy](https://www.envoyproxy.io/), [gRPC](https://grpc.io/), [Stripe](https://stripe.com/), [NATS](https://nats.io/), [Auth0](https://auth0.com/), etc...
 - Etc...
-
-<!-- TODO(@olshansk): Move over the docs from [gateway-server](https://github.com/pokt-network/gateway-server) to a Morse section under [path.grove.city](https://path.grove.city) -->
 
 ---
 

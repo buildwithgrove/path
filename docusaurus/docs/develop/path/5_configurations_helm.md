@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 title: PATH Helm Config (`.values.yaml`)
 description: PATH Helm Configurations
 ---
@@ -16,8 +16,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅        | PATH **gateway** configurations               |
+| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
 
 :::
 
@@ -46,11 +46,9 @@ By default PATH is configured as follows:
 
 **Services:**
 
-| Protocol  | Service ID | Aliases                      |
-| --------- | ---------- | ---------------------------- |
-| `shannon` | `anvil`    | -                            |
-| `morse`   | `F00C`     | `eth`, `eth-mainnet`         |
-| `morse`   | `F021`     | `polygon`, `polygon-mainnet` |
+| Protocol  | Service ID | Aliases |
+| --------- | ---------- | ------- |
+| `shannon` | `eth`      | -       |
 
 **API Keys:**
 
@@ -127,31 +125,28 @@ guard:
         - test_api_key_2
         - test_api_key_3
   services:
-    - serviceId: F021
+    - serviceId: eth
+      aliases:
+        - ethereum
+    - serviceId: poly
       aliases:
         - polygon
-    - serviceId: F00C
-      aliases:
-        - eth
-    - serviceId: F000
-      aliases:
-        - pocket
 ```
 
 ### Example Requests
 
 The above `.values.yaml` files will allow the following requests to PATH.
 
-Request to the `polygon` service using the service ID using API key `test_api_key_1`:
+Request to the `poly` service using the service ID and API key `test_api_key_1`:
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: F021" \
+  -H "Target-Service-Id: poly" \
   -H "Authorization: test_api_key_1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-Request to the `polygon` service using the alias using API key `test_api_key_2`:
+Request to the `polygon` service using the alias and API key `test_api_key_2`:
 
 ```bash
 curl http://localhost:3070/v1 \
@@ -160,11 +155,11 @@ curl http://localhost:3070/v1 \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
 
-Request to the "eth" service using an alias using API key `test_api_key_3`:
+Request to the `eth` service using an alias and API key `test_api_key_3`:
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: eth" \
+  -H "Target-Service-Id: ethereum" \
   -H "Authorization: test_api_key_3" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```

@@ -49,7 +49,7 @@ type Protocol interface {
 
 	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
 	// Hypothetical example (for illustrative purposes only):
-	// 	- protocol: Morse
+	// 	- protocol: Shannon
 	// 	- observation: "endpoint maxed-out or over-serviced (i.e. onchain rate limiting)"
 	// 	- result: skip the endpoint for a set time period until a new session begins.
 	ApplyObservations(*protocolobservations.Observations) error
@@ -58,10 +58,6 @@ type Protocol interface {
 	// TODO_TECHDEBT: Enable the hydrator for gateway modes beyond Centralized only.
 	//
 	// ConfiguredServiceIDs returns the list of service IDs that the protocol instance is configured to serve.
-	// For Morse:
-	// 	- Returns the list of all service IDs with available configured AATs.
-	// For Shannon:
-	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
 
 	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
@@ -82,16 +78,13 @@ type Protocol interface {
 //  1. Listing the endpoints available for sending relays for a specific service.
 //  2. Send a relay to a specific endpoint and return its response.
 //
-// The first two implementations of this interface are (as of writing):
-//   - Morse: in the relayer/morse package, and
-//   - Shannon: in the relayer/shannon package.
+// The implementation of this interface is in the relayer/shannon package.
 type ProtocolRequestContext interface {
 	// HandleServiceRequest sends the supplied payload to the endpoint selected using the above SelectEndpoint method,
 	// and receives and verifies the response.
 	HandleServiceRequest(protocol.Payload) (protocol.Response, error)
 
 	// HandleWebsocketRequest handles a WebSocket connection request.
-	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
 	HandleWebsocketRequest(polylog.Logger, *http.Request, http.ResponseWriter) error
 
 	// GetObservations builds and returns the set of protocol-specific observations using the current context.
@@ -99,7 +92,7 @@ type ProtocolRequestContext interface {
 	// Hypothetical illustrative example.
 	//
 	// If the context is:
-	// 	- Protocol: Morse
+	// 	- Protocol: Shannon
 	//	- SelectedEndpoint: `endpoint_101`
 	//	- Event: HandleServiceRequest returned a "maxed-out endpoint" error
 	//
