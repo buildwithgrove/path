@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -119,6 +120,8 @@ var _ FullNode = &cachingFullNode{}
 //
 // Docs reference: https://github.com/viccon/sturdyc
 type cachingFullNode struct {
+	logger polylog.Logger
+
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
 	lazyFullNode *lazyFullNode
@@ -129,7 +132,7 @@ type cachingFullNode struct {
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
-func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
+func NewCachingFullNode(logger polylog.Logger, lazyFullNode *lazyFullNode) *cachingFullNode {
 	// Configure app cache with early refreshes
 	appCache := sturdyc.New[*apptypes.Application](
 		cacheCapacity,
@@ -161,6 +164,7 @@ func NewCachingFullNode(lazyFullNode *lazyFullNode) *cachingFullNode {
 	)
 
 	return &cachingFullNode{
+		logger:       logger,
 		lazyFullNode: lazyFullNode,
 		appCache:     appCache,
 		sessionCache: sessionCache,
@@ -175,6 +179,7 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 		ctx,
 		getAppCacheKey(appAddr),
 		func(fetchCtx context.Context) (*apptypes.Application, error) {
+			cfn.logger.Debug().Msgf("cachingFullNode: Making request to lazy full node for app %s", appAddr)
 			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
 		},
 	)
@@ -200,6 +205,7 @@ func (cfn *cachingFullNode) GetSession(
 		ctx,
 		getSessionCacheKey(serviceID, appAddr),
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			cfn.logger.Debug().Msgf("cachingFullNode: Making request to lazy full node for session %s", getSessionCacheKey(serviceID, appAddr))
 			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
 	)

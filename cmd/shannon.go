@@ -11,7 +11,7 @@ import (
 )
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
-func getShannonFullNode(config shannon.FullNodeConfig) (shannon.FullNode, error) {
+func getShannonFullNode(logger polylog.Logger, config shannon.FullNodeConfig) (shannon.FullNode, error) {
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
 	lazyFullNode, err := shannon.NewLazyFullNode(config)
@@ -23,14 +23,14 @@ func getShannonFullNode(config shannon.FullNodeConfig) (shannon.FullNode, error)
 		return lazyFullNode, nil
 	}
 
-	return shannon.NewCachingFullNode(lazyFullNode), nil
+	return shannon.NewCachingFullNode(logger, lazyFullNode), nil
 }
 
 // getShannonProtocol returns an instance of the Shannon protocol using the supplied Shannon-specific configuration.
 func getShannonProtocol(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (gateway.Protocol, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	fullNode, err := getShannonFullNode(config.FullNodeConfig)
+	fullNode, err := getShannonFullNode(logger, config.FullNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a Shannon full node instance: %v", err)
 	}
