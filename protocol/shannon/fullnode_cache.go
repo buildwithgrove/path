@@ -92,8 +92,7 @@ var _ FullNode = &cachingFullNode{}
 // Background refreshes happen before entries expire, so GetApp/GetSession never block.
 //
 // Example times (values may change):
-//   - Apps: 5min TTL, refresh at 4-4.5min (80-90% of TTL)
-//   - Sessions: 30sec TTL, refresh at 20-25sec (67-83% of TTL)
+//   - 5min TTL, refresh at 3-4.5min (60-90% of TTL)
 //
 // Benefits: Zero-latency reads for active traffic, thundering herd protection,
 // automatic load balancing, and graceful degradation.
