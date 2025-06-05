@@ -61,12 +61,12 @@ const (
 // BEFORE the cached entry expires. This prevents cache misses and eliminates latency
 // spikes by ensuring hot data is always available immediately.
 //
-// Cache refresh timing is 60-90% of TTL (e.g. 3-4.5 minutes for 5-minute TTL).
-// This spread is to avoid thundering herd on the full node.
+// Cache refresh timing is 30-90% of TTL (e.g. 1.2-3.6 minutes for 4-minute TTL).
+// This spread is to avoid overloading the full node with too many simultaneous requests.
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
-	minFloat := float64(ttl) * 0.6
+	minFloat := float64(ttl) * 0.3
 	maxFloat := float64(ttl) * 0.9
 
 	// Round to the nearest second
@@ -92,7 +92,7 @@ var _ FullNode = &cachingFullNode{}
 // Background refreshes happen before entries expire, so GetApp/GetSession never block.
 //
 // Example times (values may change):
-//   - 5min TTL, refresh at 3-4.5min (60-90% of TTL)
+//   - 4min TTL, refresh at 1.2-3.6min (30-90% of TTL)
 //
 // Benefits: Zero-latency reads for active traffic, thundering herd protection,
 // automatic load balancing, and graceful degradation.

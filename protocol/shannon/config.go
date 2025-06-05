@@ -142,8 +142,10 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 }
 
 const (
-	defaultAppCacheTTL     = 5 * time.Minute
-	defaultSessionCacheTTL = 5 * time.Minute
+	// App do not expire, so we can cache them for a long time.
+	defaultAppCacheTTL = 12 * time.Minute
+	// Session TTL should match the protocol's session length.
+	defaultSessionCacheTTL = 4 * time.Minute
 )
 
 func (c *CacheConfig) validate(lazyMode bool) error {
