@@ -478,6 +478,14 @@ services:
       transaction_hash: "0xc65cff6db22a350d39d9154be650cd10bd0ca1c143402c51b3c7802f702328b0"
       call_data: "0x18160ddd"
 
+  # ------------- Anvil Services -------------
+
+  # Shannon - Anvil Local Development
+  - name: "Shannon - anvil (Anvil Local Development) Test"
+    service_id: "anvil"
+    service_type: "anvil"
+    # Note: Anvil services don't require service_params since all test methods use empty parameters
+
   # ------------- Solana Services -------------
 
   # Shannon - Solana
