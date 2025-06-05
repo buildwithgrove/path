@@ -23,7 +23,7 @@ func getShannonFullNode(logger polylog.Logger, config shannon.FullNodeConfig) (s
 		return lazyFullNode, nil
 	}
 
-	return shannon.NewCachingFullNode(logger, lazyFullNode), nil
+	return shannon.NewCachingFullNode(logger, lazyFullNode, config.CacheConfig), nil
 }
 
 // getShannonProtocol returns an instance of the Shannon protocol using the supplied Shannon-specific configuration.

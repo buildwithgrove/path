@@ -39,6 +39,9 @@ type (
 		// LazyMode, if set to true, will disable all caching of onchain data. For
 		// example, this disables caching of apps and sessions.
 		LazyMode bool `yaml:"lazy_mode" default:"true"`
+
+		// Configuration options for the cache when LazyMode is false
+		CacheConfig CacheConfig `yaml:"cache_config"`
 	}
 
 	GatewayConfig struct {
@@ -57,6 +60,11 @@ type (
 		MinConnectTimeout time.Duration `yaml:"min_connect_timeout"`
 		KeepAliveTime     time.Duration `yaml:"keep_alive_time"`
 		KeepAliveTimeout  time.Duration `yaml:"keep_alive_timeout"`
+	}
+
+	CacheConfig struct {
+		AppTTL     time.Duration `yaml:"app_ttl"`
+		SessionTTL time.Duration `yaml:"session_ttl"`
 	}
 )
 
@@ -95,6 +103,9 @@ func (c FullNodeConfig) Validate() error {
 	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
+	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,6 +138,27 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 		c.KeepAliveTimeout = defaultKeepAliveTimeout
 	}
 	return *c
+}
+
+const (
+	defaultAppCacheTTL     = 5 * time.Minute
+	defaultSessionCacheTTL = 5 * time.Minute
+)
+
+func (c *CacheConfig) validate(lazyMode bool) error {
+	if lazyMode && (c.AppTTL != 0 || c.SessionTTL != 0) {
+		return ErrShannonCacheConfigSetForLazyMode
+	}
+	return nil
+}
+
+func (c *CacheConfig) hydrateDefaults() {
+	if c.AppTTL == 0 {
+		c.AppTTL = defaultAppCacheTTL
+	}
+	if c.SessionTTL == 0 {
+		c.SessionTTL = defaultSessionCacheTTL
+	}
 }
 
 // isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
