@@ -26,6 +26,9 @@ import (
 //
 // - 3. Add more documentation around lazy mode
 
+// TODO_IN_THIS_PR: make this configurable in YAML with default value of 30 seconds
+const blockLength = 30 * time.Second
+
 // ---------------- Cache Configuration ----------------
 const (
 	// Retry base delay for exponential backoff on failed refreshes
@@ -103,7 +106,7 @@ type cachingFullNode struct {
 
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
-	lazyFullNode *lazyFullNode
+	lazyFullNode *LazyFullNode
 
 	// Applications can be cached indefinitely. They're invalidated only when they unstake.
 	//
@@ -120,27 +123,18 @@ type cachingFullNode struct {
 // NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
 func NewCachingFullNode(
 	logger polylog.Logger,
-	lazyFullNode *lazyFullNode,
+	lazyFullNode *LazyFullNode,
+	ownedAppAddrs []OwnedApp,
 	cacheConfig CacheConfig,
 ) *cachingFullNode {
 	// Set default TTLs if not set
 	cacheConfig.hydrateDefaults()
-
-	// Configure app cache with early refreshes
-	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
 
 	appCache := sturdyc.New[*apptypes.Application](
 		cacheCapacity,
 		numShards,
 		cacheConfig.AppTTL,
 		evictionPercentage,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-		sturdyc.WithEarlyRefreshes(
-			appMinRefreshDelay,
-			appMaxRefreshDelay,
-			cacheConfig.AppTTL,
-			retryBaseDelay,
-		),
 	)
 
 	// Configure session cache with early refreshes
@@ -171,17 +165,11 @@ func NewCachingFullNode(
 // GetApp returns the application with the given address, using a cached version if available.
 // The cache will automatically refresh the app in the background before it expires.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
-	return cfn.appCache.GetOrFetch(
-		ctx,
-		getAppCacheKey(appAddr),
-		func(fetchCtx context.Context) (*apptypes.Application, error) {
-			cfn.logger.Debug().Str("app_key", getAppCacheKey(appAddr)).Msgf(
-				"[cachingFullNode.GetApp] Making request to full node",
-			)
-			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
-		},
-	)
+	app, ok := cfn.appCache.Get(getAppCacheKey(appAddr))
+	if !ok {
+		return nil, fmt.Errorf("app not found in cache")
+	}
+	return app, nil
 }
 
 // getAppCacheKey returns the cache key for the given app address.
@@ -190,6 +178,11 @@ func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptyp
 // eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
 func getAppCacheKey(appAddr string) string {
 	return fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
+}
+
+type SessionQueryParams struct {
+	ServiceID protocol.ServiceID
+	AppAddr   string
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.

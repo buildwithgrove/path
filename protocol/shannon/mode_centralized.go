@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -11,11 +12,11 @@ import (
 )
 
 // ownedApp represents a single app owned by the gateway operator in Centralized Gateway Mode.
-type ownedApp struct {
+type OwnedApp struct {
 	// The address of the app. E.g. "pokt1..."
-	appAddr string
+	AppAddr string
 	// The service ID for which the app is staked. E.g. "anvil"
-	stakedServiceID protocol.ServiceID
+	StakedServiceID protocol.ServiceID
 }
 
 // Centralized Gateway Mode - Shannon Protocol Integration
@@ -28,15 +29,15 @@ type ownedApp struct {
 //
 // More details: https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680d4a0fff3a40dea543e
 //
-// getCentralizedModeOwnedApps:
+// GetCentralizedModeOwnedApps:
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
 //   - Populates `appAddr` and `stakedServiceID` for each app
-func (p *Protocol) getCentralizedModeOwnedApps(ownedAppsPrivateKeysHex []string) ([]ownedApp, error) {
-	logger := p.logger.With("method", "getCentralizedModeOwnedApps")
+func GetCentralizedModeOwnedApps(logger polylog.Logger, ownedAppsPrivateKeysHex []string, lazyFullNode *LazyFullNode) ([]OwnedApp, error) {
+	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
 
-	var ownedApps []ownedApp
+	var ownedApps []OwnedApp
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
 		// Retrieve the app's secp256k1 private key from the hex string.
 		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
@@ -53,7 +54,7 @@ func (p *Protocol) getCentralizedModeOwnedApps(ownedAppsPrivateKeysHex []string)
 		}
 
 		// Retrieve the app's onchain data.
-		app, err := p.FullNode.GetApp(context.Background(), appAddr)
+		app, err := lazyFullNode.GetApp(context.Background(), appAddr)
 		if err != nil {
 			logger.Error().Err(err).Msgf("error getting onchain data for app with address %s", appAddr)
 			return nil, err
@@ -74,9 +75,9 @@ func (p *Protocol) getCentralizedModeOwnedApps(ownedAppsPrivateKeysHex []string)
 		}
 
 		// Add the app to the list of owned apps.
-		ownedApps = append(ownedApps, ownedApp{
-			appAddr:         appAddr,
-			stakedServiceID: serviceID,
+		ownedApps = append(ownedApps, OwnedApp{
+			AppAddr:         appAddr,
+			StakedServiceID: serviceID,
 		})
 	}
 

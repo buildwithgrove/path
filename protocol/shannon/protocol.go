@@ -67,6 +67,7 @@ func NewProtocol(
 	logger polylog.Logger,
 	fullNode FullNode,
 	config GatewayConfig,
+	ownedApps []OwnedApp,
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
 
@@ -83,14 +84,10 @@ func NewProtocol(
 		gatewayMode:          config.GatewayMode,
 		// tracks sanctioned endpoints
 		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
-	}
 
-	if config.GatewayMode == protocol.GatewayModeCentralized {
-		ownedApps, err := protocolInstance.getCentralizedModeOwnedApps(config.OwnedAppsPrivateKeysHex)
-		if err != nil {
-			return nil, fmt.Errorf("NewProtocol: error getting the owned apps for Centralized gateway mode: %w", err)
-		}
-		protocolInstance.ownedApps = ownedApps
+		// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
+		// If PATH is not running in Centralized mode, this field is nil.
+		ownedApps: ownedApps,
 	}
 
 	return protocolInstance, nil
@@ -115,7 +112,7 @@ type Protocol struct {
 
 	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
 	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
-	ownedApps []ownedApp
+	ownedApps []OwnedApp
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
