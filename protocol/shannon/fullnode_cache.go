@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	accounttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/viccon/sturdyc"
-	grpcoptions "google.golang.org/grpc"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -56,10 +54,13 @@ const (
 	// SturdyC also runs background eviction jobs to remove expired entries automatically.
 	evictionPercentage = 10
 
-	// accountCacheTTL: TTL for the account cache.
-	// This is a long TTL because account data never changes;
-	// it could be cached indefinitely but SturdyC requires a TTL.
-	accountCacheTTL = 120 * time.Minute
+	// minEarlyRefreshPercentage: Minimum percentage of the TTL before the cache early refresh may start.
+	// For example, if the TTL is 4 minutes, the cache will start refreshing at 1.2 minutes.
+	minEarlyRefreshPercentage = 0.3
+
+	// maxEarlyRefreshPercentage: Maximum percentage of the TTL before the cache early refresh may start.
+	// For example, if the TTL is 4 minutes, the cache will start refreshing at 3.6 minutes.
+	maxEarlyRefreshPercentage = 0.9
 )
 
 // getCacheDelays gets the delays for the SturdyC Early Refresh Strategy.
@@ -72,9 +73,9 @@ const (
 // This spread is to avoid overloading the full node with too many simultaneous requests.
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-func getCacheDelays(minRefreshPercentage, maxRefreshPercentage float64, ttl time.Duration) (min, max time.Duration) {
-	minFloat := float64(ttl) * minRefreshPercentage
-	maxFloat := float64(ttl) * maxRefreshPercentage
+func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
+	minFloat := float64(ttl) * minEarlyRefreshPercentage
+	maxFloat := float64(ttl) * maxEarlyRefreshPercentage
 
 	// Round to the nearest second
 	min = time.Duration(minFloat/float64(time.Second)+0.5) * time.Second
@@ -134,7 +135,7 @@ func NewCachingFullNode(
 	// Set default TTLs if not set
 	cacheConfig.hydrateDefaults()
 	// Configure app cache with early refreshes
-	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(0.3, 0.9, cacheConfig.AppTTL)
+	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
 
 	// Create the app cache with early refreshes
 	appCache := sturdyc.New[*apptypes.Application](
@@ -152,7 +153,7 @@ func NewCachingFullNode(
 	)
 
 	// Configure session cache with early refreshes
-	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(0.3, 0.9, cacheConfig.SessionTTL)
+	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
 
 	// Create the session cache with early refreshes
 	sessionCache := sturdyc.New[sessiontypes.Session](
@@ -257,99 +258,4 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 //   - For now, always returns true because the cache is populated incrementally as new apps and sessions are requested.
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
-}
-
-// ---------------- Caching Account Fetcher ----------------
-
-// cachingPoktNodeAccountFetcher implements the PoktNodeAccountFetcher interface.
-var _ sdk.PoktNodeAccountFetcher = &cachingPoktNodeAccountFetcher{}
-
-// cachingPoktNodeAccountFetcher wraps an sdk.PoktNodeAccountFetcher with caching capabilities.
-// It implements the same PoktNodeAccountFetcher interface but adds sturdyc caching
-// in order to reduce repeated and unnecessary requests to the full node.
-type cachingPoktNodeAccountFetcher struct {
-	logger polylog.Logger
-
-	// The underlying account client to delegate to when cache misses occur
-	underlyingAccountClient sdk.PoktNodeAccountFetcher
-
-	// Cache for account responses
-	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse]
-}
-
-// Account implements the PoktNodeAccountFetcher interface with caching.
-//
-// It matches the function signature of the CosmosSDK's account fetcher
-// in order to satisfy the PoktNodeAccountFetcher interface.
-//
-// See CosmosSDK's account fetcher:
-// https://github.com/cosmos/cosmos-sdk/blob/main/x/auth/types/query.pb.go#L1090
-func (c *cachingPoktNodeAccountFetcher) Account(
-	ctx context.Context,
-	req *accounttypes.QueryAccountRequest,
-	opts ...grpcoptions.CallOption,
-) (*accounttypes.QueryAccountResponse, error) {
-	return c.accountCache.GetOrFetch(
-		ctx,
-		getAccountCacheKey(req.Address),
-		func(fetchCtx context.Context) (*accounttypes.QueryAccountResponse, error) {
-			c.logger.Debug().Str("account_key", getAccountCacheKey(req.Address)).Msgf(
-				"[cachingPoktNodeAccountFetcher.Account] Making request to full node",
-			)
-			return c.underlyingAccountClient.Account(fetchCtx, req, opts...)
-		},
-	)
-}
-
-// getAccountCacheKey returns the cache key for the given account address.
-// It uses the accountCacheKeyPrefix and the account address to create a unique key.
-//
-// eg. "account:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
-func getAccountCacheKey(address string) string {
-	return fmt.Sprintf("%s:%s", accountCacheKeyPrefix, address)
-}
-
-func initAccountCache() *sturdyc.Client[*accounttypes.QueryAccountResponse] {
-	// Configure account cache with early refreshes to avoid thundering herd.
-	accountMinRefreshDelay, accountMaxRefreshDelay := getCacheDelays(0.7, 0.9, accountCacheTTL)
-
-	// Create the account cache, which will be used to cache account responses.
-	accountCache := sturdyc.New[*accounttypes.QueryAccountResponse](
-		cacheCapacity,
-		numShards,
-		accountCacheTTL,
-		evictionPercentage,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-		sturdyc.WithEarlyRefreshes(
-			accountMinRefreshDelay,
-			accountMaxRefreshDelay,
-			accountCacheTTL,
-			retryBaseDelay,
-		),
-	)
-
-	return accountCache
-}
-
-// replaceLazyFullNodeAccountFetcher wraps the original account fetcher with the caching
-// account fetcher and replaces the lazy full node's account fetcher with the caching one.
-//
-// This is used to replace the lazy full node's account fetcher with the caching one.
-// It is used in the NewCachingFullNode function to create a new caching full node.
-func replaceLazyFullNodeAccountFetcher(
-	logger polylog.Logger,
-	lazyFullNode *lazyFullNode,
-	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse],
-) {
-	// Wrap the original account fetcher with the caching account fetcher
-	originalAccountFetcher := lazyFullNode.accountClient.PoktNodeAccountFetcher
-
-	// Replace the lazy full node's account fetcher with the caching one.
-	lazyFullNode.accountClient = &sdk.AccountClient{
-		PoktNodeAccountFetcher: &cachingPoktNodeAccountFetcher{
-			logger:                  logger,
-			underlyingAccountClient: originalAccountFetcher,
-			accountCache:            accountCache,
-		},
-	}
 }
