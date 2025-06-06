@@ -39,7 +39,7 @@ func init() {
 	var err error
 	cfg, err = loadE2ELoadTestConfig()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to load E2E config: %v", err))
+		panic(fmt.Sprintf("\n❌ Failed to load E2E config: %v", err))
 	}
 }
 
