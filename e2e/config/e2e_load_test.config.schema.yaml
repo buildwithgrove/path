@@ -82,9 +82,6 @@ properties:
           gateway_url_override:
             description: "Custom PATH gateway URL"
             type: string
-          use_service_subdomain:
-            description: "Whether to specify the service using the subdomain per-test case"
-            type: boolean
           portal_application_id:
             description: "Portal Application ID for the test"
             type: string
