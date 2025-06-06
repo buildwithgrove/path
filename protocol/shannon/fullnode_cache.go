@@ -57,8 +57,9 @@ const (
 	evictionPercentage = 10
 
 	// accountCacheTTL: TTL for the account cache.
-	// This is a long TTL because account data never changes;
-	// it could be cached indefinitely but SturdyC requires a TTL.
+	// This is a stupidly long TTL because account data never changes.
+	// It could theoretically be cached indefinitely but SturdyC requires a TTL.
+	// TODO_TECHDEBT: Re-evaluate if/how we cache this for the entirety of PATH's lifecycle.
 	accountCacheTTL = 120 * time.Minute
 )
 
