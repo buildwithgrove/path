@@ -18,9 +18,9 @@ import (
 // cachingPoktNodeAccountFetcher implements the PoktNodeAccountFetcher interface.
 var _ sdk.PoktNodeAccountFetcher = &cachingPoktNodeAccountFetcher{}
 
-// accountCacheTTL: TTL for the account cache.
-// This is effectively infinite caching since account data never changes.
-// time.Duration(math.MaxInt64) equals ~292 years.
+// accountCacheTTL: No TTL for the account cache since account data never changes.
+//
+// time.Duration(math.MaxInt64) equals ~292 years, which is effectively infinite.
 const accountCacheTTL = time.Duration(math.MaxInt64)
 
 // accountCacheCapacity: Maximum number of entries the account cache can hold.
@@ -28,7 +28,7 @@ const accountCacheTTL = time.Duration(math.MaxInt64)
 // will evict a percentage of the least recently used entries from each shard.
 //
 // TODO_TECHDEBT(@commoddity): Revisit cache capacity based on actual # of accounts in Shannon.
-const accountCacheCapacity = 1_000_000
+const accountCacheCapacity = 200_000
 
 // cachingPoktNodeAccountFetcher wraps an sdk.PoktNodeAccountFetcher with caching capabilities.
 // It implements the same PoktNodeAccountFetcher interface but adds sturdyc caching
@@ -43,13 +43,18 @@ type cachingPoktNodeAccountFetcher struct {
 	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse]
 }
 
-// Account implements the PoktNodeAccountFetcher interface with caching.
+// Account implements the `sdk.PoktNodeAccountFetcher` interface with caching.
+//
+// See `sdk.PoktNodeAccountFetcher` interface:
+//
+//	https://github.com/pokt-network/shannon-sdk/blob/main/account.go#L26
 //
 // It matches the function signature of the CosmosSDK's account fetcher
-// in order to satisfy the PoktNodeAccountFetcher interface.
+// in order to satisfy the `sdk.PoktNodeAccountFetcher` interface.
 //
 // See CosmosSDK's account fetcher:
-// https://github.com/cosmos/cosmos-sdk/blob/main/x/auth/types/query.pb.go#L1090
+//
+//	https://github.com/cosmos/cosmos-sdk/blob/main/x/auth/types/query.pb.go#L1090
 func (c *cachingPoktNodeAccountFetcher) Account(
 	ctx context.Context,
 	req *accounttypes.QueryAccountRequest,
@@ -75,6 +80,37 @@ func getAccountCacheKey(address string) string {
 	return fmt.Sprintf("%s:%s", accountCacheKeyPrefix, address)
 }
 
+// wrapUnderlyingAccountFetcher wraps the original account fetcher with the caching
+// account fetcher and replaces the lazy full node's account fetcher with the caching one.
+//
+// This is used to replace the lazy full node's account fetcher with the caching one.
+// It is used in the NewCachingFullNode function to create a new caching full node.
+func wrapUnderlyingAccountFetcher(
+	logger polylog.Logger,
+	lazyFullNode *lazyFullNode,
+) {
+	// Create the account cache, which is used to cache account responses from the full node.
+	accountCache := initAccountCache()
+
+	// Wrap the original account fetcher with the caching account fetcher
+	// so that the caching account fetcher can fetch accounts from the full node.
+	originalAccountFetcher := lazyFullNode.accountClient.PoktNodeAccountFetcher
+
+	// Replace the lazy full node's account fetcher with the caching one.
+	lazyFullNode.accountClient = &sdk.AccountClient{
+		PoktNodeAccountFetcher: &cachingPoktNodeAccountFetcher{
+			logger:                  logger,
+			underlyingAccountClient: originalAccountFetcher,
+			accountCache:            accountCache,
+		},
+	}
+}
+
+// initAccountCache initializes the account cache using SturdyC.
+//
+// Account data never changes, so we can cache it indefinitely.
+//
+// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#creating-a-cache-client
 func initAccountCache() *sturdyc.Client[*accounttypes.QueryAccountResponse] {
 	// Create the account cache, which will be used to cache account responses.
 	// This cache is effectively infinite caching for the lifetime of the application.
@@ -87,27 +123,4 @@ func initAccountCache() *sturdyc.Client[*accounttypes.QueryAccountResponse] {
 	)
 
 	return accountCache
-}
-
-// replaceLazyFullNodeAccountFetcher wraps the original account fetcher with the caching
-// account fetcher and replaces the lazy full node's account fetcher with the caching one.
-//
-// This is used to replace the lazy full node's account fetcher with the caching one.
-// It is used in the NewCachingFullNode function to create a new caching full node.
-func replaceLazyFullNodeAccountFetcher(
-	logger polylog.Logger,
-	lazyFullNode *lazyFullNode,
-	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse],
-) {
-	// Wrap the original account fetcher with the caching account fetcher
-	originalAccountFetcher := lazyFullNode.accountClient.PoktNodeAccountFetcher
-
-	// Replace the lazy full node's account fetcher with the caching one.
-	lazyFullNode.accountClient = &sdk.AccountClient{
-		PoktNodeAccountFetcher: &cachingPoktNodeAccountFetcher{
-			logger:                  logger,
-			underlyingAccountClient: originalAccountFetcher,
-			accountCache:            accountCache,
-		},
-	}
 }

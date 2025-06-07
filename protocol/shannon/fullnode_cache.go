@@ -170,13 +170,13 @@ func NewCachingFullNode(
 		),
 	)
 
-	// Create the account cache, which is used to cache account responses from the full node.
-	accountCache := initAccountCache()
+	// Wrap the lazy full node's account fetcher with a SturdyC caching layer.
+	//
+	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface, but
+	// with a caching layer, in order to avoid making unnecessary requests to the full node.
+	wrapUnderlyingAccountFetcher(logger, lazyFullNode)
 
-	// Wrap the original account fetcher with the caching account fetcher
-	// and replace the lazy full node's account fetcher with the caching one.
-	replaceLazyFullNodeAccountFetcher(logger, lazyFullNode, accountCache)
-
+	// Initialize the caching full node with the modified lazy full node
 	return &cachingFullNode{
 		logger:       logger,
 		lazyFullNode: lazyFullNode,
