@@ -139,8 +139,9 @@ func NewCachingFullNode(
 	lazyFullNode *lazyFullNode,
 	cacheConfig CacheConfig,
 ) (*cachingFullNode, error) {
-	// Set default TTLs if not set
+	// Set default app and session TTLs if not set
 	cacheConfig.hydrateDefaults()
+
 	// Configure app cache with early refreshes
 	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
 
