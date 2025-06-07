@@ -177,10 +177,11 @@ func NewCachingFullNode(
 		),
 	)
 
-	// Wrap the lazy full node's account fetcher with a SturdyC caching layer.
+	// Wrap the lazy full node's account fetcher with a SturdyC caching layer,
+	// then assign the wrapped account fetcher to the underlying lazy full node.
 	//
-	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface, but
-	// with a caching layer, in order to avoid making unnecessary requests to the full node.
+	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface,
+	// but with a caching layer to avoid unnecessary requests to the full node.
 	wrapUnderlyingAccountFetcher(logger, lazyFullNode)
 
 	// Initialize the caching full node with the modified lazy full node
