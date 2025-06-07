@@ -126,7 +126,14 @@ type cachingFullNode struct {
 	sessionCache *sturdyc.Client[sessiontypes.Session]
 }
 
-// NewCachingFullNode creates a new CachingFullNode that creates a LazyFullNode with caching account fetcher.
+// NewCachingFullNode creates a new CachingFullNode that wraps a LazyFullNode with caching layers.
+//
+// The caching layers are:
+//   - App cache: Gets apps from the cache or calls the lazyFullNode.GetApp()
+//   - Session cache: Gets sessions from the cache or calls the lazyFullNode.GetSession()
+//   - Account cache: Used in the `cachingPoktNodeAccountFetcher` to cache account data indefinitely.
+//
+// The caching layers are configured with early refreshes to prevent thundering herd and eliminate latency spikes.
 func NewCachingFullNode(
 	logger polylog.Logger,
 	lazyFullNode *lazyFullNode,
