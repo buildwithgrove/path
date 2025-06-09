@@ -1,5 +1,7 @@
 package shannon
 
+// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file based on the details in #291
+
 import (
 	"context"
 	"fmt"
