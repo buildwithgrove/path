@@ -53,6 +53,14 @@ const (
 	// without causing large memory spikes during eviction cycles.
 	// SturdyC also runs background eviction jobs to remove expired entries automatically.
 	evictionPercentage = 10
+
+	// minEarlyRefreshPercentage: Minimum percentage of the TTL before the cache early refresh may start.
+	// For example, if the TTL is 4 minutes, the cache will start refreshing at 1.2 minutes.
+	minEarlyRefreshPercentage = 0.3
+
+	// maxEarlyRefreshPercentage: Maximum percentage of the TTL before the cache early refresh may start.
+	// For example, if the TTL is 4 minutes, the cache will start refreshing at 3.6 minutes.
+	maxEarlyRefreshPercentage = 0.9
 )
 
 // getCacheDelays gets the delays for the SturdyC Early Refresh Strategy.
@@ -66,8 +74,8 @@ const (
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
 func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
-	minFloat := float64(ttl) * 0.3
-	maxFloat := float64(ttl) * 0.9
+	minFloat := float64(ttl) * minEarlyRefreshPercentage
+	maxFloat := float64(ttl) * maxEarlyRefreshPercentage
 
 	// Round to the nearest second
 	min = time.Duration(minFloat/float64(time.Second)+0.5) * time.Second
@@ -117,18 +125,26 @@ type cachingFullNode struct {
 	sessionCache *sturdyc.Client[sessiontypes.Session]
 }
 
-// NewCachingFullNode creates a new CachingFullNode that wraps the given LazyFullNode.
+// NewCachingFullNode creates a new CachingFullNode that wraps a LazyFullNode with caching layers.
+//
+// The caching layers are:
+//   - App cache: Gets apps from the cache or calls the lazyFullNode.GetApp()
+//   - Session cache: Gets sessions from the cache or calls the lazyFullNode.GetSession()
+//   - Account cache: Used in the `cachingPoktNodeAccountFetcher` to cache account data indefinitely.
+//
+// The caching layers are configured with early refreshes to prevent thundering herd and eliminate latency spikes.
 func NewCachingFullNode(
 	logger polylog.Logger,
 	lazyFullNode *lazyFullNode,
 	cacheConfig CacheConfig,
-) *cachingFullNode {
-	// Set default TTLs if not set
+) (*cachingFullNode, error) {
+	// Set default app and session TTLs if not set
 	cacheConfig.hydrateDefaults()
 
 	// Configure app cache with early refreshes
 	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
 
+	// Create the app cache with early refreshes
 	appCache := sturdyc.New[*apptypes.Application](
 		cacheCapacity,
 		numShards,
@@ -146,6 +162,7 @@ func NewCachingFullNode(
 	// Configure session cache with early refreshes
 	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
 
+	// Create the session cache with early refreshes
 	sessionCache := sturdyc.New[sessiontypes.Session](
 		cacheCapacity,
 		numShards,
@@ -160,12 +177,20 @@ func NewCachingFullNode(
 		),
 	)
 
+	// Wrap the lazy full node's account fetcher with a SturdyC caching layer,
+	// then assign the wrapped account fetcher to the underlying lazy full node.
+	//
+	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface,
+	// but with a caching layer to avoid unnecessary requests to the full node.
+	wrapUnderlyingAccountFetcher(logger, lazyFullNode)
+
+	// Initialize the caching full node with the modified lazy full node
 	return &cachingFullNode{
 		logger:       logger,
 		lazyFullNode: lazyFullNode,
 		appCache:     appCache,
 		sessionCache: sessionCache,
-	}
+	}, nil
 }
 
 // GetApp returns the application with the given address, using a cached version if available.
