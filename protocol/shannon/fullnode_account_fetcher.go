@@ -15,9 +15,6 @@ import (
 
 // ---------------- Caching Account Fetcher ----------------
 
-// cachingPoktNodeAccountFetcher implements the PoktNodeAccountFetcher interface.
-var _ sdk.PoktNodeAccountFetcher = &cachingPoktNodeAccountFetcher{}
-
 // accountCacheTTL: No TTL for the account cache since account data never changes.
 //
 // time.Duration(math.MaxInt64) equals ~292 years, which is effectively infinite.
@@ -29,6 +26,13 @@ const accountCacheTTL = time.Duration(math.MaxInt64)
 //
 // TODO_TECHDEBT(@commoddity): Revisit cache capacity based on actual # of accounts in Shannon.
 const accountCacheCapacity = 200_000
+
+// accountCacheKeyPrefix: The prefix for the account cache key.
+// It is used to namespace the account cache key.
+const accountCacheKeyPrefix = "account"
+
+// cachingPoktNodeAccountFetcher implements the PoktNodeAccountFetcher interface.
+var _ sdk.PoktNodeAccountFetcher = &cachingPoktNodeAccountFetcher{}
 
 // cachingPoktNodeAccountFetcher wraps an sdk.PoktNodeAccountFetcher with caching capabilities.
 // It implements the same PoktNodeAccountFetcher interface but adds sturdyc caching

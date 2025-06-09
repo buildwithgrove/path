@@ -88,7 +88,6 @@ func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
 const (
 	appCacheKeyPrefix     = "app"
 	sessionCacheKeyPrefix = "session"
-	accountCacheKeyPrefix = "account"
 )
 
 var _ FullNode = &cachingFullNode{}
