@@ -67,6 +67,8 @@ func NewProtocol(
 	logger polylog.Logger,
 	fullNode FullNode,
 	config GatewayConfig,
+	// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
+	// If PATH is not running in Centralized mode, this field is nil.
 	ownedApps []OwnedApp,
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")

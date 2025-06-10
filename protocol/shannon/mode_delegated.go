@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -67,6 +68,16 @@ func (p *Protocol) getDelegatedGatewayModeSession(
 	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
 
 	return []sessiontypes.Session{selectedSession}, nil
+}
+
+// appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
+func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Application) bool {
+	for _, svcCfg := range app.ServiceConfigs {
+		if protocol.ServiceID(svcCfg.ServiceId) == serviceID {
+			return true
+		}
+	}
+	return false
 }
 
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.

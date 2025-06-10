@@ -7,10 +7,12 @@ import (
 
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
+// It also returns the owned apps if the gateway mode is Centralized.
 func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, []shannon.OwnedApp, error) {
 	fullNodeConfig := config.FullNodeConfig
 
@@ -25,9 +27,13 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		return lazyFullNode, nil, nil
 	}
 
-	ownedApps, err := shannon.GetCentralizedModeOwnedApps(logger, config.GatewayConfig.OwnedAppsPrivateKeysHex, lazyFullNode)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get app addresses from config: %v", err)
+	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
+	var ownedApps []shannon.OwnedApp
+	if config.GatewayConfig.GatewayMode == protocol.GatewayModeCentralized {
+		ownedApps, err = shannon.GetCentralizedModeOwnedApps(logger, config.GatewayConfig.OwnedAppsPrivateKeysHex, lazyFullNode)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get app addresses from config: %v", err)
+		}
 	}
 
 	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, ownedApps, fullNodeConfig.CacheConfig)

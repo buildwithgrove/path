@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -91,16 +90,6 @@ func GetCentralizedModeOwnedApps(
 	return ownedApps, nil
 }
 
-// appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
-func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Application) bool {
-	for _, svcCfg := range app.ServiceConfigs {
-		if protocol.ServiceID(svcCfg.ServiceId) == serviceID {
-			return true
-		}
-	}
-	return false
-}
-
 // TODO_IMPROVE(@commoddity, @adshmh): This function currently loops through all apps owned by the gateway.
 // Without a caching FullNode, this results in extremely slow behaviour. We should look into improving the
 // efficiency of this lookup to get the list of apps owned by the gateway.
@@ -120,6 +109,7 @@ func (p *Protocol) getCentralizedGatewayModeSessions(
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
 	for _, ownedApp := range p.ownedApps {
+		// Skip the app if it is not staked for the requested service.
 		if ownedApp.StakedServiceID != serviceID {
 			continue
 		}
@@ -137,12 +127,6 @@ func (p *Protocol) getCentralizedGatewayModeSessions(
 		}
 
 		app := session.Application
-
-		// Skip the session's app if it is not staked for the requested service.
-		if !appIsStakedForService(serviceID, app) {
-			logger.Debug().Msgf("owned app %s is not staked for the service. Skipping.", ownedAppAddr)
-			continue
-		}
 
 		// Verify the app delegates to the gateway.
 		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
