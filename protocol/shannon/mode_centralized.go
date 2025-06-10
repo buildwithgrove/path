@@ -120,6 +120,10 @@ func (p *Protocol) getCentralizedGatewayModeSessions(
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
 	for _, ownedApp := range p.ownedApps {
+		if ownedApp.StakedServiceID != serviceID {
+			continue
+		}
+
 		ownedAppAddr := ownedApp.AppAddr
 
 		logger.Info().Msgf("checking app %s owned by the gateway", ownedAppAddr)

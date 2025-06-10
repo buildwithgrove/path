@@ -16,17 +16,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IMPROVE(@commoddity): Implement a FullNode interface that adapts caching strategy based on GatewayMode:
-// - 1. Centralized Mode:
-//   - List of owned apps is predefined.
-//   - Onchain data can be proactively cached before any user requests.
-//
-// - 2. Delegated Mode:
-//   - Apps are specified dynamically by incoming user requests.
-//   - Cache must be built incrementally (lazy-loading) as new apps are requested.
-//
-// - 3. Add more documentation around lazy mode
-
 // TODO_IN_THIS_PR: make this configurable in YAML with default value of 30 seconds
 const blockLength = 30 * time.Second
 
@@ -59,11 +48,12 @@ const (
 	evictionPercentage = 10
 
 	// minEarlyRefreshPercentage: Minimum percentage of the TTL before the cache early refresh may start.
-	// For example, if the TTL is 4 minutes, the cache will start refreshing at 1.2 minutes.
-	minEarlyRefreshPercentage = 0.3
+	// For a 30-second TTL, this means refresh can start at 22.5 seconds (75% of 30s).
+	minEarlyRefreshPercentage = 0.75
 
 	// maxEarlyRefreshPercentage: Maximum percentage of the TTL before the cache early refresh may start.
-	// For example, if the TTL is 4 minutes, the cache will start refreshing at 3.6 minutes.
+	// For a 30-second TTL, this means refresh will definitely start by 27 seconds (90% of 30s),
+	// giving a 3-second buffer before expiry to ensure items never exceed 30 seconds old.
 	maxEarlyRefreshPercentage = 0.9
 )
 
@@ -73,7 +63,7 @@ const (
 // BEFORE the cached entry expires. This prevents cache misses and eliminates latency
 // spikes by ensuring hot data is always available immediately.
 //
-// Cache refresh timing is 30-90% of TTL (e.g. 1.2-3.6 minutes for 4-minute TTL).
+// Cache refresh timing is 75-90% of TTL (e.g. 22.5-27 seconds for 30-second TTL).
 // This spread is to avoid overloading the full node with too many simultaneous requests.
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
@@ -89,10 +79,7 @@ func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
 
 // Use cache prefixes to avoid collisions with other cache keys.
 // This is a simple way to namespace the cache keys.
-const (
-	appCacheKeyPrefix     = "app"
-	sessionCacheKeyPrefix = "session"
-)
+const sessionCacheKeyPrefix = "session"
 
 var _ FullNode = &cachingFullNode{}
 
@@ -121,7 +108,7 @@ type cachingFullNode struct {
 	//
 	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking.
 	//   Revisit these values after mainnet migration to ensure no race conditions.
-	appCache *sturdyc.Client[*apptypes.Application]
+	// appCache *sturdyc.Client[*apptypes.Application]
 
 	// As of #275, on Beta TestNet, sessions are 5 minutes.
 	//
@@ -148,17 +135,6 @@ func NewCachingFullNode(
 ) (*cachingFullNode, error) {
 	// Set default app and session TTLs if not set
 	cacheConfig.hydrateDefaults()
-
-	// Configure app cache with early refreshes
-	// appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
-
-	// Create the app cache with early refreshes
-	appCache := sturdyc.New[*apptypes.Application](
-		cacheCapacity,
-		numShards,
-		cacheConfig.SessionTTL,
-		evictionPercentage,
-	)
 
 	// Configure session cache with early refreshes
 	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
@@ -192,7 +168,6 @@ func NewCachingFullNode(
 	return &cachingFullNode{
 		logger:       logger,
 		lazyFullNode: lazyFullNode,
-		appCache:     appCache,
 		sessionCache: sessionCache,
 		// Wrap the underlying account fetcher with a SturdyC caching layer.
 		cachingAccountClient: getCachingAccountClient(
@@ -203,22 +178,11 @@ func NewCachingFullNode(
 	}, nil
 }
 
-// GetApp returns the application with the given address, using a cached version if available.
-// The cache will automatically refresh the app in the background before it expires.
+// GetApp is a NoOp in the caching full node.
+// Apps are fetched on startup from the remote full node using the LazyFullNode.
+// During relaying, only sessions are fetched to ensure apps and sessions are always in sync.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	app, ok := cfn.appCache.Get(getAppCacheKey(appAddr))
-	if !ok {
-		return nil, fmt.Errorf("app not found in cache")
-	}
-	return app, nil
-}
-
-// getAppCacheKey returns the cache key for the given app address.
-// It uses the appCacheKeyPrefix and the app address to create a unique key.
-//
-// eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
-func getAppCacheKey(appAddr string) string {
-	return fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
+	return nil, fmt.Errorf("GetApp is a NoOp in the caching full node")
 }
 
 type SessionQueryParams struct {
@@ -241,15 +205,7 @@ func (cfn *cachingFullNode) GetSession(
 			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
 				"[cachingFullNode.GetSession] Making request to full node",
 			)
-
-			session, err := cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
-			if err != nil {
-				return sessiontypes.Session{}, err
-			}
-
-			cfn.appCache.Set(getAppCacheKey(appAddr), session.Application)
-
-			return session, nil
+			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
 		},
 	)
 }
