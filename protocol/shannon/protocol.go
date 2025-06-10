@@ -135,19 +135,19 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	permittedSessions, err := p.getGatewayModePermittedSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the permitted apps list for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
-	logger = logger.With("number_of_permitted_apps", len(permittedApps))
+	logger = logger.With("number_of_permitted_sessions", len(permittedSessions))
 	logger.Debug().Msg("fetched the set of permitted apps.")
 
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, permittedSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -185,7 +185,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	permittedSessions, err := p.getGatewayModePermittedSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("BuildRequestContextForEndpoint: error building the permitted apps list for service. Relay request will fail")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -194,7 +194,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, permittedSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -267,7 +267,7 @@ func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
 
 	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
 	for _, ownedApp := range p.ownedApps {
-		configuredServiceIDs[ownedApp.stakedServiceID] = struct{}{}
+		configuredServiceIDs[ownedApp.StakedServiceID] = struct{}{}
 	}
 
 	return configuredServiceIDs
@@ -289,33 +289,26 @@ func (p *Protocol) IsAlive() bool {
 // getAppsUniqueEndpoints returns a map of all endpoints matching serviceID and passing appFilter.
 // If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(
-	ctx context.Context,
+func (p *Protocol) getSessionsUniqueEndpoints(
+	_ context.Context,
 	serviceID protocol.ServiceID,
-	permittedApps []*apptypes.Application,
+	permittedSessions []sessiontypes.Session,
 	filterSanctioned bool, // will be true for calls to getAppsUniqueEndpoints made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getAppsUniqueEndpoints",
 		"service", serviceID,
-		"num_permitted_apps", len(permittedApps),
+		"num_permitted_sessions", len(permittedSessions),
 	)
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
-	for _, app := range permittedApps {
+	for _, session := range permittedSessions {
+		app := session.Application
+
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		logger := logger.With("permitted_app_address", app.Address)
 		logger.Debug().Msg("processing app.")
-
-		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
-		// error fetching a session:
-		// Log an error
-		// skip current app.
-		if err != nil {
-			logger.Error().Err(err).Msgf("Internal error: error getting a session for service %s app %s: skipping the app.", serviceID, app.Address)
-			continue
-		}
 
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
@@ -371,14 +364,14 @@ func (p *Protocol) getAppsUniqueEndpoints(
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()
 
-	// Get the list of permitted apps for the service ID.
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	// Get the list of permitted sessions for the service ID.
+	permittedSessions, err := p.getGatewayModePermittedSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}
 
 	// Get all endpoints for the service ID without filtering sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, false)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, permittedSessions, false)
 	if err != nil {
 		return 0, err
 	}

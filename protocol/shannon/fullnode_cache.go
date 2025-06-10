@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	accounttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -126,6 +127,9 @@ type cachingFullNode struct {
 	//
 	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
 	sessionCache *sturdyc.Client[sessiontypes.Session]
+
+	// The account client that wraps the underlying account fetcher with a SturdyC caching layer.
+	cachingAccountClient *sdk.AccountClient
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps a LazyFullNode with caching layers.
@@ -152,7 +156,7 @@ func NewCachingFullNode(
 	appCache := sturdyc.New[*apptypes.Application](
 		cacheCapacity,
 		numShards,
-		cacheConfig.AppTTL,
+		cacheConfig.SessionTTL,
 		evictionPercentage,
 	)
 
@@ -174,12 +178,15 @@ func NewCachingFullNode(
 		),
 	)
 
-	// Wrap the lazy full node's account fetcher with a SturdyC caching layer,
-	// then assign the wrapped account fetcher to the underlying lazy full node.
-	//
-	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface,
-	// but with a caching layer to avoid unnecessary requests to the full node.
-	wrapUnderlyingAccountFetcher(logger, lazyFullNode)
+	// Create the account cache, which is used to cache account responses from the full node.
+	// This cache is effectively infinite caching for the lifetime of the application,
+	// so no need to configure early refreshes with SturdyC.
+	accountCache := sturdyc.New[*accounttypes.QueryAccountResponse](
+		accountCacheCapacity,
+		numShards,
+		accountCacheTTL,
+		evictionPercentage,
+	)
 
 	// Initialize the caching full node with the modified lazy full node
 	return &cachingFullNode{
@@ -187,6 +194,12 @@ func NewCachingFullNode(
 		lazyFullNode: lazyFullNode,
 		appCache:     appCache,
 		sessionCache: sessionCache,
+		// Wrap the underlying account fetcher with a SturdyC caching layer.
+		cachingAccountClient: getCachingAccountClient(
+			logger,
+			accountCache,
+			lazyFullNode.accountClient,
+		),
 	}, nil
 }
 
@@ -228,7 +241,15 @@ func (cfn *cachingFullNode) GetSession(
 			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
 				"[cachingFullNode.GetSession] Making request to full node",
 			)
-			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+
+			session, err := cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			if err != nil {
+				return sessiontypes.Session{}, err
+			}
+
+			cfn.appCache.Set(getAppCacheKey(appAddr), session.Application)
+
+			return session, nil
 		},
 	)
 }
@@ -251,7 +272,7 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 
 // GetAccountClient delegates to the underlying node.
 func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
-	return cfn.lazyFullNode.GetAccountClient()
+	return cfn.cachingAccountClient
 }
 
 // IsHealthy delegates to the underlying node.

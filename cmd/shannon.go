@@ -30,7 +30,12 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		return nil, nil, fmt.Errorf("failed to get app addresses from config: %v", err)
 	}
 
-	return shannon.NewCachingFullNode(logger, lazyFullNode, ownedApps, fullNodeConfig.CacheConfig), ownedApps, nil
+	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, ownedApps, fullNodeConfig.CacheConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
+	}
+
+	return fullNode, ownedApps, nil
 }
 
 // getShannonProtocol returns an instance of the Shannon protocol using the supplied Shannon-specific configuration.

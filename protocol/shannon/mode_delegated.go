@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -20,8 +21,12 @@ import (
 //   https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 
 // getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *http.Request) ([]*apptypes.Application, error) {
-	logger := p.logger.With("method", "getDelegatedGatewayModeApps")
+func (p *Protocol) getDelegatedGatewayModeSessions(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	httpReq *http.Request,
+) ([]sessiontypes.Session, error) {
+	logger := p.logger.With("method", "getDelegatedGatewayModeSessions")
 
 	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
@@ -33,7 +38,7 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 
 	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
 
-	selectedApp, err := p.FullNode.GetApp(ctx, selectedAppAddr)
+	selectedSession, err := p.FullNode.GetSession(ctx, serviceID, selectedAppAddr)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchApp, selectedAppAddr, err)
@@ -41,7 +46,16 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 		return nil, err
 	}
 
+	selectedApp := selectedSession.Application
+
 	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
+
+	// Skip the session's app if it is not staked for the requested service.
+	if !appIsStakedForService(serviceID, selectedApp) {
+		err = fmt.Errorf("%w: app %s is not staked for the service", errProtocolContextSetupAppNotStaked, selectedApp.Address)
+		logger.Error().Err(err).Msg("app is not staked for the service. Relay request will fail.")
+		return nil, err
+	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
@@ -52,7 +66,7 @@ func (p *Protocol) getDelegatedGatewayModeApps(ctx context.Context, httpReq *htt
 
 	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
 
-	return []*apptypes.Application{selectedApp}, nil
+	return []sessiontypes.Session{selectedSession}, nil
 }
 
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.

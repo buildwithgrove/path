@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -27,11 +28,11 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 // The permitted apps are determined as follows:
 //   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
 //   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted apps.
-func (p *Protocol) getGatewayModePermittedApps(
+func (p *Protocol) getGatewayModePermittedSessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
-) ([]*apptypes.Application, error) {
+) ([]sessiontypes.Session, error) {
 	p.logger.With(
 		"service_ID", serviceID,
 		"gateway_mode", p.gatewayMode,
@@ -40,10 +41,10 @@ func (p *Protocol) getGatewayModePermittedApps(
 	switch p.gatewayMode {
 
 	case protocol.GatewayModeCentralized:
-		return p.getCentralizedGatewayModeApps(ctx, serviceID)
+		return p.getCentralizedGatewayModeSessions(ctx, serviceID)
 
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeApps(ctx, httpReq)
+		return p.getDelegatedGatewayModeSessions(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:

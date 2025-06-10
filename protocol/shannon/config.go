@@ -64,7 +64,6 @@ type (
 	}
 
 	CacheConfig struct {
-		AppTTL     time.Duration `yaml:"app_ttl"`
 		SessionTTL time.Duration `yaml:"session_ttl"`
 	}
 )
@@ -141,24 +140,17 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	return *c
 }
 
-const (
-	// App do not expire, so we can cache them for a long time.
-	defaultAppCacheTTL = 12 * time.Minute
-	// Session TTL should match the protocol's session length.
-	defaultSessionCacheTTL = 4 * time.Minute
-)
+// Session TTL should match the protocol's session length.
+const defaultSessionCacheTTL = 30 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {
-	if lazyMode && (c.AppTTL != 0 || c.SessionTTL != 0) {
+	if lazyMode && c.SessionTTL == 0 {
 		return ErrShannonCacheConfigSetForLazyMode
 	}
 	return nil
 }
 
 func (c *CacheConfig) hydrateDefaults() {
-	if c.AppTTL == 0 {
-		c.AppTTL = defaultAppCacheTTL
-	}
 	if c.SessionTTL == 0 {
 		c.SessionTTL = defaultSessionCacheTTL
 	}

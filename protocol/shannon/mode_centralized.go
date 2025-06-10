@@ -6,6 +6,7 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/protocol/crypto"
@@ -33,7 +34,11 @@ type OwnedApp struct {
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
 //   - Populates `appAddr` and `stakedServiceID` for each app
-func GetCentralizedModeOwnedApps(logger polylog.Logger, ownedAppsPrivateKeysHex []string, lazyFullNode *LazyFullNode) ([]OwnedApp, error) {
+func GetCentralizedModeOwnedApps(
+	logger polylog.Logger,
+	ownedAppsPrivateKeysHex []string,
+	lazyFullNode *LazyFullNode,
+) ([]OwnedApp, error) {
 	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
 
@@ -53,7 +58,8 @@ func GetCentralizedModeOwnedApps(logger polylog.Logger, ownedAppsPrivateKeysHex 
 			return nil, err
 		}
 
-		// Retrieve the app's onchain data.
+		// Retrieve the app's onchain data using the lazy full node to ensure the request
+		// is a remote request and not attempting to use cached data.
 		app, err := lazyFullNode.GetApp(context.Background(), appAddr)
 		if err != nil {
 			logger.Error().Err(err).Msgf("error getting onchain data for app with address %s", appAddr)
@@ -99,25 +105,26 @@ func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Applicati
 // Without a caching FullNode, this results in extremely slow behaviour. We should look into improving the
 // efficiency of this lookup to get the list of apps owned by the gateway.
 //
-// getCentralizedGatewayModeApps returns the set of permitted apps under the Centralized gateway mode.
-func (p *Protocol) getCentralizedGatewayModeApps(
+// getCentralizedGatewayModeSessions returns the set of permitted sessions under the Centralized gateway mode.
+func (p *Protocol) getCentralizedGatewayModeSessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
-) ([]*apptypes.Application, error) {
+) ([]sessiontypes.Session, error) {
 	logger := p.logger.With(
-		"method", "getCentralizedGatewayModeApps",
+		"method", "getCentralizedGatewayModeSessions",
 		"service_id", string(serviceID),
 	)
 	logger.Debug().Msg("fetching the list of owned apps.")
 
-	var permittedApps []*apptypes.Application
+	var permittedSessions []sessiontypes.Session
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
 	for _, ownedApp := range p.ownedApps {
-		ownedAppAddr := ownedApp.appAddr
+		ownedAppAddr := ownedApp.AppAddr
+
 		logger.Info().Msgf("checking app %s owned by the gateway", ownedAppAddr)
 
-		app, err := p.FullNode.GetApp(ctx, ownedAppAddr)
+		session, err := p.FullNode.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
 			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
@@ -125,7 +132,9 @@ func (p *Protocol) getCentralizedGatewayModeApps(
 			return nil, err
 		}
 
-		// Skip the app if it is not staked for the requested service.
+		app := session.Application
+
+		// Skip the session's app if it is not staked for the requested service.
 		if !appIsStakedForService(serviceID, app) {
 			logger.Debug().Msgf("owned app %s is not staked for the service. Skipping.", ownedAppAddr)
 			continue
@@ -139,16 +148,17 @@ func (p *Protocol) getCentralizedGatewayModeApps(
 			return nil, err
 		}
 
-		permittedApps = append(permittedApps, app)
+		permittedSessions = append(permittedSessions, session)
 	}
 
-	// If no apps matched the request, return an error.
-	if len(permittedApps) == 0 {
+	// If no sessions matched the request, return an error.
+	if len(permittedSessions) == 0 {
 		err := fmt.Errorf("%w: service %s.", errProtocolContextSetupCentralizedNoApps, serviceID)
 		logger.Error().Msg(err.Error())
 		return nil, err
 	}
 
-	logger.Debug().Msgf("Successfully fetched the list of %d owned apps for service %s.", len(permittedApps), serviceID)
-	return permittedApps, nil
+	logger.Debug().Msgf("Successfully fetched the list of sessions for %d owned apps for service %s.", len(permittedSessions), serviceID)
+
+	return permittedSessions, nil
 }

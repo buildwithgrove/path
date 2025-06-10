@@ -27,10 +27,8 @@ shannon_config:
     lazy_mode: false
     # If lazy_mode is true, the cache_config may not be set.
     cache_config: 
-      # The TTL for the app cache.
-      app_ttl: 12m
       # The TTL for the session cache.
-      session_ttl: 4m
+      session_ttl: 30s
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode
