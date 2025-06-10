@@ -69,7 +69,7 @@ func NewProtocol(
 	config GatewayConfig,
 	// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
 	// If PATH is not running in Centralized mode, this field is nil.
-	ownedApps []OwnedApp,
+	ownedApps OwnedApps,
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
 
@@ -114,7 +114,7 @@ type Protocol struct {
 
 	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
 	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
-	ownedApps []OwnedApp
+	ownedApps OwnedApps
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
@@ -268,8 +268,8 @@ func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
 	}
 
 	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
-	for _, ownedApp := range p.ownedApps {
-		configuredServiceIDs[ownedApp.StakedServiceID] = struct{}{}
+	for serviceID := range p.ownedApps {
+		configuredServiceIDs[serviceID] = struct{}{}
 	}
 
 	return configuredServiceIDs
