@@ -27,7 +27,8 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		return lazyFullNode, nil, nil
 	}
 
-	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
+	// If the gateway mode is Centralized, initialize the owned apps.
+	// This value will be nil if gateway mode is not Centralized.
 	var ownedApps []shannon.OwnedApp
 	if config.GatewayConfig.GatewayMode == protocol.GatewayModeCentralized {
 		ownedApps, err = shannon.GetCentralizedModeOwnedApps(logger, config.GatewayConfig.OwnedAppsPrivateKeysHex, lazyFullNode)
@@ -36,7 +37,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		}
 	}
 
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, ownedApps, fullNodeConfig.CacheConfig)
+	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
 	}

@@ -24,10 +24,14 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// getGatewayModePermittedApps returns the apps permitted under the supplied gateway mode.
-// The permitted apps are determined as follows:
-//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
-//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted apps.
+// TODO_TECHDEBT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
+// Evaluate the exact implementation of this as defined in issue:
+// https://github.com/buildwithgrove/path/issues/291
+
+// getGatewayModePermittedSessions returns the sessions permitted under the supplied gateway mode.
+// The permitted sessions are determined as follows:
+//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted sessions (specified in configs).
+//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted sessions.
 func (p *Protocol) getGatewayModePermittedSessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
