@@ -44,7 +44,7 @@ func (p *Protocol) getGatewayModePermittedSessions(
 		return p.getCentralizedGatewayModeSessions(ctx, serviceID)
 
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeSessions(ctx, serviceID, httpReq)
+		return p.getDelegatedGatewayModeSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:

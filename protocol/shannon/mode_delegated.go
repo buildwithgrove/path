@@ -20,8 +20,8 @@ import (
 // - For more details, see:
 //   https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
 
-// getDelegatedGatewayModeApps returns the set of permitted apps under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeSessions(
+// getDelegatedGatewayModeSession returns the permitted session under Delegated gateway mode, for the supplied HTTP request.
+func (p *Protocol) getDelegatedGatewayModeSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
