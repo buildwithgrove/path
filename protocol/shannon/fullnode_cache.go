@@ -119,8 +119,8 @@ type cachingFullNode struct {
 // NewCachingFullNode creates a new CachingFullNode that wraps a LazyFullNode with caching layers.
 //
 // The caching layers are:
-//   - App cache: Gets apps from the cache or calls the lazyFullNode.GetApp()
 //   - Session cache: Gets sessions from the cache or calls the lazyFullNode.GetSession()
+//     (Apps are sourced from the Session struct, so no need to cache them.)
 //   - Account cache: Used in the `cachingPoktNodeAccountFetcher` to cache account data indefinitely.
 //
 // The caching layers are configured with early refreshes to prevent thundering herd and eliminate latency spikes.
