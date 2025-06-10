@@ -16,9 +16,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// TODO_IN_THIS_PR: make this configurable in YAML with default value of 30 seconds
-const blockLength = 30 * time.Second
-
 // ---------------- Cache Configuration ----------------
 const (
 	// Retry base delay for exponential backoff on failed refreshes
