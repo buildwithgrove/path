@@ -101,12 +101,6 @@ type cachingFullNode struct {
 	// for fetching data from the protocol.
 	lazyFullNode *LazyFullNode
 
-	// Applications can be cached indefinitely. They're invalidated only when they unstake.
-	//
-	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking.
-	//   Revisit these values after mainnet migration to ensure no race conditions.
-	// appCache *sturdyc.Client[*apptypes.Application]
-
 	// As of #275, on Beta TestNet, sessions are 5 minutes.
 	//
 	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
@@ -127,7 +121,6 @@ type cachingFullNode struct {
 func NewCachingFullNode(
 	logger polylog.Logger,
 	lazyFullNode *LazyFullNode,
-	ownedApps OwnedApps,
 	cacheConfig CacheConfig,
 ) (*cachingFullNode, error) {
 	// Set default app and session TTLs if not set
@@ -180,11 +173,6 @@ func NewCachingFullNode(
 // During relaying, only sessions are fetched to ensure apps and sessions are always in sync.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	return nil, fmt.Errorf("GetApp is a NoOp in the caching full node")
-}
-
-type SessionQueryParams struct {
-	ServiceID protocol.ServiceID
-	AppAddr   string
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.

@@ -36,7 +36,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		}
 	}
 
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, ownedApps, fullNodeConfig.CacheConfig)
+	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
 	}
