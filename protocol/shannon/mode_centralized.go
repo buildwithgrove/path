@@ -11,17 +11,6 @@ import (
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
-// OwnedApps is a map of service IDs to a list of app addresses owned by the gateway operator in Centralized Gateway Mode.
-// One service ID can have multiple apps owned by the gateway operator.
-//
-// Example:
-//
-//	{
-//	  "anvil": ["pokt1...", "pokt2..."],
-//	  "eth": ["pokt3...", "pokt4..."],
-//	}
-type OwnedApps map[protocol.ServiceID][]string
-
 // Centralized Gateway Mode - Shannon Protocol Integration
 //
 // - PATH (Shannon instance) holds private keys for gateway operator's apps
@@ -36,15 +25,26 @@ type OwnedApps map[protocol.ServiceID][]string
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
 //   - Populates `appAddr` and `stakedServiceID` for each app
+//
+// The owned apps map is a map of service IDs to a list of app addresses owned by
+// the gateway operator in Centralized Gateway Mode.
+// One service ID can have multiple apps owned by the gateway operator.
+//
+// Example:
+//
+//	{
+//	  "anvil": ["pokt1...", "pokt2..."],
+//	  "eth": ["pokt3...", "pokt4..."],
+//	}
 func GetCentralizedModeOwnedApps(
 	logger polylog.Logger,
 	ownedAppsPrivateKeysHex []string,
 	lazyFullNode *LazyFullNode,
-) (OwnedApps, error) {
+) (map[protocol.ServiceID][]string, error) {
 	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
 
-	ownedApps := make(OwnedApps)
+	ownedApps := make(map[protocol.ServiceID][]string)
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
 		// Retrieve the app's secp256k1 private key from the hex string.
 		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
@@ -101,6 +101,8 @@ func (p *Protocol) getCentralizedGatewayModeSessions(
 	)
 	logger.Debug().Msg("fetching the list of owned apps.")
 
+	// TODO_TECHDEBT(@commoddity): if an owned app is changed re-staked for a
+	// different service, PATH must be restarted for changes to take effect.
 	ownedAppsForService, ok := p.ownedApps[serviceID]
 	if !ok || len(ownedAppsForService) == 0 {
 		return nil, fmt.Errorf("no owned apps for service %s", serviceID)
