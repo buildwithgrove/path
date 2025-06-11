@@ -300,6 +300,8 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		logger := logger.With("permitted_app_address", app.Address)
+		// hydrate the logger with session details.
+		logger = hydrateLoggerWithSession(logger, &session)
 		logger.Debug().Msg("processing app.")
 
 		appEndpoints, err := endpointsFromSession(session)
