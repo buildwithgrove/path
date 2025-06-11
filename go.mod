@@ -3,7 +3,8 @@ module github.com/buildwithgrove/path
 go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
-// replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
+replace github.com/pokt-network/shannon-sdk => ../shannon-sdk
+
 // replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 
 require (
@@ -15,7 +16,7 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.1.17
+	github.com/pokt-network/poktroll v0.1.19
 	github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0
