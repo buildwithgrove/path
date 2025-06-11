@@ -18,7 +18,7 @@ import (
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
 // It also returns the owned apps if the gateway mode is Centralized.
-func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, shannon.OwnedApps, error) {
+func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, map[sdk.ServiceID][]string, error) {
 	fullNodeConfig := config.FullNodeConfig
 
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
@@ -33,7 +33,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 	}
 
 	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
-	var ownedApps shannon.OwnedApps
+	var ownedApps map[sdk.ServiceID][]string
 	if config.GatewayConfig.GatewayMode == protocol.GatewayModeCentralized {
 		ownedApps, err = shannon.GetCentralizedModeOwnedApps(logger, config.GatewayConfig.OwnedAppsPrivateKeysHex, lazyFullNode)
 		if err != nil {
