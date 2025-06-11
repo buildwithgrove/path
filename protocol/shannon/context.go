@@ -195,13 +195,13 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, err
 	}
 
-	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
+	defer cancelFn()
+
+	signedRelayReq, err := rc.signRelayRequest(ctxWithTimeout, relayRequest, app)
 	if err != nil {
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
-
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
-	defer cancelFn()
 
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
@@ -218,7 +218,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	return response, nil
 }
 
-func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+func (rc *requestContext) signRelayRequest(ctx context.Context, unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
 	// Verify the relay request's metadata, specifically the session header.
 	// Note: cannot use the RelayRequest's ValidateBasic() method here, as it looks for a signature in the struct, which has not been added yet at this point.
 	meta := unsignedRelayReq.GetMeta()
@@ -233,8 +233,7 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 	}
 
 	// Sign the relay request using the selected app's private key
-	// TODO_IN_THIS_PR(@commoddity): determine what to do with this context.
-	return rc.relayRequestSigner.SignRelayRequest(context.TODO(), unsignedRelayReq, app)
+	return rc.relayRequestSigner.SignRelayRequest(ctx, unsignedRelayReq, app)
 }
 
 // buildUnsignedRelayRequest:
