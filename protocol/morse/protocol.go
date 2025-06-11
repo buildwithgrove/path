@@ -188,9 +188,9 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	return nil
 }
 
-// ConfiguredServiceIDs returns the list of all service IDs with configured AATs.
+// GetConfiguredServiceIDs returns the list of all service IDs with configured AATs.
 // This is used by the hydrator to determine which service IDs to run QoS checks on.
-func (p *Protocol) ConfiguredServiceIDs() map[sdk.ServiceID]struct{} {
+func (p *Protocol) GetConfiguredServiceIDs() map[sdk.ServiceID]struct{} {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 

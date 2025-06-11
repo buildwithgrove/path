@@ -143,8 +143,8 @@ func main() {
 	// -------------------- Start PATH API Router -------------------- */
 
 	// Log out some basic info about the running PATH instance.
-	configuredServiceIDs := make([]string, 0, len(protocol.ConfiguredServiceIDs()))
-	for serviceID := range protocol.ConfiguredServiceIDs() {
+	configuredServiceIDs := make([]string, 0, len(protocol.GetConfiguredServiceIDs()))
+	for serviceID := range protocol.GetConfiguredServiceIDs() {
 		configuredServiceIDs = append(configuredServiceIDs, string(serviceID))
 	}
 	// log.Printf is used here to ensure this info is printed to the console regardless of the log level.

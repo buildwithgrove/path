@@ -33,8 +33,8 @@ func getServiceQoSInstances(
 	}
 
 	// Get configured service IDs from the protocol instance.
-	// - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
-	configuredServiceIDs := protocolInstance.ConfiguredServiceIDs()
+	//   - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
+	configuredServiceIDs := protocolInstance.GetConfiguredServiceIDs()
 
 	// Remove any service IDs that are manually disabled by the user.
 	for _, disabledServiceID := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {

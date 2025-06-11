@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 	"github.com/pokt-network/shannon-sdk/fullnode"
 	"github.com/stretchr/testify/require"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/protocol"
 	morseprotocol "github.com/buildwithgrove/path/protocol/morse"
-	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
@@ -73,7 +73,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							SessionTTL: 30 * time.Second,
 						},
 					},
-					GatewayConfig: shannonprotocol.GatewayConfig{
+					GatewayConfig: gatewayClient.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,
 						GatewayAddress:       "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw",
 						GatewayPrivateKeyHex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",

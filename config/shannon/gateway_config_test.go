@@ -5,10 +5,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 	"github.com/pokt-network/shannon-sdk/fullnode"
 
 	"github.com/buildwithgrove/path/protocol"
-	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 func Test_Validate(t *testing.T) {
@@ -27,7 +27,7 @@ func Test_Validate(t *testing.T) {
 						HostPort: "grpc-url.io:443",
 					},
 				},
-				GatewayConfig: shannonprotocol.GatewayConfig{
+				GatewayConfig: gatewayClient.GatewayConfig{
 					GatewayMode:          protocol.GatewayModeDelegated,
 					GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
 					GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
@@ -56,7 +56,7 @@ func Test_Validate(t *testing.T) {
 						HostPort: "grpc-url.io:443",
 					},
 				},
-				GatewayConfig: shannonprotocol.GatewayConfig{
+				GatewayConfig: gatewayClient.GatewayConfig{
 					GatewayMode:          protocol.GatewayModeDelegated,
 					GatewayAddress:       "invalid_address",
 					GatewayPrivateKeyHex: "d5fcbfb894059a21e914a2d6bf1508319ce2b1b8878f15aa0c1cdf883feb018d",
@@ -73,7 +73,7 @@ func Test_Validate(t *testing.T) {
 						HostPort: "grpc-url.io:443",
 					},
 				},
-				GatewayConfig: shannonprotocol.GatewayConfig{
+				GatewayConfig: gatewayClient.GatewayConfig{
 					GatewayMode:          protocol.GatewayModeDelegated,
 					GatewayAddress:       "pokt1710ed9a8d0986d808e607c5815cc5a13f15dba",
 					GatewayPrivateKeyHex: "invalid_private_key",
