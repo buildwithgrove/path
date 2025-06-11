@@ -1,6 +1,9 @@
 package shannon
 
-// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file based on the details in #291
+// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file
+// as part of the #291 refactor, as it will not longer be needed.
+//
+// https://github.com/buildwithgrove/path/issues/291
 
 import (
 	"context"
@@ -14,11 +17,6 @@ import (
 	"github.com/viccon/sturdyc"
 	grpcoptions "google.golang.org/grpc"
 )
-
-// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file
-// as part of the #291 refactor, as it will not longer be needed.
-//
-// https://github.com/buildwithgrove/path/issues/291
 
 // ---------------- Caching Account Fetcher ----------------
 
@@ -48,6 +46,7 @@ type cachingPoktNodeAccountFetcher struct {
 	logger polylog.Logger
 
 	// The underlying account client to delegate to when cache misses occur
+	// TODO_TECHDEBT: Ass part of the effort in #291, this will be moved to the shannon-sdk.
 	underlyingAccountClient *sdk.AccountClient
 
 	// Cache for account responses

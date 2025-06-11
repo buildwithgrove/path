@@ -141,6 +141,7 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 }
 
 // Session TTL should match the protocol's session length.
+// TODO_IMPROVE(@olshansk): Align this with the onchain session TTL (num blocks and num blocks per session).
 const defaultSessionCacheTTL = 30 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {
