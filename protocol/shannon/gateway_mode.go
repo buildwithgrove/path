@@ -25,10 +25,22 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// TODO_TECHDEBT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
-// Evaluate the exact implementation of this as defined in issue:
+// TODO_NEXT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
+// A `GatewayClient` should be created for each GatewayMode that embeds a `FullNode`.
+//
+// For Example:
+// - Centralized mode: `CentralizedGatewayClient`
+// - Delegated mode: `DelegatedGatewayClient`
+// etc...
+//
+// With each `GatewayClient` containing the below logic that is specific to the GatewayMode.
+//
+// Issue:
 // https://github.com/buildwithgrove/path/issues/291
 
+// TODO_NEXT(@commoddity): This function should be moved to the Shannon SDK and
+// and handled in the specific GatewayClient structs for each GatewayMode.
+//
 // getGatewayModePermittedSessions returns the sessions permitted under the supplied gateway mode.
 // The permitted sessions are determined as follows:
 //   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted sessions (specified in configs).
@@ -60,6 +72,9 @@ func (p *Protocol) getGatewayModePermittedSessions(
 	}
 }
 
+// TODO_NEXT(@commoddity): This function should be moved to the Shannon SDK and
+// and handled in the specific GatewayClient structs for each GatewayMode.
+//
 // getGatewayModePermittedRelaySigner returns the relay request signer matching the supplied gateway mode.
 func (p *Protocol) getGatewayModePermittedRelaySigner(
 	gatewayMode protocol.GatewayMode,
@@ -67,13 +82,13 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
 		return &sdk.Signer{
-			FullNode:      p.FullNode,
-			PrivateKeyHex: p.gatewayPrivateKeyHex,
+			PrivateKeyHex:    p.gatewayPrivateKeyHex,
+			PublicKeyFetcher: p.FullNode,
 		}, nil
 	case protocol.GatewayModeDelegated:
 		return &sdk.Signer{
-			FullNode:      p.FullNode,
-			PrivateKeyHex: p.gatewayPrivateKeyHex,
+			PrivateKeyHex:    p.gatewayPrivateKeyHex,
+			PublicKeyFetcher: p.FullNode,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)

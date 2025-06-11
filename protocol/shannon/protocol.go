@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
@@ -31,10 +34,40 @@ var (
 // This allows the protocol to report its sanctioned endpoints data to the devtools.DisqualifiedEndpointReporter.
 var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
+// FullNode defines the set of capabilities the Shannon protocol integration needs
+// from a fullnode for sending relays.
+//
+// A properly initialized fullNode struct can:
+// 1. Return the onchain apps matching a service ID.
+// 2. Fetch a session for a (service,app) combination.
+// 3. Validate a relay response.
+// 4. Etc...
+type FullNode interface {
+	// GetApp returns the onchain application matching the application address
+	GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error)
+
+	// GetSession returns the latest session matching the supplied service+app combination.
+	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
+	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
+	GetSession(ctx context.Context, serviceID sdk.ServiceID, appAddr string) (sessiontypes.Session, error)
+
+	// GetAccountPubKey returns the account public key for the given address.
+	// The cache has no TTL, so the public key is cached indefinitely.
+	GetAccountPubKey(ctx context.Context, address string) (cryptotypes.PubKey, error)
+
+	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
+	ValidateRelayResponse(ctx context.Context, supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
+
+	// IsHealthy returns true if the FullNode instance is healthy.
+	// A LazyFullNode will always return true.
+	// A CachingFullNode will return true if it has data in app and session caches.
+	IsHealthy() bool
+}
+
 // NewProtocol instantiates an instance of the Shannon protocol integration.
 func NewProtocol(
 	logger polylog.Logger,
-	fullNode sdk.FullNode,
+	fullNode FullNode,
 	config GatewayConfig,
 	// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
 	// If PATH is not running in Centralized mode, this field is nil.
@@ -70,7 +103,7 @@ type Protocol struct {
 
 	// TODO_IN_THIS_PR(@commoddity): Create GatewayClient interface which embeds
 	// sdk.FullNode into it and is implemented in the Shannon SDK.
-	sdk.FullNode
+	FullNode
 
 	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
 	// See protocol/shannon/gateway_mode.go for more details.

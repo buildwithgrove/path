@@ -16,7 +16,7 @@ import (
 // It is used only to validate the relay responses returned by the Endpoint.
 type FullNode interface {
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
-	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
+	ValidateRelayResponse(ctx context.Context, supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
 }
 
 // RelayRequestSigner is used by the request context to sign the relay request.
@@ -222,7 +222,7 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
 
 	// Validate the relay response using the Shannon FullNode
-	relayResponse, err := b.fullNode.ValidateRelayResponse(sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
+	relayResponse, err := b.fullNode.ValidateRelayResponse(b.ctx, sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
 	if err != nil {
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
 		return

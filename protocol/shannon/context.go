@@ -45,7 +45,8 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	fullNode sdk.FullNode
+	fullNode FullNode
+
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
 	serviceID sdk.ServiceID
 
@@ -209,7 +210,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	// Validate the response.
-	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
+	response, err := rc.fullNode.ValidateRelayResponse(ctxWithTimeout, sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, rc.selectedEndpoint.url, err)
 	}

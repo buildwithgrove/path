@@ -18,7 +18,11 @@ import (
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
 // It also returns the owned apps if the gateway mode is Centralized.
-func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, map[sdk.ServiceID][]string, error) {
+func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (
+	shannon.FullNode,
+	map[sdk.ServiceID][]string,
+	error,
+) {
 	fullNodeConfig := config.FullNodeConfig
 
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
