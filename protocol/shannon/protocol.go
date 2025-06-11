@@ -55,6 +55,7 @@ type GatewayClient interface {
 	GetSessions(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) ([]sessiontypes.Session, error)
 	GetRelaySigner(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) (*sdk.Signer, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
+	GetGatewayMode() gatewayClient.GatewayMode
 }
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
@@ -64,16 +65,6 @@ type Protocol struct {
 	// Embeds the GatewayClient interface from the Shannon SDK package to provide
 	// the functionality needed by the gateway package for handling service requests.
 	GatewayClient
-
-	gatewayMode gatewayClient.GatewayMode
-
-	// gatewayAddr is used by the SDK for selecting onchain applications which have delegated to the gateway.
-	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
-	gatewayAddr string
-
-	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon Gateway instance.
-	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
-	gatewayPrivateKeyHex string
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
@@ -142,7 +133,7 @@ func (p *Protocol) AvailableEndpoints(
 	logger := p.logger.With(
 		"service", serviceID,
 		"method", "AvailableEndpoints",
-		"gateway_mode", p.gatewayMode,
+		"gateway_mode", p.GetGatewayMode(),
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
@@ -227,7 +218,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	if err != nil {
 		// Wrap the context setup error.
 		// Used to generate the observation.
-		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.gatewayMode, err)
+		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.GetGatewayMode(), err)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
