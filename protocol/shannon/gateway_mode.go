@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -23,15 +24,19 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// getGatewayModePermittedApps returns the apps permitted under the supplied gateway mode.
-// The permitted apps are determined as follows:
-//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
-//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted apps.
-func (p *Protocol) getGatewayModePermittedApps(
+// TODO_TECHDEBT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
+// Evaluate the exact implementation of this as defined in issue:
+// https://github.com/buildwithgrove/path/issues/291
+
+// getGatewayModePermittedSessions returns the sessions permitted under the supplied gateway mode.
+// The permitted sessions are determined as follows:
+//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted sessions (specified in configs).
+//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted sessions.
+func (p *Protocol) getGatewayModePermittedSessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
-) ([]*apptypes.Application, error) {
+) ([]sessiontypes.Session, error) {
 	p.logger.With(
 		"service_ID", serviceID,
 		"gateway_mode", p.gatewayMode,
@@ -40,10 +45,10 @@ func (p *Protocol) getGatewayModePermittedApps(
 	switch p.gatewayMode {
 
 	case protocol.GatewayModeCentralized:
-		return p.getCentralizedGatewayModeApps(ctx, serviceID)
+		return p.getCentralizedGatewayModeSessions(ctx, serviceID)
 
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeApps(ctx, httpReq)
+		return p.getDelegatedGatewayModeSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:

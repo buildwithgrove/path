@@ -33,6 +33,8 @@ var (
 	errProtocolContextSetupFetchApp = errors.New("error getting the selected app data from the SDK")
 	// Delegated gateway mode: gateway does not have delegation for the app.
 	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app")
+	// Delegated gateway mode: app is not staked for the service.
+	errProtocolContextSetupAppNotStaked = errors.New("app is not staked for the service")
 	// No endpoints available for the service.
 	// Can be due to one or more of the following:
 	// - Any of the gateway mode errors above.

@@ -15,6 +15,11 @@ import (
 	grpcoptions "google.golang.org/grpc"
 )
 
+// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file
+// as part of the #291 refactor, as it will not longer be needed.
+//
+// https://github.com/buildwithgrove/path/issues/291
+
 // ---------------- Caching Account Fetcher ----------------
 
 // accountCacheTTL: No TTL for the account cache since account data never changes.
@@ -43,7 +48,7 @@ type cachingPoktNodeAccountFetcher struct {
 	logger polylog.Logger
 
 	// The underlying account client to delegate to when cache misses occur
-	underlyingAccountClient sdk.PoktNodeAccountFetcher
+	underlyingAccountClient *sdk.AccountClient
 
 	// Cache for account responses
 	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse]
@@ -86,47 +91,20 @@ func getAccountCacheKey(address string) string {
 	return fmt.Sprintf("%s:%s", accountCacheKeyPrefix, address)
 }
 
-// wrapUnderlyingAccountFetcher wraps the original account fetcher with the caching
-// account fetcher and replaces the lazy full node's account fetcher with the caching one.
+// getCachingAccountClient wraps the original account fetcher with the caching
+// account fetcher and returns a new caching account client.
 //
-// This is used to replace the lazy full node's account fetcher with the caching one.
 // It is used in the NewCachingFullNode function to create a new caching full node.
-func wrapUnderlyingAccountFetcher(
+func getCachingAccountClient(
 	logger polylog.Logger,
-	lazyFullNode *lazyFullNode,
-) {
-	// Create the account cache, which is used to cache account responses from the full node.
-	accountCache := initAccountCache()
-
-	// Wrap the original account fetcher with the caching account fetcher
-	// so that the caching account fetcher can fetch accounts from the full node.
-	originalAccountFetcher := lazyFullNode.accountClient.PoktNodeAccountFetcher
-
-	// Replace the lazy full node's account fetcher with the caching one.
-	lazyFullNode.accountClient = &sdk.AccountClient{
+	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse],
+	underlyingAccountClient *sdk.AccountClient,
+) *sdk.AccountClient {
+	return &sdk.AccountClient{
 		PoktNodeAccountFetcher: &cachingPoktNodeAccountFetcher{
 			logger:                  logger,
-			underlyingAccountClient: originalAccountFetcher,
 			accountCache:            accountCache,
+			underlyingAccountClient: underlyingAccountClient,
 		},
 	}
-}
-
-// initAccountCache initializes the account cache using SturdyC.
-//
-// Account data never changes, so we can cache it indefinitely.
-//
-// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#creating-a-cache-client
-func initAccountCache() *sturdyc.Client[*accounttypes.QueryAccountResponse] {
-	// Create the account cache, which will be used to cache account responses.
-	// This cache is effectively infinite caching for the lifetime of the application.
-	// Account data never changes, so we can cache it indefinitely.
-	accountCache := sturdyc.New[*accounttypes.QueryAccountResponse](
-		accountCacheCapacity,
-		numShards,
-		accountCacheTTL,
-		evictionPercentage,
-	)
-
-	return accountCache
 }
