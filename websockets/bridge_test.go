@@ -311,7 +311,7 @@ func (r *relayRequestSigner) SignRelayRequest(ctx context.Context, req *servicet
 
 type fullNode struct{}
 
-func (f *fullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+func (f *fullNode) ValidateRelayResponse(ctx context.Context, supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	relayResponse := &servicetypes.RelayResponse{}
 	if err := relayResponse.Unmarshal(responseBz); err != nil {
 		return nil, err
