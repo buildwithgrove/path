@@ -15,7 +15,6 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
-	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -49,7 +48,7 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	fullNode gatewayClient.FullNode
+	fullNode sdk.FullNode
 
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
 	serviceID sdk.ServiceID

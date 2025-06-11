@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	gatewayClient "github.com/pokt-network/shannon-sdk/client"
+	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/pokt-network/shannon-sdk/fullnode"
 
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
@@ -14,7 +14,7 @@ import (
 
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration,
 // using the supplied configuration. It also returns the owned apps if the gateway mode is Centralized.
-func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (gatewayClient.FullNode, error) {
+func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, error) {
 	fullNodeConfig := config.FullNodeConfig
 
 	// In both lazy and caching modes, we use the full node to fetch the onchain data.

@@ -51,7 +51,7 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 // The FullNodeWithCache interface is used to cache the results of the GetSessions and GetRelaySigner methods.
 // This is used to improve the performance of the protocol.
 type GatewayClient interface {
-	gatewayClient.FullNode
+	sdk.FullNode
 	GetSessions(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) ([]sessiontypes.Session, error)
 	GetRelaySigner(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) (*sdk.Signer, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
@@ -61,6 +61,8 @@ type GatewayClient interface {
 type Protocol struct {
 	logger polylog.Logger
 
+	// Embeds the GatewayClient interface from the Shannon SDK package to provide
+	// the functionality needed by the gateway package for handling service requests.
 	GatewayClient
 
 	gatewayMode gatewayClient.GatewayMode
@@ -80,7 +82,7 @@ type Protocol struct {
 // NewProtocol instantiates an instance of the Shannon protocol integration.
 func NewProtocol(
 	logger polylog.Logger,
-	fullNode gatewayClient.FullNode,
+	fullNode sdk.FullNode,
 	gatewayClientConfig gatewayClient.GatewayConfig,
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
@@ -108,7 +110,7 @@ func NewProtocol(
 }
 
 // getGatewayClient gets the correct gateway client based on PATH's configured gateway mode.
-func getGatewayClient(logger polylog.Logger, fullNode gatewayClient.FullNode, config gatewayClient.GatewayConfig) (GatewayClient, error) {
+func getGatewayClient(logger polylog.Logger, fullNode sdk.FullNode, config gatewayClient.GatewayConfig) (GatewayClient, error) {
 	switch config.GatewayMode {
 	// If PATH is in centralized mode, use the centralized gateway client.
 	case gatewayClient.GatewayModeCentralized:
