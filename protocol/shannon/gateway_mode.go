@@ -50,7 +50,7 @@ func (p *Protocol) getValidGatewaySessions(
 
 	// Delegated gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeSession(ctx, serviceID, httpReq)
+		return p.getDelegatedGatewayModeValidSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:
