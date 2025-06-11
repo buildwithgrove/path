@@ -44,6 +44,10 @@ const (
 	// SturdyC also runs background eviction jobs to remove expired entries automatically.
 	evictionPercentage = 10
 
+	// TODO_TECHDEBT(@commoddity): As part of Issue #291, we should revisit the caching refresh mechanisms
+	// to use the Shannon SDK's block client in order to trigger a Session refresh only when necessary
+	// (ie. when we have passed the Session end block height)
+	//
 	// minEarlyRefreshPercentage: Minimum percentage of the TTL before the cache early refresh may start.
 	// For a 30-second TTL, this means refresh can start at 22.5 seconds (75% of 30s).
 	minEarlyRefreshPercentage = 0.75

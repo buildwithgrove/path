@@ -15,6 +15,11 @@ import (
 	grpcoptions "google.golang.org/grpc"
 )
 
+// TODO_TECHDEBT(@commoddity): Refactor (remove?) this whole file
+// as part of the #291 refactor, as it will not longer be needed.
+//
+// https://github.com/buildwithgrove/path/issues/291
+
 // ---------------- Caching Account Fetcher ----------------
 
 // accountCacheTTL: No TTL for the account cache since account data never changes.
