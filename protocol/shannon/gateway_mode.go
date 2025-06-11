@@ -8,6 +8,7 @@ import (
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -34,7 +35,7 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 //   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted sessions.
 func (p *Protocol) getGatewayModePermittedSessions(
 	ctx context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
 	p.logger.With(
@@ -65,16 +66,14 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 ) (RelayRequestSigner, error) {
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
-		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
-			privateKeyHex: p.gatewayPrivateKeyHex,
+		return &sdk.Signer{
+			FullNode:      p.FullNode,
+			PrivateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
 	case protocol.GatewayModeDelegated:
-		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
-			privateKeyHex: p.gatewayPrivateKeyHex,
+		return &sdk.Signer{
+			FullNode:      p.FullNode,
+			PrivateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)

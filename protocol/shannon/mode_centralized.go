@@ -6,8 +6,9 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
+	fullnode "github.com/pokt-network/shannon-sdk/fullnode"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
@@ -20,7 +21,7 @@ import (
 //	  "anvil": ["pokt1...", "pokt2..."],
 //	  "eth": ["pokt3...", "pokt4..."],
 //	}
-type OwnedApps map[protocol.ServiceID][]string
+type OwnedApps map[sdk.ServiceID][]string
 
 // Centralized Gateway Mode - Shannon Protocol Integration
 //
@@ -39,7 +40,7 @@ type OwnedApps map[protocol.ServiceID][]string
 func GetCentralizedModeOwnedApps(
 	logger polylog.Logger,
 	ownedAppsPrivateKeysHex []string,
-	lazyFullNode *LazyFullNode,
+	lazyFullNode *fullnode.LazyFullNode,
 ) (OwnedApps, error) {
 	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
@@ -76,7 +77,7 @@ func GetCentralizedModeOwnedApps(
 		}
 
 		appServiceConfig := appServiceConfigs[0]
-		serviceID := protocol.ServiceID(appServiceConfig.GetServiceId())
+		serviceID := sdk.ServiceID(appServiceConfig.GetServiceId())
 		if serviceID == "" {
 			logger.Error().Msgf("should never happen: app with address %s is staked for service with an empty ID", appAddr)
 			return nil, fmt.Errorf("app with address %s is staked for service with an empty ID", appAddr)
@@ -93,7 +94,7 @@ func GetCentralizedModeOwnedApps(
 // getCentralizedGatewayModeSessions returns the set of permitted sessions under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeSessions(
 	ctx context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With(
 		"method", "getCentralizedGatewayModeSessions",

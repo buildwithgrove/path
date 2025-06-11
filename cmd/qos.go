@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
@@ -18,10 +18,10 @@ func getServiceQoSInstances(
 	logger polylog.Logger,
 	gatewayConfig config.GatewayConfig,
 	protocolInstance gateway.Protocol,
-) (map[protocol.ServiceID]gateway.QoSService, error) {
+) (map[sdk.ServiceID]gateway.QoSService, error) {
 	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
 	// need to manually add entries for every new QoS implementation.
-	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
+	qosServices := make(map[sdk.ServiceID]gateway.QoSService)
 
 	logger = logger.With("module", "qos")
 

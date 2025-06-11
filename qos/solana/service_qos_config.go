@@ -1,6 +1,6 @@
 package solana
 
-import "github.com/buildwithgrove/path/protocol"
+import sdk "github.com/pokt-network/shannon-sdk"
 
 // QoSType is the QoS type for the Solana blockchain.
 const QoSType = "solana"
@@ -8,7 +8,7 @@ const QoSType = "solana"
 // ServiceQoSConfig defines the base interface for service QoS configurations.
 // This avoids circular dependency with the config package.
 type ServiceQoSConfig interface {
-	GetServiceID() protocol.ServiceID
+	GetServiceID() sdk.ServiceID
 	GetServiceQoSType() string
 }
 
@@ -20,7 +20,7 @@ type SolanaServiceQoSConfig interface {
 
 // NewSolanaServiceQoSConfig creates a new Solana service configuration.
 func NewSolanaServiceQoSConfig(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	chainID string,
 ) SolanaServiceQoSConfig {
 	return solanaServiceQoSConfig{
@@ -33,13 +33,13 @@ func NewSolanaServiceQoSConfig(
 var _ SolanaServiceQoSConfig = (*solanaServiceQoSConfig)(nil)
 
 type solanaServiceQoSConfig struct {
-	serviceID protocol.ServiceID
+	serviceID sdk.ServiceID
 	chainID   string
 }
 
 // GetServiceID returns the ID of the service.
 // Implements the ServiceQoSConfig interface.
-func (c solanaServiceQoSConfig) GetServiceID() protocol.ServiceID {
+func (c solanaServiceQoSConfig) GetServiceID() sdk.ServiceID {
 	return c.serviceID
 }
 

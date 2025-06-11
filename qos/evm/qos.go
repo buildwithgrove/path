@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -104,7 +105,7 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 // HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
 //   - takes a pointer to the DisqualifiedEndpointResponse
 //   - called by the devtools.DisqualifiedEndpointReporter to fill it with the QoS-specific data.
-func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID sdk.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 	qos.logger.Info().Msgf("hydrating disqualified endpoints response for service ID: %s", serviceID)
 	details.QoSLevelDisqualifiedEndpoints = qos.serviceState.getDisqualifiedEndpointsResponse(serviceID)
 }

@@ -7,12 +7,12 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 var (
@@ -60,7 +60,7 @@ type requestContext struct {
 	dataReporter RequestResponseReporter
 
 	// QoS related request context
-	serviceID  protocol.ServiceID
+	serviceID  sdk.ServiceID
 	serviceQoS QoSService
 	qosCtx     RequestQoSContext
 

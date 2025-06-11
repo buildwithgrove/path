@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -52,7 +53,7 @@ type requestContext struct {
 	// service_id is the identifier for the Solana QoS implementation.
 	// It is the "alias" or human readable interpretation of the chain_id.
 	// Used in generating observations.
-	serviceID protocol.ServiceID
+	serviceID sdk.ServiceID
 
 	// The length of the request payload in bytes.
 	requestPayloadLength uint

@@ -23,7 +23,7 @@ type FullNode interface {
 // It takes an unsigned relay request and an application, and returns a relay request signed either by the gateway that has delegation from the app.
 // If/when the Permissionless Gateway Mode is supported by the Shannon integration, the app's own private key may also be used for signing the relay request.
 type RelayRequestSigner interface {
-	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
+	SignRelayRequest(ctx context.Context, req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
 
 // SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
@@ -202,7 +202,7 @@ func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 	}
 
 	app := b.selectedEndpoint.Session().GetApplication()
-	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(unsignedRelayRequest, *app)
+	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(b.ctx, unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())
 	}

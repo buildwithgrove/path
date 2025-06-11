@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -25,7 +26,7 @@ type ServiceState struct {
 	// chainID and serviceID to add to endpoint checks.
 	// Used by observations of Synthetic requests.
 	chainID   string
-	serviceID protocol.ServiceID
+	serviceID sdk.ServiceID
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.

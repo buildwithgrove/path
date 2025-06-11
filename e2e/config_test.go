@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
+	sdk "github.com/pokt-network/shannon-sdk"
 	"gopkg.in/yaml.v3"
-
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // -----------------------------------------------------------------------------
@@ -43,10 +42,10 @@ func getEnvConfig() (envConfig, error) {
 		return envConfig{}, err
 	}
 
-	var testServiceIDs []protocol.ServiceID
+	var testServiceIDs []sdk.ServiceID
 	if testServiceIDsEnv := os.Getenv(envTestServiceIDs); testServiceIDsEnv != "" {
 		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
-			testServiceIDs = append(testServiceIDs, protocol.ServiceID(serviceID))
+			testServiceIDs = append(testServiceIDs, sdk.ServiceID(serviceID))
 		}
 	}
 
@@ -230,16 +229,16 @@ type (
 		services TestServices
 
 		// Below fields are all unmarshalled from the YAML files
-		E2ELoadTestConfig      E2ELoadTestConfig                    `yaml:"e2e_load_test_config"`
-		DefaultServiceConfig   ServiceConfig                        `yaml:"default_service_config"`
-		ServiceConfigOverrides map[protocol.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
+		E2ELoadTestConfig      E2ELoadTestConfig               `yaml:"e2e_load_test_config"`
+		DefaultServiceConfig   ServiceConfig                   `yaml:"default_service_config"`
+		ServiceConfigOverrides map[sdk.ServiceID]ServiceConfig `yaml:"service_config_overrides"`
 	}
 
 	// envConfig for environment configuration (loaded from environment variables, not YAML)
 	envConfig struct {
 		testMode       testMode
 		testProtocol   testProtocol
-		testServiceIDs []protocol.ServiceID
+		testServiceIDs []sdk.ServiceID
 	}
 
 	// E2ELoadTestConfig for test mode configuration
@@ -314,7 +313,7 @@ func (c *Config) getTestProtocol() testProtocol {
 	return c.envConfig.testProtocol
 }
 
-func (c *Config) getTestServiceIDs() []protocol.ServiceID {
+func (c *Config) getTestServiceIDs() []sdk.ServiceID {
 	return c.envConfig.testServiceIDs
 }
 

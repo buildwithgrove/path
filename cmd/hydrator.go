@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // TODO_TECHDEBT: Make this configurable.
@@ -23,7 +23,7 @@ const defaultProtocolHealthTimeout = 2 * time.Minute
 func setupEndpointHydrator(
 	cmdLogger polylog.Logger,
 	protocolInstance gateway.Protocol,
-	qosServices map[protocol.ServiceID]gateway.QoSService,
+	qosServices map[sdk.ServiceID]gateway.QoSService,
 	metricsReporter gateway.RequestResponseReporter,
 	dataReporter gateway.RequestResponseReporter,
 	hydratorConfig config.EndpointHydratorConfig,

@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -60,7 +60,7 @@ type (
 		HandleServiceRequest(context.Context, *http.Request, http.ResponseWriter)
 	}
 	disqualifiedEndpointsReporter interface {
-		ReportEndpointStatus(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
+		ReportEndpointStatus(sdk.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
 
@@ -201,7 +201,7 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 
 // handleDisqualifiedEndpoints returns a JSON list of disqualified endpoints
 func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Request) {
-	serviceID := protocol.ServiceID(req.Header.Get(request.HTTPHeaderTargetServiceID))
+	serviceID := sdk.ServiceID(req.Header.Get(request.HTTPHeaderTargetServiceID))
 	if serviceID == "" {
 		errMsg := `{"error": "400 Bad Request", "message": "Target-Service-Id header is required"}`
 		r.logger.Error().Msg(errMsg)

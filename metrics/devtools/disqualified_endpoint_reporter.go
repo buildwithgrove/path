@@ -4,23 +4,22 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 type (
 	// ProtocolDisqualifiedEndpointsReporter is an interface that provides data about sanctioned endpoints at the protocol level.
 	ProtocolDisqualifiedEndpointsReporter interface {
 		// GetTotalServiceEndpointsCount returns the total number of service endpoints for a given service ID.
-		GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
+		GetTotalServiceEndpointsCount(sdk.ServiceID, *http.Request) (int, error)
 		// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
-		HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *DisqualifiedEndpointResponse)
+		HydrateDisqualifiedEndpointsResponse(sdk.ServiceID, *DisqualifiedEndpointResponse)
 	}
 
 	// QoSDisqualifiedEndpointsReporter is an interface that provides data about disqualified endpoints at the QoS level.
 	QoSDisqualifiedEndpointsReporter interface {
 		// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
-		HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *DisqualifiedEndpointResponse)
+		HydrateDisqualifiedEndpointsResponse(sdk.ServiceID, *DisqualifiedEndpointResponse)
 	}
 )
 
@@ -32,13 +31,13 @@ type (
 type DisqualifiedEndpointReporter struct {
 	Logger                polylog.Logger
 	ProtocolLevelReporter ProtocolDisqualifiedEndpointsReporter
-	QoSLevelReporters     map[protocol.ServiceID]QoSDisqualifiedEndpointsReporter
+	QoSLevelReporters     map[sdk.ServiceID]QoSDisqualifiedEndpointsReporter
 }
 
 // ReportEndpointStatus collects data about disqualified endpoints from both the protocol and QoS levels.
 // It is used by the `/disqualified_endpoints` URL path in the router to provide
 // useful information about currently disqualified endpoints for development and debugging.
-func (r *DisqualifiedEndpointReporter) ReportEndpointStatus(serviceID protocol.ServiceID, httpReq *http.Request) (DisqualifiedEndpointResponse, error) {
+func (r *DisqualifiedEndpointReporter) ReportEndpointStatus(serviceID sdk.ServiceID, httpReq *http.Request) (DisqualifiedEndpointResponse, error) {
 	r.Logger.Info().Msgf("Reporting disqualified endpoints for service ID: %s", serviceID)
 
 	var serviceEndpointsCount int

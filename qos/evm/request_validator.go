@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -30,7 +30,7 @@ const maxErrMessageLen = 1000
 type evmRequestValidator struct {
 	logger       polylog.Logger
 	chainID      string
-	serviceID    protocol.ServiceID
+	serviceID    sdk.ServiceID
 	serviceState *serviceState
 }
 
@@ -126,7 +126,7 @@ func (erv *evmRequestValidator) createRequestUnmarshalingFailureContext(id jsonr
 // - qosobservations.Observations: A structured observation containing details about the validation failure
 func createRequestUnmarshalingFailureObservation(
 	_ jsonrpc.ID,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	chainID string,
 	err error,
 ) *qosobservations.Observations_Evm {
@@ -160,7 +160,7 @@ func createRequestUnmarshalingFailureObservation(
 // Returns:
 // - qosobservations.Observations: A structured observation containing details about the HTTP read failure
 func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	chainID string,
 	err error,
 ) *qosobservations.Observations_Evm {

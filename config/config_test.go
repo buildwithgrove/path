@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pokt-network/shannon-sdk/fullnode"
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config/morse"
@@ -62,13 +63,13 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			filePath: "./examples/config.shannon_example.yaml",
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
-					FullNodeConfig: shannonprotocol.FullNodeConfig{
+					FullNodeConfig: fullnode.FullNodeConfig{
 						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
-						GRPCConfig: shannonprotocol.GRPCConfig{
+						GRPCConfig: fullnode.GRPCConfig{
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
 						LazyMode: false,
-						CacheConfig: shannonprotocol.CacheConfig{
+						CacheConfig: fullnode.CacheConfig{
 							SessionTTL: 30 * time.Second,
 						},
 					},

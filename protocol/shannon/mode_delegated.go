@@ -7,8 +7,8 @@ import (
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 )
 
@@ -24,7 +24,7 @@ import (
 // getDelegatedGatewayModeSession returns the permitted session under Delegated gateway mode, for the supplied HTTP request.
 func (p *Protocol) getDelegatedGatewayModeSession(
 	ctx context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With("method", "getDelegatedGatewayModeSessions")
@@ -71,9 +71,9 @@ func (p *Protocol) getDelegatedGatewayModeSession(
 }
 
 // appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
-func appIsStakedForService(serviceID protocol.ServiceID, app *apptypes.Application) bool {
+func appIsStakedForService(serviceID sdk.ServiceID, app *apptypes.Application) bool {
 	for _, svcCfg := range app.ServiceConfigs {
-		if protocol.ServiceID(svcCfg.ServiceId) == serviceID {
+		if sdk.ServiceID(svcCfg.ServiceId) == serviceID {
 			return true
 		}
 	}

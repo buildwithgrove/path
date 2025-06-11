@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -29,7 +29,7 @@ const maxErrMessageLen = 1000
 type requestValidator struct {
 	logger        polylog.Logger
 	chainID       string
-	serviceID     protocol.ServiceID
+	serviceID     sdk.ServiceID
 	endpointStore *EndpointStore
 }
 
@@ -134,7 +134,7 @@ func (rv *requestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.I
 //   - Structured observation with failure details
 func createRequestUnmarshalingFailureObservation(
 	_ jsonrpc.ID,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	chainID string,
 	err error,
 	jsonrpcResponse jsonrpc.Response,
@@ -170,7 +170,7 @@ func createRequestUnmarshalingFailureObservation(
 // Returns:
 //   - Structured observation with HTTP read failure details
 func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	chainID string,
 	err error,
 	jsonrpcResponse jsonrpc.Response,

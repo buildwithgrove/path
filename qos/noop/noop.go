@@ -12,6 +12,7 @@ import (
 	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // TODO_TECHDEBT(@adshmh): support customization of the endpoint response's timeout.
@@ -71,5 +72,5 @@ func requestContextFromError(err error) *requestContext {
 }
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for the noop QoS.
-func (NoOpQoS) HydrateDisqualifiedEndpointsResponse(_ protocol.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
+func (NoOpQoS) HydrateDisqualifiedEndpointsResponse(_ sdk.ServiceID, _ *devtools.DisqualifiedEndpointResponse) {
 }

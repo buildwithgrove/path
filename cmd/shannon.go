@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
+	"github.com/pokt-network/shannon-sdk/fullnode"
 
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
@@ -11,14 +13,17 @@ import (
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
+// TODO_NEXT(@commoddity): Replace getShannonFullNode with getShannonGatewayClient method
+// once the GatewayClient is implemented in the SDK.
+
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
 // It also returns the owned apps if the gateway mode is Centralized.
-func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, shannon.OwnedApps, error) {
+func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, shannon.OwnedApps, error) {
 	fullNodeConfig := config.FullNodeConfig
 
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(fullNodeConfig)
+	lazyFullNode, err := fullnode.NewLazyFullNode(fullNodeConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
 	}
@@ -36,7 +41,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		}
 	}
 
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
+	fullNode, err := fullnode.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
 	}

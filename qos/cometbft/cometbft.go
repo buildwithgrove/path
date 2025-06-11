@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // QoS implements gateway.QoSService by providing:
@@ -96,5 +96,5 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for the CometBFT QoS.
 // TODO_TECHDEBT(@commoddity): implement this for CometBFT to enable debugging QoS results.
-func (QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+func (QoS) HydrateDisqualifiedEndpointsResponse(serviceID sdk.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 }

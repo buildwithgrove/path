@@ -3,8 +3,6 @@ package shannon
 import (
 	"errors"
 	"fmt"
-	"net"
-	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -25,26 +23,12 @@ const (
 var (
 	ErrShannonInvalidGatewayPrivateKey                = errors.New("invalid shannon gateway private key")
 	ErrShannonInvalidGatewayAddress                   = errors.New("invalid shannon gateway address")
-	ErrShannonInvalidNodeUrl                          = errors.New("invalid shannon node URL")
-	ErrShannonInvalidGrpcHostPort                     = errors.New("invalid shannon grpc host:port")
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
-	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
 )
 
+// TODO_NEXT(@commoddity): Move gateway config to SDK gateway client package
 type (
-	FullNodeConfig struct {
-		RpcURL     string     `yaml:"rpc_url"`
-		GRPCConfig GRPCConfig `yaml:"grpc_config"`
-
-		// LazyMode, if set to true, will disable all caching of onchain data. For
-		// example, this disables caching of apps and sessions.
-		LazyMode bool `yaml:"lazy_mode" default:"true"`
-
-		// Configuration options for the cache when LazyMode is false
-		CacheConfig CacheConfig `yaml:"cache_config"`
-	}
-
 	GatewayConfig struct {
 		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
 		GatewayAddress          string               `yaml:"gateway_address"`
@@ -61,10 +45,6 @@ type (
 		MinConnectTimeout time.Duration `yaml:"min_connect_timeout"`
 		KeepAliveTime     time.Duration `yaml:"keep_alive_time"`
 		KeepAliveTimeout  time.Duration `yaml:"keep_alive_timeout"`
-	}
-
-	CacheConfig struct {
-		SessionTTL time.Duration `yaml:"session_ttl"`
 	}
 )
 
@@ -93,19 +73,6 @@ func (gc GatewayConfig) Validate() error {
 		}
 	}
 
-	return nil
-}
-
-func (c FullNodeConfig) Validate() error {
-	if !isValidURL(c.RpcURL) {
-		return ErrShannonInvalidNodeUrl
-	}
-	if !isValidHostPort(c.GRPCConfig.HostPort) {
-		return ErrShannonInvalidGrpcHostPort
-	}
-	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -138,49 +105,4 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 		c.KeepAliveTimeout = defaultKeepAliveTimeout
 	}
 	return *c
-}
-
-// Session TTL should match the protocol's session length.
-const defaultSessionCacheTTL = 30 * time.Second
-
-func (c *CacheConfig) validate(lazyMode bool) error {
-	if lazyMode && c.SessionTTL == 0 {
-		return ErrShannonCacheConfigSetForLazyMode
-	}
-	return nil
-}
-
-func (c *CacheConfig) hydrateDefaults() {
-	if c.SessionTTL == 0 {
-		c.SessionTTL = defaultSessionCacheTTL
-	}
-}
-
-// isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
-func isValidURL(urlStr string) bool {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	return true
-}
-
-// isValidHostPort returns true if the supplied string can be parsed into a host and port combination.
-func isValidHostPort(hostPort string) bool {
-	host, port, err := net.SplitHostPort(hostPort)
-
-	if err != nil {
-		return false
-	}
-
-	if host == "" || port == "" {
-		return false
-	}
-
-	return true
 }

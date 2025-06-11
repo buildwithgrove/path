@@ -9,6 +9,7 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -24,7 +25,7 @@ const defaultRelayTimeoutMillisec = 5000
 type requestContext struct {
 	logger    polylog.Logger
 	fullNode  FullNode
-	serviceID protocol.ServiceID
+	serviceID sdk.ServiceID
 
 	// selectedEndpoint is the endpoint that has been selected for sending a relay.
 	selectedEndpoint *endpoint

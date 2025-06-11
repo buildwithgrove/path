@@ -5,7 +5,7 @@ import (
 
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // TODO_FUTURE:
@@ -55,7 +55,7 @@ func (s sanction) toSanctionDetails(
 		EndpointURL:     endpointURL,
 		AppAddr:         appAddr,
 		SessionID:       sessionID,
-		ServiceID:       protocol.ServiceID(s.sessionServiceID),
+		ServiceID:       sdk.ServiceID(s.sessionServiceID),
 		Reason:          s.reason,
 		SanctionType:    protocolobservations.MorseSanctionType_name[int32(sanctionType)],
 		ErrorType:       protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
