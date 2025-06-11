@@ -3,6 +3,7 @@ module github.com/buildwithgrove/path
 go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
+// TODO_IN_THIS_PR(@commoddity): Remove this once shannon-sdk updated
 replace github.com/pokt-network/shannon-sdk => ../shannon-sdk
 
 // replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
