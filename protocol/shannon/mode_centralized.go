@@ -11,14 +11,6 @@ import (
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
-// ownedApp represents a single app owned by the gateway operator in Centralized Gateway Mode.
-type OwnedApp struct {
-	// The address of the app. E.g. "pokt1..."
-	AppAddr string
-	// The service ID for which the app is staked. E.g. "anvil"
-	StakedServiceID protocol.ServiceID
-}
-
 // Centralized Gateway Mode - Shannon Protocol Integration
 //
 // - PATH (Shannon instance) holds private keys for gateway operator's apps
@@ -33,15 +25,26 @@ type OwnedApp struct {
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
 //   - Populates `appAddr` and `stakedServiceID` for each app
+//
+// The owned apps map is a map of service IDs to a list of app addresses owned by
+// the gateway operator in Centralized Gateway Mode.
+// One service ID can have multiple apps owned by the gateway operator.
+//
+// Example:
+//
+//	{
+//	  "anvil": ["pokt1...", "pokt2..."],
+//	  "eth": ["pokt3...", "pokt4..."],
+//	}
 func GetCentralizedModeOwnedApps(
 	logger polylog.Logger,
 	ownedAppsPrivateKeysHex []string,
 	lazyFullNode *LazyFullNode,
-) ([]OwnedApp, error) {
+) (map[protocol.ServiceID][]string, error) {
 	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
 
-	var ownedApps []OwnedApp
+	ownedApps := make(map[protocol.ServiceID][]string)
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
 		// Retrieve the app's secp256k1 private key from the hex string.
 		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
@@ -80,20 +83,13 @@ func GetCentralizedModeOwnedApps(
 		}
 
 		// Add the app to the list of owned apps.
-		ownedApps = append(ownedApps, OwnedApp{
-			AppAddr:         appAddr,
-			StakedServiceID: serviceID,
-		})
+		ownedApps[serviceID] = append(ownedApps[serviceID], appAddr)
 	}
 
 	logger.Debug().Msgf("Successfully built the list of %d owned apps.", len(ownedApps))
 	return ownedApps, nil
 }
 
-// TODO_IMPROVE(@commoddity, @adshmh): This function currently loops through all apps owned by the gateway.
-// Without a caching FullNode, this results in extremely slow behaviour. We should look into improving the
-// efficiency of this lookup to get the list of apps owned by the gateway.
-//
 // getCentralizedGatewayModeSessions returns the set of permitted sessions under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeSessions(
 	ctx context.Context,
@@ -105,17 +101,17 @@ func (p *Protocol) getCentralizedGatewayModeSessions(
 	)
 	logger.Debug().Msg("fetching the list of owned apps.")
 
+	// TODO_TECHDEBT(@commoddity): if an owned app is changed re-staked for a
+	// different service, PATH must be restarted for changes to take effect.
+	ownedAppsForService, ok := p.ownedApps[serviceID]
+	if !ok || len(ownedAppsForService) == 0 {
+		return nil, fmt.Errorf("no owned apps for service %s", serviceID)
+	}
+
 	var permittedSessions []sessiontypes.Session
 
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
-	for _, ownedApp := range p.ownedApps {
-		// Skip the app if it is not staked for the requested service.
-		if ownedApp.StakedServiceID != serviceID {
-			continue
-		}
-
-		ownedAppAddr := ownedApp.AppAddr
-
+	for _, ownedAppAddr := range ownedAppsForService {
 		logger.Info().Msgf("checking app %s owned by the gateway", ownedAppAddr)
 
 		session, err := p.FullNode.GetSession(ctx, serviceID, ownedAppAddr)
