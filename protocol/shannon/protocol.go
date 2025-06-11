@@ -320,6 +320,9 @@ func (p *Protocol) getAppsUniqueEndpoints(
 			continue
 		}
 
+		// hydrate the logger with session details.
+		logger = hydrateLoggerWithSession(logger, &session)
+
 		appEndpoints, err := endpointsFromSession(session)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
