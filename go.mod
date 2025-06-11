@@ -15,8 +15,8 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.1.13
-	github.com/pokt-network/shannon-sdk v0.0.0-20250601170546-785400478d5f
+	github.com/pokt-network/poktroll v0.1.17
+	github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tsenart/vegeta v12.7.0+incompatible

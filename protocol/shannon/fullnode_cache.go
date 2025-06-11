@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	accounttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -14,17 +15,6 @@ import (
 
 	"github.com/buildwithgrove/path/protocol"
 )
-
-// TODO_IMPROVE(@commoddity): Implement a FullNode interface that adapts caching strategy based on GatewayMode:
-// - 1. Centralized Mode:
-//   - List of owned apps is predefined.
-//   - Onchain data can be proactively cached before any user requests.
-//
-// - 2. Delegated Mode:
-//   - Apps are specified dynamically by incoming user requests.
-//   - Cache must be built incrementally (lazy-loading) as new apps are requested.
-//
-// - 3. Add more documentation around lazy mode
 
 // ---------------- Cache Configuration ----------------
 const (
@@ -54,12 +44,17 @@ const (
 	// SturdyC also runs background eviction jobs to remove expired entries automatically.
 	evictionPercentage = 10
 
+	// TODO_TECHDEBT(@commoddity): As part of Issue #291, we should revisit the caching refresh mechanisms
+	// to use the Shannon SDK's block client in order to trigger a Session refresh only when necessary
+	// (ie. when we have passed the Session end block height)
+	//
 	// minEarlyRefreshPercentage: Minimum percentage of the TTL before the cache early refresh may start.
-	// For example, if the TTL is 4 minutes, the cache will start refreshing at 1.2 minutes.
-	minEarlyRefreshPercentage = 0.3
+	// For a 30-second TTL, this means refresh can start at 22.5 seconds (75% of 30s).
+	minEarlyRefreshPercentage = 0.75
 
 	// maxEarlyRefreshPercentage: Maximum percentage of the TTL before the cache early refresh may start.
-	// For example, if the TTL is 4 minutes, the cache will start refreshing at 3.6 minutes.
+	// For a 30-second TTL, this means refresh will definitely start by 27 seconds (90% of 30s),
+	// giving a 3-second buffer before expiry to ensure items never exceed 30 seconds old.
 	maxEarlyRefreshPercentage = 0.9
 )
 
@@ -69,7 +64,7 @@ const (
 // BEFORE the cached entry expires. This prevents cache misses and eliminates latency
 // spikes by ensuring hot data is always available immediately.
 //
-// Cache refresh timing is 30-90% of TTL (e.g. 1.2-3.6 minutes for 4-minute TTL).
+// Cache refresh timing is 75-90% of TTL (e.g. 22.5-27 seconds for 30-second TTL).
 // This spread is to avoid overloading the full node with too many simultaneous requests.
 //
 // Reference: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
@@ -85,10 +80,7 @@ func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
 
 // Use cache prefixes to avoid collisions with other cache keys.
 // This is a simple way to namespace the cache keys.
-const (
-	appCacheKeyPrefix     = "app"
-	sessionCacheKeyPrefix = "session"
-)
+const sessionCacheKeyPrefix = "session"
 
 var _ FullNode = &cachingFullNode{}
 
@@ -100,7 +92,7 @@ var _ FullNode = &cachingFullNode{}
 // Background refreshes happen before entries expire, so GetApp/GetSession never block.
 //
 // Example times (values may change):
-//   - 4min TTL, refresh at 1.2-3.6min (30-90% of TTL)
+//   - 30s TTL, refresh at 22.5-27s (75-90% of TTL)
 //
 // Benefits: Zero-latency reads for active traffic, thundering herd protection,
 // automatic load balancing, and graceful degradation.
@@ -111,53 +103,37 @@ type cachingFullNode struct {
 
 	// Use a LazyFullNode as the underlying node
 	// for fetching data from the protocol.
-	lazyFullNode *lazyFullNode
-
-	// Applications can be cached indefinitely. They're invalidated only when they unstake.
-	//
-	// TODO_MAINNET_MIGRATION(@Olshansk): Ensure applications are invalidated during unstaking.
-	//   Revisit these values after mainnet migration to ensure no race conditions.
-	appCache *sturdyc.Client[*apptypes.Application]
+	lazyFullNode *LazyFullNode
 
 	// As of #275, on Beta TestNet, sessions are 5 minutes.
 	//
 	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit these values after mainnet migration to ensure no race conditions.
 	sessionCache *sturdyc.Client[sessiontypes.Session]
+
+	// The account client that wraps the underlying account fetcher with a SturdyC caching layer.
+	cachingAccountClient *sdk.AccountClient
 }
 
 // NewCachingFullNode creates a new CachingFullNode that wraps a LazyFullNode with caching layers.
 //
 // The caching layers are:
-//   - App cache: Gets apps from the cache or calls the lazyFullNode.GetApp()
 //   - Session cache: Gets sessions from the cache or calls the lazyFullNode.GetSession()
+//     (Apps are sourced from the Session struct, so no need to cache them.)
 //   - Account cache: Used in the `cachingPoktNodeAccountFetcher` to cache account data indefinitely.
 //
 // The caching layers are configured with early refreshes to prevent thundering herd and eliminate latency spikes.
 func NewCachingFullNode(
 	logger polylog.Logger,
-	lazyFullNode *lazyFullNode,
+	lazyFullNode *LazyFullNode,
 	cacheConfig CacheConfig,
 ) (*cachingFullNode, error) {
-	// Set default app and session TTLs if not set
+	// Set default session TTL if not set
 	cacheConfig.hydrateDefaults()
 
-	// Configure app cache with early refreshes
-	appMinRefreshDelay, appMaxRefreshDelay := getCacheDelays(cacheConfig.AppTTL)
-
-	// Create the app cache with early refreshes
-	appCache := sturdyc.New[*apptypes.Application](
-		cacheCapacity,
-		numShards,
-		cacheConfig.AppTTL,
-		evictionPercentage,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-		sturdyc.WithEarlyRefreshes(
-			appMinRefreshDelay,
-			appMaxRefreshDelay,
-			cacheConfig.AppTTL,
-			retryBaseDelay,
-		),
-	)
+	// Log cache configuration
+	logger.Debug().
+		Str("cache_config_session_ttl", cacheConfig.SessionTTL.String()).
+		Msgf("cachingFullNode - Cache Configuration")
 
 	// Configure session cache with early refreshes
 	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
@@ -177,44 +153,35 @@ func NewCachingFullNode(
 		),
 	)
 
-	// Wrap the lazy full node's account fetcher with a SturdyC caching layer,
-	// then assign the wrapped account fetcher to the underlying lazy full node.
-	//
-	// This implementation satisfies the `sdk.PoktNodeAccountFetcher` interface,
-	// but with a caching layer to avoid unnecessary requests to the full node.
-	wrapUnderlyingAccountFetcher(logger, lazyFullNode)
+	// Create the account cache, which is used to cache account responses from the full node.
+	// This cache is effectively infinite caching for the lifetime of the application,
+	// so no need to configure early refreshes with SturdyC.
+	accountCache := sturdyc.New[*accounttypes.QueryAccountResponse](
+		accountCacheCapacity,
+		numShards,
+		accountCacheTTL,
+		evictionPercentage,
+	)
 
 	// Initialize the caching full node with the modified lazy full node
 	return &cachingFullNode{
 		logger:       logger,
 		lazyFullNode: lazyFullNode,
-		appCache:     appCache,
 		sessionCache: sessionCache,
+		// Wrap the underlying account fetcher with a SturdyC caching layer.
+		cachingAccountClient: getCachingAccountClient(
+			logger,
+			accountCache,
+			lazyFullNode.accountClient,
+		),
 	}, nil
 }
 
-// GetApp returns the application with the given address, using a cached version if available.
-// The cache will automatically refresh the app in the background before it expires.
+// GetApp is a NoOp in the caching full node.
+// Apps are fetched on startup from the remote full node using the LazyFullNode.
+// During relaying, only sessions are fetched to ensure apps and sessions are always in sync.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
-	return cfn.appCache.GetOrFetch(
-		ctx,
-		getAppCacheKey(appAddr),
-		func(fetchCtx context.Context) (*apptypes.Application, error) {
-			cfn.logger.Debug().Str("app_key", getAppCacheKey(appAddr)).Msgf(
-				"[cachingFullNode.GetApp] Making request to full node",
-			)
-			return cfn.lazyFullNode.GetApp(fetchCtx, appAddr)
-		},
-	)
-}
-
-// getAppCacheKey returns the cache key for the given app address.
-// It uses the appCacheKeyPrefix and the app address to create a unique key.
-//
-// eg. "app:pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw"
-func getAppCacheKey(appAddr string) string {
-	return fmt.Sprintf("%s:%s", appCacheKeyPrefix, appAddr)
+	return nil, fmt.Errorf("GetApp is a NoOp in the caching full node")
 }
 
 // GetSession returns the session for the given service and app, using a cached version if available.
@@ -255,7 +222,7 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 
 // GetAccountClient delegates to the underlying node.
 func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
-	return cfn.lazyFullNode.GetAccountClient()
+	return cfn.cachingAccountClient
 }
 
 // IsHealthy delegates to the underlying node.

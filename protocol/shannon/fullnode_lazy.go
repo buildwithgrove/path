@@ -17,14 +17,14 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// The Shannon FullNode interface is implemented by the lazyFullNode struct below.
+// The Shannon FullNode interface is implemented by the LazyFullNode struct below.
 //
-// A lazyFullNode queries the onchain data for every data item it needs to do an action (e.g. serve a relay request, etc).
+// A LazyFullNode queries the onchain data for every data item it needs to do an action (e.g. serve a relay request, etc).
 // This is done to enable supporting short block times (a few seconds), by avoiding caching
 // which can result in failures due to stale data in the cache.
-var _ FullNode = &lazyFullNode{}
+var _ FullNode = &LazyFullNode{}
 
-// TODO_MVP(@adshmh): Rename `lazyFullNode`: this struct does not perform any caching and should be named accordingly.
+// TODO_MVP(@adshmh): Rename `LazyFullNode`: this struct does not perform any caching and should be named accordingly.
 //
 // LazyFullNode: default implementation of a full node for the Shannon.
 //
@@ -32,7 +32,7 @@ var _ FullNode = &lazyFullNode{}
 // - Intentionally avoids caching:
 //   - Enables support for short block times (e.g. LocalNet)
 //   - Use CachingFullNode struct if caching is desired for performance
-type lazyFullNode struct {
+type LazyFullNode struct {
 	// logger polylog.Logger
 
 	appClient     *sdk.ApplicationClient
@@ -42,7 +42,7 @@ type lazyFullNode struct {
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(config FullNodeConfig) (*lazyFullNode, error) {
+func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
@@ -65,7 +65,7 @@ func NewLazyFullNode(config FullNodeConfig) (*lazyFullNode, error) {
 		return nil, fmt.Errorf("NewSdk: error creating new account client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
-	fullNode := &lazyFullNode{
+	fullNode := &LazyFullNode{
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
@@ -78,7 +78,7 @@ func NewLazyFullNode(config FullNodeConfig) (*lazyFullNode, error) {
 // GetApp:
 // - Returns the onchain application matching the supplied application address.
 // - Required to fulfill the FullNode interface.
-func (lfn *lazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
+func (lfn *LazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
 	app, err := lfn.appClient.GetApplication(ctx, appAddr)
 	return &app, err
 }
@@ -86,7 +86,7 @@ func (lfn *lazyFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.
 // GetSession:
 // - Uses the Shannon SDK to fetch a session for the (serviceID, appAddr) combination.
 // - Required to fulfill the FullNode interface.
-func (lfn *lazyFullNode) GetSession(
+func (lfn *LazyFullNode) GetSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
@@ -118,7 +118,7 @@ func (lfn *lazyFullNode) GetSession(
 // ValidateRelayResponse:
 // - Validates the raw response bytes received from an endpoint.
 // - Uses the SDK and the account client for validation.
-func (lfn *lazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+func (lfn *LazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	return sdk.ValidateRelayResponse(
 		context.Background(),
 		supplierAddr,
@@ -130,14 +130,14 @@ func (lfn *lazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress,
 // IsHealthy:
 // - Always returns true for a LazyFullNode.
 // - Required to fulfill the FullNode interface.
-func (lfn *lazyFullNode) IsHealthy() bool {
+func (lfn *LazyFullNode) IsHealthy() bool {
 	return true
 }
 
 // GetAccountClient:
 // - Returns the account client created by the lazy fullnode.
 // - Used to create relay request signers.
-func (lfn *lazyFullNode) GetAccountClient() *sdk.AccountClient {
+func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
 }
 

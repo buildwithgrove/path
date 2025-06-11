@@ -69,8 +69,7 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						},
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
-							AppTTL:     12 * time.Minute,
-							SessionTTL: 4 * time.Minute,
+							SessionTTL: 30 * time.Second,
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
