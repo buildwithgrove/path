@@ -28,11 +28,11 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 // Evaluate the exact implementation of this as defined in issue:
 // https://github.com/buildwithgrove/path/issues/291
 
-// getValidGatewaySessions returns the valid sessions under the supplied gateway mode.
-// The valid sessions are generated as follows:
-//   - Centralized mode: gateway address and owned apps addresses (specified in configs) are used to generated valid sessions.
-//   - Delegated mode: gateway address and app address (specified in the HTTP header) are used to generated valid sessions.
-func (p *Protocol) getValidGatewaySessions(
+// getActiveGatewaySessions returns the active sessions under the supplied gateway mode.
+// The active sessions are retrieved as follows:
+//   - Centralized mode: gateway address and owned apps addresses (specified in configs) are used to retrieve active sessions.
+//   - Delegated mode: gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
+func (p *Protocol) getActiveGatewaySessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
@@ -40,17 +40,17 @@ func (p *Protocol) getValidGatewaySessions(
 	p.logger.With(
 		"service_id", serviceID,
 		"gateway_mode", p.gatewayMode,
-	).Debug().Msg("fetching valid sessions using the current gateway mode and applicable applications.")
+	).Debug().Msg("fetching active sessions using the current gateway mode and applicable applications.")
 
 	switch p.gatewayMode {
 
 	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
-		return p.getCentralizedGatewayModeValidSessions(ctx, serviceID)
+		return p.getCentralizedGatewayModeActiveSessions(ctx, serviceID)
 
 	// Delegated gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeValidSession(ctx, serviceID, httpReq)
+		return p.getDelegatedGatewayModeActiveSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:

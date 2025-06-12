@@ -28,7 +28,10 @@ shannon_config:
     # If lazy_mode is true, the cache_config may not be set.
     cache_config:
       # The TTL for the session cache.
-      # TODO_IMPROVE(@olshansk): Align this with the onchain session TTL (num blocks and num blocks per session).
+      #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+      # The proposed change is to align session refreshes with actual session expiry time,
+      # using the session expiry block and the Shannon SDK's block client.
+      # When this is done, session cache TTL can be removed altogether.
       session_ttl: 30s
 
   gateway_config:

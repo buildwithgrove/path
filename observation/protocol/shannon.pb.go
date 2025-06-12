@@ -38,7 +38,7 @@ const (
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR ShannonRequestErrorType = 3
 	// Centralized gateway mode app does not delegate to the gateway.
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION ShannonRequestErrorType = 4
-	// Centralized gateway mode: no valid sessions found for service.
+	// Centralized gateway mode: no active sessions found for service.
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS ShannonRequestErrorType = 5
 	// Delegated gateway mode: could not extract app address from HTTP request
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP ShannonRequestErrorType = 6

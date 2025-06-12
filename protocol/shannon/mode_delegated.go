@@ -23,13 +23,13 @@ import (
 // - Each relay request is signed by the gateway key and sent on behalf of an app selected by the user.
 // - Users must select a specific app for each relay request (currently via HTTP request headers).
 //
-// getDelegatedGatewayModeValidSession returns the valid session under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeValidSession(
+// getDelegatedGatewayModeActiveSession returns active sessions for the selected app under Delegated gateway mode, for the supplied HTTP request.
+func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
-	logger := p.logger.With("method", "getDelegatedGatewayModeValidSession")
+	logger := p.logger.With("method", "getDelegatedGatewayModeActiveSession")
 
 	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {

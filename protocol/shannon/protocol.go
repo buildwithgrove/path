@@ -74,7 +74,7 @@ func NewProtocol(
 	var ownedApps map[protocol.ServiceID][]string
 	if config.GatewayMode == protocol.GatewayModeCentralized {
 		var err error
-		if ownedApps, err = GetCentralizedModeOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode); err != nil {
+		if ownedApps, err = getCentralizedModeOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode); err != nil {
 			return nil, fmt.Errorf("failed to get app addresses from config: %v", err)
 		}
 	}
@@ -152,19 +152,19 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	validSessions, err := p.getValidGatewaySessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msg("Relay request will fail: error building the valid sessions for service.")
+		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
-	logger = logger.With("number_of_valid_sessions", len(validSessions))
-	logger.Debug().Msg("fetched the set of valid sessions.")
+	logger = logger.With("number_of_valid_sessions", len(activeSessions))
+	logger.Debug().Msg("fetched the set of active sessions.")
 
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, validSessions, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -192,8 +192,8 @@ func (p *Protocol) AvailableEndpoints(
 //   - TODO_TECHDEBT: Decouple context building for different gateway modes.
 //
 // Behavior:
-//   - Retrieves valid sessions for the given service ID from the full node.
-//   - Retrieves unique endpoints available across all valid sessions
+//   - Retrieves active sessions for the given service ID from the full node.
+//   - Retrieves unique endpoints available across all active sessions
 //   - Filtering out sanctioned endpoints from list of unique endpoints.
 //   - Obtains the relay request signer appropriate for the current gateway mode.
 //   - Returns a fully initialized request context for use in downstream protocol operations.
@@ -212,16 +212,16 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	validSessions, err := p.getValidGatewaySessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving valid sessions for service %s", serviceID)
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, validSessions, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -319,22 +319,22 @@ func (p *Protocol) IsAlive() bool {
 func (p *Protocol) getSessionsUniqueEndpoints(
 	_ context.Context,
 	serviceID protocol.ServiceID,
-	validSessions []sessiontypes.Session,
+	activeSessions []sessiontypes.Session,
 	filterSanctioned bool, // will be true for calls to getAppsUniqueEndpoints made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getAppsUniqueEndpoints",
 		"service", serviceID,
-		"num_valid_sessions", len(validSessions),
+		"num_valid_sessions", len(activeSessions),
 	)
 	logger.Info().Msgf(
-		"About to fetch all unique endpoints for service %s given %d valid sessions.",
-		serviceID, len(validSessions),
+		"About to fetch all unique endpoints for service %s given %d active sessions.",
+		serviceID, len(activeSessions),
 	)
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
-	// Iterate over all valid sessions for the service ID.
-	for _, session := range validSessions {
+	// Iterate over all active sessions for the service ID.
+	for _, session := range activeSessions {
 		app := session.Application
 
 		// Using a single iteration scope for this logger.
@@ -395,7 +395,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		return nil, err
 	}
 
-	logger.Info().Msgf("Successfully fetched %d endpoints for valid sessions.", len(endpoints))
+	logger.Info().Msgf("Successfully fetched %d endpoints for active sessions.", len(endpoints))
 
 	return endpoints, nil
 }
@@ -405,14 +405,14 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()
 
-	// Get the list of valid sessions for the service ID.
-	validSessions, err := p.getValidGatewaySessions(ctx, serviceID, httpReq)
+	// Get the list of active sessions for the service ID.
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}
 
 	// Get all endpoints for the service ID without filtering sanctioned endpoints.
-	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, validSessions, false)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, false)
 	if err != nil {
 		return 0, err
 	}

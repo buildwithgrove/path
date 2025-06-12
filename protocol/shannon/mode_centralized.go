@@ -20,7 +20,7 @@ import (
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
-// GetCentralizedModeOwnedApps:
+// getCentralizedModeOwnedApps:
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
 //   - Populates `appAddr` and `stakedServiceID` for each app
@@ -34,7 +34,7 @@ import (
 //	  "anvil": ["pokt1...", "pokt2..."],
 //	  "eth": ["pokt3...", "pokt4..."],
 //	}
-func GetCentralizedModeOwnedApps(
+func getCentralizedModeOwnedApps(
 	logger polylog.Logger,
 	ownedAppsPrivateKeysHex []string,
 	fullNode FullNode,
@@ -88,16 +88,16 @@ func GetCentralizedModeOwnedApps(
 	return ownedAppsMap, nil
 }
 
-// getCentralizedGatewayModeValidSessions returns the set of valid sessions under the Centralized gateway mode.
-func (p *Protocol) getCentralizedGatewayModeValidSessions(
+// getCentralizedGatewayModeActiveSessions returns the set of active sessions under the Centralized gateway mode.
+func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With(
-		"method", "getCentralizedGatewayModeValidSessions",
+		"method", "getCentralizedGatewayModeActiveSessions",
 		"service_id", string(serviceID),
 	)
-	logger.Debug().Msgf("fetching valid sessions for the service %s.", serviceID)
+	logger.Debug().Msgf("fetching active sessions for the service %s.", serviceID)
 
 	// TODO_CRITICAL(@commoddity): if an owned app is changed (i.e. re-staked) for
 	// a different service, PATH must be restarted for changes to take effect.
