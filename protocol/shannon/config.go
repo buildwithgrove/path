@@ -141,6 +141,10 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 }
 
 // Session TTL should match the protocol's session length.
+// TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+// The proposed change is to align session refreshes with actual session expiry time,
+// using the session expiry block and the Shannon SDK's block client.
+// When this is done, session cache TTL can be removed altogether.
 const defaultSessionCacheTTL = 30 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {

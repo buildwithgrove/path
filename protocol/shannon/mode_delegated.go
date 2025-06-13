@@ -1,5 +1,10 @@
 package shannon
 
+// - TODO(@Olshansk): Revisit the security specification & requirements for how the paying app is selected.
+// - TODO_DOCUMENT(@Olshansk): Convert the Notion doc into a proper README.
+// - For more details, see:
+//   https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
+
 import (
 	"context"
 	"fmt"
@@ -12,22 +17,19 @@ import (
 	"github.com/buildwithgrove/path/request"
 )
 
-// Delegated Gateway Mode:
+// Delegated Gateway Mode - Shannon Protocol Integration
+//
 // - Represents a gateway operation mode with the following behavior:
-//   - Each relay request is signed by the gateway key and sent on behalf of an app selected by the user.
-//   - Users must select a specific app for each relay request (currently via HTTP request headers).
-// - TODO(@Olshansk): Revisit the security specification & requirements for how the paying app is selected.
-// - TODO_DOCUMENT(@Olshansk): Convert the Notion doc into a proper README.
-// - For more details, see:
-//   https://www.notion.so/buildwithgrove/Different-Modes-of-Operation-PATH-LocalNet-Discussions-122a36edfff6805e9090c9a14f72f3b5?pvs=4#122a36edfff680eea2fbd46c7696d845
-
-// getDelegatedGatewayModeSession returns the permitted session under Delegated gateway mode, for the supplied HTTP request.
-func (p *Protocol) getDelegatedGatewayModeSession(
+// - Each relay request is signed by the gateway key and sent on behalf of an app selected by the user.
+// - Users must select a specific app for each relay request (currently via HTTP request headers).
+//
+// getDelegatedGatewayModeActiveSession returns active sessions for the selected app under Delegated gateway mode, for the supplied HTTP request.
+func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
-	logger := p.logger.With("method", "getDelegatedGatewayModeSessions")
+	logger := p.logger.With("method", "getDelegatedGatewayModeActiveSession")
 
 	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
@@ -39,11 +41,12 @@ func (p *Protocol) getDelegatedGatewayModeSession(
 
 	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
 
+	// Retrieve the session for the selected app.
 	selectedSession, err := p.FullNode.GetSession(ctx, serviceID, selectedAppAddr)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchApp, selectedAppAddr, err)
-		logger.Error().Err(err).Msg("error fetching the app. Relay request will fail.")
+		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchSession, selectedAppAddr, err)
+		logger.Error().Err(err).Msg("Relay request will fail because of an error fetching the session for the app.")
 		return nil, err
 	}
 
@@ -54,14 +57,14 @@ func (p *Protocol) getDelegatedGatewayModeSession(
 	// Skip the session's app if it is not staked for the requested service.
 	if !appIsStakedForService(serviceID, selectedApp) {
 		err = fmt.Errorf("%w: app %s is not staked for the service", errProtocolContextSetupAppNotStaked, selectedApp.Address)
-		logger.Error().Err(err).Msg("app is not staked for the service. Relay request will fail.")
+		logger.Error().Err(err).Msg("Relay request will fail because the app is not staked for the service.")
 		return nil, err
 	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: gateway %s app %s. Relay request will fail.", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
-		logger.Error().Err(err).Msg("Gateway does not have delegation for the app. Relay request will fail.")
+		logger.Error().Err(err).Msg("Relay request will fail because the gateway does not have delegation for the app.")
 		return nil, err
 	}
 
