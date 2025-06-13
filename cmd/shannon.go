@@ -11,9 +11,6 @@ import (
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
-// TODO_NEXT(@commoddity): Replace getShannonFullNode with getShannonGatewayClient method
-// once the GatewayClient is implemented in the SDK.
-//
 // getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
 // It also returns the owned apps if the gateway mode is Centralized.
 func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, error) {
