@@ -3,8 +3,9 @@ package devtools
 import (
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
 	sdk "github.com/pokt-network/shannon-sdk"
+
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // DisqualifiedEndpointResponse contains useful information about currently disqualified endpoints.
