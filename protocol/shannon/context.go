@@ -220,14 +220,17 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	// Validate the response.
 	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
-		// TODO_MVP(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
+		// TODO_TECHDEBT(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
 		// 1. Enhance the `RelayResponse` struct with an error field:
 		// 	https://github.com/pokt-network/poktroll/blob/2ba8b60d6bd8d21949211844161f932dd383bb76/proto/pocket/service/relay.proto#L46
 		// 2. Update the classifyRelayError function to sanction endpoints depending on the error.
 		// 3. Enhance the Shannon metrics: proto/path/protocol/shannon.proto, specifically the RequestErrorType enum, to track the errors.
 		// 4. Update the files in `metrics.protocol.shannon` package to add/update metrics according to the above.
 		//
-		// Log the raw payload received from the endpoint.
+		// Log raw payload for error tracking:
+		// - RelayResponse lacks error field (see TODO above)
+		// - RelayMiner returns generic HTTP on errors (expired sessions, etc.)
+		// - Enables error analysis via PATH logs
 		responseStr := string(responseBz)
 		hydratedLogger.With(
 			"endpoint_payload", responseStr[:min(len(responseStr), maxLenLoggedEndpointPayload)],
