@@ -4,20 +4,20 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/shannon-sdk/fullnode"
 
 	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
-// getShannonFullNode builds and returns a Shannon FullNode configuration.
-// If the configuration provided is "lazy", it short circuits to a lazy node and bypasses caching.
+// getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration, using the supplied configuration.
 func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, error) {
 	fullNodeConfig := config.FullNodeConfig
 
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(fullNodeConfig)
+	lazyFullNode, err := fullnode.NewLazyFullNode(fullNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
 	}
@@ -27,7 +27,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 		return lazyFullNode, nil
 	}
 
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
+	fullNode, err := fullnode.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
 	}

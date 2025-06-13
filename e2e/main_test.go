@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // -----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ func Test_PATH_E2E(t *testing.T) {
 	logTestStartInfo(gatewayURL, testServices)
 
 	// Initialize service summaries map (will be logged out at the end of the test)
-	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
+	serviceSummaries := make(map[sdk.ServiceID]*serviceSummary)
 
 	// Assign test service configs to each test service
 	testServiceConfigs := setTestServiceConfigs(testServices)
@@ -161,8 +161,8 @@ func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, tea
 }
 
 // setTestServiceConfigs sets the test service configs for the test services.
-func setTestServiceConfigs(testServices []*TestService) map[protocol.ServiceID]ServiceConfig {
-	serviceConfigs := make(map[protocol.ServiceID]ServiceConfig)
+func setTestServiceConfigs(testServices []*TestService) map[sdk.ServiceID]ServiceConfig {
+	serviceConfigs := make(map[sdk.ServiceID]ServiceConfig)
 	for _, ts := range testServices {
 		serviceConfig := cfg.DefaultServiceConfig
 		if override, exists := cfg.ServiceConfigOverrides[ts.ServiceID]; exists {

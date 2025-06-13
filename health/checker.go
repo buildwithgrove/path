@@ -7,8 +7,7 @@ import (
 	"slices"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 const (
@@ -51,7 +50,7 @@ type (
 	// ServiceIDReporter is satisfied by the protocol instance and returns
 	// the list of service IDs that the protocol instance is configured for.
 	ServiceIDReporter interface {
-		ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
+		ConfiguredServiceIDs() map[sdk.ServiceID]struct{}
 	}
 )
 
@@ -67,7 +66,7 @@ type healthCheckJSON struct {
 	// ReadyStates is a map of component names to their ready status
 	ReadyStates map[string]bool `json:"readyStates,omitempty"`
 	// ConfiguredServiceIDs lists the service IDs that the PATH instance is configured for.
-	ConfiguredServiceIDs []protocol.ServiceID `json:"configuredServiceIDs,omitempty"`
+	ConfiguredServiceIDs []sdk.ServiceID `json:"configuredServiceIDs,omitempty"`
 }
 
 // healthCheckHandler returns the health status of PATH as a JSON response.
@@ -133,11 +132,11 @@ func (c *Checker) getComponentReadyStates() map[string]bool {
 }
 
 // getConfiguredServiceIDs returns a slice of configured service IDs
-func (c *Checker) getConfiguredServiceIDs() []protocol.ServiceID {
+func (c *Checker) getConfiguredServiceIDs() []sdk.ServiceID {
 	if c.ServiceIDReporter == nil {
 		return nil
 	}
-	configuredServiceIDs := make([]protocol.ServiceID, 0, len(c.ServiceIDReporter.ConfiguredServiceIDs()))
+	configuredServiceIDs := make([]sdk.ServiceID, 0, len(c.ServiceIDReporter.ConfiguredServiceIDs()))
 	for serviceID := range c.ServiceIDReporter.ConfiguredServiceIDs() {
 		configuredServiceIDs = append(configuredServiceIDs, serviceID)
 	}

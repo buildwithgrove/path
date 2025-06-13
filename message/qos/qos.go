@@ -8,9 +8,9 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/message"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // The topic used by QoS publishers and subscribers
@@ -26,8 +26,8 @@ type ServiceQoS interface {
 // ObservationSetMessage is the expected format of QoS messages shared
 // between multiple PATH instances, using the provided MessagePlatform
 type ObservationSetMessage struct {
-	protocol.ServiceID `json:"service_id"`
-	Payload            []byte `json:"payload"`
+	sdk.ServiceID `json:"service_id"`
+	Payload       []byte `json:"payload"`
 }
 
 // TODO_MVP(@adshmh): implement the MessagePlatform interface in a separate package, using NATS or REDIS.
@@ -43,7 +43,7 @@ type MessagePlatform interface {
 
 type Messenger struct {
 	MessagePlatform
-	Services map[protocol.ServiceID]ServiceQoS
+	Services map[sdk.ServiceID]ServiceQoS
 	Logger   polylog.Logger
 }
 

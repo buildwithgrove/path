@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
+
 	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
@@ -17,7 +18,7 @@ var _ ServiceQoSConfig = (cometbft.CometBFTServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (solana.SolanaServiceQoSConfig)(nil)
 
 type ServiceQoSConfig interface {
-	GetServiceID() protocol.ServiceID
+	GetServiceID() sdk.ServiceID
 	GetServiceQoSType() string
 }
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	sdk "github.com/pokt-network/shannon-sdk"
+
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
@@ -107,5 +109,5 @@ type QoSService interface {
 	ApplyObservations(*qos.Observations) error
 
 	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
-	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
+	HydrateDisqualifiedEndpointsResponse(sdk.ServiceID, *devtools.DisqualifiedEndpointResponse)
 }

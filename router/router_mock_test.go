@@ -15,7 +15,7 @@ import (
 	reflect "reflect"
 
 	devtools "github.com/buildwithgrove/path/metrics/devtools"
-	protocol "github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -80,7 +80,7 @@ func (m *MockdisqualifiedEndpointsReporter) EXPECT() *MockdisqualifiedEndpointsR
 }
 
 // ReportEndpointStatus mocks base method.
-func (m *MockdisqualifiedEndpointsReporter) ReportEndpointStatus(arg0 protocol.ServiceID, arg1 *http.Request) (devtools.DisqualifiedEndpointResponse, error) {
+func (m *MockdisqualifiedEndpointsReporter) ReportEndpointStatus(arg0 sdk.ServiceID, arg1 *http.Request) (devtools.DisqualifiedEndpointResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportEndpointStatus", arg0, arg1)
 	ret0, _ := ret[0].(devtools.DisqualifiedEndpointResponse)

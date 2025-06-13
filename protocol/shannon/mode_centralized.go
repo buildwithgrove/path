@@ -15,8 +15,8 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/protocol/crypto"
 )
 
@@ -38,11 +38,11 @@ func getCentralizedModeOwnedApps(
 	logger polylog.Logger,
 	ownedAppsPrivateKeysHex []string,
 	fullNode FullNode,
-) (map[protocol.ServiceID][]string, error) {
+) (map[sdk.ServiceID][]string, error) {
 	logger = logger.With("method", "getCentralizedModeOwnedApps")
 	logger.Debug().Msg("Building the list of owned apps.")
 
-	ownedAppsMap := make(map[protocol.ServiceID][]string)
+	ownedAppsMap := make(map[sdk.ServiceID][]string)
 	for _, ownedAppPrivateKeyHex := range ownedAppsPrivateKeysHex {
 		// Retrieve the app's secp256k1 private key from the hex string.
 		ownedAppPrivateKey, err := crypto.GetSecp256k1PrivateKeyFromKeyHex(ownedAppPrivateKeyHex)
@@ -74,7 +74,7 @@ func getCentralizedModeOwnedApps(
 		}
 
 		appServiceConfig := appServiceConfigs[0]
-		serviceID := protocol.ServiceID(appServiceConfig.GetServiceId())
+		serviceID := sdk.ServiceID(appServiceConfig.GetServiceId())
 		if serviceID == "" {
 			logger.Error().Msgf("should never happen: app with address %s is staked for service with an empty ID", appAddr)
 			return nil, fmt.Errorf("app with address %s is staked for service with an empty ID", appAddr)
@@ -91,7 +91,7 @@ func getCentralizedModeOwnedApps(
 // getCentralizedGatewayModeActiveSessions returns the set of active sessions under the Centralized gateway mode.
 func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 	ctx context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With(
 		"method", "getCentralizedGatewayModeActiveSessions",

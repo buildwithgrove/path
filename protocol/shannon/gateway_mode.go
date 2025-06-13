@@ -8,6 +8,7 @@ import (
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -24,17 +25,30 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// TODO_TECHDEBT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
-// Evaluate the exact implementation of this as defined in issue:
+// TODO_NEXT(@commoddity): All of the functionality in this file is moved to the Shannon SDK,
+// as of PR #297 - https://github.com/buildwithgrove/path/pull/297
+// A `GatewayClient` should be created for each GatewayMode that embeds a `FullNode`.
+//
+// For Example:
+// - Centralized mode: `CentralizedGatewayClient`
+// - Delegated mode: `DelegatedGatewayClient`
+// etc...
+//
+// With each `GatewayClient` containing the below logic that is specific to the GatewayMode.
+//
+// Issue:
 // https://github.com/buildwithgrove/path/issues/291
 
+// TODO_NEXT(@commoddity): This function should be moved to the Shannon SDK and
+// and handled in the specific GatewayClient structs for each GatewayMode.
+//
 // getActiveGatewaySessions returns the active sessions under the supplied gateway mode.
 // The active sessions are retrieved as follows:
 //   - Centralized mode: gateway address and owned apps addresses (specified in configs) are used to retrieve active sessions.
 //   - Delegated mode: gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
 func (p *Protocol) getActiveGatewaySessions(
 	ctx context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
 	p.logger.With(
@@ -61,22 +75,23 @@ func (p *Protocol) getActiveGatewaySessions(
 	}
 }
 
+// TODO_NEXT(@commoddity): This function should be moved to the Shannon SDK and
+// and handled in the specific GatewayClient structs for each GatewayMode.
+//
 // getGatewayModePermittedRelaySigner returns the relay request signer matching the supplied gateway mode.
 func (p *Protocol) getGatewayModePermittedRelaySigner(
 	gatewayMode protocol.GatewayMode,
 ) (RelayRequestSigner, error) {
 	switch gatewayMode {
 	case protocol.GatewayModeCentralized:
-		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
-			privateKeyHex: p.gatewayPrivateKeyHex,
+		return &sdk.Signer{
+			PrivateKeyHex:    p.gatewayPrivateKeyHex,
+			PublicKeyFetcher: p.FullNode,
 		}, nil
 	case protocol.GatewayModeDelegated:
-		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
-			privateKeyHex: p.gatewayPrivateKeyHex,
+		return &sdk.Signer{
+			PrivateKeyHex:    p.gatewayPrivateKeyHex,
+			PublicKeyFetcher: p.FullNode,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)

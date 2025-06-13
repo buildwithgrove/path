@@ -11,6 +11,7 @@ import (
 	"github.com/pokt-foundation/pocket-go/provider"
 	sdkrelayer "github.com/pokt-foundation/pocket-go/relayer"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -56,7 +57,7 @@ func NewProtocol(logger polylog.Logger, fullNode FullNode, offChainBackend OffCh
 	morseLogger := logger.With("protocol", "morse")
 
 	protocol := &Protocol{
-		appCache:                 make(map[protocol.ServiceID][]app),
+		appCache:                 make(map[sdk.ServiceID][]app),
 		sessionCache:             make(map[string]provider.Session),
 		logger:                   morseLogger,
 		fullNode:                 fullNode,
@@ -90,7 +91,7 @@ type Protocol struct {
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 
 	// appCache caches applications associated with the services supported.
-	appCache   map[protocol.ServiceID][]app
+	appCache   map[sdk.ServiceID][]app
 	appCacheMu sync.RWMutex
 
 	// sessionCache caches sessions for use by the Relay function.
@@ -109,7 +110,7 @@ type Protocol struct {
 // Implements the gateway.Protocol interface.
 func (p *Protocol) AvailableEndpoints(
 	_ context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	_ *http.Request,
 ) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
 	endpoints, err := p.getEndpoints(serviceID)
@@ -133,7 +134,7 @@ func (p *Protocol) AvailableEndpoints(
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
 	_ context.Context,
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	_ *http.Request,
 ) (gateway.ProtocolRequestContext, protocolobservations.Observations, error) {
@@ -189,11 +190,11 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 
 // ConfiguredServiceIDs returns the list of all service IDs with configured AATs.
 // This is used by the hydrator to determine which service IDs to run QoS checks on.
-func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
+func (p *Protocol) ConfiguredServiceIDs() map[sdk.ServiceID]struct{} {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
-	configuredServiceIDs := make(map[protocol.ServiceID]struct{}, len(p.appCache))
+	configuredServiceIDs := make(map[sdk.ServiceID]struct{}, len(p.appCache))
 	for serviceID := range p.appCache {
 		configuredServiceIDs[serviceID] = struct{}{}
 	}
@@ -245,7 +246,7 @@ func (p *Protocol) refreshAppsCache() error {
 	return nil
 }
 
-func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
+func (p *Protocol) fetchAppData() map[sdk.ServiceID][]app {
 	logger := p.logger.With(
 		"protocol", "Morse",
 		"method", "fetchAppData",
@@ -257,7 +258,7 @@ func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 		return nil
 	}
 
-	appData := make(map[protocol.ServiceID][]app)
+	appData := make(map[sdk.ServiceID][]app)
 	for _, onchainApp := range onchainApps {
 		logger := logger.With(
 			"publicKey", onchainApp.PublicKey,
@@ -283,7 +284,7 @@ func (p *Protocol) fetchAppData() map[protocol.ServiceID][]app {
 		}
 
 		for _, chainID := range onchainApp.Chains {
-			serviceID := protocol.ServiceID(chainID)
+			serviceID := sdk.ServiceID(chainID)
 			appData[serviceID] = append(appData[serviceID], app)
 			logger.With("service_iD", serviceID).Info().Msg("Found matching AAT, adding the app/service combination to the cache.")
 		}
@@ -328,7 +329,7 @@ func (p *Protocol) refreshSessionCache() error {
 
 // getAppsUniqueEndpoints returns a map of all endpoints matching the provided service ID.
 // It also filters out sanctioned endpoints from the endpoint store.
-func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
+func (p *Protocol) getAppsUniqueEndpoints(serviceID sdk.ServiceID, apps []app) (map[protocol.EndpointAddr]endpoint, error) {
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 
 	// Get a logger specifically for this operation
@@ -368,7 +369,7 @@ func (p *Protocol) getAppsUniqueEndpoints(serviceID protocol.ServiceID, apps []a
 }
 
 // getSession gets a session from the session cache for the given service ID and application address
-func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (provider.Session, bool) {
+func (p *Protocol) getSession(serviceID sdk.ServiceID, appAddr string) (provider.Session, bool) {
 	p.sessionCacheMu.RLock()
 	defer p.sessionCacheMu.RUnlock()
 
@@ -378,7 +379,7 @@ func (p *Protocol) getSession(serviceID protocol.ServiceID, appAddr string) (pro
 }
 
 // getEndpoints returns all endpoints for a given service ID
-func (p *Protocol) getEndpoints(serviceID protocol.ServiceID) (map[protocol.EndpointAddr]endpoint, error) {
+func (p *Protocol) getEndpoints(serviceID sdk.ServiceID) (map[protocol.EndpointAddr]endpoint, error) {
 	apps, found := p.getApps(serviceID)
 	if !found || len(apps) == 0 {
 		return nil, fmt.Errorf("getEndpoints: no apps found for service %s", serviceID)
@@ -388,7 +389,7 @@ func (p *Protocol) getEndpoints(serviceID protocol.ServiceID) (map[protocol.Endp
 }
 
 // getApps gets apps from the app cache for a given service Id
-func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
+func (p *Protocol) getApps(serviceID sdk.ServiceID) ([]app, bool) {
 	p.appCacheMu.RLock()
 	defer p.appCacheMu.RUnlock()
 
@@ -397,19 +398,19 @@ func (p *Protocol) getApps(serviceID protocol.ServiceID) ([]app, bool) {
 }
 
 // sessionCacheKey generates a cache key for a (serviceID, appAddr) pair
-func sessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
+func sessionCacheKey(serviceID sdk.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s", serviceID, appAddr)
 }
 
 // GetTotalProtocolEndpointsCount is a no-op for Morse.
 // Here to satisfy the gateway.Protocol interface.
-func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
+func (p *Protocol) GetTotalServiceEndpointsCount(serviceID sdk.ServiceID, httpReq *http.Request) (int, error) {
 	// No-op for Morse
 	return 0, nil
 }
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for Morse.
 // Here to satisfy the gateway.Protocol interface.
-func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
+func (p *Protocol) HydrateDisqualifiedEndpointsResponse(serviceID sdk.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 	// No-op for Morse
 }

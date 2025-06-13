@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
+	sdk "github.com/pokt-network/shannon-sdk"
 	vegeta "github.com/tsenart/vegeta/lib"
 
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -339,7 +339,7 @@ type methodMetrics struct {
 // • Holds aggregated metrics for a service
 // • Used for service-level reporting
 type serviceSummary struct {
-	serviceID protocol.ServiceID
+	serviceID sdk.ServiceID
 
 	avgP90Latency  time.Duration
 	avgLatency     time.Duration
@@ -356,7 +356,7 @@ type serviceSummary struct {
 	totalErrors   int
 }
 
-func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, methodsToTest []string) *serviceSummary {
+func newServiceSummary(serviceID sdk.ServiceID, serviceConfig ServiceConfig, methodsToTest []string) *serviceSummary {
 	return &serviceSummary{
 		serviceID:     serviceID,
 		serviceConfig: serviceConfig,
@@ -788,11 +788,11 @@ func calculateAvgLatency(latencies []time.Duration) time.Duration {
 }
 
 // printServiceSummaries prints a summary of all services after tests are complete
-func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
+func printServiceSummaries(summaries map[sdk.ServiceID]*serviceSummary) {
 	fmt.Printf("\n\n%s===== SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
 
 	// Sort service IDs for consistent output
-	serviceIDs := make([]protocol.ServiceID, 0, len(summaries))
+	serviceIDs := make([]sdk.ServiceID, 0, len(summaries))
 	for svcID := range summaries {
 		serviceIDs = append(serviceIDs, svcID)
 	}

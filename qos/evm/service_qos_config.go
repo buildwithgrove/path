@@ -1,6 +1,6 @@
 package evm
 
-import "github.com/buildwithgrove/path/protocol"
+import sdk "github.com/pokt-network/shannon-sdk"
 
 // QoSType is the QoS type for the EVM blockchain.
 const QoSType = "evm"
@@ -18,7 +18,7 @@ const defaultEVMBlockNumberSyncAllowance = 5
 // ServiceQoSConfig defines the base interface for service QoS configurations.
 // This avoids circular dependency with the config package.
 type ServiceQoSConfig interface {
-	GetServiceID() protocol.ServiceID
+	GetServiceID() sdk.ServiceID
 	GetServiceQoSType() string
 }
 
@@ -51,7 +51,7 @@ func (c evmArchivalCheckConfig) IsEmpty() bool {
 
 // NewEVMServiceQoSConfig creates a new EVM service configuration with the specified archival check settings.
 func NewEVMServiceQoSConfig(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	evmChainID string,
 	archivalCheckConfig *evmArchivalCheckConfig,
 ) EVMServiceQoSConfig {
@@ -77,7 +77,7 @@ func NewEVMArchivalCheckConfig(
 var _ EVMServiceQoSConfig = (*evmServiceQoSConfig)(nil)
 
 type evmServiceQoSConfig struct {
-	serviceID           protocol.ServiceID
+	serviceID           sdk.ServiceID
 	evmChainID          string
 	syncAllowance       uint64
 	archivalCheckConfig *evmArchivalCheckConfig
@@ -85,7 +85,7 @@ type evmServiceQoSConfig struct {
 
 // GetServiceID returns the ID of the service.
 // Implements the ServiceQoSConfig interface.
-func (c evmServiceQoSConfig) GetServiceID() protocol.ServiceID {
+func (c evmServiceQoSConfig) GetServiceID() sdk.ServiceID {
 	return c.serviceID
 }
 

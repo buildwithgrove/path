@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/pokt-network/shannon-sdk/fullnode"
+
 	"github.com/buildwithgrove/path/protocol"
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
@@ -19,9 +21,9 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should pass with valid config",
 			config: ShannonGatewayConfig{
-				FullNodeConfig: shannonprotocol.FullNodeConfig{
+				FullNodeConfig: fullnode.FullNodeConfig{
 					RpcURL: "https://rpc-url.io",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: fullnode.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -36,9 +38,9 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should fail with invalid URL",
 			config: ShannonGatewayConfig{
-				FullNodeConfig: shannonprotocol.FullNodeConfig{
+				FullNodeConfig: fullnode.FullNodeConfig{
 					RpcURL: "invalid-url",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: fullnode.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -48,9 +50,9 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should fail with invalid gateway address",
 			config: ShannonGatewayConfig{
-				FullNodeConfig: shannonprotocol.FullNodeConfig{
+				FullNodeConfig: fullnode.FullNodeConfig{
 					RpcURL: "https://rpc-url.io",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: fullnode.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},
@@ -65,9 +67,9 @@ func Test_Validate(t *testing.T) {
 		{
 			name: "should fail with invalid gateway private key",
 			config: ShannonGatewayConfig{
-				FullNodeConfig: shannonprotocol.FullNodeConfig{
+				FullNodeConfig: fullnode.FullNodeConfig{
 					RpcURL: "https://rpc-url.io",
-					GRPCConfig: shannonprotocol.GRPCConfig{
+					GRPCConfig: fullnode.GRPCConfig{
 						HostPort: "grpc-url.io:443",
 					},
 				},

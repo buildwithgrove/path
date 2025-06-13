@@ -8,6 +8,7 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -258,13 +259,13 @@ func (s sanctionKey) endpointAddr() protocol.EndpointAddr {
 //   - counts for valid and sanctioned endpoints
 //
 // It is called by the router to allow quick information about currently sanctioned endpoints.
-func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.ServiceID) devtools.ProtocolLevelDataResponse {
+func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID sdk.ServiceID) devtools.ProtocolLevelDataResponse {
 	permanentSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 	sessionSanctionDetails := make(map[protocol.EndpointAddr]devtools.SanctionedEndpoint)
 
 	// First get permanent sanctions
 	for key, sanction := range ses.permanentSanctions {
-		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
+		sanctionServiceID := sdk.ServiceID(sanction.sessionServiceID)
 
 		// Only return sanctions for the provided service ID
 		// Filter out all sanctions for other service IDs.
@@ -283,7 +284,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
+		sanctionServiceID := sdk.ServiceID(sanction.sessionServiceID)
 
 		// Only return sanctions for the provided service ID
 		// Filter out all sanctions for other service IDs.

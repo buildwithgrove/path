@@ -11,12 +11,12 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
-	protocolPkg "github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
 )
@@ -118,7 +118,7 @@ func main() {
 	}
 
 	// Convert qosInstances to DataReporter map to satisfy the QoSDisqualifiedEndpointsReporter interface.
-	qosLevelReporters := make(map[protocolPkg.ServiceID]devtools.QoSDisqualifiedEndpointsReporter)
+	qosLevelReporters := make(map[sdk.ServiceID]devtools.QoSDisqualifiedEndpointsReporter)
 	for serviceID, qosService := range qosInstances {
 		qosLevelReporters[serviceID] = qosService
 	}

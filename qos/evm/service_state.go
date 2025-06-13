@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -167,7 +168,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 // getDisqualifiedEndpointsResponse gets the QoSLevelDisqualifiedEndpoints map for a devtools.DisqualifiedEndpointResponse.
 // It checks the current service state and populates a map with QoS-level disqualified endpoints.
 // This data is useful for creating a snapshot of the current QoS state for a given service.
-func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
+func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID sdk.ServiceID) devtools.QoSLevelDataResponse {
 	qosLevelDataResponse := devtools.QoSLevelDataResponse{
 		DisqualifiedEndpoints: make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint),
 	}

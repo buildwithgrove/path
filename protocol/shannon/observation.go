@@ -6,16 +6,16 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sdk "github.com/pokt-network/shannon-sdk"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 // buildSuccessfulEndpointLookupObservation builds a minimum observation to indicate the endpoint lookup was successful.
 // Used when endpoint lookup succeeds but endpoint selection fails.
 func buildSuccessfulEndpointLookupObservation(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
 		Protocol: &protocolobservations.Observations_Shannon{
@@ -35,7 +35,7 @@ func buildSuccessfulEndpointLookupObservation(
 // - Getting available endpoints.
 // - Setting up the request context for a specific endpoint.
 func buildProtocolContextSetupErrorObservation(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	err error,
 ) protocolobservations.Observations {
 	return protocolobservations.Observations{
