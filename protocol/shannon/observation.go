@@ -67,16 +67,16 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 	case errors.Is(err, errProtocolContextSetupCentralizedAppDelegation):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION
 
-	// Centralized gateway mode: no apps found for service
-	case errors.Is(err, errProtocolContextSetupCentralizedNoApps):
-		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS
+	// Centralized gateway mode: no sessions found for service
+	case errors.Is(err, errProtocolContextSetupCentralizedNoSessions):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS
 
 	// Delegated gateway mode: could not extract app from HTTP request.
 	case errors.Is(err, errProtocolContextSetupGetAppFromHTTPReq):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP
 
 	// Delegated gateway mode: error fetching onchain app data
-	case errors.Is(err, errProtocolContextSetupFetchApp):
+	case errors.Is(err, errProtocolContextSetupFetchSession):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP
 
 	// Delegated gateway mode: pp does not delegate to the gateway

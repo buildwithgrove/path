@@ -25,7 +25,8 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// TODO_NEXT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
+// TODO_NEXT(@commoddity): All of the functionality in this file is moved to the Shannon SDK,
+// as of PR #297 - https://github.com/buildwithgrove/path/pull/297
 // A `GatewayClient` should be created for each GatewayMode that embeds a `FullNode`.
 //
 // For Example:
@@ -41,27 +42,29 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 // TODO_NEXT(@commoddity): This function should be moved to the Shannon SDK and
 // and handled in the specific GatewayClient structs for each GatewayMode.
 //
-// getGatewayModePermittedSessions returns the sessions permitted under the supplied gateway mode.
-// The permitted sessions are determined as follows:
-//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted sessions (specified in configs).
-//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted sessions.
-func (p *Protocol) getGatewayModePermittedSessions(
+// getActiveGatewaySessions returns the active sessions under the supplied gateway mode.
+// The active sessions are retrieved as follows:
+//   - Centralized mode: gateway address and owned apps addresses (specified in configs) are used to retrieve active sessions.
+//   - Delegated mode: gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
+func (p *Protocol) getActiveGatewaySessions(
 	ctx context.Context,
 	serviceID sdk.ServiceID,
 	httpReq *http.Request,
 ) ([]sessiontypes.Session, error) {
 	p.logger.With(
-		"service_ID", serviceID,
+		"service_id", serviceID,
 		"gateway_mode", p.gatewayMode,
-	).Debug().Msg("fetching permitted apps under the current gateway mode.")
+	).Debug().Msg("fetching active sessions using the current gateway mode and applicable applications.")
 
 	switch p.gatewayMode {
 
+	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
-		return p.getCentralizedGatewayModeSessions(ctx, serviceID)
+		return p.getCentralizedGatewayModeActiveSessions(ctx, serviceID)
 
+	// Delegated gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeSession(ctx, serviceID, httpReq)
+		return p.getDelegatedGatewayModeActiveSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:

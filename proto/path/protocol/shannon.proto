@@ -19,8 +19,8 @@ enum ShannonRequestErrorType {
   SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR = 3;
   // Centralized gateway mode app does not delegate to the gateway.
   SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION = 4;
-  // Centralized gateway mode: no permitted apps found for service.
-  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS = 5;
+  // Centralized gateway mode: no active sessions found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS = 5;
   // Delegated gateway mode: could not extract app address from HTTP request
   SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP = 6;
   // Delegated gateway mode: error fetching the app
