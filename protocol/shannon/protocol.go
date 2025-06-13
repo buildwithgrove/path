@@ -112,8 +112,9 @@ func NewProtocol(
 type Protocol struct {
 	logger polylog.Logger
 
-	// TODO_IN_THIS_PR(@commoddity): Create GatewayClient interface which embeds
-	// sdk.FullNode into it and is implemented in the Shannon SDK.
+	// NOTE: Embedded full node is replaced with GatewayClient in PRs:
+	//   - PATH - https://github.com/buildwithgrove/path/pull/297
+	//   - Shannon SDK - https://github.com/pokt-network/shannon-sdk/pull/39
 	FullNode
 
 	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.

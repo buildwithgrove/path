@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	sdk "github.com/pokt-network/shannon-sdk"
+
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
-	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 // RequestQoSContext represents the interactions of the gateway with the QoS instance
