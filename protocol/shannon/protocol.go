@@ -45,15 +45,15 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 //   - get the list of service IDs that the gateway is configured for.
 //
 // It also emebeds the FullNode interface from the Shannon SDK package, which may be either:
-//   - gatewayClient.FullNode
-//   - gatewayClient.FullNodeWithCache
+//   - fullnode.FullNode
+//   - fullnode.FullNodeWithCache
 //
 // The FullNodeWithCache interface is used to cache the results of the GetSessions and GetRelaySigner methods.
 // This is used to improve the performance of the protocol.
 type GatewayClient interface {
 	sdk.FullNode
-	GetActiveSessions(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) ([]sessiontypes.Session, error)
-	GetPermittedRelaySigner(ctx context.Context, serviceID sdk.ServiceID, httpReq *http.Request) (*sdk.Signer, error)
+	GetActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
+	GetPermittedRelaySigner(context.Context, sdk.ServiceID, *http.Request) (*sdk.Signer, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
 	GetGatewayMode() gatewayClient.GatewayMode
 }
@@ -85,32 +85,29 @@ func NewProtocol(
 		return nil, err
 	}
 
-	protocolInstance := &Protocol{
-		logger:        shannonLogger,
+	return &Protocol{
+		logger: shannonLogger,
+
 		GatewayClient: client,
-		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
-		// 1. Query onchain data for a gateway with the supplied address.
-		// 2. Query onchain data for app(s) matching the derived addresses.
-		// tracks sanctioned endpoints
+
+		// TODO_MVP(@adshmh): verify the gateway address and private key are valid,
+		// by completing the following:
+		//   1. Query onchain data for a gateway with the supplied address.
+		//   2. Query onchain data for app(s) matching the derived addresses.
 		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
-	}
-
-	shannonLogger.Info().Msg("Protocol instance created")
-
-	return protocolInstance, nil
+	}, nil
 }
 
-// getGatewayClient gets the correct gateway client based on PATH's configured gateway mode.
+// getGatewayClient gets the configured gateway client for the PATH instance.
 func getGatewayClient(logger polylog.Logger, fullNode sdk.FullNode, config gatewayClient.GatewayConfig) (GatewayClient, error) {
 	switch config.GatewayMode {
-	// If PATH is in centralized mode, use the centralized gateway client.
+
 	case gatewayClient.GatewayModeCentralized:
-		logger.Info().Msg("Creating centralized gateway client")
+		logger.Info().Msg("getGatewayClient: PATH configured for centralized gateway mode")
 		return gatewayClient.NewCentralizedGatewayClient(fullNode, logger, config)
 
-	// If PATH is in delegated mode, use the delegated gateway client.
 	case gatewayClient.GatewayModeDelegated:
-		logger.Info().Msg("Creating delegated gateway client")
+		logger.Info().Msg("getGatewayClient: PATH configured for delegated gateway mode")
 		return gatewayClient.NewDelegatedGatewayClient(fullNode, logger, config)
 
 		// TODO_IMPROVE(@commoddity, @adshmh): add new gateway client for permissionless mode once implemented in the SDK.
