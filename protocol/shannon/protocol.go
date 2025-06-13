@@ -342,7 +342,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Hydrate the logger with session details.
 		logger := logger.With("valid_app_address", app.Address)
 		logger = hydrateLoggerWithSession(logger, &session)
-		logger.Debug().Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
 		// Retrieve all endpoints for the session.
 		sessionEndpoints, err := endpointsFromSession(session)

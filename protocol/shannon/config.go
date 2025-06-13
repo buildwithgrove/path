@@ -148,7 +148,8 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 const defaultSessionCacheTTL = 30 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {
-	if lazyMode && c.SessionTTL == 0 {
+	// Cannot set both lazy mode and cache configuration.
+	if lazyMode && c.SessionTTL != 0 {
 		return ErrShannonCacheConfigSetForLazyMode
 	}
 	return nil
