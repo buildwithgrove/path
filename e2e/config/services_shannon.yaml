@@ -505,23 +505,23 @@ services:
     service_type: "cometbft"
 
   # pocket-beta1
-  - name: "Shannon - pcket-beta1"
+  - name: "Shannon - pocket-beta1"
     service_id: "pocket-beta1"
     service_type: "cometbft"
   # pocket-beta2
-  - name: "Shannon - pcket-beta2"
+  - name: "Shannon - pocket-beta2"
     service_id: "pocket-beta2"
     service_type: "cometbft"
   # pocket-beta3
-  - name: "Shannon - pcket-beta3"
+  - name: "Shannon - pocket-beta3"
     service_id: "pocket-beta3"
     service_type: "cometbft"
   # pocket-beta4
-  - name: "Shannon - pcket-beta4"
+  - name: "Shannon - pocket-beta4"
     service_id: "pocket-beta4"
     service_type: "cometbft"
   # pocket-beta5
-  - name: "Shannon - pcket-beta5"
+  - name: "Shannon - pocket-beta5"
     service_id: "pocket-beta5"
     service_type: "cometbft"
 
