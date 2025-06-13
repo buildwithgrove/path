@@ -12,8 +12,7 @@ import (
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
-// getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration,
-// using the supplied configuration. It also returns the owned apps if the gateway mode is Centralized.
+// getShannonFullNode builds and returns a FullNode implementation for Shannon protocol integration.
 func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (sdk.FullNode, error) {
 	fullNodeConfig := config.FullNodeConfig
 

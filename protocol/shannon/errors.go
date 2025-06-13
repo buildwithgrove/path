@@ -24,13 +24,13 @@ var (
 	errProtocolContextSetupCentralizedAppFetchErr = errors.New("error getting onchain data for app owned by the gateway")
 	// Centralized gateway mode app does not delegate to the gateway.
 	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway")
-	// Centralized gateway mode: no permitted apps found for service.
-	errProtocolContextSetupCentralizedNoApps = errors.New("No apps mathed the request for service")
+	// Centralized gateway mode: no active sessions could be retrieved for the service.
+	errProtocolContextSetupCentralizedNoSessions = errors.New("no active sessions could be retrieved for the service")
 
 	// Delegated gateway mode: could not extract app from HTTP request.
 	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
-	// Delegated gateway mode: could not fetch app using the SDK
-	errProtocolContextSetupFetchApp = errors.New("error getting the selected app data from the SDK")
+	// Delegated gateway mode: could not fetch session for app from the full node
+	errProtocolContextSetupFetchSession = errors.New("error getting a session from the full node for app")
 	// Delegated gateway mode: gateway does not have delegation for the app.
 	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app")
 	// Delegated gateway mode: app is not staked for the service.
@@ -46,7 +46,7 @@ var (
 	// - Endpoint sanctioned due to an observation while selection logic was running.
 	errRequestContextSetupInvalidEndpointSelected = errors.New("selected endpoint is not available: relay request will fail")
 	// Error initializing a signer for the current gateway mode.
-	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signe: relay request will fail")
+	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signer: relay request will fail")
 )
 
 // extractErrFromRelayError:
