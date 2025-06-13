@@ -48,7 +48,7 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	fullNode FullNode
+	fullNode sdk.FullNode
 
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
 	serviceID sdk.ServiceID

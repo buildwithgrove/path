@@ -44,10 +44,6 @@ type Protocol interface {
 		*http.Request,
 	) (ProtocolRequestContext, protocolobservations.Observations, error)
 
-	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
-	// See protocol/gateway_mode.go for more details.
-	SupportedGatewayModes() []protocol.GatewayMode
-
 	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
 	// Hypothetical example (for illustrative purposes only):
 	// 	- protocol: Morse
@@ -63,7 +59,7 @@ type Protocol interface {
 	// 	- Returns the list of all service IDs with available configured AATs.
 	// For Shannon:
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
-	ConfiguredServiceIDs() map[sdk.ServiceID]struct{}
+	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
 
 	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
 	// without filtering sanctioned endpoints.

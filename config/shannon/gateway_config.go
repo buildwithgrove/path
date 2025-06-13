@@ -3,15 +3,14 @@ package shannon
 import (
 	"gopkg.in/yaml.v3"
 
+	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 	"github.com/pokt-network/shannon-sdk/fullnode"
-
-	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 // Fields that are unmarshaled from the config YAML must be capitalized.
 type ShannonGatewayConfig struct {
-	FullNodeConfig fullnode.FullNodeConfig       `yaml:"full_node_config"`
-	GatewayConfig  shannonprotocol.GatewayConfig `yaml:"gateway_config"`
+	FullNodeConfig fullnode.FullNodeConfig     `yaml:"full_node_config"`
+	GatewayConfig  gatewayClient.GatewayConfig `yaml:"gateway_config"`
 }
 
 // UnmarshalYAML is a custom unmarshaller for GatewayConfig.

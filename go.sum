@@ -1010,8 +1010,8 @@ github.com/pokt-foundation/pocket-go v0.21.0 h1:LbCPHQWdlaHzWatPrmghRR2+lrh40jmo
 github.com/pokt-foundation/pocket-go v0.21.0/go.mod h1:TyJgMIbfVF9qhjTMU9u+TeiBwYKLq6+YZhq6POLNeHE=
 github.com/pokt-foundation/utils-go v0.7.0 h1:+BwAZj9Wfac6zkD4eQstRoz8lHc+6xBEtySys9WE5Ec=
 github.com/pokt-foundation/utils-go v0.7.0/go.mod h1:VMYNYtm1NKfCceLqzs6QSRhLcivafktirc3FSnB7Hxs=
-github.com/pokt-network/poktroll v0.1.19 h1:6m4LmxY3jH2IcdAjPWUz6dbdVjqIJ5qOrzV+ISobUX4=
-github.com/pokt-network/poktroll v0.1.19/go.mod h1:8Ukz3y5o5MhEmCVrdVV0/S/IMgRPW5ZZQST+67BQPT4=
+github.com/pokt-network/poktroll v0.1.20 h1:0ZJziJ6rxT1dm86gFIFYI4ecc7TNSlICfsjN65gSuUw=
+github.com/pokt-network/poktroll v0.1.20/go.mod h1:8Ukz3y5o5MhEmCVrdVV0/S/IMgRPW5ZZQST+67BQPT4=
 github.com/pokt-network/ring-go v0.1.0 h1:hF7mDR4VVCIqqDAsrloP8azM9y1mprc99YgnTjKSSwk=
 github.com/pokt-network/ring-go v0.1.0/go.mod h1:8NHPH7H3EwrPX3XHfpyRI6bz4gApkE3+fd0XZRbMWP0=
 github.com/pokt-network/smt v0.13.0 h1:C2F8FlJh34aU+DVeRU/Bt8BOkFXn4QjWMK+nbT9PUj4=

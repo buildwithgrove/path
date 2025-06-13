@@ -12,13 +12,12 @@ require (
 	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-sdk v0.53.0
-	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.1.19
+	github.com/pokt-network/poktroll v0.1.20
 	github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0

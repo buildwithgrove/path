@@ -50,7 +50,7 @@ type (
 	// ServiceIDReporter is satisfied by the protocol instance and returns
 	// the list of service IDs that the protocol instance is configured for.
 	ServiceIDReporter interface {
-		ConfiguredServiceIDs() map[sdk.ServiceID]struct{}
+		GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
 	}
 )
 
@@ -136,8 +136,8 @@ func (c *Checker) getConfiguredServiceIDs() []sdk.ServiceID {
 	if c.ServiceIDReporter == nil {
 		return nil
 	}
-	configuredServiceIDs := make([]sdk.ServiceID, 0, len(c.ServiceIDReporter.ConfiguredServiceIDs()))
-	for serviceID := range c.ServiceIDReporter.ConfiguredServiceIDs() {
+	configuredServiceIDs := make([]sdk.ServiceID, 0, len(c.ServiceIDReporter.GetConfiguredServiceIDs()))
+	for serviceID := range c.ServiceIDReporter.GetConfiguredServiceIDs() {
 		configuredServiceIDs = append(configuredServiceIDs, serviceID)
 	}
 	slices.Sort(configuredServiceIDs)
