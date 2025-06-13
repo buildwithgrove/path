@@ -51,31 +51,17 @@ func hydrateLoggerWithSession(
 	hydratedLogger := logger.With(
 		"session_id", session.SessionId,
 		"session_number", session.SessionNumber,
-		"session_num_blocks_per_session", session.NumBlocksPerSession,
+		"num_blocks_per_session", session.NumBlocksPerSession,
+		"supplier_count", len(session.Suppliers),
 	)
-
-	// Add application information if available
-	if session.Application != nil {
-		hydratedLogger = hydratedLogger.With(
-			"session_app_addr", session.Application.Address,
-		)
-	}
-
-	// Add supplier count if available
-	if len(session.Suppliers) > 0 {
-		hydratedLogger = hydratedLogger.With(
-			"session_supplier_count", len(session.Suppliers),
-		)
-	}
 
 	// Add session header details if available
 	if session.Header != nil {
 		hydratedLogger = hydratedLogger.With(
-			"session_header_app_addr", session.Header.ApplicationAddress,
-			"session_header_service_id", session.Header.ServiceId,
-			"session_header_session_id", session.Header.SessionId,
-			"session_header_start_height", session.Header.SessionStartBlockHeight,
-			"session_header_end_height", session.Header.SessionEndBlockHeight,
+			"app_addr", session.Header.ApplicationAddress,
+			"service_id", session.Header.ServiceId,
+			"session_start_height", session.Header.SessionStartBlockHeight,
+			"session_end_height", session.Header.SessionEndBlockHeight,
 		)
 	}
 
