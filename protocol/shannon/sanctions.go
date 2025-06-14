@@ -34,6 +34,21 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
+	// endpoint unexpected EOF error
+	case RelayErrEndpointUnexpectedEOF:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// endpoint protocol parsing error
+	case RelayErrEndpointProtocolError:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// endpoint invalid session header error
+	case RelayErrEndpointInvalidSession:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
 	default:
 		// Unknown error: log and return generic internal error.
 		// TODO_IMPROVE: Automate tracking and code updates for unrecognized errors.
