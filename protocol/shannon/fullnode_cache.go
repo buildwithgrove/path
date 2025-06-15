@@ -150,9 +150,9 @@ func NewCachingFullNode(
 	}, nil
 }
 
-// GetApp is a NoOp (apps fetched only at startup; relaying fetches sessions for app/session sync).
+// GetApp is only used at startup; relaying fetches sessions for app/session sync.
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	return nil, fmt.Errorf("GetApp is a NoOp in the caching full node")
+	return cfn.lazyFullNode.GetApp(ctx, appAddr)
 }
 
 // GetSession returns (and auto-refreshes) the session for a service/app from cache.

@@ -42,10 +42,24 @@ message ShannonRequestError {
 // ShannonEndpointErrorType enumerates possible relay errors when interacting with Shannon endpoints.
 enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
-  SHANNON_ENDPOINT_ERROR_INTERNAL = 1; // endpoint internal error: not recognized.
-  SHANNON_ENDPOINT_ERROR_CONFIG = 2; // endpoint config error: e.g. DNS lookup error, TLS certificate error.
-  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3; // endpoint timeout on responding to relay request.
-  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 4; // TODO_TECHDEBT: Uncomment when this is used.
+  // endpoint internal error: not recognized.
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1;
+  // endpoint config error: e.g. DNS lookup error, TLS certificate error.
+  SHANNON_ENDPOINT_ERROR_CONFIG = 2;
+  // endpoint timeout on responding to relay request.
+  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3;
+  // Endpoint payload failed to unmarshal into a RelayResponse struct
+  SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR = 4;
+  // Endpoint response failed basic validation
+  SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR = 5;
+  // Could not fetch the public key for supplier address used for the relay.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR = 6;
+  // Received nil public key on supplier lookup using its address
+  SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY = 7;
+  // RelayResponse's signature failed validation.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR = 8;
+  // TODO_TECHDEBT: Uncomment when this is used.
+  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 9;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions
