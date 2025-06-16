@@ -1,8 +1,8 @@
 #!/bin/bash
 
-################################################################################
 # Shannon Services Supplier Report Generator
-################################################################################
+# For usage instructions, run this script with --help
+
 #
 # DESCRIPTION:
 #   This script queries supplier counts for a predefined list of service IDs and
