@@ -110,9 +110,22 @@ type ShannonEndpointErrorType int32
 
 const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED ShannonEndpointErrorType = 0
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL    ShannonEndpointErrorType = 1 // endpoint internal error: not recognized.
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG      ShannonEndpointErrorType = 2 // endpoint config error: e.g. DNS lookup error, TLS certificate error.
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT     ShannonEndpointErrorType = 3 // endpoint timeout on responding to relay request.
+	// endpoint internal error: not recognized.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL ShannonEndpointErrorType = 1
+	// endpoint config error: e.g. DNS lookup error, TLS certificate error.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG ShannonEndpointErrorType = 2
+	// endpoint timeout on responding to relay request.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT ShannonEndpointErrorType = 3
+	// Endpoint payload failed to unmarshal into a RelayResponse struct
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR ShannonEndpointErrorType = 4
+	// Endpoint response failed basic validation
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR ShannonEndpointErrorType = 5
+	// Could not fetch the public key for supplier address used for the relay.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR ShannonEndpointErrorType = 6
+	// Received nil public key on supplier lookup using its address
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY ShannonEndpointErrorType = 7
+	// RelayResponse's signature failed validation.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR ShannonEndpointErrorType = 8
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -122,12 +135,22 @@ var (
 		1: "SHANNON_ENDPOINT_ERROR_INTERNAL",
 		2: "SHANNON_ENDPOINT_ERROR_CONFIG",
 		3: "SHANNON_ENDPOINT_ERROR_TIMEOUT",
+		4: "SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR",
+		5: "SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR",
+		6: "SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR",
+		7: "SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY",
+		8: "SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
-		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED": 0,
-		"SHANNON_ENDPOINT_ERROR_INTERNAL":    1,
-		"SHANNON_ENDPOINT_ERROR_CONFIG":      2,
-		"SHANNON_ENDPOINT_ERROR_TIMEOUT":     3,
+		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                       0,
+		"SHANNON_ENDPOINT_ERROR_INTERNAL":                          1,
+		"SHANNON_ENDPOINT_ERROR_CONFIG":                            2,
+		"SHANNON_ENDPOINT_ERROR_TIMEOUT":                           3,
+		"SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR":             4,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR":           5,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR":           6,
+		"SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY":               7,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR": 8,
 	}
 )
 
@@ -571,12 +594,17 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"5SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP\x10\x06\x126\n" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\a\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\b\x125\n" +
-	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\t*\xae\x01\n" +
+	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\t*\xb6\x03\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
 	"\x1dSHANNON_ENDPOINT_ERROR_CONFIG\x10\x02\x12\"\n" +
-	"\x1eSHANNON_ENDPOINT_ERROR_TIMEOUT\x10\x03*u\n" +
+	"\x1eSHANNON_ENDPOINT_ERROR_TIMEOUT\x10\x03\x120\n" +
+	",SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR\x10\x04\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR\x10\x05\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR\x10\x06\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY\x10\a\x12<\n" +
+	"8SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR\x10\b*u\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
