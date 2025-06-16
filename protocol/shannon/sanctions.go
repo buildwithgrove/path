@@ -1,7 +1,10 @@
 package shannon
 
 import (
+	"errors"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
@@ -17,6 +20,36 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 
+	switch {
+	// Endpoint payload failed to unmarshal into a RelayResponse struct
+	case errors.Is(err, sdk.ErrRelayResponseValidationUnmarshal):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// Endpoint response failed basic validation
+	case errors.Is(err, sdk.ErrRelayResponseValidationBasicValidation):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// Could not fetch the public key for supplier address used for the relay.
+	case errors.Is(err, sdk.ErrRelayResponseValidationGetPubKey):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// Received nil public key on supplier lookup using its address
+	case errors.Is(err, sdk.ErrRelayResponseValidationNilSupplierPubKey):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY,
+			// No sanctions needed: supplier address is provided by PATH.
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+
+	// RelayResponse's signature failed validation.
+	case errors.Is(err, sdk.ErrRelayResponseValidationSignatureError):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// No known error matched:
+	// Fallback to error matching using the error string.
 	// Extract the specific error type using centralized error matching.
 	extractedErr := extractErrFromRelayError(err)
 
