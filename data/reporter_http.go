@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/observation"
 )
+
+// defaultPostTimeoutMS defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
+const defaultPostTimeoutMS = 10000
 
 // DataReporterHTTP exports observations to an external components over HTTP (e.g. Flentd HTTP Plugin, a Messaging system, or a database)
 var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
@@ -26,6 +30,10 @@ type DataReporterHTTP struct {
 	// Only JSON-accepting data pipelines are supported as of PR #215.
 	// e.g. Fluentd HTTP input plugin on localhost:8686.
 	DataProcessorURL string
+
+	// Timeout in milliseconds for HTTP POST operations.
+	// If zero or negative, the default timeout of defaultPostTimeoutMS (10s) is used.
+	PostTimeoutMS int
 }
 
 // Publish the supplied observations:
@@ -52,12 +60,32 @@ func (drh *DataReporterHTTP) Publish(observations *observation.RequestResponseOb
 }
 
 func (drh *DataReporterHTTP) sendRecordOverHTTP(serializedDataRecord []byte) error {
-	// Send the marshaled bytes to the data processor, e.g. Fluentd.
-	//
-	resp, err := http.Post(drh.DataProcessorURL, "application/json", bytes.NewReader(serializedDataRecord))
+	// Determine the timeout to use
+	timeoutMS := drh.PostTimeoutMS
+	if timeoutMS <= 0 {
+		timeoutMS = defaultPostTimeoutMS // Default timeout
+	}
+
+	// Create an HTTP client with the configured timeout
+	client := &http.Client{
+		Timeout: time.Duration(timeoutMS) * time.Millisecond,
+	}
+
+	// Create a new request with the data
+	req, err := http.NewRequest(http.MethodPost, drh.DataProcessorURL, bytes.NewReader(serializedDataRecord))
 	if err != nil {
 		return err
 	}
+
+	// Set content type header
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the marshaled bytes to the data processor, e.g. Fluentd.
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
 	// Verify the data processor responded with OK
 	if resp.StatusCode != http.StatusOK {

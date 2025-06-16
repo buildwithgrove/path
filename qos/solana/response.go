@@ -17,7 +17,7 @@ type responseUnmarshaller func(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	jsonrpcResp jsonrpc.Response,
-) (response, error)
+) response
 
 var (
 	// All response types must implement the response interface.
@@ -37,18 +37,18 @@ func unmarshalResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
-) (response, error) {
+) response {
 	// Unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSON-RPC response.
 		// Return a generic response to the user.
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
 	}
 
 	// Validate the JSON-RPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
+		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
 	}
 
 	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.

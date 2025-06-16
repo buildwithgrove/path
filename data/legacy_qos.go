@@ -31,6 +31,11 @@ func setLegacyFieldsFromQoSObservations(
 		return setLegacyFieldsFromQoSEVMObservations(logger, legacyRecord, evmObservations)
 	}
 
+	// Use Solana observations to update the legacy record's fields.
+	if solanaObservations := observations.GetSolana(); solanaObservations != nil {
+		return setLegacyFieldsFromQoSSolanaObservations(logger, legacyRecord, solanaObservations)
+	}
+
 	return legacyRecord
 }
 
@@ -86,6 +91,50 @@ func setLegacyFieldsFromQoSEVMObservations(
 	default:
 		legacyRecord.ErrorType = fmt.Sprintf("%s_UNKNOWN_ERROR", qosEVMErrorTypeStr)
 	}
+
+	return legacyRecord
+}
+
+// setLegacyFieldsFromQoSSolanaObservations populates legacy record with Solana-specific QoS data.
+// It captures:
+// - Request payload size
+// - JSONRPC method information
+// - Error details (when applicable)
+//
+// Parameters:
+// - logger: logging interface
+// - legacyRecord: the record to populate
+// - observations: Solana-specific QoS observations
+// Returns: the populated legacy record
+func setLegacyFieldsFromQoSSolanaObservations(
+	logger polylog.Logger,
+	legacyRecord *legacyRecord,
+	observations *qosobservation.SolanaRequestObservations,
+) *legacyRecord {
+	logger = logger.With("method", "setLegacyFieldsFromQoSSolanaObservations")
+
+	// In bytes: the length of the request: float64 type is for compatibility with the legacy data pipeline.
+	legacyRecord.RequestDataSize = float64(observations.RequestPayloadLength)
+
+	// Initialize the Solana observations interpreter.
+	// Used to extract required fields from the observations.
+	solanaInterpreter := &qosobservation.SolanaObservationInterpreter{
+		Logger:       logger,
+		Observations: observations,
+	}
+
+	// Extract the JSONRPC request's method.
+	legacyRecord.ChainMethod = solanaInterpreter.GetRequestMethod()
+
+	// ErrorType is already set at gateway or protocol level.
+	// Skip updating the error fields to preserve the original error.
+	if legacyRecord.ErrorType != "" {
+		return legacyRecord
+	}
+
+	errType := solanaInterpreter.GetRequestErrorType()
+	legacyRecord.ErrorType = errType
+	legacyRecord.ErrorMessage = errType
 
 	return legacyRecord
 }

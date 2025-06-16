@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
+
+# Default Load test configuration for Morse and Shannon
+#
+# Usage:
+# - Expected config location: `.e2e_load_test.config.yaml`
+# - If no custom config is found, the default template is used.
+# - Create your own config to override defaults.
+#
+# Vegeta Test modes:
+# 1. E2E Test Mode: Starts PATH in Docker (Dockertest) & runs tests against it
+# 2. Load Test Mode: Runs tests against a specified gateway URL
+
+# General test configuration overrides for all tests
+e2e_load_test_config:
+  # E2E Test Mode
+  # PATH runs in Docker (Dockertest), tests run against this container
+  e2e_config:
+    # [Optional] Seconds to wait for hydrator checks after PATH startup
+    wait_for_hydrator: 0
+    # [Optional] Docker-related options
+    docker_config:
+      # [Optional] Log Docker container output to a file
+      log_to_file: false
+      # [Optional] Force Docker image rebuild (useful after code changes)
+      force_rebuild_image: false
+
+  # Load Test Mode
+  # Tests run against a specified gateway URL (local or public)
+  # Examples:
+  #   - Public: "https://rpc.grove.city/v1"
+  #   - Local:  "http://localhost:3091/v1"
+  load_test_config:
+    # [Required] Custom PATH gateway URL
+    #
+    # The default value uses the Grove Portal as the gateway URL.
+    #
+    # To test against a local PATH instance, use the following URL instead:
+    # gateway_url_override: "http://localhost:3069/v1"
+    gateway_url_override: "https://rpc.grove.city/v1"
+
+    # [Optional] Insert service ID into subdomain per test case
+    #     Example: "F00C.rpc.grove.city/v1"
+    #
+    # TODO_TECHDEBT(@commoddity): Remove after header-based service selection is supported.
+    #     See: https://github.com/buildwithgrove/infrastructure/issues/91
+    use_service_subdomain: true
+
+    # [Optional] Custom user identifier for the test (i.e. portal-application-id)
+    #
+    # DEV_NOTE: This field IS required if you are testing against the Grove Portal.
+    #
+    # If you do not have a Grove Portal Application ID, get one by visiting:
+    #     https://www.portal.grove.city
+    #
+    # This field is NOT required if you are testing against a local PATH instance.
+    portal_application_id: ""
+
+    # [Optional] Custom API key for the test (i.e. portal-api-key)
+    #
+    # DEV_NOTE: This field IS required if your Grove Portal Application ID 
+    # requires an API key to be set in the `Authorization` header.
+    #
+    # This field is NOT required if you are testing against a local PATH instance.
+    portal_api_key: ""
+
+# Default configuration applied to all test cases (unless overridden)
+default_service_config:
+  global_rps: 50              # Requests per second (shared across all methods)
+  requests_per_method: 50     # Number of requests per method
+  success_rate: 0.80          # Minimum required success rate (80%)
+  max_p50_latency_ms: 2000ms  # Max allowed P50 latency (ms)
+  max_p95_latency_ms: 5000ms  # Max allowed P95 latency (ms)
+  max_p99_latency_ms: 10000ms # Max allowed P99 latency (ms)
+
+# Override default configuration for specific services
+service_config_overrides:
+  # Shannon - Anvil local Ethereum node (Ephemeral)
+  # "anvil" is an ephemeral test chain and requires lower RPS and higher latency
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+    success_rate: 0.60
+    max_p50_latency_ms: 20000ms
+    max_p95_latency_ms: 50000ms
+    max_p99_latency_ms: 100000ms
+
+  # Shannon - Ethereum Mainnet (Archival)
+  # "eth" is not yet fully supplied so may require higher latency thresholds
+  "eth":
+    max_p50_latency_ms: 4000ms
+    max_p95_latency_ms: 8000ms
+    max_p99_latency_ms: 12000ms

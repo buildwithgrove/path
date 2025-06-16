@@ -21,7 +21,9 @@ import (
 
 /* -------------------- Dockertest Ephemeral PATH Container Setup -------------------- */
 
-// These variables reference the testOptions struct defined in evm_test.go
+// --- USED ONLY FOR E2E TEST MODE ---
+
+// This file is used to setup and tear down an ephemeral PATH container using Dockertest.
 
 const (
 	imageName            = "path-image"
@@ -51,7 +53,7 @@ var containerPortAndProtocol = internalPathPort + "/tcp"
 func setupPathInstance(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts dockerOptions,
+	dockerOpts DockerConfig,
 ) (containerPort string, cleanupFn func()) {
 	t.Helper()
 
@@ -84,13 +86,13 @@ func setupPathInstance(
 func setupPathDocker(
 	t *testing.T,
 	configFilePath string,
-	dockerOpts dockerOptions,
+	dockerOpts DockerConfig,
 ) (*dockertest.Pool, *dockertest.Resource, string, string) {
 	t.Helper()
 
 	// Get docker options from the global test options
-	logContainer := dockerOpts.logOutput
-	forceRebuild := dockerOpts.forceRebuild
+	logContainer := dockerOpts.LogToFile
+	forceRebuild := dockerOpts.ForceRebuildImage
 
 	// eg. {file_path}/path/e2e/.shannon.config.yaml
 	configFilePath = filepath.Join(os.Getenv("PWD"), configFilePath)
@@ -100,7 +102,7 @@ func setupPathDocker(
 		t.Fatalf("config file does not exist: %s", configFilePath)
 	}
 
-	// eg. {file_path}/path/e2e/.shannon.config.yaml:/app/config/.config.yaml
+	// eg. {file_path}/path/e2e/config/.shannon.config.yaml:/app/config/.config.yaml
 	containerConfigMount := configFilePath + configMountPoint
 
 	// Initialize the dockertest pool
@@ -116,7 +118,7 @@ func setupPathDocker(
 		if _, err := pool.Client.InspectImage(imageName); err == nil {
 			imageExists = true
 			fmt.Println("\n🐳 Using existing Docker image, skipping build...")
-			fmt.Println("  💡 TIP: Set DOCKER_FORCE_REBUILD=true to rebuild the image if needed 💡")
+			fmt.Println("  💡 TIP: Set `e2e_load_test_config.e2e_config.docker_config.force_rebuild_image: true` to rebuild the image if needed 💡")
 		}
 	} else {
 		fmt.Println("\n🔄 Force rebuild requested, will build Docker image...")

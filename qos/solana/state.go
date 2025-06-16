@@ -21,6 +21,11 @@ type ServiceState struct {
 	perceivedEpoch uint64
 	// perceivedBlockHeight is the perceived blockheight based on endpoints' responses to `getEpochInfo` requests.
 	perceivedBlockHeight uint64
+
+	// chainID and serviceID to add to endpoint checks.
+	// Used by observations of Synthetic requests.
+	chainID   string
+	serviceID protocol.ServiceID
 }
 
 // TODO_FUTURE: add an endpoint ranking method which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.

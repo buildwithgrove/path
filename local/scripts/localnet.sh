@@ -1,7 +1,20 @@
 #!/bin/bash
-# Script to manage PATH Localnet in Docker
-# Usage: ./localnet.sh [up|down]
-#        ./localnet.sh up --use-local-helm
+#
+# PATH Localnet Management Script
+#
+# This script is responsible for starting up and tearing down the PATH Localnet environment.
+# The environment runs in its own Docker container, which contains all dependencies needed for local development
+# (such as Tilt, Helm, Kind, kubectl, etc.), and is built from the Dockerfile.dev file.
+#
+# This script is invoked by the targets defined in localnet.mk:
+#   - make path_up:           brings up the environment with remote helm charts (calls: ./localnet.sh up)
+#   - make path_up_local_helm: brings up the environment with local helm charts (calls: ./localnet.sh up --use-local-helm)
+#   - make path_down:         tears down the environment (calls: ./localnet.sh down)
+#   - make localnet_exec:     opens a shell in the running container (not handled by this script)
+#
+# Usage: ./localnet.sh [up|down] [--use-local-helm]
+#
+# For more information, see the documentation or the Dockerfile.dev used to build the environment.
 
 set -e
 
@@ -68,7 +81,8 @@ prompt_for_local_helm_charts() {
     return 0
 }
 
-# Function to run a spinner with a timeout
+# Function to run a spinner with a timeout while waiting for a network endpoint (URL) to become available.
+# Use this when you need to wait for a service (e.g., web server or API) to respond at a given URL.
 run_spinner() {
     local timeout=$1
     local check_url=$2
@@ -109,7 +123,8 @@ run_spinner() {
     return 1
 }
 
-# Function to show a simple spinner for a process
+# Function to show a spinner while a shell command runs in the background.
+# Use this when you want to display a spinner while waiting for a process or command to finish executing.
 show_spinner() {
     local message=$1
     local cmd=$2
@@ -177,11 +192,20 @@ run_with_local_helm_charts() {
     
     echo -e "  ${WHITE}📦 Mounting local helm charts from ${helm_charts_path}${NC}"
     
+    # Description of the run command
+    # Volume Mounts:
+    #   - "$(pwd)":/app - Mount the PATH repository as /app to enable hot reloading of changes
+    #   - "${helm_charts_path}":/helm-charts - Mount the local helm charts path as /helm-charts
+    # Port Forwards:
+    #   - 10350 - Tilt UI
+    #   - 3070 - PATH API
+    #   - 3003 - Grafana
     if ! docker run \
         --name path-localnet \
         -v "$(pwd)":/app \
         -p 10350:10350 \
         -p 3070:3070 \
+        -p 3003:3003 \
         --privileged \
         -v "${helm_charts_path}":/helm-charts \
         -e LOCAL_HELM_CHARTS_PATH=/helm-charts \
@@ -199,11 +223,19 @@ run_with_local_helm_charts() {
 run_without_local_helm_charts() {
     echo -e "  ${WHITE}📡 Using remote helm charts${NC}"
     
+    # Description of the container
+    # Volume Mounts:
+    #   - "$(pwd)":/app - Mount the PATH repository as /app to enable hot reloading of changes
+    # Port Forwards:
+    #   - 10350 - Tilt UI
+    #   - 3070 - PATH API
+    #   - 3003 - Grafana
     if ! docker run \
         --name path-localnet \
         -v "$(pwd)":/app \
         -p 10350:10350 \
         -p 3070:3070 \
+        -p 3003:3003 \
         --privileged \
         -e LOCAL_HELM_CHARTS_PATH= \
         -d \

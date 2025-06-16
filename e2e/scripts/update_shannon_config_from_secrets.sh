@@ -6,8 +6,8 @@ set -o nounset
 # It is used in GitHub actions to run the CI, and the environment variables
 # are populated from repo's secrets.
 
-# Set the current working directory to e2e config directory.
-cd "$(dirname "$0")/.." || exit 1
+# Set the current working directory to e2e/config directory.
+cd "$(dirname "$0")/../config" || exit 1
 
 update_shannon_config_from_env() {
     check_env_vars "SHANNON_GATEWAY_PRIVATE_KEY" "SHANNON_OWNED_APPS_PRIVATE_KEYS"
@@ -21,7 +21,7 @@ update_shannon_config_from_env() {
     # Update the PATH Shannon config to reflect secrets on GitHub.
     yq -i '
 	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
-	.shannon_config.gateway_config.owned_apps_private_keys_hex = [env(SHANNON_OWNED_APPS_PRIVATE_KEYS)] |
+	.shannon_config.gateway_config.owned_apps_private_keys_hex = (env(SHANNON_OWNED_APPS_PRIVATE_KEYS) | split(",")) |
     .shannon_config.full_node_config.lazy_mode = true
     ' $CONFIG_FILE
 }

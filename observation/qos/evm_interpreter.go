@@ -5,6 +5,8 @@ package qos
 
 import (
 	"errors"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
 var (
@@ -26,6 +28,9 @@ var (
 // This interpreter allows the rest of the code to draw conclusions about the observations
 // without needing to understand the structure of the proto-generated types.
 type EVMObservationInterpreter struct {
+	Logger polylog.Logger
+
+	// TODO_TECHDEBT(@adshmh): Missing a logger
 	Observations *EVMRequestObservations
 }
 
@@ -88,6 +93,19 @@ func (i *EVMObservationInterpreter) GetServiceID() (string, bool) {
 	}
 
 	return serviceID, true
+}
+
+// GetRequestOrigin returns the Origin of the request:
+// Organic, i.e. User requests.
+// Synthetic, i.e. requests build by the QoS sytem to get observations on endpoints.
+func (i *EVMObservationInterpreter) GetRequestOrigin() string {
+	// Nil observations: log a warning and skip further processing.
+	if i.Observations == nil {
+		i.Logger.Warn().Msg("SHOULD HAPPEN VERY RARELY: got nil EVM QoS observations.")
+		return RequestOrigin_REQUEST_ORIGIN_UNSPECIFIED.String()
+	}
+
+	return i.Observations.GetRequestOrigin().String()
 }
 
 // GetRequestStatus interprets the observations to determine request status information:

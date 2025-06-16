@@ -6,8 +6,8 @@ set -o nounset
 # It is used in GitHub actions to run the CI, and the environment variables
 # are populated from repo's secrets.
 
-# Set the current working directory to e2e config directory.
-cd "$(dirname "$0")/.." || exit 1
+# Set the current working directory to e2e/config directory.
+cd "$(dirname "$0")/../config" || exit 1
 
 update_morse_config_from_env() {
     check_env_vars "MORSE_GATEWAY_SIGNING_KEY" "MORSE_FULLNODE_URL" "MORSE_AATS"
