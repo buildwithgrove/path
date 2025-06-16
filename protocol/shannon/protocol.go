@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
-	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -51,11 +52,11 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 // The FullNodeWithCache interface is used to cache the results of the GetSessions and GetRelaySigner methods.
 // This is used to improve the performance of the protocol.
 type GatewayClient interface {
-	sdk.FullNode
-	GetActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
-	GetPermittedRelaySigner(context.Context, sdk.ServiceID, *http.Request) (*sdk.Signer, error)
+	GetGatewayModeActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
+	SignRelayRequest(context.Context, *servicetypes.RelayRequest, apptypes.Application) (*servicetypes.RelayRequest, error)
+	ValidateRelayResponse(context.Context, sdk.SupplierAddress, []byte) (*servicetypes.RelayResponse, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
-	GetGatewayMode() gatewayClient.GatewayMode
+	IsHealthy() bool
 }
 
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
@@ -73,48 +74,19 @@ type Protocol struct {
 // NewProtocol instantiates an instance of the Shannon protocol integration.
 func NewProtocol(
 	logger polylog.Logger,
-	fullNode sdk.FullNode,
-	gatewayClientConfig gatewayClient.GatewayConfig,
+	gatewayClient GatewayClient,
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
 
-	// Initialize the gateway client by passing it the full node.
-	// The gateway client is responsible for interacting with the Shannon protocol.
-	client, err := getGatewayClient(shannonLogger, fullNode, gatewayClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Protocol{
-		logger: shannonLogger,
-
-		GatewayClient: client,
-
+		logger:        shannonLogger,
+		GatewayClient: gatewayClient,
 		// TODO_MVP(@adshmh): verify the gateway address and private key are valid,
 		// by completing the following:
 		//   1. Query onchain data for a gateway with the supplied address.
 		//   2. Query onchain data for app(s) matching the derived addresses.
 		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
 	}, nil
-}
-
-// getGatewayClient gets the configured gateway client for the PATH instance.
-func getGatewayClient(logger polylog.Logger, fullNode sdk.FullNode, config gatewayClient.GatewayConfig) (GatewayClient, error) {
-	switch config.GatewayMode {
-
-	case gatewayClient.GatewayModeCentralized:
-		logger.Info().Msg("getGatewayClient: PATH configured for centralized gateway mode")
-		return gatewayClient.NewCentralizedGatewayClient(fullNode, logger, config)
-
-	case gatewayClient.GatewayModeDelegated:
-		logger.Info().Msg("getGatewayClient: PATH configured for delegated gateway mode")
-		return gatewayClient.NewDelegatedGatewayClient(fullNode, logger, config)
-
-		// TODO_IMPROVE(@commoddity, @adshmh): add new gateway client for permissionless mode once implemented in the SDK.
-
-	default:
-		return nil, fmt.Errorf("unsupported gateway mode: %s", config.GatewayMode)
-	}
 }
 
 // AvailableEndpoints returns the list available endpoints for a given service ID.
@@ -140,11 +112,10 @@ func (p *Protocol) AvailableEndpoints(
 	logger := p.logger.With(
 		"service", serviceID,
 		"method", "AvailableEndpoints",
-		"gateway_mode", p.GetGatewayMode(),
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	activeSessions, err := p.GatewayClient.GetActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -204,7 +175,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	activeSessions, err := p.GatewayClient.GetActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -230,22 +201,12 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
-	// Retrieve the relay request signer for the current gateway mode.
-	permittedSigner, err := p.GatewayClient.GetPermittedRelaySigner(ctx, serviceID, httpReq)
-	if err != nil {
-		// Wrap the context setup error.
-		// Used to generate the observation.
-		err = fmt.Errorf("%w: gateway mode %s: %w", errRequestContextSetupErrSignerSetup, p.GetGatewayMode(), err)
-		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
-	}
-
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
-		logger:             p.logger,
-		fullNode:           p.GatewayClient,
-		selectedEndpoint:   &selectedEndpoint,
-		serviceID:          serviceID,
-		relayRequestSigner: permittedSigner,
+		logger:           p.logger,
+		gatewayClient:    p.GatewayClient,
+		selectedEndpoint: &selectedEndpoint,
+		serviceID:        serviceID,
 	}, protocolobservations.Observations{}, nil
 }
 
@@ -381,7 +342,7 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID sdk.ServiceID, httpRe
 	ctx := context.Background()
 
 	// Get the list of permitted sessions for the service ID.
-	activeSessions, err := p.GatewayClient.GetActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GatewayClient.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}

@@ -22,11 +22,10 @@ shannon_config:
       # If this config is used for Shannon E2E tests, do not change host_port
       # Otherwise, replace with the correct full node GRPC host:port.
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
-
-    # Setting this to true disables all caching of full node data.
-    lazy_mode: false
-    # If lazy_mode is true, the cache_config may not be set.
     cache_config:
+      # Setting this to true enables caching of full node data.
+      caching_enabled: true
+
       # The TTL for the session cache.
       #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
       # The proposed change is to align session refreshes with actual session expiry time,

@@ -12,18 +12,27 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 )
 
-// FullNode represents a Shannon FullNode as only Shannon supports websocket connections.
-// It is used only to validate the relay responses returned by the Endpoint.
-type FullNode interface {
-	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
-	ValidateRelayResponse(ctx context.Context, supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
-}
-
-// RelayRequestSigner is used by the request context to sign the relay request.
-// It takes an unsigned relay request and an application, and returns a relay request signed either by the gateway that has delegation from the app.
-// If/when the Permissionless Gateway Mode is supported by the Shannon integration, the app's own private key may also be used for signing the relay request.
-type RelayRequestSigner interface {
-	SignRelayRequest(ctx context.Context, req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
+// GatewayClient provides all the methods needed by the Shannon protocol
+// package in PATH to interface with the Shannon Protocol.
+//
+// It is implemented by the following concrete structs in the Shannon SDK package:
+//   - gatewayClient.CentralizedGatewayClient
+//   - gatewayClient.DelegatedGatewayClient
+//
+// It provides methods to:
+//   - get the list of permitted sessions for a given service ID.
+//   - get the relay signer for a given service ID.
+//   - get the list of service IDs that the gateway is configured for.
+//
+// It also emebeds the FullNode interface from the Shannon SDK package, which may be either:
+//   - fullnode.FullNode
+//   - fullnode.FullNodeWithCache
+//
+// The FullNodeWithCache interface is used to cache the results of the GetSessions and GetRelaySigner methods.
+// This is used to improve the performance of the protocol.
+type GatewayClient interface {
+	SignRelayRequest(context.Context, *servicetypes.RelayRequest, apptypes.Application) (*servicetypes.RelayRequest, error)
+	ValidateRelayResponse(context.Context, sdk.SupplierAddress, []byte) (*servicetypes.RelayResponse, error)
 }
 
 // SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
@@ -42,6 +51,8 @@ type bridge struct {
 	// ctx is used to stop the bridge when the context is cancelled from either connection
 	ctx context.Context
 
+	GatewayClient
+
 	logger polylog.Logger
 
 	// endpointConn is the connection to the WebSocket Endpoint
@@ -54,10 +65,6 @@ type bridge struct {
 
 	// selectedEndpoint is the Endpoint that the bridge is connected to
 	selectedEndpoint SelectedEndpoint
-	// relayRequestSigner is the RelayRequestSigner that the bridge uses to sign relay requests
-	relayRequestSigner RelayRequestSigner
-	// fullNode is the FullNode that the bridge uses to validate relay responses
-	fullNode FullNode
 }
 
 // NewBridge creates a new Bridge instance and a new connection to the Endpoint from the Endpoint URL
@@ -65,8 +72,7 @@ func NewBridge(
 	logger polylog.Logger,
 	clientWSSConn *websocket.Conn,
 	selectedEndpoint SelectedEndpoint,
-	relayRequestSigner RelayRequestSigner,
-	fullNode FullNode,
+	gatewayClient GatewayClient,
 ) (*bridge, error) {
 	logger = logger.With(
 		"component", "bridge",
@@ -87,12 +93,11 @@ func NewBridge(
 
 	// Create bridge instance without connections first
 	b := &bridge{
-		logger:             logger,
-		msgChan:            msgChan,
-		selectedEndpoint:   selectedEndpoint,
-		relayRequestSigner: relayRequestSigner,
-		fullNode:           fullNode,
-		ctx:                ctx,
+		logger:           logger,
+		msgChan:          msgChan,
+		selectedEndpoint: selectedEndpoint,
+		GatewayClient:    gatewayClient,
+		ctx:              ctx,
 	}
 
 	// Initialize connections with context and cancel function
@@ -202,7 +207,7 @@ func (b *bridge) signClientMessage(msg message) ([]byte, error) {
 	}
 
 	app := b.selectedEndpoint.Session().GetApplication()
-	signedRelayRequest, err := b.relayRequestSigner.SignRelayRequest(b.ctx, unsignedRelayRequest, *app)
+	signedRelayRequest, err := b.SignRelayRequest(b.ctx, unsignedRelayRequest, *app)
 	if err != nil {
 		return nil, fmt.Errorf("error signing client message: %s", err.Error())
 	}
@@ -222,7 +227,7 @@ func (b *bridge) handleEndpointMessage(msg message) {
 	b.logger.Debug().Msgf("received message from endpoint: %s", string(msg.data))
 
 	// Validate the relay response using the Shannon FullNode
-	relayResponse, err := b.fullNode.ValidateRelayResponse(b.ctx, sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
+	relayResponse, err := b.ValidateRelayResponse(b.ctx, sdk.SupplierAddress(b.selectedEndpoint.Supplier()), msg.data)
 	if err != nil {
 		b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
 		return

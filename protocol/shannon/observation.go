@@ -7,7 +7,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
-	gatewayClient "github.com/pokt-network/shannon-sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -61,27 +60,27 @@ func buildProtocolContextSetupErrorObservation(
 func translateContextSetupErrorToRequestErrorType(err error) protocolobservations.ShannonRequestErrorType {
 	switch {
 	// Centralized gateway mode: error fetching app
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupCentralizedAppFetchErr):
+	case errors.Is(err, errProtocolContextSetupCentralizedAppFetchErr):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR
 
 	// Centralized gateway mode: app does not delegate to the gateway
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupCentralizedAppDelegation):
+	case errors.Is(err, errProtocolContextSetupCentralizedAppDelegation):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION
 
 	// Centralized gateway mode: no sessions found for service
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupCentralizedNoSessions):
+	case errors.Is(err, errProtocolContextSetupCentralizedNoSessions):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS
 
 	// Delegated gateway mode: could not extract app from HTTP request.
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupGetAppFromHTTPReq):
+	case errors.Is(err, errProtocolContextSetupGetAppFromHTTPReq):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP
 
 	// Delegated gateway mode: error fetching onchain app data
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupFetchSession):
+	case errors.Is(err, errProtocolContextSetupFetchSession):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP
 
 	// Delegated gateway mode: pp does not delegate to the gateway
-	case errors.Is(err, gatewayClient.ErrProtocolContextSetupAppDoesNotDelegate):
+	case errors.Is(err, errProtocolContextSetupAppDoesNotDelegate):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE
 
 	// No endpoints available for the service

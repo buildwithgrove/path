@@ -145,19 +145,15 @@ properties:
               keep_alive_timeout:
                 description: "Keep-alive timeout for gRPC connections."
                 type: string
-          lazy_mode:
-            description: "Indicates if lazy mode is enabled for full node connections."
-            type: boolean
-            default: true
           cache_config:
             description: "Configuration for the cache."
             type: object
             additionalProperties: false
             properties:
-              app_ttl:
-                description: "TTL for the app cache."
-                type: string
-                pattern: "^[0-9]+[smh]$"
+              caching_enabled:
+                description: "Indicates if caching is enabled for the full node."
+                type: boolean
+                default: false
               session_ttl:
                 description: "TTL for the session cache."
                 type: string

@@ -48,12 +48,10 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	fullNode sdk.FullNode
+	gatewayClient GatewayClient
 
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
 	serviceID sdk.ServiceID
-
-	relayRequestSigner RelayRequestSigner
 
 	// selectedEndpoint:
 	// - Endpoint selected for sending a relay.
@@ -138,8 +136,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		wsLogger,
 		clientConn,
 		rc.selectedEndpoint,
-		rc.relayRequestSigner,
-		rc.fullNode,
+		rc.gatewayClient,
 	)
 	if err != nil {
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
@@ -226,7 +223,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	// Validate the response.
-	response, err := rc.fullNode.ValidateRelayResponse(ctxWithTimeout, sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
+	response, err := rc.gatewayClient.ValidateRelayResponse(ctxWithTimeout, sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
 		// TODO_TECHDEBT(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
 		// 1. Enhance the `RelayResponse` struct with an error field:
@@ -264,7 +261,7 @@ func (rc *requestContext) signRelayRequest(ctx context.Context, unsignedRelayReq
 	}
 
 	// Sign the relay request using the selected app's private key
-	return rc.relayRequestSigner.SignRelayRequest(ctx, unsignedRelayReq, app)
+	return rc.gatewayClient.SignRelayRequest(ctx, unsignedRelayReq, app)
 }
 
 // buildUnsignedRelayRequest:

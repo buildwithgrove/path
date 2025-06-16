@@ -6,14 +6,13 @@ import (
 	"testing"
 	"time"
 
-	gatewayClient "github.com/pokt-network/shannon-sdk/client"
-	"github.com/pokt-network/shannon-sdk/fullnode"
+	"github.com/pokt-network/shannon-sdk/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/buildwithgrove/path/config/morse"
-	"github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/protocol"
 	morseprotocol "github.com/buildwithgrove/path/protocol/morse"
+	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
@@ -62,18 +61,18 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			name:     "should load valid shannon config without error",
 			filePath: "./examples/config.shannon_example.yaml",
 			want: GatewayConfig{
-				ShannonConfig: &shannon.ShannonGatewayConfig{
-					FullNodeConfig: fullnode.FullNodeConfig{
+				ShannonConfig: &shannonprotocol.ShannonGatewayConfig{
+					FullNodeConfig: client.FullNodeConfig{
 						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
-						GRPCConfig: fullnode.GRPCConfig{
+						GRPCConfig: client.GRPCConfig{
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
-						LazyMode: false,
-						CacheConfig: fullnode.CacheConfig{
-							SessionTTL: 30 * time.Second,
+						CacheConfig: client.CacheConfig{
+							CachingEnabled: true,
+							SessionTTL:     30 * time.Second,
 						},
 					},
-					GatewayConfig: gatewayClient.GatewayConfig{
+					GatewayConfig: shannonprotocol.GatewayConfig{
 						GatewayMode:          protocol.GatewayModeCentralized,
 						GatewayAddress:       "pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw",
 						GatewayPrivateKeyHex: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
