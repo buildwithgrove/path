@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Source helpers for TLD reporting
+source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 
 # For usage instructions, run:
 # $ ./e2e/scripts/shannon_preliminary_services_test.sh --he
@@ -7,10 +10,10 @@
 # Master List: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
 # $ pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq '.service[].id'
 SERVICES=(
-    "arb_one"
+    # "arb_one"
     # "arb_sep_test"
     # "avax-dfk"
-    "avax"
+    # "avax"
     # "base-test"
     # "base-testnet"
     # "base"
@@ -18,9 +21,9 @@ SERVICES=(
     # "bitcoin"
     # "blast"
     # "boba"
-    # "bsc"
+    "bsc"
     # "celo"
-    # "eth"
+    "eth"
     # "eth_hol_test"
     # "eth_sep_test"
     # "evmos"
@@ -44,8 +47,8 @@ SERVICES=(
     # "op_sep_test"
     # "opbnb"
     # "osmosis"
-    # "pocket"
-    # "poly"
+    "pocket"
+    "poly"
     # "poly_amoy_test"
     # "poly_zkevm"
     # "radix"
@@ -54,7 +57,7 @@ SERVICES=(
     # "solana"
     # "sonic"
     # "sui"
-    "svc-poktminer"
+    # "svc-poktminer"
     # "taiko"
     # "taiko_hek_test"
     # "tron"
@@ -86,10 +89,10 @@ print_help() {
 ### Test onchain service availability on Shannon ###
 
 Quickstart with Examples:
-  ./e2e/scripts/shannon_preliminary_services_test.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
   ./e2e/scripts/shannon_preliminary_services_test.sh --network beta --environment local --disqualified_endpoints
   ./e2e/scripts/shannon_preliminary_services_test.sh --network alpha --environment local
-  ./e2e/scripts/shannon_preliminary_services_test.sh --network mainnet --environment production --use-onchain-services
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --use-onchain-services
 
 tl;dr
 - Find all services with >=1 supplier on Shannon using 'pocketd'
@@ -113,10 +116,10 @@ tl;dr
 
 
  USAGE:
-   ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
+   ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|main> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
 
  ARGUMENTS:
-  -n, --network              Network to use: 'alpha', 'beta' or 'mainnet' (required)
+  -n, --network              Network to use: 'alpha', 'beta' or 'main' (required)
   -e, --environment          Environment to use: 'local' or 'production' (required)
 
   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
@@ -210,8 +213,8 @@ if [ -z "$NETWORK" ]; then
     exit 1
 fi
 # Check if network is valid
-if [[ "$NETWORK" != "alpha" && "$NETWORK" != "beta" && "$NETWORK" != "mainnet" ]]; then
-    echo "ERROR: --network must be one of 'alpha', 'beta', or 'mainnet'"
+if [[ "$NETWORK" != "alpha" && "$NETWORK" != "beta" && "$NETWORK" != "main" ]]; then
+    echo "ERROR: --network must be one of 'alpha', 'beta', or 'main'"
     print_show_help
     exit 1
 fi
@@ -236,12 +239,31 @@ echo -e "  • 🧪 Tests JSON-RPC requests for services with suppliers"
 echo -e "  • 📊 Generates a summary table and JSON report"
 echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
 
+# --- TLDs by Service Setup ---
+
+# Call TLD helper and parse JSON into an associative array
+TLD_OUTPUT=$(shannon_query_service_tlds_by_id "$NETWORK" --structured)
+declare -A SERVICE_TLDS
+# Populate associative array: SERVICE_TLDS[service_id]="comma,separated,tlds"
+while IFS= read -r service; do
+    tlds=$(echo "$TLD_OUTPUT" | jq -r --arg s "$service" '.[$s] | join(",")')
+    SERVICE_TLDS["$service"]="$tlds"
+done < <(echo "$TLD_OUTPUT" | jq -r 'keys[]')
+
+# Helper to get TLDs for a service name
+get_service_tlds() {
+    local search_service="$1"
+    echo "${SERVICE_TLDS[$search_service]}"
+}
+
+# --- End TLDs Setup ---
+
 # Set node flag based on network
 if [ "$NETWORK" = "alpha" ]; then
     NODE_FLAG="--node https://shannon-alpha-grove-rpc.alpha.poktroll.com"
 elif [ "$NETWORK" = "beta" ]; then
     NODE_FLAG="--node https://shannon-testnet-grove-rpc.beta.poktroll.com"
-elif [ "$NETWORK" = "mainnet" ]; then
+elif [ "$NETWORK" = "main" ]; then
     NODE_FLAG="--node https://shannon-grove-rpc.mainnet.poktroll.com"
 fi
 
@@ -367,15 +389,16 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
     echo -e "=============================="
     echo -e "👥 SERVICE SUPPLIER COUNTS:"
     echo -e "=============================="
-    printf "%-20s | %s\n" "SERVICE ID" "SUPPLIERS"
-    printf "%-20s-+-%s\n" "--------------------" "----------"
+    printf "%-20s | %-9s | %s\n" "SERVICE ID" "SUPPLIERS" "TLDS"
+    printf "%-20s-+-%9s-+-%s\n" "--------------------" "---------" "----------------"
 
     for item in "${all_services_results[@]}"; do
         IFS=':' read -r service count <<<"$item"
+        tlds="${SERVICE_TLDS[$service]}"
         if [[ "$count" =~ ^[0-9]+$ ]]; then
-            printf "%-20s | %s\n" "$service" "$count"
+            printf "%-20s | %-9s | %s\n" "$service" "$count" "$tlds"
         else
-            printf "%-20s | %s\n" "$service" "ERROR"
+            printf "%-20s | %-9s | %s\n" "$service" "ERROR" "$tlds"
         fi
     done
 
@@ -511,6 +534,11 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
         done
 
         # Build service JSON with optional disqualified endpoints response
+        tlds_json=$(jq -c --arg s "$service" '.[$s]' <<<"$TLD_OUTPUT")
+        if [ -z "$tlds_json" ]; then
+            tlds_json='[]'
+        fi
+        tlds_json="[]"
         if [ "$QUERY_DISQUALIFIED" = true ] && [ -n "$disqualified_response" ]; then
             service_json=$(jq -n \
                 --arg service_id "$service" \
@@ -522,6 +550,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                 --arg total_requests "$max_requests" \
                 --argjson errors "$errors_json" \
                 --argjson disqualified_response "$disqualified_response" \
+                --argjson tlds "$tlds_json" \
                 '{
                     service_id: $service_id,
                     suppliers: ($suppliers | tonumber),
@@ -531,7 +560,8 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                     failed_requests: ($failed_requests | tonumber),
                     total_requests: ($total_requests | tonumber),
                     errors: $errors,
-                    disqualifed_endpoints_response: $disqualified_response
+                    disqualifed_endpoints_response: $disqualified_response,
+                    tlds: $tlds
                 }')
         else
             service_json=$(jq -n \
@@ -543,6 +573,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                 --arg failed_requests "$failed_requests" \
                 --arg total_requests "$max_requests" \
                 --argjson errors "$errors_json" \
+                --argjson tlds "$tlds_json" \
                 '{
                     service_id: $service_id,
                     suppliers: ($suppliers | tonumber),
@@ -551,7 +582,8 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                     successful_requests: ($successful_requests | tonumber),
                     failed_requests: ($failed_requests | tonumber),
                     total_requests: ($total_requests | tonumber),
-                    errors: $errors
+                    errors: $errors,
+                    tlds: $tlds
                 }')
         fi
 
@@ -641,12 +673,15 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
     echo "    💔  All requests failed (no successful tests)"
     echo ""
     # Display as a nice table
-    printf "%-20s | %-9s | %s\n" "SERVICE ID" "SUPPLIERS" "RESULT"
-    printf "%-20s-+-%9s-+-%s\n" "--------------------" "---------" "-------"
+    printf "%-20s | %-9s | %-7s | %s\n" "SERVICE ID" "SUPPLIERS" "RESULT" "TLDS"
+    printf "%-20s-+-%9s-+-%7s-+-%s\n" "--------------------" "---------" "-------" "----------------"
 
     # Sort and display the results from the all_results array
-    printf '%s\n' "${all_results[@]}" | sort -t, -k3,3r -k1,1 | while IFS=, read -r service count result; do
-        printf "%-20s | %-9s | %s\n" "$service" "$count" "$result"
+    IFS=$'\n' sorted_results=($(printf '%s\n' "${all_results[@]}" | sort -t, -k3,3r -k1,1))
+    for row in "${sorted_results[@]}"; do
+        IFS=',' read -r service count result <<<"$row"
+        tlds="${SERVICE_TLDS[$service]}"
+        printf "%-20s | %-9s | %-7s | %s\n" "$service" "$count" "$result" "$tlds"
     done
 
     echo "=============================="
