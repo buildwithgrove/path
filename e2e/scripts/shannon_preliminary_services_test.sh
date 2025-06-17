@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# What this script does:
-echo -e "\n✨ What this script does: ✨"
-echo -e "  • 🔍 Queries all known Shannon services for supplier counts"
-echo -e "  • 🧪 Tests JSON-RPC requests for services with suppliers"
-echo -e "  • 📊 Generates a summary table and JSON report"
-echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
-
 # For usage instructions, run:
 # $ ./e2e/scripts/shannon_preliminary_services_test.sh --he
 
@@ -96,11 +89,14 @@ Quickstart with Examples:
   ./e2e/scripts/shannon_preliminary_services_test.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
   ./e2e/scripts/shannon_preliminary_services_test.sh --network beta --environment local --disqualified_endpoints
   ./e2e/scripts/shannon_preliminary_services_test.sh --network alpha --environment local
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network mainnet --environment production --use-onchain-services
 
 tl;dr
 - Find all services with >=1 supplier on Shannon using 'pocketd'
 - Confirm at least 1 'eth_blockNumber' request returns a 200 using PATH
 - Output logs AND JSON report named supplier_report_<YYYY-MM-DD>_.json
+- Optionally include disqualified endpoint analysis
+- Optionally override the SERVICES list by querying all on-chain services from Pocketd
 
 
 ############################################
@@ -108,10 +104,13 @@ tl;dr
 ############################################
 
  DESCRIPTION:
-   This script queries supplier counts for a predefined list of service IDs and
-   optionally tests each service with suppliers using curl requests. It generates
-   both console output and a detailed CSV report. With the --disqualified_endpoints
-   flag, it also queries and stores disqualified endpoints data in JSON format.
+   What this script does:
+   • 🔍 Queries supplier counts for a predefined list of Shannon service IDs
+   • 🧪 Optionally tests each service with suppliers using JSON-RPC curl requests
+   • 📊 Generates both human-readable console output and a detailed CSV report
+   • 🚫 With --disqualified_endpoints: Also queries and stores disqualified endpoint data as JSON
+   • 🔄 With --use-onchain-services: Dynamically fetches the list of services from on-chain via Pocketd, overriding the default SERVICES list
+
 
  USAGE:
    ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
@@ -124,6 +123,8 @@ tl;dr
   -k, --api_key              API Key for production (required when environment=production)
 
   -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)
+  -o --use-onchain-services     Override the SERVICES list by querying all on-chain services from Pocketd (optional)
+
   -h, --help                 Show this help message and exit
 
 
@@ -185,11 +186,15 @@ while [[ $# -gt 0 ]]; do
         API_KEY="$2"
         shift 2
         ;;
+    -o | --use-onchain-services)
+        USE_ONCHAIN_SERVICES=true
+        shift
+        ;;
     -h | --help)
         print_help
         ;;
     *)
-        echo "ERROR: Unknown argument '$1'"
+        echo "Unknown option: $1"
         print_show_help
         exit 1
         ;;
@@ -223,6 +228,13 @@ if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
     print_show_help
     exit 1
 fi
+
+# What this script does:
+echo -e "\n✨ What this script does: ✨"
+echo -e "  • 🔍 Queries all known Shannon services for supplier counts"
+echo -e "  • 🧪 Tests JSON-RPC requests for services with suppliers"
+echo -e "  • 📊 Generates a summary table and JSON report"
+echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
 
 # Set node flag based on network
 if [ "$NETWORK" = "alpha" ]; then
@@ -284,19 +296,32 @@ RESULTS_FILE="$TEMP_DIR/results.txt"
 JSON_REPORT_FILE="supplier_report_$(date +%Y-%m-%d_%H:%M:%S).json"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
+# If --use-onchain-services is set, override SERVICES array with on-chain queried list
+if [ "$USE_ONCHAIN_SERVICES" = true ]; then
+    echo -e "\n🔗 Fetching on-chain services via pocketd..."
+    ONCHAIN_SERVICES_RAW=$(pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq -r '.service[].id')
+    # Convert multi-line string to bash array (compatible with Linux and macOS)
+    SERVICES=()
+    while IFS= read -r line; do
+        SERVICES+=("$line")
+    done <<<"$ONCHAIN_SERVICES_RAW"
+    echo -e "\n📝 SERVICES to be tested (from on-chain):"
+    printf '  - %s\n' "${SERVICES[@]}"
+fi
+
 # Initialize array to store services with suppliers
 declare -a services_with_suppliers
 
-echo "=== SUPPLIER COUNT REPORT ==="
-echo "Generated: $(date)"
-echo "Network: $NETWORK"
-echo "Environment: $ENVIRONMENT"
+echo -e "\n=== SUPPLIER COUNT REPORT ==="
+echo -e "Generated: $(date)"
+echo -e "Network: $NETWORK"
+echo -e "Environment: $ENVIRONMENT"
 if [ "$QUERY_DISQUALIFIED" = true ]; then
-    echo "Mode: Including disqualified endpoints analysis 📊"
+    echo -e "Mode: Including disqualified endpoints analysis 📊"
 else
-    echo "Mode: Basic supplier count and testing only 📈"
+    echo -e "Mode: Basic supplier count and testing only 📈"
 fi
-echo "=============================="
+echo -e "=============================="
 echo ""
 
 # Iterate through each service in the embedded array
@@ -334,15 +359,14 @@ for service in "${SERVICES[@]}"; do
         all_services_results+=("$service:FAILED")
         echo "🔍 $service: ❌ (command failed)"
     fi
-
 done
 
 # Display all services (including 0 suppliers) as a table
 if [ ${#all_services_results[@]} -gt 0 ]; then
     echo ""
-    echo "=============================="
-    echo "👥 SERVICE SUPPLIER COUNTS:"
-    echo "=============================="
+    echo -e "=============================="
+    echo -e "👥 SERVICE SUPPLIER COUNTS:"
+    echo -e "=============================="
     printf "%-20s | %s\n" "SERVICE ID" "SUPPLIERS"
     printf "%-20s-+-%s\n" "--------------------" "----------"
 
