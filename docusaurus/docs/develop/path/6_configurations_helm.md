@@ -16,8 +16,8 @@ A `PATH` stack is configured via two files:
 
 | File           | Required | Description                                   |
 | -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
+| `.config.yaml` | ✅        | PATH **gateway** configurations               |
+| `.values.yaml` | ❌        | PATH **Helm chart deployment** configurations |
 
 :::
 
@@ -117,6 +117,7 @@ The service ID is specified per-request as the `Target-Service-Id` header; eithe
 
 #### Example `.values.yaml` File
 
+<!--TODO_MIGRATION(@commoddity): once GUARD is updated, remove `shannonServiceId` and use `serviceId` instead. -->
 ```yaml
 guard:
   auth:
@@ -128,12 +129,15 @@ guard:
         - test_api_key_3
   services:
     - serviceId: F021
+      shannonServiceId: poly
       aliases:
         - polygon
     - serviceId: F00C
+      shannonServiceId: eth
       aliases:
         - eth
     - serviceId: F000
+      shannonServiceId: pocket
       aliases:
         - pocket
 ```
