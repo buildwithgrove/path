@@ -64,7 +64,9 @@ EVM_SERVICES=(
     "taiko_hek_test"
     "tron"
     "xrpl_evm_dev"
-    "xrpl_evm_test"
+    # TODO_TECHDEBT: Align and keep one
+    "xrpl_evm_test"    # Shannon Mainnet
+    "xrpl_evm_testnet" # Shannon Beta TestNet
     "zklink_nova"
     "zksync_era"
 )
@@ -316,17 +318,17 @@ get_service_identifier() {
     local service_id="$1"
     if [ "$ENVIRONMENT" = "production" ]; then
         case "$service_id" in
-            arb_one) echo "arbitrum-one" ;;
-            arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
-            base-test) echo "base-testnet" ;;
-            eth_hol_test) echo "eth-holesky-testnet" ;;
-            eth_sep_test) echo "eth-sepolia-testnet" ;;
-            op_sep_test) echo "optimism-sepolia-testnet" ;;
-            poly) echo "polygon" ;;
-            taiko_hek_test) echo "taiko-hekla-testnet" ;;
-            xrpl_evm_test) echo "xrpl-evm-test" ;;
-            zksync_era) echo "zksync-era" ;;
-            *) echo "$service_id" ;;
+        arb_one) echo "arbitrum-one" ;;
+        arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
+        base-test) echo "base-testnet" ;;
+        eth_hol_test) echo "eth-holesky-testnet" ;;
+        eth_sep_test) echo "eth-sepolia-testnet" ;;
+        op_sep_test) echo "optimism-sepolia-testnet" ;;
+        poly) echo "polygon" ;;
+        taiko_hek_test) echo "taiko-hekla-testnet" ;;
+        xrpl_evm_test) echo "xrpl-evm-test" ;;
+        zksync_era) echo "zksync-era" ;;
+        *) echo "$service_id" ;;
         esac
     else
         echo "$service_id"

@@ -449,9 +449,21 @@ services:
       transaction_hash: "0x26f8e0bc913775116335b2b379c19e0a044acdbf5d42f149b7ddd288e273dd6d"
       call_data: "0x18160ddd"
 
+  # TODO_TECHDEBT(@commoddity): Align and keep one of xrpl_evm_test or xrpl_evm_testnet
   # Shannon - XRPL EVM Testnet (Archival)
-  - name: "Shannon - xrpl_evm_test (XRPL EVM Testnet) Test"
+  - name: "Shannon - xrpl_evm_test (XRPL EVM Testnet) Test - Shannon Mainnet"
     service_id: "xrpl_evm_test"
+    service_type: "evm"
+    archival: true
+    service_params:
+      # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+      contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
+      contract_start_block: 368266
+      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
+      call_data: "0x18160ddd"
+  # Shannon - XRPL EVM Testnet (Archival)
+  - name: "Shannon - xrpl_evm_testnet (XRPL EVM Testnet) Test - Shannon Beta TestNet"
+    service_id: "xrpl_evm_testnet"
     service_type: "evm"
     archival: true
     service_params:

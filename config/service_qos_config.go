@@ -339,8 +339,16 @@ var shannonServices = []ServiceQoSConfig{
 		420_139,
 	)),
 
-	// XRPL EVM Testnet
+	// TODO_TECHDEBT(@commoddity, @fred): Align these names
+	// XRPL EVM Testnet - On Shannon MainNet
 	evm.NewEVMServiceQoSConfig("xrpl_evm_test", "0x161c28", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
+		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
+		// Contract start block
+		368_266,
+	)),
+	// XRPL EVM Testnet - On Shannon Beta TestNet
+	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 		// Contract start block
