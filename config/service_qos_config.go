@@ -340,7 +340,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("xrpl_evm_test", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 		// Contract start block
