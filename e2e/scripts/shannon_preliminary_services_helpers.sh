@@ -1,43 +1,59 @@
 #!/bin/bash
 
-# shannon_query_services_by_owner queries all services from a Pocket Network Shannon environment
-# and filters them to show only services owned by a specific address.
-#
-# Parameters:
-#   $1 (env): Network environment - must be one of: alpha, beta, main
-#   $2 (owner_address): The owner address to filter services by
-#
-# Returns:
-#   Outputs a list of services owned by the specified address in the format:
-#   "- <service_id>: <service_name>"
-#   Services are displayed with colored service IDs (blue)
-#
-# Side effects:
-#   - Writes raw JSON response to /tmp/shannon_all_services_${ENV}.json for debugging
-#   - Requires pocketd CLI tool to be installed and configured
-#   - Uses ~/.pocket_prod as the home directory for pocketd
-#
-# Usage:
-#   shannon_query_services_by_owner main pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s
+# To experiment with this script and make them available in your shell, run:
+# source ./e2e/scripts/shannon_preliminary_services_helpers.sh
+
+# Run with --help for usage info.
 function shannon_query_services_by_owner() {
   if [[ -z "$1" || "$1" == "--help" || "$1" == "-h" ]]; then
-    echo "shannon_query_services_by_owner - List services owned by a given address"
+    echo "shannon_query_services_by_owner - List all services owned by a given address."
+    echo ""
+    echo "DESCRIPTION:"
+    echo "  - Queries all services from the specified Pocket Network Shannon environment ('alpha', 'beta', or 'main')"
+    echo "  - Filters them to show only services owned by a specific address"
+    echo "  - Outputs a formatted list"
+    echo ""
+    echo "REQUIREMENTS:"
+    echo "  - 'pocketd' CLI tool must be installed and configured."
+    echo "  - Writes the raw JSON response to /tmp/shannon_all_services_<env>.json for debugging."
     echo ""
     echo "USAGE:"
-    echo "  shannon_query_services_by_owner <env> <owner_address>"
+    echo "  shannon_query_services_by_owner <env> [owner_address]"
+    echo ""
+    echo "ARGUMENTS:"
+    echo "    <env>           Required. Network environment - must be one of: alpha, beta, main."
+    echo "    [owner_address] Optional. Owner address to filter services by."
+    echo "                    Defaults to pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s if not provided."
+    echo ""
+    echo "OUTPUT:"
+    echo "  - Outputs a list of services owned by the specified address in the format:"
+    echo "      - <service_id>: <service_name>"
+    echo "  - Raw query response is saved to /tmp/shannon_all_services_<env>.json."
+    echo ""
+    echo "SIDE EFFECTS:"
+    echo "  - Creates/overwrites /tmp/shannon_all_services_<env>.json with the full service list."
+    echo "  - Prints info and errors to standard output."
     echo ""
     echo "EXAMPLES:"
-    echo "  shannon_query_services_by_owner main pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s"
+    echo "  # List all services for the default owner in mainnet:"
+    echo "  shannon_query_services_by_owner main"
+    echo ""
+    echo "  # List all services for a specific owner address in beta:"
+    echo "  shannon_query_services_by_owner beta pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s"
     return 0
   fi
 
   local ENV="$1"
   local OWNER="$2"
-  local HOME_DIR="$HOME/.pocket_prod"
+  if [[ -z "$OWNER" ]]; then
+    OWNER="pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s"
+    echo "No owner address provided, defaulting to $OWNER"
+  fi
+
   local DUMP_FILE="/tmp/shannon_all_services_${ENV}.json"
 
   echo "Querying services from network: $ENV"
-  if ! pocketd query service all-services --network="$ENV" --home="$HOME_DIR" --grpc-insecure=false -o json >"$DUMP_FILE"; then
+  if ! pocketd query service all-services --network="$ENV"--grpc-insecure=false -o json >"$DUMP_FILE"; then
     echo "❌ Failed to query service list"
     return 1
   fi
@@ -52,47 +68,35 @@ function shannon_query_services_by_owner() {
   ' "$DUMP_FILE"
 }
 
-# shannon_query_service_tlds_by_id queries all suppliers from a Pocket Network Shannon environment
-# and aggregates the 2nd-level TLDs (e.g. 'nodefleet.net') for each service ID.
-#
-# This function is used in shannon_preliminary_services_test.sh to populate the SERVICE_TLDS
-# associative array, which maps service IDs to their comma-separated TLD lists for display
-# in the final report table.
-#
-# Parameters:
-#   $1 (env): Network environment - must be one of: alpha, beta, main
-#   $2 (structured): Optional "--structured" flag for JSON-only output without log messages
-#
-# Returns:
-#   Without --structured: Human-readable list with colored service IDs showing TLDs per service
-#   With --structured: Raw JSON object mapping service IDs to arrays of unique TLDs
-#
-# Side effects:
-#   - Writes raw JSON response to /tmp/shannon_supplier_dump_${ENV}.json for debugging
-#   - Requires pocketd CLI tool to be installed and configured
-#   - Uses ~/.pocket as the home directory for pocketd
-#
-# Example JSON output with --structured:
-#   {"eth": ["nodefleet.net", "grove.city"], "bsc": ["ankr.com", "quicknode.com"]}
-#
-# Usage:
-#   shannon_query_service_tlds_by_id beta                    # Human-readable output
-#   shannon_query_service_tlds_by_id main --structured      # JSON output for parsing
+# Run with --help for usage info.
 function shannon_query_service_tlds_by_id() {
   if [[ -z "$1" || "$1" == "--help" || "$1" == "-h" ]]; then
-    echo "shannon_query_service_tlds_by_id - Aggregate service endpoint TLDs by service ID"
+    echo "shannon_query_service_tlds_by_id - Query and aggregate service endpoint TLDs by service ID from a Pocket Network Shannon environment."
     echo ""
     echo "DESCRIPTION:"
-    echo "  Queries the Pocket Network Shannon supplier list for a given network"
-    echo "  and aggregates the 2nd-level TLDs (e.g. 'nodefleet.net') for each service ID."
-    echo "  Also writes the raw JSON response to /tmp for debugging."
+    echo "  • Queries all suppliers from the specified Shannon environment ('alpha', 'beta', or 'main')."
+    echo "  • Aggregates the 2nd-level TLDs (e.g. 'nodefleet.net') for each service ID, and displays the results."
+    echo "  • Used in shannon_preliminary_services_test.sh to populate the SERVICE_TLDS associative array."
+    echo "  • Maps service IDs to their comma-separated TLD lists for reporting."
+    echo ""
+    echo "PARAMETERS:"
+    echo "  <env>           Required. Network environment - must be one of: alpha, beta, main."
+    echo "  [--structured]  Optional. Output raw JSON only (no log output); otherwise, human-readable output."
+    echo ""
+    echo "OUTPUT:"
+    echo "  Without --structured: Human-readable list showing colored service IDs and their TLDs."
+    echo "  With --structured:    Raw JSON object mapping service IDs to arrays of unique TLDs."
+    echo ""
+    echo "SIDE EFFECTS:"
+    echo "  - Writes raw JSON response to /tmp/shannon_supplier_dump_<env>.json for debugging."
+    echo "  - Requires 'pocketd' CLI to be installed and configured."
+    echo "  - Uses ~/.pocket as the home directory for pocketd."
+    echo ""
+    echo "EXAMPLE JSON OUTPUT (with --structured):"
+    echo "  {\"eth\": [\"nodefleet.net\", \"grove.city\"], \"bsc\": [\"ankr.com\", \"quicknode.com\"]}"
     echo ""
     echo "USAGE:"
     echo "  shannon_query_service_tlds_by_id <env> [--structured]"
-    echo ""
-    echo "ARGUMENTS:"
-    echo "  env           Network environment - must be one of: alpha, beta, main"
-    echo "  --structured  Output raw JSON only, no log output"
     echo ""
     echo "EXAMPLES:"
     echo "  shannon_query_service_tlds_by_id beta"
@@ -123,28 +127,24 @@ function shannon_query_service_tlds_by_id() {
   fi
 
   local JQ_FILTER='
-      reduce .supplier[] as $s (
-        {};
-        . + (
-          $s.services // []
-          | map({
-              key: .service_id,
-              value: (
-                .endpoints // []
-                | map(
-                    .url
-                    | sub("^https?://"; "")
-                    | split("/")[0]
-                    | split(".")[-2:]
-                    | join(".")
-                  )
-                | unique
-              )
-            })
-          | from_entries
-        )
+    reduce .supplier[] as $s (
+      {};
+      reduce ($s.services // [])[] as $svc (
+        .;
+        ($svc.endpoints // [] | map(
+            .url
+            | sub("^https?://"; "")
+            | split("/")[0]
+            | split(".")[-2:]
+            | join(".")
+          )
+          | unique) as $tlds
+        |
+        .[$svc.service_id] += $tlds
       )
-    '
+    )
+    | with_entries(.value |= unique | .value |= sort)
+  '
 
   if [[ "$STRUCTURED" == "--structured" ]]; then
     jq "$JQ_FILTER" "$DUMP_FILE"
