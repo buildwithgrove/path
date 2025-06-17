@@ -1014,8 +1014,6 @@ github.com/pokt-network/poktroll v0.1.17 h1:wkc8R3QKiyB6t8kGQGh/yzkdP85/4hiRhitH
 github.com/pokt-network/poktroll v0.1.17/go.mod h1:8Ukz3y5o5MhEmCVrdVV0/S/IMgRPW5ZZQST+67BQPT4=
 github.com/pokt-network/ring-go v0.1.0 h1:hF7mDR4VVCIqqDAsrloP8azM9y1mprc99YgnTjKSSwk=
 github.com/pokt-network/ring-go v0.1.0/go.mod h1:8NHPH7H3EwrPX3XHfpyRI6bz4gApkE3+fd0XZRbMWP0=
-github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5 h1:TTtN4ln+AWWPb8wbUZESAyZqUWFxV/kQNkNCEE6FgmM=
-github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5/go.mod h1:D7ZoOsLtOzDD7Vj9bnIIPFDbqfcUBR0Ic995vyfbdQM=
 github.com/pokt-network/shannon-sdk v0.0.0-20250615013032-bbc533b256f4 h1:5UlMGjlQE6uPBKuSFYp+c2s2FAGYa3kYcYrLUlAr3Cc=
 github.com/pokt-network/shannon-sdk v0.0.0-20250615013032-bbc533b256f4/go.mod h1:D7ZoOsLtOzDD7Vj9bnIIPFDbqfcUBR0Ic995vyfbdQM=
 github.com/pokt-network/smt v0.13.0 h1:C2F8FlJh34aU+DVeRU/Bt8BOkFXn4QjWMK+nbT9PUj4=
