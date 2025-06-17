@@ -1,70 +1,71 @@
 #!/usr/bin/env bash
 
+# TODO_UPNEXT(@olshansky): Further improvements
+# - [ ] Add support for REST based services
+
 # Source helpers for TLD reporting
 source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 
 # For usage instructions, run:
 # $ ./e2e/scripts/shannon_preliminary_services_test.sh --he
 
-# To Update this list, run:
-# Master List: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
-# $ pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq '.service[].id'
+# References
+# Pocket Services - Public Directory: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
+# Grove Shannon Mainnet Applications: https://docs.google.com/spreadsheets/d/1EjF9buF6GNR4vGglUuMjLtJmrfQD9JunX_CJHslwt84/edit?gid=0#gid=0
 SERVICES=(
-    # "arb_one"
-    # "arb_sep_test"
-    # "avax-dfk"
-    # "avax"
-    # "base-test"
-    # "base-testnet"
-    # "base"
-    # "bera"
-    # "bitcoin"
-    # "blast"
-    # "boba"
+    "arb_one"
+    "arb_sep_test"
+    "avax-dfk"
+    "avax"
+    "base-test"
+    "base"
+    "bera"
+    "bitcoin"
+    "blast"
+    "boba"
     "bsc"
-    # "celo"
+    "celo"
     "eth"
-    # "eth_hol_test"
-    # "eth_sep_test"
-    # "evmos"
-    # "fantom"
-    # "fraxtal"
-    # "fuse"
-    # "gnosis"
-    # "harmony"
-    # "ink"
-    # "iotex"
-    # "kaia"
-    # "kava"
-    # "linea"
-    # "mantle"
-    # "metis"
-    # "moonbeam"
-    # "moonriver"
-    # "near"
-    # "oasys"
-    # "op"
-    # "op_sep_test"
-    # "opbnb"
-    # "osmosis"
+    "eth_hol_test"
+    "eth_sep_test"
+    "evmos"
+    "fantom"
+    "fraxtal"
+    "fuse"
+    "gnosis"
+    "harmony"
+    "ink"
+    "iotex"
+    "kaia"
+    "kava"
+    "linea"
+    "mantle"
+    "metis"
+    "moonbeam"
+    "moonriver"
+    "near"
+    "oasys"
+    "op"
+    "op_sep_test"
+    "opbnb"
+    "osmosis"
     "pocket"
     "poly"
-    # "poly_amoy_test"
-    # "poly_zkevm"
-    # "radix"
-    # "scroll"
-    # "sei"
-    # "solana"
-    # "sonic"
-    # "sui"
-    # "svc-poktminer"
-    # "taiko"
-    # "taiko_hek_test"
-    # "tron"
-    # "xrpl_evm_dev"
-    # "xrpl_evm_test"
-    # "zklink_nova"
-    # "zksync_era"
+    "poly_amoy_test"
+    "poly_zkevm"
+    "radix"
+    "scroll"
+    "sei"
+    "solana"
+    "sonic"
+    "sui"
+    "taiko"
+    "taiko_hek_test"
+    "tron"
+    "xrpl_evm_dev"
+    "xrpl_evm_test"
+    "zklink_nova"
+    "zksync_era"
 )
 
 # Configuration Variables
@@ -90,9 +91,11 @@ print_help() {
 
 Quickstart with Examples:
   ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --services bsc,eth,pocket,poly --portal_app_id "your_app_id" --api_key "your_api_key"
   ./e2e/scripts/shannon_preliminary_services_test.sh --network beta --environment local --disqualified_endpoints
   ./e2e/scripts/shannon_preliminary_services_test.sh --network alpha --environment local
-  ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --use-onchain-services
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --onchain-services
+
 
 tl;dr
 - Find all services with >=1 supplier on Shannon using 'pocketd'
@@ -112,23 +115,24 @@ tl;dr
    • 🧪 Optionally tests each service with suppliers using JSON-RPC curl requests
    • 📊 Generates both human-readable console output and a detailed CSV report
    • 🚫 With --disqualified_endpoints: Also queries and stores disqualified endpoint data as JSON
-   • 🔄 With --use-onchain-services: Dynamically fetches the list of services from on-chain via Pocketd, overriding the default SERVICES list
+   • 🔄 With --onchain-services: Dynamically fetches the list of services from on-chain via Pocketd, overriding the default SERVICES list
 
 
  USAGE:
    ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|main> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
 
  ARGUMENTS:
-  -n, --network              Network to use: 'alpha', 'beta' or 'main' (required)
-  -e, --environment          Environment to use: 'local' or 'production' (required)
+  -n, --network                 Network to use: 'alpha', 'beta' or 'main' (required)
+  -e, --environment             Environment to use: 'local' or 'production' (required)
 
-  -p, --portal_app_id        Portal Application ID for production (required when environment=production)
-  -k, --api_key              API Key for production (required when environment=production)
+  -p, --portal_app_id           Portal Application ID for production (required when environment=production)
+  -k, --api_key                 API Key for production (required when environment=production)
 
   -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)
-  -o --use-onchain-services     Override the SERVICES list by querying all on-chain services from Pocketd (optional)
+  -o, --onchain-services        Override the SERVICES list by querying all on-chain services from Pocketd (optional)
+  -s, --services                Comma-separated list of services to test (e.g. -s bsc,eth,pocket,poly) (optional)
 
-  -h, --help                 Show this help message and exit
+  -h, --help                    Show this help message and exit
 
 
  ENVIRONMENT BEHAVIOR:
@@ -189,9 +193,13 @@ while [[ $# -gt 0 ]]; do
         API_KEY="$2"
         shift 2
         ;;
-    -o | --use-onchain-services)
+    -o | --onchain-services)
         USE_ONCHAIN_SERVICES=true
         shift
+        ;;
+    -s | --services)
+        SERVICES_OVERRIDE="$2"
+        shift 2
         ;;
     -h | --help)
         print_help
@@ -230,6 +238,11 @@ if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
     echo "ERROR: --environment must be either 'local' or 'production'"
     print_show_help
     exit 1
+fi
+
+# If SERVICES_OVERRIDE is set, override the SERVICES array
+if [ -n "$SERVICES_OVERRIDE" ]; then
+    IFS=',' read -r -a SERVICES <<<"$SERVICES_OVERRIDE"
 fi
 
 # What this script does:
@@ -318,7 +331,7 @@ RESULTS_FILE="$TEMP_DIR/results.txt"
 JSON_REPORT_FILE="supplier_report_$(date +%Y-%m-%d_%H:%M:%S).json"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# If --use-onchain-services is set, override SERVICES array with on-chain queried list
+# If --onchain-services is set, override SERVICES array with on-chain queried list
 if [ "$USE_ONCHAIN_SERVICES" = true ]; then
     echo -e "\n🔗 Fetching on-chain services via pocketd..."
     ONCHAIN_SERVICES_RAW=$(pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq -r '.service[].id')
