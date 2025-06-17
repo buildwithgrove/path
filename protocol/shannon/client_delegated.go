@@ -5,25 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/pokt-network/shannon-sdk/client"
 )
 
-var (
-	// Delegated gateway mode: could not extract app from HTTP request.
-	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
-	// Delegated gateway mode: could not fetch session for app from the full node
-	errProtocolContextSetupFetchSession = errors.New("error getting a session from the full node for app")
-	// Delegated gateway mode: app is not staked for the service.
-	errProtocolContextSetupAppNotStaked = errors.New("app is not staked for the service")
-	// Delegated gateway mode: gateway does not have delegation for the app.
-	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app")
-)
+// Delegated gateway mode: could not extract app from HTTP request.
+var errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
 
 // - TODO(@Olshansk): Revisit the security specification & requirements for how the paying app is selected.
 // - TODO_DOCUMENT(@Olshansk): Convert the Notion doc into a proper README.
@@ -32,6 +22,9 @@ var (
 
 // delegatedGatewayClient implements the GatewayClient interface for delegated gateway mode.
 //
+// It embeds the GatewayClient interface from the Shannon SDK package, which provides the
+// functionality needed by the gateway package for handling service requests.
+//
 // # Delegated Gateway Mode - Shannon Protocol Integration
 //
 //   - Represents a gateway operation mode with the following behavior:
@@ -39,11 +32,11 @@ var (
 //   - Users must select a specific app for each relay request (currently via HTTP request headers).
 type delegatedGatewayClient struct {
 	logger polylog.Logger
+
+	// Embeds the GatewayClient interface from the Shannon SDK package, which provides the
+	// functionality needed by the gateway package for handling service requests.
 	*client.GatewayClient
 }
-
-// httpHeaderAppAddress is the HTTP header name for specifying the target application address.
-const httpHeaderAppAddress = "X-App-Address"
 
 // NewDelegatedGatewayClient creates a new delegatedGatewayClient instance.
 func NewDelegatedGatewayClient(
@@ -58,10 +51,13 @@ func NewDelegatedGatewayClient(
 	}, nil
 }
 
-// GetGatewayModeActiveSessions implements GatewayClient interface.
+// httpHeaderAppAddress is the HTTP header name for specifying the target application address.
+const httpHeaderAppAddress = "X-App-Address"
+
+// getGatewayModeActiveSessions implements GatewayClient interface.
 //   - Returns the permitted session under Delegated gateway mode, for the supplied HTTP request.
 //   - Gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
-func (d *delegatedGatewayClient) GetGatewayModeActiveSessions(
+func (d *delegatedGatewayClient) getGatewayModeActiveSessions(
 	ctx context.Context,
 	serviceID sdk.ServiceID,
 	httpReq *http.Request,
@@ -78,66 +74,13 @@ func (d *delegatedGatewayClient) GetGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
-
-	selectedSession, err := d.FullNode.GetSession(ctx, serviceID, selectedAppAddr)
-	if err != nil {
-		err = fmt.Errorf("%w: error: %w",
-			errProtocolContextSetupFetchSession,
-			err,
-		)
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, err
-	}
-
-	selectedApp := selectedSession.Application
-
-	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
-
-	// Skip the session's app if it is not staked for the requested service.
-	if !appIsStakedForService(serviceID, selectedApp) {
-		err = fmt.Errorf("%w: app: %s",
-			errProtocolContextSetupAppNotStaked,
-			selectedApp.Address,
-		)
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, err
-	}
-
-	if !d.gatewayHasDelegationForApp(selectedApp) {
-		err = fmt.Errorf("%w: gateway: %s, app: %s",
-			errProtocolContextSetupAppDoesNotDelegate,
-			d.GetGatewayAddress(),
-			selectedApp.Address,
-		)
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, err
-	}
-
-	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
-
-	return []sessiontypes.Session{selectedSession}, nil
+	return d.GetActiveSessions(ctx, serviceID, []string{selectedAppAddr})
 }
 
 // GetConfiguredServiceIDs is a no-op for delegated mode because
 // the app address is known only at request time.
 func (d *delegatedGatewayClient) GetConfiguredServiceIDs() map[sdk.ServiceID]struct{} {
 	return nil
-}
-
-// gatewayHasDelegationForApp returns true if the supplied application delegates to the supplied gateway address.
-func (d *delegatedGatewayClient) gatewayHasDelegationForApp(app *apptypes.Application) bool {
-	return slices.Contains(app.DelegateeGatewayAddresses, d.GetGatewayAddress())
-}
-
-// appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
-func appIsStakedForService(serviceID sdk.ServiceID, app *apptypes.Application) bool {
-	for _, svcCfg := range app.ServiceConfigs {
-		if sdk.ServiceID(svcCfg.ServiceId) == serviceID {
-			return true
-		}
-	}
-	return false
 }
 
 // getAppAddrFromHTTPReq extracts the application address specified by the supplied HTTP request's headers.

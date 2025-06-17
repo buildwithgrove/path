@@ -36,14 +36,15 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 // GatewayClient provides all the methods needed by the Shannon protocol
 // package in PATH to interface with the Shannon Protocol.
 //
-// It is implemented by the following concrete structs in the Shannon SDK package:
-//   - gatewayClient.CentralizedGatewayClient
-//   - gatewayClient.DelegatedGatewayClient
+// It is implemented by the following concrete structs in the Shannon protocol package:
+//   - centralizedGatewayClient
+//   - delegatedGatewayClient
 //
 // It provides methods to:
-//   - get the list of permitted sessions for a given service ID.
-//   - get the relay signer for a given service ID.
-//   - get the list of service IDs that the gateway is configured for.
+//   - get the list of active sessions for a given service ID and gateway mode.
+//   - sign a relay request
+//   - validate a relay response
+//   - get the list of service IDs that the gateway is configured for (centralized mode only)
 //
 // It also emebeds the FullNode interface from the Shannon SDK package, which may be either:
 //   - fullnode.FullNode
@@ -52,7 +53,10 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 // The FullNodeWithCache interface is used to cache the results of the GetSessions and GetRelaySigner methods.
 // This is used to improve the performance of the protocol.
 type GatewayClient interface {
-	GetGatewayModeActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
+	// Methods from the gateway mode specific gateway client.
+	getGatewayModeActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
+
+	// Methods from the Shannon SDK GatewayClient interface.
 	SignRelayRequest(context.Context, *servicetypes.RelayRequest, apptypes.Application) (*servicetypes.RelayRequest, error)
 	ValidateRelayResponse(context.Context, sdk.SupplierAddress, []byte) (*servicetypes.RelayResponse, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
@@ -115,7 +119,7 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -175,7 +179,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -342,7 +346,7 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID sdk.ServiceID, httpRe
 	ctx := context.Background()
 
 	// Get the list of permitted sessions for the service ID.
-	activeSessions, err := p.GatewayClient.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GatewayClient.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}
