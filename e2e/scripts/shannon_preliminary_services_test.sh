@@ -1,66 +1,74 @@
 #!/bin/bash
 
+# What this script does:
+echo -e "\n✨ What this script does: ✨"
+echo -e "  • 🔍 Queries all known Shannon services for supplier counts"
+echo -e "  • 🧪 Tests JSON-RPC requests for services with suppliers"
+echo -e "  • 📊 Generates a summary table and JSON report"
+echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
+
 # For usage instructions, run:
 # $ ./e2e/scripts/shannon_preliminary_services_test.sh --he
 
 # To Update this list, run:
+# Master List: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
 # $ pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq '.service[].id'
 SERVICES=(
     "arb_one"
-    "arb_sep_test"
-    "avax-dfk"
+    # "arb_sep_test"
+    # "avax-dfk"
     "avax"
-    "base-test"
-    "base-testnet"
-    "base"
-    "bera"
-    "bitcoin"
-    "blast"
-    "boba"
-    "bsc"
-    "celo"
-    "eth"
-    "eth_hol_test"
-    "eth_sep_test"
-    "evmos"
-    "fantom"
-    "fraxtal"
-    "fuse"
-    "gnosis"
-    "harmony"
-    "ink"
-    "iotex"
-    "kaia"
-    "kava"
-    "linea"
-    "mantle"
-    "metis"
-    "moonbeam"
-    "moonriver"
-    "near"
-    "oasys"
-    "op"
-    "op_sep_test"
-    "opbnb"
-    "osmosis"
-    "pocket"
-    "poly"
-    "poly_amoy_test"
-    "poly_zkevm"
-    "radix"
-    "scroll"
-    "sei"
-    "solana"
-    "sonic"
-    "sui"
+    # "base-test"
+    # "base-testnet"
+    # "base"
+    # "bera"
+    # "bitcoin"
+    # "blast"
+    # "boba"
+    # "bsc"
+    # "celo"
+    # "eth"
+    # "eth_hol_test"
+    # "eth_sep_test"
+    # "evmos"
+    # "fantom"
+    # "fraxtal"
+    # "fuse"
+    # "gnosis"
+    # "harmony"
+    # "ink"
+    # "iotex"
+    # "kaia"
+    # "kava"
+    # "linea"
+    # "mantle"
+    # "metis"
+    # "moonbeam"
+    # "moonriver"
+    # "near"
+    # "oasys"
+    # "op"
+    # "op_sep_test"
+    # "opbnb"
+    # "osmosis"
+    # "pocket"
+    # "poly"
+    # "poly_amoy_test"
+    # "poly_zkevm"
+    # "radix"
+    # "scroll"
+    # "sei"
+    # "solana"
+    # "sonic"
+    # "sui"
     "svc-poktminer"
-    "taiko"
-    "taiko_hek_test"
-    "tron"
-    "xrpl_evm_dev"
-    "xrpl_evm_test"
-    "zklink_nova"
-    "zksync_era"
+    # "taiko"
+    # "taiko_hek_test"
+    # "tron"
+    # "xrpl_evm_dev"
+    # "xrpl_evm_test"
+    # "zklink_nova"
+    # "zksync_era"
 )
 
 # Configuration Variables
@@ -265,9 +273,9 @@ if [ "$ENVIRONMENT" = "local" ]; then
         exit 1
     fi
 
-    echo "✅ PATH service is healthy - proceeding with service tests"
+    echo -e "\n✅ PATH service is healthy - proceeding with service tests\n"
 else
-    echo "🌍 Using production environment - skipping local health check"
+    echo -e "\n🌍 Using production environment - skipping local health check\n"
 fi
 
 # Initialize temporary files for storing results
@@ -292,13 +300,13 @@ echo "=============================="
 echo ""
 
 # Iterate through each service in the embedded array
+# Collect all service:count (or ERROR/FAILED) for table display later
+declare -a all_services_results
 for service in "${SERVICES[@]}"; do
     # Skip empty services (shouldn't happen with embedded array, but safety check)
     if [[ -z "$service" ]]; then
         continue
     fi
-
-    echo "🔍 Querying service: $service..."
 
     # Run the command and capture output
     output=$(pocketd q supplier list-suppliers --service-id "$service" $NODE_FLAG 2>/dev/null)
@@ -309,38 +317,47 @@ for service in "${SERVICES[@]}"; do
 
         if [[ "$total" =~ ^[0-9]+$ ]]; then
             echo "$service:$total" >>"$RESULTS_FILE"
-            echo "  ✅ Found $total suppliers"
-
-            # Only add to array if suppliers were found
+            all_services_results+=("$service:$total")
             if [ "$total" -gt 0 ]; then
+                echo "🔍 $service: ✅ $total suppliers"
                 services_with_suppliers+=("$service:$total")
+            else
+                echo "🔍 $service: ❌ suppliers"
             fi
         else
             echo "$service:ERROR" >>"$RESULTS_FILE"
-            echo "  🚫 Found 0 suppliers for $service, skipping..."
+            all_services_results+=("$service:ERROR")
+            echo "🔍 $service: ❌ suppliers"
         fi
     else
         echo "$service:FAILED" >>"$RESULTS_FILE"
-        echo "  💥 Command failed"
+        all_services_results+=("$service:FAILED")
+        echo "🔍 $service: ❌ (command failed)"
     fi
 
 done
 
-# Display services with suppliers as a table
-if [ ${#services_with_suppliers[@]} -gt 0 ]; then
+# Display all services (including 0 suppliers) as a table
+if [ ${#all_services_results[@]} -gt 0 ]; then
     echo ""
     echo "=============================="
-    echo "👥 SERVICES WITH SUPPLIERS:"
+    echo "👥 SERVICE SUPPLIER COUNTS:"
     echo "=============================="
     printf "%-20s | %s\n" "SERVICE ID" "SUPPLIERS"
     printf "%-20s-+-%s\n" "--------------------" "----------"
 
-    for item in "${services_with_suppliers[@]}"; do
+    for item in "${all_services_results[@]}"; do
         IFS=':' read -r service count <<<"$item"
-        printf "%-20s | %s\n" "$service" "$count"
+        if [[ "$count" =~ ^[0-9]+$ ]]; then
+            printf "%-20s | %s\n" "$service" "$count"
+        else
+            printf "%-20s | %s\n" "$service" "ERROR"
+        fi
     done
 
     echo "=============================="
+
+    echo ""
 
     echo "=============================="
     echo "🧪 TESTING SERVICES..."
@@ -354,7 +371,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
 
     for item in "${services_with_suppliers[@]}"; do
         IFS=':' read -r service count <<<"$item"
-        echo "🚀 Testing $service..."
+        echo -e "\n 🚀 Testing $service..."
 
         # Execute 5 curl requests and require ALL to succeed
         request_count=0
@@ -366,7 +383,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
 
         while [ $request_count -lt $max_requests ]; do
             request_count=$((request_count + 1))
-            echo "    📡 Request $request_count/$max_requests..."
+            request_prefix="    📡 Request $request_count/$max_requests..."
 
             # Construct URL and headers based on environment
             if [ "$USE_SUBDOMAIN" = true ]; then
@@ -387,7 +404,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
             if [ $? -eq 0 ] && echo "$curl_result" | jq -e . >/dev/null 2>&1; then
                 # Check if response contains an error field
                 if echo "$curl_result" | jq -e '.error' >/dev/null 2>&1; then
-                    echo "      ❌ Failed (JSON-RPC error)"
+                    echo "$request_prefix ❌ Failed (JSON-RPC error)"
                     failed_requests=$((failed_requests + 1))
                     # Collect error response
                     error_response=$(echo "$curl_result" | jq -c '.error')
@@ -398,7 +415,7 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
                     unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
                     detailed_errors+=("{\"error_message\":\"$error_message\",\"endpoint_response\":\"$endpoint_response\",\"unmarshaling_error\":\"$unmarshaling_error\"}")
                 else
-                    echo "      ✅ Success"
+                    echo "$request_prefix ✅ Success"
                     successful_requests=$((successful_requests + 1))
                 fi
             else
@@ -591,7 +608,14 @@ if [ ${#services_with_suppliers[@]} -gt 0 ]; then
     fi
 
     echo ""
-
+    echo "Legend:"
+    echo "  SERVICE ID : Unique identifier for the service tested."
+    echo "  SUPPLIERS  : Number of suppliers found for the service."
+    echo "  RESULT     : Test status for supplier endpoints:"
+    echo "    🟢  All requests passed (all tests succeeded)"
+    echo "    🟡  Partial success (some, but not all, requests succeeded)"
+    echo "    💔  All requests failed (no successful tests)"
+    echo ""
     # Display as a nice table
     printf "%-20s | %-9s | %s\n" "SERVICE ID" "SUPPLIERS" "RESULT"
     printf "%-20s-+-%9s-+-%s\n" "--------------------" "---------" "-------"
