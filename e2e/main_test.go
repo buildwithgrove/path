@@ -90,7 +90,11 @@ func Test_PATH_E2E(t *testing.T) {
 		// TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 		//   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
 		if cfg.getTestMode() == testModeLoad && cfg.useServiceSubdomain() {
-			serviceGatewayURL = setServiceIDInGatewayURLSubdomain(serviceGatewayURL, ts.ServiceID)
+			serviceGatewayURL = setServiceIDInGatewayURLSubdomain(
+				serviceGatewayURL,
+				ts.ServiceID,
+				ts.Alias,
+			)
 		}
 
 		// Get methods to test

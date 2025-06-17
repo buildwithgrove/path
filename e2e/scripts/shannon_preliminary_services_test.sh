@@ -159,6 +159,7 @@ tl;dr
  ENVIRONMENT BEHAVIOR:
    local:      Uses http://localhost:3069 with Target-Service-Id header
    production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
+               Note: Uses service alias (when available) instead of service_id for production subdomain URLs
 
  OUTPUT:
    - Console: Summary table showing service IDs, supplier counts, and test results
@@ -291,6 +292,33 @@ get_service_tlds() {
 }
 
 # --- End TLDs Setup ---
+
+# --- Service Aliases Setup ---
+
+# Function to get the service identifier for production URLs
+# Returns the alias if available and environment is production, otherwise returns the service ID
+get_service_identifier() {
+    local service_id="$1"
+    if [ "$ENVIRONMENT" = "production" ]; then
+        case "$service_id" in
+            arb_one) echo "arbitrum-one" ;;
+            arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
+            base-test) echo "base-testnet" ;;
+            eth_hol_test) echo "eth-holesky-testnet" ;;
+            eth_sep_test) echo "eth-sepolia-testnet" ;;
+            op_sep_test) echo "optimism-sepolia-testnet" ;;
+            poly) echo "polygon" ;;
+            taiko_hek_test) echo "taiko-hekla-testnet" ;;
+            xrpl_evm_test) echo "xrpl-evm-test" ;;
+            zksync_era) echo "zksync-era" ;;
+            *) echo "$service_id" ;;
+        esac
+    else
+        echo "$service_id"
+    fi
+}
+
+# --- End Service Aliases Setup ---
 
 # Set node flag based on network
 if [ "$NETWORK" = "alpha" ]; then
@@ -453,6 +481,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
     for item in "${services_with_suppliers[@]}"; do
         IFS=':' read -r service count <<<"$item"
         service_type=$(get_service_type "$service")
+        service_identifier=$(get_service_identifier "$service")
         echo -e "\n 🚀 Testing $service ($service_type)..."
 
         # Execute 5 curl requests and require ALL to succeed
@@ -463,22 +492,44 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
         declare -a error_responses=()
         declare -a detailed_errors=()
 
+        # Construct URL and headers based on environment and service type
+        if [ "$service_type" = "cometbft" ]; then
+            # CometBFT services use /status endpoint
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                service_url="https://${service_identifier}.rpc.grove.city/v1/status"
+            else
+                # Local: use header format
+                service_url="$BASE_PATH_URL/status"
+            fi
+        else
+            # EVM services use JSON-RPC
+            if [ "$USE_SUBDOMAIN" = true ]; then
+                # Production: use subdomain format with required headers
+                service_url="https://${service_identifier}.rpc.grove.city/v1"
+            else
+                # Local: use header format
+                service_url="$BASE_PATH_URL"
+            fi
+        fi
+
+        echo "  🌐 Target URL: $service_url"
+
         while [ $request_count -lt $max_requests ]; do
             request_count=$((request_count + 1))
             request_prefix="    📡 Request $request_count/$max_requests..."
 
-            # Construct URL and headers based on environment and service type
+            # Execute the curl request using the pre-constructed URL
             if [ "$service_type" = "cometbft" ]; then
                 # CometBFT services use /status endpoint
                 if [ "$USE_SUBDOMAIN" = true ]; then
                     # Production: use subdomain format with required headers
-                    service_url="https://${service}.rpc.grove.city/v1/status"
                     curl_result=$(curl -s -w "%{http_code}" "$service_url" \
                         -H "Portal-Application-Id: $PORTAL_APP_ID" \
                         -H "Authorization: $API_KEY" 2>/dev/null)
                 else
                     # Local: use header format
-                    curl_result=$(curl -s -w "%{http_code}" "$BASE_PATH_URL/status" \
+                    curl_result=$(curl -s -w "%{http_code}" "$service_url" \
                         -H "$TARGET_SERVICE_HEADER: $service" 2>/dev/null)
                 fi
                 
@@ -535,14 +586,13 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                 # EVM services use JSON-RPC
                 if [ "$USE_SUBDOMAIN" = true ]; then
                     # Production: use subdomain format with required headers
-                    service_url="https://${service}.rpc.grove.city/v1"
                     curl_result=$(curl -s -w "%{http_code}" "$service_url" \
                         -H "Portal-Application-Id: $PORTAL_APP_ID" \
                         -H "Authorization: $API_KEY" \
                         -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
                 else
                     # Local: use header format
-                    curl_result=$(curl -s -w "%{http_code}" "$BASE_PATH_URL" \
+                    curl_result=$(curl -s -w "%{http_code}" "$service_url" \
                         -H "$TARGET_SERVICE_HEADER: $service" \
                         -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
                 fi
@@ -632,7 +682,9 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
             # Construct URL and headers based on environment
             if [ "$USE_SUBDOMAIN" = true ]; then
                 # Production: use subdomain format with required headers
-                disqualified_url="https://${service}.rpc.grove.city/disqualified_endpoints"
+                # Use alias if available in production, otherwise use service ID
+                service_identifier=$(get_service_identifier "$service")
+                disqualified_url="https://${service_identifier}.rpc.grove.city/disqualified_endpoints"
                 disqualified_response=$(curl -s "$disqualified_url" \
                     -H "Portal-Application-Id: $PORTAL_APP_ID" \
                     -H "Authorization: $API_KEY" 2>/dev/null)
