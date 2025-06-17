@@ -1,75 +1,23 @@
 #!/bin/bash
 
-# Shannon Services Supplier Report Generator
-# For usage instructions, run this script with --help
+# For usage instructions, run:
+# $ ./e2e/scripts/shannon_preliminary_services_test.sh --he
 
-#
-# DESCRIPTION:
-#   This script queries supplier counts for a predefined list of service IDs and
-#   optionally tests each service with suppliers using curl requests. It generates
-#   both console output and a detailed CSV report. With the --disqualified_endpoints
-#   flag, it also queries and stores disqualified endpoints data in JSON format.
-#
-# USAGE:
-#   ./services-shannon.sh --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
-#
-# ARGUMENTS:
-#   -n, --network              Network to use: 'beta' or 'mainnet' (required)
-#   -e, --environment          Environment to use: 'local' or 'production' (required)
-#   -d, --disqualified_endpoints  Also query disqualified endpoints and update JSON file (optional)
-#   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
-#   -k, --api_key              API Key for production (required when environment=production)
-#
-# EXAMPLE USAGE:
-#   ./services-shannon.sh --network beta --environment local
-#   ./services-shannon.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
-#   ./services-shannon.sh --network beta --environment local --disqualified_endpoints
-#
-# ENVIRONMENT BEHAVIOR:
-#   local:      Uses http://localhost:3069 with Target-Service-Id header
-#   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
-#
-# OUTPUT:
-#   - Console: Summary table showing service IDs, supplier counts, and test results
-#   - JSON File: Detailed report with test results (supplier_report_YYYY-MM-DD_HH:MM:SS.json)
-#   - JSON File: (with -d flag) Disqualified endpoints data (sanctioned-endpoint-results.json)
-#
-# FEATURES:
-#   - Embedded service list for easy maintenance
-#   - Automatic network node configuration
-#   - Skips services with 0 suppliers
-#   - Tests services with curl requests (5 retries per service)
-#   - Captures detailed error information in CSV
-#   - Optional disqualified endpoints querying and JSON storage
-#   - Clean console output for quick scanning
-#
-# CSV COLUMNS:
-#   service_id, suppliers, test_result, error_message, endpoint_response, unmarshaling_error
-#
-# JSON STRUCTURE (with -d flag):
-#   {"suppliers_passed": {services with working JSON-RPC and suppliers},
-#    "suppliers_failed": {services with failed JSON-RPC but suppliers, includes errors array},
-#    "no_suppliers": {services with no suppliers}}
-#
-################################################################################
-
-# Embedded Services Array
-# Modify this array to include or exclude services
+# To Update this list, run:
+# $ pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq '.service[].id'
 SERVICES=(
-    "tia_da"
-    "tia_cons"
-    "tia_da_test"
-    "tia_cons_test"
     "arb_one"
     "arb_sep_test"
-    "avax"
     "avax-dfk"
-    "base"
+    "avax"
     "base-test"
+    "base-testnet"
+    "base"
+    "bera"
     "bitcoin"
     "blast"
-    "bsc"
     "boba"
+    "bsc"
     "celo"
     "eth"
     "eth_hol_test"
@@ -80,9 +28,12 @@ SERVICES=(
     "fuse"
     "gnosis"
     "harmony"
+    "ink"
     "iotex"
     "kaia"
     "kava"
+    "linea"
+    "mantle"
     "metis"
     "moonbeam"
     "moonriver"
@@ -92,26 +43,24 @@ SERVICES=(
     "op_sep_test"
     "opbnb"
     "osmosis"
+    "pocket"
     "poly"
     "poly_amoy_test"
+    "poly_zkevm"
     "radix"
     "scroll"
+    "sei"
     "solana"
+    "sonic"
     "sui"
+    "svc-poktminer"
     "taiko"
     "taiko_hek_test"
-    "poly_zkevm"
+    "tron"
+    "xrpl_evm_dev"
+    "xrpl_evm_test"
     "zklink_nova"
     "zksync_era"
-    "xrpl_evm_dev"
-    "sonic"
-    "tron"
-    "linea"
-    "ink"
-    "mantle"
-    "sei"
-    "bera"
-    "xrpl_evm_testnet"
 )
 
 # Configuration Variables
@@ -123,91 +72,72 @@ RETRY_SLEEP_DURATION=1
 # Disqualified endpoints configuration
 DISQUALIFIED_API_URL="http://localhost:3069/disqualified_endpoints"
 
+print_show_help() {
+    echo ""
+    echo "RUN: ./e2e/scripts/shannon_preliminary_services_test.sh --help"
+    echo ""
+    exit 1
+}
+
 # Function to display usage/help, including tl;dr and script docstring
 print_help() {
     cat <<'EOF'
-**tl;dr This script tests service availability on Shannon** by:
+### Test onchain service availability on Shannon ###
 
-- Finding all services with >=1 supplier on Shannon using 'pocketd'
-- Confirming that at least 1 'eth_blockNumber' request returns a 200 using PATH
+Quickstart with Examples:
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network beta --environment local --disqualified_endpoints
+  ./e2e/scripts/shannon_preliminary_services_test.sh --network alpha --environment local
 
-It then outputs results in 2 places:
+tl;dr
+- Find all services with >=1 supplier on Shannon using 'pocketd'
+- Confirm at least 1 'eth_blockNumber' request returns a 200 using PATH
+- Output logs AND JSON report named supplier_report_<YYYY-MM-DD>_.json
 
-1. Logs
-2. A JSON file with the format supplier_report_<YYYY-MM-DD>_....json
 
-################################################################################
+############################################
 # Shannon Services Supplier Report Generator
-################################################################################
-#
-# DESCRIPTION:
-#   This script queries supplier counts for a predefined list of service IDs and
-#   optionally tests each service with suppliers using curl requests. It generates
-#   both console output and a detailed CSV report. With the --disqualified_endpoints
-#   flag, it also queries and stores disqualified endpoints data in JSON format.
-#
-# USAGE:
-#   ./services-shannon.sh --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
-#
-# ARGUMENTS:
-#   -n, --network              Network to use: 'beta' or 'mainnet' (required)
-#   -e, --environment          Environment to use: 'local' or 'production' (required)
-#   -d, --disqualified_endpoints  Also query disqualified endpoints and update JSON file (optional)
-#   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
-#   -k, --api_key              API Key for production (required when environment=production)
-#
-# EXAMPLE USAGE:
-#   ./services-shannon.sh --network beta --environment local
-#   ./services-shannon.sh --network mainnet --environment production --portal_app_id "your_app_id" --api_key "your_api_key"
-#   ./services-shannon.sh --network beta --environment local --disqualified_endpoints
-#
-# ENVIRONMENT BEHAVIOR:
-#   local:      Uses http://localhost:3069 with Target-Service-Id header
-#   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
-#
-# OUTPUT:
-#   - Console: Summary table showing service IDs, supplier counts, and test results
-#   - JSON File: Detailed report with test results (supplier_report_YYYY-MM-DD_HH:MM:SS.json)
-#   - JSON File: (with -d flag) Disqualified endpoints data (sanctioned-endpoint-results.json)
-#
-# FEATURES:
-#   - Embedded service list for easy maintenance
-#   - Automatic network node configuration
-#   - Skips services with 0 suppliers
-#   - Tests services with curl requests (5 retries per service)
-#   - Captures detailed error information in CSV
-#   - Optional disqualified endpoints querying and JSON storage
-#   - Clean console output for quick scanning
-#
-# CSV COLUMNS:
-#   service_id, suppliers, test_result, error_message, endpoint_response, unmarshaling_error
-#
-# JSON STRUCTURE (with -d flag):
-#   {"suppliers_passed": {services with working JSON-RPC and suppliers},
-#    "suppliers_failed": {services with failed JSON-RPC but suppliers, includes errors array},
-#    "no_suppliers": {services with no suppliers}}
-#
-################################################################################
+############################################
 
-Usage: $0 --network <beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
-  -n, --network              Network to use: 'beta' or 'mainnet' (required)
+ DESCRIPTION:
+   This script queries supplier counts for a predefined list of service IDs and
+   optionally tests each service with suppliers using curl requests. It generates
+   both console output and a detailed CSV report. With the --disqualified_endpoints
+   flag, it also queries and stores disqualified endpoints data in JSON format.
+
+ USAGE:
+   ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|mainnet> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
+
+ ARGUMENTS:
+  -n, --network              Network to use: 'alpha', 'beta' or 'mainnet' (required)
   -e, --environment          Environment to use: 'local' or 'production' (required)
-  -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)
+
   -p, --portal_app_id        Portal Application ID for production (required when environment=production)
   -k, --api_key              API Key for production (required when environment=production)
+
+  -d, --disqualified_endpoints  Also query disqualified endpoints and add to JSON report (optional)
   -h, --help                 Show this help message and exit
 
-Examples:
-  $0 --network beta --environment local
-  $0 --network mainnet --environment production --portal_app_id your_app_id --api_key your_api_key
-  $0 --network beta --environment local --disqualified_endpoints
+
+ ENVIRONMENT BEHAVIOR:
+   local:      Uses http://localhost:3069 with Target-Service-Id header
+   production: Uses https://<service>.rpc.grove.city URLs with Portal-Application-Id and Authorization headers
+
+ OUTPUT:
+   - Console: Summary table showing service IDs, supplier counts, and test results
+   - JSON File: Detailed report with test results (supplier_report_YYYY-MM-DD_HH:MM:SS.json)
+   - JSON File: (with -d flag) Disqualified endpoints data (sanctioned-endpoint-results.json)
+
+ CSV COLUMNS:
+   service_id, suppliers, test_result, error_message, endpoint_response, unmarshaling_error
+
+ JSON STRUCTURE (with -d flag):
+   {"suppliers_passed": {services with working JSON-RPC and suppliers},
+    "suppliers_failed": {services with failed JSON-RPC but suppliers, includes errors array},
+    "no_suppliers": {services with no suppliers}}
+
 EOF
     exit 0
-}
-
-# Alias usage() to print_help for backwards compatibility
-usage() {
-    print_help
 }
 
 # Parse command line arguments
@@ -224,6 +154,7 @@ for arg in "$@"; do
     fi
 done
 
+# Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
     -n | --network)
@@ -250,49 +181,51 @@ while [[ $# -gt 0 ]]; do
         print_help
         ;;
     *)
-        print_help
-        echo "Error: Unknown argument '$1'"
+        echo "ERROR: Unknown argument '$1'"
+        print_show_help
         exit 1
         ;;
     esac
 done
 
+##  Validate arguments
+
 # Check if network was provided and valid
 if [ -z "$NETWORK" ]; then
-    usage
-    echo "Error: --network flag is required"
+    echo "ERROR: --network flag is required"
+    print_show_help
+    exit 1
 fi
-
-if [[ "$NETWORK" != "beta" && "$NETWORK" != "mainnet" ]]; then
-    usage
-    echo "Error: --network must be either 'beta' or 'mainnet'"
+# Check if network is valid
+if [[ "$NETWORK" != "alpha" && "$NETWORK" != "beta" && "$NETWORK" != "mainnet" ]]; then
+    echo "ERROR: --network must be one of 'alpha', 'beta', or 'mainnet'"
+    print_show_help
+    exit 1
 fi
 
 # Check if environment was provided and valid
 if [ -z "$ENVIRONMENT" ]; then
-    echo "Error: --environment flag is required"
-    usage
+    echo "ERROR: --environment flag is required"
+    print_show_help
+    exit 1
 fi
-
+# Check if environment is valid
 if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
-    echo "Error: --environment must be either 'local' or 'production'"
-    usage
+    echo "ERROR: --environment must be either 'local' or 'production'"
+    print_show_help
+    exit 1
 fi
 
-# Check if production-specific parameters are provided when needed
-if [ "$ENVIRONMENT" = "production" ]; then
-    if [ -z "$PORTAL_APP_ID" ]; then
-        echo "Error: --portal_app_id is required when environment is production"
-        usage
-    fi
-
-    if [ -z "$API_KEY" ]; then
-        echo "Error: --api_key is required when environment is production"
-        usage
-    fi
+# Set node flag based on network
+if [ "$NETWORK" = "alpha" ]; then
+    NODE_FLAG="--node https://shannon-alpha-grove-rpc.alpha.poktroll.com"
+elif [ "$NETWORK" = "beta" ]; then
+    NODE_FLAG="--node https://shannon-testnet-grove-rpc.beta.poktroll.com"
+elif [ "$NETWORK" = "mainnet" ]; then
+    NODE_FLAG="--node https://shannon-grove-rpc.mainnet.poktroll.com"
 fi
 
-# Configure URLs and headers based on environment
+# Local vs Production: Configure URLs and headers based on environment
 if [ "$ENVIRONMENT" = "local" ]; then
     BASE_PATH_URL="http://localhost:3069/v1"
     BASE_DISQUALIFIED_URL="http://localhost:3069/disqualified_endpoints"
@@ -303,15 +236,20 @@ elif [ "$ENVIRONMENT" = "production" ]; then
     USE_SUBDOMAIN=true
 fi
 
-# Set node flag based on network
-if [ "$NETWORK" = "beta" ]; then
-    NODE_FLAG="--node https://shannon-testnet-grove-rpc.beta.poktroll.com"
-elif [ "$NETWORK" = "mainnet" ]; then
-    NODE_FLAG="--node https://shannon-grove-rpc.mainnet.poktroll.com"
+# Production-specific parameters are required when environment is production
+if [ "$ENVIRONMENT" = "production" ]; then
+    if [ -z "$PORTAL_APP_ID" ]; then
+        echo "ERROR: --portal_app_id is required when environment is production"
+        print_show_help
+    fi
+
+    if [ -z "$API_KEY" ]; then
+        echo "ERROR: --api_key is required when environment is production"
+        print_show_help
+    fi
 fi
 
-# Check if PATH service is running via health endpoint
-echo ""
+# Local: Check if PATH service is running via health endpoint
 if [ "$ENVIRONMENT" = "local" ]; then
     echo "🏥 Checking if PATH service is running..."
     health_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3069/healthz 2>/dev/null)
@@ -331,7 +269,6 @@ if [ "$ENVIRONMENT" = "local" ]; then
 else
     echo "🌍 Using production environment - skipping local health check"
 fi
-echo ""
 
 # Initialize temporary files for storing results
 TEMP_DIR=$(mktemp -d)
