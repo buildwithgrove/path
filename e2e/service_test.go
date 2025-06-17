@@ -42,6 +42,7 @@ type (
 		Name          string             `yaml:"name"`               // Name of the service
 		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
 		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
+		Alias         string             `yaml:"alias,omitempty"`    // Alias for the service
 		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
 		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
 		// Not marshaled from YAML; set in test case.
@@ -156,7 +157,14 @@ func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 //
 // TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 //   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
-func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.ServiceID) string {
+func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.ServiceID, alias string) string {
+	// If the alias is set, use it instead of the service ID to fill in the subdomain.
+	// This is necessary because some services have subdomain aliases that differ
+	// from the Shannon onchain service ID so the alias must be used to hit production.
+	if alias != "" {
+		serviceID = protocol.ServiceID(alias)
+	}
+
 	parsedURL, err := url.Parse(gatewayURL)
 	if err != nil {
 		// If parsing fails, fall back to simple string insertion
