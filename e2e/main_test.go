@@ -120,7 +120,6 @@ func Test_PATH_E2E(t *testing.T) {
 
 		if serviceTestFailed {
 			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, ts.ServiceID, RESET)
-			printServiceSummaries(serviceSummaries)
 			allPassed = false
 		} else {
 			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, ts.ServiceID, RESET)
