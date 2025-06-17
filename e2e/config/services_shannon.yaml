@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./services.schema.yaml
 
 # TODO_IMPROVE(@commoddity): Once Shannon migration is complete:
-#   1. Move this file to top-level `config` package 
+#   1. Move this file to top-level `config` package
 #   2. Use it as the source of truth for service QoS configs by embedding and YAML unmarshalling
 #   3. Remove the `config/service_qos_config.go` file in favour of using this file
 
@@ -151,12 +151,12 @@ services:
   - name: "Shannon - eth Test"
     service_id: "eth"
     service_type: "evm"
-    archival: true 
+    archival: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000
       transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
-      call_data: "0x18160ddd" 
+      call_data: "0x18160ddd"
 
   # Shannon - Ethereum Holesky Testnet (Archival)
   - name: "Shannon - eth_hol_test (Ethereum Holesky Testnet) Test"
@@ -368,7 +368,6 @@ services:
   # Shannon - Polygon Mainnet (Archival)
   - name: "Shannon - polygon (Polygon) Test"
     service_id: "poly"
-    alias: "polygon"
     service_type: "evm"
     archival: true
     service_params:
@@ -380,7 +379,7 @@ services:
 
   # Shannon - Polygon Amoy Testnet (Archival)
   - name: "Shannon - polygon_amoy_test (Polygon Amoy Testnet) Test"
-    service_id: "polygon_amoy_test"
+    service_id: "poly_amoy_test"
     service_type: "evm"
     archival: true
     service_params:
@@ -392,7 +391,7 @@ services:
 
   # Shannon - Polygon zkEVM (Archival)
   - name: "Shannon - polygon_zkevm (Polygon zkEVM) Test"
-    service_id: "polygon_zkevm"
+    service_id: "poly_zkevm"
     service_type: "evm"
     archival: true
     service_params:
@@ -441,7 +440,6 @@ services:
   # Shannon - Taiko Hekla Testnet (Archival)
   - name: "Shannon - taiko_hekla_test (Taiko Hekla Testnet) Test"
     service_id: "taiko_hek_test"
-    alias: "taiko-hekla-testnet"
     service_type: "evm"
     archival: true
     service_params:
@@ -455,7 +453,6 @@ services:
   - name: "Shannon - xrpl_evm_test (XRPL EVM Testnet) Test"
     service_id: "xrpl_evm_test"
     service_type: "evm"
-    alias: "xrpl-evm-test"
     archival: true
     service_params:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
@@ -466,7 +463,7 @@ services:
 
   # Shannon - zkLink (Archival)
   - name: "Shannon - zklink (zkLink) Test"
-    service_id: "zklink"
+    service_id: "zklink_nova"
     service_type: "evm"
     archival: true
     service_params:
@@ -490,7 +487,6 @@ services:
       call_data: "0x18160ddd"
 
   # ------------- Anvil Services -------------
-
   # Shannon - Anvil Local Development
   - name: "Shannon - anvil (Anvil Local Development) Test"
     service_id: "anvil"

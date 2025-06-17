@@ -7,9 +7,13 @@
 git_fetch_prune_tags: ## Sync local tags to remote
 	git fetch --prune --prune-tags origin
 
+.PHONY: shannon_preliminary_services_test_help
+shannon_preliminary_services_test_help: ## Run shannon preliminary services test to verify service availability
+	./e2e/scripts/shannon_preliminary_services_test.sh --help
+
 .PHONY: shannon_preliminary_services_test
 shannon_preliminary_services_test: ## Run shannon preliminary services test to verify service availability
-	./e2e/scripts/shannon-preliminary-services-test.sh
+	./e2e/scripts/shannon_preliminary_services_test.sh
 
 .PHONY: source_shannon_preliminary_services_helpers
 source_shannon_preliminary_services_helpers: ## Source shannon preliminary services helpers

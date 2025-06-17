@@ -132,10 +132,10 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	var cfgPath string
 	// Prefer custom config if present, otherwise fall back to default
 	if _, err := os.Stat(customConfigFile); err == nil {
-		fmt.Printf("💾 Using custom config file: e2e/%s\n", customConfigFile)
+		fmt.Printf("💽 Using CUSTOM config file: e2e/%s\n\n", customConfigFile)
 		cfgPath = customConfigFile
 	} else {
-		fmt.Printf("💾 Using default config file: e2e/%s\n", defaultConfigFile)
+		fmt.Printf("💾 Using DEFAULT config file: e2e/%s\n\n", defaultConfigFile)
 		cfgPath = defaultConfigFile
 	}
 
@@ -333,13 +333,13 @@ func (c *Config) validate() error {
 	// Validate load test mode
 	if mode == testModeLoad {
 		if c.E2ELoadTestConfig.LoadTestConfig == nil {
-			return fmt.Errorf("load test mode requires loadTestConfig to be set")
+			return fmt.Errorf("❌ load test mode requires loadTestConfig to be set")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride == "" {
-			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
+			return fmt.Errorf("❌ load test mode requires GatewayURLOverride to be set")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID == "" {
-			return fmt.Errorf("load test mode requires PortalApplicationID to be set")
+			return fmt.Errorf("❌ load test mode requires PortalApplicationID to be set")
 		}
 	}
 

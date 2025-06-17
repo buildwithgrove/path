@@ -92,7 +92,14 @@ get_service_type() {
             return
         fi
     done
-    echo "evm"
+    for evm_service in "${EVM_SERVICES[@]}"; do
+        if [ "$service" = "$evm_service" ]; then
+            echo "evm"
+            return
+        fi
+    done
+    echo "ERROR: not evm or cometbft service: $service"
+    return 1
 }
 
 # Disqualified endpoints configuration
@@ -277,13 +284,21 @@ echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
 # --- TLDs by Service Setup ---
 
 # Call TLD helper and parse JSON into an associative array
+echo -e "\n✨ Setting up Service TLDs by Service (this may take a little while)... ✨"
 TLD_OUTPUT=$(shannon_query_service_tlds_by_id "$NETWORK" --structured)
+echo "Retrieved TLDs by Service"
 declare -A SERVICE_TLDS
-# Populate associative array: SERVICE_TLDS[service_id]="comma,separated,tlds"
-while IFS= read -r service; do
-    tlds=$(echo "$TLD_OUTPUT" | jq -r --arg s "$service" '.[$s] | join(",")')
-    SERVICE_TLDS["$service"]="$tlds"
-done < <(echo "$TLD_OUTPUT" | jq -r 'keys[]')
+
+while IFS="=" read -r key value; do
+    SERVICE_TLDS["$key"]="$value"
+done < <(
+    echo "$TLD_OUTPUT" | jq -r '
+    to_entries[] |
+    "\(.key)=\(.value | join(","))"
+  '
+)
+
+echo "✅ Finished setting SERVICE_TLDS"
 
 # Helper to get TLDs for a service name
 get_service_tlds() {
@@ -532,7 +547,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                     curl_result=$(curl -s -w "%{http_code}" "$service_url" \
                         -H "$TARGET_SERVICE_HEADER: $service" 2>/dev/null)
                 fi
-                
+
                 # Extract HTTP status code from curl response
                 if [ ${#curl_result} -ge 3 ]; then
                     http_code="${curl_result: -3}"
@@ -541,7 +556,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                     http_code="000"
                     response_body=""
                 fi
-                
+
                 # Check both HTTP status and JSON error field
                 if [ "$http_code" = "200" ]; then
                     # Check if response body is valid JSON and has no error field
