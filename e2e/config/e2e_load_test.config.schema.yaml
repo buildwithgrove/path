@@ -41,6 +41,9 @@ definitions:
         type: string
         pattern: "^[0-9]+ms$"
         examples: ["10000ms"]
+      archival:
+        description: "Whether the service is archival. Use to override the default archival status for a service."
+        type: boolean
 
 properties:
   e2e_load_test_config:
@@ -79,9 +82,6 @@ properties:
           gateway_url_override:
             description: "Custom PATH gateway URL"
             type: string
-          use_service_subdomain:
-            description: "Whether to specify the service using the subdomain per-test case"
-            type: boolean
           portal_application_id:
             description: "Portal Application ID for the test"
             type: string

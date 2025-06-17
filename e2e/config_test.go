@@ -263,7 +263,6 @@ type (
 	// LoadTestConfig for load test mode configuration
 	LoadTestConfig struct {
 		GatewayURLOverride  string `yaml:"gateway_url_override"`  // [REQUIRED] Custom PATH gateway URL
-		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // [OPTIONAL] Whether to specify the service using the subdomain per-test case
 		PortalApplicationID string `yaml:"portal_application_id"` // [OPTIONAL] Grove Portal Application ID for the test. Required if using the Grove Portal.
 		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Grove Portal API key for the test. Required if Grove Portal Application requires API key.
 	}
@@ -276,19 +275,20 @@ type (
 		MaxP50LatencyMS   time.Duration `yaml:"max_p50_latency_ms"`  // Maximum P50 latency in milliseconds
 		MaxP95LatencyMS   time.Duration `yaml:"max_p95_latency_ms"`  // Maximum P95 latency in milliseconds
 		MaxP99LatencyMS   time.Duration `yaml:"max_p99_latency_ms"`  // Maximum P99 latency in milliseconds
+		Archival          *bool         `yaml:"archival"`            // Whether the service is archival, used to override the default service config
 	}
 )
 
 // getTestServices returns test services filtered by protocol specified in environment
-func (c *Config) getTestServices() ([]TestService, error) {
+func (c *Config) getTestServices() ([]*TestService, error) {
 	protocol := c.getTestProtocol()
 
-	var filteredTestCases []TestService
+	var filteredTestCases []*TestService
 	for _, tc := range c.services.Services {
 		// If no service IDs are specified, include all test cases
 		// Otherwise, only include test cases for the specified service IDs
 		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
-			filteredTestCases = append(filteredTestCases, tc)
+			filteredTestCases = append(filteredTestCases, &tc)
 		}
 	}
 
@@ -319,7 +319,7 @@ func (c *Config) getTestServiceIDs() []protocol.ServiceID {
 }
 
 func (c *Config) useServiceSubdomain() bool {
-	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
+	return !strings.Contains(c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride, "localhost")
 }
 
 func (c *Config) getGatewayURLForLoadTest() string {
@@ -373,7 +373,7 @@ func (c *Config) validate() error {
 // applyOverrides merges non-zero values from the override config into this config.
 // This ensures that only fields that are explicitly set in the override config are merged,
 // while preserving the default values for the other fields.
-func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
+func (sc *ServiceConfig) applyOverride(ts *TestService, override *ServiceConfig) {
 	if override == nil {
 		return
 	}
@@ -395,5 +395,9 @@ func (sc *ServiceConfig) applyOverride(override *ServiceConfig) {
 	}
 	if override.MaxP99LatencyMS != 0 {
 		sc.MaxP99LatencyMS = override.MaxP99LatencyMS
+	}
+	// If archival override is set, set it on the test service
+	if override.Archival != nil {
+		ts.Archival = *override.Archival
 	}
 }

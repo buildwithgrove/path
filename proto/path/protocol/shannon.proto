@@ -9,6 +9,26 @@ import "google/protobuf/timestamp.proto";
 enum ShannonRequestErrorType {
   SHANNON_REQUEST_ERROR_UNSPECIFIED = 0;
   SHANNON_REQUEST_ERROR_INTERNAL = 1; // Internal error.
+  // No endpoints available for the service
+  // Due to one or more of the following:
+  // - Any of the gateway mode errors above
+  // - Error fetching a session for one or more apps.
+  // - One or more available endpoints are sanctioned.
+  SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE = 2;
+  // Centralized gateway mode: Error fetching the app.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR = 3;
+  // Centralized gateway mode app does not delegate to the gateway.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION = 4;
+  // Centralized gateway mode: no active sessions found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS = 5;
+  // Delegated gateway mode: could not extract app address from HTTP request
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP = 6;
+  // Delegated gateway mode: error fetching the app
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP = 7;
+  // Delegated gateway mode: app does not delegate to the gateway
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE = 8;
+  // Error initializing a signer for the selected gateway mode.
+  SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR = 9;
 }
 
 // ShannonRequestError stores details of any errors encountered processing the request.
@@ -22,10 +42,24 @@ message ShannonRequestError {
 // ShannonEndpointErrorType enumerates possible relay errors when interacting with Shannon endpoints.
 enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
-  SHANNON_ENDPOINT_ERROR_INTERNAL = 1; // endpoint internal error: not recognized.
-  SHANNON_ENDPOINT_ERROR_CONFIG = 2; // endpoint config error: e.g. DNS lookup error, TLS certificate error.
-  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3; // endpoint timeout on responding to relay request.
-  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 4; // TODO_TECHDEBT: Uncomment when this is used.
+  // endpoint internal error: not recognized.
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1;
+  // endpoint config error: e.g. DNS lookup error, TLS certificate error.
+  SHANNON_ENDPOINT_ERROR_CONFIG = 2;
+  // endpoint timeout on responding to relay request.
+  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3;
+  // Endpoint payload failed to unmarshal into a RelayResponse struct
+  SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR = 4;
+  // Endpoint response failed basic validation
+  SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR = 5;
+  // Could not fetch the public key for supplier address used for the relay.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR = 6;
+  // Received nil public key on supplier lookup using its address
+  SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY = 7;
+  // RelayResponse's signature failed validation.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR = 8;
+  // TODO_TECHDEBT: Uncomment when this is used.
+  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 9;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

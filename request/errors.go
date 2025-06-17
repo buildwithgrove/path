@@ -2,13 +2,19 @@ package request
 
 import (
 	"fmt"
-)
 
-const parserErrorTemplate = `{"code":%d,"message":"%s"}`
+	"github.com/buildwithgrove/path/gateway"
+)
 
 var (
-	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header", HTTPHeaderTargetServiceID)
+	// Wrap the Gateway error.
+	// Allows the gateway package to recognize the type of error.
+	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header: %w", HTTPHeaderTargetServiceID, gateway.GatewayErrNoServiceIDProvided)
 )
+
+// Use JSON-formatted HTTP payload for user errors.
+// Not spec-required but expected by Gateway users.
+const parserErrorTemplate = `{"code":%d,"message":"%s"}`
 
 /* Parser Error Response */
 

@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
@@ -161,4 +162,53 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 	}
 
 	return nil
+}
+
+// getDisqualifiedEndpointsResponse gets the QoSLevelDisqualifiedEndpoints map for a devtools.DisqualifiedEndpointResponse.
+// It checks the current service state and populates a map with QoS-level disqualified endpoints.
+// This data is useful for creating a snapshot of the current QoS state for a given service.
+func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.ServiceID) devtools.QoSLevelDataResponse {
+	qosLevelDataResponse := devtools.QoSLevelDataResponse{
+		DisqualifiedEndpoints: make(map[protocol.EndpointAddr]devtools.QoSDisqualifiedEndpoint),
+	}
+
+	// Populate the data response object using the endpoints in the endpoint store.
+	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
+		if err := ss.validateEndpoint(endpoint); err != nil {
+			qosLevelDataResponse.DisqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
+				EndpointAddr: endpointAddr,
+				Reason:       err.Error(),
+				ServiceID:    serviceID,
+			}
+
+			// DEV_NOTE: if new checks are added to a service, we need to add them here.
+			switch {
+			// Endpoint is disqualified due to an empty qosLevelDataResponse.
+			case errors.Is(err, errEmptyResponseObs):
+				qosLevelDataResponse.EmptyResponseCount++
+
+			// Endpoint is disqualified due to a missing or invalid block number.
+			case errors.Is(err, errNoBlockNumberObs),
+				errors.Is(err, errInvalidBlockNumberObs):
+				qosLevelDataResponse.BlockNumberCheckErrorsCount++
+
+			// Endpoint is disqualified due to a missing or invalid chain ID.
+			case errors.Is(err, errNoChainIDObs),
+				errors.Is(err, errInvalidChainIDObs):
+				qosLevelDataResponse.ChainIDCheckErrorsCount++
+
+			// Endpoint is disqualified due to a missing or invalid archival balance.
+			case errors.Is(err, errNoArchivalBalanceObs),
+				errors.Is(err, errInvalidArchivalBalanceObs):
+				qosLevelDataResponse.ArchivalCheckErrorsCount++
+
+			default:
+				ss.logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: unknown error for endpoint: %s", endpointAddr)
+			}
+
+			continue
+		}
+	}
+
+	return qosLevelDataResponse
 }

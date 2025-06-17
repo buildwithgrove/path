@@ -16,6 +16,7 @@ properties:
         - $ref: "#/definitions/evm_service"
         - $ref: "#/definitions/solana_service"
         - $ref: "#/definitions/cometbft_service"
+        - $ref: "#/definitions/anvil_service"
 
 definitions:
   evm_service:
@@ -138,3 +139,23 @@ definitions:
         enum: ["cometbft"]
         examples: ["cometbft"]
 
+  anvil_service:
+    description: "Anvil service definition"
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - service_id
+      - service_type
+    properties:
+      name:
+        description: "Name of the service"
+        type: string
+      service_id:
+        description: "Service ID to test - identifies the specific blockchain service"
+        type: string
+      service_type:
+        description: "Type of service to test"
+        type: string
+        enum: ["anvil"]
+        examples: ["anvil"]

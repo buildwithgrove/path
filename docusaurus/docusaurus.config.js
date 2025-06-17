@@ -17,6 +17,7 @@ const config = {
   },
   themes: [
     "@docusaurus/theme-mermaid",
+    "docusaurus-theme-openapi-docs",
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       /** @type {import('@easyops-cn/docusaurus-search-local').PluginOptions} **/
@@ -33,13 +34,6 @@ const config = {
   // Set the production url of your site here
   url: "https://grove.city",
   baseUrl: "/",
-
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: "buildwithgrove",
-  projectName: "path",
-  deploymentBranch: "gh-pages",
-  trailingSlash: false,
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -58,11 +52,35 @@ const config = {
           routeBasePath: "/",
           sidebarPath: "./sidebars.js",
           sidebarCollapsible: false,
+          docItemComponent: "@theme/ApiItem",
         },
         theme: {
           customCss: "./src/css/custom.css",
         },
       }),
+    ],
+  ],
+
+  plugins: [
+    [
+      'docusaurus-plugin-openapi-docs',
+      {
+        id: "api",
+        docsPluginId: "classic",
+        config: {
+          path: {
+            specPath: "../api/path_openapi.yaml",
+            outputDir: "docs/learn/api",
+            sidebarOptions: {
+              groupPathsBy: "tag",
+            },
+            downloadUrl: "../api/path_openapi.yaml",
+            // Required to allow requests to production Grove Portal from the browser.
+            proxy: "https://corsproxy.io/",
+            hideSendButton: false,
+          },
+        },
+      },
     ],
   ],
 

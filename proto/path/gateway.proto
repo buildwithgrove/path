@@ -15,8 +15,19 @@ import "path/auth.proto"; // import RequestAuth message.
 //  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
 enum RequestType {
   REQUEST_TYPE_UNSPECIFIED = 0;
-  REQUEST_TYPE_ORGANIC = 1;  // Service request sent by a user.
-  REQUEST_TYPE_SYNTHETIC = 2; // Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+  // Organic: Service request sent by a user.
+  REQUEST_TYPE_ORGANIC = 1;
+  // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+  REQUEST_TYPE_SYNTHETIC = 2;
+}
+
+enum GatewayRequestErrorKind {
+  GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED = 0;
+  // Service ID not specified.
+  GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID = 1;
+  // QoS rejected the request.
+  // e.g. malformed payload could not be unmarshaled into JSONRPC
+  GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
 }
 
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
@@ -25,7 +36,7 @@ message GatewayObservations {
   // request_auth stores any fields related to the identification/authentication of the request.
   RequestAuth request_auth = 1;
 
-  // Specifies the request type.
+  // Specifies the request origin.
   // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
   RequestType request_type = 2;
 
@@ -41,4 +52,17 @@ message GatewayObservations {
 
   // response_size is the size in bytes of the response payload
   uint64 response_size = 6;
+
+  // gateway-level request error, if any.
+  // e.g. no service ID specified.
+  optional GatewayRequestError request_error = 7;
+}
+
+// Tracks any errors encountered at the gateway level.
+// e.g.: No Service ID specified by the request's HTTP headers.
+message GatewayRequestError {
+  // Categorizes the error
+  GatewayRequestErrorKind error_kind = 1;
+  // Detailed reason
+  string details = 2;
 }

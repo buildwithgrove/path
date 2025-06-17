@@ -7,6 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -19,7 +20,13 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	AvailableEndpoints(context.Context, protocol.ServiceID, *http.Request) (protocol.EndpointAddrList, error)
+	// Return observation if endpoint lookup fails.
+	// Used as protocol observation for the request when no protocol context exists.
+	AvailableEndpoints(
+		context.Context,
+		protocol.ServiceID,
+		*http.Request,
+	) (protocol.EndpointAddrList, protocolobservations.Observations, error)
 
 	// BuildRequestContextForEndpoint builds and returns a ProtocolRequestContext containing a single selected endpoint.
 	// One `ProtocolRequestContext` correspond to a single request, which is sent to a single endpoint.
@@ -27,7 +34,14 @@ type Protocol interface {
 	// (Shannon only: in Delegated mode, the staked application is passed in the request header, which
 	// filters the list of available endpoints. In all other modes, *http.Request will be nil.)
 	// Context may contain a deadline that protocol should respect on best-effort basis.
-	BuildRequestContextForEndpoint(context.Context, protocol.ServiceID, protocol.EndpointAddr, *http.Request) (ProtocolRequestContext, error)
+	// Return observation if the context setup fails.
+	// Used as protocol observation for the request when no protocol context exists.
+	BuildRequestContextForEndpoint(
+		context.Context,
+		protocol.ServiceID,
+		protocol.EndpointAddr,
+		*http.Request,
+	) (ProtocolRequestContext, protocolobservations.Observations, error)
 
 	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
 	// See protocol/gateway_mode.go for more details.
@@ -49,6 +63,13 @@ type Protocol interface {
 	// For Shannon:
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
 	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
+
+	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
+	// without filtering sanctioned endpoints.
+	GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
+
+	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
+	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

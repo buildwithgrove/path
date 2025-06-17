@@ -21,6 +21,7 @@ const (
 	serviceTypeEVM      serviceType = "evm"
 	serviceTypeCometBFT serviceType = "cometbft"
 	serviceTypeSolana   serviceType = "solana"
+	serviceTypeAnvil    serviceType = "anvil"
 )
 
 // -----------------------------------------------------------------------------
@@ -40,7 +41,7 @@ type (
 	TestService struct {
 		Name          string             `yaml:"name"`               // Name of the service
 		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
-		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana)
+		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
 		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
 		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
 		// Not marshaled from YAML; set in test case.
@@ -89,6 +90,8 @@ func (ts *TestService) getTestMethods() []string {
 	case serviceTypeCometBFT:
 		// CometBFT uses REST-like URL paths, not JSON-RPC methods
 		return getCometBFTTestURLPaths()
+	case serviceTypeAnvil:
+		return getAnvilTestMethods()
 	}
 	return nil
 }
@@ -101,6 +104,8 @@ func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) (ma
 		return getSolanaVegetaTargets(ts, methods, gatewayURL)
 	case serviceTypeCometBFT:
 		return getCometBFTVegetaTargets(ts, methods, gatewayURL)
+	case serviceTypeAnvil:
+		return getAnvilVegetaTargets(ts, methods, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
 }
@@ -113,6 +118,8 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 		return solanaExpectedID
 	case serviceTypeCometBFT:
 		return cometbftExpectedID
+	case serviceTypeAnvil:
+		return anvilExpectedID
 	default:
 		return jsonrpc.IDFromInt(1)
 	}
@@ -143,9 +150,9 @@ func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 }
 
 // setServiceIDInGatewayURLSubdomain inserts the service ID as a subdomain in the gateway URL.
-//   - https://rpc.grove.city/v1 → https://F00C.rpc.grove.city/v1
-//   - http://localhost:3091/v1 → http://F00C.localhost:3091/v1
-//   - https://api.example.com/path?query=param → https://F00C.api.example.com/path?query=param
+// Will be used if testing against production; ie. a URL that does NOT contain `localhost`.
+//   - https://rpc.grove.city/v1 → https://eth.rpc.grove.city/v1
+//   - https://api.example.com/path?query=param → https://eth.api.example.com/path?query=param
 //
 // TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 //   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
@@ -213,6 +220,10 @@ func (ts *TestServices) validateTestService(tc TestService, index int) error {
 		}
 	case serviceTypeCometBFT:
 		// No specific validation for CometBFT yet
+	case serviceTypeAnvil:
+		// Anvil services require no specific parameters since all test methods use empty params
+		// This is intentionally minimal - just verify the service can respond to basic JSON-RPC calls
+		return nil
 	default:
 		return fmt.Errorf("test service #%d: Unsupported service type: %s", index, tc.ServiceType)
 	}

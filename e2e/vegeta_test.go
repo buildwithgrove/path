@@ -39,7 +39,7 @@ const (
 // ===== Vegeta Helper Functions =====
 
 // runServiceTest runs the E2E test for a single EVM service in a test case.
-func runServiceTest(t *testing.T, ctx context.Context, ts TestService) (serviceTestFailed bool) {
+func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (serviceTestFailed bool) {
 	results := make(map[string]*methodMetrics)
 	var resultsMutex sync.Mutex
 
@@ -79,7 +79,7 @@ func runServiceTest(t *testing.T, ctx context.Context, ts TestService) (serviceT
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
-func runMethodAttack(ctx context.Context, method string, ts TestService, progBar *pb.ProgressBar) *methodMetrics {
+func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *methodMetrics {
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Method %s cancelled", method)
@@ -98,7 +98,7 @@ func runMethodAttack(ctx context.Context, method string, ts TestService, progBar
 // • Sends `serviceConfig.totalRequests` requests at `serviceConfig.rps` requests/sec
 // • DEV_NOTE: "Attack" is Vegeta's term for a single request
 // • See: https://github.com/tsenart/vegeta
-func runAttack(ctx context.Context, method string, ts TestService, progressBar *pb.ProgressBar) *methodMetrics {
+func runAttack(ctx context.Context, method string, ts *TestService, progressBar *pb.ProgressBar) *methodMetrics {
 	methodConfig := ts.testMethodsMap[method]
 
 	// Calculate RPS per method, rounding up and ensuring at least 1 RPS
@@ -185,7 +185,7 @@ func createVegetaAttacker(rps int, timeout time.Duration) *vegeta.Attacker {
 // startResultsCollector
 // • Launches a goroutine to process results, update progress bar, print status
 func startResultsCollector(
-	ts TestService,
+	ts *TestService,
 	method string,
 	methodConfig testMethodConfig,
 	metrics *methodMetrics,
@@ -730,10 +730,20 @@ func collectLatencyFailures(m *methodMetrics, serviceConfig ServiceConfig) []str
 func getRateColor(rate, requiredRate float64) string {
 	if rate >= requiredRate {
 		return GREEN // Green for meeting requirement
-	} else if rate >= requiredRate*0.95 {
+	} else if rate >= requiredRate*0.75 {
 		return YELLOW // Yellow for close
 	}
 	return RED // Red for failing
+}
+
+// Helper function to get emoji for success rates
+func getRateEmoji(rate, requiredRate float64) string {
+	if rate >= requiredRate {
+		return "🟢" // Green for meeting requirement
+	} else if rate >= requiredRate*0.75 {
+		return "🟡" // Yellow for close
+	}
+	return "🔴" // Red for failing
 }
 
 // Helper function to get color for latency values
@@ -777,8 +787,6 @@ func calculateAvgLatency(latencies []time.Duration) time.Duration {
 	return time.Duration(int64(sum) / int64(len(latencies)))
 }
 
-// getAnyMethodKey returns an arbitrary method key from the map (first found)
-
 // printServiceSummaries prints a summary of all services after tests are complete
 func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	fmt.Printf("\n\n%s===== SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
@@ -799,7 +807,8 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		serviceConfig := summary.serviceConfig
 
 		// Header with service ID
-		fmt.Printf("\n%s⛓️  Service: %s%s\n", BOLD_BLUE, svcID, RESET)
+		successEmoji := getRateEmoji(summary.avgSuccessRate, serviceConfig.SuccessRate)
+		fmt.Printf("\n%s⛓️  Service: %s%s - %s\n", BOLD_BLUE, svcID, RESET, successEmoji)
 
 		// Use helpers for coloring based on method config
 		successColor := getRateColor(summary.avgSuccessRate, serviceConfig.SuccessRate)
