@@ -12,7 +12,9 @@ source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 # References
 # Pocket Services - Public Directory: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
 # Grove Shannon Mainnet Applications: https://docs.google.com/spreadsheets/d/1EjF9buF6GNR4vGglUuMjLtJmrfQD9JunX_CJHslwt84/edit?gid=0#gid=0
-SERVICES=(
+
+# EVM-compatible services that use JSON-RPC eth_blockNumber for testing
+EVM_SERVICES=(
     "arb_one"
     "arb_sep_test"
     "avax-dfk"
@@ -49,7 +51,6 @@ SERVICES=(
     "op_sep_test"
     "opbnb"
     "osmosis"
-    "pocket"
     "poly"
     "poly_amoy_test"
     "poly_zkevm"
@@ -68,11 +69,31 @@ SERVICES=(
     "zksync_era"
 )
 
+# CometBFT services that use REST /status endpoint for testing
+COMETBFT_SERVICES=(
+    "pocket"
+)
+
+# Combined services list for backwards compatibility
+SERVICES=("${EVM_SERVICES[@]}" "${COMETBFT_SERVICES[@]}")
+
 # Configuration Variables
 TARGET_SERVICE_HEADER="Target-Service-Id"
 JSONRPC_TEST_PAYLOAD='{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}'
 MAX_RETRIES=5
 RETRY_SLEEP_DURATION=1
+
+# Helper function to determine service type
+get_service_type() {
+    local service="$1"
+    for cometbft_service in "${COMETBFT_SERVICES[@]}"; do
+        if [ "$service" = "$cometbft_service" ]; then
+            echo "cometbft"
+            return
+        fi
+    done
+    echo "evm"
+}
 
 # Disqualified endpoints configuration
 DISQUALIFIED_API_URL="http://localhost:3069/disqualified_endpoints"
@@ -431,7 +452,8 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
 
     for item in "${services_with_suppliers[@]}"; do
         IFS=':' read -r service count <<<"$item"
-        echo -e "\n 🚀 Testing $service..."
+        service_type=$(get_service_type "$service")
+        echo -e "\n 🚀 Testing $service ($service_type)..."
 
         # Execute 5 curl requests and require ALL to succeed
         request_count=0
@@ -445,46 +467,140 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
             request_count=$((request_count + 1))
             request_prefix="    📡 Request $request_count/$max_requests..."
 
-            # Construct URL and headers based on environment
-            if [ "$USE_SUBDOMAIN" = true ]; then
-                # Production: use subdomain format with required headers
-                service_url="https://${service}.rpc.grove.city/v1"
-                curl_result=$(curl -s "$service_url" \
-                    -H "Portal-Application-Id: $PORTAL_APP_ID" \
-                    -H "Authorization: $API_KEY" \
-                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
-            else
-                # Local: use header format
-                curl_result=$(curl -s "$BASE_PATH_URL" \
-                    -H "$TARGET_SERVICE_HEADER: $service" \
-                    -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
-            fi
-
-            # Check if curl was successful and returned valid JSON
-            if [ $? -eq 0 ] && echo "$curl_result" | jq -e . >/dev/null 2>&1; then
-                # Check if response contains an error field
-                if echo "$curl_result" | jq -e '.error' >/dev/null 2>&1; then
-                    echo "$request_prefix ❌ Failed (JSON-RPC error)"
-                    failed_requests=$((failed_requests + 1))
-                    # Collect error response
-                    error_response=$(echo "$curl_result" | jq -c '.error')
-                    error_responses+=("$error_response")
-                    # Collect detailed error for JSON report - with safe parsing
-                    error_message=$(echo "$curl_result" | jq -r '.error.message // .error // "Unknown error"' 2>/dev/null || echo "Parse error")
-                    endpoint_response=$(echo "$curl_result" | jq -r '.error.data.endpoint_response // ""' 2>/dev/null || echo "")
-                    unmarshaling_error=$(echo "$curl_result" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
-                    detailed_errors+=("{\"error_message\":\"$error_message\",\"endpoint_response\":\"$endpoint_response\",\"unmarshaling_error\":\"$unmarshaling_error\"}")
+            # Construct URL and headers based on environment and service type
+            if [ "$service_type" = "cometbft" ]; then
+                # CometBFT services use /status endpoint
+                if [ "$USE_SUBDOMAIN" = true ]; then
+                    # Production: use subdomain format with required headers
+                    service_url="https://${service}.rpc.grove.city/v1/status"
+                    curl_result=$(curl -s -w "%{http_code}" "$service_url" \
+                        -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                        -H "Authorization: $API_KEY" 2>/dev/null)
                 else
-                    echo "$request_prefix ✅ Success"
-                    successful_requests=$((successful_requests + 1))
+                    # Local: use header format
+                    curl_result=$(curl -s -w "%{http_code}" "$BASE_PATH_URL/status" \
+                        -H "$TARGET_SERVICE_HEADER: $service" 2>/dev/null)
+                fi
+                
+                # Extract HTTP status code from curl response
+                if [ ${#curl_result} -ge 3 ]; then
+                    http_code="${curl_result: -3}"
+                    response_body="${curl_result%???}"
+                else
+                    http_code="000"
+                    response_body=""
+                fi
+                
+                # Check both HTTP status and JSON error field
+                if [ "$http_code" = "200" ]; then
+                    # Check if response body is valid JSON and has no error field
+                    if [ -n "$response_body" ] && echo "$response_body" | jq -e . >/dev/null 2>&1; then
+                        if echo "$response_body" | jq -e '.error' >/dev/null 2>&1; then
+                            echo "$request_prefix ❌ Failed (HTTP 200 but JSON error present)"
+                            failed_requests=$((failed_requests + 1))
+                            error_response=$(echo "$response_body" | jq -c '.error')
+                            error_responses+=("$error_response")
+                            error_message=$(echo "$response_body" | jq -r '.error.message // .error // "Unknown error"' 2>/dev/null || echo "Parse error")
+                            endpoint_response=$(echo "$response_body" | jq -r '.error.data.endpoint_response // ""' 2>/dev/null || echo "")
+                            unmarshaling_error=$(echo "$response_body" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
+                            # Safely create JSON with potentially problematic extracted strings
+                            error_detail=$(jq -n --arg msg "$error_message" --arg ep "$endpoint_response" --arg unmarshal "$unmarshaling_error" \
+                                '{error_message: $msg, endpoint_response: $ep, unmarshaling_error: $unmarshal}')
+                            detailed_errors+=("$error_detail")
+                        else
+                            echo "$request_prefix ✅ Success (HTTP 200, no JSON error)"
+                            successful_requests=$((successful_requests + 1))
+                        fi
+                    else
+                        echo "$request_prefix ❌ Failed (HTTP 200 but invalid JSON)"
+                        failed_requests=$((failed_requests + 1))
+                        error_response='{"code":-32700,"message":"Invalid JSON response"}'
+                        error_responses+=("$error_response")
+                        # Safely create JSON with potentially problematic response body
+                        error_detail=$(jq -n --arg msg "Invalid JSON response" --arg body "$response_body" --arg unmarshal "" \
+                            '{error_message: $msg, endpoint_response: $body, unmarshaling_error: $unmarshal}')
+                        detailed_errors+=("$error_detail")
+                    fi
+                else
+                    echo "$request_prefix ❌ Failed (HTTP $http_code)"
+                    failed_requests=$((failed_requests + 1))
+                    error_response="{\"code\":-32000,\"message\":\"HTTP $http_code response\"}"
+                    error_responses+=("$error_response")
+                    # Safely create JSON with potentially problematic response body
+                    error_detail=$(jq -n --arg msg "HTTP $http_code response" --arg body "$response_body" --arg unmarshal "" \
+                        '{error_message: $msg, endpoint_response: $body, unmarshaling_error: $unmarshal}')
+                    detailed_errors+=("$error_detail")
                 fi
             else
-                echo "      ❌ Failed (connection/invalid JSON)"
-                failed_requests=$((failed_requests + 1))
-                # Create error object for connection/JSON parsing failures
-                error_response='{"code":-32700,"message":"Connection error or invalid JSON response"}'
-                error_responses+=("$error_response")
-                detailed_errors+=("{\"error_message\":\"Connection error or invalid JSON response\",\"endpoint_response\":\"\",\"unmarshaling_error\":\"\"}")
+                # EVM services use JSON-RPC
+                if [ "$USE_SUBDOMAIN" = true ]; then
+                    # Production: use subdomain format with required headers
+                    service_url="https://${service}.rpc.grove.city/v1"
+                    curl_result=$(curl -s -w "%{http_code}" "$service_url" \
+                        -H "Portal-Application-Id: $PORTAL_APP_ID" \
+                        -H "Authorization: $API_KEY" \
+                        -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+                else
+                    # Local: use header format
+                    curl_result=$(curl -s -w "%{http_code}" "$BASE_PATH_URL" \
+                        -H "$TARGET_SERVICE_HEADER: $service" \
+                        -d "$JSONRPC_TEST_PAYLOAD" 2>/dev/null)
+                fi
+
+                # Extract HTTP status code from curl response
+                if [ ${#curl_result} -ge 3 ]; then
+                    http_code="${curl_result: -3}"
+                    response_body="${curl_result%???}"
+                else
+                    http_code="000"
+                    response_body=""
+                fi
+
+                # Check both HTTP status and JSON error field
+                if [ "$http_code" = "200" ]; then
+                    # Check if response body is valid JSON
+                    if [ -n "$response_body" ] && echo "$response_body" | jq -e . >/dev/null 2>&1; then
+                        # Check if response contains an error field
+                        if echo "$response_body" | jq -e '.error' >/dev/null 2>&1; then
+                            echo "$request_prefix ❌ Failed (HTTP 200 but JSON-RPC error)"
+                            failed_requests=$((failed_requests + 1))
+                            # Collect error response
+                            error_response=$(echo "$response_body" | jq -c '.error')
+                            error_responses+=("$error_response")
+                            # Collect detailed error for JSON report - with safe parsing
+                            error_message=$(echo "$response_body" | jq -r '.error.message // .error // "Unknown error"' 2>/dev/null || echo "Parse error")
+                            endpoint_response=$(echo "$response_body" | jq -r '.error.data.endpoint_response // ""' 2>/dev/null || echo "")
+                            unmarshaling_error=$(echo "$response_body" | jq -r '.error.data.unmarshaling_error // ""' 2>/dev/null || echo "")
+                            # Safely create JSON with potentially problematic extracted strings
+                            error_detail=$(jq -n --arg msg "$error_message" --arg ep "$endpoint_response" --arg unmarshal "$unmarshaling_error" \
+                                '{error_message: $msg, endpoint_response: $ep, unmarshaling_error: $unmarshal}')
+                            detailed_errors+=("$error_detail")
+                        else
+                            echo "$request_prefix ✅ Success (HTTP 200, no JSON error)"
+                            successful_requests=$((successful_requests + 1))
+                        fi
+                    else
+                        echo "$request_prefix ❌ Failed (HTTP 200 but invalid JSON)"
+                        failed_requests=$((failed_requests + 1))
+                        # Create error object for JSON parsing failures
+                        error_response='{"code":-32700,"message":"Invalid JSON response"}'
+                        error_responses+=("$error_response")
+                        # Safely create JSON with potentially problematic response body
+                        error_detail=$(jq -n --arg msg "Invalid JSON response" --arg body "$response_body" --arg unmarshal "" \
+                            '{error_message: $msg, endpoint_response: $body, unmarshaling_error: $unmarshal}')
+                        detailed_errors+=("$error_detail")
+                    fi
+                else
+                    echo "$request_prefix ❌ Failed (HTTP $http_code)"
+                    failed_requests=$((failed_requests + 1))
+                    # Create error object for HTTP failures
+                    error_response="{\"code\":-32000,\"message\":\"HTTP $http_code response\"}"
+                    error_responses+=("$error_response")
+                    # Safely create JSON with potentially problematic response body
+                    error_detail=$(jq -n --arg msg "HTTP $http_code response" --arg body "$response_body" --arg unmarshal "" \
+                        '{error_message: $msg, endpoint_response: $body, unmarshaling_error: $unmarshal}')
+                    detailed_errors+=("$error_detail")
+                fi
             fi
 
             # Brief pause between requests
