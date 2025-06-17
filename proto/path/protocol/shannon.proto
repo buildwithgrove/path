@@ -15,18 +15,14 @@ enum ShannonRequestErrorType {
   // - Error fetching a session for one or more apps.
   // - One or more available endpoints are sanctioned.
   SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE = 2;
-  // Centralized gateway mode: Error fetching the app.
-  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR = 3;
-  // Centralized gateway mode app does not delegate to the gateway.
-  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION = 4;
-  // Centralized gateway mode: no active sessions found for service.
-  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS = 5;
-  // Delegated gateway mode: could not extract app address from HTTP request
-  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP = 6;
-  // Delegated gateway mode: error fetching the app
-  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP = 7;
-  // Delegated gateway mode: app does not delegate to the gateway
-  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE = 8;
+  // Error fetching the app.
+  SHANNON_REQUEST_ERROR_INTERNAL_APP_FETCH_ERR = 3;
+  // No active sessions found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_NO_SESSIONS = 4;
+  // Could not extract app address from HTTP request
+  SHANNON_REQUEST_ERROR_INTERNAL_GET_APP_HTTP = 5;
+  // App does not delegate to the gateway
+  SHANNON_REQUEST_ERROR_INTERNAL_APP_DOES_NOT_DELEGATE = 6;
   // Error initializing a signer for the selected gateway mode.
   SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR = 9;
 }
