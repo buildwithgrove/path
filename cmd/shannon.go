@@ -26,12 +26,12 @@ func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayCon
 		config.GatewayConfig.GatewayPrivateKeyHex,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon protocol gateway client: %v", err)
+		return nil, fmt.Errorf("failed to create a gateway client: %v", err)
 	}
 
 	protocolGatewayClient, err := getGatewayModeClient(logger, gatewayClient, config.GatewayConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon protocol gateway client: %v", err)
+		return nil, fmt.Errorf("failed to create a gateway mode client: %v", err)
 	}
 
 	protocol, err := shannon.NewProtocol(logger, protocolGatewayClient)
