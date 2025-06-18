@@ -54,9 +54,9 @@ var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 // This is used to improve the performance of the protocol.
 type GatewayClient interface {
 	// Methods from the gateway mode specific gateway client.
-	getGatewayModeActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
+	GetGatewayModeActiveSessions(context.Context, sdk.ServiceID, *http.Request) ([]sessiontypes.Session, error)
 
-	// Methods from the Shannon SDK GatewayClient interface.
+	// Methods from the Shannon SDK GatewayClient struct.
 	SignRelayRequest(context.Context, *servicetypes.RelayRequest, apptypes.Application) (*servicetypes.RelayRequest, error)
 	ValidateRelayResponse(context.Context, sdk.SupplierAddress, []byte) (*servicetypes.RelayResponse, error)
 	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
@@ -119,7 +119,7 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	activeSessions, err := p.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -179,7 +179,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	activeSessions, err := p.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -346,7 +346,7 @@ func (p *Protocol) GetTotalServiceEndpointsCount(serviceID sdk.ServiceID, httpRe
 	ctx := context.Background()
 
 	// Get the list of permitted sessions for the service ID.
-	activeSessions, err := p.GatewayClient.getGatewayModeActiveSessions(ctx, serviceID, httpReq)
+	activeSessions, err := p.GetGatewayModeActiveSessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}

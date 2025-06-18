@@ -56,8 +56,8 @@ const httpHeaderAppAddress = "X-App-Address"
 
 // getGatewayModeActiveSessions implements GatewayClient interface.
 //   - Returns the permitted session under Delegated gateway mode, for the supplied HTTP request.
-//   - Gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
-func (d *delegatedGatewayClient) getGatewayModeActiveSessions(
+//   - App address specified in the HTTP header is used to retrieve active session for a service.
+func (d *delegatedGatewayClient) GetGatewayModeActiveSessions(
 	ctx context.Context,
 	serviceID sdk.ServiceID,
 	httpReq *http.Request,

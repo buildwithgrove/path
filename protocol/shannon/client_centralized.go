@@ -2,6 +2,7 @@ package shannon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/pokt-network/shannon-sdk/client"
 	"github.com/pokt-network/shannon-sdk/crypto"
 )
+
+var errCentralizedGatewayClientNoOwnedAppsForService = errors.New("no owned apps for service")
 
 // centralizedGatewayClient implements the GatewayClient interface for Centralized Gateway Mode.
 //
@@ -61,8 +64,8 @@ func NewCentralizedGatewayClient(
 
 // getGatewayModeActiveSessions implements GatewayClient interface.
 //   - Returns the set of permitted sessions under the Centralized gateway mode.
-//   - Gateway address and owned apps addresses (specified in configs) are used to retrieve active sessions.
-func (c *centralizedGatewayClient) getGatewayModeActiveSessions(
+//   - Owned app addresses are used to retrieve active sessions for a service.
+func (c *centralizedGatewayClient) GetGatewayModeActiveSessions(
 	ctx context.Context,
 	serviceID sdk.ServiceID,
 	httpReq *http.Request,
@@ -77,7 +80,10 @@ func (c *centralizedGatewayClient) getGatewayModeActiveSessions(
 	// different service, PATH must be restarted for changes to take effect.
 	ownedAppsForService, ok := c.ownedApps[serviceID]
 	if !ok || len(ownedAppsForService) == 0 {
-		return nil, fmt.Errorf("no owned apps for service %s", serviceID)
+		return nil, fmt.Errorf("%w: service %s",
+			errCentralizedGatewayClientNoOwnedAppsForService,
+			serviceID,
+		)
 	}
 
 	return c.GetActiveSessions(ctx, serviceID, ownedAppsForService)
@@ -92,7 +98,7 @@ func (c *centralizedGatewayClient) GetConfiguredServiceIDs() map[sdk.ServiceID]s
 	return servicesIDs
 }
 
-// getOwnedApps:
+// getOwnedApps is called only once when initializing the centralized gateway client.
 //
 //   - Returns list of apps owned by the gateway, built from supplied private keys
 //   - Supplied private keys are ONLY used to build app addresses for relay signing
@@ -132,8 +138,8 @@ func getOwnedApps(
 		}
 
 		// Retrieve the app's onchain data.
-		// GetApp passthrough to the underlying full node to ensure the request
-		// is a remote request and not using cached data.
+		// GetApp passes through to the underlying full node
+		//to ensure the request is not using cached data.
 		app, err := gatewayClient.GetApp(context.Background(), appAddr)
 		if err != nil {
 			logger.Error().Err(err).Msgf("error getting onchain data for app with address %s", appAddr)
@@ -147,6 +153,7 @@ func getOwnedApps(
 			return nil, fmt.Errorf("app with address %s is not staked for exactly one service", appAddr)
 		}
 
+		// Retrieve the app's service ID; each app is staked for exactly one service.
 		appServiceConfig := appServiceConfigs[0]
 		serviceID := sdk.ServiceID(appServiceConfig.GetServiceId())
 		if serviceID == "" {
