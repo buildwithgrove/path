@@ -367,7 +367,7 @@ services:
 
   # Shannon - Polygon Mainnet (Archival)
   - name: "Shannon - polygon (Polygon) Test"
-    service_id: "poly"
+    service_id: "polygon"
     service_type: "evm"
     archival: true
     service_params:

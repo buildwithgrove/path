@@ -51,7 +51,7 @@ EVM_SERVICES=(
     "op_sep_test"
     "opbnb"
     "osmosis"
-    "poly"
+    "polygon"
     "poly_amoy_test"
     "poly_zkevm"
     "radix"
@@ -499,6 +499,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
         IFS=':' read -r service count <<<"$item"
         service_type=$(get_service_type "$service")
         service_identifier=$(get_service_identifier "$service")
+        service_identifier="${service_identifier//_/-}"
         echo -e "\n 🚀 Testing $service ($service_type)..."
 
         # Execute 5 curl requests and require ALL to succeed
@@ -701,6 +702,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                 # Production: use subdomain format with required headers
                 # Use alias if available in production, otherwise use service ID
                 service_identifier=$(get_service_identifier "$service")
+                service_identifier="${service_identifier//_/-}"
                 disqualified_url="https://${service_identifier}.rpc.grove.city/disqualified_endpoints"
                 disqualified_response=$(curl -s "$disqualified_url" \
                     -H "Portal-Application-Id: $PORTAL_APP_ID" \
