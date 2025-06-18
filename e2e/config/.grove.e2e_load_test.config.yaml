@@ -93,7 +93,7 @@ service_config_overrides:
     archival: false
   "pocket":
     archival: false
-  "polygon":
+  "poly":
     archival: false
   "poly_amoy_test":
     archival: false
