@@ -4,50 +4,76 @@ import (
 	"fmt"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/shannon-sdk/client"
 
-	shannonconfig "github.com/buildwithgrove/path/config/shannon"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
-// getShannonFullNode builds and returns a Shannon FullNode configuration.
-// If the configuration provided is "lazy", it short circuits to a lazy node and bypasses caching.
-func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (shannon.FullNode, error) {
-	fullNodeConfig := config.FullNodeConfig
-
-	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
-	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(fullNodeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
-	}
-
-	// Bypass caching if the configuration is "lazy".
-	if fullNodeConfig.LazyMode {
-		return lazyFullNode, nil
-	}
-
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
-	}
-
-	return fullNode, nil
-}
-
 // getShannonProtocol returns an instance of the Shannon protocol using the supplied Shannon-specific configuration.
-func getShannonProtocol(logger polylog.Logger, config *shannonconfig.ShannonGatewayConfig) (gateway.Protocol, error) {
+func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayConfig) (gateway.Protocol, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	fullNode, err := getShannonFullNode(logger, config)
+	gatewayClientCache, err := getGatewayClientCache(logger, config.FullNodeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon full node instance: %v", err)
+		return nil, fmt.Errorf("failed to create Shannon full node: %v", err)
 	}
 
-	protocol, err := shannon.NewProtocol(logger, config.GatewayConfig, fullNode)
+	gatewayClient, err := client.NewGatewayClient(
+		logger,
+		gatewayClientCache,
+		config.GatewayConfig.GatewayAddress,
+		config.GatewayConfig.GatewayPrivateKeyHex,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a gateway client: %v", err)
+	}
+
+	protocolGatewayClient, err := getGatewayModeClient(logger, gatewayClient, config.GatewayConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a gateway mode client: %v", err)
+	}
+
+	protocol, err := shannon.NewProtocol(logger, protocolGatewayClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a Shannon protocol instance: %v", err)
 	}
 
 	return protocol, nil
+}
+
+// getGatewayClientCache builds and returns a GatewayClientCache instance using the supplied configuration.
+// It is passed to the GatewayClient to fetch and cache onchain data for the Shannon protocol.
+func getGatewayClientCache(logger polylog.Logger, config client.FullNodeConfig) (*client.GatewayClientCache, error) {
+	return client.NewGatewayClientCache(logger, config.RpcURL, config)
+}
+
+// getGatewayModeClient gets the configured gateway client for the PATH instance.
+func getGatewayModeClient(
+	logger polylog.Logger,
+	gatewayClient *client.GatewayClient,
+	gatewayConfig shannon.GatewayConfig,
+) (shannon.GatewayClient, error) {
+	switch gatewayConfig.GatewayMode {
+
+	case shannon.GatewayModeCentralized:
+		logger.Info().Msg("getGatewayClient: PATH configured for centralized gateway mode")
+		return shannon.NewCentralizedGatewayClient(
+			logger,
+			gatewayClient,
+			gatewayConfig.OwnedAppsPrivateKeysHex,
+		)
+
+	case shannon.GatewayModeDelegated:
+		logger.Info().Msg("getGatewayClient: PATH configured for delegated gateway mode")
+		return shannon.NewDelegatedGatewayClient(
+			logger,
+			gatewayClient,
+		)
+
+		// TODO_IMPROVE(@commoddity, @adshmh): add new gateway client for permissionless mode once implemented in the SDK.
+
+	default:
+		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayConfig.GatewayMode)
+	}
 }

@@ -12,9 +12,9 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/noop"
 )
 
@@ -38,14 +38,14 @@ type Parser struct {
 	Logger polylog.Logger
 
 	// QoSServices is the set of QoS services to which the request parser should map requests based on the extracted service ID.
-	QoSServices map[protocol.ServiceID]gateway.QoSService
+	QoSServices map[sdk.ServiceID]gateway.QoSService
 }
 
 /* --------------------------------- HTTP Request Parsing -------------------------------- */
 
 // GetQoSService returns the QoS service implementation for the given request, as well as the authoritative service ID.
 // If the service ID does not have a corresponding QoS implementation, the NoOp QoS service is returned.
-func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol.ServiceID, gateway.QoSService, error) {
+func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (sdk.ServiceID, gateway.QoSService, error) {
 	// Get the authoritative service ID from the request's header.
 	serviceID, err := p.getServiceID(req)
 	if err != nil {
@@ -69,9 +69,9 @@ func (p *Parser) GetQoSService(ctx context.Context, req *http.Request) (protocol
 }
 
 // getServiceID extracts the authoritative service ID from the HTTP request's `Target-Service-Id` header.
-func (p *Parser) getServiceID(req *http.Request) (protocol.ServiceID, error) {
+func (p *Parser) getServiceID(req *http.Request) (sdk.ServiceID, error) {
 	if serviceID := req.Header.Get(HTTPHeaderTargetServiceID); serviceID != "" {
-		return protocol.ServiceID(serviceID), nil
+		return sdk.ServiceID(serviceID), nil
 	}
 	return "", errNoServiceIDProvided
 }

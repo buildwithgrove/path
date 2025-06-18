@@ -1,9 +1,11 @@
 package shannon
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 	sdk "github.com/pokt-network/shannon-sdk"
+	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -33,7 +36,11 @@ var _ gateway.ProtocolRequestContext = &requestContext{}
 // - Returns a relay request signed by the gateway (with delegation from the app).
 // - In future Permissionless Gateway Mode, may use the app's own private key for signing.
 type RelayRequestSigner interface {
-	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
+	SignRelayRequest(
+		ctx context.Context,
+		relayRequest *servicetypes.RelayRequest,
+		app apptypes.Application,
+	) (*servicetypes.RelayRequest, error)
 }
 
 // requestContext:
@@ -41,11 +48,10 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	fullNode FullNode
-	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
-	serviceID protocol.ServiceID
+	gatewayClient GatewayClient
 
-	relayRequestSigner RelayRequestSigner
+	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
+	serviceID sdk.ServiceID
 
 	// selectedEndpoint:
 	// - Endpoint selected for sending a relay.
@@ -130,8 +136,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 		wsLogger,
 		clientConn,
 		rc.selectedEndpoint,
-		rc.relayRequestSigner,
-		rc.fullNode,
+		rc.gatewayClient,
 	)
 	if err != nil {
 		wsLogger.Error().Err(err).Msg("Error creating websocket bridge")
@@ -200,14 +205,14 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, err
 	}
 
-	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
+	defer cancelFn()
+
+	signedRelayReq, err := rc.signRelayRequest(ctxWithTimeout, relayRequest, app)
 	if err != nil {
 		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to sign the relay request. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
-
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
-	defer cancelFn()
 
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
@@ -218,7 +223,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	// Validate the response.
-	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
+	response, err := rc.gatewayClient.ValidateRelayResponse(ctxWithTimeout, sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
 		// TODO_TECHDEBT(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
 		// 1. Enhance the `RelayResponse` struct with an error field:
@@ -241,7 +246,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	return response, nil
 }
 
-func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+func (rc *requestContext) signRelayRequest(ctx context.Context, unsignedRelayReq *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
 	// Verify the relay request's metadata, specifically the session header.
 	// Note: cannot use the RelayRequest's ValidateBasic() method here, as it looks for a signature in the struct, which has not been added yet at this point.
 	meta := unsignedRelayReq.GetMeta()
@@ -256,7 +261,7 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 	}
 
 	// Sign the relay request using the selected app's private key
-	return rc.relayRequestSigner.SignRelayRequest(unsignedRelayReq, app)
+	return rc.gatewayClient.SignRelayRequest(ctx, unsignedRelayReq, app)
 }
 
 // buildUnsignedRelayRequest:
@@ -321,6 +326,62 @@ func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 	)
 
 	return logger
+}
+
+// TODO_IMPROVE: consider enhancing the service or RelayRequest/RelayResponse types in poktroll repo (see links below) to perform
+// Serialization/Deserialization of the payload.
+//
+// Benefits:
+// - Makes code easier to read and less error-prone by consolidating serialization/deserialization in a single source (e.g. relay.go).
+//
+// Current behavior:
+// - Relay miner serializes the HTTP response received from the proxied service (see link below).
+// - Deserialization is handled here (see sdktypes.DeserializeHTTPResponse below).
+//
+// Links:
+// - Relay miner serializing the service response:
+//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/pkg/relayer/proxy/synchronous.go#L361-L363
+// - Relay response validation (potential package for serialization/deserialization):
+//   https://github.com/pokt-network/poktroll/blob/e5024ea5d28cc94d09e531f84701a85cefb9d56f/x/service/types/relay.go#L68
+//
+// deserializeRelayResponse:
+// - Uses the Shannon sdk to deserialize the relay response payload received from an endpoint into a protocol.Response.
+// - Required because the relay miner (the endpoint serving the relay) returns the HTTP response in serialized format in its payload.
+
+func deserializeRelayResponse(bz []byte) (protocol.Response, error) {
+	poktHttpResponse, err := sdktypes.DeserializeHTTPResponse(bz)
+	if err != nil {
+		return protocol.Response{}, err
+	}
+
+	return protocol.Response{
+		Bytes:          poktHttpResponse.BodyBz,
+		HTTPStatusCode: int(poktHttpResponse.StatusCode),
+	}, nil
+}
+
+// serviceRequestPayload:
+// - Contents of the request received by the underlying service's API server.
+
+func shannonJsonRpcHttpRequest(serviceRequestPayload []byte, url string) (*http.Request, error) {
+	jsonRpcServiceReq, err := http.NewRequest(http.MethodPost, url, io.NopCloser(bytes.NewReader(serviceRequestPayload)))
+	if err != nil {
+		return nil, fmt.Errorf("shannonJsonRpcHttpRequest: failed to create a new HTTP request for url %s: %w", url, err)
+	}
+
+	jsonRpcServiceReq.Header.Set("Content-Type", "application/json")
+	return jsonRpcServiceReq, nil
+}
+
+func embedHttpRequest(reqToEmbed *http.Request) (*servicetypes.RelayRequest, error) {
+	_, reqToEmbedBz, err := sdktypes.SerializeHTTPRequest(reqToEmbed)
+	if err != nil {
+		return nil, fmt.Errorf("embedHttpRequest: failed to Serialize HTTP Request for URL %s: %w", reqToEmbed.URL, err)
+	}
+
+	return &servicetypes.RelayRequest{
+		Payload: reqToEmbedBz,
+	}, nil
 }
 
 // handleInternalError:

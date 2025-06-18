@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/morse"
-	"github.com/buildwithgrove/path/config/shannon"
+	"github.com/buildwithgrove/path/protocol/shannon"
 )
 
 /* ---------------------------------  Gateway Config Struct -------------------------------- */

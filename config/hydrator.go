@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/buildwithgrove/path/protocol"
+	sdk "github.com/pokt-network/shannon-sdk"
 )
 
 /* --------------------------------- Hydrator Config Defaults -------------------------------- */
@@ -26,7 +26,7 @@ type EndpointHydratorConfig struct {
 	// By default all configured service IDs will be checked unless specified here.
 	// Startup will error if a service ID is specified here that is not in the protocol's configured service IDs.
 	// Primarily just used for testing & development.
-	QoSDisabledServiceIDs []protocol.ServiceID `yaml:"qos_disabled_service_ids"`
+	QoSDisabledServiceIDs []sdk.ServiceID `yaml:"qos_disabled_service_ids"`
 
 	// Interval between hydrator runs during which endpoint checks are performed
 	RunInterval time.Duration `yaml:"run_interval_ms"`

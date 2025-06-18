@@ -3,28 +3,28 @@ module github.com/buildwithgrove/path
 go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
-// replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
+// TODO_IN_THIS_PR(@commoddity): Remove this once shannon-sdk updated
+replace github.com/pokt-network/shannon-sdk => ../shannon-sdk
+
 // replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-sdk v0.53.0
-	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.1.17
-	github.com/pokt-network/shannon-sdk v0.0.0-20250615013032-bbc533b256f4
+	github.com/pokt-network/poktroll v0.1.20
+	github.com/pokt-network/shannon-sdk v0.0.0-20250603210336-969a825fddd5
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tsenart/vegeta v12.7.0+incompatible
 	github.com/viccon/sturdyc v1.1.5
 	go.uber.org/mock v0.5.2
 	golang.org/x/net v0.40.0
-	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -262,6 +262,7 @@ require (
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/grpc v1.72.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect

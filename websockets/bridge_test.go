@@ -1,6 +1,7 @@
 package websockets
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -109,8 +110,7 @@ func Test_Bridge_Run(t *testing.T) {
 				polyzero.NewLogger(),
 				clientConn,
 				test.selectedEndpoint,
-				&relayRequestSigner{},
-				&fullNode{},
+				&gatewayClient{},
 			)
 			c.NoError(err)
 
@@ -304,13 +304,17 @@ func (e *selectedEndpoint) Session() *sessiontypes.Session {
 
 type relayRequestSigner struct{}
 
-func (r *relayRequestSigner) SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+func (r *relayRequestSigner) SignRelayRequest(ctx context.Context, req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
 	return req, nil
 }
 
-type fullNode struct{}
+type gatewayClient struct{}
 
-func (f *fullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
+func (g *gatewayClient) SignRelayRequest(ctx context.Context, req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error) {
+	return req, nil
+}
+
+func (g *gatewayClient) ValidateRelayResponse(ctx context.Context, supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	relayResponse := &servicetypes.RelayResponse{}
 	if err := relayResponse.Unmarshal(responseBz); err != nil {
 		return nil, err

@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"net/url"
 
+	sdk "github.com/pokt-network/shannon-sdk"
 	vegeta "github.com/tsenart/vegeta/lib"
 
 	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/buildwithgrove/path/request"
 )
@@ -39,12 +39,12 @@ type (
 	}
 
 	TestService struct {
-		Name          string             `yaml:"name"`               // Name of the service
-		ServiceID     protocol.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
-		ServiceType   serviceType        `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
-		Alias         string             `yaml:"alias,omitempty"`    // Alias for the service
-		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
-		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
+		Name          string        `yaml:"name"`               // Name of the service
+		ServiceID     sdk.ServiceID `yaml:"service_id"`         // Service ID to test (identifies the specific blockchain service)
+		ServiceType   serviceType   `yaml:"service_type"`       // Type of service to test (evm, cometbft, solana, anvil)
+		Alias         string        `yaml:"alias,omitempty"`    // Alias for the service
+		Archival      bool          `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
+		ServiceParams ServiceParams `yaml:"service_params"`     // Service-specific parameters for test requests
 		// Not marshaled from YAML; set in test case.
 		serviceType    serviceType
 		testMethodsMap map[string]testMethodConfig
@@ -131,7 +131,7 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 // -----------------------------------------------------------------------------
 
 // getRequestHeaders returns the HTTP headers for a given service ID, including Portal credentials if in load test mode.
-func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
+func getRequestHeaders(serviceID sdk.ServiceID) http.Header {
 	headers := http.Header{
 		"Content-Type":                    []string{"application/json"},
 		request.HTTPHeaderTargetServiceID: []string{string(serviceID)},
@@ -157,12 +157,12 @@ func getRequestHeaders(serviceID protocol.ServiceID) http.Header {
 //
 // TODO_TECHDEBT(@commoddity): Remove this once PATH in production supports service in headers
 //   - Issue: https://github.com/buildwithgrove/infrastructure/issues/91
-func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.ServiceID, alias string) string {
+func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID sdk.ServiceID, alias string) string {
 	// If the alias is set, use it instead of the service ID to fill in the subdomain.
 	// This is necessary because some services have subdomain aliases that differ
 	// from the Shannon onchain service ID so the alias must be used to hit production.
 	if alias != "" {
-		serviceID = protocol.ServiceID(alias)
+		serviceID = sdk.ServiceID(alias)
 	}
 
 	parsedURL, err := url.Parse(gatewayURL)

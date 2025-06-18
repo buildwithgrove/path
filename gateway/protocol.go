@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -24,7 +25,7 @@ type Protocol interface {
 	// Used as protocol observation for the request when no protocol context exists.
 	AvailableEndpoints(
 		context.Context,
-		protocol.ServiceID,
+		sdk.ServiceID,
 		*http.Request,
 	) (protocol.EndpointAddrList, protocolobservations.Observations, error)
 
@@ -38,14 +39,10 @@ type Protocol interface {
 	// Used as protocol observation for the request when no protocol context exists.
 	BuildRequestContextForEndpoint(
 		context.Context,
-		protocol.ServiceID,
+		sdk.ServiceID,
 		protocol.EndpointAddr,
 		*http.Request,
 	) (ProtocolRequestContext, protocolobservations.Observations, error)
-
-	// SupportedGatewayModes returns the Gateway modes supported by the protocol instance.
-	// See protocol/gateway_mode.go for more details.
-	SupportedGatewayModes() []protocol.GatewayMode
 
 	// ApplyObservations applies the supplied observations to the protocol instance's internal state.
 	// Hypothetical example (for illustrative purposes only):
@@ -62,14 +59,14 @@ type Protocol interface {
 	// 	- Returns the list of all service IDs with available configured AATs.
 	// For Shannon:
 	// 	- Returns the list of all service IDs for which the gateway is configured to serve.
-	ConfiguredServiceIDs() map[protocol.ServiceID]struct{}
+	GetConfiguredServiceIDs() map[sdk.ServiceID]struct{}
 
 	// GetTotalServiceEndpointsCount returns the count of all unique endpoints for a service ID
 	// without filtering sanctioned endpoints.
-	GetTotalServiceEndpointsCount(protocol.ServiceID, *http.Request) (int, error)
+	GetTotalServiceEndpointsCount(sdk.ServiceID, *http.Request) (int, error)
 
 	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the protocol-specific data.
-	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
+	HydrateDisqualifiedEndpointsResponse(sdk.ServiceID, *devtools.DisqualifiedEndpointResponse)
 
 	// health.Check interface is used to verify protocol instance's health status.
 	health.Check

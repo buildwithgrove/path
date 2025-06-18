@@ -1,8 +1,6 @@
 package cometbft
 
-import (
-	"github.com/buildwithgrove/path/protocol"
-)
+import sdk "github.com/pokt-network/shannon-sdk"
 
 // QoSType is the QoS type for the CometBFT blockchain.
 const QoSType = "cometbft"
@@ -16,7 +14,7 @@ const defaultCometBFTArchivalThreshold = 128
 // ServiceQoSConfig defines the base interface for service QoS configurations.
 // This avoids circular dependency with the config package.
 type ServiceQoSConfig interface {
-	GetServiceID() protocol.ServiceID
+	GetServiceID() sdk.ServiceID
 	GetServiceQoSType() string
 }
 
@@ -28,7 +26,7 @@ type CometBFTServiceQoSConfig interface {
 
 // NewCometBFTServiceQoSConfig creates a new EVM service configuration with the specified archival check settings.
 func NewCometBFTServiceQoSConfig(
-	serviceID protocol.ServiceID,
+	serviceID sdk.ServiceID,
 	cometBFTChainID string,
 ) CometBFTServiceQoSConfig {
 	return cometBFTServiceQoSConfig{
@@ -40,13 +38,13 @@ func NewCometBFTServiceQoSConfig(
 var _ CometBFTServiceQoSConfig = (*cometBFTServiceQoSConfig)(nil)
 
 type cometBFTServiceQoSConfig struct {
-	serviceID       protocol.ServiceID
+	serviceID       sdk.ServiceID
 	cometBFTChainID string
 }
 
 // GetServiceID returns the ID of the service.
 // Implements the config.ServiceQoSConfig interface.
-func (c cometBFTServiceQoSConfig) GetServiceID() protocol.ServiceID {
+func (c cometBFTServiceQoSConfig) GetServiceID() sdk.ServiceID {
 	return c.serviceID
 }
 

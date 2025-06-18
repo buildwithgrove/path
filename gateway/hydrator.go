@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/protocol"
@@ -41,7 +42,7 @@ type EndpointHydrator struct {
 	// ActiveQoSServices provides the hydrator with the QoS instances
 	// it needs to invoke for generating synthetic service requests.
 	// IMPORTANT: ActiveQoSServices should not be modified after the hydrator is started.
-	ActiveQoSServices map[protocol.ServiceID]QoSService
+	ActiveQoSServices map[sdk.ServiceID]QoSService
 
 	// MetricsReporter is used to export metrics based on observations made in handling service requests.
 	MetricsReporter RequestResponseReporter
@@ -103,7 +104,7 @@ func (eph *EndpointHydrator) run() {
 
 	for svcID, svcQoS := range eph.ActiveQoSServices {
 		wg.Add(1)
-		go func(serviceID protocol.ServiceID, serviceQoS QoSService) {
+		go func(serviceID sdk.ServiceID, serviceQoS QoSService) {
 			defer wg.Done()
 
 			logger := eph.Logger.With("serviceID", serviceID)
@@ -126,7 +127,7 @@ func (eph *EndpointHydrator) run() {
 	eph.isHealthy = eph.getHealthStatus(&successfulServiceChecks)
 }
 
-func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, serviceQoS QoSService) error {
+func (eph *EndpointHydrator) performChecks(serviceID sdk.ServiceID, serviceQoS QoSService) error {
 	logger := eph.Logger.With(
 		"method", "performChecks",
 		"service_id", string(serviceID),

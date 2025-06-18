@@ -145,23 +145,19 @@ properties:
               keep_alive_timeout:
                 description: "Keep-alive timeout for gRPC connections."
                 type: string
-          lazy_mode:
-            description: "Indicates if lazy mode is enabled for full node connections."
-            type: boolean
-            default: true
           cache_config:
             description: "Configuration for the cache."
             type: object
             additionalProperties: false
             properties:
-              app_ttl:
-                description: "TTL for the app cache."
-                type: string
-                pattern: "^[0-9]+[smh]$"
               session_ttl:
                 description: "TTL for the session cache."
                 type: string
                 pattern: "^[0-9]+[smh]$"
+              early_refresh_enabled:
+                description: "Setting this to false disables early refresh for the session cache. This causes SturdyC to asynchronously refresh the cache before it expires to ensure that the cache is always hot and never blocking. See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes"
+                type: boolean
+                default: true
 
       gateway_config:
         description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
