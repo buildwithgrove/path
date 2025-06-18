@@ -14,14 +14,14 @@ import (
 func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayConfig) (gateway.Protocol, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	fullNode, err := getFullNode(logger, config.FullNodeConfig)
+	gatewayClientCache, err := getGatewayClientCache(logger, config.FullNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Shannon full node: %v", err)
 	}
 
 	gatewayClient, err := client.NewGatewayClient(
 		logger,
-		fullNode,
+		gatewayClientCache,
 		config.GatewayConfig.GatewayAddress,
 		config.GatewayConfig.GatewayPrivateKeyHex,
 	)
@@ -42,23 +42,10 @@ func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayCon
 	return protocol, nil
 }
 
-// getFullNode builds and returns a FullNode implementation for Shannon protocol integration.
-//
-// It may return a `fullNode` or a `fullNodeWithCache` depending on the caching configuration.
-func getFullNode(logger polylog.Logger, config client.FullNodeConfig) (client.ShannonFullNode, error) {
-	// With or without caching, we use the full node to fetch the onchain data.
-	fullNode, err := client.NewFullNode(logger, config.RpcURL, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Shannon full node: %v", err)
-	}
-
-	// If caching is disabled, return the full node directly.
-	if !config.CacheConfig.CachingEnabled {
-		return fullNode, nil
-	}
-
-	// If caching is enabled, return the full node with cache.
-	return client.NewFullNodeWithCache(logger, fullNode, config.CacheConfig)
+// getGatewayClientCache builds and returns a GatewayClientCache instance using the supplied configuration.
+// It is passed to the GatewayClient to fetch and cache onchain data for the Shannon protocol.
+func getGatewayClientCache(logger polylog.Logger, config client.FullNodeConfig) (*client.GatewayClientCache, error) {
+	return client.NewGatewayClientCache(logger, config.RpcURL, config)
 }
 
 // getGatewayModeClient gets the configured gateway client for the PATH instance.

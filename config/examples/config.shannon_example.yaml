@@ -23,15 +23,18 @@ shannon_config:
       # Otherwise, replace with the correct full node GRPC host:port.
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
     cache_config:
-      # Setting this to true enables caching of full node data.
-      caching_enabled: true
-
       # The TTL for the session cache.
-      #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
-      # The proposed change is to align session refreshes with actual session expiry time,
-      # using the session expiry block and the Shannon SDK's block client.
-      # When this is done, session cache TTL can be removed altogether.
+      # TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+      #   The proposed change is to align session refreshes with actual session expiry time,
+      #   using the session expiry block and the Shannon SDK's block client.
+      #   When this is done, session cache TTL can be removed altogether.
       session_ttl: 30s
+      # Default: true
+      # Setting this to false disables early refresh for the session cache.
+      # This causes SturdyC to asynchronously refresh the cache before it expires
+      # to ensure that the cache is always hot and never blocking.
+      # See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
+      early_refresh_enabled: true
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode

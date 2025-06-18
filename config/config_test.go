@@ -15,6 +15,8 @@ import (
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
+var defaultEarlyRefreshEnabled = true
+
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -68,8 +70,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
 						CacheConfig: client.CacheConfig{
-							CachingEnabled: true,
-							SessionTTL:     30 * time.Second,
+							SessionTTL:          30 * time.Second,
+							EarlyRefreshEnabled: &defaultEarlyRefreshEnabled,
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{

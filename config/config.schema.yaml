@@ -150,14 +150,14 @@ properties:
             type: object
             additionalProperties: false
             properties:
-              caching_enabled:
-                description: "Indicates if caching is enabled for the full node."
-                type: boolean
-                default: false
               session_ttl:
                 description: "TTL for the session cache."
                 type: string
                 pattern: "^[0-9]+[smh]$"
+              early_refresh_enabled:
+                description: "Setting this to false disables early refresh for the session cache. This causes SturdyC to asynchronously refresh the cache before it expires to ensure that the cache is always hot and never blocking. See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes"
+                type: boolean
+                default: true
 
       gateway_config:
         description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
