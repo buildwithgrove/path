@@ -316,17 +316,17 @@ get_service_identifier() {
     local service_id="$1"
     if [ "$ENVIRONMENT" = "production" ]; then
         case "$service_id" in
-            arb_one) echo "arbitrum-one" ;;
-            arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
-            base-test) echo "base-testnet" ;;
-            eth_hol_test) echo "eth-holesky-testnet" ;;
-            eth_sep_test) echo "eth-sepolia-testnet" ;;
-            op_sep_test) echo "optimism-sepolia-testnet" ;;
-            poly) echo "polygon" ;;
-            taiko_hek_test) echo "taiko-hekla-testnet" ;;
-            xrpl_evm_test) echo "xrpl-evm-test" ;;
-            zksync_era) echo "zksync-era" ;;
-            *) echo "$service_id" ;;
+        arb_one) echo "arbitrum-one" ;;
+        arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
+        base-test) echo "base-testnet" ;;
+        eth_hol_test) echo "eth-holesky-testnet" ;;
+        eth_sep_test) echo "eth-sepolia-testnet" ;;
+        op_sep_test) echo "optimism-sepolia-testnet" ;;
+        poly) echo "poly" ;;
+        taiko_hek_test) echo "taiko-hekla-testnet" ;;
+        xrpl_evm_test) echo "xrpl-evm-test" ;;
+        zksync_era) echo "zksync-era" ;;
+        *) echo "$service_id" ;;
         esac
     else
         echo "$service_id"
@@ -497,6 +497,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
         IFS=':' read -r service count <<<"$item"
         service_type=$(get_service_type "$service")
         service_identifier=$(get_service_identifier "$service")
+        service_identifier="${service_identifier//_/-}"
         echo -e "\n 🚀 Testing $service ($service_type)..."
 
         # Execute 5 curl requests and require ALL to succeed
@@ -699,6 +700,7 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
                 # Production: use subdomain format with required headers
                 # Use alias if available in production, otherwise use service ID
                 service_identifier=$(get_service_identifier "$service")
+                service_identifier="${service_identifier//_/-}"
                 disqualified_url="https://${service_identifier}.rpc.grove.city/disqualified_endpoints"
                 disqualified_response=$(curl -s "$disqualified_url" \
                     -H "Portal-Application-Id: $PORTAL_APP_ID" \

@@ -14,7 +14,6 @@ function shannon_query_services_by_owner() {
     echo "  - Outputs a formatted list"
     echo ""
     echo "REQUIREMENTS:"
-    echo "  - 'pocketd' CLI tool must be installed and configured."
     echo "  - Writes the raw JSON response to /tmp/shannon_all_services_<env>.json for debugging."
     echo ""
     echo "USAGE:"
@@ -38,8 +37,12 @@ function shannon_query_services_by_owner() {
     echo "  # List all services for the default owner in mainnet:"
     echo "  shannon_query_services_by_owner main"
     echo ""
-    echo "  # List all services for a specific owner address in beta:"
+    echo "  # List all services for a specific owner address in beta for first owner"
     echo "  shannon_query_services_by_owner beta pokt1lf0kekv9zcv9v3wy4v6jx2wh7v4665s8e0sl9s"
+    echo ""
+    echo "  # List all services for a specific owner address in beta for second owner"
+    echo "  shannon_query_services_by_owner beta pokt100ea839pz5e9zuhtjxvtyyzuv4evhmq95682zw"
+    echo ""
     return 0
   fi
 
@@ -53,7 +56,7 @@ function shannon_query_services_by_owner() {
   local DUMP_FILE="/tmp/shannon_all_services_${ENV}.json"
 
   echo "Querying services from network: $ENV"
-  if ! pocketd query service all-services --network="$ENV"--grpc-insecure=false -o json >"$DUMP_FILE"; then
+  if ! pocketd query service all-services --network="$ENV" --grpc-insecure=false -o json --page-limit=100000000 >"$DUMP_FILE"; then
     echo "❌ Failed to query service list"
     return 1
   fi

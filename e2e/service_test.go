@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	vegeta "github.com/tsenart/vegeta/lib"
 
@@ -170,7 +171,10 @@ func setServiceIDInGatewayURLSubdomain(gatewayURL string, serviceID protocol.Ser
 		// If parsing fails, fall back to simple string insertion
 		return gatewayURL
 	}
-	parsedURL.Host = fmt.Sprintf("%s.%s", serviceID, parsedURL.Host)
+	// TODO_TECHDEBT(@commoddity): Find a way to make the entire `_` vs `-` thing consistent.
+	serviceIdWithDashes := strings.ReplaceAll(string(serviceID), "_", "-")
+
+	parsedURL.Host = fmt.Sprintf("%s.%s", serviceIdWithDashes, parsedURL.Host)
 	return parsedURL.String()
 }
 
