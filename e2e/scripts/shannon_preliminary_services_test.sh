@@ -51,7 +51,7 @@ EVM_SERVICES=(
     "op_sep_test"
     "opbnb"
     "osmosis"
-    "polygon"
+    "poly"
     "poly_amoy_test"
     "poly_zkevm"
     "radix"
@@ -322,7 +322,7 @@ get_service_identifier() {
         eth_hol_test) echo "eth-holesky-testnet" ;;
         eth_sep_test) echo "eth-sepolia-testnet" ;;
         op_sep_test) echo "optimism-sepolia-testnet" ;;
-        poly) echo "polygon" ;;
+        poly) echo "poly" ;;
         taiko_hek_test) echo "taiko-hekla-testnet" ;;
         xrpl_evm_test) echo "xrpl-evm-test" ;;
         zksync_era) echo "zksync-era" ;;
