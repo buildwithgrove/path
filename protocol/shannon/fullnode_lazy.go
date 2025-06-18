@@ -116,8 +116,9 @@ func (lfn *LazyFullNode) GetSession(
 }
 
 // ValidateRelayResponse:
-// - Validates the raw response bytes received from an endpoint.
-// - Uses the SDK and the account client for validation.
+//   - Validates the raw response bytes received from an endpoint.
+//   - Uses the SDK and the lazy full node's account client for validation.
+//   - Will make a call to the remote full node to fetch the account public key.
 func (lfn *LazyFullNode) ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error) {
 	return sdk.ValidateRelayResponse(
 		context.Background(),
