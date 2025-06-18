@@ -9,6 +9,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -539,12 +540,12 @@ func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig
 	// Print metrics header with method name in blue
 	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
 
-	// Print success rate with color (green ≥99%, yellow ≥95%, red <95%)
+	// Print success rate with color (green ≥90%, yellow ≥70%, red <70%)
 	successColor := RED // Red by default
-	if m.successRate >= 0.99 {
-		successColor = GREEN // Green for ≥99%
-	} else if m.successRate >= 0.95 {
-		successColor = YELLOW // Yellow for ≥95%
+	if m.successRate >= 0.90 {
+		successColor = GREEN // Green for ≥90%
+	} else if m.successRate >= 0.70 {
+		successColor = YELLOW // Yellow for ≥70%
 	}
 	fmt.Printf("%sHTTP Success Rate%s: %s%.2f%%%s (%d/%d requests)\n",
 		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
@@ -730,7 +731,7 @@ func collectLatencyFailures(m *methodMetrics, serviceConfig ServiceConfig) []str
 func getRateColor(rate, requiredRate float64) string {
 	if rate >= requiredRate {
 		return GREEN // Green for meeting requirement
-	} else if rate >= requiredRate*0.75 {
+	} else if rate >= requiredRate*0.50 {
 		return YELLOW // Yellow for close
 	}
 	return RED // Red for failing
@@ -740,7 +741,7 @@ func getRateColor(rate, requiredRate float64) string {
 func getRateEmoji(rate, requiredRate float64) string {
 	if rate >= requiredRate {
 		return "🟢" // Green for meeting requirement
-	} else if rate >= requiredRate*0.75 {
+	} else if rate >= requiredRate*0.50 {
 		return "🟡" // Yellow for close
 	}
 	return "🔴" // Red for failing
@@ -748,10 +749,10 @@ func getRateEmoji(rate, requiredRate float64) string {
 
 // Helper function to get color for latency values
 func getLatencyColor(actual, maxAllowed time.Duration) string {
-	if float64(actual) <= float64(maxAllowed)*0.7 {
-		return GREEN // Green if well under limit (≤70%)
+	if float64(actual) <= float64(maxAllowed)*0.5 {
+		return GREEN // Green if well under limit (≤50%)
 	} else if float64(actual) <= float64(maxAllowed) {
-		return YELLOW // Yellow if close to limit (70-100%)
+		return YELLOW // Yellow if close to limit (50-100%)
 	}
 	return RED // Red if over limit
 }
@@ -800,51 +801,66 @@ func printServiceSummaries(summaries map[sdk.ServiceID]*serviceSummary) {
 		return string(serviceIDs[i]) < string(serviceIDs[j])
 	})
 
-	// Print summary for each service
+	type row struct {
+		service      string
+		status       string
+		totalReq     int
+		totalSuccess int
+		failuresStr  string
+		successRate  string
+		p90Latency   string
+		avgLatency   string
+	}
+
+	rows := make([]row, 0, len(serviceIDs))
+
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
-		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
 		serviceConfig := summary.serviceConfig
 
-		// Header with service ID
 		successEmoji := getRateEmoji(summary.avgSuccessRate, serviceConfig.SuccessRate)
-		fmt.Printf("\n%s⛓️  Service: %s%s - %s\n", BOLD_BLUE, svcID, RESET, successEmoji)
 
-		// Use helpers for coloring based on method config
-		successColor := getRateColor(summary.avgSuccessRate, serviceConfig.SuccessRate)
-		p90Color := getLatencyColor(summary.avgP90Latency, serviceConfig.MaxP95LatencyMS) // P90 closest to P95
-		avgColor := getLatencyColor(summary.avgLatency, serviceConfig.MaxP50LatencyMS)    // Avg closest to P50
-
-		// Calculate allowed failure rate
 		maxFailureRate := 1.0 - serviceConfig.SuccessRate
 		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
-
-		// Color for failures based on whether they exceed the allowed threshold
-		failureColor := GREEN
-		if summary.totalFailure > maxAllowedFailures {
-			failureColor = RED
-		}
-
-		// Print request stats
-		fmt.Printf("  • Total Requests: %d\n", summary.totalRequests)
-		fmt.Printf("  • Total Successes: %s%d%s\n", GREEN, summary.totalSuccess, RESET)
-		fmt.Printf("  • Total Failures: %s%d%s", failureColor, summary.totalFailure, RESET)
-
-		// Add context about allowed failures if there are any failures
+		failuresStr := fmt.Sprintf("%d", summary.totalFailure)
 		if summary.totalFailure > 0 {
-			fmt.Printf(" (max allowed: %d)", maxAllowedFailures)
+			failuresStr += fmt.Sprintf(" (max allowed: %d)", maxAllowedFailures)
 		}
-		fmt.Println()
 
-		fmt.Printf("  • Average Success Rate: %s%.2f%%%s\n",
-			successColor, summary.avgSuccessRate*100, RESET)
-		fmt.Printf("  • Average P90 Latency: %s%s%s\n",
-			p90Color, formatLatency(summary.avgP90Latency), RESET)
-		fmt.Printf("  • Average Latency: %s%s%s\n",
-			avgColor, formatLatency(summary.avgLatency), RESET)
+		rows = append(rows, row{
+			service:      string(svcID),
+			status:       successEmoji,
+			totalReq:     summary.totalRequests,
+			totalSuccess: summary.totalSuccess,
+			failuresStr:  failuresStr,
+			successRate:  fmt.Sprintf("%.2f%%", summary.avgSuccessRate*100),
+			p90Latency:   formatLatency(summary.avgP90Latency),
+			avgLatency:   formatLatency(summary.avgLatency),
+		})
+	}
+
+	// Print table header
+	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s |\n",
+		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P90 Latency", "Avg Latency")
+	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|\n")
+
+	// Print table rows
+	for _, r := range rows {
+		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s |\n",
+			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p90Latency, r.avgLatency)
 	}
 
 	fmt.Printf("\n%s===== END SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
+}
+
+// parseLatency parses latency string to time.Duration
+func parseLatency(latency string) time.Duration {
+	latency = strings.TrimSuffix(latency, "ms")
+	d, err := strconv.Atoi(latency)
+	if err != nil {
+		return 0
+	}
+	return time.Duration(d) * time.Millisecond
 }
 
 // ===== Progress Bars =====
