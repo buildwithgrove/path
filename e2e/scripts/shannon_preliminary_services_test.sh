@@ -64,9 +64,7 @@ EVM_SERVICES=(
     "taiko_hek_test"
     "tron"
     "xrpl_evm_dev"
-    # TODO_TECHDEBT: Align and keep one
-    "xrpl_evm_test"    # Shannon Mainnet
-    "xrpl_evm_testnet" # Shannon Beta TestNet
+    "xrpl_evm_test"
     "zklink_nova"
     "zksync_era"
 )

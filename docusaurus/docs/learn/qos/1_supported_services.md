@@ -83,7 +83,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Sonic                                                      | sonic                    | EVM              | 146                                 | ✅                        |
 | Taiko                                                      | taiko                    | EVM              | 167000                              | ✅                        |
 | Taiko Hekla Testnet                                        | taiko_hek_test           | EVM              | 167009                              | ✅                        |
-| XRPL EVM Testnet                                           | xrpl_evm_testnet         | EVM              | 1449000                             | ✅                        |
+| XRPL EVM Testnet                                           | xrpl_evm_test            | EVM              | 1449000                             | ✅                        |
 | zkLink                                                     | zklink_nova              | EVM              | 810180                              | ✅                        |
 | zkSync                                                     | zksync_era               | EVM              | 324                                 | ✅                        |
 | Anvil - Ethereum development/testing                       | anvil                    | EVM              | 31337                               |                           |
