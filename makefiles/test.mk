@@ -16,6 +16,10 @@ test_all: test_unit
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
 
+.PHONY: go_lint
+go_lint: ## Run all go linters
+	golangci-lint run --timeout 5m --build-tags test
+
 #################
 ### E2E Tests ###
 #################
