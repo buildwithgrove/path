@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./services.schema.yaml
 
 # TODO_IMPROVE(@commoddity): Once Shannon migration is complete:
-#   1. Move this file to top-level `config` package 
+#   1. Move this file to top-level `config` package
 #   2. Use it as the source of truth for service QoS configs by embedding and YAML unmarshalling
 #   3. Remove the `config/service_qos_config.go` file in favour of using this file
 
@@ -15,6 +15,7 @@ services:
   - name: "Shannon - arb_one (Arbitrum One) Test"
     service_id: "arb_one"
     service_type: "evm"
+    alias: "arbitrum-one"
     archival: true
     service_params:
       # https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
@@ -27,6 +28,7 @@ services:
   - name: "Shannon - arb_sep_test (Arbitrum Sepolia Testnet) Test"
     service_id: "arb_sep_test"
     service_type: "evm"
+    alias: "arbitrum-sepolia-testnet"
     archival: true
     service_params:
       # https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
@@ -74,6 +76,7 @@ services:
   # Shannon - Base Sepolia Testnet (Archival)
   - name: "Shannon - base (Base Sepolia Testnet) Test"
     service_id: "base-test"
+    alias: "base-testnet"
     service_type: "evm"
     archival: true
     service_params:
@@ -87,6 +90,7 @@ services:
   - name: "Shannon - bera (Berachain) Test"
     service_id: "bera"
     service_type: "evm"
+    alias: "berachain"
     archival: true
     service_params:
       # https://berascan.com/address/0x6969696969696969696969696969696969696969
@@ -147,16 +151,17 @@ services:
   - name: "Shannon - eth Test"
     service_id: "eth"
     service_type: "evm"
-    archival: true 
+    archival: true
     service_params:
       contract_address: "0x28C6c06298d514Db089934071355E5743bf21d60"
       contract_start_block: 12300000
       transaction_hash: "0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"
-      call_data: "0x18160ddd" 
+      call_data: "0x18160ddd"
 
   # Shannon - Ethereum Holesky Testnet (Archival)
   - name: "Shannon - eth_hol_test (Ethereum Holesky Testnet) Test"
     service_id: "eth_hol_test"
+    alias: "eth-holesky-testnet"
     service_type: "evm"
     archival: true
     service_params:
@@ -169,6 +174,7 @@ services:
   # Shannon - Ethereum Sepolia Testnet (Archival)
   - name: "Shannon - eth_sep_test (Ethereum Sepolia Testnet) Test"
     service_id: "eth_sep_test"
+    alias: "eth-sepolia-testnet"
     service_type: "evm"
     archival: true
     service_params:
@@ -176,6 +182,18 @@ services:
       contract_address: "0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b"
       contract_start_block: 6412177
       transaction_hash: "0x1a82131a2caa0f4964661fd6316f2ff16c9a195e9c9befc14766956f957a2e40"
+      call_data: "0x18160ddd"
+
+  # Shannon - Fantom (Archival)
+  - name: "Shannon - fantom (Fantom) Test"
+    service_id: "fantom"
+    service_type: "evm"
+    archival: true
+    service_params:
+      # https://explorer.fantom.network/address/0xaabf86ab3646a7064aa2f61e5959e39129ca46b6
+      contract_address: "0xaabf86ab3646a7064aa2f61e5959e39129ca46b6"
+      contract_start_block: 110633000
+      transaction_hash: "0x4c18f777ac522f7362e4918b89fee24b553e4b3693688a56fc4dd39a57ac343a"
       call_data: "0x18160ddd"
 
   # Shannon - Fuse (Archival)
@@ -312,7 +330,7 @@ services:
 
   # Shannon - Optimism (Archival)
   - name: "Shannon - optimism (Optimism) Test"
-    service_id: "optimism"
+    service_id: "op"
     service_type: "evm"
     archival: true
     service_params:
@@ -324,7 +342,8 @@ services:
 
   # Shannon - Optimism Sepolia Testnet (Archival)
   - name: "Shannon - optimism_sep_test (Optimism Sepolia Testnet) Test"
-    service_id: "optimism_sep_test"
+    service_id: "op_sep_test"
+    alias: "optimism-sepolia-testnet"
     service_type: "evm"
     archival: true
     service_params:
@@ -348,7 +367,7 @@ services:
 
   # Shannon - Polygon Mainnet (Archival)
   - name: "Shannon - polygon (Polygon) Test"
-    service_id: "polygon"
+    service_id: "poly"
     service_type: "evm"
     archival: true
     service_params:
@@ -360,7 +379,7 @@ services:
 
   # Shannon - Polygon Amoy Testnet (Archival)
   - name: "Shannon - polygon_amoy_test (Polygon Amoy Testnet) Test"
-    service_id: "polygon_amoy_test"
+    service_id: "poly_amoy_test"
     service_type: "evm"
     archival: true
     service_params:
@@ -372,7 +391,7 @@ services:
 
   # Shannon - Polygon zkEVM (Archival)
   - name: "Shannon - polygon_zkevm (Polygon zkEVM) Test"
-    service_id: "polygon_zkevm"
+    service_id: "poly_zkevm"
     service_type: "evm"
     archival: true
     service_params:
@@ -420,7 +439,7 @@ services:
 
   # Shannon - Taiko Hekla Testnet (Archival)
   - name: "Shannon - taiko_hekla_test (Taiko Hekla Testnet) Test"
-    service_id: "taiko_hekla_test"
+    service_id: "taiko_hek_test"
     service_type: "evm"
     archival: true
     service_params:
@@ -444,7 +463,7 @@ services:
 
   # Shannon - zkLink (Archival)
   - name: "Shannon - zklink (zkLink) Test"
-    service_id: "zklink"
+    service_id: "zklink_nova"
     service_type: "evm"
     archival: true
     service_params:
@@ -456,8 +475,9 @@ services:
 
   # Shannon - zkSync (Archival)
   - name: "Shannon - zksync (zkSync) Test"
-    service_id: "zksync"
+    service_id: "zksync_era"
     service_type: "evm"
+    alias: "zksync-era"
     archival: true
     service_params:
       # https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
@@ -465,6 +485,13 @@ services:
       contract_start_block: 55405668
       transaction_hash: "0xc65cff6db22a350d39d9154be650cd10bd0ca1c143402c51b3c7802f702328b0"
       call_data: "0x18160ddd"
+
+  # ------------- Anvil Services -------------
+  # Shannon - Anvil Local Development
+  - name: "Shannon - anvil (Anvil Local Development) Test"
+    service_id: "anvil"
+    service_type: "anvil"
+    # Note: Anvil services don't require service_params since all test methods use empty parameters
 
   # ------------- Solana Services -------------
 
@@ -484,6 +511,31 @@ services:
     service_id: "osmosis"
     service_type: "cometbft"
 
+  # pocket-beta1
+  - name: "Shannon - pocket"
+    service_id: "pocket"
+    service_type: "cometbft"
+  # pocket-beta1
+  - name: "Shannon - pocket-beta1"
+    service_id: "pocket-beta1"
+    service_type: "cometbft"
+  # pocket-beta2
+  - name: "Shannon - pocket-beta2"
+    service_id: "pocket-beta2"
+    service_type: "cometbft"
+  # pocket-beta3
+  - name: "Shannon - pocket-beta3"
+    service_id: "pocket-beta3"
+    service_type: "cometbft"
+  # pocket-beta4
+  - name: "Shannon - pocket-beta4"
+    service_id: "pocket-beta4"
+    service_type: "cometbft"
+  # pocket-beta5
+  - name: "Shannon - pocket-beta5"
+    service_id: "pocket-beta5"
+    service_type: "cometbft"
+
   # TODO_NEXT(@commoddity): Add `service_params` for the below services
 
   # # Shannon - Berachain Testnet
@@ -494,11 +546,6 @@ services:
   # # Shannon - Evmos
   # - name: "Shannon - evmos (Evmos) Test"
   #   service_id: "evmos"
-  #   service_type: "evm"
-
-  # # Shannon - Fantom
-  # - name: "Shannon - fantom (Fantom) Test"
-  #   service_id: "fantom"
   #   service_type: "evm"
 
   # # Shannon - Fraxtal

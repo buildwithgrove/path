@@ -23,26 +23,29 @@ help: ## Prints all the targets in all the Makefiles
 path_build: ## Build the path binary locally (does not run anything)
 	go build -o bin/path ./cmd
 
+# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
+CONFIG_PATH ?= ./local/path/.config.yaml
+
 .PHONY: check_path_config
 ## Verify that path configuration file exists
 check_path_config:
-	@if [ ! -f ./local/path/.config.yaml ]; then \
+	@if [ -z "$(CONFIG_PATH)" ]; then \
 		echo "################################################################"; \
-   		echo "Error: Missing config file at ./local/path/.config.yaml"; \
-   		echo ""; \
-   		echo "Initialize using either:"; \
-   		echo "  make shannon_prepare_e2e_config"; \
-   		echo "  make morse_prepare_e2e_config "; \
-   		echo "################################################################"; \
-   		exit 1; \
-   fi
+		echo "Error: CONFIG_PATH is not set."; \
+		echo ""; \
+		echo "Set CONFIG_PATH to your config file, e.g.:"; \
+		echo "  export CONFIG_PATH=./local/path/.config.yaml"; \
+		echo "Or initialize using either:"; \
+		echo "  make shannon_prepare_e2e_config"; \
+		echo "  make morse_prepare_e2e_config "; \
+		echo "################################################################"; \
+		exit 1; \
+	fi
 
-# The PATH config value can be set via the CONFIG_PATH env variable and defaults to ./local/path/.config.yaml
-CONFIG_PATH ?= ../local/path/.config.yaml
 
 .PHONY: path_run
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
-	(cd bin; ./path -config ${CONFIG_PATH})
+	(cd bin; ./path -config ../${CONFIG_PATH})
 
 #################################
 ###  Local PATH make targets  ###
@@ -53,7 +56,7 @@ path_run: path_build check_path_config ## Run the path binary as a standalone bi
 # PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
 
 .PHONY: path_up
-path_up: check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
+path_up: check_docker check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
 	tilt up
 
 .PHONY: path_down
@@ -78,6 +81,7 @@ include ./makefiles/configs.mk
 include ./makefiles/configs_morse.mk
 include ./makefiles/configs_shannon.mk
 include ./makefiles/deps.mk
+include ./makefiles/devtools.mk
 include ./makefiles/docs.mk
 include ./makefiles/localnet.mk
 include ./makefiles/test.mk
@@ -86,3 +90,4 @@ include ./makefiles/proto.mk
 include ./makefiles/debug.mk
 include ./makefiles/claude.mk
 include ./makefiles/release.mk
+include ./makefiles/helpers.mk

@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics/devtools"
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -47,27 +51,38 @@ type (
 
 		config config.RouterConfig
 
-		mux           *http.ServeMux
-		gateway       gateway
-		healthChecker *health.Checker
+		mux                           *http.ServeMux
+		gateway                       gateway
+		disqualifiedEndpointsReporter disqualifiedEndpointsReporter
+		healthChecker                 *health.Checker
 	}
 	gateway interface {
-		HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter)
+		HandleServiceRequest(context.Context, *http.Request, http.ResponseWriter)
+	}
+	disqualifiedEndpointsReporter interface {
+		ReportEndpointStatus(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
 
 /* --------------------------------- Init -------------------------------- */
 
 // NewRouter creates a new router instance
-func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Checker, config config.RouterConfig) *router {
+func NewRouter(
+	logger polylog.Logger,
+	gateway gateway,
+	disqualifiedEndpointsReporter disqualifiedEndpointsReporter,
+	healthChecker *health.Checker,
+	config config.RouterConfig,
+) *router {
 	r := &router{
 		logger: logger.With("package", "router"),
 
 		config: config,
 
-		mux:           http.NewServeMux(),
-		gateway:       gateway,
-		healthChecker: healthChecker,
+		mux:                           http.NewServeMux(),
+		gateway:                       gateway,
+		disqualifiedEndpointsReporter: disqualifiedEndpointsReporter,
+		healthChecker:                 healthChecker,
 	}
 	r.handleRoutes()
 	return r
@@ -76,6 +91,9 @@ func NewRouter(logger polylog.Logger, gateway gateway, healthChecker *health.Che
 func (r *router) handleRoutes() {
 	// GET /healthz - returns a JSON health check response indicating the ready status of PATH
 	r.mux.HandleFunc("GET /healthz", methodCheckMiddleware(r.healthChecker.HealthzHandler))
+
+	// GET /v1/disqualified_endpoints/{service_id} - returns a JSON list of disqualified endpoints for a given service ID
+	r.mux.HandleFunc("GET /disqualified_endpoints", methodCheckMiddleware(r.handleDisqualifiedEndpoints))
 
 	// requestHandlerFn defines the middleware chain for all service requests
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
@@ -157,6 +175,7 @@ func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc 
 }
 
 /* --------------------------------- Handlers -------------------------------- */
+
 // handleServiceRequest:
 // 1. Creates timeout context before WriteTimeout expires
 // 2. Prevents empty responses on long operations
@@ -178,4 +197,36 @@ func (r *router) handleServiceRequest(w http.ResponseWriter, req *http.Request) 
 	reqCtx, cancel := context.WithTimeout(req.Context(), processingTimeout)
 	defer cancel()
 	r.gateway.HandleServiceRequest(reqCtx, req, w)
+}
+
+// handleDisqualifiedEndpoints returns a JSON list of disqualified endpoints
+func (r *router) handleDisqualifiedEndpoints(w http.ResponseWriter, req *http.Request) {
+	serviceID := protocol.ServiceID(req.Header.Get(request.HTTPHeaderTargetServiceID))
+	if serviceID == "" {
+		errMsg := `{"error": "400 Bad Request", "message": "Target-Service-Id header is required"}`
+		r.logger.Error().Msg(errMsg)
+		http.Error(w, errMsg, http.StatusBadRequest)
+		return
+	}
+
+	disqualifiedEndpointResponses, err := r.disqualifiedEndpointsReporter.ReportEndpointStatus(serviceID, req)
+	if err != nil {
+		errMsg := fmt.Sprintf(`{"error": "400 Bad Request", "message": "invalid service ID: %v"}`, err)
+		r.logger.Error().Msg(errMsg)
+		http.Error(w, errMsg, http.StatusBadRequest)
+		return
+	}
+
+	// Set content type header
+	w.Header().Set("Content-Type", "application/json")
+
+	// Set status code
+	w.WriteHeader(http.StatusOK)
+
+	// Marshal and write JSON response
+	if err := json.NewEncoder(w).Encode(disqualifiedEndpointResponses); err != nil {
+		// If encoding fails, log the error but we can't change the status code since it's already written
+		r.logger.Error().Err(err).Msg("failed to encode JSON response")
+		return
+	}
 }

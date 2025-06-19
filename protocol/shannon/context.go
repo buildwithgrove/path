@@ -20,6 +20,9 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
+// Maximum length of the endpoint payload logged on error.
+const maxLenLoggedEndpointPayload = 1000
+
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
 var _ gateway.ProtocolRequestContext = &requestContext{}
@@ -171,12 +174,21 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 // - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 // - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.RelayResponse, error) {
+	hydratedLogger := rc.getHydratedLogger("sendRelay")
+	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
+
+	// TODO_MVP(@adshmh): enhance Shannon metrics, e.g. request error kind, to capture all potential errors via metrics.
 	if rc.selectedEndpoint == nil {
+		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: No endpoint has been selected. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: no endpoint has been selected on service %s", rc.serviceID)
 	}
 
+	// Hydrate the logger with endpoint/session details.
+	hydratedLogger = hydrateLoggerWithEndpoint(hydratedLogger, rc.selectedEndpoint)
+
 	session := rc.selectedEndpoint.session
 	if session.Application == nil {
+		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: selected endpoint session has nil Application. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: nil app on session %s for service %s", session.SessionId, rc.serviceID)
 	}
 	app := *session.Application
@@ -184,11 +196,13 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	payloadBz := []byte(payload.Data)
 	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payloadBz, payload.Path)
 	if err != nil {
+		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to build the unsigned relay request. Relay request will fail.")
 		return nil, err
 	}
 
 	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
 	if err != nil {
+		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to sign the relay request. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
@@ -198,12 +212,29 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
+		// endpoint failed to respond before the timeout expires.
+		hydratedLogger.Info().Err(err).Msg("Failed to receive a response from the selected endpoint. Relay request will fail.")
 		return nil, fmt.Errorf("relay: error sending request to endpoint %s: %w", rc.selectedEndpoint.url, err)
 	}
 
 	// Validate the response.
 	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
 	if err != nil {
+		// TODO_TECHDEBT(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
+		// 1. Enhance the `RelayResponse` struct with an error field:
+		// 	https://github.com/pokt-network/poktroll/blob/2ba8b60d6bd8d21949211844161f932dd383bb76/proto/pocket/service/relay.proto#L46
+		// 2. Update the classifyRelayError function to sanction endpoints depending on the error.
+		// 3. Enhance the Shannon metrics: proto/path/protocol/shannon.proto, specifically the RequestErrorType enum, to track the errors.
+		// 4. Update the files in `metrics.protocol.shannon` package to add/update metrics according to the above.
+		//
+		// Log raw payload for error tracking:
+		// - RelayResponse lacks error field (see TODO above)
+		// - RelayMiner returns generic HTTP on errors (expired sessions, etc.)
+		// - Enables error analysis via PATH logs
+		responseStr := string(responseBz)
+		hydratedLogger.With(
+			"endpoint_payload", responseStr[:min(len(responseStr), maxLenLoggedEndpointPayload)],
+		).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, rc.selectedEndpoint.url, err)
 	}
 

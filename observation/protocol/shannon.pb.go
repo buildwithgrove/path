@@ -28,17 +28,57 @@ type ShannonRequestErrorType int32
 const (
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_UNSPECIFIED ShannonRequestErrorType = 0
 	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL    ShannonRequestErrorType = 1 // Internal error.
+	// No endpoints available for the service
+	// Due to one or more of the following:
+	// - Any of the gateway mode errors above
+	// - Error fetching a session for one or more apps.
+	// - One or more available endpoints are sanctioned.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE ShannonRequestErrorType = 2
+	// Centralized gateway mode: Error fetching the app.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR ShannonRequestErrorType = 3
+	// Centralized gateway mode app does not delegate to the gateway.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION ShannonRequestErrorType = 4
+	// Centralized gateway mode: no active sessions found for service.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS ShannonRequestErrorType = 5
+	// Centralized gateway mode: no apps found for service.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE ShannonRequestErrorType = 6
+	// Delegated gateway mode: could not extract app address from HTTP request
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP ShannonRequestErrorType = 7
+	// Delegated gateway mode: error fetching the app
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP ShannonRequestErrorType = 8
+	// Delegated gateway mode: app does not delegate to the gateway
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE ShannonRequestErrorType = 9
+	// Error initializing a signer for the selected gateway mode.
+	ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR ShannonRequestErrorType = 10
 )
 
 // Enum value maps for ShannonRequestErrorType.
 var (
 	ShannonRequestErrorType_name = map[int32]string{
-		0: "SHANNON_REQUEST_ERROR_UNSPECIFIED",
-		1: "SHANNON_REQUEST_ERROR_INTERNAL",
+		0:  "SHANNON_REQUEST_ERROR_UNSPECIFIED",
+		1:  "SHANNON_REQUEST_ERROR_INTERNAL",
+		2:  "SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE",
+		3:  "SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR",
+		4:  "SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION",
+		5:  "SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS",
+		6:  "SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE",
+		7:  "SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP",
+		8:  "SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP",
+		9:  "SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE",
+		10: "SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR",
 	}
 	ShannonRequestErrorType_value = map[string]int32{
-		"SHANNON_REQUEST_ERROR_UNSPECIFIED": 0,
-		"SHANNON_REQUEST_ERROR_INTERNAL":    1,
+		"SHANNON_REQUEST_ERROR_UNSPECIFIED":                                   0,
+		"SHANNON_REQUEST_ERROR_INTERNAL":                                      1,
+		"SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE":               2,
+		"SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR":       3,
+		"SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION":      4,
+		"SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS":         5,
+		"SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE": 6,
+		"SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP":               7,
+		"SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP":                  8,
+		"SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE":      9,
+		"SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR":                   10,
 	}
 )
 
@@ -74,9 +114,22 @@ type ShannonEndpointErrorType int32
 
 const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED ShannonEndpointErrorType = 0
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL    ShannonEndpointErrorType = 1 // endpoint internal error: not recognized.
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG      ShannonEndpointErrorType = 2 // endpoint config error: e.g. DNS lookup error, TLS certificate error.
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT     ShannonEndpointErrorType = 3 // endpoint timeout on responding to relay request.
+	// endpoint internal error: not recognized.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL ShannonEndpointErrorType = 1
+	// endpoint config error: e.g. DNS lookup error, TLS certificate error.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG ShannonEndpointErrorType = 2
+	// endpoint timeout on responding to relay request.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT ShannonEndpointErrorType = 3
+	// Endpoint payload failed to unmarshal into a RelayResponse struct
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR ShannonEndpointErrorType = 4
+	// Endpoint response failed basic validation
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR ShannonEndpointErrorType = 5
+	// Could not fetch the public key for supplier address used for the relay.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR ShannonEndpointErrorType = 6
+	// Received nil public key on supplier lookup using its address
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY ShannonEndpointErrorType = 7
+	// RelayResponse's signature failed validation.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR ShannonEndpointErrorType = 8
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -86,12 +139,22 @@ var (
 		1: "SHANNON_ENDPOINT_ERROR_INTERNAL",
 		2: "SHANNON_ENDPOINT_ERROR_CONFIG",
 		3: "SHANNON_ENDPOINT_ERROR_TIMEOUT",
+		4: "SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR",
+		5: "SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR",
+		6: "SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR",
+		7: "SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY",
+		8: "SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
-		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED": 0,
-		"SHANNON_ENDPOINT_ERROR_INTERNAL":    1,
-		"SHANNON_ENDPOINT_ERROR_CONFIG":      2,
-		"SHANNON_ENDPOINT_ERROR_TIMEOUT":     3,
+		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                       0,
+		"SHANNON_ENDPOINT_ERROR_INTERNAL":                          1,
+		"SHANNON_ENDPOINT_ERROR_CONFIG":                            2,
+		"SHANNON_ENDPOINT_ERROR_TIMEOUT":                           3,
+		"SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR":             4,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR":           5,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR":           6,
+		"SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY":               7,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR": 8,
 	}
 )
 
@@ -524,15 +587,30 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x0e_error_detailsB\x17\n" +
 	"\x15_recommended_sanction\"h\n" +
 	"\x17ShannonObservationsList\x12M\n" +
-	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*d\n" +
+	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*\x9e\x05\n" +
 	"\x17ShannonRequestErrorType\x12%\n" +
 	"!SHANNON_REQUEST_ERROR_UNSPECIFIED\x10\x00\x12\"\n" +
-	"\x1eSHANNON_REQUEST_ERROR_INTERNAL\x10\x01*\xae\x01\n" +
+	"\x1eSHANNON_REQUEST_ERROR_INTERNAL\x10\x01\x129\n" +
+	"5SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE\x10\x02\x12A\n" +
+	"=SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR\x10\x03\x12B\n" +
+	">SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION\x10\x04\x12?\n" +
+	";SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS\x10\x05\x12G\n" +
+	"CSHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE\x10\x06\x129\n" +
+	"5SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP\x10\a\x126\n" +
+	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
+	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
+	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
+	"*\xb6\x03\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
 	"\x1dSHANNON_ENDPOINT_ERROR_CONFIG\x10\x02\x12\"\n" +
-	"\x1eSHANNON_ENDPOINT_ERROR_TIMEOUT\x10\x03*u\n" +
+	"\x1eSHANNON_ENDPOINT_ERROR_TIMEOUT\x10\x03\x120\n" +
+	",SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR\x10\x04\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR\x10\x05\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR\x10\x06\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY\x10\a\x12<\n" +
+	"8SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR\x10\b*u\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +

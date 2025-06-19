@@ -14,12 +14,37 @@ import (
 )
 
 // getServiceQoSInstances returns all QoS instances to be used by the Gateway and the EndpointHydrator.
-func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayConfig) (map[protocol.ServiceID]gateway.QoSService, error) {
+func getServiceQoSInstances(
+	logger polylog.Logger,
+	gatewayConfig config.GatewayConfig,
+	protocolInstance gateway.Protocol,
+) (map[protocol.ServiceID]gateway.QoSService, error) {
 	// TODO_TECHDEBT(@adshmh): refactor this function to remove the
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
 
 	logger = logger.With("module", "qos")
+
+	// Wait for the protocol to become healthy BEFORE configuring and starting the hydrator.
+	// - Ensures the protocol instance's configured service IDs are available before hydrator startup.
+	err := waitForProtocolHealth(logger, protocolInstance, defaultProtocolHealthTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get configured service IDs from the protocol instance.
+	// - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
+	configuredServiceIDs := protocolInstance.ConfiguredServiceIDs()
+
+	// Remove any service IDs that are manually disabled by the user.
+	for _, disabledServiceID := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {
+		// Throw error if any manually disabled service IDs are not found in the protocol's configured service IDs.
+		if _, found := configuredServiceIDs[disabledServiceID]; !found {
+			return nil, fmt.Errorf("invalid configuration: QoS manually disabled for service ID: %s, but not found in protocol's configured service IDs", disabledServiceID)
+		}
+		logger.Info().Msgf("QoS manually disabled for service ID: %s", disabledServiceID)
+		delete(configuredServiceIDs, disabledServiceID)
+	}
 
 	// Get the service configs for the current protocol
 	serviceConfigs := config.ServiceConfigs.GetServiceConfigs(gatewayConfig)
@@ -27,6 +52,11 @@ func getServiceQoSInstances(logger polylog.Logger, gatewayConfig config.GatewayC
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.
 	for _, serviceConfig := range serviceConfigs {
+		// Skip service IDs that are not configured for the PATH instance.
+		if _, found := configuredServiceIDs[serviceConfig.GetServiceID()]; !found {
+			continue
+		}
+
 		serviceID := serviceConfig.GetServiceID()
 
 		switch serviceConfig.GetServiceQoSType() {

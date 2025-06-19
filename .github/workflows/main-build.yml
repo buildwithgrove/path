@@ -50,6 +50,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: IMAGE_TAG=${{ steps.meta.outputs.version }}
+          # TODO_TECHDEBT: speed up arm64 builds.
+          # Need for LocalNet developers
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           cache-from: type=gha

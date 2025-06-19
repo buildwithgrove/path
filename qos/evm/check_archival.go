@@ -18,7 +18,7 @@ const checkArchivalInterval = 20 * time.Minute
 
 var (
 	errNoArchivalBalanceObs      = fmt.Errorf("endpoint has not returned an archival balance response to a %q request", methodGetBalance)
-	errInvalidArchivalBalanceObs = "endpoint has archival balance %s, expected archival balance %s"
+	errInvalidArchivalBalanceObs = fmt.Errorf("endpoint has incorrect archival balance")
 )
 
 // endpointCheckBlockNumber is a check that ensures the endpoint's block height is greater than the perceived block height.

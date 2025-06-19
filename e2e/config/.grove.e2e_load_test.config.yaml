@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
+
+e2e_load_test_config:
+  load_test_config:
+    portal_application_id: ""
+    portal_api_key: ""
+    gateway_url_override: "https://rpc.grove.city/v1"
+    # gateway_url_override: "http://localhost:3069/v1"
+
+default_service_config:
+  global_rps: 100
+  requests_per_method: 300
+  success_rate: 0.95
+  max_p50_latency_ms: 10000ms
+  max_p95_latency_ms: 20000ms
+  max_p99_latency_ms: 30000ms
+
+service_config_overrides:
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+  "arb_one":
+    archival: false
+  "arb_sep_test":
+    archival: false
+  "avax":
+    archival: false
+  "avax-dfk":
+    archival: false
+  "base":
+    archival: false
+  "base-test":
+    archival: false
+  "bera":
+    archival: false
+  "bitcoin":
+    archival: false
+  "blast":
+    archival: false
+  "boba":
+    archival: false
+  "bsc":
+    archival: false
+  "celo":
+    archival: false
+  "eth":
+    archival: false
+  "eth_hol_test":
+    archival: false
+  "eth_sep_test":
+    archival: false
+  "evmos":
+    archival: false
+  "fantom":
+    archival: false
+  "fraxtal":
+    archival: false
+  "fuse":
+    archival: false
+  "gnosis":
+    archival: false
+  "harmony":
+    archival: false
+  "ink":
+    archival: false
+  "iotex":
+    archival: false
+  "kaia":
+    archival: false
+  "kava":
+    archival: false
+  "linea":
+    archival: false
+  "mantle":
+    archival: false
+  "metis":
+    archival: false
+  "moonbeam":
+    archival: false
+  "moonriver":
+    archival: false
+  "near":
+    archival: false
+  "oasys":
+    archival: false
+  "op":
+    archival: false
+  "op_sep_test":
+    archival: false
+  "opbnb":
+    archival: false
+  "osmosis":
+    archival: false
+  "pocket":
+    archival: false
+  "poly":
+    archival: false
+  "poly_amoy_test":
+    archival: false
+  "poly_zkevm":
+    archival: false
+  "radix":
+    archival: false
+  "scroll":
+    archival: false
+  "sei":
+    archival: false
+  "solana":
+    archival: false
+  "sonic":
+    archival: false
+  "sui":
+    archival: false
+  "taiko":
+    archival: false
+  "taiko_hek_test":
+    archival: false
+  "tron":
+    archival: false
+  "xrpl_evm_dev":
+    archival: false
+  "xrpl_evm_test":
+    archival: false
+  "zklink_nova":
+    archival: false
+  "zksync_era":
+    archival: false

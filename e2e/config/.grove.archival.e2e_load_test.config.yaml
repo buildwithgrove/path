@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
+
+e2e_load_test_config:
+  load_test_config:
+    portal_application_id: ""
+    portal_api_key: ""
+    gateway_url_override: "https://rpc.grove.city/v1"
+    # gateway_url_override: "http://localhost:3069/v1"
+
+default_service_config:
+  global_rps: 100
+  requests_per_method: 300
+  success_rate: 0.95
+  max_p50_latency_ms: 10000ms
+  max_p95_latency_ms: 20000ms
+  max_p99_latency_ms: 30000ms
+
+service_config_overrides:
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+  "arb_one":
+    archival: true
+  "arb_sep_test":
+    archival: true
+  "avax":
+    archival: true
+  "avax-dfk":
+    archival: true
+  "base":
+    archival: true
+  "base-test":
+    archival: true
+  "bera":
+    archival: true
+  "bitcoin":
+    archival: true
+  "blast":
+    archival: true
+  "boba":
+    archival: true
+  "bsc":
+    archival: true
+  "celo":
+    archival: true
+  "eth":
+    archival: true
+  "eth_hol_test":
+    archival: true
+  "eth_sep_test":
+    archival: true
+  "evmos":
+    archival: true
+  "fantom":
+    archival: true
+  "fraxtal":
+    archival: true
+  "fuse":
+    archival: true
+  "gnosis":
+    archival: true
+  "harmony":
+    archival: true
+  "ink":
+    archival: true
+  "iotex":
+    archival: true
+  "kaia":
+    archival: true
+  "kava":
+    archival: true
+  "linea":
+    archival: true
+  "mantle":
+    archival: true
+  "metis":
+    archival: true
+  "moonbeam":
+    archival: true
+  "moonriver":
+    archival: true
+  "near":
+    archival: true
+  "oasys":
+    archival: true
+  "op":
+    archival: true
+  "op_sep_test":
+    archival: true
+  "opbnb":
+    archival: true
+  "osmosis":
+    archival: true
+  "pocket":
+    archival: true
+  "poly":
+    archival: true
+  "poly_amoy_test":
+    archival: true
+  "poly_zkevm":
+    archival: true
+  "radix":
+    archival: true
+  "scroll":
+    archival: true
+  "sei":
+    archival: true
+  "solana":
+    archival: true
+  "sonic":
+    archival: true
+  "sui":
+    archival: true
+  "taiko":
+    archival: true
+  "taiko_hek_test":
+    archival: true
+  "tron":
+    archival: true
+  "xrpl_evm_dev":
+    archival: true
+  "xrpl_evm_test":
+    archival: true
+  "zklink_nova":
+    archival: true
+  "zksync_era":
+    archival: true

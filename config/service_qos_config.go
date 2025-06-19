@@ -171,6 +171,14 @@ var shannonServices = []ServiceQoSConfig{
 		6_412_177,
 	)),
 
+	// Fantom
+	evm.NewEVMServiceQoSConfig("fantom", "0xfa", evm.NewEVMArchivalCheckConfig(
+		// https://explorer.fantom.network/address/0xaabf86ab3646a7064aa2f61e5959e39129ca46b6
+		"0xaabf86ab3646a7064aa2f61e5959e39129ca46b6",
+		// Contract start block
+		110_633_000,
+	)),
+
 	// Fuse
 	evm.NewEVMServiceQoSConfig("fuse", "0x7a", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.fuse.io/address/0x3014ca10b91cb3D0AD85fEf7A3Cb95BCAc9c0f79
@@ -332,7 +340,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("xrpl_evm_test", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 		// Contract start block
@@ -367,9 +375,6 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Evmos
 	evm.NewEVMServiceQoSConfig("evmos", "0x2329", nil),
-
-	// Fantom
-	evm.NewEVMServiceQoSConfig("fantom", "0xfa", nil),
 
 	// Fraxtal
 	evm.NewEVMServiceQoSConfig("fraxtal", "0xfc", nil),

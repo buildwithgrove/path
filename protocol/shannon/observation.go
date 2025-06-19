@@ -1,6 +1,7 @@
 package shannon
 
 import (
+	"errors"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -8,7 +9,100 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	"github.com/buildwithgrove/path/protocol"
 )
+
+// buildSuccessfulEndpointLookupObservation builds a minimum observation to indicate the endpoint lookup was successful.
+// Used when endpoint lookup succeeds but endpoint selection fails.
+func buildSuccessfulEndpointLookupObservation(
+	serviceID protocol.ServiceID,
+) protocolobservations.Observations {
+	return protocolobservations.Observations{
+		Protocol: &protocolobservations.Observations_Shannon{
+			Shannon: &protocolobservations.ShannonObservationsList{
+				Observations: []*protocolobservations.ShannonRequestObservations{
+					{
+						ServiceId: string(serviceID),
+					},
+				},
+			},
+		},
+	}
+}
+
+// buildProtocolContextSetupErrorObservation builds a protocol observation from the supplied error.
+// Used if any steps of building a protocol context fails:
+// - Getting available endpoints.
+// - Setting up the request context for a specific endpoint.
+func buildProtocolContextSetupErrorObservation(
+	serviceID protocol.ServiceID,
+	err error,
+) protocolobservations.Observations {
+	return protocolobservations.Observations{
+		Protocol: &protocolobservations.Observations_Shannon{
+			Shannon: &protocolobservations.ShannonObservationsList{
+				Observations: []*protocolobservations.ShannonRequestObservations{
+					{
+						ServiceId: string(serviceID),
+						RequestError: &protocolobservations.ShannonRequestError{
+							ErrorType:    translateContextSetupErrorToRequestErrorType(err),
+							ErrorDetails: err.Error(),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// translateContextSetupErrorToRequestErrorType maps the supplied error to a request error type.
+// Used to generate the request error field of the observation.
+func translateContextSetupErrorToRequestErrorType(err error) protocolobservations.ShannonRequestErrorType {
+	switch {
+	// Centralized gateway mode: error fetching app
+	case errors.Is(err, errProtocolContextSetupCentralizedAppFetchErr):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR
+
+	// Centralized gateway mode: app does not delegate to the gateway
+	case errors.Is(err, errProtocolContextSetupCentralizedAppDelegation):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION
+
+	// Centralized gateway mode: no sessions found for service
+	case errors.Is(err, errProtocolContextSetupCentralizedNoSessions):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS
+
+	// Centralized gateway mode: no apps found for service
+	case errors.Is(err, errProtocolContextSetupCentralizedNoAppsForService):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE
+
+	// Delegated gateway mode: could not extract app from HTTP request.
+	case errors.Is(err, errProtocolContextSetupGetAppFromHTTPReq):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP
+
+	// Delegated gateway mode: error fetching onchain app data
+	case errors.Is(err, errProtocolContextSetupFetchSession):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP
+
+	// Delegated gateway mode: pp does not delegate to the gateway
+	case errors.Is(err, errProtocolContextSetupAppDoesNotDelegate):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE
+
+	// No endpoints available for the service
+	// Due to one or more of the following:
+	// - Any of the gateway mode errors above
+	// - Error fetching a session for one or more apps.
+	// - One or more available endpoints are sanctioned.
+	case errors.Is(err, errProtocolContextSetupNoEndpoints):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE
+
+	case errors.Is(err, errRequestContextSetupErrSignerSetup):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR
+
+	// Should NOT happen: use the INTERNAL type to track and resolve via metrics.
+	default:
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL
+	}
+}
 
 // builds a Shannon endpoint success observation to include:
 // - endpoint details: address, url, app

@@ -29,6 +29,7 @@ var (
 	ErrShannonInvalidGrpcHostPort                     = errors.New("invalid shannon grpc host:port")
 	ErrShannonUnsupportedGatewayMode                  = errors.New("invalid shannon gateway mode")
 	ErrShannonCentralizedGatewayModeRequiresOwnedApps = errors.New("shannon Centralized gateway mode requires at-least 1 owned app")
+	ErrShannonCacheConfigSetForLazyMode               = errors.New("cache config cannot be set for lazy mode")
 )
 
 type (
@@ -39,6 +40,9 @@ type (
 		// LazyMode, if set to true, will disable all caching of onchain data. For
 		// example, this disables caching of apps and sessions.
 		LazyMode bool `yaml:"lazy_mode" default:"true"`
+
+		// Configuration options for the cache when LazyMode is false
+		CacheConfig CacheConfig `yaml:"cache_config"`
 	}
 
 	GatewayConfig struct {
@@ -57,6 +61,10 @@ type (
 		MinConnectTimeout time.Duration `yaml:"min_connect_timeout"`
 		KeepAliveTime     time.Duration `yaml:"keep_alive_time"`
 		KeepAliveTimeout  time.Duration `yaml:"keep_alive_timeout"`
+	}
+
+	CacheConfig struct {
+		SessionTTL time.Duration `yaml:"session_ttl"`
 	}
 )
 
@@ -95,6 +103,9 @@ func (c FullNodeConfig) Validate() error {
 	if !isValidHostPort(c.GRPCConfig.HostPort) {
 		return ErrShannonInvalidGrpcHostPort
 	}
+	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,6 +138,27 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 		c.KeepAliveTimeout = defaultKeepAliveTimeout
 	}
 	return *c
+}
+
+// Session TTL should match the protocol's session length.
+// TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+// The proposed change is to align session refreshes with actual session expiry time,
+// using the session expiry block and the Shannon SDK's block client.
+// When this is done, session cache TTL can be removed altogether.
+const defaultSessionCacheTTL = 30 * time.Second
+
+func (c *CacheConfig) validate(lazyMode bool) error {
+	// Cannot set both lazy mode and cache configuration.
+	if lazyMode && c.SessionTTL != 0 {
+		return ErrShannonCacheConfigSetForLazyMode
+	}
+	return nil
+}
+
+func (c *CacheConfig) hydrateDefaults() {
+	if c.SessionTTL == 0 {
+		c.SessionTTL = defaultSessionCacheTTL
+	}
 }
 
 // isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
