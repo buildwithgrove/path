@@ -26,6 +26,8 @@ var (
 	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway")
 	// Centralized gateway mode: no active sessions could be retrieved for the service.
 	errProtocolContextSetupCentralizedNoSessions = errors.New("no active sessions could be retrieved for the service")
+	// Centralized gateway mode: no owned apps found for the service.
+	errProtocolContextSetupCentralizedNoAppsForService = errors.New("ZERO owned apps found for service")
 
 	// Delegated gateway mode: could not extract app from HTTP request.
 	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
