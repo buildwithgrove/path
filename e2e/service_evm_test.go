@@ -123,7 +123,7 @@ func getEVMVegetaTargets(
 
 	blockNumber, err := getEVMBlockNumber(ts, headers, gatewayURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get EVM block number: %w", err)
+		return nil, fmt.Errorf("Failed to get EVM block number for service '%s' due to: %w.", ts.ServiceID, err)
 	}
 	ts.ServiceParams.blockNumber = blockNumber
 
@@ -140,7 +140,7 @@ func getEVMVegetaTargets(
 		// Marshal the request body
 		body, err := json.Marshal(jsonrpcReq)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal JSON-RPC request for method %s: %w", method, err)
+			return nil, fmt.Errorf("Failed to marshal JSON-RPC request for method '%s' due to: %w.", method, err)
 		}
 
 		// Create vegeta target
@@ -171,7 +171,7 @@ func getEVMBlockNumber(testService *TestService, headers http.Header, gatewayURL
 			testService.ServiceParams.ContractStartBlock,
 		)
 		if err != nil {
-			return "", fmt.Errorf("Could not get archival block number: %w", err)
+			return "", fmt.Errorf("Could not get archival block number for service '%s' due to: %w.", testService.ServiceID, err)
 		}
 		return blockNumber, nil
 	}
@@ -187,7 +187,7 @@ func setTestBlockNumber(
 	// Get current block height - fail test if this doesn't work
 	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
 	if err != nil {
-		return "", fmt.Errorf("Could not get current block height: %w", err)
+		return "", fmt.Errorf("Could not get current block height due to: %w.", err)
 	}
 
 	// Get random historical block number
@@ -217,7 +217,7 @@ func getCurrentBlockNumber(gatewayURL string, headers http.Header) (uint64, erro
 	}
 
 	// If we get here, we didn't reach consensus
-	return 0, fmt.Errorf("failed to reach consensus on block height after %d attempts", maxAttempts)
+	return 0, fmt.Errorf("Failed to reach consensus on block height after %d attempts.", maxAttempts)
 }
 
 // fetchBlockNumber makes a single request to get the current block number.
@@ -225,12 +225,12 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Heade
 	// Build and send request
 	req, err := buildBlockNumberRequest(gatewayURL, headers)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Failed to build block number request due to: %w.", err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Failed to fetch block number due to: %w.", err)
 	}
 	defer resp.Body.Close()
 
