@@ -75,7 +75,7 @@ func NewProtocol(
 	if config.GatewayMode == protocol.GatewayModeCentralized {
 		var err error
 		if ownedApps, err = getCentralizedModeOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode); err != nil {
-			return nil, fmt.Errorf("failed to get app addresses from config: %w, err)
+			return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
 		}
 	}
 
