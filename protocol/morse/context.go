@@ -56,7 +56,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// record request error due to internal error.
 	// no endpoint to sanction.
 	if err != nil {
-		return rc.handleInternalError(fmt.Errorf("error matching endpoint against session's nodes: %v", err))
+		return rc.handleInternalError(fmt.Errorf("error matching endpoint against session's nodes: %w", err))
 	}
 
 	// record the endpoint query time.

@@ -2,7 +2,6 @@ package cometbft
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"sync"
 
@@ -70,7 +69,7 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter for valid endpoints through %d available endpoints", len(allAvailableEndpoints)))
+	logger.Info().Msgf("About to filter for valid endpoints through %d available endpoints", len(allAvailableEndpoints))
 
 	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
@@ -82,17 +81,17 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", availableEndpointAddr))
+			logger.Info().Msgf("endpoint %s not found in the store. Skipping...", availableEndpointAddr)
 			continue
 		}
 
 		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
+			logger.Info().Err(err).Msgf("skipping endpoint that failed validation: %v", endpoint)
 			continue
 		}
 
 		filteredValidEndpointsAddr = append(filteredValidEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", availableEndpointAddr))
+		logger.Info().Msgf("endpoint %s passed validation", availableEndpointAddr)
 	}
 
 	return filteredValidEndpointsAddr, nil

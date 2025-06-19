@@ -72,7 +72,7 @@ func NewNoEndpointsError(serviceID string) error {
 // NewEndpointSelectionError creates a formatted error for endpoint selection issues
 // that includes the service ID and underlying error
 func NewEndpointSelectionError(serviceID string, err error) error {
-	return fmt.Errorf("SelectEndpoint: %w for service %s: %v", ErrEndpointSelectionFailed, serviceID, err)
+	return fmt.Errorf("SelectEndpoint: %w for service %s: %w", ErrEndpointSelectionFailed, serviceID, err)
 }
 
 // NewEndpointNotFoundError creates a formatted error for when a selected endpoint is not found

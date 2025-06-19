@@ -183,7 +183,7 @@ func getConfigPath(defaultConfigPath string) (string, error) {
 	// Get executable directory for default path
 	exeDir, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("failed to get executable path: %v", err)
+		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
 
 	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)

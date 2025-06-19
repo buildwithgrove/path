@@ -19,7 +19,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
 	lazyFullNode, err := shannon.NewLazyFullNode(fullNodeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Shannon lazy full node: %v", err)
+		return nil, fmt.Errorf("failed to create Shannon lazy full node: %w", err)
 	}
 
 	// Bypass caching if the configuration is "lazy".
@@ -29,7 +29,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 
 	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon caching full node instance: %v", err)
+		return nil, fmt.Errorf("failed to create a Shannon caching full node instance: %w", err)
 	}
 
 	return fullNode, nil
@@ -41,12 +41,12 @@ func getShannonProtocol(logger polylog.Logger, config *shannonconfig.ShannonGate
 
 	fullNode, err := getShannonFullNode(logger, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon full node instance: %v", err)
+		return nil, fmt.Errorf("failed to create a Shannon full node instance: %w", err)
 	}
 
 	protocol, err := shannon.NewProtocol(logger, config.GatewayConfig, fullNode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a Shannon protocol instance: %v", err)
+		return nil, fmt.Errorf("failed to create a Shannon protocol instance: %w", err)
 	}
 
 	return protocol, nil

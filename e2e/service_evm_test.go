@@ -171,7 +171,7 @@ func getEVMBlockNumber(testService *TestService, headers http.Header, gatewayURL
 			testService.ServiceParams.ContractStartBlock,
 		)
 		if err != nil {
-			return "", fmt.Errorf("Could not get archival block number: %v", err)
+			return "", fmt.Errorf("Could not get archival block number: %w", err)
 		}
 		return blockNumber, nil
 	}
@@ -187,7 +187,7 @@ func setTestBlockNumber(
 	// Get current block height - fail test if this doesn't work
 	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
 	if err != nil {
-		return "", fmt.Errorf("Could not get current block height: %v", err)
+		return "", fmt.Errorf("Could not get current block height: %w", err)
 	}
 
 	// Get random historical block number
