@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -41,7 +40,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 		"method", "UpdateEndpointsFromObservations",
 	)
 
-	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
+	logger.Info().Msgf("About to update endpoints from %d observations.", len(endpointObservations))
 
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {

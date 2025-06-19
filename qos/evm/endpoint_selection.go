@@ -59,7 +59,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 		return nil, errors.New("received empty list of endpoints to select from")
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
+	logger.Info().Msgf("About to filter through %d available endpoints", len(availableEndpoints))
 
 	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
@@ -70,23 +70,23 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 
 		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", availableEndpointAddr))
+			logger.Info().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
 			continue
 		}
 
-		if err := ss.validateEndpoint(endpoint); err != nil {
-			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
+		if err := ss.basicEndpointValidation(endpoint); err != nil {
+			logger.Info().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", availableEndpointAddr))
+		logger.Info().Msgf("✅ endpoint %s passed validation", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, nil
 }
 
-// validateEndpoint returns an error if the supplied endpoint is not
+// basicEndpointValidation returns an error if the supplied endpoint is not
 // valid based on the perceived state of the EVM blockchain.
 //
 // It returns an error if:
@@ -94,28 +94,28 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint's archival check is invalid, if enabled.
-func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
+func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	ss.serviceStateLock.RLock()
 	defer ss.serviceStateLock.RUnlock()
 
 	// Ensure the endpoint has not returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
-		return errEmptyResponseObs
+		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
 	}
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
-		return err
+		return fmt.Errorf("block number validation for %d failed: %w", endpoint.checkBlockNumber.parsedBlockNumberResponse, err)
 	}
 
 	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
 	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-		return err
+		return fmt.Errorf("validation for chain ID %s failed: %w", *endpoint.checkChainID.chainID, err)
 	}
 
 	// Ensure the endpoint has returned an archival balance for the perceived block number.
 	if err := ss.archivalState.isArchivalBalanceValid(endpoint.checkArchival); err != nil {
-		return err
+		return fmt.Errorf("archival balance validation for %s failed: %w", endpoint.checkArchival.observedArchivalBalance, err)
 	}
 
 	return nil

@@ -170,7 +170,7 @@ func getSolanaBlockNumber(_ *TestService, headers http.Header, gatewayURL string
 	// Get the current slot number
 	slotNumber, err := getCurrentSlotNumber(gatewayURL, headers)
 	if err != nil {
-		return "", fmt.Errorf("Could not get current slot number: %v", err)
+		return "", fmt.Errorf("Could not get current slot number: %w", err)
 	}
 	return strconv.FormatUint(slotNumber, 10), nil
 }
@@ -228,13 +228,13 @@ func fetchSlotNumber(client *http.Client, gatewayURL string, headers http.Header
 	// Marshal the result back to JSON so we can unmarshal it into our struct
 	resultBytes, err := json.Marshal(jsonRPC.Result)
 	if err != nil {
-		return 0, fmt.Errorf("failed to marshal result: %v", err)
+		return 0, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
 	// Unmarshal into getEpochInfoResponse
 	var epochInfo getEpochInfoResponse
 	if err := json.Unmarshal(resultBytes, &epochInfo); err != nil {
-		return 0, fmt.Errorf("failed to unmarshal epoch info: %v", err)
+		return 0, fmt.Errorf("failed to unmarshal epoch info: %w", err)
 	}
 
 	return epochInfo.AbsoluteSlot, nil

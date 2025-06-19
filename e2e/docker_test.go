@@ -267,7 +267,7 @@ func setupPathDocker(
 	retryConnectFn := func() error {
 		resp, err := http.Get(healthCheckURL)
 		if err != nil {
-			return fmt.Errorf("unable to connect to health check endpoint: %v", err)
+			return fmt.Errorf("unable to connect to health check endpoint: %w", err)
 		}
 		defer resp.Body.Close()
 

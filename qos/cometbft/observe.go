@@ -3,8 +3,6 @@
 package cometbft
 
 import (
-	"fmt"
-
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -27,7 +25,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		"qos_instance", "cometbft",
 		"method", "UpdateEndpointsFromObservations",
 	)
-	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
+	logger.Info().Msgf("About to update endpoints from %d observations.", len(endpointObservations))
 
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
