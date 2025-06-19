@@ -281,24 +281,36 @@ type (
 
 // getTestServices returns test services filtered by protocol specified in environment
 func (c *Config) getTestServices() ([]*TestService, error) {
-	protocol := c.getTestProtocol()
+	testProtocol := c.getTestProtocol()
 
+	// If no service IDs are specified, include all test cases
+	testServiceIds := c.getTestServiceIDs()
+
+	// Track which service IDs were provided but had no test cases
+	serviceIdsWithNoTestCases := make(map[string]struct{})
+	for _, id := range testServiceIds {
+		serviceIdsWithNoTestCases[string(id)] = struct{}{}
+	}
+
+	shouldIncludeAllServices := len(testServiceIds) == 0
 	var filteredTestCases []*TestService
 	for _, tc := range c.services.Services {
-		// If no service IDs are specified, include all test cases
-		// Otherwise, only include test cases for the specified service IDs
-		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
+		isServiceIdInTestServiceIds := slices.Contains(testServiceIds, tc.ServiceID)
+		if shouldIncludeAllServices || isServiceIdInTestServiceIds {
 			filteredTestCases = append(filteredTestCases, &tc)
+			// Remove from map if found
+			delete(serviceIdsWithNoTestCases, string(tc.ServiceID))
 		}
 	}
 
-	if len(filteredTestCases) == 0 {
-		servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
-		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
-			"\n"+
-			"Please refer to the `%s` file to see which services are configured for the `%s` protocol.",
-			envTestServiceIDs, servicesFile, protocol,
-		)
+	if len(filteredTestCases) == 0 || len(serviceIdsWithNoTestCases) > 0 {
+		var missingServiceIds []string
+		for id := range serviceIdsWithNoTestCases {
+			missingServiceIds = append(missingServiceIds, id)
+		}
+		fmt.Printf("Warning: The following service IDs had no test cases: [%s]\n", strings.Join(missingServiceIds, ", "))
+		servicesFile := fmt.Sprintf(servicesFileTemplate, testProtocol)
+		return nil, fmt.Errorf("Please refer to the `e2e/%s` file to see which services are configured for the `%s` protocol.", servicesFile, testProtocol)
 	}
 
 	return filteredTestCases, nil
