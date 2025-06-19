@@ -86,7 +86,7 @@ Handles EVM service requests. This endpoint processes API requests and forwards 
 
 <RequestSchema
   title={"Body"}
-  body={{
+  body={(() => ({
     content: {
       "application/json": {
         schema: {
@@ -210,7 +210,7 @@ Handles EVM service requests. This endpoint processes API requests and forwards 
         },
       },
     },
-  }}
+  }))()}
 />
 
 <StatusCodes
