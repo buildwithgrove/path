@@ -512,6 +512,10 @@ services:
     service_type: "cometbft"
 
   # pocket-beta1
+  - name: "Shannon - pocket"
+    service_id: "pocket"
+    service_type: "cometbft"
+  # pocket-beta1
   - name: "Shannon - pocket-beta1"
     service_id: "pocket-beta1"
     service_type: "cometbft"

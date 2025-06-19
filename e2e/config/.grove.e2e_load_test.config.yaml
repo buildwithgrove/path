@@ -8,8 +8,8 @@ e2e_load_test_config:
     # gateway_url_override: "http://localhost:3069/v1"
 
 default_service_config:
-  global_rps: 50
-  requests_per_method: 30
+  global_rps: 100
+  requests_per_method: 300
   success_rate: 0.95
   max_p50_latency_ms: 10000ms
   max_p95_latency_ms: 20000ms
