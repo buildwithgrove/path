@@ -1,10 +1,7 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# yaml-language-server: $schema=../config.schema.yaml
 #
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
-#
-# Use the following if you need it to point to the local schema file:
-# yaml-language-server: $schema=../../../config/config.schema.yaml
 
 #################################################
 ### Example Shannon Configuration YAML Format ###
@@ -14,15 +11,18 @@
 # fields in this file are just random hex codes to bypass schema validation.
 
 shannon_config:
-  full_node_config:
-    # If this config is used for Shannon E2E tests, do not change rpc_url
-    # Otherwise, replace with the correct full node RPC url.
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+  gateway_client_config:
     grpc_config:
+      # If this config is used for Shannon E2E tests, do not change rpc_url
+      # Otherwise, replace with the correct full node RPC url.
+      rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
       # If this config is used for Shannon E2E tests, do not change host_port
       # Otherwise, replace with the correct full node GRPC host:port.
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
     cache_config:
+      # Default: true
+      # When set to false, the cache will not be used.
+      use_cache: true
       # The TTL for the session cache.
       # TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
       #   The proposed change is to align session refreshes with actual session expiry time,

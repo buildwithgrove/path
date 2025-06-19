@@ -14,14 +14,14 @@ import (
 func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayConfig) (gateway.Protocol, error) {
 	logger.Info().Msg("Starting PATH gateway with Shannon protocol")
 
-	gatewayClientCache, err := getGatewayClientCache(logger, config.FullNodeConfig)
+	onchainDataFetcher, err := getOnchainDataFetcher(logger, config.GatewayClientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Shannon full node: %v", err)
 	}
 
 	gatewayClient, err := client.NewGatewayClient(
 		logger,
-		gatewayClientCache,
+		onchainDataFetcher,
 		config.GatewayConfig.GatewayAddress,
 		config.GatewayConfig.GatewayPrivateKeyHex,
 	)
@@ -42,10 +42,26 @@ func getShannonProtocol(logger polylog.Logger, config *shannon.ShannonGatewayCon
 	return protocol, nil
 }
 
-// getGatewayClientCache builds and returns a GatewayClientCache instance using the supplied configuration.
-// It is passed to the GatewayClient to fetch and cache onchain data for the Shannon protocol.
-func getGatewayClientCache(logger polylog.Logger, config client.FullNodeConfig) (*client.GatewayClientCache, error) {
-	return client.NewGatewayClientCache(logger, config.RpcURL, config)
+// getOnchainDataFetcher builds and returns an OnchainDataFetcher instance using the supplied configuration.
+// It is passed to the GatewayClient to fetch and optionally cache onchain data for the Shannon protocol.
+//
+// May return one of the following:
+//   - client.GatewayClientCache: if caching is enabled
+//   - client.GRPCClient: if caching is disabled
+func getOnchainDataFetcher(logger polylog.Logger, config client.GatewayClientConfig) (client.OnchainDataFetcher, error) {
+	// Instantiate a gRPC client for fetching onchain data from the Shannon full node.
+	grpcClient, err := client.NewGRPCClient(logger, config.GRPCConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a gRPC client: %v", err)
+	}
+
+	// If caching is disabled, return the gRPC client directly.
+	if config.CacheConfig.UseCache != nil && !*config.CacheConfig.UseCache {
+		return grpcClient, nil
+	}
+
+	// If caching is enabled, return a GatewayClientCache instance that wraps the gRPC client.
+	return client.NewGatewayClientCache(logger, grpcClient, config.CacheConfig)
 }
 
 // getGatewayModeClient gets the configured gateway client for the PATH instance.

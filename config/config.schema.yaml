@@ -100,28 +100,28 @@ properties:
     type: object
     additionalProperties: false
     required:
-      - full_node_config
+      - gateway_client_config
       - gateway_config
     properties:
-      full_node_config:
-        description: "Configuration for the Shannon full node. This configuration is used to connect to the Shannon full node to get data from the Pocket blockchain."
+      gateway_client_config:
+        description: "Configuration for the Shannon gateway client. This configuration is used to connect to the Shannon full node to get data from the Pocket blockchain."
         type: object
         additionalProperties: false
         required:
-          - rpc_url
           - grpc_config
         properties:
-          rpc_url:
-            description: "HTTP URL for the Shannon full node."
-            type: string
-            pattern: "^(tcp|http|https)://.*$"
           grpc_config:
             description: "gRPC configuration for the Shannon full node."
             type: object
             additionalProperties: false
             required:
+              - rpc_url
               - host_port
             properties:
+              rpc_url:
+                description: "HTTP URL for the Shannon full node."
+                type: string
+                pattern: "^(tcp|http|https)://.*$"
               host_port:
                 description: "Host and port for gRPC connections, eg. 127.0.0.1:4040"
                 type: string
@@ -150,6 +150,10 @@ properties:
             type: object
             additionalProperties: false
             properties:
+              use_cache:
+                description: "Indicates if the cache should be used."
+                type: boolean
+                default: true
               session_ttl:
                 description: "TTL for the session cache."
                 type: string
