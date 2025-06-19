@@ -110,7 +110,7 @@ func PublishMetrics(
 
 	shannonObservations := observations.GetObservations()
 	if len(shannonObservations) == 0 {
-		logger.Error().Msg("SHOULD NEVER HAPPEN: Unable to publish Shannon metrics: received nil observations.")
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Unable to publish Shannon metrics: received nil observations.")
 		return
 	}
 

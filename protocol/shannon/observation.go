@@ -178,7 +178,7 @@ func buildEndpointObservationFromSession(
 	header := session.Header
 	// Nil session: skip.
 	if header == nil {
-		logger.With("method", "buildEndpointObservationFromSession").Warn().Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
+		logger.With("method", "buildEndpointObservationFromSession").ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
 		return &protocolobservations.ShannonEndpointObservation{}
 	}
 

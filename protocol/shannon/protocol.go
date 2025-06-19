@@ -266,13 +266,13 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
 	// Sanity check the input
 	if observations == nil || observations.GetShannon() == nil {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
 		return nil
 	}
 
 	shannonObservations := observations.GetShannon().GetObservations()
 	if len(shannonObservations) == 0 {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
 		return nil
 	}
 
