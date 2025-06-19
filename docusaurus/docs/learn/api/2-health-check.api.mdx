@@ -24,41 +24,44 @@ import Heading from "@theme/Heading";
   as={"h1"}
   className={"openapi__heading"}
   children={"Health Check"}
->
-</Heading>
+></Heading>
 
-<MethodEndpoint
-  method={"get"}
-  path={"/healthz"}
-  context={"endpoint"}
->
-  
-</MethodEndpoint>
-
-
+<MethodEndpoint method={"get"} path={"/healthz"} context={"endpoint"} />
 
 Returns a JSON health check response indicating the ready status of PATH
 
-<ParamsDetails
-  parameters={undefined}
->
-  
-</ParamsDetails>
+<ParamsDetails parameters={undefined} />
 
-<RequestSchema
-  title={"Body"}
-  body={undefined}
->
-  
-</RequestSchema>
+<RequestSchema title={"Body"} body={undefined} />
 
 <StatusCodes
   id={undefined}
   label={undefined}
-  responses={{"200":{"description":"Health check successful","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","example":"ok"},"message":{"type":"string","example":"PATH is up and running"},"version":{"type":"string","example":"1.0.0"},"readyStates":{"type":"object","additionalProperties":{"type":"boolean"},"example":{"endpoint-hydrator":true,"pokt-shannon":true}},"configuredServiceIDs":{"type":"array","items":{"type":"string"},"example":["eth","poly","avax"]}}}}}}}}
->
-  
-</StatusCodes>
-
-
-      
+  responses={{
+    "200": {
+      description: "Health check successful",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              status: { type: "string", example: "ok" },
+              message: { type: "string", example: "PATH is up and running" },
+              version: { type: "string", example: "1.0.0" },
+              readyStates: {
+                type: "object",
+                additionalProperties: { type: "boolean" },
+                example: { "endpoint-hydrator": true, "pokt-shannon": true },
+              },
+              configuredServiceIDs: {
+                type: "array",
+                items: { type: "string" },
+                example: ["eth", "poly", "avax"],
+              },
+            },
+          },
+        },
+      },
+    },
+  }}
+/>
