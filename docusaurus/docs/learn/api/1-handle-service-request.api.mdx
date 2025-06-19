@@ -171,9 +171,12 @@ Handles EVM service requests. This endpoint processes API requests and forwards 
           },
           eth_chainId: {
             summary: "Get Chain ID",
-            value: JSON.parse(
-              `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":6}`
-            ),
+            value: {
+              jsonrpc: "2.0",
+              method: "eth_chainId",
+              params: [],
+              id: 6,
+            },
           },
           eth_getTransactionCount: {
             summary: "Get Transaction Count for Address",
