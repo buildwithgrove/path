@@ -77,16 +77,6 @@ jobs:
         with:
           path: docusaurus/build
 
-      # Disabled
-      #
-      # GitHub pages is set to "Deploy from a branch" and not "Deploy from a workflow"
-      # Ref: https://github.com/buildwithgrove/path/settings/pages
-      #
-      # The introduction of .mdx files makes the Jekyll build fail
-      # Ref: https://github.com/buildwithgrove/path/actions/runs/15767780914/job/44447308356
-      #
-      # TODO_TECHDEBT: Disabling this is fine for now but may need to be re-enabled in the future.
-      # Ref: https://chatgpt.com/share/6854dabf-7680-8002-a1e5-dbed695fdcd2
-      # - name: Deploy to GitHub Pages
-      #   id: deployment
-      #   uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
