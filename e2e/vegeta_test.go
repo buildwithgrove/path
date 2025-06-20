@@ -75,8 +75,7 @@ func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (service
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
 
-	calculateServiceSummary(t, ts.testMethodsMap, results, ts.summary, &serviceTestFailed)
-	return serviceTestFailed
+	return calculateServiceSummary(t, ts, results)
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
@@ -370,15 +369,18 @@ func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[string]testMethodConfig,
+	ts *TestService,
 	results map[string]*methodMetrics,
-	summary *serviceSummary,
-	serviceTestFailed *bool,
-) {
+) bool {
+	var serviceTestFailed bool = false
 	var totalLatency time.Duration
 	var totalP90Latency time.Duration
 	var totalSuccessRate float64
 	var methodsWithResults int
+
+	methodConfigs := ts.testMethodsMap
+	summary := ts.summary
+	serviceId := ts.ServiceID
 
 	// Track service totals
 	summary.totalRequests = 0
@@ -405,11 +407,11 @@ func calculateServiceSummary(
 			MaxP99LatencyMS:   methodDef.serviceConfig.MaxP99LatencyMS,
 		}
 
-		validateResults(t, serviceConfig, methodTestConfig)
+		validateResults(t, serviceId, serviceConfig, methodTestConfig)
 
 		// If the test has failed after validation, set the service failure flag
 		if t.Failed() {
-			*serviceTestFailed = true
+			serviceTestFailed = true
 		}
 
 		// Accumulate totals for the service summary
@@ -454,6 +456,8 @@ func calculateServiceSummary(
 		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
 		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
 	}
+
+	return serviceTestFailed
 }
 
 // ===== Metric Calculation Helpers =====
@@ -530,7 +534,7 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 }
 
 // validateResults performs assertions on test metrics
-func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig) {
+func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetrics, serviceConfig ServiceConfig) {
 	// Create a slice to collect all assertion failures
 	var failures []string
 
@@ -538,7 +542,7 @@ func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig
 	fmt.Println()
 
 	// Print metrics header with method name in blue
-	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
+	fmt.Printf("%s~~~~~~~~~~ %s - %s ~~~~~~~~%s\n\n", BOLD_CYAN, serviceId, m.method, RESET)
 
 	// Print success rate with color (green ≥90%, yellow ≥70%, red <70%)
 	successColor := RED // Red by default
@@ -643,7 +647,6 @@ func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig
 	} else {
 		fmt.Printf("\n%s✅ Method %s passed all assertions%s\n", GREEN, m.method, RESET)
 	}
-	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
 }
 
 // collectHTTPSuccessRateFailures checks HTTP success rate and returns failure message if not met
@@ -839,28 +842,36 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		})
 	}
 
+	// Sort rows by descending success rate, then ascending P90 latency, then ascending avg latency
+	sort.Slice(rows, func(i, j int) bool {
+		// Parse success rates
+		srI, _ := strconv.ParseFloat(strings.TrimSuffix(rows[i].successRate, "%"), 64)
+		srJ, _ := strconv.ParseFloat(strings.TrimSuffix(rows[j].successRate, "%"), 64)
+		if srI != srJ {
+			return srI > srJ // Descending success rate
+		}
+		// Parse P90 latency (remove "ms")
+		p90I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p90Latency, "ms"))
+		p90J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p90Latency, "ms"))
+		if p90I != p90J {
+			return p90I < p90J // Ascending P90 latency
+		}
+		// Parse avg latency (remove "ms")
+		avgI, _ := strconv.Atoi(strings.TrimSuffix(rows[i].avgLatency, "ms"))
+		avgJ, _ := strconv.Atoi(strings.TrimSuffix(rows[j].avgLatency, "ms"))
+		return avgI < avgJ // Ascending avg latency
+	})
+
 	// Print table header
 	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s |\n",
 		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P90 Latency", "Avg Latency")
 	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|\n")
-
-	// Print table rows
 	for _, r := range rows {
 		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s |\n",
 			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p90Latency, r.avgLatency)
 	}
 
 	fmt.Printf("\n%s===== END SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
-}
-
-// parseLatency parses latency string to time.Duration
-func parseLatency(latency string) time.Duration {
-	latency = strings.TrimSuffix(latency, "ms")
-	d, err := strconv.Atoi(latency)
-	if err != nil {
-		return 0
-	}
-	return time.Duration(d) * time.Millisecond
 }
 
 // ===== Progress Bars =====

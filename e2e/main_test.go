@@ -75,7 +75,6 @@ func Test_PATH_E2E(t *testing.T) {
 	// Log the test service IDs
 	logTestServiceIDs(testServices)
 
-	allPassed := true
 	for _, ts := range testServices {
 		serviceConfig, exists := testServiceConfigs[ts.ServiceID]
 		if !exists {
@@ -116,21 +115,9 @@ func Test_PATH_E2E(t *testing.T) {
 		logTestServiceInfo(ts, serviceGatewayURL, serviceConfig)
 
 		// Run the service test
-		serviceTestFailed := runServiceTest(t, ctx, ts)
-
-		if serviceTestFailed {
-			fmt.Printf("\n%s❌ TEST FAILED: Service %s failed assertions%s\n", RED, ts.ServiceID, RESET)
-			allPassed = false
-		} else {
-			fmt.Printf("\n%s✅ Service %s test passed%s\n", GREEN, ts.ServiceID, RESET)
-		}
+		runServiceTest(t, ctx, ts)
 	}
 
-	if allPassed {
-		fmt.Printf("\n%s✅ Test Success: All %d services passed%s\n", GREEN, len(testServices), RESET)
-	} else {
-		fmt.Printf("\n%s❌ Test Failure: One or more services failed%s\n", RED, RESET)
-	}
 	printServiceSummaries(serviceSummaries)
 }
 
@@ -199,7 +186,8 @@ func logTestStartInfo(gatewayURL string, testServices []*TestService) {
 }
 
 func logTestServiceIDs(testServices []*TestService) {
-	fmt.Printf("\n⛓️  Running tests for service IDs:\n")
+	fmt.Printf("\n\n=======================================================\n")
+	fmt.Printf("⛓️  Will be running tests for service IDs:\n")
 	for _, ts := range testServices {
 		if ts.Archival {
 			fmt.Printf("  🗄️  %s%s%s (Archival)\n", GREEN, ts.ServiceID, RESET)
@@ -210,7 +198,8 @@ func logTestServiceIDs(testServices []*TestService) {
 }
 
 func logTestServiceInfo(ts *TestService, serviceGatewayURL string, serviceConfig ServiceConfig) {
-	fmt.Printf("\n🛠️  Running test: %s%s%s\n", BOLD_BLUE, ts.Name, RESET)
+	fmt.Printf("\n\n=======================================================\n")
+	fmt.Printf("🛠️  Starting test for : %s%s%s\n", BOLD_BLUE, ts.Name, RESET)
 	fmt.Printf("  🖥️  Service Gateway URL: %s%s%s\n", BLUE, serviceGatewayURL, RESET)
 	fmt.Printf("  🏎️  Global Requests per Second: %s%d%s\n", GREEN, serviceConfig.GlobalRPS, RESET)
 	fmt.Printf("  🚗 Total Requests per Method: %s%d%s\n\n", GREEN, serviceConfig.RequestsPerMethod, RESET)

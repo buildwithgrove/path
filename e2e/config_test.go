@@ -308,9 +308,9 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 		for id := range serviceIdsWithNoTestCases {
 			missingServiceIds = append(missingServiceIds, id)
 		}
-		fmt.Printf("Warning: The following service IDs had no test cases: [%s]\n", strings.Join(missingServiceIds, ", "))
 		servicesFile := fmt.Sprintf(servicesFileTemplate, testProtocol)
-		return nil, fmt.Errorf("Please refer to the `e2e/%s` file to see which services are configured for the `%s` protocol.", servicesFile, testProtocol)
+		fmt.Printf("⚠️ The following service IDs have no E2E / Load test cases and will there be skipped: [%s] ⚠️\n", strings.Join(missingServiceIds, ", "))
+		fmt.Printf("⚠️ Please refer to the `e2e/%s` file to see which services are configured for the `%s` protocol ⚠️\n", servicesFile, testProtocol)
 	}
 
 	return filteredTestCases, nil
