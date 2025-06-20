@@ -87,7 +87,6 @@ jobs:
       #
       # TODO_TECHDEBT: Disabling this is fine for now but may need to be re-enabled in the future.
       # Ref: https://chatgpt.com/share/6854dabf-7680-8002-a1e5-dbed695fdcd2
-      - name: Deploy to GitHub Pages
-        if: false
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # - name: Deploy to GitHub Pages
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4
