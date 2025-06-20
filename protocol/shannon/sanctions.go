@@ -36,11 +36,15 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
-	// Received nil public key on supplier lookup using its address
+	// Received nil public key on supplier lookup using its address.
+	// This means the supplier account is not properly initialized:
+	//
+	// In Cosmos SDK (and thus in pocketd) accounts:
+	// - Are created when they receive tokens.
+	// - Get their public key onchain once they sign their first transaction (e.g. send, delegate, stake, etc.)
 	case errors.Is(err, sdk.ErrRelayResponseValidationNilSupplierPubKey):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY,
-			// No sanctions needed: supplier address is provided by PATH.
-			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// RelayResponse's signature failed validation.
 	case errors.Is(err, sdk.ErrRelayResponseValidationSignatureError):
