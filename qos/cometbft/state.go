@@ -56,7 +56,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
-			"service_id", s.chainID,
+			"chain_id", s.chainID,
 		)
 
 		// DO NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.

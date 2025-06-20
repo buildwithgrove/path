@@ -123,7 +123,6 @@ func getEVMVegetaTargets(
 
 	blockNumber, err := getEVMBlockNumber(ts, headers, gatewayURL)
 	if err != nil {
-		fmt.Println("❌ OLSH", headers, gatewayURL)
 		return nil, fmt.Errorf("failed to get EVM block number for service '%s': %w", ts.ServiceID, err)
 	}
 	ts.ServiceParams.blockNumber = blockNumber
