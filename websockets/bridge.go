@@ -148,7 +148,7 @@ func (b *bridge) Run() {
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
 func (b *bridge) Shutdown(err error) {
-	b.logger.Info().Err(err).Msg("bridge shutting down due to error")
+	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
 
 	// Send close message to both connections and close the connections
 	errMsg := fmt.Sprintf("bridge shutting down: %s", err.Error())

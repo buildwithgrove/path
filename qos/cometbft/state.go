@@ -56,12 +56,13 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		logger := s.logger.With(
 			"endpoint_addr", endpointAddr,
 			"perceived_block_number", s.perceivedBlockNumber,
+			"service_id", s.chainID,
 		)
 
 		// DO NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.
 		// E.g. an endpoint with an invalid response to `/status` will not be used to update the perceived block number.
 		if err := endpoint.Validate(s.chainID); err != nil {
-			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint with invalid chain id '%s' for endpoint '%s'", s.chainID, endpointAddr)
 			continue
 		}
 
@@ -70,13 +71,13 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		// not result in all other endpoints being marked as invalid.
 		blockNumber, err := endpoint.GetBlockNumber()
 		if err != nil {
-			logger.Info().Err(err).Msg("Skipping endpoint with invalid block number")
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint with invalid block number '%d' for endpoint '%s'", blockNumber, endpointAddr)
 			continue
 		}
 
 		s.perceivedBlockNumber = blockNumber
 
-		logger.With("endpoint_block_number", blockNumber).Info().Msg("Updating latest block height")
+		logger.With("endpoint_block_number", blockNumber).Info().Msgf("✅ Updating latest block height for endpoint '%s'", endpointAddr)
 	}
 
 	return nil

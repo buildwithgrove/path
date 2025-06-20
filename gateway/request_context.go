@@ -110,7 +110,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 		rc.presetFailureHTTPResponse = rc.httpRequestParser.GetHTTPErrorResponse(rc.context, err)
 
 		// log the error
-		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
+		rc.logger.Error().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
 		return errHTTPRequestRejectedByParser
 	}
 
