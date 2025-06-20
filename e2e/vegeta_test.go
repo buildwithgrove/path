@@ -341,6 +341,7 @@ type methodMetrics struct {
 type serviceSummary struct {
 	serviceID protocol.ServiceID
 
+	avgP50Latency  time.Duration
 	avgP90Latency  time.Duration
 	avgLatency     time.Duration
 	avgSuccessRate float64
@@ -374,6 +375,7 @@ func calculateServiceSummary(
 ) bool {
 	var serviceTestFailed bool = false
 	var totalLatency time.Duration
+	var totalP50Latency time.Duration
 	var totalP90Latency time.Duration
 	var totalSuccessRate float64
 	var methodsWithResults int
@@ -425,12 +427,14 @@ func calculateServiceSummary(
 			latencies = append(latencies, res.Latency)
 		}
 
-		// Calculate P90 for this method
+		// Calculate p50 and p90 latencies for this method
+		p50 := calculateP50(latencies)
 		p90 := calculateP90(latencies)
 		avgLatency := calculateAvgLatency(latencies)
 
 		// Add to summary totals
 		totalLatency += avgLatency
+		totalP50Latency += p50
 		totalP90Latency += p90
 		totalSuccessRate += serviceConfig.successRate
 		methodsWithResults++
@@ -453,6 +457,7 @@ func calculateServiceSummary(
 	// Calculate averages if we have methods with results
 	if methodsWithResults > 0 {
 		summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
+		summary.avgP50Latency = time.Duration(int64(totalP50Latency) / int64(methodsWithResults))
 		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
 		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
 	}
@@ -765,6 +770,18 @@ func formatLatency(d time.Duration) string {
 	return fmt.Sprintf("%dms", d/time.Millisecond)
 }
 
+// calculateP50 computes the 50th percentile latency
+func calculateP50(latencies []time.Duration) time.Duration {
+	if len(latencies) == 0 {
+		return 0
+	}
+
+	// Sort latencies if they aren't already sorted
+	slices.Sort(latencies)
+
+	return percentile(latencies, 50)
+}
+
 // calculateP90 computes the 90th percentile latency
 func calculateP90(latencies []time.Duration) time.Duration {
 	if len(latencies) == 0 {
@@ -811,6 +828,7 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		totalSuccess int
 		failuresStr  string
 		successRate  string
+		p50Latency   string
 		p90Latency   string
 		avgLatency   string
 	}
@@ -837,6 +855,7 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 			totalSuccess: summary.totalSuccess,
 			failuresStr:  failuresStr,
 			successRate:  fmt.Sprintf("%.2f%%", summary.avgSuccessRate*100),
+			p50Latency:   formatLatency(summary.avgP50Latency),
 			p90Latency:   formatLatency(summary.avgP90Latency),
 			avgLatency:   formatLatency(summary.avgLatency),
 		})
@@ -849,6 +868,12 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		srJ, _ := strconv.ParseFloat(strings.TrimSuffix(rows[j].successRate, "%"), 64)
 		if srI != srJ {
 			return srI > srJ // Descending success rate
+		}
+		// Parse P50 latency (remove "ms")
+		p50I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p50Latency, "ms"))
+		p50J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p50Latency, "ms"))
+		if p50I != p50J {
+			return p50I < p50J // Ascending P50 latency
 		}
 		// Parse P90 latency (remove "ms")
 		p90I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p90Latency, "ms"))
@@ -863,12 +888,12 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 	})
 
 	// Print table header
-	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s |\n",
-		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P90 Latency", "Avg Latency")
-	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|\n")
+	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
+		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P50 Latency", "P90 Latency", "Avg Latency")
+	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|-------------|\n")
 	for _, r := range rows {
-		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s |\n",
-			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p90Latency, r.avgLatency)
+		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
+			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p50Latency, r.p90Latency, r.avgLatency)
 	}
 
 	fmt.Printf("\n%s===== END SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)
