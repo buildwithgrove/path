@@ -165,8 +165,8 @@ func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.End
 		select {
 		case balance, ok := <-balanceCh:
 			if !ok {
-				// Channel closed, break loop
-				break
+				// Channel closed, exit function
+				return
 			}
 			count := as.balanceConsensus[balance] + 1
 			as.balanceConsensus[balance] = count
