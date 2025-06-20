@@ -144,7 +144,7 @@ func (c *connection) connLoop() {
 //
 // This function will cancel the context to signal the bridge to handle shutdown.
 func (c *connection) handleDisconnect(err error) {
-	c.logger.Info().Err(err).Msgf("handling error in websocket connection")
+	c.logger.Warn().Err(err).Msgf("🔌 Handling websocket disconnection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown
 }
 

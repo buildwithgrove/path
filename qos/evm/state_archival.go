@@ -3,6 +3,7 @@ package evm
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -130,31 +131,57 @@ func blockNumberToHex(blockNumber uint64) string {
 	return fmt.Sprintf("0x%x", blockNumber)
 }
 
-// updateExpectedBalance checks for consensus and updates the expected balance in the archival state.
-// When >= 5 endpoints agree on the same balance, it is set as the expected archival balance.
+// updateExpectedBalance checks for consensus of the expected balance at a specific height.
+//
+// `archivalConsensusThreshold` endpoints must agree on the same balance for it to be set as the expected archival balance.
 func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.EndpointAddr]endpoint) {
-	for _, endpoint := range updatedEndpoints {
-		// Get the observed balance at the archival block number from the endpoint observation.
-		balance, err := endpoint.checkArchival.getArchivalBalance()
-		if err != nil {
-			as.logger.Info().Err(err).Msg("Skipping endpoint with no observed archival balance")
-			continue
-		}
+	// Parallelize balance fetching and consensus because some chains have very low block latencies (e.g. arb_one).
+	balanceCh := make(chan string, len(updatedEndpoints))
+	timeout := time.After(5 * time.Second)
+	var wg sync.WaitGroup
 
-		// Update the balance consensus map.
-		count := as.balanceConsensus[balance] + 1
-		as.balanceConsensus[balance] = count
+	// Loop over all updated endpoints and fetch their balance.
+	for endpointAddr, updatedEndpoint := range updatedEndpoints {
+		wg.Add(1)
+		go func(endpointAddr protocol.EndpointAddr, updatedEndpoint endpoint) {
+			defer wg.Done()
+			balance, err := updatedEndpoint.checkArchival.getArchivalBalance()
+			if err != nil {
+				as.logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' because it has no observed archival balance", endpointAddr)
+				return
+			}
+			balanceCh <- balance
+		}(endpointAddr, updatedEndpoint)
+	}
 
-		// Check for consensus immediately after updating count
-		if count >= archivalConsensusThreshold {
-			as.expectedBalance = balance
-			as.logger.Info().
-				Str("archival_block_number", as.blockNumberHex).
-				Str("contract_address", as.archivalCheckConfig.contractAddress).
-				Str("expected_balance", balance).
-				Msg("Updated expected archival balance")
+	// Close the channel when all goroutines are done
+	go func() {
+		wg.Wait()
+		close(balanceCh)
+	}()
 
-			as.balanceConsensus = make(map[string]int) // Clear map as it's no longer needed.
+	// Tally consensus as results arrive
+	for {
+		select {
+		case balance, ok := <-balanceCh:
+			if !ok {
+				// Channel closed, break loop
+				break
+			}
+			count := as.balanceConsensus[balance] + 1
+			as.balanceConsensus[balance] = count
+			if count >= archivalConsensusThreshold {
+				as.expectedBalance = balance
+				as.logger.Info().
+					Str("archival_block_number", as.blockNumberHex).
+					Str("contract_address", as.archivalCheckConfig.contractAddress).
+					Str("expected_balance", balance).
+					Msg("Updated expected archival balance")
+				as.balanceConsensus = make(map[string]int)
+				return
+			}
+		case <-timeout:
+			as.logger.Warn().Msg("Timeout while waiting for archival balance consensus")
 			return
 		}
 	}

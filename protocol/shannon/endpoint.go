@@ -14,7 +14,7 @@ import (
 // that can serve relays.
 var _ protocol.Endpoint = endpoint{}
 
-// endpoint is used to fulfull a protocol package Endpoint using a Shannon SupplierEndpoint.
+// endpoint is used to fulfill a protocol package Endpoint using a Shannon SupplierEndpoint.
 // An endpoint is identified by combining its supplier address and its URL, because
 // in Shannon a supplier can have multiple endpoints for a service.
 type endpoint struct {

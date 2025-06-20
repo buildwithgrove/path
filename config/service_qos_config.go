@@ -385,9 +385,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("moonriver", "0x505", nil),
 
-	// Near
-	evm.NewEVMServiceQoSConfig("near", "0x18d", nil),
-
 	// opBNB
 	evm.NewEVMServiceQoSConfig("opbnb", "0xcc", nil),
 
@@ -405,6 +402,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
+
+	// *** Near EVM Services ***
+
+	// Near
+	// TODO_TECHDEBT: Add support for Near QoS
+	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
 
 	// *** CometBFT Services ***
 

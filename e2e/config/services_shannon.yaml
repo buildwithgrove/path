@@ -5,6 +5,21 @@
 #   2. Use it as the source of truth for service QoS configs by embedding and YAML unmarshalling
 #   3. Remove the `config/service_qos_config.go` file in favour of using this file
 
+# TODO_TECHDEBT: Add support for the following services:
+# - bitcoin
+# - evmos
+# - near
+# - radix
+# - xrpl_evm_dev
+# - base-testnet
+# - moonriver
+# - sei
+# - svc-poktminer
+# - tron
+# - fraxtal
+# - kava
+# - sui
+
 ####################################################
 # ---------------- Shannon Services -------------- #
 ####################################################
@@ -292,6 +307,18 @@ services:
       transaction_hash: "0xfc30dd922a20302b88108422da4cfc09a82853d896a5f45f4ea777e12136af70"
       call_data: "0x18160ddd"
 
+  # TODO_TECHDEBT: Add support for Near E2E tests
+  # - name: "Shannon - near (Near) Test"
+  #   service_id: "near"
+  #   service_type: "near"
+  #   archival: true
+  #   service_params:
+  #     https://nearblocks.io/txns/4PVpwA42LpaUZ5LPD6fwNd94hjB5ue1ND2WSG4UzQVM8
+  #     contract_address: "usdt.tether-token.near"
+  #     contract_start_block: 74076817
+  #     transaction_hash: "4PVpwA42LpaUZ5LPD6fwNd94hjB5ue1ND2WSG4UzQVM8"
+  #     call_data: "0x18160ddd"
+
   # Shannon - Metis (Archival)
   - name: "Shannon - metis (Metis) Test"
     service_id: "metis"
@@ -561,11 +588,6 @@ services:
   # # Shannon - Moonriver
   # - name: "Shannon - moonriver (Moonriver) Test"
   #   service_id: "moonriver"
-  #   service_type: "evm"
-
-  # # Shannon - Near
-  # - name: "Shannon - near (Near) Test"
-  #   service_id: "near"
   #   service_type: "evm"
 
   # # Shannon - Radix

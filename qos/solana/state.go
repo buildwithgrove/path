@@ -40,11 +40,11 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	}
 
 	if endpoint.SolanaGetEpochInfoResponse.Epoch < s.perceivedEpoch {
-		return fmt.Errorf("endpoint has epoch %d, perceived current epoch is %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.perceivedEpoch)
+		return fmt.Errorf("solana endpoint epoch is less than chain perceived epoch: %d < %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.perceivedEpoch)
 	}
 
 	if endpoint.SolanaGetEpochInfoResponse.BlockHeight < s.perceivedBlockHeight {
-		return fmt.Errorf("endpoint has block height %d, perceived block height is %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.perceivedBlockHeight)
+		return fmt.Errorf("solana endpoint block height is less than chain perceived block height: %d < %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.perceivedBlockHeight)
 	}
 
 	return nil
