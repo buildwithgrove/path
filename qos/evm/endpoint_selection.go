@@ -110,7 +110,7 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 
 	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
 	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-		return fmt.Errorf("validation for chain ID %s failed: %w", *endpoint.checkChainID.chainID, err)
+		return fmt.Errorf("validation for chain ID %s failed: %w", endpoint.checkChainID.chainID, err)
 	}
 
 	// Ensure the endpoint has returned an archival balance for the perceived block number.

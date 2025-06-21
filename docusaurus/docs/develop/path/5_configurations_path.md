@@ -299,10 +299,10 @@ data_reporter_config:
   post_timeout_ms: 5000
 ```
 
-| Field            | Type    | Required | Default | Description                                                                                         |
-| ---------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
-| `target_url`     | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)                 |
-| `post_timeout_ms`| integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used   |
+| Field             | Type    | Required | Default | Description                                                                                       |
+| ----------------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `target_url`      | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)               |
+| `post_timeout_ms` | integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used |
 
 :::info
 Currently, only JSON-accepting data pipelines are supported as of PR #215.

@@ -9,6 +9,8 @@ import (
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
+var emptyQosObservations = qos.Observations{}
+
 // PublishMetrics builds and exports all qos-related metrics using qos-level observations.
 func PublishQoSMetrics(
 	logger polylog.Logger,
@@ -35,6 +37,11 @@ func PublishQoSMetrics(
 		return
 	}
 
+	if cometbftObservations := qosObservations.GetCometbft(); cometbftObservations != nil {
+		hydratedLogger.Warn().Msgf("CometBFTObservations not supported yet: '%+v'", qosObservations)
+		return
+	}
+
 	// Log warning if no matching observation types were found
-	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: %+v", qosObservations)
+	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: '%+v'", qosObservations)
 }

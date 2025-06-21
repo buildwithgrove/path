@@ -2,7 +2,6 @@
 
 # TODO_UPNEXT(@olshansky): Further improvements
 # - [ ] Add support for REST based services
-
 # Source helpers for TLD reporting
 source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 
@@ -67,6 +66,67 @@ EVM_SERVICES=(
     "xrpl_evm_test"
     "zklink_nova"
     "zksync_era"
+=======
+# To Update this list, run:
+# Master List: https://docs.google.com/spreadsheets/d/1QWVGEuB2u5bkGfONoDNaltjny1jd9rJ_f7HZTjSGgQM/edit?gid=195862478#gid=195862478
+# $ pocketd query service all-services --network=main --home=~/.pocket_prod --grpc-insecure=false -o json | jq '.service[].id'
+SERVICES=(
+    # "arb_one"
+    # "arb_sep_test"
+    # "avax-dfk"
+    # "avax"
+    # "base-test"
+    # "base-testnet"
+    # "base"
+    # "bera"
+    # "bitcoin"
+    # "blast"
+    # "boba"
+    "bsc"
+    # "celo"
+    "eth"
+    # "eth_hol_test"
+    # "eth_sep_test"
+    # "evmos"
+    # "fantom"
+    # "fraxtal"
+    # "fuse"
+    # "gnosis"
+    # "harmony"
+    # "ink"
+    # "iotex"
+    # "kaia"
+    # "kava"
+    # "linea"
+    # "mantle"
+    # "metis"
+    # "moonbeam"
+    # "moonriver"
+    # "near"
+    # "oasys"
+    # "op"
+    # "op_sep_test"
+    # "opbnb"
+    # "osmosis"
+    "pocket"
+    "poly"
+    # "poly_amoy_test"
+    # "poly_zkevm"
+    # "radix"
+    # "scroll"
+    # "sei"
+    # "solana"
+    # "sonic"
+    # "sui"
+    # "svc-poktminer"
+    # "taiko"
+    # "taiko_hek_test"
+    # "tron"
+    # "xrpl_evm_dev"
+    # "xrpl_evm_test"
+    # "zklink_nova"
+    # "zksync_era"
+>>>>>>> Stashed changes
 )
 
 # CometBFT services that use REST /status endpoint for testing
@@ -124,7 +184,6 @@ Quickstart with Examples:
   ./e2e/scripts/shannon_preliminary_services_test.sh --network alpha --environment local
   ./e2e/scripts/shannon_preliminary_services_test.sh --network main --environment production --onchain-services
 
-
 tl;dr
 - Find all services with >=1 supplier on Shannon using 'pocketd'
 - Confirm at least 1 'eth_blockNumber' request returns a 200 using PATH
@@ -150,8 +209,9 @@ tl;dr
    ./e2e/scripts/shannon_preliminary_services_test.sh --network <alpha|beta|main> --environment <local|production> [--disqualified_endpoints] [--portal_app_id <id>] [--api_key <key>]
 
  ARGUMENTS:
-  -n, --network                 Network to use: 'alpha', 'beta' or 'main' (required)
-  -e, --environment             Environment to use: 'local' or 'production' (required)
+  -n, --network              Network to use: 'alpha', 'beta' or 'main' (required)
+  -e, --environment          Environment to use: 'local' or 'production' (required)
+>>>>>>> Stashed changes
 
   -p, --portal_app_id           Portal Application ID for production (required when environment=production)
   -k, --api_key                 API Key for production (required when environment=production)
@@ -282,58 +342,34 @@ echo -e "  • 📊 Generates a summary table and JSON report"
 echo -e "  • 🚫 Optionally includes disqualified endpoint analysis\n"
 
 # --- TLDs by Service Setup ---
+# Call TLD helper and parse into portable parallel arrays
+TLD_OUTPUT=$(shannon_query_service_tlds_by_id "$NETWORK")
+SERVICE_TLDS_SERVICES=()
+SERVICE_TLDS_VALUES=()
+while IFS= read -r line; do
+    # Parse lines like: - base-test: ["nodefleet.net"]
+    if [[ "$line" =~ ^-?[[:space:]]*([a-zA-Z0-9_-]+):[[:space:]]*(.*)$ ]]; then
+        service="${BASH_REMATCH[1]}"
+        tlds="${BASH_REMATCH[2]}"
+        SERVICE_TLDS_SERVICES+=("$service")
+        SERVICE_TLDS_VALUES+=("$tlds")
+    fi
+done <<<"$TLD_OUTPUT"
 
-# Call TLD helper and parse JSON into an associative array
-echo -e "\n✨ Setting up Service TLDs by Service (this may take a little while)... ✨"
-TLD_OUTPUT=$(shannon_query_service_tlds_by_id "$NETWORK" --structured)
-echo "Retrieved TLDs by Service"
-declare -A SERVICE_TLDS
-
-while IFS="=" read -r key value; do
-    SERVICE_TLDS["$key"]="$value"
-done < <(
-    echo "$TLD_OUTPUT" | jq -r '
-    to_entries[] |
-    "\(.key)=\(.value | join(","))"
-  '
-)
-
-echo "✅ Finished setting SERVICE_TLDS"
-
-# Helper to get TLDs for a service name
+# Helper to get TLDs for a service name (portable, bash 3.2+)
 get_service_tlds() {
     local search_service="$1"
-    echo "${SERVICE_TLDS[$search_service]}"
+    local i
+    for i in "${!SERVICE_TLDS_SERVICES[@]}"; do
+        if [ "${SERVICE_TLDS_SERVICES[$i]}" = "$search_service" ]; then
+            echo "${SERVICE_TLDS_VALUES[$i]}"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
 }
-
 # --- End TLDs Setup ---
-
-# --- Service Aliases Setup ---
-
-# Function to get the service identifier for production URLs
-# Returns the alias if available and environment is production, otherwise returns the service ID
-get_service_identifier() {
-    local service_id="$1"
-    if [ "$ENVIRONMENT" = "production" ]; then
-        case "$service_id" in
-        arb_one) echo "arbitrum-one" ;;
-        arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
-        base-test) echo "base-testnet" ;;
-        eth_hol_test) echo "eth-holesky-testnet" ;;
-        eth_sep_test) echo "eth-sepolia-testnet" ;;
-        op_sep_test) echo "optimism-sepolia-testnet" ;;
-        poly) echo "poly" ;;
-        taiko_hek_test) echo "taiko-hekla-testnet" ;;
-        xrpl_evm_test) echo "xrpl-evm-test" ;;
-        zksync_era) echo "zksync-era" ;;
-        *) echo "$service_id" ;;
-        esac
-    else
-        echo "$service_id"
-    fi
-}
-
-# --- End Service Aliases Setup ---
 
 # Set node flag based on network
 if [ "$NETWORK" = "alpha" ]; then
@@ -736,7 +772,6 @@ if [ ${#all_services_results[@]} -gt 0 ]; then
         if [ -z "$tlds_json" ]; then
             tlds_json='[]'
         fi
-        tlds_json="[]"
         if [ "$QUERY_DISQUALIFIED" = true ] && [ -n "$disqualified_response" ]; then
             service_json=$(jq -n \
                 --arg service_id "$service" \

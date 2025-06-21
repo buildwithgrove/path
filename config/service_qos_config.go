@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/cometbft"
 	"github.com/buildwithgrove/path/qos/evm"
@@ -29,16 +31,21 @@ type qosServiceConfigs struct {
 
 // GetServiceConfigs returns the service configs for the provided protocol supported by the Gateway.
 func (c qosServiceConfigs) GetServiceConfigs(config GatewayConfig) []ServiceQoSConfig {
+	fmt.Println("OLSH1222")
+
 	// Shannon configurations
 	if shannonConfig := config.GetShannonConfig(); shannonConfig != nil {
+		fmt.Println("OLSH1333")
 		return c.shannonServices
 	}
 
 	// Morse configurations
 	if morseConfig := config.GetMorseConfig(); morseConfig != nil {
+		fmt.Println("OLSH1444")
 		return c.morseServices
 	}
 
+	fmt.Println("OLSH1555")
 	// If no configuration is found, return an empty slice.
 	return nil
 }
