@@ -84,7 +84,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Taiko                                                      | taiko                    | EVM              | 167000                              | ✅                        |
 | Taiko Hekla Testnet                                        | taiko-hekla-testnet      | EVM              | 167009                              | ✅                        |
 | XRPLEVM Testnet                                            | xrplevm-testnet          | EVM              | 1449000                             | ✅                        |
-| zkLink                                                     | zklink_nova              | EVM              | 810180                              | ✅                        |
+| zkLink                                                     | zklink-nova              | EVM              | 810180                              | ✅                        |
 | zkSync                                                     | zksync_era               | EVM              | 324                                 | ✅                        |
 | Anvil - Ethereum development/testing                       | anvil                    | EVM              | 31337                               |                           |
 | Anvil WebSockets - Ethereum WebSockets development/testing | anvilws                  | EVM              | 31337                               |                           |
@@ -99,10 +99,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | XRPLEVM                                                    | xrplevm                  | EVM              | 1440000                             |                           |
 | TRON                                                       | tron                     | EVM              | 728126428                           |                           |
 | Sei                                                        | sei                      | EVM              | 1329                                |                           |
-| Celestia Archival                                          | tia_da                   | CometBFT         | celestia-archival                   |                           |
-| Celestia Consensus Archival                                | tia_cons                 | CometBFT         | celestia-consensus-archival         |                           |
-| Celestia Testnet DA Archival                               | tia_da_test              | CometBFT         | celestia-testnet-da-archival        |                           |
-| Celestia Testnet Consensus Archival                        | tia_cons_test            | CometBFT         | celestia-testnet-consensus-archival |                           |
 | Osmosis                                                    | osmosis                  | CometBFT         | osmosis                             |                           |
 | Pocket Beta Testnet                                        | pocket-beta-rpc          | CometBFT         | pocket-beta                         |                           |
 | Cosmos Hub                                                 | cometbft                 | CometBFT         | cosmoshub-4                         |                           |

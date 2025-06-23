@@ -45,9 +45,9 @@ service_config_overrides:
     archival: false
   "eth":
     archival: false
-  "eth_hol_test":
+  "eth-holesky-testnet":
     archival: false
-  "eth_sep_test":
+  "eth-sepolia-testnet":
     archival: false
   "evmos":
     archival: false
@@ -85,7 +85,7 @@ service_config_overrides:
     archival: false
   "op":
     archival: false
-  "op_sep_test":
+  "op-sepolia-testnet":
     archival: false
   "opbnb":
     archival: false
@@ -95,9 +95,9 @@ service_config_overrides:
     archival: false
   "poly":
     archival: false
-  "poly_amoy_test":
+  "poly-amoy-testnet":
     archival: false
-  "poly_zkevm":
+  "poly-zkevm":
     archival: false
   "radix":
     archival: false
@@ -113,15 +113,15 @@ service_config_overrides:
     archival: false
   "taiko":
     archival: false
-  "taiko_hek_test":
+  "taiko-hekla-testnet":
     archival: false
   "tron":
     archival: false
-  "xrpl_evm_dev":
+  "xrplevm":
     archival: false
-  "xrpl_evm_test":
+  "xrplevm-testnet":
     archival: false
-  "zklink_nova":
+  "zklink-nova":
     archival: false
   "zksync_era":
     archival: false
