@@ -11,7 +11,7 @@
 # - near
 # - radix
 # - xrpl_evm_dev
-# - base-testnet
+# - base-sepolia-testnetnet
 # - moonriver
 # - sei
 # - svc-poktminer
@@ -27,8 +27,8 @@ services:
   # ------------- EVM Services -------------
 
   # Shannon - Arbitrum One (Archival)
-  - name: "Shannon - arb_one (Arbitrum One) Test"
-    service_id: "arb_one"
+  - name: "Shannon - arb-one (Arbitrum One) Test"
+    service_id: "arb-one"
     service_type: "evm"
     alias: "arbitrum-one"
     archival: true
@@ -40,8 +40,8 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - Arbitrum Sepolia Testnet (Archival)
-  - name: "Shannon - arb_sep_test (Arbitrum Sepolia Testnet) Test"
-    service_id: "arb_sep_test"
+  - name: "Shannon - arb-sepolia-testnet (Arbitrum Sepolia Testnet) Test"
+    service_id: "arb-sepolia-testnet"
     service_type: "evm"
     alias: "arbitrum-sepolia-testnet"
     archival: true
@@ -90,8 +90,8 @@ services:
 
   # Shannon - Base Sepolia Testnet (Archival)
   - name: "Shannon - base (Base Sepolia Testnet) Test"
-    service_id: "base-test"
-    alias: "base-testnet"
+    service_id: "base-sepolia-testnet"
+    alias: "base-sepolia-testnetnet"
     service_type: "evm"
     archival: true
     service_params:

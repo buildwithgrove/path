@@ -19,9 +19,9 @@ service_config_overrides:
   "anvil":
     global_rps: 1
     requests_per_method: 3
-  "arb_one":
+  "arb-one":
     archival: false
-  "arb_sep_test":
+  "arb-sepolia-testnet":
     archival: false
   "avax":
     archival: false
@@ -29,7 +29,7 @@ service_config_overrides:
     archival: false
   "base":
     archival: false
-  "base-test":
+  "base-sepolia-testnet":
     archival: false
   "bera":
     archival: false

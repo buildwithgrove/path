@@ -15,11 +15,11 @@ source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 
 # EVM-compatible services that use JSON-RPC eth_blockNumber for testing
 EVM_SERVICES=(
-    "arb_one"
-    "arb_sep_test"
+    "arb-one"
+    "arb-sepolia-testnet"
     "avax-dfk"
     "avax"
-    "base-test"
+    "base-sepolia-testnet"
     "base"
     "bera"
     "bitcoin"
@@ -316,9 +316,9 @@ get_service_identifier() {
     local service_id="$1"
     if [ "$ENVIRONMENT" = "production" ]; then
         case "$service_id" in
-        arb_one) echo "arbitrum-one" ;;
-        arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
-        base-test) echo "base-testnet" ;;
+        arb-one) echo "arbitrum-one" ;;
+        arb-sepolia-testnet) echo "arbitrum-sepolia-testnet" ;;
+        base-sepolia-testnet) echo "base-sepolia-testnetnet" ;;
         eth_hol_test) echo "eth-holesky-testnet" ;;
         eth_sep_test) echo "eth-sepolia-testnet" ;;
         op_sep_test) echo "optimism-sepolia-testnet" ;;
