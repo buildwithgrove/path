@@ -33,8 +33,8 @@ We use [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) for running the 
 
 | Protocol | Status (04/2025)       | Documentation                                     |
 | -------- | ---------------------- | ------------------------------------------------- |
-| Shannon  | Beta & Private MainNet | [Shannon Protocol Guide](3_cheatsheet_shannon.md) |
-| Morse    | MainNet (deprecated)   | [Morse Protocol Guide](4_cheatsheet_morse.md)     |
+| Shannon  | Beta & Private MainNet | [Shannon Protocol Guide](2_cheatsheet_shannon.md) |
+| Morse    | MainNet (deprecated)   | [Morse Protocol Guide](10_cheatsheet_morse.md)    |
 
 ## Architecture Overview
 

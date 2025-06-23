@@ -44,7 +44,7 @@ Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operat
 
 ## 0. Prerequisites
 
-Complete the [**Quick Start**](1_getting_started.md) guide.
+Complete the [**Quick Start**](1_quick_start.md) guide.
 
 ## 1. Setup Shannon Protocol Accounts (Gateway & Application)
 
@@ -209,7 +209,7 @@ To disable for specific services, add `qos_disabled_service_ids` to `.config.yam
 **Use cases**: Testing and development.
 
 **More info**:
-- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [PATH Configuration File](./8_ref_configurations_path.md#hydrator_config-optional)
 - [Supported QoS Services](../../learn/qos/1_supported_services.md)
 
 :::tip

@@ -101,8 +101,8 @@ Configure PATH for the service you want to test, and run `make path_run` to star
 
 For information on how to configure PATH for a service, see one of the PATH cheatsheets:
 
-- [Shannon Cheat Sheet](../../develop/path/3_cheatsheet_shannon.md)
-- [Morse Cheat Sheet](../../develop/path/4_cheatsheet_morse.md)
+- [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_shannon.md)
+- [Morse Cheat Sheet](../../develop/path/10_cheatsheet_morse.md)
 
 :::
 

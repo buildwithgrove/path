@@ -37,4 +37,4 @@ make install_tools
 
 # What's Next
 
-**[Shannon Cheat Sheet](3_cheatsheet_shannon.md)** - Configure PATH for the Shannon protocol
+**[Shannon Cheat Sheet](2_cheatsheet_shannon.md)** - Configure PATH for the Shannon protocol

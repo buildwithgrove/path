@@ -28,7 +28,7 @@ hydrator_config:
     - "F00C"
 ```
 
-See [PATH Configuration File](../../develop/path/5_configurations_path.md#hydrator_config-optional) for more details.
+See [PATH Configuration File](../../develop/path/8_ref_configurations_path.md#hydrator_config-optional) for more details.
 
 ## ⛓️ Supported QoS Services
 

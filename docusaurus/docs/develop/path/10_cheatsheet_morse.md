@@ -26,7 +26,7 @@ This guide covers setting up `PATH` with the **Morse** protocol. In MainNet as o
 
 ## 0. Prerequisites
 
-1. Prepare your environment by following the instructions in the [**environment setup**](2_environment.md) guide.
+1. Prepare your environment by following the instructions in the [**Quick Start**](1_quick_start.md) guide.
 2. Install the [**pocket CLI**](https://github.com/pokt-network/homebrew-pocket-core): CLI for interacting with Pocket's Morse Network
 
 :::tip
@@ -178,7 +178,7 @@ feature unless you are customizing QoS modules yourself.
 
 For more information, see:
 
-- [PATH Configuration File](./5_configurations_path.md#hydrator_config-optional)
+- [PATH Configuration File](./8_ref_configurations_path.md#hydrator_config-optional)
 - [Supported QoS Services](../../learn/qos/1_supported_services.md)
 
 :::tip
