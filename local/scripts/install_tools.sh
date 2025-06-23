@@ -4,7 +4,7 @@
 #                            This will greatly simplify the developer experience of running PATH in development mode and remove the need to have a
 #                            local Kubernetes cluster running, as well as the need to install these tools on the host machine.
 
-# This script installs Docker, Kind, Kubectl, Helm, and Tilt if they are not already installed.
+# This script installs Docker, Kind, Kubectl, Helm, Tilt, and pocketd if they are not already installed.
 # It detects the OS and architecture to download the correct binaries.
 
 set -e
@@ -201,6 +201,26 @@ install_tilt() {
     tilt version
 }
 
+# Function to install pocketd (always install to ensure latest version)
+install_pocketd() {
+    if command_exists pocketd; then
+        log "WARNING" "🌟 pocketd already installed. Overwriting with latest version..."
+        pocketd version
+    else
+        log "INFO" "🌟 Installing pocketd..."
+    fi
+
+    # Run the official pocketd installation script
+    curl -sSL https://raw.githubusercontent.com/pokt-network/poktroll/main/tools/scripts/pocketd-install.sh | bash -s -- --upgrade
+
+    if command_exists pocketd; then
+        log "SUCCESS" "✅ pocketd installed successfully."
+        pocketd version
+    else
+        log "WARNING" "pocketd installation completed but pocketd command not found. You may need to restart your terminal or update your PATH."
+    fi
+}
+
 # Function to prompt user for confirmation
 prompt_user() {
     local message="$1"
@@ -221,10 +241,10 @@ log "INFO" "🔍 Starting installation script..."
 # Detect system architecture and OS
 detect_system
 
-# Check for missing dependencies
+# Check for missing dependencies (pocketd is always installed)
 MISSING_DEPS=()
 
-for cmd in docker kind kubectl helm tilt; do
+for cmd in docker kind kubectl helm tilt pocketd; do
     if ! command_exists "$cmd"; then
         case "$cmd" in
             docker) MISSING_DEPS+=("🐳 Docker: Container engine for running applications in containers") ;;
@@ -236,19 +256,33 @@ for cmd in docker kind kubectl helm tilt; do
     fi
 done
 
-if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
-    log "SUCCESS" "✅ All dependencies are installed."
-    exit 0
+# Always check pocketd status for user information
+if command_exists pocketd; then
+    POCKETD_STATUS="🌟 pocketd: Pocket Network Protocol daemon (will be updated to latest version)"
+else
+    POCKETD_STATUS="🌟 pocketd: Pocket Network Protocol daemon (will be installed)"
 fi
 
-# Display missing dependencies
-log "WARNING" "🚨 The following required dependencies are missing:"
-for dep in "${MISSING_DEPS[@]}"; do
-    echo -e "${YELLOW}${dep}${RESET}"
-done
+if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
+    log "SUCCESS" "✅ All core dependencies are installed."
+    log "INFO" "$POCKETD_STATUS"
+else
+    # Display missing dependencies
+    log "WARNING" "🚨 The following required dependencies are missing:"
+    for dep in "${MISSING_DEPS[@]}"; do
+        echo -e "${YELLOW}${dep}${RESET}"
+    done
+    log "INFO" "$POCKETD_STATUS"
+fi
 
-# Prompt user to install
-if ! prompt_user "❔ Would you like to install these dependencies? (y/n):"; then
+# Always prompt for installation if there are missing deps OR for pocketd update
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    PROMPT_MESSAGE="❔ Would you like to install the missing dependencies and update pocketd? (y/n):"
+else
+    PROMPT_MESSAGE="❔ Would you like to update pocketd to the latest version? (y/n):"
+fi
+
+if ! prompt_user "$PROMPT_MESSAGE"; then
     log "WARNING" "Installation aborted by user"
     exit 1
 fi
@@ -259,5 +293,6 @@ install_kind
 install_kubectl
 install_helm
 install_tilt
+install_pocketd
 
 log "SUCCESS" "✅ Installation script completed."

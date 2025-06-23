@@ -1,6 +1,6 @@
 ---
-sidebar_position: 6
-title: PATH Helm Config (`.values.yaml`)
+sidebar_position: 9
+title: Reference - PATH Helm Config (`.values.yaml`)
 description: PATH Helm Configurations
 ---
 
