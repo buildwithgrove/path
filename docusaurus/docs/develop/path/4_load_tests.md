@@ -37,7 +37,7 @@ The remainder of this document is only relevant if you intend to load test the G
 
 :::info 🏢 **Grove Employees**
 
-You can obtain the required Portal Application ID and API Key from the [1Password link](1Password_link_to_grove_portal_credentials).
+You can obtain the required Portal Application ID and API Key from the [Grove Portal App Credentials for PATH Load Testing on 1Password](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=iznzvqegxbl4y73d5lppm4y6r4&h=buildwithgrove.1password.com).
 
 :::
 
