@@ -36,7 +36,7 @@ definitions:
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
-        examples: ["F00C", "anvil", "eth", "arb_one"]
+        examples: ["F00C", "anvil", "eth", "arb-one"]
       service_type:
         description: "Type of service to test"
         type: string
