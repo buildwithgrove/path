@@ -62,7 +62,11 @@ type Gateway struct {
 // TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
 // - Extract generic processing into common method
 // - Keep HTTP-specific details separate
-func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+func (g Gateway) HandleServiceRequest(
+	ctx context.Context,
+	httpReq *http.Request,
+	w http.ResponseWriter,
+) {
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
@@ -96,7 +100,12 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 }
 
 // handleHTTPRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+func (g Gateway) handleHTTPServiceRequest(
+	_ context.Context,
+	httpReq *http.Request,
+	gatewayRequestCtx *requestContext,
+	w http.ResponseWriter,
+) {
 	defer func() {
 		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(w)
@@ -125,11 +134,16 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	_ = gatewayRequestCtx.HandleRelayRequestWithRetries(httpReq, 0)
+	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
 // handleWebsocketRequest handles WebSocket connection requests
-func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+func (g Gateway) handleWebSocketRequest(
+	_ context.Context,
+	httpReq *http.Request,
+	gatewayRequestCtx *requestContext,
+	w http.ResponseWriter,
+) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {

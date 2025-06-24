@@ -1,100 +1,128 @@
-# This schema file may be used to validate the e2e config file using the `yaml-language-server` VSCode extension.
-# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+# yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
 
-$schema: "http://json-schema.org/draft-07/schema#"
-title: "PATH E2E Testing Configuration Schema"
-description: "PATH E2E Testing Configuration YAML: this file is used to configure end-to-end tests for PATH gateways"
-type: object
-additionalProperties: false
+e2e_load_test_config:
+  load_test_config:
+    portal_application_id: "ea7f9165"
+    portal_api_key: "ad61cfb38c1e79ab0ba58f9a1b5968f9"
+    gateway_url_override: "https://rpc.grove.city/v1"
+    # gateway_url_override: "http://localhost:3070/v1"
+    # portal_api_key: "test_api_key"
 
-definitions:
-  method_config_base:
-    description: "Common test configuration options"
-    type: object
-    additionalProperties: false
-    properties:
-      global_rps:
-        description: "Requests per second for all methods"
-        type: integer
-        minimum: 1
-      requests_per_method:
-        description: "Total number of requests to send for each method"
-        type: integer
-        minimum: 1
-      success_rate:
-        description: "Minimum success rate required (0-1)"
-        type: number
-        minimum: 0
-        maximum: 1
-      max_p50_latency_ms:
-        description: "Maximum P50 latency in milliseconds (e.g. '2000ms')"
-        type: string
-        pattern: "^[0-9]+ms$"
-        examples: ["2000ms"]
-      max_p95_latency_ms:
-        description: "Maximum P95 latency in milliseconds (e.g. '5000ms')"
-        type: string
-        pattern: "^[0-9]+ms$"
-        examples: ["5000ms"]
-      max_p99_latency_ms:
-        description: "Maximum P99 latency in milliseconds (e.g. '10000ms')"
-        type: string
-        pattern: "^[0-9]+ms$"
-        examples: ["10000ms"]
-      archival:
-        description: "Whether the service is archival. Use to override the default archival status for a service."
-        type: boolean
+default_service_config:
+  global_rps: 100
+  requests_per_method: 300
+  success_rate: 0.95
+  max_p50_latency_ms: 10000ms
+  max_p95_latency_ms: 20000ms
+  max_p99_latency_ms: 30000ms
 
-properties:
-  e2e_load_test_config:
-    description: "General test configuration"
-    type: object
-    additionalProperties: false
-    properties:
-      e2e_config:
-        description: "E2E test mode configuration"
-        type: object
-        additionalProperties: false
-        properties:
-          wait_for_hydrator:
-            description: "Seconds to wait for hydrator checks after PATH startup"
-            type: integer
-            minimum: 0
-          docker_config:
-            description: "Docker configuration"
-            type: object
-            additionalProperties: false
-            properties:
-              log_to_file:
-                description: "Log Docker container output to file"
-                type: boolean
-              force_rebuild_image:
-                description: "Force Docker image rebuild (useful after code changes)"
-                type: boolean
-      load_test_config:
-        description: "Load test mode configuration"
-        type: object
-        additionalProperties: false
-        required:
-          - gateway_url_override
-          - portal_application_id
-        properties:
-          gateway_url_override:
-            description: "Custom PATH gateway URL"
-            type: string
-          portal_application_id:
-            description: "Portal Application ID for the test"
-            type: string
-          portal_api_key:
-            description: "Portal API key for the test"
-            type: string
-
-  default_service_config:
-    $ref: "#/definitions/method_config_base"
-    description: "Default configuration for all services"
-
-  service_config_overrides:
-    description: "Override default configuration for specific services"
-    type: object
-    additionalProperties:
-      $ref: "#/definitions/method_config_base"
+service_config_overrides:
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+  "arb-one":
+    archival: true
+  "arb-sepolia-testnet":
+    archival: true
+  "avax":
+    archival: true
+  "avax-dfk":
+    archival: true
+  "base":
+    archival: true
+  "base-sepolia-testnet":
+    archival: true
+  "bera":
+    archival: true
+  "bitcoin":
+    archival: true
+  "blast":
+    archival: true
+  "boba":
+    archival: true
+  "bsc":
+    archival: true
+  "celo":
+    archival: true
+  "eth":
+    archival: true
+  "eth-holesky-testnet":
+    archival: true
+  "eth-sepolia-testnet":
+    archival: true
+  "evmos":
+    archival: true
+  "fantom":
+    archival: true
+  "fraxtal":
+    archival: true
+  "fuse":
+    archival: true
+  "gnosis":
+    archival: true
+  "harmony":
+    archival: true
+  "ink":
+    archival: true
+  "iotex":
+    archival: true
+  "kaia":
+    archival: true
+  "kava":
+    archival: true
+  "linea":
+    archival: true
+  "mantle":
+    archival: true
+  "metis":
+    archival: true
+  "moonbeam":
+    archival: true
+  "moonriver":
+    archival: true
+  "near":
+    archival: true
+  "oasys":
+    archival: true
+  "op":
+    archival: true
+  "op-sepolia-testnet":
+    archival: true
+  "opbnb":
+    archival: true
+  "osmosis":
+    archival: true
+  "pocket":
+    archival: true
+  "poly":
+    archival: true
+  "poly-amoy-testnet":
+    archival: true
+  "poly-zkevm":
+    archival: true
+  "radix":
+    archival: true
+  "scroll":
+    archival: true
+  "sei":
+    archival: true
+  "solana":
+    archival: true
+  "sonic":
+    archival: true
+  "sui":
+    archival: true
+  "taiko":
+    archival: true
+  "taiko-hekla-testnet":
+    archival: true
+  "tron":
+    archival: true
+  "xrplevm":
+    archival: true
+  "xrplevm-testnet":
+    archival: true
+  "zklink-nova":
+    archival: true
+  "zksync_era":
+    archival: true

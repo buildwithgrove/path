@@ -15,6 +15,11 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+// TODO_IMPROVE: Make this configurable via PATH configs.
+const (
+	maxRequestRetriesDefault = 3 // Default maximum number of retry attempts
+)
+
 var (
 	errHTTPRequestRejectedByParser   = errors.New("HTTP request rejected by the HTTP parser")
 	errHTTPRequestRejectedByQoS      = errors.New("HTTP request rejected by service QoS instance")
@@ -44,6 +49,7 @@ type requestContext struct {
 	// 	1. service ID
 	// 	2. The service ID's corresponding QoS instance.
 	httpRequestParser HTTPRequestParser
+	httpReq           *http.Request
 
 	// metricsReporter is used to export metrics based on observations made in handling service requests.
 	metricsReporter RequestResponseReporter
@@ -89,6 +95,7 @@ type requestContext struct {
 //   - The target service ID
 //   - The Service QoS instance
 func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
+	rc.httpReq = httpReq
 	rc.logger = rc.getHTTPRequestLogger(httpReq)
 
 	// TODO_MVP(@adshmh): The HTTPRequestParser should return a context, similar to QoS, which is then used to get a QoS instance and the observation set.
@@ -275,88 +282,87 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
-	return rc.HandleRelayRequestWithRetries(nil, 0)
-}
-
-// HandleRelayRequestWithRetries sends a relay with retry logic on failure.
-// It attempts to retry the request with a different endpoint up to maxRetries times.
-func (rc *requestContext) HandleRelayRequestWithRetries(httpReq *http.Request, maxRetries int) error {
-	const maxRetriesDefault = 2 // Default maximum number of retry attempts
-
-	// Use default if maxRetries is not provided or invalid
-	if maxRetries <= 0 {
-		maxRetries = maxRetriesDefault
-	}
-
-	return rc.handleRelayRequestWithRetriesRecursive(httpReq, maxRetries, 0, nil)
+	triedEndpoints := []protocol.EndpointAddr{}
+	return rc.handleRelayRequestWithRetries(maxRequestRetriesDefault, 0, triedEndpoints)
 }
 
 // handleRelayRequestWithRetriesRecursive is the recursive implementation of HandleRelayRequestWithRetries.
-func (rc *requestContext) handleRelayRequestWithRetriesRecursive(httpReq *http.Request, maxRetries, currentAttempt int, triedEndpoints []protocol.EndpointAddr) error {
+func (rc *requestContext) handleRelayRequestWithRetries(
+	maxRetries,
+	currentAttempt int,
+	triedEndpoints []protocol.EndpointAddr,
+) error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
-	if err == nil {
+	if err == nil || currentAttempt >= maxRetries {
 		// Success! Process the response and return.
 		rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
 		return nil
 	}
 
 	// Log the failure
-	rc.logger.
-		With("attempt", currentAttempt+1).
-		With("max_retries", maxRetries+1).
-		Warn().Err(err).
-		Msg("Failed to send a relay request.")
+	rc.logger.Warn().Err(err).Msgf("Failed to send a relay request on attempt %d of %d.", currentAttempt+1, maxRetries)
 
 	// Track the failed endpoint if we have response information
 	if endpointResponse.EndpointAddr != "" {
 		triedEndpoints = append(triedEndpoints, endpointResponse.EndpointAddr)
 	}
 
-	// If this was the last attempt, don't try to retry
-	if currentAttempt >= maxRetries {
-		rc.logger.
-			With("total_attempts", maxRetries+1).
-			With("tried_endpoints", len(triedEndpoints)).
-			Error().Err(err).
-			Msg("All retry attempts failed.")
-		return err
-	}
-
-	// Only retry if we have an HTTP request to rebuild the protocol context
-	if httpReq == nil {
-		rc.logger.Warn().Msg("Cannot retry: no HTTP request available to rebuild protocol context.")
-		return err
-	}
-
-	// Log retry attempt
-	rc.logger.
-		With("attempt", currentAttempt+1).
-		With("max_retries", maxRetries+1).
-		Info().
-		Msg("Retrying request with new endpoint.")
-
 	// Try to get a different endpoint and rebuild the protocol context
-	if retryErr := rc.selectNewEndpointForRetry(httpReq, triedEndpoints); retryErr != nil {
+	if retryErr := rc.selectNewEndpointForRetry(triedEndpoints); retryErr != nil {
 		rc.logger.Warn().Err(retryErr).Msg("Failed to select a new endpoint for retry.")
 		return err
 	}
 
 	// Recursively retry with the new endpoint
-	return rc.handleRelayRequestWithRetriesRecursive(httpReq, maxRetries, currentAttempt+1, triedEndpoints)
+	return rc.handleRelayRequestWithRetries(maxRetries, currentAttempt+1, triedEndpoints)
 }
 
 // selectNewEndpointForRetry attempts to select a new endpoint and rebuild the protocol context.
-func (rc *requestContext) selectNewEndpointForRetry(httpReq *http.Request, triedEndpoints []protocol.EndpointAddr) error {
+func (rc *requestContext) selectNewEndpointForRetry(
+	triedEndpoints []protocol.EndpointAddr,
+) error {
 	// Get available endpoints for the service
-	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
+	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, nil)
 	if err != nil {
 		rc.updateProtocolObservations(&endpointLookupObs)
 		return fmt.Errorf("error getting available endpoints for retry: %w", err)
 	}
 
-	// Filter out already tried endpoints
-	var filteredEndpoints protocol.EndpointAddrList
+	// Filter out already tried endpoints using helper
+	filteredEndpoints := filterUntriedEndpoints(availableEndpoints, triedEndpoints)
+
+	// If no new endpoints are available, fall back to the QoS selector with all endpoints
+	var selectedEndpointAddr protocol.EndpointAddr
+	if len(filteredEndpoints) == 0 {
+		rc.logger.Warn().Msg("No new endpoints available for retry, using QoS selector with all endpoints.")
+		selectedEndpointAddr, err = rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
+	} else {
+		rc.logger.Info().Msgf("Selecting new endpoint out of %d available endpoints for retry.", len(filteredEndpoints))
+		selectedEndpointAddr, err = rc.qosCtx.GetEndpointSelector().Select(filteredEndpoints)
+	}
+	if err != nil {
+		rc.updateProtocolObservations(&endpointLookupObs)
+		return fmt.Errorf("error selecting new endpoint for retry: %w", err)
+	}
+
+	// Build a new protocol context for the selected endpoint
+	protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, rc.httpReq)
+	if err != nil {
+		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
+		return fmt.Errorf("error building protocol context for retry: %w", err)
+	}
+
+	// Update the protocol context
+	rc.protocolCtx = protocolCtx
+	rc.logger.Info().Msgf("Successfully selected new endpoint %s for retry.", selectedEndpointAddr)
+
+	return nil
+}
+
+// filterUntriedEndpoints returns a list of endpoints from availableEndpoints that are not present in triedEndpoints.
+func filterUntriedEndpoints(availableEndpoints, triedEndpoints protocol.EndpointAddrList) protocol.EndpointAddrList {
+	var filtered protocol.EndpointAddrList
 	for _, endpoint := range availableEndpoints {
 		alreadyTried := false
 		for _, tried := range triedEndpoints {
@@ -366,43 +372,10 @@ func (rc *requestContext) selectNewEndpointForRetry(httpReq *http.Request, tried
 			}
 		}
 		if !alreadyTried {
-			filteredEndpoints = append(filteredEndpoints, endpoint)
+			filtered = append(filtered, endpoint)
 		}
 	}
-
-	// If no new endpoints are available, fall back to the QoS selector with all endpoints
-	var selectedEndpointAddr protocol.EndpointAddr
-	if len(filteredEndpoints) == 0 {
-		rc.logger.Warn().Msg("No new endpoints available for retry, using QoS selector with all endpoints.")
-		selectedEndpointAddr, err = rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
-	} else {
-		rc.logger.
-			With("available_new_endpoints", len(filteredEndpoints)).
-			Info().
-			Msg("Selecting new endpoint for retry.")
-		selectedEndpointAddr, err = rc.qosCtx.GetEndpointSelector().Select(filteredEndpoints)
-	}
-
-	if err != nil {
-		rc.updateProtocolObservations(&endpointLookupObs)
-		return fmt.Errorf("error selecting new endpoint for retry: %w", err)
-	}
-
-	// Build a new protocol context for the selected endpoint
-	protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
-	if err != nil {
-		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
-		return fmt.Errorf("error building protocol context for retry: %w", err)
-	}
-
-	// Update the protocol context
-	rc.protocolCtx = protocolCtx
-	rc.logger.
-		With("selected_endpoint", selectedEndpointAddr).
-		Info().
-		Msg("Successfully selected new endpoint for retry.")
-
-	return nil
+	return filtered
 }
 
 // HandleWebsocketRequest handles a websocket request.
