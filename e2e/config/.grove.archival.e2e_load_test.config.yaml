@@ -19,9 +19,9 @@ service_config_overrides:
   "anvil":
     global_rps: 1
     requests_per_method: 3
-  "arb_one":
+  "arb-one":
     archival: true
-  "arb_sep_test":
+  "arb-sepolia-testnet":
     archival: true
   "avax":
     archival: true
@@ -29,7 +29,7 @@ service_config_overrides:
     archival: true
   "base":
     archival: true
-  "base-test":
+  "base-sepolia-testnet":
     archival: true
   "bera":
     archival: true
@@ -45,9 +45,9 @@ service_config_overrides:
     archival: true
   "eth":
     archival: true
-  "eth_hol_test":
+  "eth-holesky-testnet":
     archival: true
-  "eth_sep_test":
+  "eth-sepolia-testnet":
     archival: true
   "evmos":
     archival: true
@@ -85,7 +85,7 @@ service_config_overrides:
     archival: true
   "op":
     archival: true
-  "op_sep_test":
+  "op-sepolia-testnet":
     archival: true
   "opbnb":
     archival: true
@@ -95,9 +95,9 @@ service_config_overrides:
     archival: true
   "poly":
     archival: true
-  "poly_amoy_test":
+  "poly-amoy-testnet":
     archival: true
-  "poly_zkevm":
+  "poly-zkevm":
     archival: true
   "radix":
     archival: true
@@ -113,15 +113,15 @@ service_config_overrides:
     archival: true
   "taiko":
     archival: true
-  "taiko_hek_test":
+  "taiko-hekla-testnet":
     archival: true
   "tron":
     archival: true
-  "xrpl_evm_dev":
+  "xrplevm":
     archival: true
-  "xrpl_evm_test":
+  "xrplevm-testnet":
     archival: true
-  "zklink_nova":
+  "zklink-nova":
     archival: true
   "zksync_era":
     archival: true

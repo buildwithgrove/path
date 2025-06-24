@@ -15,11 +15,11 @@ source "$(dirname "$0")/shannon_preliminary_services_helpers.sh"
 
 # EVM-compatible services that use JSON-RPC eth_blockNumber for testing
 EVM_SERVICES=(
-    "arb_one"
-    "arb_sep_test"
+    "arb-one"
+    "arb-sepolia-testnet"
     "avax-dfk"
     "avax"
-    "base-test"
+    "base-sepolia-testnet"
     "base"
     "bera"
     "bitcoin"
@@ -28,8 +28,8 @@ EVM_SERVICES=(
     "bsc"
     "celo"
     "eth"
-    "eth_hol_test"
-    "eth_sep_test"
+    "eth-holesky-testnet"
+    "eth-sepolia-testnet"
     "evmos"
     "fantom"
     "fraxtal"
@@ -48,12 +48,12 @@ EVM_SERVICES=(
     "near"
     "oasys"
     "op"
-    "op_sep_test"
+    "op-sepolia-testnet"
     "opbnb"
     "osmosis"
     "poly"
-    "poly_amoy_test"
-    "poly_zkevm"
+    "poly-amoy-testnet"
+    "poly-zkevm"
     "radix"
     "scroll"
     "sei"
@@ -61,11 +61,11 @@ EVM_SERVICES=(
     "sonic"
     "sui"
     "taiko"
-    "taiko_hek_test"
+    "taiko-hekla-testnet"
     "tron"
-    "xrpl_evm_dev"
-    "xrpl_evm_test"
-    "zklink_nova"
+    "xrplevm"
+    "xrplevm-testnet"
+    "zklink-nova"
     "zksync_era"
 )
 
@@ -316,15 +316,15 @@ get_service_identifier() {
     local service_id="$1"
     if [ "$ENVIRONMENT" = "production" ]; then
         case "$service_id" in
-        arb_one) echo "arbitrum-one" ;;
-        arb_sep_test) echo "arbitrum-sepolia-testnet" ;;
-        base-test) echo "base-testnet" ;;
-        eth_hol_test) echo "eth-holesky-testnet" ;;
-        eth_sep_test) echo "eth-sepolia-testnet" ;;
-        op_sep_test) echo "optimism-sepolia-testnet" ;;
+        arb-one) echo "arbitrum-one" ;;
+        arb-sepolia-testnet) echo "arbitrum-sepolia-testnet" ;;
+        base-sepolia-testnet) echo "base-sepolia-testnetnet" ;;
+        eth-holesky-testnet) echo "eth-holesky-testnet" ;;
+        eth-sepolia-testnet) echo "eth-sepolia-testnet" ;;
+        op-sepolia-testnet) echo "optimism-sepolia-testnet" ;;
         poly) echo "poly" ;;
-        taiko_hek_test) echo "taiko-hekla-testnet" ;;
-        xrpl_evm_test) echo "xrpl-evm-test" ;;
+        taiko-hekla-testnet) echo "taiko-hekla-testnet" ;;
+        xrplevm-testnet) echo "xrpl-evm-test" ;;
         zksync_era) echo "zksync-era" ;;
         *) echo "$service_id" ;;
         esac
