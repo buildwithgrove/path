@@ -9,7 +9,7 @@
 
 .PHONY: test_all ## Run all unit tests and E2E test a subset of key services.
 test_all: test_unit
-	@$(MAKE) e2e_test eth,poly,xrpl_evm_test,oasys
+	@$(MAKE) e2e_test eth,poly,xrplevm-testnet,oasys
 	@$(MAKE) morse_e2e_test F00C,F021,F036,F01C
 
 .PHONY: test_unit

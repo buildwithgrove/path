@@ -135,7 +135,7 @@ func blockNumberToHex(blockNumber uint64) string {
 //
 // `archivalConsensusThreshold` endpoints must agree on the same balance for it to be set as the expected archival balance.
 func (as *archivalState) updateExpectedBalance(updatedEndpoints map[protocol.EndpointAddr]endpoint) {
-	// Parallelize balance fetching and consensus because some chains have very low block latencies (e.g. arb_one).
+	// Parallelize balance fetching and consensus because some chains have very low block latencies (e.g. arb-one).
 	balanceCh := make(chan string, len(updatedEndpoints))
 	timeout := time.After(5 * time.Second)
 	var wg sync.WaitGroup
