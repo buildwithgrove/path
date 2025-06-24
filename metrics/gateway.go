@@ -16,12 +16,14 @@ const (
 	requestsTotal        = "requests_total"
 	responseSizeBytes    = "response_size_bytes"
 	relayDurationSeconds = "relay_duration_seconds"
+	versionInfoMetric    = "version_info"
 )
 
 func init() {
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysDurationSeconds)
 	prometheus.MustRegister(relayResponseSizeBytes)
+	prometheus.MustRegister(versionInfo)
 }
 
 var (
@@ -90,6 +92,26 @@ var (
 	//	3. Building an HTTP observation using the extracted data.
 	// This will also involve a small refactor on protocol and qos packages to accept a custom struct
 	// rather than an HTTP request.
+
+	// versionInfo provides version information about the running PATH instance.
+	// This is a gauge metric that is set to 1 with labels containing version details.
+	// Labels:
+	//   - version: Version string from git describe (e.g., "v1.0.0" or "v1.0.0-dev1")
+	//   - commit: Git commit SHA
+	//   - build_date: ISO8601 timestamp when the binary was built
+	//
+	// Use to analyze:
+	//   - Which version of PATH is running
+	//   - Track deployment rollouts
+	//   - Correlate issues with specific builds
+	versionInfo = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      versionInfoMetric,
+			Help:      "Version information about the running PATH instance",
+		},
+		[]string{"version", "commit", "build_date"},
+	)
 )
 
 // publishGatewayMetrics publishes all metrics related to gateway-level observations.
@@ -150,4 +172,25 @@ func publishGatewayMetrics(
 
 	// Return the validity status of the request.
 	return requestErr == nil
+}
+
+// SetVersionInfo sets the version information metric with the provided build details.
+// This should be called once during application startup.
+func SetVersionInfo(version, commit, buildDate string) {
+	// Set default values if any are empty
+	if version == "" {
+		version = "unknown"
+	}
+	if commit == "" {
+		commit = "unknown"
+	}
+	if buildDate == "" {
+		buildDate = "unknown"
+	}
+
+	versionInfo.With(prometheus.Labels{
+		"version":    version,
+		"commit":     commit,
+		"build_date": buildDate,
+	}).Set(1)
 }
