@@ -13,6 +13,7 @@
 
 # Don't commit binaries
 bin
+release
 
 # Do not allow a multi-moduled projected
 go.work.sum
@@ -67,9 +68,10 @@ install.log
 # exclude values.tmpl.yaml files
 !values.tmpl.yaml
 
-# Claudesync
+# Claudesync, Claude code and MCP servers
 .claudesync/
 .claudeignore
+.serena/cache
 
 # Config Backup files
 *.backup
