@@ -14,12 +14,12 @@ servers:
         default: eth
         description: The service ID that determines the subdomain
         enum:
-          - arb_one
-          - arb_sep_test
+          - arb-one
+          - arb-sepolia-testnet
           - avax
           - avax-dfk
           - base
-          - base-test
+          - base-sepolia-testnet
           - bera
           - bitcoin
           - blast
@@ -27,8 +27,8 @@ servers:
           - bsc
           - celo
           - eth
-          - eth_hol_test
-          - eth_sep_test
+          - eth-holesky-testnet
+          - eth-sepolia-testnet
           - evmos
           - fantom
           - fraxtal
@@ -47,24 +47,24 @@ servers:
           - near
           - oasys
           - op
-          - op_sep_test
+          - op-sepolia-testnet
           - opbnb
           - pocket
           - poly
-          - poly_amoy_test
-          - poly_zkevm
+          - poly-amoy-testnet
+          - poly-zkevm
           - radix
           - scroll
           - sei
           - sonic
           - sui
           - taiko
-          - taiko_hek_test
+          - taiko-hekla-testnet
           - tron
-          - xrpl_evm_dev
-          - xrpl_evm_test
-          - zklink_nova
-          - zksync_era
+          - xrplevm
+          - xrplevm-testnet
+          - zklink-nova
+          - zksync-era
   - url: http://localhost:3069
     description: Local PATH instance
 components:
@@ -124,11 +124,11 @@ components:
       schema:
         type: string
   examples:
-    arb_one:
-      value: arb_one
+    arb-one:
+      value: arb-one
       summary: Arbitrum One
-    arb_sep_test:
-      value: arb_sep_test
+    arb-sepolia-testnet:
+      value: arb-sepolia-testnet
       summary: Arbitrum Sepolia Testnet
     avax:
       value: avax
@@ -139,8 +139,8 @@ components:
     base:
       value: base
       summary: Base
-    base-test:
-      value: base-test
+    base-sepolia-testnet:
+      value: base-sepolia-testnet
       summary: Base Testnet
     bera:
       value: bera
@@ -163,11 +163,11 @@ components:
     eth:
       value: eth
       summary: Ethereum
-    eth_hol_test:
-      value: eth_hol_test
+    eth-holesky-testnet:
+      value: eth-holesky-testnet
       summary: Ethereum Holesky Testnet
-    eth_sep_test:
-      value: eth_sep_test
+    eth-sepolia-testnet:
+      value: eth-sepolia-testnet
       summary: Ethereum Sepolia Testnet
     evmos:
       value: evmos
@@ -223,8 +223,8 @@ components:
     op:
       value: op
       summary: Optimism
-    op_sep_test:
-      value: op_sep_test
+    op-sepolia-testnet:
+      value: op-sepolia-testnet
       summary: Optimism Sepolia Testnet
     opbnb:
       value: opbnb
@@ -235,11 +235,11 @@ components:
     poly:
       value: poly
       summary: Polygon
-    poly_amoy_test:
-      value: poly_amoy_test
+    poly-amoy-testnet:
+      value: poly-amoy-testnet
       summary: Polygon Amoy Testnet
-    poly_zkevm:
-      value: poly_zkevm
+    poly-zkevm:
+      value: poly-zkevm
       summary: Polygon zkEVM
     radix:
       value: radix
@@ -259,23 +259,23 @@ components:
     taiko:
       value: taiko
       summary: Taiko
-    taiko_hek_test:
-      value: taiko_hek_test
+    taiko-hekla-testnet:
+      value: taiko-hekla-testnet
       summary: Taiko Hekla Testnet
     tron:
       value: tron
       summary: Tron
-    xrpl_evm_dev:
-      value: xrpl_evm_dev
-      summary: XRPL EVM Dev
-    xrpl_evm_test:
-      value: xrpl_evm_test
-      summary: XRPL EVM Testnet
-    zklink_nova:
-      value: zklink_nova
+    xrplevm:
+      value: xrplevm
+      summary: XRPLEVM
+    xrplevm-testnet:
+      value: xrplevm-testnet
+      summary: XRPLEVM Testnet
+    zklink-nova:
+      value: zklink-nova
       summary: zkLink Nova
-    zksync_era:
-      value: zksync_era
+    zksync-era:
+      value: zksync-era
       summary: zkSync Era
 security:
   - ApiKeyAuth: []

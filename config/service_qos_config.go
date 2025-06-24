@@ -60,7 +60,7 @@ var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
 	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("arb-one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
 		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
 		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
 		// Contract start block
@@ -68,7 +68,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Arbitrum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("arb_sep_test", "0x66EEE", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("arb-sepolia-testnet", "0x66EEE", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
 		"0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54",
 		// Contract start block
@@ -100,7 +100,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Base Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("base-test", "0x14a34", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("base-sepolia-testnet", "0x14a34", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
 		"0xbab76e4365a2dff89ddb2d3fc9994103b48886c0",
 		// Contract start block
@@ -156,7 +156,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Ethereum Holesky Testnet
-	evm.NewEVMServiceQoSConfig("eth_hol_test", "0x4268", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("eth-holesky-testnet", "0x4268", evm.NewEVMArchivalCheckConfig(
 		// https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
 		"0xc6392ad8a14794ea57d237d12017e7295bea2363",
 		// Contract start block
@@ -164,7 +164,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Ethereum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("eth_sep_test", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("eth-sepolia-testnet", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
 		"0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b",
 		// Contract start block
@@ -276,7 +276,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Optimism Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("op-sepolia-testnet", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
 		"0x734d539a7efee15714a2755caa4280e12ef3d7e4",
 		// Contract start block
@@ -292,7 +292,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Polygon Amoy Testnet
-	evm.NewEVMServiceQoSConfig("poly_amoy_test", "0x13882", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("poly-amoy-testnet", "0x13882", evm.NewEVMArchivalCheckConfig(
 		// https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
 		"0x54d03ec0c462e9a01f77579c090cde0fc2617817",
 		// Contract start block
@@ -300,7 +300,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("poly-zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
 		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
 		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
 		// Contract start block
@@ -332,7 +332,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Taiko Hekla Testnet
-	evm.NewEVMServiceQoSConfig("taiko_hek_test", "0x28c61", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("taiko-hekla-testnet", "0x28c61", evm.NewEVMArchivalCheckConfig(
 		// https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
 		"0x1670090000000000000000000000000000010001",
 		// Contract start block
@@ -340,7 +340,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_test", "0x161c28", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("xrplevm-testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
 		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
 		// Contract start block
@@ -348,7 +348,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// zkLink
-	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("zklink-nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
 		"0xa3cb8648d12bD36e713af27D92968B370D7A9546",
 		// Contract start block
@@ -356,7 +356,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// zkSync
-	evm.NewEVMServiceQoSConfig("zksync_era", "0x144", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("zksync-era", "0x144", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
 		"0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C",
 		// Contract start block
