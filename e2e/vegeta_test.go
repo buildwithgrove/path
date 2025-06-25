@@ -281,6 +281,7 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 	// Process JSON-RPC validation if we have a successful HTTP response
 	var rpcResponse jsonrpc.Response
 	if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
+		fmt.Printf("Error unmarshalling JSON-RPC response: %v\n", string(result.Body))
 		m.jsonRPCUnmarshalErrors++
 	} else {
 		m.jsonRPCResponses++
