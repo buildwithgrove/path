@@ -237,7 +237,7 @@ message EVMGetBalanceResponse {
 
 // EVMUnrecognizedResponse handles requests with unrecognized/unvalidated response methods for QoS endpoint selection.
 // - Example: eth_call response contents used for endpoint validation (as of PR #72)
-// - Sanctions still apply to endpoints returning invalid responses (e.g. unparseable JSONRPC) 
+// - Sanctions still apply to endpoints returning invalid responses (e.g. unparsable JSONRPC)
 message EVMUnrecognizedResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;

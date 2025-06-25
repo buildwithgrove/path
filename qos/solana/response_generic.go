@@ -10,6 +10,7 @@ import (
 )
 
 // TODO_UPNEXT(@adshmh): Update solana and cometbft QoS to detect and sanction malformed endpoint responses to any request.
+// See evm implementation in #321 for reference.
 
 const (
 	// errCodeUnmarshaling is set as the JSON-RPC response's error code if the endpoint returns a malformed response.

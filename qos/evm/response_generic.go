@@ -91,9 +91,8 @@ func (r responseGeneric) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
-// responseUnmarshallerGenericFromResponse processes an already unmarshaled JSON-RPC response
-// into a responseGeneric struct. This avoids double unmarshaling when the response has
-// already been parsed.
+// responseUnmarshallerGenericFromResponse processes an already unmarshaled JSON-RPC response into a responseGeneric struct.
+// This avoids double unmarshaling when the response has already been parsed.
 func responseUnmarshallerGenericFromResponse(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResponse jsonrpc.Response) (response, error) {
 	httpStatus := jsonrpcResponse.GetRecommendedHTTPStatusCode()
 	logger.With(
