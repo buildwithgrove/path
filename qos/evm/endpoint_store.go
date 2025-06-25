@@ -125,12 +125,21 @@ func applyObservation(
 		}
 	}
 
+	// If unrecognizedResponse is not nil, the observation is for an unrecognized response.
+	if unrecognizedResponse := observation.GetUnrecognizedResponse(); unrecognizedResponse != nil {
+		applyUnrecognizedResponseObservation(endpoint, unrecognizedResponse)
+		endpointWasMutated = true
+		return
+	}
+
 	return endpointWasMutated // endpoint was not mutated by the observation
 }
 
 // applyEmptyResponseObservation updates the empty response check if a valid observation is provided.
 func applyEmptyResponseObservation(endpoint *endpoint) {
 	endpoint.hasReturnedEmptyResponse = true
+	now := time.Now()
+	endpoint.invalidResponseLastObserved = &now
 }
 
 // applyBlockNumberObservation updates the block number check if a valid observation is provided.
@@ -168,5 +177,16 @@ func applyArchivalObservation(endpoint *endpoint, archivalResponse *qosobservati
 	endpoint.checkArchival = endpointCheckArchival{
 		observedArchivalBalance: archivalResponse.GetBalance(),
 		expiresAt:               time.Now().Add(checkArchivalInterval),
+	}
+}
+
+// applyUnrecognizedResponseObservation updates the invalid response check if a validation error is present.
+func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedResponse *qosobservations.EVMUnrecognizedResponse) {
+	// Check if the unrecognized response has a validation error set to something other than UNSPECIFIED
+	validationError := unrecognizedResponse.GetResponseValidationError()
+	if validationError != qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
+		endpoint.hasReturnedInvalidResponse = true
+		now := time.Now()
+		endpoint.invalidResponseLastObserved = &now
 	}
 }

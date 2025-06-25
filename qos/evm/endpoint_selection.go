@@ -4,11 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/buildwithgrove/path/protocol"
 )
 
-var errEmptyResponseObs = errors.New("endpoint is invalid: history of empty responses")
+var (
+	errEmptyResponseObs         = errors.New("endpoint is invalid: history of empty responses")
+	errRecentInvalidResponseObs = errors.New("endpoint is invalid: recent invalid response")
+	errEmptyEndpointListObs     = errors.New("received empty list of endpoints to select from")
+)
+
+// TODO_UPNEXT(@adshmh): make the invalid response timeout duration configurable
+// It is set to 30 minutes because that is the session time as of #321.
+const invalidResponseTimeout = 30 * time.Minute
 
 /* -------------------- QoS Valid Endpoint Selector -------------------- */
 // This section contains methods for the `serviceState` struct
@@ -56,7 +65,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 	logger := ss.logger.With("method", "filterValidEndpoints").With("qos_instance", "evm")
 
 	if len(availableEndpoints) == 0 {
-		return nil, errors.New("received empty list of endpoints to select from")
+		return nil, errEmptyEndpointListObs
 	}
 
 	logger.Info().Msgf("About to filter through %d available endpoints", len(availableEndpoints))
@@ -91,6 +100,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 //
 // It returns an error if:
 // - The endpoint has returned an empty response in the past.
+// - The endpoint has returned an invalid response within the last 30 minutes.
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint's archival check is invalid, if enabled.
@@ -98,22 +108,31 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	ss.serviceStateLock.RLock()
 	defer ss.serviceStateLock.RUnlock()
 
-	// Ensure the endpoint has not returned an empty response.
+	// Check if the endpoint has returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
 		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
 	}
 
-	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
+	// Check if the endpoint has returned an invalid response within the invalid response timeout period.
+	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
+		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
+		if timeSinceInvalidResponse < invalidResponseTimeout {
+			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+		}
+	}
+
+	// Check if the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
 		return fmt.Errorf("block number validation failed: %w", err)
 	}
 
-	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
+	// Check if the endpoint's EVM chain ID matches the expected chain ID.
 	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
 		return fmt.Errorf("chain ID validation failed: %w", err)
 	}
 
-	// Ensure the endpoint has returned an archival balance for the perceived block number.
+	// Check if the endpoint has returned an archival balance for the perceived block number.
 	if err := ss.archivalState.isArchivalBalanceValid(endpoint.checkArchival); err != nil {
 		return fmt.Errorf("archival balance validation failed: %w", err)
 	}
