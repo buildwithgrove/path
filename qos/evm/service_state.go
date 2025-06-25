@@ -154,8 +154,10 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 			continue
 		}
 
-		// Update the perceived block number.
-		ss.perceivedBlockNumber = blockNumber
+		// Update the perceived block number to the maximum of current and observed block numbers.
+		if blockNumber > ss.perceivedBlockNumber {
+			ss.perceivedBlockNumber = blockNumber
+		}
 	}
 
 	// If archival checks are enabled for the service, update the archival state.
