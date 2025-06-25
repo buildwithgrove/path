@@ -852,8 +852,9 @@ func (x *EVMGetBalanceResponse) GetResponseValidationError() EVMResponseValidati
 	return EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
 }
 
-// EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
-// Example: As of PR #72, `eth_call` requests are not used for endpoint validation
+// EVMUnrecognizedResponse handles requests with unrecognized/unvalidated response methods for QoS endpoint selection.
+// - Example: eth_call response contents used for endpoint validation (as of PR #72)
+// - Sanctions still apply to endpoints returning invalid responses (e.g. unparseable JSONRPC)
 type EVMUnrecognizedResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint

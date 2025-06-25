@@ -235,8 +235,9 @@ message EVMGetBalanceResponse {
   optional EVMResponseValidationError response_validation_error = 5 [(metadata.semantic_meaning) = "Validity failure type"];
 }
 
-// EVMUnrecognizedResponse handles requests with methods ignored by state update and endpoint validation
-// Example: As of PR #72, `eth_call` requests are not used for endpoint validation
+// EVMUnrecognizedResponse handles requests with unrecognized/unvalidated response methods for QoS endpoint selection.
+// - Example: eth_call response contents used for endpoint validation (as of PR #72)
+// - Sanctions still apply to endpoints returning invalid responses (e.g. unparseable JSONRPC) 
 message EVMUnrecognizedResponse {
   // The HTTP status code received from the endpoint
   int32 http_status_code = 1;

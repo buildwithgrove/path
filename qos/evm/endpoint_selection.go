@@ -4,11 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/buildwithgrove/path/protocol"
 )
 
 var errEmptyResponseObs = errors.New("endpoint is invalid: history of empty responses")
+var errRecentInvalidResponseObs = errors.New("endpoint is invalid: recent invalid response")
+
+// TODO_UPNEXT(@adshmh): make the invalid response timeout duration configurable
+const invalidResponseTimeout = 30 * time.Minute
 
 /* -------------------- QoS Valid Endpoint Selector -------------------- */
 // This section contains methods for the `serviceState` struct
@@ -91,6 +96,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 //
 // It returns an error if:
 // - The endpoint has returned an empty response in the past.
+// - The endpoint has returned an invalid response within the last 30 minutes.
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint's archival check is invalid, if enabled.
@@ -101,6 +107,15 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	// Ensure the endpoint has not returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
 		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
+	}
+
+	// Ensure the endpoint has not returned an invalid response within the timeout period.
+	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
+		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
+		if timeSinceInvalidResponse < invalidResponseTimeout {
+			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+		}
 	}
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
