@@ -132,10 +132,10 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	var cfgPath string
 	// Prefer custom config if present, otherwise fall back to default
 	if _, err := os.Stat(customConfigFile); err == nil {
-		fmt.Printf("💽 Using CUSTOM config file: e2e/%s\n\n", customConfigFile)
+		fmt.Printf("💽 Using CUSTOM config file: %se2e/%s%s\n\n", CYAN, customConfigFile, RESET)
 		cfgPath = customConfigFile
 	} else {
-		fmt.Printf("💾 Using DEFAULT config file: e2e/%s\n\n", defaultConfigFile)
+		fmt.Printf("💾 Using DEFAULT config file: %se2e/%s%s\n\n", CYAN, defaultConfigFile, RESET)
 		cfgPath = defaultConfigFile
 	}
 
