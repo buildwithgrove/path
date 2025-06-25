@@ -279,22 +279,27 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 	// Update status code counts
 	m.statusCodes[int(result.Code)]++
 	// Process JSON-RPC validation if we have a successful HTTP response
+	m.jsonRPCRequests++
 	var rpcResponse jsonrpc.Response
 	if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
 		m.jsonRPCUnmarshalErrors++
+		fmt.Printf("❌ ERROR unmarshalling JSON-RPC response due to: %v.\nResult Body: %s\n\n", err, string(result.Body))
 	} else {
 		m.jsonRPCResponses++
 		// Check if Error field is nil (good)
 		if rpcResponse.Error != nil {
+			fmt.Printf("❌ ERROR RPC response has non-nil Error field: %v\n", rpcResponse.Error)
 			m.jsonRPCErrorField++
 			m.errors[rpcResponse.Error.Message]++
 		}
 		// Check if Result field is not nil (good)
 		if rpcResponse.Result == nil {
+			fmt.Printf("❌ ERROR RPC response has nil Result field\n")
 			m.jsonRPCNilResult++
 		}
 		// Validate the response
 		if err := rpcResponse.Validate(getExpectedID(serviceType)); err != nil {
+			fmt.Printf("❌ ERROR RPC response validation failed: %v\n", err)
 			m.jsonRPCValidateErrors++
 		}
 	}
@@ -322,6 +327,7 @@ type methodMetrics struct {
 	p99          time.Duration    // 99th percentile latency
 
 	// JSON-RPC specific validation metrics
+	jsonRPCRequests        int // Total number of JSON-RPC requests that a got a response (marshalable or not)
 	jsonRPCResponses       int // Count of responses we could unmarshal as JSON-RPC
 	jsonRPCUnmarshalErrors int // Count of responses we couldn't unmarshal
 	jsonRPCErrorField      int // Count of responses with non-nil Error field
@@ -477,9 +483,8 @@ func calculateSuccessRate(m *methodMetrics) {
 	}
 
 	// JSON-RPC unmarshal success rate
-	totalJSONAttempts := m.jsonRPCResponses + m.jsonRPCUnmarshalErrors
-	if totalJSONAttempts > 0 {
-		m.jsonRPCSuccessRate = float64(m.jsonRPCResponses) / float64(totalJSONAttempts)
+	if m.jsonRPCRequests > 0 {
+		m.jsonRPCSuccessRate = float64(m.jsonRPCResponses) / float64(m.jsonRPCRequests)
 	}
 
 	// Only calculate these if we have valid JSON-RPC responses
@@ -568,26 +573,24 @@ func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetric
 	fmt.Printf("%sLatency P99%s: %s%s%s\n", BOLD, RESET, p99Color, formatLatency(m.p99), RESET)
 
 	// Print JSON-RPC metrics with coloring
-	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors > 0 {
+	if m.jsonRPCRequests > 0 {
 		fmt.Printf("%sJSON-RPC Metrics:%s\n", BOLD, RESET)
 
 		if m.jsonRPCResponses > 0 {
 			// Unmarshal success rate
 			color := getRateColor(m.jsonRPCSuccessRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCSuccessRate*100, RESET, m.jsonRPCResponses, m.jsonRPCResponses+m.jsonRPCUnmarshalErrors)
+			fmt.Printf("  Unmarshal Success: %s%.2f%%%s (%d/%d responses)\n", color, m.jsonRPCSuccessRate*100, RESET, m.jsonRPCResponses, m.jsonRPCRequests)
+
 			// Validation success rate
 			color = getRateColor(m.jsonRPCValidateRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCValidateRate*100, RESET, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
+			fmt.Printf("  Validation Success: %s%.2f%%%s (%d/%d responses)\n", color, m.jsonRPCValidateRate*100, RESET, m.jsonRPCResponses-m.jsonRPCValidateErrors, m.jsonRPCResponses)
 			// Non-nil result rate
 			color = getRateColor(m.jsonRPCResultRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCResultRate*100, RESET, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
+			fmt.Printf("  Has Result: %s%.2f%%%s (%d/%d responses)\n", color, m.jsonRPCResultRate*100, RESET, m.jsonRPCResponses-m.jsonRPCNilResult, m.jsonRPCResponses)
+
 			// Error field absent rate
 			color = getRateColor(m.jsonRPCErrorFieldRate, serviceConfig.SuccessRate)
-			fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n",
-				color, m.jsonRPCErrorFieldRate*100, RESET, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
+			fmt.Printf("  Does Not Have Error: %s%.2f%%%s (%d/%d responses)\n", color, m.jsonRPCErrorFieldRate*100, RESET, m.jsonRPCResponses-m.jsonRPCErrorField, m.jsonRPCResponses)
 		}
 	}
 
@@ -671,7 +674,7 @@ func collectJSONRPCRatesFailures(m *methodMetrics, requiredRate float64) []strin
 	var failures []string
 
 	// Skip if we don't have any JSON-RPC responses
-	if m.jsonRPCResponses+m.jsonRPCUnmarshalErrors == 0 {
+	if m.jsonRPCRequests == 0 {
 		return failures
 	}
 
