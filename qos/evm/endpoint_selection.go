@@ -105,7 +105,11 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
-		return fmt.Errorf("block number validation for %d failed: %w", endpoint.checkBlockNumber.parsedBlockNumberResponse, err)
+		var blockNumber uint64
+		if endpoint.checkBlockNumber.parsedBlockNumberResponse != nil {
+			blockNumber = *endpoint.checkBlockNumber.parsedBlockNumberResponse
+		}
+		return fmt.Errorf("block number validation for %d failed: %w", blockNumber, err)
 	}
 
 	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
