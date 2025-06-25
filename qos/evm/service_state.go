@@ -156,7 +156,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		}
 
 		// Update perceived block number to maximum instead of overwriting with last endpoint.
-		// Per struct field documentation (lines 34-37), perceivedBlockNumber should be "the maximum of block height reported by any endpoint"
+		// Per perceivedBlockNumber field documentation, it should be "the maximum of block height reported by any endpoint"
 		// but code was incorrectly overwriting with each endpoint, causing validation failures.
 		if blockNumber > ss.perceivedBlockNumber {
 			ss.perceivedBlockNumber = blockNumber
