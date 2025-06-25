@@ -59,11 +59,22 @@ func unmarshalResponse(
 	if err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
+		payloadStr := string(data)
+		logger.With(
+			"request", jsonrpcReq,
+			"unmarshal_err", err,
+			"raw_payload", payloadStr[:min(1000, len(payloadStr))],
+		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
+
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
 	// Validate the JSONRPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
+		logger.With(
+			"request", jsonrpcReq,
+			"validation_err", err,
+		).Debug().Msg("JSON-RPC response validation failed")
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
 
@@ -74,5 +85,6 @@ func unmarshalResponse(
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return responseUnmarshallerGeneric(logger, jsonrpcReq, data)
+	// Pass the already unmarshaled jsonrpcResponse to avoid double unmarshaling.
+	return responseUnmarshallerGenericFromResponse(logger, jsonrpcReq, jsonrpcResponse)
 }

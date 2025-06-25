@@ -14,6 +14,11 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+var (
+	errNilApplyObservations    = errors.New("ApplyObservations: received nil")
+	errNilApplyEVMObservations = errors.New("ApplyObservations: received nil EVM observation")
+)
+
 // The serviceState struct maintains the expected current state of the EVM blockchain
 // based on the endpoints' responses to different requests.
 //
@@ -109,12 +114,12 @@ func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
 // ApplyObservations updates endpoint storage and blockchain state from observations.
 func (ss *serviceState) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
-		return errors.New("ApplyObservations: received nil")
+		return errNilApplyObservations
 	}
 
 	evmObservations := observations.GetEvm()
 	if evmObservations == nil {
-		return errors.New("ApplyObservations: received nil EVM observation")
+		return errNilApplyEVMObservations
 	}
 
 	updatedEndpoints := ss.endpointStore.updateEndpointsFromObservations(
