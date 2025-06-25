@@ -105,7 +105,7 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 
 	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
-		// Fix: Dereference pointer to show actual block number instead of memory address in error logs
+		// Dereference pointer to show actual block number instead of memory address in error logs
 		var blockNumber uint64
 		if endpoint.checkBlockNumber.parsedBlockNumberResponse != nil {
 			blockNumber = *endpoint.checkBlockNumber.parsedBlockNumberResponse

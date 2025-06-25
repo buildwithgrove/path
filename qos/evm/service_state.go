@@ -139,7 +139,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			// Fix: Dereference pointer to show actual chain ID instead of memory address in error logs
+			// Dereference pointer to show actual chain ID instead of memory address in error logs
 			chainIDStr := "<nil>"
 			if endpoint.checkChainID.chainID != nil {
 				chainIDStr = *endpoint.checkChainID.chainID
@@ -155,8 +155,8 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 			continue
 		}
 
-		// Fix: Update perceived block number to maximum instead of overwriting with last endpoint.
-		// Per documentation, perceivedBlockNumber should be "the maximum of block height reported by any endpoint"
+		// Update perceived block number to maximum instead of overwriting with last endpoint.
+		// Per struct field documentation (lines 34-37), perceivedBlockNumber should be "the maximum of block height reported by any endpoint"
 		// but code was incorrectly overwriting with each endpoint, causing validation failures.
 		if blockNumber > ss.perceivedBlockNumber {
 			ss.perceivedBlockNumber = blockNumber
