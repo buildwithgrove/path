@@ -3,7 +3,7 @@ helm_chart_local_repo:
   path: ../helm-charts
 hot-reloading: true
 observability:
-  enabled: true
+  enabled: false
   grafana:
     defaultDashboardsEnabled: false
 path:
