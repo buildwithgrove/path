@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -45,6 +46,11 @@ const (
 	systemOverheadAllowance = 5 * time.Second
 )
 
+var (
+	// applicationIDPattern matches 8-character hexadecimal strings (e.g., aedfaa8f, 0caa84c4)
+	applicationIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}$`)
+)
+
 type (
 	router struct {
 		logger polylog.Logger
@@ -63,6 +69,14 @@ type (
 		ReportEndpointStatus(protocol.ServiceID, *http.Request) (devtools.DisqualifiedEndpointResponse, error)
 	}
 )
+
+/* --------------------------------- Helpers -------------------------------- */
+
+// isApplicationID checks if a string matches the expected application ID pattern
+// (8-character hexadecimal string)
+func isApplicationID(s string) bool {
+	return applicationIDPattern.MatchString(s)
+}
 
 /* --------------------------------- Init -------------------------------- */
 
@@ -152,17 +166,44 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// removePrefixMiddleware removes the API version and endpoint ID prefixes from the URL path
-// to allow REST-based services to pass the cleaned path to the selected endpoint.
+// removePrefixMiddleware removes the API version prefix, extracts the application ID from the URL path,
+// and removes endpoint ID prefixes to allow REST-based services to pass the cleaned path to the selected endpoint.
 //
-// Example:
+// Examples:
 //
-//	Input:  /v1/endpoint/path/123
-//	Output: /path/123
+//	Input:  /v1/aedfaa8f/status
+//	Output: /status (with Portal-Application-ID: aedfaa8f header)
+//
+//	Input:  /v1/aedfaa8f/endpoint/path/123
+//	Output: /path/123 (with Portal-Application-ID: aedfaa8f header)
 func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		// Remove API version prefix (e.g. /v1/path -> /path)
+		// Remove API version prefix (e.g. /v1/aedfaa8f/path -> /aedfaa8f/path)
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, apiVersionPrefix)
+
+		// Extract application ID from the path and set it as header
+		// Expected format: /aedfaa8f/remaining/path (where aedfaa8f is an 8-character hex string)
+		if req.URL.Path != "" && req.URL.Path != "/" {
+			// Remove leading slash and split on next slash
+			pathWithoutLeadingSlash := strings.TrimPrefix(req.URL.Path, "/")
+			parts := strings.SplitN(pathWithoutLeadingSlash, "/", 2)
+			
+			if len(parts) > 0 && parts[0] != "" {
+				// Check if first part looks like an application ID (8-character hex string)
+				if isApplicationID(parts[0]) {
+					// First part is the application ID
+					applicationID := parts[0]
+					req.Header.Set("Portal-Application-ID", applicationID)
+					
+					// Update path to remove the application ID part
+					if len(parts) > 1 {
+						req.URL.Path = "/" + parts[1]
+					} else {
+						req.URL.Path = "/"
+					}
+				}
+			}
+		}
 
 		// Remove endpoint ID prefix if present (e.g. /1a2b3c4d/path -> /path)
 		if endpointID := req.Header.Get(reqHeaderEndpointID); endpointID != "" {
