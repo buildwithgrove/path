@@ -125,8 +125,9 @@ func (ss *serviceState) ApplyObservations(observations *qosobservations.Observat
 	return ss.updateFromEndpoints(updatedEndpoints)
 }
 
-// updateFromEndpoints updates the service state using estimation(s) derived from the set of updated
-// endpoints. This only includes the set of endpoints for which an observation was received.
+// updateFromEndpoints updates the service state based on new observations from endpoints.
+// - Only endpoints with received observations are considered.
+// - Estimations are derived from these updated endpoints.
 func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	ss.serviceStateLock.Lock()
 	defer ss.serviceStateLock.Unlock()
@@ -139,12 +140,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			// Dereference pointer to show actual chain ID instead of memory address in error logs
-			chainIDStr := "<nil>"
-			if endpoint.checkChainID.chainID != nil {
-				chainIDStr = *endpoint.checkChainID.chainID
-			}
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid chain id '%s'", endpointAddr, chainIDStr)
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid chain id", endpointAddr)
 			continue
 		}
 
@@ -159,6 +155,7 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		// Per perceivedBlockNumber field documentation, it should be "the maximum of block height reported by any endpoint"
 		// but code was incorrectly overwriting with each endpoint, causing validation failures.
 		if blockNumber > ss.perceivedBlockNumber {
+			logger.Debug().Msgf("Updating perceived block number from %d to %d", ss.perceivedBlockNumber, blockNumber)
 			ss.perceivedBlockNumber = blockNumber
 		}
 	}
