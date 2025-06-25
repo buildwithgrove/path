@@ -124,24 +124,25 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 
 	// Check if the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
-		return fmt.Errorf("block number validation for %d failed: %w", endpoint.checkBlockNumber.parsedBlockNumberResponse, err)
+		return fmt.Errorf("block number validation failed: %w", err)
 	}
 
 	// Check if the endpoint's EVM chain ID matches the expected chain ID.
 	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-		return fmt.Errorf("validation for chain ID failed: %w", err)
+		return fmt.Errorf("chain ID validation failed: %w", err)
 	}
 
 	// Check if the endpoint has returned an archival balance for the perceived block number.
 	if err := ss.archivalState.isArchivalBalanceValid(endpoint.checkArchival); err != nil {
-		return fmt.Errorf("archival balance validation for %s failed: %w", endpoint.checkArchival.observedArchivalBalance, err)
+		return fmt.Errorf("archival balance validation failed: %w", err)
 	}
 
 	return nil
 }
 
-// isValid returns an error if the endpoint's block height is less
-// than the perceived block height minus the sync allowance.
+// isBlockNumberValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_blockNumber` request.
+//   - The endpoint's block height is less than the perceived block height minus the sync allowance.
 func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error {
 	if ss.perceivedBlockNumber == 0 {
 		return errNoBlockNumberObs
@@ -151,25 +152,36 @@ func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error
 		return errNoBlockNumberObs
 	}
 
+	// Dereference pointer to show actual block number instead of memory address in error logs
+	parsedBlockNumber := *check.parsedBlockNumberResponse
+
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
-	minAllowedBlockNumber := ss.perceivedBlockNumber - ss.serviceConfig.getSyncAllowance()
-
-	if *check.parsedBlockNumberResponse < minAllowedBlockNumber {
-		return errInvalidBlockNumberObs
+	syncAllowance := ss.serviceConfig.getSyncAllowance()
+	minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
+	if parsedBlockNumber < minAllowedBlockNumber {
+		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
+			errOutsideSyncAllowanceBlockNumberObs, parsedBlockNumber, minAllowedBlockNumber, syncAllowance)
 	}
 
 	return nil
 }
 
-// isChainIDValid returns an error if the endpoint's chain ID does not
-// match the expected chain ID in the service state.
+// isChainIDValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_chainId` request.
+//   - The endpoint's chain ID does not match the expected chain ID in the service state.
 func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 	if check.chainID == nil {
 		return errNoChainIDObs
 	}
-	if *check.chainID != ss.serviceConfig.getEVMChainID() {
-		return errInvalidChainIDObs
+
+	// Dereference pointer to show actual chain ID instead of memory address in error logs
+	chainID := *check.chainID
+
+	expectedChainID := ss.serviceConfig.getEVMChainID()
+	if chainID != expectedChainID {
+		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
+			errInvalidChainIDObs, chainID, expectedChainID)
 	}
 	return nil
 }
