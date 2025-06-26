@@ -39,7 +39,7 @@ type QoS struct {
 // Returns (context, false) if POST request is not valid JSON-RPC.
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	logger := qos.logger.With("qos", "solana")
+	logger := qos.logger.With("qos", "cometbft")
 
 	requestContext := &requestContext{
 		logger:        logger,
