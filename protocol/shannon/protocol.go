@@ -238,6 +238,8 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
+	fmt.Println("OLSH3: Selected endpoint:", selectedEndpoint, selectedEndpointAddr)
+
 	// Retrieve the relay request signer for the current gateway mode.
 	permittedSigner, err := p.getGatewayModePermittedRelaySigner(p.gatewayMode)
 	if err != nil {

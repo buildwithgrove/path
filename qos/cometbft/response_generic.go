@@ -75,24 +75,6 @@ func (r responseGeneric) GetResponseStatusCode() int {
 	return http.StatusOK
 }
 
-// responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
-// It extracts and stores any data needed for generating a response payload.
-func responseUnmarshallerGeneric(
-	logger polylog.Logger,
-	_ jsonrpc.Response,
-	data []byte,
-) (response, error) {
-	var response jsonrpc.Response
-	if err := json.Unmarshal(data, &response); err != nil {
-		return getGenericJSONRPCErrResponse(logger, response, data, err), nil
-	}
-
-	return responseGeneric{
-		logger:          logger,
-		jsonRPCResponse: response,
-	}, nil
-}
-
 // getGenericJSONRPCErrResponse creates a generic response containing:
 // - JSON-RPC error with supplied ID
 // - Error details

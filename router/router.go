@@ -166,8 +166,10 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// removePrefixMiddleware removes the API version prefix, extracts the application ID from the URL path,
-// and removes endpoint ID prefixes to allow REST-based services to pass the cleaned path to the selected endpoint.
+// removePrefixMiddleware does the following:
+// - removes the API version prefix
+// - extracts and removes the portal application ID from the path
+// - removes endpoint ID prefixes to allow REST-based services to pass the cleaned path to the selected endpoint.
 //
 // Examples:
 //
@@ -187,14 +189,14 @@ func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc 
 			// Remove leading slash and split on next slash
 			pathWithoutLeadingSlash := strings.TrimPrefix(req.URL.Path, "/")
 			parts := strings.SplitN(pathWithoutLeadingSlash, "/", 2)
-			
+
 			if len(parts) > 0 && parts[0] != "" {
 				// Check if first part looks like an application ID (8-character hex string)
 				if isApplicationID(parts[0]) {
 					// First part is the application ID
 					applicationID := parts[0]
 					req.Header.Set("Portal-Application-ID", applicationID)
-					
+
 					// Update path to remove the application ID part
 					if len(parts) > 1 {
 						req.URL.Path = "/" + parts[1]

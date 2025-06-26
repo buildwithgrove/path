@@ -244,10 +244,12 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	if err != nil {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
+
 		rc.logger.
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
+
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
 	}
 
@@ -259,14 +261,17 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		//
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
+
 		rc.logger.
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
+
 		return errHTTPRequestRejectedByProtocol
 	}
 
 	rc.protocolCtx = protocolCtx
+
 	return nil
 }
 
