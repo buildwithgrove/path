@@ -429,8 +429,21 @@ var shannonServices = []ServiceQoSConfig{
 	// Osmosis
 	cometbft.NewCometBFTServiceQoSConfig("osmosis", "osmosis"),
 
+	// *** Pocket Services ***
+
+	// Pocket Mainnet and Beta Testnet
+	cometbft.NewCometBFTServiceQoSConfig("pocket", "pocket"),
+
+	// Pocket Mainnet
+	cometbft.NewCometBFTServiceQoSConfig("pocket-alpha", "pocket-alpha"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta", "pocket-beta"),
+
 	// Pocket Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta-rpc", "pocket-beta"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta1", "pocket-beta1"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta2", "pocket-beta2"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta3", "pocket-beta3"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta4", "pocket-beta4"),
+	cometbft.NewCometBFTServiceQoSConfig("pocket-beta5", "pocket-beta5"),
 
 	// Cosmos Hub
 	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
