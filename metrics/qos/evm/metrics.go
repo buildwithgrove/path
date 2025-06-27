@@ -14,11 +14,15 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for EVM QoS
-	requestsTotalMetric = "evm_requests_total"
+	requestsTotalMetric      = "evm_requests_total"
+	availableEndpointsMetric = "evm_available_endpoints"
+	validEndpointsMetric     = "evm_valid_endpoints"
 )
 
 func init() {
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(availableEndpoints)
+	prometheus.MustRegister(validEndpoints)
 }
 
 var (
@@ -59,6 +63,41 @@ var (
 		},
 		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
 	)
+
+	// availableEndpoints tracks the number of available endpoints per service.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//
+	// Use to analyze:
+	//   - Endpoint pool size per service
+	//   - Service capacity trends
+	availableEndpoints = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      availableEndpointsMetric,
+			Help:      "Number of available endpoints for EVM QoS instance(s)",
+		},
+		[]string{"chain_id", "service_id"},
+	)
+
+	// validEndpoints tracks the number of valid endpoints per service after filtering.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//
+	// Use to analyze:
+	//   - Endpoint health per service
+	//   - Validation failure rates
+	//   - Service quality trends
+	validEndpoints = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      validEndpointsMetric,
+			Help:      "Number of valid endpoints for EVM QoS instance(s) after validation",
+		},
+		[]string{"chain_id", "service_id"},
+	)
 )
 
 // PublishMetrics exports all EVM-related Prometheus metrics using observations reported by EVM QoS service.
@@ -88,8 +127,8 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Extract request method
 	method := extractRequestMethod(logger, interpreter)
 
-	// Extract random endpoint fallback status
-	randomEndpointFallback := extractRandomEndpointFallback(interpreter)
+	// Extract endpoint selection metadata
+	endpointSelectionMetadata := extractEndpointSelectionMetadata(interpreter)
 
 	// Get request status
 	statusCode, requestError, err := interpreter.GetRequestStatus()
@@ -117,9 +156,24 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 			"success":                  fmt.Sprintf("%t", requestError == nil),
 			"error_type":               errorType,
 			"http_status_code":         fmt.Sprintf("%d", statusCode),
-			"random_endpoint_fallback": randomEndpointFallback,
+			"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
 		},
 	).Inc()
+
+	// Update endpoint count gauges
+	availableEndpoints.With(
+		prometheus.Labels{
+			"chain_id":   chainID,
+			"service_id": serviceID,
+		},
+	).Set(float64(endpointSelectionMetadata.AvailableEndpointsCount))
+
+	validEndpoints.With(
+		prometheus.Labels{
+			"chain_id":   chainID,
+			"service_id": serviceID,
+		},
+	).Set(float64(endpointSelectionMetadata.ValidEndpointsCount))
 }
 
 // extractChainID extracts the chain ID from the interpreter.
@@ -161,10 +215,13 @@ func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservation
 	return method
 }
 
-// extractRandomEndpointFallback extracts random fallback status from observations.
-// Returns "true" if random fallback was used, "false" for normal selection.
-func extractRandomEndpointFallback(interpreter *qos.EVMObservationInterpreter) string {
-	// Access random fallback status from observations
-	randomFallback := interpreter.Observations.RandomEndpointFallback
-	return fmt.Sprintf("%t", randomFallback)
+// extractEndpointSelectionMetadata extracts endpoint selection metadata from observations.
+// Returns metadata about the endpoint selection process including counts and fallback status.
+func extractEndpointSelectionMetadata(interpreter *qos.EVMObservationInterpreter) *qos.EndpointSelectionMetadata {
+	// Return the endpoint selection metadata directly from observations
+	if interpreter.Observations.EndpointSelectionMetadata != nil {
+		return interpreter.Observations.EndpointSelectionMetadata
+	}
+	// Return empty metadata if not set
+	return &qos.EndpointSelectionMetadata{}
 }

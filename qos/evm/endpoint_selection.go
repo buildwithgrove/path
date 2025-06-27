@@ -19,27 +19,34 @@ var (
 // It is set to 30 minutes because that is the session time as of #321.
 const invalidResponseTimeout = 30 * time.Minute
 
-/* -------------------- QoS Valid Endpoint Selector -------------------- */
-// This section contains methods for the `serviceState` struct
-// but are kept in a separate file for clarity and readability.
-
 // EndpointSelectionResult contains endpoint selection results and metadata.
 type EndpointSelectionResult struct {
 	// SelectedEndpoint is the chosen endpoint address
 	SelectedEndpoint protocol.EndpointAddr
+	// Metadata contains endpoint selection process metadata
+	Metadata EndpointSelectionMetadata
+}
+
+// EndpointSelectionMetadata contains metadata about the endpoint selection process.
+type EndpointSelectionMetadata struct {
 	// RandomEndpointFallback indicates random endpoint selection when all endpoints failed validation
 	RandomEndpointFallback bool
+	// AvailableEndpointsCount is the total number of endpoints available for selection
+	AvailableEndpointsCount int
+	// ValidEndpointsCount is the number of endpoints that passed validation
+	ValidEndpointsCount int
 }
 
 // SelectWithMetadata returns endpoint address and selection metadata.
-// Filters endpoints by validity
+// Filters endpoints by validity.
 // Selects random endpoint if all fail validation.
 func (ss *serviceState) SelectWithMetadata(availableEndpoints protocol.EndpointAddrList) (EndpointSelectionResult, error) {
 	logger := ss.logger.With("method", "SelectWithMetadata").
 		With("chain_id", ss.serviceConfig.getEVMChainID()).
 		With("service_id", ss.serviceConfig.GetServiceID())
 
-	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
+	availableCount := len(availableEndpoints)
+	logger.Info().Msgf("filtering %d available endpoints.", availableCount)
 
 	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
 	if err != nil {
@@ -47,23 +54,33 @@ func (ss *serviceState) SelectWithMetadata(availableEndpoints protocol.EndpointA
 		return EndpointSelectionResult{}, err
 	}
 
+	validCount := len(filteredEndpointsAddr)
+
 	// Handle case where all endpoints failed validation
-	if len(filteredEndpointsAddr) == 0 {
+	if validCount == 0 {
 		logger.Warn().Msgf("SELECTING A RANDOM ENDPOINT because all endpoints failed validation from: %s", availableEndpoints.String())
-		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
+		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(availableCount)]
 		return EndpointSelectionResult{
-			SelectedEndpoint:       randomAvailableEndpointAddr,
-			RandomEndpointFallback: true,
+			SelectedEndpoint: randomAvailableEndpointAddr,
+			Metadata: EndpointSelectionMetadata{
+				RandomEndpointFallback:  true,
+				AvailableEndpointsCount: availableCount,
+				ValidEndpointsCount:     validCount,
+			},
 		}, nil
 	}
 
-	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", validCount, availableCount)
 
 	// Select random endpoint from valid candidates
-	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
+	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(validCount)]
 	return EndpointSelectionResult{
-		SelectedEndpoint:       selectedEndpointAddr,
-		RandomEndpointFallback: false, // Set explicitly to false to indicate successful endpoint selection.
+		SelectedEndpoint: selectedEndpointAddr,
+		Metadata: EndpointSelectionMetadata{
+			RandomEndpointFallback:  false,
+			AvailableEndpointsCount: availableCount,
+			ValidEndpointsCount:     validCount,
+		},
 	}, nil
 }
 

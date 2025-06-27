@@ -89,8 +89,8 @@ type requestContext struct {
 	// modification of this field's type.
 	endpointResponses []endpointResponse
 
-	// randomEndpointFallback tracks random endpoint selection when all endpoints fail validation
-	randomEndpointFallback bool
+	// endpointSelectionMetadata contains metadata about the endpoint selection process
+	endpointSelectionMetadata EndpointSelectionMetadata
 }
 
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
@@ -187,13 +187,17 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				JsonrpcRequest:         rc.jsonrpcReq.GetObservation(),
-				ChainId:                rc.chainID,
-				ServiceId:              string(rc.serviceID),
-				RequestPayloadLength:   uint32(rc.requestPayloadLength),
-				RequestOrigin:          rc.requestOrigin,
-				EndpointObservations:   observations,
-				RandomEndpointFallback: rc.randomEndpointFallback,
+				JsonrpcRequest:       rc.jsonrpcReq.GetObservation(),
+				ChainId:              rc.chainID,
+				ServiceId:            string(rc.serviceID),
+				RequestPayloadLength: uint32(rc.requestPayloadLength),
+				RequestOrigin:        rc.requestOrigin,
+				EndpointObservations: observations,
+				EndpointSelectionMetadata: &qosobservations.EndpointSelectionMetadata{
+					RandomEndpointFallback:  rc.endpointSelectionMetadata.RandomEndpointFallback,
+					AvailableEndpointsCount: uint32(rc.endpointSelectionMetadata.AvailableEndpointsCount),
+					ValidEndpointsCount:     uint32(rc.endpointSelectionMetadata.ValidEndpointsCount),
+				},
 			},
 		},
 	}
@@ -216,7 +220,7 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 	}
 
 	// Store selection metadata for observation tracking
-	rc.randomEndpointFallback = selectionResult.RandomEndpointFallback
+	rc.endpointSelectionMetadata = selectionResult.Metadata
 
 	return selectionResult.SelectedEndpoint, nil
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+// TODO_TECHDEBT(@adshmh): Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+// EndpointSelectionMetadata captures metadata about the endpoint selection process.
+// This message can be embedded in various QoS observation types to provide
+// consistent endpoint selection tracking across different blockchain services.
+message EndpointSelectionMetadata {
+  // random_endpoint_fallback indicates random endpoint selection was used
+  // when all available endpoints failed QoS validation.
+  bool random_endpoint_fallback = 1;
+
+  // available_endpoints_count is the total number of endpoints available for selection.
+  uint32 available_endpoints_count = 2;
+
+  // valid_endpoints_count is the number of endpoints that passed validation.
+  uint32 valid_endpoints_count = 3;
+}
