@@ -63,7 +63,7 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 9
+  // Next ID: 10
 
   // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
@@ -110,6 +110,10 @@ message EVMRequestObservations {
   // * Request is sent to additional endpoints for data collection
   // This field will only be populated if request validation succeeds.
   repeated EVMEndpointObservation endpoint_observations = 6;
+
+  // random_endpoint_fallback indicates random endpoint selection was used
+  // when all available endpoints failed QoS validation.
+  bool random_endpoint_fallback = 9;
 }
 
 // TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated

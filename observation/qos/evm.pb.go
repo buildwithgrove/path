@@ -13,14 +13,12 @@
 package qos
 
 import (
+	_ "github.com/buildwithgrove/path/observation/metadata"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	_ "github.com/buildwithgrove/path/observation/metadata"
 )
 
 const (
@@ -201,8 +199,11 @@ type EVMRequestObservations struct {
 	// * Request is sent to additional endpoints for data collection
 	// This field will only be populated if request validation succeeds.
 	EndpointObservations []*EVMEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// random_endpoint_fallback indicates random endpoint selection was used
+	// when all available endpoints failed QoS validation.
+	RandomEndpointFallback bool `protobuf:"varint,9,opt,name=random_endpoint_fallback,json=randomEndpointFallback,proto3" json:"random_endpoint_fallback,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *EVMRequestObservations) Reset() {
@@ -300,6 +301,13 @@ func (x *EVMRequestObservations) GetEndpointObservations() []*EVMEndpointObserva
 		return x.EndpointObservations
 	}
 	return nil
+}
+
+func (x *EVMRequestObservations) GetRandomEndpointFallback() bool {
+	if x != nil {
+		return x.RandomEndpointFallback
+	}
+	return false
 }
 
 type isEVMRequestObservations_RequestValidationFailure interface {
@@ -856,7 +864,7 @@ func (x *EVMGetBalanceResponse) GetResponseValidationError() EVMResponseValidati
 
 // EVMUnrecognizedResponse handles requests with unrecognized/unvalidated response methods for QoS endpoint selection.
 // - Example: eth_call response contents used for endpoint validation (as of PR #72)
-// - Sanctions still apply to endpoints returning invalid responses (e.g. unparseable JSONRPC)
+// - Sanctions still apply to endpoints returning invalid responses (e.g. unparsable JSONRPC)
 type EVMUnrecognizedResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint
@@ -1037,7 +1045,7 @@ var File_path_qos_evm_proto protoreflect.FileDescriptor
 
 const file_path_qos_evm_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/metadata/metadata.proto\"\xd4\x04\n" +
+	"\x12path/qos/evm.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/metadata/metadata.proto\"\x8e\x05\n" +
 	"\x16EVMRequestObservations\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1d\n" +
 	"\n" +
@@ -1047,7 +1055,8 @@ const file_path_qos_evm_proto_rawDesc = "" +
 	"\x1aevm_http_body_read_failure\x18\x03 \x01(\v2 .path.qos.EVMHTTPBodyReadFailureH\x00R\x16evmHttpBodyReadFailure\x12r\n" +
 	" evm_request_unmarshaling_failure\x18\x04 \x01(\v2'.path.qos.EVMRequestUnmarshalingFailureH\x00R\x1devmRequestUnmarshalingFailure\x12A\n" +
 	"\x0fjsonrpc_request\x18\x05 \x01(\v2\x18.path.qos.JsonRpcRequestR\x0ejsonrpcRequest\x12U\n" +
-	"\x15endpoint_observations\x18\x06 \x03(\v2 .path.qos.EVMEndpointObservationR\x14endpointObservationsB\x1c\n" +
+	"\x15endpoint_observations\x18\x06 \x03(\v2 .path.qos.EVMEndpointObservationR\x14endpointObservations\x128\n" +
+	"\x18random_endpoint_fallback\x18\t \x01(\bR\x16randomEndpointFallbackB\x1c\n" +
 	"\x1arequest_validation_failure\"\xce\x01\n" +
 	"\x16EVMHTTPBodyReadFailure\x12(\n" +
 	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12N\n" +

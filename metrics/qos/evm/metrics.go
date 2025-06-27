@@ -41,6 +41,7 @@ var (
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (or "" for successful requests)
 	//   - http_status_code: The HTTP status code returned to the user
+	//   - random_endpoint_fallback: Random endpoint selected when all failed validation
 	//
 	// Use to analyze:
 	//   - Request volume by chain and method
@@ -49,13 +50,14 @@ var (
 	//   - End-to-end request success rates
 	//   - Error types by JSON-RPC method and chain
 	//   - HTTP status code distribution
+	//   - Service degradation when random endpoint fallback is used
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
 	)
 )
 
@@ -86,6 +88,9 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Extract request method
 	method := extractRequestMethod(logger, interpreter)
 
+	// Extract random endpoint fallback status
+	randomEndpointFallback := extractRandomEndpointFallback(interpreter)
+
 	// Get request status
 	statusCode, requestError, err := interpreter.GetRequestStatus()
 	// If we couldn't get status info due to missing observations, skip metrics.
@@ -105,13 +110,14 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
-			"chain_id":         chainID,
-			"service_id":       serviceID,
-			"request_origin":   interpreter.GetRequestOrigin(),
-			"request_method":   method,
-			"success":          fmt.Sprintf("%t", requestError == nil),
-			"error_type":       errorType,
-			"http_status_code": fmt.Sprintf("%d", statusCode),
+			"chain_id":                 chainID,
+			"service_id":               serviceID,
+			"request_origin":           interpreter.GetRequestOrigin(),
+			"request_method":           method,
+			"success":                  fmt.Sprintf("%t", requestError == nil),
+			"error_type":               errorType,
+			"http_status_code":         fmt.Sprintf("%d", statusCode),
+			"random_endpoint_fallback": randomEndpointFallback,
 		},
 	).Inc()
 }
@@ -153,4 +159,12 @@ func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservation
 		logger.Debug().Msgf("Should happen very rarely: Unable to determine request method for EVM metrics: %+v", interpreter)
 	}
 	return method
+}
+
+// extractRandomEndpointFallback extracts random fallback status from observations.
+// Returns "true" if random fallback was used, "false" for normal selection.
+func extractRandomEndpointFallback(interpreter *qos.EVMObservationInterpreter) string {
+	// Access random fallback status from observations
+	randomFallback := interpreter.Observations.RandomEndpointFallback
+	return fmt.Sprintf("%t", randomFallback)
 }

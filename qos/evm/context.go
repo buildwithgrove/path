@@ -20,6 +20,10 @@ const defaultServiceRequestTimeoutMillisec = 10000
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
+// requestContext provides the endpoint selection capability required
+// by the protocol package for handling a service request.
+var _ protocol.EndpointSelector = &requestContext{}
+
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
 // in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
 // Consider renaming:
@@ -84,6 +88,9 @@ type requestContext struct {
 	// enhancing to support batch JSONRPC requests will involve the
 	// modification of this field's type.
 	endpointResponses []endpointResponse
+
+	// randomEndpointFallback tracks random endpoint selection when all endpoints fail validation
+	randomEndpointFallback bool
 }
 
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
@@ -180,12 +187,13 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
 			Evm: &qosobservations.EVMRequestObservations{
-				JsonrpcRequest:       rc.jsonrpcReq.GetObservation(),
-				ChainId:              rc.chainID,
-				ServiceId:            string(rc.serviceID),
-				RequestPayloadLength: uint32(rc.requestPayloadLength),
-				RequestOrigin:        rc.requestOrigin,
-				EndpointObservations: observations,
+				JsonrpcRequest:         rc.jsonrpcReq.GetObservation(),
+				ChainId:                rc.chainID,
+				ServiceId:              string(rc.serviceID),
+				RequestPayloadLength:   uint32(rc.requestPayloadLength),
+				RequestOrigin:          rc.requestOrigin,
+				EndpointObservations:   observations,
+				RandomEndpointFallback: rc.randomEndpointFallback,
 			},
 		},
 	}
@@ -195,8 +203,20 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// Select returns the address of an endpoint using the request context's endpoint store.
-// Implements the protocol.EndpointSelector interface.
+// Select returns endpoint address using request context's endpoint store.
+// Implements protocol.EndpointSelector interface.
+// Tracks random selection when all endpoints fail validation.
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	return rc.serviceState.Select(allEndpoints)
+	// TODO_FUTURE(@adshmh): Enhance the endpoint selection meta data to track, e.g.:
+	// * Endpoint Selection Latency
+	// * Number of available endpoints
+	selectionResult, err := rc.serviceState.SelectWithMetadata(allEndpoints)
+	if err != nil {
+		return protocol.EndpointAddr(""), err
+	}
+
+	// Store selection metadata for observation tracking
+	rc.randomEndpointFallback = selectionResult.RandomEndpointFallback
+
+	return selectionResult.SelectedEndpoint, nil
 }

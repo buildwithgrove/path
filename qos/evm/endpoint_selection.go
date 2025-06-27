@@ -23,15 +23,19 @@ const invalidResponseTimeout = 30 * time.Minute
 // This section contains methods for the `serviceState` struct
 // but are kept in a separate file for clarity and readability.
 
-// serviceState provides the endpoint selection capability required
-// by the protocol package for handling a service request.
-var _ protocol.EndpointSelector = &serviceState{}
+// EndpointSelectionResult contains endpoint selection results and metadata.
+type EndpointSelectionResult struct {
+	// SelectedEndpoint is the chosen endpoint address
+	SelectedEndpoint protocol.EndpointAddr
+	// RandomEndpointFallback indicates random endpoint selection when all endpoints failed validation
+	RandomEndpointFallback bool
+}
 
-// Select returns an endpoint address matching an entry from the list of available endpoints.
-// available endpoints are filtered based on their validity first.
-// A random endpoint is then returned from the filtered list of valid endpoints.
-func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select").
+// SelectWithMetadata returns endpoint address and selection metadata.
+// Filters endpoints by validity
+// Selects random endpoint if all fail validation.
+func (ss *serviceState) SelectWithMetadata(availableEndpoints protocol.EndpointAddrList) (EndpointSelectionResult, error) {
+	logger := ss.logger.With("method", "SelectWithMetadata").
 		With("chain_id", ss.serviceConfig.getEVMChainID()).
 		With("service_id", ss.serviceConfig.GetServiceID())
 
@@ -40,20 +44,27 @@ func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (pr
 	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
 	if err != nil {
 		logger.Error().Err(err).Msg("error filtering endpoints")
-		return protocol.EndpointAddr(""), err
+		return EndpointSelectionResult{}, err
 	}
 
+	// Handle case where all endpoints failed validation
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msgf("SELECTING A RANDOM ENDPOINT because all endpoints failed validation from: %s", availableEndpoints.String())
 		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
-		return randomAvailableEndpointAddr, nil
+		return EndpointSelectionResult{
+			SelectedEndpoint:       randomAvailableEndpointAddr,
+			RandomEndpointFallback: true,
+		}, nil
 	}
 
 	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
 
-	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
+	// Select random endpoint from valid candidates
 	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
-	return selectedEndpointAddr, nil
+	return EndpointSelectionResult{
+		SelectedEndpoint:       selectedEndpointAddr,
+		RandomEndpointFallback: false, // Set explicitly to false to indicate successful endpoint selection.
+	}, nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
