@@ -23,25 +23,188 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// EndpointValidationFailureReason enumerates the possible reasons why an endpoint fails validation.
+type EndpointValidationFailureReason int32
+
+const (
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED EndpointValidationFailureReason = 0
+	// Endpoint has returned empty responses in the past
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY EndpointValidationFailureReason = 1
+	// Endpoint returned an invalid response within the timeout period
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE EndpointValidationFailureReason = 2
+	// Endpoint's block number is outside the sync allowance (too far behind)
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND EndpointValidationFailureReason = 3
+	// Endpoint's chain ID doesn't match the expected chain ID
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH EndpointValidationFailureReason = 4
+	// No block number observation available for the endpoint
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION EndpointValidationFailureReason = 5
+	// No chain ID observation available for the endpoint
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION EndpointValidationFailureReason = 6
+	// Endpoint failed archival balance validation
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED EndpointValidationFailureReason = 7
+	// Endpoint was not found in PATH's endpoint store
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND EndpointValidationFailureReason = 8
+	// Unknown or unclassified validation failure
+	EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN EndpointValidationFailureReason = 9
+)
+
+// Enum value maps for EndpointValidationFailureReason.
+var (
+	EndpointValidationFailureReason_name = map[int32]string{
+		0: "ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED",
+		1: "ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY",
+		2: "ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE",
+		3: "ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND",
+		4: "ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH",
+		5: "ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION",
+		6: "ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION",
+		7: "ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED",
+		8: "ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND",
+		9: "ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN",
+	}
+	EndpointValidationFailureReason_value = map[string]int32{
+		"ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED":                 0,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY":      1,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE":     2,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND":         3,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH":           4,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION": 5,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION":     6,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED":       7,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND":          8,
+		"ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN":                     9,
+	}
+)
+
+func (x EndpointValidationFailureReason) Enum() *EndpointValidationFailureReason {
+	p := new(EndpointValidationFailureReason)
+	*p = x
+	return p
+}
+
+func (x EndpointValidationFailureReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EndpointValidationFailureReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_path_qos_endpoint_selection_metadata_proto_enumTypes[0].Descriptor()
+}
+
+func (EndpointValidationFailureReason) Type() protoreflect.EnumType {
+	return &file_path_qos_endpoint_selection_metadata_proto_enumTypes[0]
+}
+
+func (x EndpointValidationFailureReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EndpointValidationFailureReason.Descriptor instead.
+func (EndpointValidationFailureReason) EnumDescriptor() ([]byte, []int) {
+	return file_path_qos_endpoint_selection_metadata_proto_rawDescGZIP(), []int{0}
+}
+
+// EndpointValidationResult represents the result of validating a single endpoint.
+// This captures both successful and failed validation attempts with optional failure details.
+type EndpointValidationResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The endpoint address that was validated
+	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
+	// Whether the validation was successful
+	Success bool `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	// The specific reason why validation failed (only set when success = false)
+	FailureReason *EndpointValidationFailureReason `protobuf:"varint,3,opt,name=failure_reason,json=failureReason,proto3,enum=path.qos.EndpointValidationFailureReason,oneof" json:"failure_reason,omitempty"`
+	// Optional additional details about the failure (only set when success = false)
+	FailureDetails *string `protobuf:"bytes,4,opt,name=failure_details,json=failureDetails,proto3,oneof" json:"failure_details,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *EndpointValidationResult) Reset() {
+	*x = EndpointValidationResult{}
+	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EndpointValidationResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EndpointValidationResult) ProtoMessage() {}
+
+func (x *EndpointValidationResult) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EndpointValidationResult.ProtoReflect.Descriptor instead.
+func (*EndpointValidationResult) Descriptor() ([]byte, []int) {
+	return file_path_qos_endpoint_selection_metadata_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *EndpointValidationResult) GetEndpointAddr() string {
+	if x != nil {
+		return x.EndpointAddr
+	}
+	return ""
+}
+
+func (x *EndpointValidationResult) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *EndpointValidationResult) GetFailureReason() EndpointValidationFailureReason {
+	if x != nil && x.FailureReason != nil {
+		return *x.FailureReason
+	}
+	return EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED
+}
+
+func (x *EndpointValidationResult) GetFailureDetails() string {
+	if x != nil && x.FailureDetails != nil {
+		return *x.FailureDetails
+	}
+	return ""
+}
+
 // EndpointSelectionMetadata captures metadata about the endpoint selection process.
 // This message can be embedded in various QoS observation types to provide
 // consistent endpoint selection tracking across different blockchain services.
+//
+// Note: Multiple endpoint validations occur during each service request processing:
+// - All available endpoints are validated before selection
+// - Failed endpoints are filtered out
+// - One endpoint is selected from the valid set
+// - This metadata captures the validation results for all endpoints checked
 type EndpointSelectionMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// random_endpoint_fallback indicates random endpoint selection was used
 	// when all available endpoints failed QoS validation.
 	RandomEndpointFallback bool `protobuf:"varint,1,opt,name=random_endpoint_fallback,json=randomEndpointFallback,proto3" json:"random_endpoint_fallback,omitempty"`
-	// available_endpoints_count is the total number of endpoints available for selection.
-	AvailableEndpointsCount uint32 `protobuf:"varint,2,opt,name=available_endpoints_count,json=availableEndpointsCount,proto3" json:"available_endpoints_count,omitempty"`
-	// valid_endpoints_count is the number of endpoints that passed validation.
-	ValidEndpointsCount uint32 `protobuf:"varint,3,opt,name=valid_endpoints_count,json=validEndpointsCount,proto3" json:"valid_endpoints_count,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// validation_results contains detailed information about each endpoint
+	// validation attempt during the selection process (both successful and failed).
+	//
+	// Derived counts can be calculated from this field:
+	// - available_endpoints_count = len(validation_results)
+	// - valid_endpoints_count = count(validation_results where success = true)
+	ValidationResults []*EndpointValidationResult `protobuf:"bytes,2,rep,name=validation_results,json=validationResults,proto3" json:"validation_results,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *EndpointSelectionMetadata) Reset() {
 	*x = EndpointSelectionMetadata{}
-	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[0]
+	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -53,7 +216,7 @@ func (x *EndpointSelectionMetadata) String() string {
 func (*EndpointSelectionMetadata) ProtoMessage() {}
 
 func (x *EndpointSelectionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[0]
+	mi := &file_path_qos_endpoint_selection_metadata_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -66,7 +229,7 @@ func (x *EndpointSelectionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndpointSelectionMetadata.ProtoReflect.Descriptor instead.
 func (*EndpointSelectionMetadata) Descriptor() ([]byte, []int) {
-	return file_path_qos_endpoint_selection_metadata_proto_rawDescGZIP(), []int{0}
+	return file_path_qos_endpoint_selection_metadata_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *EndpointSelectionMetadata) GetRandomEndpointFallback() bool {
@@ -76,29 +239,39 @@ func (x *EndpointSelectionMetadata) GetRandomEndpointFallback() bool {
 	return false
 }
 
-func (x *EndpointSelectionMetadata) GetAvailableEndpointsCount() uint32 {
+func (x *EndpointSelectionMetadata) GetValidationResults() []*EndpointValidationResult {
 	if x != nil {
-		return x.AvailableEndpointsCount
+		return x.ValidationResults
 	}
-	return 0
-}
-
-func (x *EndpointSelectionMetadata) GetValidEndpointsCount() uint32 {
-	if x != nil {
-		return x.ValidEndpointsCount
-	}
-	return 0
+	return nil
 }
 
 var File_path_qos_endpoint_selection_metadata_proto protoreflect.FileDescriptor
 
 const file_path_qos_endpoint_selection_metadata_proto_rawDesc = "" +
 	"\n" +
-	"*path/qos/endpoint_selection_metadata.proto\x12\bpath.qos\"\xc5\x01\n" +
+	"*path/qos/endpoint_selection_metadata.proto\x12\bpath.qos\"\x85\x02\n" +
+	"\x18EndpointValidationResult\x12#\n" +
+	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12U\n" +
+	"\x0efailure_reason\x18\x03 \x01(\x0e2).path.qos.EndpointValidationFailureReasonH\x00R\rfailureReason\x88\x01\x01\x12,\n" +
+	"\x0ffailure_details\x18\x04 \x01(\tH\x01R\x0efailureDetails\x88\x01\x01B\x11\n" +
+	"\x0f_failure_reasonB\x12\n" +
+	"\x10_failure_details\"\xa8\x01\n" +
 	"\x19EndpointSelectionMetadata\x128\n" +
-	"\x18random_endpoint_fallback\x18\x01 \x01(\bR\x16randomEndpointFallback\x12:\n" +
-	"\x19available_endpoints_count\x18\x02 \x01(\rR\x17availableEndpointsCount\x122\n" +
-	"\x15valid_endpoints_count\x18\x03 \x01(\rR\x13validEndpointsCountB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	"\x18random_endpoint_fallback\x18\x01 \x01(\bR\x16randomEndpointFallback\x12Q\n" +
+	"\x12validation_results\x18\x02 \x03(\v2\".path.qos.EndpointValidationResultR\x11validationResults*\xf7\x04\n" +
+	"\x1fEndpointValidationFailureReason\x122\n" +
+	".ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED\x10\x00\x12=\n" +
+	"9ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY\x10\x01\x12>\n" +
+	":ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE\x10\x02\x12:\n" +
+	"6ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND\x10\x03\x128\n" +
+	"4ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH\x10\x04\x12B\n" +
+	">ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION\x10\x05\x12>\n" +
+	":ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION\x10\x06\x12<\n" +
+	"8ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED\x10\a\x129\n" +
+	"5ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND\x10\b\x12.\n" +
+	"*ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN\x10\tB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_endpoint_selection_metadata_proto_rawDescOnce sync.Once
@@ -112,16 +285,21 @@ func file_path_qos_endpoint_selection_metadata_proto_rawDescGZIP() []byte {
 	return file_path_qos_endpoint_selection_metadata_proto_rawDescData
 }
 
-var file_path_qos_endpoint_selection_metadata_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_path_qos_endpoint_selection_metadata_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_path_qos_endpoint_selection_metadata_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_path_qos_endpoint_selection_metadata_proto_goTypes = []any{
-	(*EndpointSelectionMetadata)(nil), // 0: path.qos.EndpointSelectionMetadata
+	(EndpointValidationFailureReason)(0), // 0: path.qos.EndpointValidationFailureReason
+	(*EndpointValidationResult)(nil),     // 1: path.qos.EndpointValidationResult
+	(*EndpointSelectionMetadata)(nil),    // 2: path.qos.EndpointSelectionMetadata
 }
 var file_path_qos_endpoint_selection_metadata_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: path.qos.EndpointValidationResult.failure_reason:type_name -> path.qos.EndpointValidationFailureReason
+	1, // 1: path.qos.EndpointSelectionMetadata.validation_results:type_name -> path.qos.EndpointValidationResult
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_endpoint_selection_metadata_proto_init() }
@@ -129,18 +307,20 @@ func file_path_qos_endpoint_selection_metadata_proto_init() {
 	if File_path_qos_endpoint_selection_metadata_proto != nil {
 		return
 	}
+	file_path_qos_endpoint_selection_metadata_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_endpoint_selection_metadata_proto_rawDesc), len(file_path_qos_endpoint_selection_metadata_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_path_qos_endpoint_selection_metadata_proto_goTypes,
 		DependencyIndexes: file_path_qos_endpoint_selection_metadata_proto_depIdxs,
+		EnumInfos:         file_path_qos_endpoint_selection_metadata_proto_enumTypes,
 		MessageInfos:      file_path_qos_endpoint_selection_metadata_proto_msgTypes,
 	}.Build()
 	File_path_qos_endpoint_selection_metadata_proto = out.File

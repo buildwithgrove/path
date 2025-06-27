@@ -183,6 +183,12 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		}
 	}
 
+	// Convert validation results to proto format
+	var validationResults []*qosobservations.EndpointValidationResult
+	for _, result := range rc.endpointSelectionMetadata.ValidationResults {
+		validationResults = append(validationResults, result)
+	}
+
 	// Return the set of observations for the single JSONRPC request.
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
@@ -194,9 +200,8 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 				RequestOrigin:        rc.requestOrigin,
 				EndpointObservations: observations,
 				EndpointSelectionMetadata: &qosobservations.EndpointSelectionMetadata{
-					RandomEndpointFallback:  rc.endpointSelectionMetadata.RandomEndpointFallback,
-					AvailableEndpointsCount: uint32(rc.endpointSelectionMetadata.AvailableEndpointsCount),
-					ValidEndpointsCount:     uint32(rc.endpointSelectionMetadata.ValidEndpointsCount),
+					RandomEndpointFallback: rc.endpointSelectionMetadata.RandomEndpointFallback,
+					ValidationResults:      validationResults,
 				},
 			},
 		},
