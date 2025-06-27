@@ -185,9 +185,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	// Convert validation results to proto format
 	var validationResults []*qosobservations.EndpointValidationResult
-	for _, result := range rc.endpointSelectionMetadata.ValidationResults {
-		validationResults = append(validationResults, result)
-	}
+	validationResults = append(validationResults, rc.endpointSelectionMetadata.ValidationResults...)
 
 	// Return the set of observations for the single JSONRPC request.
 	return qosobservations.Observations{

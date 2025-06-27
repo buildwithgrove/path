@@ -283,14 +283,6 @@ func calculateValidEndpointsCount(metadata *qos.EndpointSelectionMetadata) int {
 	return validCount
 }
 
-// publishSuccessfulValidations is now deprecated since we track actual validation results.
-// Keeping for backward compatibility but it's no longer used.
-func publishSuccessfulValidations(logger polylog.Logger, chainID, serviceID string, totalSuccessful int) {
-	// This function is deprecated - we now track actual validation results
-	// from the ValidationResults field in metadata
-	logger.Debug().Msg("publishSuccessfulValidations is deprecated - using actual ValidationResults from metadata")
-}
-
 // extractDomainFromEndpointAddr extracts the eTLD+1 domain from an endpoint address.
 // Handles the format: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
 // Returns "unknown" if domain cannot be extracted.
