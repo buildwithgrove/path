@@ -33,6 +33,8 @@ guard:
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:
+    debug_endpoints:
+      api_key_secret_name: "path-debug-api-keys"
     apiKey:
       # To disable API key authentication, set `enabled` to `false`.
       enabled: true

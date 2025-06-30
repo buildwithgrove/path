@@ -3,6 +3,7 @@ load("ext://restart_process", "docker_build_with_restart")
 load("ext://helm_resource", "helm_resource", "helm_repo")
 load('ext://k8s_attach', 'k8s_attach')
 load("ext://configmap", "configmap_create")
+load('ext://secret', 'secret_from_dict')
 
 # A list of directories where changes trigger a hot-reload of PATH.
 # IMPORTANT_DEV_NOTE: this list needs to be updated each time a new package is added to the repo.
@@ -101,12 +102,15 @@ LOCAL_DIR = "local"
 PATH_LOCAL_DIR = LOCAL_DIR + "/path"
 # The configuration file for PATH.
 PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
+# The secrets file for local development.
+SECRETS_FILE = LOCAL_DIR + "/secrets.yaml"
 
 # --------------------------------------------------------------------------- #
 #                              Configuration Resources                        #
 # --------------------------------------------------------------------------- #
 # 1. PATH Config Updater                                                      #
-# 2. Patch Envoy Gateway LoadBalancer                                         #
+# 2. Local Development Secrets from secrets.yaml                             #
+# 3. Patch Envoy Gateway LoadBalancer                                         #
 # --------------------------------------------------------------------------- #
 
 # Start a Tilt resource to update the PATH config with the local config file.
@@ -122,6 +126,20 @@ local_resource(
     deps=[PATH_LOCAL_CONFIG_FILE],
     labels=["configuration"],
 )
+
+# Load and create secrets from secrets.yaml using Tilt's secret extension
+# This replaces the manual Python script approach with a cleaner Tilt-native solution
+secrets_config = read_yaml(SECRETS_FILE, default={})
+if secrets_config:
+    print("Creating secrets from local/secrets.yaml...")
+    for secret_name, secret_data in secrets_config.items():
+        print("Creating secret: " + secret_name)
+        k8s_yaml(secret_from_dict(secret_name, inputs=secret_data))
+else:
+    print("No secrets.yaml found or empty, skipping secret creation")
+
+# TODO_TECHDEBT(@adshmh): Migrate local development API keys to the new secrets.yaml file
+# for centralized secret management and better organization.
 
 # Start a Tilt resource to patch the Envoy Gateway LoadBalancer resource
 # to ensure it is reachable from outside the cluster at "localhost:3070".
