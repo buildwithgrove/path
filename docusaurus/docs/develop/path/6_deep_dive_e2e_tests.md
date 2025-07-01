@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: Deep Dive - E2E Tests
 description: Deep dive into End-to-End Tests for PATH
 ---

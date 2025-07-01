@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: Deep Dive - Local Development Environment
 description: Technical details and background information
 ---

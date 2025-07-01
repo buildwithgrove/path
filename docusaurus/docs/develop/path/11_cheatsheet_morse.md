@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: Morse Cheat Sheet (30-60 min)
 description: Introductory guide for setting up PATH w/ Morse
 ---
