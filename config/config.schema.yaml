@@ -111,7 +111,7 @@ properties:
           - grpc_config
         properties:
           grpc_config:
-            description: "gRPC configuration for the Shannon full node."
+            description: "gRPC configuration for the Shannon GRPC client. This configuration is used to connect to the Shannon full node to get data from the Pocket blockchain."
             type: object
             additionalProperties: false
             required:
@@ -146,20 +146,12 @@ properties:
                 description: "Keep-alive timeout for gRPC connections."
                 type: string
           cache_config:
-            description: "Configuration for the cache."
+            description: "Configuration for the cache. This configuration is used to configure the cache for the Shannon gateway client."
             type: object
             additionalProperties: false
             properties:
               use_cache:
                 description: "Indicates if the cache should be used."
-                type: boolean
-                default: true
-              session_ttl:
-                description: "TTL for the session cache."
-                type: string
-                pattern: "^[0-9]+[smh]$"
-              early_refresh_enabled:
-                description: "Setting this to false disables early refresh for the session cache. This causes SturdyC to asynchronously refresh the cache before it expires to ensure that the cache is always hot and never blocking. See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes"
                 type: boolean
                 default: true
 
