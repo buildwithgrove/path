@@ -200,50 +200,25 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		return currentSession, nil
 	}
 
-	// Check if we're within the grace period of the previous session
-	if lfn.isWithinPreviousSessionGracePeriod(currentSession, currentHeight, sharedParams) {
-		// Try to get the previous session by querying at the previous session's end height
-		prevSessionHeight := currentSession.Header.SessionStartBlockHeight - 1
-		if prevSessionHeight > 0 {
-			prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionHeight)
-			if err == nil && prevSession != nil {
-				// Validate that the previous session is still within grace period
-				prevSessionEndHeight := prevSession.Header.SessionEndBlockHeight
-				gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+	// Calculate when the previous session's grace period would end
+	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
+	gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
-				if currentHeight <= gracePeriodEndHeight {
-					return *prevSession, nil
-				}
-			}
+	// If we're not within the grace period of the previous session, return the current session
+	if currentHeight > gracePeriodEndHeight {
+		return currentSession, nil
+	}
+
+	// Try to get the previous session by querying at the previous session's end height
+	if prevSessionEndHeight > 0 {
+		prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
+		if err == nil && prevSession != nil {
+			return *prevSession, nil
 		}
 	}
 
-	// Return current session if not in grace period or unable to get previous session
+	// Return current session if unable to get previous session
 	return currentSession, nil
-}
-
-// isWithinPreviousSessionGracePeriod checks if we're still within the grace period
-// of the previous session and should continue using it.
-func (lfn *LazyFullNode) isWithinPreviousSessionGracePeriod(
-	currentSession sessiontypes.Session,
-	currentHeight int64,
-	sharedParams *sharedtypes.Params,
-) bool {
-	// If current session just started (we're in the first few blocks of the new session),
-	// check if we're still within grace period of the previous session
-	sessionStartHeight := currentSession.Header.SessionStartBlockHeight
-
-	// Allow some buffer - if we're in the first few blocks of a new session,
-	// check if previous session's grace period is still active
-	if currentHeight <= sessionStartHeight+int64(sharedParams.NumBlocksPerSession)/4 {
-		// Calculate when the previous session's grace period would end
-		prevSessionEndHeight := sessionStartHeight - 1
-		gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
-
-		return currentHeight <= gracePeriodEndHeight
-	}
-
-	return false
 }
 
 // serviceRequestPayload:
