@@ -1,11 +1,25 @@
+// Package shannon provides blockchain data fetching and caching for Shannon full nodes.
+//
+// This package contains:
+//   - cachingFullNode: Intelligent caching layer with block-based session refresh
+//   - LazyFullNode: Direct connection to Shannon full nodes
+//   - Configuration types for flexible client setup
+//
+// The caching system uses SturdyC to provide:
+//   - Block-aware session refresh (triggers at SessionEndBlockHeight+1)
+//   - Zero-downtime cache swaps during session transitions
+//   - Stampede protection for concurrent requests
+//   - Infinite TTL for account public keys (immutable data)
 package shannon
 
 import (
 	"context"
 	"fmt"
+	"math"
+	"sync"
 	"time"
 
-	accounttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -16,173 +30,188 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// ---------------- Cache Configuration ----------------
-const (
-	// Retry base delay for exponential backoff on failed refreshes
-	retryBaseDelay = 100 * time.Millisecond
-
-	// cacheCapacity:
-	//   - Max entries across all shards (not per-shard)
-	//   - Exceeding capacity triggers LRU eviction per shard
-	//   - 100k supports most large deployments
-	//   - TODO_TECHDEBT(@commoddity): Revisit based on real-world usage; consider making configurable
-	cacheCapacity = 100_000
-
-	// numShards:
-	//   - Number of independent cache shards for concurrency
-	//   - Reduces lock contention, improves parallelism
-	//   - 10 is a good balance for most workloads
-	numShards = 10
-
-	// evictionPercentage:
-	//   - % of LRU entries evicted per shard when full
-	//   - 10% = incremental cleanup, avoids memory spikes
-	//   - SturdyC also evicts expired entries in background
-	evictionPercentage = 10
-
-	// TODO_TECHDEBT(@commoddity): See Issue #291 for improvements to refresh logic
-	// minEarlyRefreshPercentage:
-	//   - Earliest point (as % of TTL) to start background refresh
-	//   - 0.75 = 75% of TTL (e.g. 22.5s for 30s TTL)
-	minEarlyRefreshPercentage = 0.75
-
-	// maxEarlyRefreshPercentage:
-	//   - Latest point (as % of TTL) to start background refresh
-	//   - 0.9 = 90% of TTL (e.g. 27s for 30s TTL)
-	//   - Ensures refresh always completes before expiry
-	maxEarlyRefreshPercentage = 0.9
-)
-
-// getCacheDelays returns the min/max delays for SturdyC's Early Refresh strategy.
-// - Proactively refreshes cache before expiry (prevents misses/latency spikes)
-// - Refresh window: 75-90% of TTL (e.g. 22.5-27s for 30s TTL)
-// - Spreads requests to avoid thundering herd
-// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
-	minFloat := float64(ttl) * minEarlyRefreshPercentage
-	maxFloat := float64(ttl) * maxEarlyRefreshPercentage
-
-	// Round to the nearest second
-	min = time.Duration(minFloat/float64(time.Second)+0.5) * time.Second
-	max = time.Duration(maxFloat/float64(time.Second)+0.5) * time.Second
-	return
-}
-
-// Prefix for session cache keys to avoid collisions with other keys.
-const sessionCacheKeyPrefix = "session"
-
+// cachingFullNode implements FullNode interface.
 var _ FullNode = &cachingFullNode{}
 
-// cachingFullNode wraps a LazyFullNode with SturdyC-based caching.
-// - Early refresh: background updates before expiry (prevents thundering herd/latency spikes)
-// - Example: 30s TTL, refresh at 22.5–27s (75–90%)
-// - Benefits: zero-latency reads, graceful degradation, auto load balancing
-// Docs: https://github.com/viccon/sturdyc
+// Cache configuration constants
+const (
+	// SturdyC cache configuration
+	// Docs: https://github.com/viccon/sturdyc
+	cacheCapacity      = 100_000 // Max entries across all shards
+	numShards          = 10      // Number of cache shards for concurrency
+	evictionPercentage = 10      // Percentage of LRU entries evicted when full
+
+	// Cache key prefixes to avoid collisions
+	sessionCacheKeyPrefix       = "session"
+	accountPubKeyCacheKeyPrefix = "pubkey"
+)
+
+// noTTL represents infinite cache duration (~292 years)
+// Used for immutable data like account public keys
+const noTTL = time.Duration(math.MaxInt64)
+
+// cachingFullNode provides intelligent caching for Shannon blockchain data.
+//
+// Key features:
+//   - Block-based session refresh: Monitors SessionEndBlockHeight instead of time-based TTL
+//   - Zero-downtime transitions: Creates new cache instances and atomically swaps them
+//   - Intelligent polling: Switches to 1-second polling when approaching session end
+//   - Stampede protection: SturdyC prevents duplicate requests for the same data
+//   - Infinite caching: Account public keys cached forever (immutable data)
+//
+// Documentation: https://github.com/viccon/sturdyc
 type cachingFullNode struct {
-	logger polylog.Logger
+	logger             polylog.Logger
+	onchainDataFetcher FullNode
 
-	// Underlying node for protocol data fetches
-	lazyFullNode *LazyFullNode
+	// Session cache with block-based refresh monitoring
+	sessionCache        *sturdyc.Client[sessiontypes.Session]
+	sessionCacheMu      sync.RWMutex
+	sessionRefreshState *sessionRefreshState
 
-	// Session cache (5 min on Beta TestNet, see #275)
-	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit after mainnet
-	sessionCache *sturdyc.Client[sessiontypes.Session]
-
-	// Account client wrapped with SturdyC cache
-	cachingAccountClient *sdk.AccountClient
+	// Account public key cache with infinite TTL
+	accountPubKeyCache *sturdyc.Client[cryptotypes.PubKey]
 }
 
-// NewCachingFullNode wraps a LazyFullNode with:
-//   - Session cache: caches sessions, refreshes early
-//   - Account cache: indefinite cache for account data
+// NewCachingFullNode creates a new caching layer around a FullNode.
 //
-// Both use early refresh to avoid thundering herd/latency spikes.
+// The cache automatically starts background session monitoring and will refresh
+// sessions based on blockchain height rather than time-based TTL.
 func NewCachingFullNode(
 	logger polylog.Logger,
-	lazyFullNode *LazyFullNode,
-	cacheConfig CacheConfig,
+	dataFetcher FullNode,
 ) (*cachingFullNode, error) {
-	// Set default session TTL if not set
-	cacheConfig.hydrateDefaults()
+	logger = logger.With("client", "caching_full_node")
 
-	// Log cache configuration
-	logger.Debug().
-		Str("cache_config_session_ttl", cacheConfig.SessionTTL.String()).
-		Msgf("cachingFullNode - Cache Configuration")
+	cfn := &cachingFullNode{
+		logger:             logger,
+		onchainDataFetcher: dataFetcher,
 
-	// Configure session cache with early refreshes
-	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
+		sessionCache: getCache[sessiontypes.Session](),
+		sessionRefreshState: &sessionRefreshState{
+			activeSessionKeys: make(map[string]sessionKeyInfo),
+		},
 
-	// Create the session cache with early refreshes
-	sessionCache := sturdyc.New[sessiontypes.Session](
+		accountPubKeyCache: getCache[cryptotypes.PubKey](),
+	}
+
+	// Start background session monitoring
+	cfn.startSessionMonitoring()
+
+	return cfn, nil
+}
+
+// getCache creates a SturdyC cache instance with infinite TTL
+func getCache[T any]() *sturdyc.Client[T] {
+	return sturdyc.New[T](
 		cacheCapacity,
 		numShards,
-		cacheConfig.SessionTTL,
-		evictionPercentage,
-		// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#early-refreshes
-		sturdyc.WithEarlyRefreshes(
-			sessionMinRefreshDelay,
-			sessionMaxRefreshDelay,
-			cacheConfig.SessionTTL,
-			retryBaseDelay,
-		),
-	)
-
-	// Account cache: infinite for app lifetime; no early refresh needed.
-	accountCache := sturdyc.New[*accounttypes.QueryAccountResponse](
-		accountCacheCapacity,
-		numShards,
-		accountCacheTTL,
+		noTTL,
 		evictionPercentage,
 	)
-
-	// Initialize the caching full node with the modified lazy full node
-	return &cachingFullNode{
-		logger:       logger,
-		lazyFullNode: lazyFullNode,
-		sessionCache: sessionCache,
-		// Wrap the underlying account fetcher with a SturdyC caching layer.
-		cachingAccountClient: getCachingAccountClient(
-			logger,
-			accountCache,
-			lazyFullNode.accountClient,
-		),
-	}, nil
 }
 
-// GetApp is only used at startup; relaying fetches sessions for app/session sync.
+// GetApp fetches application data directly from the full node without caching.
+//
+// Applications are not cached because:
+//   - Only needed during gateway startup for service configuration
+//   - Runtime access to applications happens via sessions (which contain the app)
+//   - Reduces cache complexity for rarely-accessed data
 func (cfn *cachingFullNode) GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error) {
-	return cfn.lazyFullNode.GetApp(ctx, appAddr)
+	return cfn.onchainDataFetcher.GetApp(ctx, appAddr)
 }
 
-// GetSession returns (and auto-refreshes) the session for a service/app from cache.
+// GetSession returns a session from cache or fetches it from the blockchain.
+//
+// On cache miss, this method:
+//   - Fetches the session from the full node
+//   - Updates the global session end height for monitoring
+//   - Tracks the session key for background refresh
+//   - Caches the session with infinite TTL (refreshed by block monitoring)
+//
+// SturdyC provides automatic stampede protection for concurrent requests.
 func (cfn *cachingFullNode) GetSession(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
-	return cfn.sessionCache.GetOrFetch(
+	sessionKey := getSessionCacheKey(serviceID, appAddr)
+
+	// Get current cache instance with read lock
+	// This is to ensure that the cache is not modified while we are fetching the session
+	// ie. when the session cache is reset during a session rollover.
+	cfn.sessionCacheMu.RLock()
+	sessionCache := cfn.sessionCache
+	cfn.sessionCacheMu.RUnlock()
+
+	// SturdyC GetOrFetch provides stampede protection
+	session, err := sessionCache.GetOrFetch(
 		ctx,
-		getSessionCacheKey(serviceID, appAddr),
+		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
-			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
-				"[cachingFullNode.GetSession] Fetching from full node",
-			)
-			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			cfn.logger.Debug().
+				Str("session_key", sessionKey).
+				Msgf("Cache miss - fetching session from full node for service %s", serviceID)
+
+			session, err := cfn.onchainDataFetcher.GetSession(fetchCtx, serviceID, appAddr)
+			if err != nil {
+				return session, err
+			}
+
+			// Register session for block-based monitoring
+			cfn.updateSessionEndHeight(session)
+
+			// Track for background refresh during session transitions
+			cfn.trackActiveSession(sessionKey, serviceID, appAddr)
+
+			return session, nil
 		},
 	)
+
+	return session, err
 }
 
-// getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>
+// getSessionCacheKey creates a unique cache key: "session:<serviceID>:<appAddr>"
 func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 }
 
-// ValidateRelayResponse:
-//   - Validates the raw response bytes received from an endpoint.
-//   - Uses the SDK and the caching full node's account client for validation.
-//   - Will use the caching account client to fetch the account pub key.
+// GetAccountPubKey returns an account's public key from cache or blockchain.
+//
+// Account public keys are cached with infinite TTL because they never change.
+// The fetchFn is only called once per address during the application lifetime.
+func (cfn *cachingFullNode) GetAccountPubKey(
+	ctx context.Context,
+	address string,
+) (pubKey cryptotypes.PubKey, err error) {
+	return cfn.accountPubKeyCache.GetOrFetch(
+		ctx,
+		getAccountPubKeyCacheKey(address),
+		func(fetchCtx context.Context) (cryptotypes.PubKey, error) {
+			cfn.logger.Debug().
+				Str("account_key", getAccountPubKeyCacheKey(address)).
+				Msg("Cache miss - fetching account public key from full node")
+
+			// Use the account client from the underlying full node
+			accountClient := cfn.onchainDataFetcher.GetAccountClient()
+			return accountClient.GetPubKeyFromAddress(fetchCtx, address)
+		},
+	)
+}
+
+// getAccountPubKeyCacheKey creates a unique cache key: "pubkey:<address>"
+func getAccountPubKeyCacheKey(address string) string {
+	return fmt.Sprintf("%s:%s", accountPubKeyCacheKeyPrefix, address)
+}
+
+// LatestBlockHeight returns the current blockchain height from the full node.
+// This method is not cached as block height changes frequently.
+func (cfn *cachingFullNode) LatestBlockHeight(ctx context.Context) (height int64, err error) {
+	return cfn.onchainDataFetcher.LatestBlockHeight(ctx)
+}
+
+// ValidateRelayResponse validates the raw response bytes received from an endpoint.
+// Uses the SDK and the caching full node's account client for validation.
 func (cfn *cachingFullNode) ValidateRelayResponse(
 	supplierAddr sdk.SupplierAddress,
 	responseBz []byte,
@@ -191,19 +220,22 @@ func (cfn *cachingFullNode) ValidateRelayResponse(
 		context.Background(),
 		supplierAddr,
 		responseBz,
-		cfn.cachingAccountClient,
+		cfn.onchainDataFetcher.GetAccountClient(),
 	)
 }
 
-// GetAccountClient: passthrough to underlying node (returns caching client).
+// GetAccountClient returns the account client from the underlying full node.
 func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
-	return cfn.cachingAccountClient
+	return cfn.onchainDataFetcher.GetAccountClient()
 }
 
-// IsHealthy: passthrough to underlying node.
-// TODO_IMPROVE(@commoddity):
-//   - Add smarter health checks (e.g. verify cached apps/sessions)
-//   - Currently always true (cache fills as needed)
+// IsHealthy reports the health status of the cache.
+// Currently always returns true as the cache is populated on-demand.
+//
+// TODO_IMPROVE: Add meaningful health checks:
+//   - Verify cache connectivity
+//   - Check session refresh monitoring status
+//   - Validate recent successful fetches
 func (cfn *cachingFullNode) IsHealthy() bool {
-	return cfn.lazyFullNode.IsHealthy()
+	return cfn.onchainDataFetcher.IsHealthy()
 }

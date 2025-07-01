@@ -89,21 +89,3 @@ func (c *cachingPoktNodeAccountFetcher) Account(
 func getAccountCacheKey(address string) string {
 	return fmt.Sprintf("%s:%s", accountCacheKeyPrefix, address)
 }
-
-// getCachingAccountClient wraps the original account fetcher with the caching
-// account fetcher and returns a new caching account client.
-//
-// It is used in the NewCachingFullNode function to create a new caching full node.
-func getCachingAccountClient(
-	logger polylog.Logger,
-	accountCache *sturdyc.Client[*accounttypes.QueryAccountResponse],
-	underlyingAccountClient *sdk.AccountClient,
-) *sdk.AccountClient {
-	return &sdk.AccountClient{
-		PoktNodeAccountFetcher: &cachingPoktNodeAccountFetcher{
-			logger:                  logger,
-			accountCache:            accountCache,
-			underlyingAccountClient: underlyingAccountClient,
-		},
-	}
-}

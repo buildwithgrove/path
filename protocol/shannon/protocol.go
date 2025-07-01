@@ -60,6 +60,9 @@ type FullNode interface {
 
 	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
 	GetAccountClient() *sdk.AccountClient
+
+	// LatestBlockHeight returns the current blockchain height from the full node.
+	LatestBlockHeight(ctx context.Context) (int64, error)
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
