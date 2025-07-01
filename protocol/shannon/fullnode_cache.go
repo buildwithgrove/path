@@ -249,22 +249,22 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get current session")
-		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
+		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
 	}
 
 	logger.Debug().
-		Int64("session_start_height", currentSession.Header.SessionStartBlockHeight).
-		Int64("session_end_height", currentSession.Header.SessionEndBlockHeight).
+		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
+		Int64("current_session_end_height", currentSession.Header.SessionEndBlockHeight).
 		Msg("Got the current session from cache")
 
-	// Get shared parameters to determine grace period (cached with 10min TTL)
+	// Get shared parameters to determine grace period
 	sharedParams, err := cfn.GetSharedParams(ctx)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
 		return currentSession, nil
 	}
 
-	// Get current block height (cached with 20sec TTL)
+	// Get current block height
 	currentHeight, err := cfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
@@ -273,13 +273,14 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 
 	// Calculate when the previous session's grace period would end
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
-	gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+	prevSessionGracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
 	// If we're not within the grace period of the previous session, return the current session
-	if currentHeight > gracePeriodEndHeight {
+	if currentHeight > prevSessionGracePeriodEndHeight {
 		logger.Debug().
 			Int64("current_height", currentHeight).
-			Int64("grace_period_end_height", gracePeriodEndHeight).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 			Msg("IS NOT WITHIN grace period, returning current session")
 		return currentSession, nil
 	}
@@ -287,7 +288,7 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	logger.Debug().
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 		Msg("IS WITHIN grace period of previous session")
 
 	// Use cache for previous session lookup with a specific key

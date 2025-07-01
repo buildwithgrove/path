@@ -182,7 +182,6 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-
 	logger := lfn.logger.
 		With("service_id", string(serviceID)).
 		With("app_addr", appAddr).
@@ -191,46 +190,47 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	// Get the current session
 	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
-		logger.Error().Err(err).Msg("GetSessionWithGracePeriod: failed to get current session")
-		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
+		logger.Error().Err(err).Msg("failed to get current session")
+		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
 	}
 
 	logger.Debug().
-		Int64("session_start_height", currentSession.Header.SessionStartBlockHeight).
-		Int64("session_end_height", currentSession.Header.SessionEndBlockHeight).
+		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
+		Int64("current_session_end_height", currentSession.Header.SessionEndBlockHeight).
 		Msg("Got the current session")
 
 	// Get shared parameters to determine grace period
 	sharedParams, err := lfn.GetSharedParams(ctx)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
+		logger.Warn().Err(err).Msg("failed to get shared params, falling back to current session")
 		return currentSession, nil
 	}
 
 	// Get current block height
 	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
+		logger.Warn().Err(err).Msg("failed to get current block height, falling back to current session")
 		return currentSession, nil
 	}
 
 	// Calculate when the previous session's grace period would end
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
-	gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+	prevSessionGracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
 	// If we're not within the grace period of the previous session, return the current session
-	if currentHeight > gracePeriodEndHeight {
+	if currentHeight > prevSessionGracePeriodEndHeight {
 		logger.Debug().
 			Int64("current_height", currentHeight).
-			Int64("grace_period_end_height", gracePeriodEndHeight).
-			Msg("IS NOT WITHIN grace period, returning current session")
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+			Msg("IS NOT WITHIN grace period of previous session, returning current session")
 		return currentSession, nil
 	}
 
 	logger.Debug().
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 		Msg("IS WITHIN grace period of previous session")
 
 	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
@@ -241,11 +241,11 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		return currentSession, nil
 	}
 
-	logger.Info().
+	logger.Debug().
 		Int64("prev_session_start_height", prevSession.Header.SessionStartBlockHeight).
 		Int64("prev_session_end_height", prevSession.Header.SessionEndBlockHeight).
-		Int64("grace_period_end_height", gracePeriodEndHeight).
-		Msg("Using previous session since its within the grace period")
+		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+		Msg("USING PREVIOUS SESSION since its within the grace period")
 
 	return *prevSession, nil
 }
