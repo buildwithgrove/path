@@ -15,14 +15,15 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric            = "shannon_relays_total"
-	relaysErrorsTotalMetric      = "shannon_relay_errors_total"
-	sanctionsByDomainMetric      = "shannon_sanctions_by_domain"
-	sessionTransitionMetric      = "shannon_session_transitions_total"
-	sessionCacheOperationsMetric = "shannon_session_cache_operations_total"
-	sessionGracePeriodMetric     = "shannon_session_grace_period_usage_total"
+	relaysTotalMetric              = "shannon_relays_total"
+	relaysErrorsTotalMetric        = "shannon_relay_errors_total"
+	sanctionsByDomainMetric        = "shannon_sanctions_by_domain"
+	sessionTransitionMetric        = "shannon_session_transitions_total"
+	sessionCacheOperationsMetric   = "shannon_session_cache_operations_total"
+	sessionGracePeriodMetric       = "shannon_session_grace_period_usage_total"
 	sessionOperationDurationMetric = "shannon_session_operation_duration_seconds"
-	relayLatencyMetric           = "shannon_relay_latency_seconds"
+	relayLatencyMetric             = "shannon_relay_latency_seconds"
+	backendServiceLatencyMetric    = "shannon_backend_service_latency_seconds"
 )
 
 func init() {
@@ -34,6 +35,7 @@ func init() {
 	prometheus.MustRegister(sessionGracePeriodUsage)
 	prometheus.MustRegister(sessionOperationDuration)
 	prometheus.MustRegister(relayLatency)
+	prometheus.MustRegister(backendServiceLatency)
 }
 
 var (
@@ -221,6 +223,34 @@ var (
 			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0},
 		},
 		[]string{"service_id", "session_state", "cache_effectiveness"},
+	)
+
+	// backendServiceLatency tracks the time spent waiting for backend service responses.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Backend service domain (TLD+1 for cardinality control)
+	//   - http_status: HTTP response status (2xx, 4xx, 5xx, timeout)
+	//   - request_size_bucket: Request size category (small, medium, large)
+	//
+	// Buckets optimized for backend service response times (1ms to 30s):
+	//   - Fast responses: < 50ms (cache hits, simple queries)
+	//   - Normal responses: 50ms - 2s (typical blockchain RPC calls)
+	//   - Slow responses: 2s - 10s (complex queries, archival data)
+	//   - Timeout/error responses: 10s - 30s (network issues, overloaded backends)
+	//
+	// Use to analyze:
+	//   - Pure backend service performance (excluding PATH overhead)
+	//   - Backend service degradation patterns
+	//   - Correlation between backend latency and total request latency
+	//   - Impact of request size on backend response time
+	backendServiceLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      backendServiceLatencyMetric,
+			Help:      "Backend service response latency in seconds",
+			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0},
+		},
+		[]string{"service_id", "endpoint_domain", "http_status", "request_size_bucket"},
 	)
 )
 
@@ -461,10 +491,10 @@ func RecordSessionGracePeriodUsage(serviceID, usageType, sessionDecision string)
 // RecordSessionOperationDuration records the duration of session-related operations.
 func RecordSessionOperationDuration(serviceID, operation, cacheResult string, gracePeriodActive bool, duration float64) {
 	sessionOperationDuration.With(prometheus.Labels{
-		"service_id":           serviceID,
-		"operation":            operation,
-		"cache_result":         cacheResult,
-		"grace_period_active":  fmt.Sprintf("%t", gracePeriodActive),
+		"service_id":          serviceID,
+		"operation":           operation,
+		"cache_result":        cacheResult,
+		"grace_period_active": fmt.Sprintf("%t", gracePeriodActive),
 	}).Observe(duration)
 }
 
@@ -474,5 +504,15 @@ func RecordRelayLatency(serviceID, sessionState, cacheEffectiveness string, dura
 		"service_id":          serviceID,
 		"session_state":       sessionState,
 		"cache_effectiveness": cacheEffectiveness,
+	}).Observe(duration)
+}
+
+// RecordBackendServiceLatency records backend service response latency.
+func RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestSizeBucket string, duration float64) {
+	backendServiceLatency.With(prometheus.Labels{
+		"service_id":          serviceID,
+		"endpoint_domain":     endpointDomain,
+		"http_status":         httpStatus,
+		"request_size_bucket": requestSizeBucket,
 	}).Observe(duration)
 }
