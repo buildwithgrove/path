@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -34,7 +35,7 @@ var _ FullNode = &LazyFullNode{}
 //   - Enables support for short block times (e.g. LocalNet)
 //   - Use CachingFullNode struct if caching is desired for performance
 type LazyFullNode struct {
-	// logger polylog.Logger
+	logger polylog.Logger
 
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
@@ -44,7 +45,7 @@ type LazyFullNode struct {
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
+func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
@@ -73,6 +74,7 @@ func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
 	}
 
 	fullNode := &LazyFullNode{
+		logger:        logger,
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
@@ -180,23 +182,35 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+
+	logger := lfn.logger.
+		With("service_id", string(serviceID)).
+		With("app_addr", appAddr).
+		With("method", "GetSessionWithGracePeriod")
+
 	// Get the current session
 	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
 	if err != nil {
+		logger.Error().Err(err).Msg("GetSessionWithGracePeriod: failed to get current session")
 		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
 	}
+
+	logger.Debug().
+		Int64("session_start_height", currentSession.Header.SessionStartBlockHeight).
+		Int64("session_end_height", currentSession.Header.SessionEndBlockHeight).
+		Msg("Got the current session")
 
 	// Get shared parameters to determine grace period
 	sharedParams, err := lfn.GetSharedParams(ctx)
 	if err != nil {
-		// If we can't get shared params, fall back to current session
+		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
 		return currentSession, nil
 	}
 
 	// Get current block height
 	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
-		// If we can't get current height, fall back to current session
+		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
 		return currentSession, nil
 	}
 
@@ -206,19 +220,34 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 
 	// If we're not within the grace period of the previous session, return the current session
 	if currentHeight > gracePeriodEndHeight {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("grace_period_end_height", gracePeriodEndHeight).
+			Msg("Not within grace period, returning current session")
 		return currentSession, nil
 	}
 
-	// Try to get the previous session by querying at the previous session's end height
-	if prevSessionEndHeight > 0 {
-		prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
-		if err == nil && prevSession != nil {
-			return *prevSession, nil
-		}
+	logger.Debug().
+		Int64("current_height", currentHeight).
+		Int64("prev_session_end_height", prevSessionEndHeight).
+		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Msg("Is within grace period of previous session")
+
+	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
+	if err != nil || prevSession == nil {
+		logger.Warn().Err(err).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Msg("Failed to get previous session, falling back to current session")
+		return currentSession, nil
 	}
 
-	// Return current session if unable to get previous session
-	return currentSession, nil
+	logger.Info().
+		Int64("prev_session_start_height", prevSession.Header.SessionStartBlockHeight).
+		Int64("prev_session_end_height", prevSession.Header.SessionEndBlockHeight).
+		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Msg("Using previous session since its within the grace period")
+
+	return *prevSession, nil
 }
 
 // serviceRequestPayload:

@@ -175,9 +175,111 @@ func (cfn *cachingFullNode) GetSession(
 	)
 }
 
+// GetSessionWithGracePeriod implements grace period aware session fetching with caching.
+// This method extends the standard GetSession with grace period logic while maintaining
+// the caching benefits for session data.
+func (cfn *cachingFullNode) GetSessionWithGracePeriod(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
+
+	logger := cfn.logger.
+		With("service_id", string(serviceID)).
+		With("app_addr", appAddr).
+		With("method", "GetSessionWithGracePeriod")
+
+	// Get the current session from cache
+	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to get current session")
+		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
+	}
+
+	logger.Debug().
+		Int64("session_start_height", currentSession.Header.SessionStartBlockHeight).
+		Int64("session_end_height", currentSession.Header.SessionEndBlockHeight).
+		Msg("Got the current session from cache")
+
+	// Get shared parameters to determine grace period (not cached due to infrequent use)
+	sharedParams, err := cfn.GetSharedParams(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Get current block height (not cached due to frequent changes)
+	currentHeight, err := cfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Calculate when the previous session's grace period would end
+	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
+	gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+
+	// If we're not within the grace period of the previous session, return the current session
+	if currentHeight > gracePeriodEndHeight {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("grace_period_end_height", gracePeriodEndHeight).
+			Msg("Not within grace period, returning current session")
+		return currentSession, nil
+	}
+
+	logger.Debug().
+		Int64("current_height", currentHeight).
+		Int64("prev_session_end_height", prevSessionEndHeight).
+		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Msg("Is within grace period of previous session")
+
+	// Use cache for previous session lookup with a specific key
+	prevSessionKey := getPreviousSessionCacheKey(serviceID, appAddr, prevSessionEndHeight)
+	prevSession, err := cfn.sessionCache.GetOrFetch(
+		ctx,
+		prevSessionKey,
+		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			logger.Debug().
+				Str("prev_session_key", prevSessionKey).
+				Int64("prev_session_end_height", prevSessionEndHeight).
+				Msg("Fetching previous session from full node")
+			
+			session, err := cfn.lazyFullNode.sessionClient.GetSession(fetchCtx, appAddr, string(serviceID), prevSessionEndHeight)
+			if err != nil {
+				return sessiontypes.Session{}, err
+			}
+			if session == nil {
+				return sessiontypes.Session{}, fmt.Errorf("previous session is nil")
+			}
+			return *session, nil
+		},
+	)
+
+	if err != nil || prevSession.Header.SessionStartBlockHeight == 0 {
+		logger.Warn().Err(err).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Msg("Failed to get previous session, falling back to current session")
+		return currentSession, nil
+	}
+
+	logger.Info().
+		Int64("prev_session_start_height", prevSession.Header.SessionStartBlockHeight).
+		Int64("prev_session_end_height", prevSession.Header.SessionEndBlockHeight).
+		Int64("grace_period_end_height", gracePeriodEndHeight).
+		Msg("Using cached previous session since its within the grace period")
+
+	return prevSession, nil
+}
+
 // getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>
 func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
+}
+
+// getPreviousSessionCacheKey builds a unique cache key for previous session: <prefix>:prev:<serviceID>:<appAddr>:<height>
+func getPreviousSessionCacheKey(serviceID protocol.ServiceID, appAddr string, height int64) string {
+	return fmt.Sprintf("%s:prev:%s:%s:%d", sessionCacheKeyPrefix, serviceID, appAddr, height)
 }
 
 // ValidateRelayResponse:
@@ -217,13 +319,4 @@ func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.P
 // GetCurrentBlockHeight: passthrough to underlying node (no caching for current height).
 func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 	return cfn.lazyFullNode.GetCurrentBlockHeight(ctx)
-}
-
-// GetSessionWithGracePeriod delegates to the underlying LazyFullNode for grace period logic.
-func (cfn *cachingFullNode) GetSessionWithGracePeriod(
-	ctx context.Context,
-	serviceID protocol.ServiceID,
-	appAddr string,
-) (sessiontypes.Session, error) {
-	return cfn.lazyFullNode.GetSessionWithGracePeriod(ctx, serviceID, appAddr)
 }
