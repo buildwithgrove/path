@@ -114,8 +114,8 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 	for _, ownedAppAddr := range ownedAppsForService {
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
-		// Retrieve the session for the owned app.
-		session, err := p.FullNode.GetSession(ctx, serviceID, ownedAppAddr)
+		// Retrieve the session for the owned app, considering grace period logic.
+		session, err := p.FullNode.GetSessionWithGracePeriod(ctx, serviceID, ownedAppAddr)
 		if err != nil {
 			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)

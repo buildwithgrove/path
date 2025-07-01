@@ -9,6 +9,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -49,6 +50,16 @@ type FullNode interface {
 	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
 	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+
+	// GetSessionWithGracePeriod returns the appropriate session considering grace period logic.
+	// If within grace period of a session rollover, it may return the previous session.
+	GetSessionWithGracePeriod(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+
+	// GetSharedParams returns the shared module parameters from the blockchain.
+	GetSharedParams(ctx context.Context) (*sharedtypes.Params, error)
+
+	// GetCurrentBlockHeight returns the current block height from the blockchain.
+	GetCurrentBlockHeight(ctx context.Context) (int64, error)
 
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
 	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)

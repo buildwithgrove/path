@@ -11,6 +11,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
@@ -39,6 +40,7 @@ type LazyFullNode struct {
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
+	sharedClient  *sdk.SharedClient
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
@@ -65,11 +67,17 @@ func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
 		return nil, fmt.Errorf("NewSdk: error creating new account client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
+	sharedClient, err := newSharedClient(config.GRPCConfig)
+	if err != nil {
+		return nil, fmt.Errorf("NewSdk: error creating new shared client using url %s: %w", config.GRPCConfig.HostPort, err)
+	}
+
 	fullNode := &LazyFullNode{
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
+		sharedClient:  sharedClient,
 	}
 
 	return fullNode, nil
@@ -140,6 +148,102 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 // - Used to create relay request signers.
 func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
+}
+
+// GetSharedParams:
+// - Returns the shared module parameters from the blockchain.
+// - Used to get grace period and session configuration.
+func (lfn *LazyFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Params, error) {
+	params, err := lfn.sharedClient.GetParams(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetSharedParams: error getting shared module parameters: %w", err)
+	}
+	return &params, nil
+}
+
+// GetCurrentBlockHeight:
+// - Returns the current block height from the blockchain.
+// - Used for session validation and grace period calculations.
+func (lfn *LazyFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
+	height, err := lfn.blockClient.LatestBlockHeight(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("GetCurrentBlockHeight: error getting latest block height: %w", err)
+	}
+	return height, nil
+}
+
+// GetSessionWithGracePeriod:
+// - Returns the appropriate session considering grace period logic.
+// - If within grace period of a session rollover, it may return the previous session.
+func (lfn *LazyFullNode) GetSessionWithGracePeriod(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
+	// Get the current session
+	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
+	if err != nil {
+		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
+	}
+
+	// Get shared parameters to determine grace period
+	sharedParams, err := lfn.GetSharedParams(ctx)
+	if err != nil {
+		// If we can't get shared params, fall back to current session
+		return currentSession, nil
+	}
+
+	// Get current block height
+	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		// If we can't get current height, fall back to current session
+		return currentSession, nil
+	}
+
+	// Check if we're within the grace period of the previous session
+	if lfn.isWithinPreviousSessionGracePeriod(currentSession, currentHeight, sharedParams) {
+		// Try to get the previous session by querying at the previous session's end height
+		prevSessionHeight := currentSession.Header.SessionStartBlockHeight - 1
+		if prevSessionHeight > 0 {
+			prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionHeight)
+			if err == nil && prevSession != nil {
+				// Validate that the previous session is still within grace period
+				prevSessionEndHeight := prevSession.Header.SessionEndBlockHeight
+				gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+
+				if currentHeight <= gracePeriodEndHeight {
+					return *prevSession, nil
+				}
+			}
+		}
+	}
+
+	// Return current session if not in grace period or unable to get previous session
+	return currentSession, nil
+}
+
+// isWithinPreviousSessionGracePeriod checks if we're still within the grace period
+// of the previous session and should continue using it.
+func (lfn *LazyFullNode) isWithinPreviousSessionGracePeriod(
+	currentSession sessiontypes.Session,
+	currentHeight int64,
+	sharedParams *sharedtypes.Params,
+) bool {
+	// If current session just started (we're in the first few blocks of the new session),
+	// check if we're still within grace period of the previous session
+	sessionStartHeight := currentSession.Header.SessionStartBlockHeight
+
+	// Allow some buffer - if we're in the first few blocks of a new session,
+	// check if previous session's grace period is still active
+	if currentHeight <= sessionStartHeight+int64(sharedParams.NumBlocksPerSession)/4 {
+		// Calculate when the previous session's grace period would end
+		prevSessionEndHeight := sessionStartHeight - 1
+		gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+
+		return currentHeight <= gracePeriodEndHeight
+	}
+
+	return false
 }
 
 // serviceRequestPayload:
@@ -237,4 +341,13 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 	}
 
 	return &sdk.AccountClient{PoktNodeAccountFetcher: sdk.NewPoktNodeAccountFetcher(conn)}, nil
+}
+
+func newSharedClient(config GRPCConfig) (*sdk.SharedClient, error) {
+	conn, err := connectGRPC(config)
+	if err != nil {
+		return nil, fmt.Errorf("newSharedClient: error creating new GRPC connection for shared client at url %s: %w", config.HostPort, err)
+	}
+
+	return &sdk.SharedClient{QueryClient: sharedtypes.NewQueryClient(conn)}, nil
 }

@@ -37,7 +37,7 @@ var (
 	// ErrInvalidResponse is returned when an endpoint returns an invalid response
 	ErrInvalidResponse = errors.New("invalid response from endpoint")
 
-	// ErrPocketCore is returned whan an endpoint returns an SDK or Pocket-core error.
+	// ErrPocketCore is returned when an endpoint returns an SDK or Pocket-core error.
 	ErrPocketCore = errors.New("endpoint returned SDK/Pocket-Core error.")
 
 	// ErrSDK4XX is the Morse SDK's 4XX error.

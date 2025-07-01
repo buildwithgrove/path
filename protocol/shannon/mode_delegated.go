@@ -41,8 +41,8 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 
 	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
 
-	// Retrieve the session for the selected app.
-	selectedSession, err := p.FullNode.GetSession(ctx, serviceID, selectedAppAddr)
+	// Retrieve the session for the selected app, considering grace period logic.
+	selectedSession, err := p.FullNode.GetSessionWithGracePeriod(ctx, serviceID, selectedAppAddr)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchSession, selectedAppAddr, err)

@@ -10,6 +10,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/viccon/sturdyc"
 
@@ -206,4 +207,98 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 //   - Currently always true (cache fills as needed)
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
+}
+
+// GetSharedParams: passthrough to underlying node (no caching for shared params).
+func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Params, error) {
+	return cfn.lazyFullNode.GetSharedParams(ctx)
+}
+
+// GetCurrentBlockHeight: passthrough to underlying node (no caching for current height).
+func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
+	return cfn.lazyFullNode.GetCurrentBlockHeight(ctx)
+}
+
+// GetSessionWithGracePeriod implements grace period aware session fetching with caching.
+// This method extends the standard GetSession with grace period logic while maintaining
+// the caching benefits for session data.
+func (cfn *cachingFullNode) GetSessionWithGracePeriod(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
+	// Get the current session from cache
+	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
+	if err != nil {
+		return sessiontypes.Session{}, fmt.Errorf("GetSessionWithGracePeriod: error getting current session: %w", err)
+	}
+
+	// Get shared parameters to determine grace period (not cached due to infrequent access)
+	sharedParams, err := cfn.GetSharedParams(ctx)
+	if err != nil {
+		// If we can't get shared params, fall back to current session
+		cfn.logger.Warn().Err(err).Msg("Failed to get shared params for grace period validation, using current session")
+		return currentSession, nil
+	}
+
+	// Get current block height (not cached due to frequent changes)
+	currentHeight, err := cfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		// If we can't get current height, fall back to current session
+		cfn.logger.Warn().Err(err).Msg("Failed to get current block height for grace period validation, using current session")
+		return currentSession, nil
+	}
+
+	// Check if we're within the grace period of the previous session
+	if cfn.isWithinPreviousSessionGracePeriod(currentSession, currentHeight, sharedParams) {
+		// Try to get the previous session (this will be cached too)
+		prevSessionHeight := currentSession.Header.SessionStartBlockHeight - 1
+		if prevSessionHeight > 0 {
+			// Use lazy node directly to get previous session (bypass cache for historical session)
+			prevSession, err := cfn.lazyFullNode.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionHeight)
+			if err == nil && prevSession != nil {
+				// Validate that the previous session is still within grace period
+				prevSessionEndHeight := prevSession.Header.SessionEndBlockHeight
+				gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+				
+				if currentHeight <= gracePeriodEndHeight {
+					cfn.logger.Info().
+						Int64("current_height", currentHeight).
+						Int64("prev_session_end", prevSessionEndHeight).
+						Int64("grace_period_end", gracePeriodEndHeight).
+						Str("service_id", string(serviceID)).
+						Str("app_addr", appAddr).
+						Msg("Using previous session during grace period")
+					return *prevSession, nil
+				}
+			}
+		}
+	}
+
+	// Return current session if not in grace period or unable to get previous session
+	return currentSession, nil
+}
+
+// isWithinPreviousSessionGracePeriod checks if we're still within the grace period
+// of the previous session and should continue using it.
+func (cfn *cachingFullNode) isWithinPreviousSessionGracePeriod(
+	currentSession sessiontypes.Session,
+	currentHeight int64,
+	sharedParams *sharedtypes.Params,
+) bool {
+	// If current session just started (we're in the first few blocks of the new session),
+	// check if we're still within grace period of the previous session
+	sessionStartHeight := currentSession.Header.SessionStartBlockHeight
+	
+	// Allow some buffer - if we're in the first few blocks of a new session,
+	// check if previous session's grace period is still active
+	if currentHeight <= sessionStartHeight+int64(sharedParams.NumBlocksPerSession)/4 {
+		// Calculate when the previous session's grace period would end
+		prevSessionEndHeight := sessionStartHeight - 1
+		gracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+		
+		return currentHeight <= gracePeriodEndHeight
+	}
+	
+	return false
 }
