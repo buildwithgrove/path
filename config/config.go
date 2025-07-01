@@ -65,6 +65,9 @@ func (c *GatewayConfig) hydrateDefaults() {
 	c.Router.hydrateRouterDefaults()
 	c.Logger.hydrateLoggerDefaults()
 	c.HydratorConfig.hydrateHydratorDefaults()
+	if c.ShannonConfig != nil {
+		c.ShannonConfig.FullNodeConfig.CacheConfig.HydrateDefaults()
+	}
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */

@@ -8,8 +8,6 @@ package shannon
 import (
 	"context"
 	"fmt"
-	"math"
-	"time"
 
 	accounttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -19,18 +17,6 @@ import (
 )
 
 // ---------------- Caching Account Fetcher ----------------
-
-// accountCacheTTL: No TTL for the account cache since account data never changes.
-//
-// time.Duration(math.MaxInt64) equals ~292 years, which is effectively infinite.
-const accountCacheTTL = time.Duration(math.MaxInt64)
-
-// accountCacheCapacity: Maximum number of entries the account cache can hold.
-// This is the total capacity, not per-shard. When capacity is exceeded, the cache
-// will evict a percentage of the least recently used entries from each shard.
-//
-// TODO_TECHDEBT(@commoddity): Revisit cache capacity based on actual # of accounts in Shannon.
-const accountCacheCapacity = 200_000
 
 // accountCacheKeyPrefix: The prefix for the account cache key.
 // It is used to namespace the account cache key.

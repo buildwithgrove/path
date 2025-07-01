@@ -108,7 +108,7 @@ func (c FullNodeConfig) Validate() error {
 var defaultUseCache = true
 
 // hydrateDefaults fills in any missing configuration with sensible defaults
-func (c *CacheConfig) hydrateDefaults() {
+func (c *CacheConfig) HydrateDefaults() {
 	if c.UseCache == nil {
 		c.UseCache = &defaultUseCache
 	}
