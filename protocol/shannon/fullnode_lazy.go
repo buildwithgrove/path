@@ -223,7 +223,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		logger.Debug().
 			Int64("current_height", currentHeight).
 			Int64("grace_period_end_height", gracePeriodEndHeight).
-			Msg("Not within grace period, returning current session")
+			Msg("IS NOT WITHIN grace period, returning current session")
 		return currentSession, nil
 	}
 
@@ -231,7 +231,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).
 		Int64("grace_period_end_height", gracePeriodEndHeight).
-		Msg("Is within grace period of previous session")
+		Msg("IS WITHIN grace period of previous session")
 
 	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
 	if err != nil || prevSession == nil {
