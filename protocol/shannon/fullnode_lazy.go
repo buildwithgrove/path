@@ -227,6 +227,18 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		return currentSession, nil
 	}
 
+	// Scale down the grace period to aggressively start using the new session
+	prevSessionGracePeriodEndHeightScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionGracePeriodScaleDownFactor)
+	if currentHeight > prevSessionGracePeriodEndHeightScaled {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+			Int64("prev_session_grace_period_end_height_scaled", prevSessionGracePeriodEndHeightScaled).
+			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
+		return currentSession, nil
+	}
+
 	logger.Debug().
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).

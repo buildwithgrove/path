@@ -52,6 +52,26 @@ const (
 	//   - 0.9 = 90% of TTL (e.g. 27s for 30s TTL)
 	//   - Ensures refresh always completes before expiry
 	maxEarlyRefreshPercentage = 0.9
+
+	// Cache key prefixes to avoid collisions between different data types.
+	sessionCacheKeyPrefix = "session"
+	sharedParamsCacheKey  = "shared_params"
+	blockHeightCacheKey   = "block_height"
+
+	// TODO_IMPROVE: Make this configurable
+	sharedParamsCacheTTL      = 10 * time.Minute // Shared params change infrequently
+	sharedParamsCacheCapacity = 10               // Only need to cache one entry
+
+	// TODO_IMPROVE: Make this configurable
+	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
+	blockHeightCacheCapacity = 10               // Only need to cache one entry
+
+	// TODO_TECHDEBT(@olshansk): Re-evaluate if we should have this at all, and if so, make it configurable.
+	// sessionGracePeriodScaleDownFactor forces the gateway to respect a slight
+	// smaller grace period than the one specified onchain to ensure we start using
+	// the new session as soon as possible.
+	// It must be between 0 and 1.
+	sessionGracePeriodScaleDownFactor = 0.8
 )
 
 // getCacheDelays returns the min/max delays for SturdyC's Early Refresh strategy.
@@ -68,22 +88,6 @@ func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
 	max = time.Duration(maxFloat/float64(time.Second)+0.5) * time.Second
 	return
 }
-
-// Cache key prefixes to avoid collisions between different data types.
-const (
-	sessionCacheKeyPrefix = "session"
-
-	sharedParamsCacheKey = "shared_params"
-	blockHeightCacheKey  = "block_height"
-
-	// TODO_IMPROVE: Make this configurable
-	sharedParamsCacheTTL      = 10 * time.Minute // Shared params change infrequently
-	sharedParamsCacheCapacity = 10               // Only need to cache one entry
-
-	// TODO_IMPROVE: Make this configurable
-	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
-	blockHeightCacheCapacity = 10               // Only need to cache one entry
-)
 
 var _ FullNode = &cachingFullNode{}
 
@@ -239,7 +243,6 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-
 	logger := cfn.logger.
 		With("service_id", string(serviceID)).
 		With("app_addr", appAddr).
@@ -282,6 +285,18 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 			Int64("prev_session_end_height", prevSessionEndHeight).
 			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 			Msg("IS NOT WITHIN grace period, returning current session")
+		return currentSession, nil
+	}
+
+	// Scale down the grace period to aggressively start using the new session
+	prevSessionGracePeriodEndHeightScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionGracePeriodScaleDownFactor)
+	if currentHeight > prevSessionGracePeriodEndHeightScaled {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+			Int64("prev_session_grace_period_end_height_scaled", prevSessionGracePeriodEndHeightScaled).
+			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
 		return currentSession, nil
 	}
 
