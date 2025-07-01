@@ -15,6 +15,7 @@ import (
 	"github.com/viccon/sturdyc"
 
 	"github.com/buildwithgrove/path/protocol"
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
 // ---------------- Cache Configuration ----------------
@@ -218,21 +219,45 @@ func (cfn *cachingFullNode) GetSession(
 
 	height, err := cfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "block_height", "error")
 		return sessiontypes.Session{}, err
 	}
 	sessionKey := getSessionCacheKey(serviceID, appAddr, height)
 
+	// Track if this will be a cache hit by checking if key exists
+	var cacheHit bool
+	if _, exists := cfn.sessionCache.Get(sessionKey); exists {
+		cacheHit = true
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "hit")
+	} else {
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "miss")
+	}
+
 	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
-	return cfn.sessionCache.GetOrFetch(
+	session, err := cfn.sessionCache.GetOrFetch(
 		ctx,
 		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			cfn.logger.Debug().Str("session_key", sessionKey).Msgf(
 				"[cachingFullNode.GetSession] Fetching from full node",
 			)
-			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "attempted")
+			session, fetchErr := cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "error")
+			} else {
+				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "success")
+			}
+			return session, fetchErr
 		},
 	)
+
+	if err == nil {
+		// Record session transition metrics
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "session_fetch", cacheHit)
+	}
+
+	return session, err
 }
 
 // GetSessionWithGracePeriod implements grace period aware session fetching with caching.
@@ -285,6 +310,10 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 			Int64("prev_session_end_height", prevSessionEndHeight).
 			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 			Msg("IS NOT WITHIN grace period, returning current session")
+		
+		// Record grace period usage metrics
+		shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "outside_grace", "current")
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "rollover", true)
 		return currentSession, nil
 	}
 
@@ -297,6 +326,10 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 			Int64("prev_session_grace_period_end_height_scaled", prevSessionGracePeriodEndHeightScaled).
 			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
+		
+		// Record grace period usage metrics - scaled grace period applied
+		shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "scaled_grace", "current")
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "rollover_scaled", true)
 		return currentSession, nil
 	}
 
@@ -305,16 +338,43 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 		Int64("prev_session_end_height", prevSessionEndHeight).
 		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 		Msg("IS WITHIN grace period of previous session")
+	
+	// Record that we are within grace period and will use previous session
+	shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "within_grace", "previous")
 
 	// Use cache for previous session lookup with a specific key
 	prevSessionKey := getSessionCacheKey(serviceID, appAddr, prevSessionEndHeight)
-	return cfn.sessionCache.GetOrFetch(
+	
+	// Track if this will be a cache hit for the previous session
+	var prevSessionCacheHit bool
+	if _, exists := cfn.sessionCache.Get(prevSessionKey); exists {
+		prevSessionCacheHit = true
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "prev_session", "hit")
+	} else {
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "prev_session", "miss")
+	}
+	
+	prevSession, err := cfn.sessionCache.GetOrFetch(
 		ctx,
 		prevSessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
-			return cfn.lazyFullNode.GetSessionWithGracePeriod(fetchCtx, serviceID, appAddr)
+			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "attempted")
+			session, fetchErr := cfn.lazyFullNode.GetSessionWithGracePeriod(fetchCtx, serviceID, appAddr)
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "error")
+			} else {
+				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "success")
+			}
+			return session, fetchErr
 		},
 	)
+	
+	if err == nil {
+		// Record session transition metrics for grace period usage
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "grace_period", prevSessionCacheHit)
+	}
+	
+	return prevSession, err
 }
 
 // getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>:<height>
@@ -353,24 +413,56 @@ func (cfn *cachingFullNode) IsHealthy() bool {
 
 // GetSharedParams: cached shared params with early refresh for governance changes.
 func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Params, error) {
-	return cfn.sharedParamsCache.GetOrFetch(
+	// Track cache operations for shared params
+	if _, exists := cfn.sharedParamsCache.Get(sharedParamsCacheKey); exists {
+		shannonmetrics.RecordSessionCacheOperation("", "get", "shared_params", "hit")
+	} else {
+		shannonmetrics.RecordSessionCacheOperation("", "get", "shared_params", "miss")
+	}
+
+	params, err := cfn.sharedParamsCache.GetOrFetch(
 		ctx,
 		sharedParamsCacheKey,
 		func(fetchCtx context.Context) (*sharedtypes.Params, error) {
 			cfn.logger.Debug().Msg("Fetching shared params from full node")
-			return cfn.lazyFullNode.GetSharedParams(fetchCtx)
+			shannonmetrics.RecordSessionCacheOperation("", "fetch", "shared_params", "attempted")
+			params, fetchErr := cfn.lazyFullNode.GetSharedParams(fetchCtx)
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "shared_params", "error")
+			} else {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "shared_params", "success")
+			}
+			return params, fetchErr
 		},
 	)
+
+	return params, err
 }
 
 // GetCurrentBlockHeight: cached block height with 20sec TTL and early refresh.
 func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
-	return cfn.blockHeightCache.GetOrFetch(
+	// Track cache operations for block height
+	if _, exists := cfn.blockHeightCache.Get(blockHeightCacheKey); exists {
+		shannonmetrics.RecordSessionCacheOperation("", "get", "block_height", "hit")
+	} else {
+		shannonmetrics.RecordSessionCacheOperation("", "get", "block_height", "miss")
+	}
+
+	height, err := cfn.blockHeightCache.GetOrFetch(
 		ctx,
 		blockHeightCacheKey,
 		func(fetchCtx context.Context) (int64, error) {
 			cfn.logger.Debug().Msg("Fetching current block height from full node")
-			return cfn.lazyFullNode.GetCurrentBlockHeight(fetchCtx)
+			shannonmetrics.RecordSessionCacheOperation("", "fetch", "block_height", "attempted")
+			height, fetchErr := cfn.lazyFullNode.GetCurrentBlockHeight(fetchCtx)
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "block_height", "error")
+			} else {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "block_height", "success")
+			}
+			return height, fetchErr
 		},
 	)
+
+	return height, err
 }

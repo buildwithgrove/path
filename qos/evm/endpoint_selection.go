@@ -79,17 +79,17 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 
 		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Error().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
+			logger.Error().Msgf("❓ SKIPPING endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
 			continue
 		}
 
 		if err := ss.basicEndpointValidation(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
+			logger.Error().Err(err).Msgf("❌ SKIPPING endpoint because it failed basic validation: %s", availableEndpointAddr)
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msgf("✅ endpoint %s passed validation", availableEndpointAddr)
+		logger.Info().Msgf("✅ endpoint passed validation: %s", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, nil

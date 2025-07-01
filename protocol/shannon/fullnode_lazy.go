@@ -17,6 +17,7 @@ import (
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
 	"github.com/buildwithgrove/path/protocol"
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
 // The Shannon FullNode interface is implemented by the LazyFullNode struct below.
@@ -245,11 +246,18 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 		Msg("IS WITHIN grace period of previous session")
 
+	// Record that we are within grace period and will use previous session
+	shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "within_grace", "previous")
+
 	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
 	if err != nil || prevSession == nil {
 		logger.Warn().Err(err).
 			Int64("prev_session_end_height", prevSessionEndHeight).
 			Msg("Failed to get previous session, falling back to current session")
+		
+		// Record fallback to current session due to error
+		shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "within_grace_fallback", "current")
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "grace_period_fallback", false)
 		return currentSession, nil
 	}
 
@@ -259,6 +267,8 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
 		Msg("USING PREVIOUS SESSION since its within the grace period")
 
+	// Record successful previous session usage
+	shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "grace_period_success", false)
 	return *prevSession, nil
 }
 

@@ -15,15 +15,21 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric       = "shannon_relays_total"
-	relaysErrorsTotalMetric = "shannon_relay_errors_total"
-	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
+	relaysTotalMetric            = "shannon_relays_total"
+	relaysErrorsTotalMetric      = "shannon_relay_errors_total"
+	sanctionsByDomainMetric      = "shannon_sanctions_by_domain"
+	sessionTransitionMetric      = "shannon_session_transitions_total"
+	sessionCacheOperationsMetric = "shannon_session_cache_operations_total"
+	sessionGracePeriodMetric     = "shannon_session_grace_period_usage_total"
 )
 
 func init() {
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
+	prometheus.MustRegister(sessionTransitions)
+	prometheus.MustRegister(sessionCacheOperations)
+	prometheus.MustRegister(sessionGracePeriodUsage)
 }
 
 var (
@@ -98,6 +104,65 @@ var (
 			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type and reason",
 		},
 		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
+	)
+
+	// sessionTransitions tracks session transitions and rollover events.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - app_addr: Application address (truncated for cardinality)
+	//   - transition_type: Type of transition (new_session, rollover, grace_period)
+	//   - cache_hit: Whether the session was found in cache
+	//
+	// Use to analyze:
+	//   - Session rollover frequency patterns
+	//   - Cache effectiveness during transitions
+	//   - Identify services with high session turnover
+	sessionTransitions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      sessionTransitionMetric,
+			Help:      "Total session transitions by service, transition type and cache performance",
+		},
+		[]string{"service_id", "app_addr_prefix", "transition_type", "cache_hit"},
+	)
+
+	// sessionCacheOperations tracks cache operations for session-related data.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - operation: Type of operation (get, fetch, evict, refresh)
+	//   - cache_type: Type of cache (session, shared_params, block_height)
+	//   - result: Result of operation (hit, miss, error)
+	//
+	// Use to analyze:
+	//   - Cache hit rates during session rollovers
+	//   - Cache refresh patterns
+	//   - Performance bottlenecks in cache operations
+	sessionCacheOperations = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      sessionCacheOperationsMetric,
+			Help:      "Total cache operations for session-related data",
+		},
+		[]string{"service_id", "operation", "cache_type", "result"},
+	)
+
+	// sessionGracePeriodUsage tracks grace period usage patterns.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - usage_type: Type of grace period usage (within_grace, outside_grace, scaled_grace)
+	//   - session_decision: Which session was selected (current, previous)
+	//
+	// Use to analyze:
+	//   - Grace period effectiveness
+	//   - Session selection patterns during transitions
+	//   - Impact of grace period scaling factor
+	sessionGracePeriodUsage = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      sessionGracePeriodMetric,
+			Help:      "Total grace period usage patterns by service and decision type",
+		},
+		[]string{"service_id", "usage_type", "session_decision"},
 	)
 )
 
@@ -298,4 +363,39 @@ func processSanctionsByDomain(
 			},
 		).Inc()
 	}
+}
+
+// RecordSessionTransition records a session transition event with cache performance data.
+func RecordSessionTransition(serviceID, appAddr, transitionType string, cacheHit bool) {
+	// Truncate app address to first 8 characters to reduce cardinality while maintaining uniqueness
+	appAddrPrefix := appAddr
+	if len(appAddr) > 8 {
+		appAddrPrefix = appAddr[:8]
+	}
+
+	sessionTransitions.With(prometheus.Labels{
+		"service_id":      serviceID,
+		"app_addr_prefix": appAddrPrefix,
+		"transition_type": transitionType,
+		"cache_hit":       fmt.Sprintf("%t", cacheHit),
+	}).Inc()
+}
+
+// RecordSessionCacheOperation records cache operations for session-related data.
+func RecordSessionCacheOperation(serviceID, operation, cacheType, result string) {
+	sessionCacheOperations.With(prometheus.Labels{
+		"service_id": serviceID,
+		"operation":  operation,
+		"cache_type": cacheType,
+		"result":     result,
+	}).Inc()
+}
+
+// RecordSessionGracePeriodUsage records grace period usage patterns.
+func RecordSessionGracePeriodUsage(serviceID, usageType, sessionDecision string) {
+	sessionGracePeriodUsage.With(prometheus.Labels{
+		"service_id":       serviceID,
+		"usage_type":       usageType,
+		"session_decision": sessionDecision,
+	}).Inc()
 }

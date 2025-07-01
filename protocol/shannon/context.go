@@ -174,7 +174,7 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 // - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 // - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.RelayResponse, error) {
-	hydratedLogger := rc.getHydratedLogger("sendRelay")
+	hydratedLogger := rc.getHydratedLogger("sendRelay").With("method", "sendRelay")
 	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
 
 	// TODO_MVP(@adshmh): enhance Shannon metrics, e.g. request error kind, to capture all potential errors via metrics.
