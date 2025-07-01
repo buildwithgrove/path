@@ -16,8 +16,8 @@ var (
 )
 
 // TODO_UPNEXT(@adshmh): make the invalid response timeout duration configurable
-// It is set to 30 minutes because that is the session time as of #321.
-const invalidResponseTimeout = 30 * time.Minute
+// It is set to 5 minutes because that is the session time as of #321.
+const invalidResponseTimeout = 5 * time.Minute
 
 /* -------------------- QoS Valid Endpoint Selector -------------------- */
 // This section contains methods for the `serviceState` struct
@@ -117,8 +117,8 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
 		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
 		if timeSinceInvalidResponse < invalidResponseTimeout {
-			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
-				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+			return fmt.Errorf("recent invalid response validation failed (%.0f minutes ago): %w. Empty response: %t. Response validation error: %s",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs, endpoint.hasReturnedEmptyResponse, endpoint.invalidResponseError)
 		}
 	}
 

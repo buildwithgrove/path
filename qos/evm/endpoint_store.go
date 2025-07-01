@@ -186,6 +186,7 @@ func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedRespon
 	validationError := unrecognizedResponse.GetResponseValidationError()
 	if validationError != qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
 		endpoint.hasReturnedInvalidResponse = true
+		endpoint.invalidResponseError = validationError
 		now := time.Now()
 		endpoint.invalidResponseLastObserved = &now
 	}

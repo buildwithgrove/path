@@ -21,6 +21,8 @@ const (
 	sessionTransitionMetric      = "shannon_session_transitions_total"
 	sessionCacheOperationsMetric = "shannon_session_cache_operations_total"
 	sessionGracePeriodMetric     = "shannon_session_grace_period_usage_total"
+	sessionOperationDurationMetric = "shannon_session_operation_duration_seconds"
+	relayLatencyMetric           = "shannon_relay_latency_seconds"
 )
 
 func init() {
@@ -30,6 +32,8 @@ func init() {
 	prometheus.MustRegister(sessionTransitions)
 	prometheus.MustRegister(sessionCacheOperations)
 	prometheus.MustRegister(sessionGracePeriodUsage)
+	prometheus.MustRegister(sessionOperationDuration)
+	prometheus.MustRegister(relayLatency)
 }
 
 var (
@@ -163,6 +167,60 @@ var (
 			Help:      "Total grace period usage patterns by service and decision type",
 		},
 		[]string{"service_id", "usage_type", "session_decision"},
+	)
+
+	// sessionOperationDuration tracks latency of session-related operations.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - operation: Type of operation (get_session, get_session_with_grace, get_active_sessions, cache_fetch, etc.)
+	//   - cache_result: Result of cache operation (hit, miss, fetch_success, fetch_error)
+	//   - grace_period_active: Whether grace period logic was applied (true/false)
+	//
+	// Buckets optimized for session operations (1ms to 30s):
+	//   - Cache hits: < 1ms
+	//   - Cache misses with network fetch: 10ms - 1s
+	//   - Session rollover scenarios: 100ms - 5s
+	//   - Network issues/timeouts: 5s - 30s
+	//
+	// Use to analyze:
+	//   - Latency distribution during session rollovers
+	//   - Cache vs network fetch performance
+	//   - Grace period overhead
+	//   - P95/P99 latency trends during rollover windows
+	sessionOperationDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      sessionOperationDurationMetric,
+			Help:      "Duration of session-related operations in seconds",
+			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0},
+		},
+		[]string{"service_id", "operation", "cache_result", "grace_period_active"},
+	)
+
+	// relayLatency tracks end-to-end relay request latency.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - session_state: State of session during request (current, grace_period, rollover)
+	//   - cache_effectiveness: Overall cache performance (all_hits, some_misses, all_misses)
+	//
+	// Buckets optimized for relay latency (1ms to 60s):
+	//   - Fast cached responses: < 10ms
+	//   - Normal responses: 10ms - 1s
+	//   - Session rollover impact: 100ms - 10s
+	//   - Slow/failed responses: 10s - 60s
+	//
+	// Use to analyze:
+	//   - Impact of session rollovers on end-user latency
+	//   - Correlation between cache misses and request latency
+	//   - Session transition impact on user experience
+	relayLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      relayLatencyMetric,
+			Help:      "End-to-end relay request latency in seconds",
+			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0},
+		},
+		[]string{"service_id", "session_state", "cache_effectiveness"},
 	)
 )
 
@@ -398,4 +456,23 @@ func RecordSessionGracePeriodUsage(serviceID, usageType, sessionDecision string)
 		"usage_type":       usageType,
 		"session_decision": sessionDecision,
 	}).Inc()
+}
+
+// RecordSessionOperationDuration records the duration of session-related operations.
+func RecordSessionOperationDuration(serviceID, operation, cacheResult string, gracePeriodActive bool, duration float64) {
+	sessionOperationDuration.With(prometheus.Labels{
+		"service_id":           serviceID,
+		"operation":            operation,
+		"cache_result":         cacheResult,
+		"grace_period_active":  fmt.Sprintf("%t", gracePeriodActive),
+	}).Observe(duration)
+}
+
+// RecordRelayLatency records end-to-end relay request latency.
+func RecordRelayLatency(serviceID, sessionState, cacheEffectiveness string, duration float64) {
+	relayLatency.With(prometheus.Labels{
+		"service_id":          serviceID,
+		"session_state":       sessionState,
+		"cache_effectiveness": cacheEffectiveness,
+	}).Observe(duration)
 }

@@ -216,6 +216,7 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	startTime := time.Now()
 
 	height, err := cfn.GetCurrentBlockHeight(ctx)
 	if err != nil {
@@ -226,10 +227,13 @@ func (cfn *cachingFullNode) GetSession(
 
 	// Track if this will be a cache hit by checking if key exists
 	var cacheHit bool
+	var cacheResult string
 	if _, exists := cfn.sessionCache.Get(sessionKey); exists {
 		cacheHit = true
+		cacheResult = "hit"
 		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "hit")
 	} else {
+		cacheResult = "miss"
 		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "miss")
 	}
 
@@ -238,23 +242,36 @@ func (cfn *cachingFullNode) GetSession(
 		ctx,
 		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			fetchStartTime := time.Now()
 			cfn.logger.Debug().Str("session_key", sessionKey).Msgf(
 				"[cachingFullNode.GetSession] Fetching from full node",
 			)
 			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "attempted")
 			session, fetchErr := cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			fetchDuration := time.Since(fetchStartTime).Seconds()
+			
 			if fetchErr != nil {
 				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "error")
+				shannonmetrics.RecordSessionOperationDuration(string(serviceID), "cache_fetch", "error", false, fetchDuration)
+				cacheResult = "fetch_error"
 			} else {
 				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "success")
+				shannonmetrics.RecordSessionOperationDuration(string(serviceID), "cache_fetch", "success", false, fetchDuration)
+				if !cacheHit {
+					cacheResult = "fetch_success"
+				}
 			}
 			return session, fetchErr
 		},
 	)
 
+	duration := time.Since(startTime).Seconds()
+	
 	if err == nil {
 		// Record session transition metrics
 		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "session_fetch", cacheHit)
+		// Record overall operation duration
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session", cacheResult, false, duration)
 	}
 
 	return session, err
@@ -268,17 +285,24 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	startTime := time.Now()
 	logger := cfn.logger.
 		With("service_id", string(serviceID)).
 		With("app_addr", appAddr).
 		With("method", "GetSessionWithGracePeriod")
 
 	// Get the current session from cache
+	currentSessionStartTime := time.Now()
 	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
+	currentSessionDuration := time.Since(currentSessionStartTime).Seconds()
+	
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get current session")
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_current_session", "error", true, currentSessionDuration)
 		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
 	}
+	
+	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_current_session", "success", true, currentSessionDuration)
 
 	logger.Debug().
 		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
@@ -286,18 +310,32 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 		Msg("Got the current session from cache")
 
 	// Get shared parameters to determine grace period
+	sharedParamsStartTime := time.Now()
 	sharedParams, err := cfn.GetSharedParams(ctx)
+	sharedParamsDuration := time.Since(sharedParamsStartTime).Seconds()
+	
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_shared_params", "error", true, sharedParamsDuration)
+		duration := time.Since(startTime).Seconds()
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "fallback_params_error", true, duration)
 		return currentSession, nil
 	}
+	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_shared_params", "success", true, sharedParamsDuration)
 
 	// Get current block height
+	blockHeightStartTime := time.Now()
 	currentHeight, err := cfn.GetCurrentBlockHeight(ctx)
+	blockHeightDuration := time.Since(blockHeightStartTime).Seconds()
+	
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_block_height", "error", true, blockHeightDuration)
+		duration := time.Since(startTime).Seconds()
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "fallback_height_error", true, duration)
 		return currentSession, nil
 	}
+	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_block_height", "success", true, blockHeightDuration)
 
 	// Calculate when the previous session's grace period would end
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
@@ -314,6 +352,10 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 		// Record grace period usage metrics
 		shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "outside_grace", "current")
 		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "rollover", true)
+		
+		// Record overall operation duration for non-grace period session
+		duration := time.Since(startTime).Seconds()
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "outside_grace", true, duration)
 		return currentSession, nil
 	}
 
@@ -330,6 +372,10 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 		// Record grace period usage metrics - scaled grace period applied
 		shannonmetrics.RecordSessionGracePeriodUsage(string(serviceID), "scaled_grace", "current")
 		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "rollover_scaled", true)
+		
+		// Record overall operation duration for scaled grace period
+		duration := time.Since(startTime).Seconds()
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "scaled_grace", true, duration)
 		return currentSession, nil
 	}
 
@@ -347,31 +393,52 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	
 	// Track if this will be a cache hit for the previous session
 	var prevSessionCacheHit bool
+	var prevSessionCacheResult string
 	if _, exists := cfn.sessionCache.Get(prevSessionKey); exists {
 		prevSessionCacheHit = true
+		prevSessionCacheResult = "hit"
 		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "prev_session", "hit")
 	} else {
+		prevSessionCacheResult = "miss"
 		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "prev_session", "miss")
 	}
 	
+	prevSessionStartTime := time.Now()
 	prevSession, err := cfn.sessionCache.GetOrFetch(
 		ctx,
 		prevSessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			fetchStartTime := time.Now()
 			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "attempted")
 			session, fetchErr := cfn.lazyFullNode.GetSessionWithGracePeriod(fetchCtx, serviceID, appAddr)
+			fetchDuration := time.Since(fetchStartTime).Seconds()
+			
 			if fetchErr != nil {
 				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "error")
+				shannonmetrics.RecordSessionOperationDuration(string(serviceID), "prev_session_fetch", "error", true, fetchDuration)
+				prevSessionCacheResult = "fetch_error"
 			} else {
 				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "prev_session", "success")
+				shannonmetrics.RecordSessionOperationDuration(string(serviceID), "prev_session_fetch", "success", true, fetchDuration)
+				if !prevSessionCacheHit {
+					prevSessionCacheResult = "fetch_success"
+				}
 			}
 			return session, fetchErr
 		},
 	)
+	prevSessionDuration := time.Since(prevSessionStartTime).Seconds()
+	
+	// Record overall operation duration
+	duration := time.Since(startTime).Seconds()
 	
 	if err == nil {
 		// Record session transition metrics for grace period usage
 		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "grace_period", prevSessionCacheHit)
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_prev_session", prevSessionCacheResult, true, prevSessionDuration)
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "within_grace", true, duration)
+	} else {
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session_with_grace", "grace_error", true, duration)
 	}
 	
 	return prevSession, err
