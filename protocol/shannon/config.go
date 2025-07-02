@@ -115,10 +115,10 @@ func (c FullNodeConfig) Validate() error {
 // on the `config` package.
 const (
 	defaultBackoffBaseDelay  = 1 * time.Second
-	defaultBackoffMaxDelay   = 120 * time.Second
-	defaultMinConnectTimeout = 20 * time.Second
-	defaultKeepAliveTime     = 20 * time.Second
-	defaultKeepAliveTimeout  = 20 * time.Second
+	defaultBackoffMaxDelay   = 20 * time.Second
+	defaultMinConnectTimeout = 5 * time.Second
+	defaultKeepAliveTime     = 5 * time.Second
+	defaultKeepAliveTimeout  = 10 * time.Second
 )
 
 func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
@@ -145,7 +145,7 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 // The proposed change is to align session refreshes with actual session expiry time,
 // using the session expiry block and the Shannon SDK's block client.
 // When this is done, session cache TTL can be removed altogether.
-const defaultSessionCacheTTL = 30 * time.Second
+const defaultSessionCacheTTL = 20 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {
 	// Cannot set both lazy mode and cache configuration.

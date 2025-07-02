@@ -206,11 +206,12 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
+	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
 
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.
-	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
+	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, timeout)
 	if err != nil {
 		// endpoint failed to respond before the timeout expires.
 		hydratedLogger.Error().Err(err).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())

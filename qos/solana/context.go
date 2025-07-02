@@ -17,7 +17,7 @@ import (
 const (
 	// The default timeout when sending a request to
 	// a Solana blockchain endpoint.
-	defaultServiceRequestTimeoutMillisec = 5000
+	defaultServiceRequestTimeoutMillisec = 5_000
 )
 
 // requestContext provides the support required by the gateway

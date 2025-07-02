@@ -10,7 +10,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-const defaultServiceRequestTimeoutMillisec = 10_000
+const defaultServiceRequestTimeoutMillisec = 5_000
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.

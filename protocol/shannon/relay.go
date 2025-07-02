@@ -10,6 +10,7 @@ import (
 	"time"
 
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
+
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
@@ -18,6 +19,7 @@ func sendHttpRelay(
 	ctx context.Context,
 	supplierUrlStr string,
 	relayRequest *servicetypes.RelayRequest,
+	timeout time.Duration,
 ) (relayResponseBz []byte, err error) {
 	_, err = url.Parse(supplierUrlStr)
 	if err != nil {
@@ -44,31 +46,35 @@ func sendHttpRelay(
 	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
 	//  - allow configuring the defaultTransport.
 	//  - allow PATH users to override default transport config.
-	//
+
 	// Best practice in Go is to use a custom HTTP client Transport.
 	// See: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
-	
+	ctx.Deadline()
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
 	// Record backend service latency metrics
 	backendStartTime := time.Now()
-	relayHTTPResponse, err := http.DefaultClient.Do(relayHTTPRequest)
+	relayHTTPResponse, err := client.Do(relayHTTPRequest)
 	backendDuration := time.Since(backendStartTime).Seconds()
-	
+
 	// Extract labels for backend service latency metrics
 	serviceID := extractServiceIDFromContext(ctx)
 	endpointDomain := extractDomainFromURL(supplierUrlStr)
 	httpStatus := "timeout"
 	requestSizeBucket := categorizeRequestSize(len(relayRequestBz))
-	
+
 	if err != nil {
 		// Record failed backend request latency
 		shannonmetrics.RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestSizeBucket, backendDuration)
 		return nil, err
 	}
 	defer relayHTTPResponse.Body.Close()
-	
+
 	// Update HTTP status for successful requests
 	httpStatus = categorizeHTTPStatus(relayHTTPResponse.StatusCode)
-	
+
 	// Read response body
 	responseBody, readErr := io.ReadAll(relayHTTPResponse.Body)
 	if readErr != nil {
@@ -76,10 +82,10 @@ func sendHttpRelay(
 		shannonmetrics.RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestSizeBucket, backendDuration)
 		return nil, readErr
 	}
-	
+
 	// Record successful backend service latency
 	shannonmetrics.RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestSizeBucket, backendDuration)
-	
+
 	return responseBody, nil
 }
 
@@ -102,25 +108,25 @@ func extractDomainFromURL(urlStr string) string {
 	if err != nil {
 		return "unknown"
 	}
-	
+
 	// Extract hostname and remove port if present
 	hostname := parsedURL.Hostname()
 	if hostname == "" {
 		return "unknown"
 	}
-	
+
 	// For IP addresses or localhost, return as-is
 	if strings.Contains(hostname, "127.0.0.1") || strings.Contains(hostname, "localhost") {
 		return "localhost"
 	}
-	
+
 	// For domain names, try to extract TLD+1 (simplified)
 	parts := strings.Split(hostname, ".")
 	if len(parts) >= 2 {
 		// Return last two parts (domain.tld)
 		return strings.Join(parts[len(parts)-2:], ".")
 	}
-	
+
 	return hostname
 }
 
