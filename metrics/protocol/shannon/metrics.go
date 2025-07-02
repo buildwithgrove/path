@@ -3,7 +3,6 @@ package shannon
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
