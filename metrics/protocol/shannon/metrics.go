@@ -24,6 +24,7 @@ const (
 	sessionOperationDurationMetric = "shannon_session_operation_duration_seconds"
 	relayLatencyMetric             = "shannon_relay_latency_seconds"
 	backendServiceLatencyMetric    = "shannon_backend_service_latency_seconds"
+	requestSetupLatencyMetric      = "shannon_request_setup_latency_seconds"
 )
 
 func init() {
@@ -36,7 +37,19 @@ func init() {
 	prometheus.MustRegister(sessionOperationDuration)
 	prometheus.MustRegister(relayLatency)
 	prometheus.MustRegister(backendServiceLatency)
+	prometheus.MustRegister(requestSetupLatency)
 }
+
+var (
+	defaultBuckets = []float64{
+		// Sub-50ms (cache hits, internal optimization, fast responses, potential internal errors, etc.)
+		0.01, 0.025, 0.05,
+		// Primary range: 50ms to 1s (majority of traffic, normal responses, etc...)
+		0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.7, 0.8, 0.9, 1.0,
+		// Long tail: > 1s (slow queries, rollovers, cold state, failed, etc.)
+		1.5, 2.0, 3.0, 5.0, 10.0, 30.0,
+	}
+)
 
 var (
 	// relaysTotal tracks the total Shannon relay requests processed.
@@ -172,17 +185,12 @@ var (
 	)
 
 	// sessionOperationDuration tracks latency of session-related operations.
+	//
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - operation: Type of operation (get_session, get_session_with_grace, get_active_sessions, cache_fetch, etc.)
 	//   - cache_result: Result of cache operation (hit, miss, fetch_success, fetch_error)
 	//   - grace_period_active: Whether grace period logic was applied (true/false)
-	//
-	// Buckets optimized for session operations (1ms to 30s):
-	//   - Cache hits: < 1ms
-	//   - Cache misses with network fetch: 10ms - 1s
-	//   - Session rollover scenarios: 100ms - 5s
-	//   - Network issues/timeouts: 5s - 30s
 	//
 	// Use to analyze:
 	//   - Latency distribution during session rollovers
@@ -194,22 +202,17 @@ var (
 			Subsystem: pathProcess,
 			Name:      sessionOperationDurationMetric,
 			Help:      "Duration of session-related operations in seconds",
-			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0},
+			Buckets:   defaultBuckets,
 		},
 		[]string{"service_id", "operation", "cache_result", "grace_period_active"},
 	)
 
 	// relayLatency tracks end-to-end relay request latency.
+	//
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - session_state: State of session during request (current, grace_period, rollover)
 	//   - cache_effectiveness: Overall cache performance (all_hits, some_misses, all_misses)
-	//
-	// Buckets optimized for relay latency (1ms to 60s):
-	//   - Fast cached responses: < 10ms
-	//   - Normal responses: 10ms - 1s
-	//   - Session rollover impact: 100ms - 10s
-	//   - Slow/failed responses: 10s - 60s
 	//
 	// Use to analyze:
 	//   - Impact of session rollovers on end-user latency
@@ -220,23 +223,18 @@ var (
 			Subsystem: pathProcess,
 			Name:      relayLatencyMetric,
 			Help:      "End-to-end relay request latency in seconds",
-			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0},
+			Buckets:   defaultBuckets,
 		},
 		[]string{"service_id", "session_state", "cache_effectiveness"},
 	)
 
 	// backendServiceLatency tracks the time spent waiting for backend service responses.
+	//
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - endpoint_domain: Backend service domain (TLD+1 for cardinality control)
 	//   - http_status: HTTP response status (2xx, 4xx, 5xx, timeout)
 	//   - request_size_bucket: Request size category (small, medium, large)
-	//
-	// Buckets optimized for backend service response times (1ms to 30s):
-	//   - Fast responses: < 50ms (cache hits, simple queries)
-	//   - Normal responses: 50ms - 2s (typical blockchain RPC calls)
-	//   - Slow responses: 2s - 10s (complex queries, archival data)
-	//   - Timeout/error responses: 10s - 30s (network issues, overloaded backends)
 	//
 	// Use to analyze:
 	//   - Pure backend service performance (excluding PATH overhead)
@@ -248,9 +246,30 @@ var (
 			Subsystem: pathProcess,
 			Name:      backendServiceLatencyMetric,
 			Help:      "Backend service response latency in seconds",
-			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0},
+			Buckets:   defaultBuckets,
 		},
 		[]string{"service_id", "endpoint_domain", "http_status", "request_size_bucket"},
+	)
+
+	// requestSetupLatency tracks the time spent in PATH's request setup phase before sending the relay.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - setup_stage: Which setup stage completed successfully (qos_context, protocol_context, complete)
+	//   - cache_performance: Overall cache hit rate during setup (all_hits, some_misses, all_misses)
+	//
+	// Use to analyze:
+	//   - Setup overhead vs backend service latency
+	//   - Impact of session rollovers on request preparation time
+	//   - Cache effectiveness during session transitions
+	//   - Bottlenecks in QoS vs Protocol context setup
+	requestSetupLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      requestSetupLatencyMetric,
+			Help:      "Request setup latency before relay transmission in seconds",
+			Buckets:   defaultBuckets,
+		},
+		[]string{"service_id", "setup_stage", "cache_performance"},
 	)
 )
 
@@ -514,5 +533,14 @@ func RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestS
 		"endpoint_domain":     endpointDomain,
 		"http_status":         httpStatus,
 		"request_size_bucket": requestSizeBucket,
+	}).Observe(duration)
+}
+
+// RecordRequestSetupLatency records the time spent in PATH's request setup phase.
+func RecordRequestSetupLatency(serviceID, setupStage, cachePerformance string, duration float64) {
+	requestSetupLatency.With(prometheus.Labels{
+		"service_id":        serviceID,
+		"setup_stage":       setupStage,
+		"cache_performance": cachePerformance,
 	}).Observe(duration)
 }

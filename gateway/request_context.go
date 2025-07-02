@@ -286,20 +286,11 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
-	// Record relay start time for latency tracking
-	rc.relayStartTime = time.Now()
-	
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 	
-	// Calculate relay duration
-	relayDuration := time.Since(rc.relayStartTime).Seconds()
-	
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
-		
-		// Record failed relay latency metrics
-		rc.recordRelayLatencyMetrics(relayDuration, "error", "unknown")
 		
 		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
 		// a response could be retrying with another endpoint, depending on the error.
@@ -319,10 +310,6 @@ func (rc *requestContext) HandleRelayRequest() error {
 	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
 	// e.g. for handling JSONRPC batch requests.
 	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
-
-	// Record successful relay latency metrics
-	sessionState, cacheEffectiveness := rc.determineRelayMetricLabels()
-	rc.recordRelayLatencyMetrics(relayDuration, sessionState, cacheEffectiveness)
 
 	return nil
 }
@@ -391,6 +378,23 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 
 // WriteHTTPUserResponse uses the data contained in the gateway request context to write the user-facing HTTP response.
 func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
+	// Always record relay latency metrics when writing the response
+	defer func() {
+		if rc.relayStartTime.IsZero() {
+			// No start time recorded, skip metrics
+			return
+		}
+		
+		// Calculate end-to-end relay duration
+		relayDuration := time.Since(rc.relayStartTime).Seconds()
+		
+		// Determine session state and cache effectiveness
+		sessionState, cacheEffectiveness := rc.determineRelayMetricLabels()
+		
+		// Record the relay latency metrics
+		rc.recordRelayLatencyMetrics(relayDuration, sessionState, cacheEffectiveness)
+	}()
+	
 	// If the HTTP request was invalid, write a generic response.
 	// e.g. if the specified target service ID was invalid.
 	if rc.presetFailureHTTPResponse != nil {

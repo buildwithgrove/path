@@ -206,8 +206,11 @@ WORKDIR /app
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
-    # Enable GUARD resources.
-    "--set", "guard.enabled=true",
+    # Reduce Helm secret size for local development
+    "--skip-crds",
+    "--atomic=false",
+    # Enable GUARD resources - disabled in .values.yaml for local dev
+    "--set", "guard.enabled=false",
     # Enable PATH to load the config from a secret.
     # PATH supports loading the config from either a Secret or a ConfigMap.
     # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
@@ -216,6 +219,8 @@ flags = [
     "--set", "config.fromSecret.key=.config.yaml",
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
+    # Disable observability for local development
+    "--set", "observability.enabled=false",
 ]
 
 # Optional: Use a local values.yaml file to override the default values.
