@@ -10,14 +10,27 @@ import (
 	"github.com/buildwithgrove/path/observation/protocol"
 )
 
+var (
+	defaultBuckets = []float64{
+		// Sub-50ms (cache hits, internal optimization, fast responses, potential internal errors, etc.)
+		0.01, 0.025, 0.05,
+		// Primary range: 50ms to 1s (majority of traffic, normal responses, etc...)
+		0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.7, 0.8, 0.9, 1.0,
+		// Long tail: > 1s (slow queries, rollovers, cold state, failed, etc.)
+		1.5, 2.0, 3.0, 5.0, 10.0, 30.0,
+	}
+)
+
 const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric              = "shannon_relays_total"
-	relaysErrorsTotalMetric        = "shannon_relay_errors_total"
-	sanctionsByDomainMetric        = "shannon_sanctions_by_domain"
+	relaysTotalMetric       = "shannon_relays_total"
+	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
+	endpointLatencyMetric   = "shannon_endpoint_latency_seconds"
+
 	sessionTransitionMetric        = "shannon_session_transitions_total"
 	sessionCacheOperationsMetric   = "shannon_session_cache_operations_total"
 	sessionGracePeriodMetric       = "shannon_session_grace_period_usage_total"
@@ -31,6 +44,8 @@ func init() {
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
+	prometheus.MustRegister(endpointLatency)
+
 	prometheus.MustRegister(sessionTransitions)
 	prometheus.MustRegister(sessionCacheOperations)
 	prometheus.MustRegister(sessionGracePeriodUsage)
@@ -39,17 +54,6 @@ func init() {
 	prometheus.MustRegister(backendServiceLatency)
 	prometheus.MustRegister(requestSetupLatency)
 }
-
-var (
-	defaultBuckets = []float64{
-		// Sub-50ms (cache hits, internal optimization, fast responses, potential internal errors, etc.)
-		0.01, 0.025, 0.05,
-		// Primary range: 50ms to 1s (majority of traffic, normal responses, etc...)
-		0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.7, 0.8, 0.9, 1.0,
-		// Long tail: > 1s (slow queries, rollovers, cold state, failed, etc.)
-		1.5, 2.0, 3.0, 5.0, 10.0, 30.0,
-	}
-)
 
 var (
 	// relaysTotal tracks the total Shannon relay requests processed.
@@ -123,6 +127,32 @@ var (
 			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type and reason",
 		},
 		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
+	)
+
+	// endpointLatency tracks the latency distribution of endpoint responses.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the request was successful (true if at least one endpoint had no error)
+	//
+	// This histogram measures the time between sending a request to an endpoint
+	// and receiving its response. Only recorded for endpoints that actually respond
+	// (excludes timeouts where no response timestamp is available).
+	// A request with error not related to an endpoint will not have an endpoint query time set.
+	//
+	// Use to analyze:
+	//   - Response time percentiles by service and domain
+	//   - Performance comparison across different endpoint domains
+	//   - Latency trends over time
+	//   - Impact of errors on response times
+	endpointLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      endpointLatencyMetric,
+			Help:      "Histogram of endpoint response latencies in seconds",
+			Buckets:   defaultBuckets,
+		},
+		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
 	// sessionTransitions tracks session transitions and rollover events.
@@ -296,6 +326,9 @@ func PublishMetrics(
 
 		// Process sanctions by domain
 		processSanctionsByDomain(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
+
+		// Process endpoint latency metrics
+		processEndpointLatency(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
 	}
 }
 
@@ -469,6 +502,63 @@ func processSanctionsByDomain(
 				"sanction_reason": sanctionReason,
 			},
 		).Inc()
+	}
+}
+
+// processEndpointLatency records endpoint response latency metrics.
+// Only records latency for endpoints that actually responded (have both query and response timestamps).
+// A request with error not related to an endpoint will not have an endpoint query time set.
+func processEndpointLatency(
+	logger polylog.Logger,
+	serviceID string,
+	observations []*protocol.ShannonEndpointObservation,
+) {
+	// Calculate overall success status for the request
+	success := isAnyObservationSuccessful(observations)
+
+	for _, endpointObs := range observations {
+		// Skip if we don't have both timestamps (e.g., timeouts)
+		// These will be caught by other metrics indicating endpoint errors.
+		queryTime := endpointObs.GetEndpointQueryTimestamp()
+		responseTime := endpointObs.GetEndpointResponseTimestamp()
+
+		if queryTime == nil || responseTime == nil {
+			continue
+		}
+
+		// Calculate latency in seconds
+		queryTimestamp := queryTime.AsTime()
+		responseTimestamp := responseTime.AsTime()
+		latencySeconds := responseTimestamp.Sub(queryTimestamp).Seconds()
+
+		// Skip negative latencies (invalid timestamps)
+		if latencySeconds < 0 {
+			logger.With(
+				"endpoint_url", endpointObs.GetEndpointUrl(),
+				"latency_seconds", latencySeconds,
+			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+				Msg("SHOULD RARELY HAPPEN: Negative latency detected, skipping metric")
+			continue
+		}
+
+		// Extract effective TLD+1 from endpoint URL
+		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		if err != nil {
+			logger.With(
+				"endpoint_url", endpointObs.GetEndpointUrl(),
+			).ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for latency metric")
+			continue
+		}
+
+		// Record latency
+		endpointLatency.With(
+			prometheus.Labels{
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"success":         fmt.Sprintf("%t", success),
+			},
+		).Observe(latencySeconds)
 	}
 }
 
