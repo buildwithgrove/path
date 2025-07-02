@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -67,8 +69,9 @@ type requestContext struct {
 	qosCtx     RequestQoSContext
 
 	// Protocol related request context
-	protocol    Protocol
-	protocolCtx ProtocolRequestContext
+	protocol         Protocol
+	protocolCtx      ProtocolRequestContext
+	protocolContexts []ProtocolRequestContext // For parallel requests
 
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
@@ -246,74 +249,349 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Use the QoS context to select one endpoint to be used for relaying the request.
-	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
-	if err != nil {
+	// Select multiple endpoints for parallel requests
+	maxParallelRequests := 4
+	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
+	if len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
 		rc.logger.
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
+			Msg("error selecting endpoints for the service request. Request will fail.")
+		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints could be selected")
 	}
 
-	// Prepare the Protocol ctx for the selected endpoint.
-	protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
-	if err != nil {
-		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
-		// This will enable debugging of any potential issues (i.e. tracing)
-		//
+	rc.logger.Info().Msgf("Selected %d endpoints for parallel relay requests", len(selectedEndpoints))
+
+	// Prepare Protocol contexts for all selected endpoints
+	rc.protocolContexts = make([]ProtocolRequestContext, 0, len(selectedEndpoints))
+	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
+
+	for _, endpointAddr := range selectedEndpoints {
+		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
+		if err != nil {
+			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
+			rc.logger.Warn().
+				Err(err).
+				Str("endpoint_addr", string(endpointAddr)).
+				Msg("Failed to build protocol context for endpoint, skipping")
+			// Continue with other endpoints rather than failing completely
+			continue
+		}
+		rc.protocolContexts = append(rc.protocolContexts, protocolCtx)
+	}
+
+	if len(rc.protocolContexts) == 0 {
 		// error encountered: use the supplied observations as protocol observations.
-		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
+		rc.updateProtocolObservations(lastProtocolCtxSetupErrObs)
 		rc.logger.
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
+			Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
 
-	rc.protocolCtx = protocolCtx
+	// For backward compatibility, set the first protocol context as the primary one
+	rc.protocolCtx = rc.protocolContexts[0]
 	return nil
 }
 
 // HandleRelayRequest sends a relay from the perspective of a gateway.
 // It performs the following steps:
-//  1. Selects an endpoint using the QoS context.
-//  2. Sends the relay to the selected endpoint, using the protocol context.
-//  3. Processes the endpoint's response using the QoS context.
+//  1. Selects endpoints using the QoS context.
+//  2. Sends the relay to multiple selected endpoints in parallel, using the protocol contexts.
+//  3. Processes the first successful endpoint's response using the QoS context.
 //
 // HandleRelayRequest is written as a template method to allow the customization of key steps,
 // e.g. endpoint selection and protocol-specific details of sending a relay.
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
+	// If we have multiple protocol contexts, send parallel requests
+	if len(rc.protocolContexts) > 1 {
+		return rc.handleParallelRelayRequests()
+	}
+
+	// Fallback to single request for backward compatibility
+	return rc.handleSingleRelayRequest()
+}
+
+// handleSingleRelayRequest handles a single relay request (original behavior)
+func (rc *requestContext) handleSingleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
 
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
-
-		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
-		// a response could be 	retrying with another endpoint, depending on the error.
-		// This should be revisited once a retry mechanism for failed relays is within scope.
-		//
-		// TODO_TECHDEBT(@adshmh): use the relay error in the response returned to the user.
 		return err
 	}
 
-	// TODO_TECHDEBT(@commoddity): implement a service-specific retry mechanism based on the protocol's response/error:
-	// This would need to distinguish between:
-	// 1) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
-	// 2) QoS errors, e.g.:
-	// 	A. The request is invalid: e.g. a JSONRPC request with no specified method.
-	//	B. An endpoint returns an invalid response.
-	//
-	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
-	// e.g. for handling JSONRPC batch requests.
 	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
-
 	return nil
+}
+
+// handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
+// and returns the first successful response
+func (rc *requestContext) handleParallelRelayRequests() error {
+	rc.logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
+
+	// Create a channel to receive the first successful response
+	type relayResult struct {
+		response protocol.Response
+		err      error
+		index    int
+	}
+
+	resultChan := make(chan relayResult, len(rc.protocolContexts))
+	ctx, cancel := context.WithCancel(rc.context)
+	defer cancel()
+
+	// Launch parallel requests
+	for i, protocolCtx := range rc.protocolContexts {
+		go func(index int, pCtx ProtocolRequestContext) {
+			response, err := pCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+			select {
+			case resultChan <- relayResult{response: response, err: err, index: index}:
+			case <-ctx.Done():
+				// Request was cancelled, don't send result
+			}
+		}(i, protocolCtx)
+	}
+
+	// Wait for the first successful response
+	var lastErr error
+	successfulResponses := 0
+	totalRequests := len(rc.protocolContexts)
+
+	for successfulResponses < totalRequests {
+		select {
+		case result := <-resultChan:
+			successfulResponses++
+			if result.err == nil {
+				// First successful response - cancel other requests and return
+				rc.logger.Info().Msgf("Received successful response from endpoint %d, cancelling other requests", result.index)
+				cancel()
+				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
+				return nil
+			}
+			// Log the error but continue waiting for other responses
+			rc.logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed", result.index)
+			lastErr = result.err
+		case <-ctx.Done():
+			// Context was cancelled, return the last error
+			return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
+		}
+	}
+
+	// All requests failed
+	rc.logger.Error().Msg("All parallel relay requests failed")
+	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
+}
+
+// selectMultipleEndpoints selects up to maxCount endpoints from the available endpoints
+// with bias towards different TLDs for improved diversity and resilience
+func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
+	if len(availableEndpoints) == 0 {
+		return nil
+	}
+
+	// Get endpoint URLs to extract TLD information
+	endpointTLDs := rc.getEndpointTLDs(availableEndpoints)
+
+	var selectedEndpoints []protocol.EndpointAddr
+	usedTLDs := make(map[string]bool)
+	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
+	copy(remainingEndpoints, availableEndpoints)
+
+	// First pass: Try to select endpoints with different TLDs
+	for i := 0; i < maxCount && len(remainingEndpoints) > 0; i++ {
+		var selectedEndpoint protocol.EndpointAddr
+		var err error
+
+		// Try to find an endpoint with a different TLD
+		if i > 0 && len(usedTLDs) > 0 {
+			selectedEndpoint, err = rc.selectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
+			if err != nil {
+				// Fallback to standard selection if no different TLD found
+				selectedEndpoint, err = rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
+			}
+		} else {
+			// First endpoint: use standard selection
+			selectedEndpoint, err = rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
+		}
+
+		if err != nil {
+			rc.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
+			break
+		}
+
+		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
+
+		// Track the TLD of the selected endpoint
+		if tld, exists := endpointTLDs[selectedEndpoint]; exists {
+			usedTLDs[tld] = true
+			rc.logger.Debug().Msgf("Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
+		}
+
+		// Remove the selected endpoint from the remaining pool
+		newRemainingEndpoints := make(protocol.EndpointAddrList, 0, len(remainingEndpoints)-1)
+		for _, endpoint := range remainingEndpoints {
+			if endpoint != selectedEndpoint {
+				newRemainingEndpoints = append(newRemainingEndpoints, endpoint)
+			}
+		}
+		remainingEndpoints = newRemainingEndpoints
+	}
+
+	rc.logger.Info().Msgf("Selected %d endpoints across %d different TLDs", len(selectedEndpoints), len(usedTLDs))
+	return selectedEndpoints
+}
+
+// getEndpointTLDs extracts TLD information from endpoint addresses
+// Returns a map of endpoint address to TLD for efficient lookup
+func (rc *requestContext) getEndpointTLDs(endpoints protocol.EndpointAddrList) map[protocol.EndpointAddr]string {
+	endpointTLDs := make(map[protocol.EndpointAddr]string)
+
+	for _, endpointAddr := range endpoints {
+		tld := rc.extractTLDFromEndpointAddr(endpointAddr)
+		if tld != "" {
+			endpointTLDs[endpointAddr] = tld
+		}
+	}
+
+	return endpointTLDs
+}
+
+// extractTLDFromEndpointAddr extracts the TLD from an endpoint address
+// Shannon endpoints are formatted as "supplier-url", so we need to extract the URL part
+func (rc *requestContext) extractTLDFromEndpointAddr(endpointAddr protocol.EndpointAddr) string {
+	addrStr := string(endpointAddr)
+
+	// Find the first occurrence of "http" to locate the URL part
+	httpIndex := strings.Index(addrStr, "http")
+	if httpIndex == -1 {
+		// No http found, try to find domain-like patterns
+		// Look for first part that contains a dot (likely a domain)
+		parts := strings.Split(addrStr, "-")
+		for i, part := range parts {
+			if strings.Contains(part, ".") {
+				// Reconstruct potential URL from this point
+				urlPart := strings.Join(parts[i:], "-")
+				return rc.extractTLDFromURL(urlPart, true)
+			}
+		}
+		return ""
+	}
+
+	// Extract URL part starting from "http"
+	urlPart := addrStr[httpIndex:]
+	return rc.extractTLDFromURL(urlPart, false)
+}
+
+// extractTLDFromURL extracts TLD from a URL string
+func (rc *requestContext) extractTLDFromURL(urlStr string, addScheme bool) string {
+	// Add scheme if needed for proper URL parsing
+	if addScheme && !strings.HasPrefix(urlStr, "http") {
+		urlStr = "https://" + urlStr
+	}
+
+	// Clean up any URL encoding issues
+	urlStr = strings.ReplaceAll(urlStr, "%3A", ":")
+	urlStr = strings.ReplaceAll(urlStr, "%2F", "/")
+
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		rc.logger.Debug().Err(err).Msgf("Failed to parse URL: %s", urlStr)
+		// Fallback: try to extract hostname manually
+		return rc.extractTLDManually(urlStr)
+	}
+
+	hostname := parsedURL.Hostname()
+	if hostname == "" {
+		// Fallback: try to extract hostname manually
+		return rc.extractTLDManually(urlStr)
+	}
+
+	// Extract TLD from hostname
+	domainParts := strings.Split(hostname, ".")
+	if len(domainParts) < 2 {
+		return ""
+	}
+
+	// Return the TLD (last part of the domain)
+	tld := domainParts[len(domainParts)-1]
+	return tld
+}
+
+// extractTLDManually attempts to extract TLD when URL parsing fails
+func (rc *requestContext) extractTLDManually(urlStr string) string {
+	// Remove protocol if present
+	urlStr = strings.TrimPrefix(urlStr, "http://")
+	urlStr = strings.TrimPrefix(urlStr, "https://")
+
+	// Take only the host part (before any path, query, or fragment)
+	if idx := strings.Index(urlStr, "/"); idx != -1 {
+		urlStr = urlStr[:idx]
+	}
+	if idx := strings.Index(urlStr, "?"); idx != -1 {
+		urlStr = urlStr[:idx]
+	}
+	if idx := strings.Index(urlStr, "#"); idx != -1 {
+		urlStr = urlStr[:idx]
+	}
+
+	// Remove port if present
+	if idx := strings.LastIndex(urlStr, ":"); idx != -1 {
+		// Check if this is actually a port (numeric after the colon)
+		portPart := urlStr[idx+1:]
+		isPort := true
+		for _, char := range portPart {
+			if char < '0' || char > '9' {
+				isPort = false
+				break
+			}
+		}
+		if isPort {
+			urlStr = urlStr[:idx]
+		}
+	}
+
+	// Split by dots and get the last part
+	domainParts := strings.Split(urlStr, ".")
+	if len(domainParts) < 2 {
+		return ""
+	}
+
+	return domainParts[len(domainParts)-1]
+}
+
+// selectEndpointWithDifferentTLD attempts to select an endpoint with a TLD that hasn't been used yet
+func (rc *requestContext) selectEndpointWithDifferentTLD(
+	availableEndpoints protocol.EndpointAddrList,
+	endpointTLDs map[protocol.EndpointAddr]string,
+	usedTLDs map[string]bool,
+) (protocol.EndpointAddr, error) {
+	// Filter endpoints to only those with different TLDs
+	var endpointsWithDifferentTLDs protocol.EndpointAddrList
+
+	for _, endpoint := range availableEndpoints {
+		if tld, exists := endpointTLDs[endpoint]; exists {
+			if !usedTLDs[tld] {
+				endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
+			}
+		} else {
+			// If we can't determine TLD, include it anyway
+			endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
+		}
+	}
+
+	if len(endpointsWithDifferentTLDs) == 0 {
+		return "", fmt.Errorf("no endpoints with different TLDs available")
+	}
+
+	// Use the QoS selector on the filtered list
+	return rc.qosCtx.GetEndpointSelector().Select(endpointsWithDifferentTLDs)
 }
 
 // determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.
@@ -546,6 +824,13 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 	// Protocol context is setup: fetch and use observations.
 	if rc.protocolCtx != nil {
 		observations := rc.protocolCtx.GetObservations()
+		rc.protocolObservations = &observations
+		return
+	}
+
+	// Check if we have multiple protocol contexts and use the first successful one
+	if len(rc.protocolContexts) > 0 {
+		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
 	}
