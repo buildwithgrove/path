@@ -830,6 +830,7 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 
 	// Check if we have multiple protocol contexts and use the first successful one
 	if len(rc.protocolContexts) > 0 {
+		// TODO_IN_TEST: Refactor to all observations.
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
