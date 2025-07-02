@@ -27,6 +27,7 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/viccon/sturdyc"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -135,6 +136,7 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	startTime := time.Now()
 	sessionKey := getSessionCacheKey(serviceID, appAddr)
 
 	// Get current cache instance with read lock
@@ -144,18 +146,43 @@ func (cfn *cachingFullNode) GetSession(
 	sessionCache := cfn.sessionCache
 	cfn.sessionCacheMu.RUnlock()
 
+	// Track if this will be a cache hit by checking if key exists
+	var cacheHit bool
+	var cacheResult string
+	if _, exists := sessionCache.Get(sessionKey); exists {
+		cacheHit = true
+		cacheResult = "hit"
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "hit")
+	} else {
+		cacheResult = "miss"
+		shannonmetrics.RecordSessionCacheOperation(string(serviceID), "get", "session", "miss")
+	}
+
 	// SturdyC GetOrFetch provides stampede protection
 	session, err := sessionCache.GetOrFetch(
 		ctx,
 		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			fetchStartTime := time.Now()
 			cfn.logger.Debug().
 				Str("session_key", sessionKey).
 				Msgf("Cache miss - fetching session from full node for service %s", serviceID)
 
-			session, err := cfn.onchainDataFetcher.GetSession(fetchCtx, serviceID, appAddr)
-			if err != nil {
-				return session, err
+			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "attempted")
+			session, fetchErr := cfn.onchainDataFetcher.GetSession(fetchCtx, serviceID, appAddr)
+			fetchDuration := time.Since(fetchStartTime).Seconds()
+
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "error")
+				shannonmetrics.RecordSessionOperationDuration(string(serviceID), "cache_fetch", "error", false, fetchDuration)
+				cacheResult = "fetch_error"
+				return session, fetchErr
+			}
+
+			shannonmetrics.RecordSessionCacheOperation(string(serviceID), "fetch", "session", "success")
+			shannonmetrics.RecordSessionOperationDuration(string(serviceID), "cache_fetch", "success", false, fetchDuration)
+			if !cacheHit {
+				cacheResult = "fetch_success"
 			}
 
 			// Register session for block-based monitoring
@@ -164,9 +191,18 @@ func (cfn *cachingFullNode) GetSession(
 			// Track for background refresh during session transitions
 			cfn.trackActiveSession(sessionKey, serviceID, appAddr)
 
-			return session, nil
+			return session, fetchErr
 		},
 	)
+
+	duration := time.Since(startTime).Seconds()
+
+	if err == nil {
+		// Record session transition metrics
+		shannonmetrics.RecordSessionTransition(string(serviceID), appAddr, "session_fetch", cacheHit)
+		// Record overall operation duration
+		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_session", cacheResult, false, duration)
+	}
 
 	return session, err
 }
@@ -184,19 +220,60 @@ func (cfn *cachingFullNode) GetAccountPubKey(
 	ctx context.Context,
 	address string,
 ) (pubKey cryptotypes.PubKey, err error) {
-	return cfn.accountPubKeyCache.GetOrFetch(
+	startTime := time.Now()
+	accountKey := getAccountPubKeyCacheKey(address)
+
+	// Track if this will be a cache hit by checking if key exists
+	var cacheHit bool
+	var cacheResult string
+	if _, exists := cfn.accountPubKeyCache.Get(accountKey); exists {
+		cacheHit = true
+		cacheResult = "hit"
+		shannonmetrics.RecordSessionCacheOperation("", "get", "account_pubkey", "hit")
+	} else {
+		cacheResult = "miss"
+		shannonmetrics.RecordSessionCacheOperation("", "get", "account_pubkey", "miss")
+	}
+
+	pubKey, err = cfn.accountPubKeyCache.GetOrFetch(
 		ctx,
-		getAccountPubKeyCacheKey(address),
+		accountKey,
 		func(fetchCtx context.Context) (cryptotypes.PubKey, error) {
+			fetchStartTime := time.Now()
 			cfn.logger.Debug().
-				Str("account_key", getAccountPubKeyCacheKey(address)).
+				Str("account_key", accountKey).
 				Msg("Cache miss - fetching account public key from full node")
 
+			shannonmetrics.RecordSessionCacheOperation("", "fetch", "account_pubkey", "attempted")
 			// Use the account client from the underlying full node
 			accountClient := cfn.onchainDataFetcher.GetAccountClient()
-			return accountClient.GetPubKeyFromAddress(fetchCtx, address)
+			pubKey, fetchErr := accountClient.GetPubKeyFromAddress(fetchCtx, address)
+			fetchDuration := time.Since(fetchStartTime).Seconds()
+
+			if fetchErr != nil {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "account_pubkey", "error")
+				shannonmetrics.RecordSessionOperationDuration("", "account_pubkey_fetch", "error", false, fetchDuration)
+				cacheResult = "fetch_error"
+			} else {
+				shannonmetrics.RecordSessionCacheOperation("", "fetch", "account_pubkey", "success")
+				shannonmetrics.RecordSessionOperationDuration("", "account_pubkey_fetch", "success", false, fetchDuration)
+				if !cacheHit {
+					cacheResult = "fetch_success"
+				}
+			}
+
+			return pubKey, fetchErr
 		},
 	)
+
+	duration := time.Since(startTime).Seconds()
+
+	if err == nil {
+		// Record overall operation duration for account public key retrieval
+		shannonmetrics.RecordSessionOperationDuration("", "get_account_pubkey", cacheResult, false, duration)
+	}
+
+	return pubKey, err
 }
 
 // getAccountPubKeyCacheKey creates a unique cache key: "pubkey:<address>"
