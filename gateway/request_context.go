@@ -10,11 +10,11 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
 var (
@@ -222,6 +222,8 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 	return nil
 }
 
+// TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
+//
 // BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
 // This includes:
 // 1. Getting this list of available endpoints for the requested service from the Protocol instance.
@@ -288,12 +290,12 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 func (rc *requestContext) HandleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
-	
+
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
-		
+
 		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
-		// a response could be retrying with another endpoint, depending on the error.
+		// a response could be 	retrying with another endpoint, depending on the error.
 		// This should be revisited once a retry mechanism for failed relays is within scope.
 		//
 		// TODO_TECHDEBT(@adshmh): use the relay error in the response returned to the user.
@@ -319,7 +321,7 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 	// Default values
 	sessionState = "normal"
 	cacheEffectiveness = "unknown"
-	
+
 	// Check if we have Shannon observations to determine session state
 	if rc.protocolObservations != nil && rc.protocolObservations.GetShannon() != nil {
 		shannonObs := rc.protocolObservations.GetShannon().GetObservations()
@@ -338,7 +340,7 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 			}
 		}
 	}
-	
+
 	// Determine cache effectiveness based on timing patterns
 	// This is a simplified heuristic - in practice you might want more sophisticated logic
 	relayDurationMs := time.Since(rc.relayStartTime).Milliseconds()
@@ -346,11 +348,11 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 	case relayDurationMs < 100: // Very fast, likely cache hits
 		cacheEffectiveness = "all_hits"
 	case relayDurationMs < 1000: // Moderate, some cache usage
-		cacheEffectiveness = "some_misses"  
+		cacheEffectiveness = "some_misses"
 	default: // Slower, likely cache misses or network issues
 		cacheEffectiveness = "all_misses"
 	}
-	
+
 	return sessionState, cacheEffectiveness
 }
 
@@ -384,17 +386,17 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 			// No start time recorded, skip metrics
 			return
 		}
-		
+
 		// Calculate end-to-end relay duration
 		relayDuration := time.Since(rc.relayStartTime).Seconds()
-		
+
 		// Determine session state and cache effectiveness
 		sessionState, cacheEffectiveness := rc.determineRelayMetricLabels()
-		
+
 		// Record the relay latency metrics
 		rc.recordRelayLatencyMetrics(relayDuration, sessionState, cacheEffectiveness)
 	}()
-	
+
 	// If the HTTP request was invalid, write a generic response.
 	// e.g. if the specified target service ID was invalid.
 	if rc.presetFailureHTTPResponse != nil {

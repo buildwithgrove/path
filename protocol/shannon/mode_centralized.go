@@ -115,7 +115,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
 		// Retrieve the session for the owned app, considering grace period logic.
-		session, err := p.FullNode.GetSessionWithGracePeriod(ctx, serviceID, ownedAppAddr)
+		sessionWithGrace, err := p.FullNode.GetSessionWithGracePeriod(ctx, serviceID, ownedAppAddr)
 		if err != nil {
 			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
@@ -123,17 +123,46 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 			return nil, err
 		}
 
-		app := session.Application
-
-		// Verify the app delegates to the gateway	.
-		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
+		// Retrieve the session for the owned app, without grace period logic.
+		sessionWithoutGrace, err := p.FullNode.GetSession(ctx, serviceID, ownedAppAddr)
+		if err != nil {
 			// Wrap the protocol context setup error.
-			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, app.Address, p.gatewayAddr)
-			logger.Error().Msg(err.Error())
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
+			logger.Error().Err(err).Msg(err.Error())
 			return nil, err
 		}
 
-		ownedAppSessions = append(ownedAppSessions, session)
+		// Compare session IDs - if they're different, return both sessions
+		if sessionWithGrace.Header.SessionId != sessionWithoutGrace.Header.SessionId {
+			logger.Info().Msgf("Sessions differ for app %s: with grace ID=%s, without grace ID=%s - returning both", 
+				ownedAppAddr, sessionWithGrace.Header.SessionId, sessionWithoutGrace.Header.SessionId)
+			
+			// Verify both apps delegate to the gateway
+			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionWithGrace.Application) {
+				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionWithGrace.Application.Address, p.gatewayAddr)
+				logger.Error().Msg(err.Error())
+				return nil, err
+			}
+			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionWithoutGrace.Application) {
+				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionWithoutGrace.Application.Address, p.gatewayAddr)
+				logger.Error().Msg(err.Error())
+				return nil, err
+			}
+			
+			ownedAppSessions = append(ownedAppSessions, sessionWithGrace, sessionWithoutGrace)
+		} else {
+			// Sessions are the same, just add one
+			logger.Debug().Msgf("Sessions are identical for app %s: ID=%s", ownedAppAddr, sessionWithGrace.Header.SessionId)
+			
+			// Verify the app delegates to the gateway
+			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionWithGrace.Application) {
+				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionWithGrace.Application.Address, p.gatewayAddr)
+				logger.Error().Msg(err.Error())
+				return nil, err
+			}
+			
+			ownedAppSessions = append(ownedAppSessions, sessionWithGrace)
+		}
 	}
 
 	// If no sessions were found, return an error.

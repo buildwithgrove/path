@@ -40,3 +40,13 @@ For Technical Support please open a ticket in [Grove's Discord](https://discord.
 ## License
 
 This project is licensed under the MIT License; see the [LICENSE](https://github.com/buildwithgrove/path/blob/main/LICENSE) file for details.
+
+TODO_IN_THIS_PR: Find a good place for this documentation
+
+```
+Protocol-level: Unmarshal payload from endpoint/RelayMiner  into RelayResponse struct, and validate signature.
+
+If the above succeeds: pass the Bytes field of RelayResponse (i.e. data from the backend service) to QoS.
+
+QoS-level unmarshal: parse the backend service's payload into expected format (JSONRPC for most services for now).
+```

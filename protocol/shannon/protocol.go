@@ -158,7 +158,7 @@ func (p *Protocol) AvailableEndpoints(
 	httpReq *http.Request,
 ) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
 	startTime := time.Now()
-	
+
 	// hydrate the logger.
 	logger := p.logger.With(
 		"service", serviceID,
@@ -170,7 +170,7 @@ func (p *Protocol) AvailableEndpoints(
 	sessionsStartTime := time.Now()
 	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	sessionsDuration := time.Since(sessionsStartTime).Seconds()
-	
+
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_active_sessions", "error", false, sessionsDuration)
@@ -185,9 +185,11 @@ func (p *Protocol) AvailableEndpoints(
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
 	endpointsStartTime := time.Now()
+	// TODO_IN_THIS_PR: Maintain the session metadata alongside the endpoint so we can
+	// make sure we make requests across two different sessions.
 	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	endpointsDuration := time.Since(endpointsStartTime).Seconds()
-	
+
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_unique_endpoints", "error", false, endpointsDuration)
