@@ -99,7 +99,7 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 }
 
 // handleHTTPRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+func (g Gateway) handleHTTPServiceRequest(_ context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
 	// Record the overall request start time for end-to-end latency tracking
 	gatewayRequestCtx.relayStartTime = time.Now()
 

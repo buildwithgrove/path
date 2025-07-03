@@ -781,7 +781,7 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 
 	numWrittenBz, writeErr := w.Write(responsePayload)
 	if writeErr != nil {
-		logger.With("http_response_bytes_writte", numWrittenBz).Warn().Err(writeErr).Msg("Error writing the HTTP response.")
+		logger.With("http_response_bytes_written", numWrittenBz).Warn().Err(writeErr).Msg("Error writing the HTTP response.")
 		return
 	}
 
