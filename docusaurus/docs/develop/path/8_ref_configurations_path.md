@@ -1,6 +1,6 @@
 ---
-sidebar_position: 5
-title: PATH Config File (`.config.yaml`)
+sidebar_position: 8
+title: Reference - PATH Config File (`.config.yaml`)
 description: PATH Configurations
 ---
 
