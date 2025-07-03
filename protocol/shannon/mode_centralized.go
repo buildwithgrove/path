@@ -104,7 +104,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 	ownedAppsForService, ok := p.ownedApps[serviceID]
 	if !ok || len(ownedAppsForService) == 0 {
 		err := fmt.Errorf("%s: %s", errProtocolContextSetupCentralizedNoAppsForService, serviceID)
-		logger.Error().Err(err).Msg("🚨 MISCONFIGURATION: ❌ ZERO owned apps found for service.")
+		logger.Error().Err(err).Msgf("🚨 MISCONFIGURATION: ❌ ZERO owned apps found for service: %s", serviceID)
 		return nil, err
 	}
 
