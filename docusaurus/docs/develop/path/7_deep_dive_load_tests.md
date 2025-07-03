@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: Deep Dive - Load Tests
 description: Deep dive into Load Tests for PATH
 ---
