@@ -220,7 +220,8 @@ flags = [
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
     # Disable observability for local development
-    "--set", "observability.enabled=false",
+    "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
+    "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
 ]
 
 # Optional: Use a local values.yaml file to override the default values.

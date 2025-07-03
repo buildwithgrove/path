@@ -54,6 +54,12 @@ type Gateway struct {
 	DataReporter RequestResponseReporter
 }
 
+const (
+	requestSetupStageQoSContext      = "qos_context"
+	requestSetupStageProtocolContext = "protocol_context"
+	requestSetupStageComplete        = "complete"
+)
+
 // HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
 //
 // This is written as a template method to allow customization of steps.
@@ -98,65 +104,62 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 	}
 }
 
-// handleHTTPRequest handles a standard HTTP service request.
-func (g Gateway) handleHTTPServiceRequest(_ context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
-	// Record the overall request start time for end-to-end latency tracking
+func (g Gateway) handleHTTPServiceRequest(
+	_ context.Context,
+	httpReq *http.Request,
+	gatewayRequestCtx *requestContext,
+	w http.ResponseWriter,
+) {
 	gatewayRequestCtx.relayStartTime = time.Now()
 
+	// Track setup phase timing
+	requestSetupStartTime := time.Now()
+	requestSetupStage := requestSetupStageQoSContext
+	var setupCompleted bool
+
 	defer func() {
-		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
+		// Record setup metrics if setup didn't complete successfully
+		if !setupCompleted {
+			requestSetupDuration := time.Since(requestSetupStartTime).Seconds()
+			requestCachePerformance := categorizeRequestSetupCachePerformance(requestSetupDuration)
+			shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, requestCachePerformance, requestSetupDuration)
+		}
+
+		// Write the HTTP response
 		gatewayRequestCtx.WriteHTTPUserResponse(w)
 	}()
 
-	// Track setup phase timing to identify bottlenecks
-	setupStartTime := time.Now()
-	setupStage := "qos_context"
-	cachePerformance := "unknown"
-
-	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
-	// Build the QoS context for the target service ID using the HTTP request's payload.
+	// Build QoS context
 	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
-		// Record setup latency even for failed QoS context building
-		setupDuration := time.Since(setupStartTime).Seconds()
-		cachePerformance = categorizeSetupCachePerformance(setupDuration)
-		shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), setupStage, cachePerformance, setupDuration)
 		return
 	}
 
-	// QoS context built successfully - move to protocol context building
-	setupStage = "protocol_context"
+	requestSetupStage = requestSetupStageProtocolContext
 
-	// TODO_MVP(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.
-	// Implementation should:
-	//   1. Differentiate between user errors (e.g., invalid Service ID in request) and system errors (e.g., endpoint timeout)
-	//   2. Add error type field to protocol response structure
-	//   3. Pass specific error codes from the protocol back to QoS service
-	// This will allow the QoS service to return more helpful diagnostic messages and enable better metrics collection for different failure modes.
-	//
-	// Build the protocol context for the HTTP request.
+	// Build protocol context
 	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
-		// Record setup latency for failed protocol context building
-		setupDuration := time.Since(setupStartTime).Seconds()
-		cachePerformance = categorizeSetupCachePerformance(setupDuration)
-		shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), setupStage, cachePerformance, setupDuration)
 		return
 	}
 
-	// Setup phase complete - record successful setup latency
-	setupDuration := time.Since(setupStartTime).Seconds()
-	cachePerformance = categorizeSetupCachePerformance(setupDuration)
-	shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), "complete", cachePerformance, setupDuration)
+	// Setup completed successfully - record metrics
+	requestSetupDuration := time.Since(requestSetupStartTime).Seconds()
+	requestCachePerformance := categorizeRequestSetupCachePerformance(requestSetupDuration)
+	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStageComplete, requestCachePerformance, requestSetupDuration)
+	setupCompleted = true
 
-	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
-	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
-	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
+	// Handle the actual relay request
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
 // handleWebsocketRequest handles WebSocket connection requests
-func (g Gateway) handleWebSocketRequest(_ context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+func (g Gateway) handleWebSocketRequest(
+	_ context.Context,
+	httpReq *http.Request,
+	gatewayRequestCtx *requestContext,
+	w http.ResponseWriter,
+) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
 	if err != nil {
@@ -175,17 +178,22 @@ func (g Gateway) handleWebSocketRequest(_ context.Context, httpReq *http.Request
 	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
 }
 
-// categorizeSetupCachePerformance categorizes setup performance based on timing patterns.
+// categorizeRequestSetupCachePerformance categorizes request setup performance based on timing patterns.
 // This helps identify whether session cache hits/misses are affecting setup time.
-func categorizeSetupCachePerformance(setupDurationSeconds float64) string {
+func categorizeRequestSetupCachePerformance(setupDurationSeconds float64) string {
 	setupDurationMs := setupDurationSeconds * 1000
 
 	switch {
-	case setupDurationMs < 50: // Very fast setup, likely all cache hits
+	// Very fast setup, likely all cache hits
+	case setupDurationMs < 50:
 		return "all_hits"
-	case setupDurationMs < 500: // Moderate setup time, some cache misses
+
+	// Moderate setup time, some cache misses
+	case setupDurationMs < 500:
 		return "some_misses"
-	default: // Slow setup, likely session rollover or cache failures
+
+	// Slow setup, likely session rollover or cache failures
+	default:
 		return "all_misses"
 	}
 }

@@ -7,7 +7,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/buildwithgrove/path/observation/protocol"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	protocol "github.com/buildwithgrove/path/protocol"
 )
 
 var (
@@ -511,7 +512,7 @@ func processSanctionsByDomain(
 func processEndpointLatency(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
@@ -563,7 +564,11 @@ func processEndpointLatency(
 }
 
 // RecordSessionTransition records a session transition event with cache performance data.
-func RecordSessionTransition(serviceID, appAddr, transitionType string, cacheHit bool) {
+func RecordSessionTransition(
+	serviceID protocol.ServiceID,
+	appAddr, transitionType string,
+	cacheHit bool,
+) {
 	// Truncate app address to first 8 characters to reduce cardinality while maintaining uniqueness
 	appAddrPrefix := appAddr
 	if len(appAddr) > 8 {
@@ -571,7 +576,7 @@ func RecordSessionTransition(serviceID, appAddr, transitionType string, cacheHit
 	}
 
 	sessionTransitions.With(prometheus.Labels{
-		"service_id":      serviceID,
+		"service_id":      string(serviceID),
 		"app_addr_prefix": appAddrPrefix,
 		"transition_type": transitionType,
 		"cache_hit":       fmt.Sprintf("%t", cacheHit),
@@ -579,9 +584,12 @@ func RecordSessionTransition(serviceID, appAddr, transitionType string, cacheHit
 }
 
 // RecordSessionCacheOperation records cache operations for session-related data.
-func RecordSessionCacheOperation(serviceID, operation, cacheType, result string) {
+func RecordSessionCacheOperation(
+	serviceID protocol.ServiceID,
+	operation, cacheType, result string,
+) {
 	sessionCacheOperations.With(prometheus.Labels{
-		"service_id": serviceID,
+		"service_id": string(serviceID),
 		"operation":  operation,
 		"cache_type": cacheType,
 		"result":     result,
@@ -589,18 +597,26 @@ func RecordSessionCacheOperation(serviceID, operation, cacheType, result string)
 }
 
 // RecordSessionGracePeriodUsage records grace period usage patterns.
-func RecordSessionGracePeriodUsage(serviceID, usageType, sessionDecision string) {
+func RecordSessionGracePeriodUsage(
+	serviceID protocol.ServiceID,
+	usageType, sessionDecision string,
+) {
 	sessionGracePeriodUsage.With(prometheus.Labels{
-		"service_id":       serviceID,
+		"service_id":       string(serviceID),
 		"usage_type":       usageType,
 		"session_decision": sessionDecision,
 	}).Inc()
 }
 
 // RecordSessionOperationDuration records the duration of session-related operations.
-func RecordSessionOperationDuration(serviceID, operation, cacheResult string, gracePeriodActive bool, duration float64) {
+func RecordSessionOperationDuration(
+	serviceID protocol.ServiceID,
+	operation, cacheResult string,
+	gracePeriodActive bool,
+	duration float64,
+) {
 	sessionOperationDuration.With(prometheus.Labels{
-		"service_id":          serviceID,
+		"service_id":          string(serviceID),
 		"operation":           operation,
 		"cache_result":        cacheResult,
 		"grace_period_active": fmt.Sprintf("%t", gracePeriodActive),
@@ -608,18 +624,26 @@ func RecordSessionOperationDuration(serviceID, operation, cacheResult string, gr
 }
 
 // RecordRelayLatency records end-to-end relay request latency.
-func RecordRelayLatency(serviceID, sessionState, cacheEffectiveness string, duration float64) {
+func RecordRelayLatency(
+	serviceID protocol.ServiceID,
+	sessionState, cacheEffectiveness string,
+	duration float64,
+) {
 	relayLatency.With(prometheus.Labels{
-		"service_id":          serviceID,
+		"service_id":          string(serviceID),
 		"session_state":       sessionState,
 		"cache_effectiveness": cacheEffectiveness,
 	}).Observe(duration)
 }
 
 // RecordBackendServiceLatency records backend service response latency.
-func RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestSizeBucket string, duration float64) {
+func RecordBackendServiceLatency(
+	serviceID protocol.ServiceID,
+	endpointDomain, httpStatus, requestSizeBucket string,
+	duration float64,
+) {
 	backendServiceLatency.With(prometheus.Labels{
-		"service_id":          serviceID,
+		"service_id":          string(serviceID),
 		"endpoint_domain":     endpointDomain,
 		"http_status":         httpStatus,
 		"request_size_bucket": requestSizeBucket,
@@ -627,9 +651,13 @@ func RecordBackendServiceLatency(serviceID, endpointDomain, httpStatus, requestS
 }
 
 // RecordRequestSetupLatency records the time spent in PATH's request setup phase.
-func RecordRequestSetupLatency(serviceID, setupStage, cachePerformance string, duration float64) {
+func RecordRequestSetupLatency(
+	serviceID protocol.ServiceID,
+	setupStage, cachePerformance string,
+	duration float64,
+) {
 	requestSetupLatency.With(prometheus.Labels{
-		"service_id":        serviceID,
+		"service_id":        string(serviceID),
 		"setup_stage":       setupStage,
 		"cache_performance": cachePerformance,
 	}).Observe(duration)

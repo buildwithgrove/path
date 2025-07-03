@@ -187,7 +187,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	//  	1. Update QoSService interface to parse custom struct with []byte payload
 	//  	2. Read HTTP request body in `request` package and return struct for QoS Service
 	//  	3. Export HTTP observations from `request` package when reading body
-	//
+
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(rc.context, httpReq)
@@ -419,6 +419,10 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 
 // selectMultipleEndpoints selects up to maxCount endpoints from the available endpoints
 // with bias towards different TLDs for improved diversity and resilience
+//
+// 🏗️ ARCHITECTURAL CONCERN: This TLD-based selection logic is tightly coupled to URL parsing
+// and makes assumptions about endpoint address format. Consider abstracting endpoint diversity
+// selection into a pluggable strategy pattern.
 func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
 	if len(availableEndpoints) == 0 {
 		return nil
@@ -543,6 +547,7 @@ func (rc *requestContext) extractTLDFromEndpointAddr(endpointAddr protocol.Endpo
 	}
 
 	// Extract URL part starting from "http"
+	// 🐛 POTENTIAL BUG: This URL extraction is fragile and depends on specific formatting
 	urlPart := addrStr[httpIndex:]
 	return rc.extractTLDFromURL(urlPart, false)
 }

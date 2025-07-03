@@ -89,7 +89,7 @@ func sendHttpRelay(
 }
 
 // extractServiceIDFromContext extracts service ID from context (simplified version)
-// In practice, this would be passed more explicitly through the call chain
+// TODO_IMPROVE: Pass service ID explicitly through function parameters instead of context
 func extractServiceIDFromContext(ctx context.Context) string {
 	// This is a simplified implementation. In practice, you might want to
 	// pass the service ID more explicitly through the function parameters
