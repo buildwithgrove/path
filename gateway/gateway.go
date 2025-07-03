@@ -18,8 +18,11 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -97,17 +100,32 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 
 // handleHTTPRequest handles a standard HTTP service request.
 func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Request, gatewayRequestCtx *requestContext, w http.ResponseWriter) {
+	// Record the overall request start time for end-to-end latency tracking
+	gatewayRequestCtx.relayStartTime = time.Now()
+
 	defer func() {
 		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
 		gatewayRequestCtx.WriteHTTPUserResponse(w)
 	}()
 
+	// Record setup phase timing - starts before QoS context building
+	setupStartTime := time.Now()
+	setupStage := "qos_context"   // Track which stage we reach
+	cachePerformance := "unknown" // Will be determined based on timing
+
 	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
+		// Record setup latency even for failed QoS context building
+		setupDuration := time.Since(setupStartTime).Seconds()
+		cachePerformance = categorizeSetupCachePerformance(setupDuration)
+		shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), setupStage, cachePerformance, setupDuration)
 		return
 	}
+
+	// Update setup stage - QoS context built successfully
+	setupStage = "protocol_context"
 
 	// TODO_MVP(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.
 	// Implementation should:
@@ -119,8 +137,17 @@ func (g Gateway) handleHTTPServiceRequest(ctx context.Context, httpReq *http.Req
 	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
 	if err != nil {
+		// Record setup latency for failed protocol context building
+		setupDuration := time.Since(setupStartTime).Seconds()
+		cachePerformance = categorizeSetupCachePerformance(setupDuration)
+		shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), setupStage, cachePerformance, setupDuration)
 		return
 	}
+
+	// Setup phase complete - record successful setup latency
+	setupDuration := time.Since(setupStartTime).Seconds()
+	cachePerformance = categorizeSetupCachePerformance(setupDuration)
+	shannonmetrics.RecordRequestSetupLatency(string(gatewayRequestCtx.serviceID), "complete", cachePerformance, setupDuration)
 
 	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
@@ -146,4 +173,19 @@ func (g Gateway) handleWebSocketRequest(ctx context.Context, httpReq *http.Reque
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+}
+
+// categorizeSetupCachePerformance categorizes setup performance based on timing patterns.
+// This helps identify whether session cache hits/misses are affecting setup time.
+func categorizeSetupCachePerformance(setupDurationSeconds float64) string {
+	setupDurationMs := setupDurationSeconds * 1000
+
+	switch {
+	case setupDurationMs < 50: // Very fast setup, likely all cache hits
+		return "all_hits"
+	case setupDurationMs < 500: // Moderate setup time, some cache misses
+		return "some_misses"
+	default: // Slow setup, likely session rollover or cache failures
+		return "all_misses"
+	}
 }

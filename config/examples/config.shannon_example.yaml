@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+# yaml-language-server: $schema=../config.schema.yaml
 #
 # The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
 # See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
@@ -23,16 +23,10 @@ shannon_config:
       # Otherwise, replace with the correct full node GRPC host:port.
       host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
 
-    # Setting this to true disables all caching of full node data.
-    lazy_mode: false
     # If lazy_mode is true, the cache_config may not be set.
     cache_config:
-      # The TTL for the session cache.
-      #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
-      # The proposed change is to align session refreshes with actual session expiry time,
-      # using the session expiry block and the Shannon SDK's block client.
-      # When this is done, session cache TTL can be removed altogether.
-      session_ttl: 30s
+      # Setting this to true enables caching of full node data.
+      use_cache: true
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode

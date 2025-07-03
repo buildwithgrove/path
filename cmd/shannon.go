@@ -23,11 +23,11 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 	}
 
 	// Bypass caching if the configuration is "lazy".
-	if fullNodeConfig.LazyMode {
+	if fullNodeConfig.CacheConfig.UseCache != nil && !*fullNodeConfig.CacheConfig.UseCache {
 		return lazyFullNode, nil
 	}
 
-	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode, fullNodeConfig.CacheConfig)
+	fullNode, err := shannon.NewCachingFullNode(logger, lazyFullNode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a Shannon caching full node instance: %w", err)
 	}

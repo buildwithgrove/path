@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -88,6 +90,9 @@ type requestContext struct {
 	// Tracks whether the request was rejected by the QoS.
 	// This is needed for handling the observations: there will be no protocol context/observations in this case.
 	requestRejectedByQoS bool
+
+	// Timing fields for relay latency tracking
+	relayStartTime time.Time
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -283,8 +288,10 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 func (rc *requestContext) HandleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
 	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
+
 		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
 		// a response could be retrying with another endpoint, depending on the error.
 		// This should be revisited once a retry mechanism for failed relays is within scope.
@@ -307,6 +314,56 @@ func (rc *requestContext) HandleRelayRequest() error {
 	return nil
 }
 
+// determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.
+func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffectiveness string) {
+	// Default values
+	sessionState = "normal"
+	cacheEffectiveness = "unknown"
+
+	// Check if we have Shannon observations to determine session state
+	if rc.protocolObservations != nil && rc.protocolObservations.GetShannon() != nil {
+		shannonObs := rc.protocolObservations.GetShannon().GetObservations()
+		if len(shannonObs) > 0 {
+			// Look for grace period or rollover patterns in the observations
+			// This is a simplified heuristic - could be improved with explicit session state tracking
+			for _, obs := range shannonObs {
+				if obs.GetRequestError() != nil {
+					sessionState = "error"
+					break
+				}
+				// If we have endpoint observations, we can infer some patterns
+				if len(obs.GetEndpointObservations()) > 0 {
+					sessionState = "active"
+				}
+			}
+		}
+	}
+
+	// Determine cache effectiveness based on timing patterns
+	// This is a simplified heuristic - in practice you might want more sophisticated logic
+	relayDurationMs := time.Since(rc.relayStartTime).Milliseconds()
+	switch {
+	case relayDurationMs < 100: // Very fast, likely cache hits
+		cacheEffectiveness = "all_hits"
+	case relayDurationMs < 1000: // Moderate, some cache usage
+		cacheEffectiveness = "some_misses"
+	default: // Slower, likely cache misses or network issues
+		cacheEffectiveness = "all_misses"
+	}
+
+	return sessionState, cacheEffectiveness
+}
+
+// recordRelayLatencyMetrics records the end-to-end relay latency metrics.
+func (rc *requestContext) recordRelayLatencyMetrics(duration float64, sessionState, cacheEffectiveness string) {
+	// Only record metrics for Shannon protocol
+	if rc.protocol != nil {
+		// Check if this is a Shannon protocol (we could add a method to identify protocol type)
+		// For now, we'll record metrics for all protocols but with service_id differentiation
+		shannonmetrics.RecordRelayLatency(string(rc.serviceID), sessionState, cacheEffectiveness, duration)
+	}
+}
+
 // HandleWebsocketRequest handles a websocket request.
 func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
@@ -321,6 +378,23 @@ func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.Respo
 
 // WriteHTTPUserResponse uses the data contained in the gateway request context to write the user-facing HTTP response.
 func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
+	// Always record relay latency metrics when writing the response
+	defer func() {
+		if rc.relayStartTime.IsZero() {
+			// No start time recorded, skip metrics
+			return
+		}
+
+		// Calculate end-to-end relay duration
+		relayDuration := time.Since(rc.relayStartTime).Seconds()
+
+		// Determine session state and cache effectiveness
+		sessionState, cacheEffectiveness := rc.determineRelayMetricLabels()
+
+		// Record the relay latency metrics
+		rc.recordRelayLatencyMetrics(relayDuration, sessionState, cacheEffectiveness)
+	}()
+
 	// If the HTTP request was invalid, write a generic response.
 	// e.g. if the specified target service ID was invalid.
 	if rc.presetFailureHTTPResponse != nil {
