@@ -12,6 +12,7 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 // sendHttpRelay sends the relay request to the supplier at the given URL using an HTTP Post request.
@@ -90,15 +91,15 @@ func sendHttpRelay(
 
 // extractServiceIDFromContext extracts service ID from context (simplified version)
 // TODO_IMPROVE: Pass service ID explicitly through function parameters instead of context
-func extractServiceIDFromContext(ctx context.Context) string {
+func extractServiceIDFromContext(ctx context.Context) protocol.ServiceID {
 	// This is a simplified implementation. In practice, you might want to
 	// pass the service ID more explicitly through the function parameters
 	if serviceID := ctx.Value("service_id"); serviceID != nil {
 		if str, ok := serviceID.(string); ok {
-			return str
+			return protocol.ServiceID(str)
 		}
 	}
-	return "unknown"
+	return protocol.ServiceID("unknown")
 }
 
 // extractDomainFromURL extracts the domain from a URL for metrics labeling

@@ -26,24 +26,30 @@ var (
 	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
 )
 
+const (
+	// Session state constants
+	sessionStateNormal = "normal"
+	sessionStateError  = "error"
+	sessionStateActive = "active"
+)
+
+var (
+	// TODO_IN_THIS_PR: Make this configurable
+	maxParallelRequests = 4
+)
+
 // Gateway requestContext is responsible for performing the steps necessary to complete a service request.
 //
 // It contains two main contexts:
 //
 //  1. Protocol context
-//
 //     - Supplies the list of available endpoints for the requested service to the QoS ctx.
-//
 //     - Builds the Protocol ctx for the selected endpoint once it has been selected.
-//
 //     - Sends the relay request to the selected endpoint using the protocol-specific implementation.
 //
 //  2. QoS context
-//
 //     - Receives the list of available endpoints for the requested service from the Protocol instance.
-//
 //     - Selects a valid endpoint from among them based on the service-specific QoS implementation.
-//
 //     - Updates its internal store based on observations made during the handling of the request.
 //
 // As of PR #72, it is limited in scope to HTTP service requests.
@@ -70,8 +76,7 @@ type requestContext struct {
 
 	// Protocol related request context
 	protocol         Protocol
-	protocolCtx      ProtocolRequestContext
-	protocolContexts []ProtocolRequestContext // For parallel requests
+	protocolContexts []ProtocolRequestContext // Multiplicity of protocol contexts for parallel requests
 
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
@@ -225,7 +230,8 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 	return nil
 }
 
-// BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
+// BuildProtocolContextsFromHTTPRequest builds multiple Protocol contexts using the supplied HTTP request.
+//
 // Steps:
 // 1. Get available endpoints for the requested service from the Protocol instance
 // 2. Select multiple endpoints for parallel relay attempts
@@ -236,7 +242,7 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 //   - Getting the list of protocol-level observations
 //
 // TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
-func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
+func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Request) error {
 	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
@@ -246,11 +252,10 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			Err(err).Msg("error getting available endpoints for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
+		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Select up to 4 endpoints for parallel relay attempts
-	maxParallelRequests := 4
+	// Select multiple endpoints for parallel relay attempts
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
@@ -259,7 +264,7 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 			With("service_id", rc.serviceID).
 			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 			Msg("error selecting endpoints for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextFromHTTP: no endpoints could be selected")
+		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: no endpoints could be selected")
 	}
 
 	rc.logger.Info().Msgf("Selected %d endpoints for parallel relay requests", len(selectedEndpoints))
@@ -294,8 +299,6 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		return errHTTPRequestRejectedByProtocol
 	}
 
-	// For backward compatibility, set the first protocol context as the primary one
-	rc.protocolCtx = rc.protocolContexts[0]
 	return nil
 }
 
@@ -322,7 +325,8 @@ func (rc *requestContext) HandleRelayRequest() error {
 // handleSingleRelayRequest handles a single relay request (original behavior)
 func (rc *requestContext) handleSingleRelayRequest() error {
 	// Send the service request payload, through the protocol context, to the selected endpoint.
-	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	// In this code path, we are always guaranteed to have exactly one protocol context.
+	endpointResponse, err := rc.protocolContexts[0].HandleServiceRequest(rc.qosCtx.GetServicePayload())
 
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
@@ -336,11 +340,11 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 // handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
 // and returns the first successful response
 //
-// TODO_IMPROVE: Add configuration for maxParallelRequests instead of hardcoding to 4
-// TODO_IMPROVE: Implement request cancellation timeout to avoid zombie goroutines
-// TODO_IMPROVE: Add circuit breaker pattern for repeatedly failing endpoints
+// TODO_IN_THIS_PR: Implement request cancellation timeout to avoid zombie goroutines
+// TODO_IN_THIS_PR: Add circuit breaker pattern for repeatedly failing endpoints
 func (rc *requestContext) handleParallelRelayRequests() error {
-	rc.logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
+	logger := rc.logger.With("service_id", rc.serviceID).With("method", "handleParallelRelayRequests")
+	logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
 
 	// Create a channel to receive the first successful response
 	type relayResult struct {
@@ -351,7 +355,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 		startTime time.Time
 	}
 
-	resultChan := make(chan relayResult, len(rc.protocolContexts))
+	relayResultChan := make(chan relayResult, len(rc.protocolContexts))
 	ctx, cancel := context.WithCancel(rc.context)
 	defer cancel()
 
@@ -365,7 +369,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			duration := time.Since(startTime)
 
 			select {
-			case resultChan <- relayResult{
+			case relayResultChan <- relayResult{
 				response:  response,
 				err:       err,
 				index:     index,
@@ -374,7 +378,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			}:
 			case <-ctx.Done():
 				// Request was cancelled, don't send result
-				rc.logger.Debug().Msgf("Request to endpoint %d cancelled after %dms", index, duration.Milliseconds())
+				logger.Debug().Msgf("Request to endpoint %d cancelled after %dms", index, duration.Milliseconds())
 			}
 		}(i, protocolCtx)
 	}
@@ -387,7 +391,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 
 	for successfulResponses < totalRequests {
 		select {
-		case result := <-resultChan:
+		case result := <-relayResultChan:
 			successfulResponses++
 			timingLog := fmt.Sprintf("endpoint_%d=%dms", result.index, result.duration.Milliseconds())
 			responseTimings = append(responseTimings, timingLog)
@@ -395,14 +399,14 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			if result.err == nil {
 				// First successful response - cancel other requests and return
 				overallDuration := time.Since(overallStartTime)
-				rc.logger.Info().Msgf("Received successful response from endpoint %d after %dms (overall: %dms), cancelling other requests. Timings: [%s]",
+				logger.Info().Msgf("Received successful response from endpoint %d after %dms (overall: %dms), cancelling other requests. Timings: [%s]",
 					result.index, result.duration.Milliseconds(), overallDuration.Milliseconds(), strings.Join(responseTimings, ", "))
 				cancel()
 				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
 				return nil
 			}
 			// Log the error but continue waiting for other responses
-			rc.logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
+			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
 			// Context was cancelled, return the last error
@@ -411,9 +415,11 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	}
 
 	// All requests failed
-	overallDuration := time.Since(overallStartTime)
-	rc.logger.Error().Msgf("All parallel relay requests failed after %dms. Timings: [%s]",
-		overallDuration.Milliseconds(), strings.Join(responseTimings, ", "))
+	totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
+	individualRequestDurationsStr := strings.Join(responseTimings, ", ")
+	logger.Error().Msgf("All parallel relay requests failed after %dms. Timings: [%s]", totalParallelRelayDuration, individualRequestDurationsStr)
+
+	// Return the last error
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
 }
 
@@ -660,8 +666,7 @@ func (rc *requestContext) selectEndpointWithDifferentTLD(
 // determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.
 func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffectiveness string) {
 	// Default values
-	sessionState = "normal"
-	cacheEffectiveness = "unknown"
+	sessionState = sessionStateNormal
 
 	// Check if we have Shannon observations to determine session state
 	if rc.protocolObservations != nil && rc.protocolObservations.GetShannon() != nil {
@@ -671,12 +676,12 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 			// This is a simplified heuristic - could be improved with explicit session state tracking
 			for _, obs := range shannonObs {
 				if obs.GetRequestError() != nil {
-					sessionState = "error"
+					sessionState = sessionStateError
 					break
 				}
 				// If we have endpoint observations, we can infer some patterns
 				if len(obs.GetEndpointObservations()) > 0 {
-					sessionState = "active"
+					sessionState = sessionStateActive
 				}
 			}
 		}
@@ -685,14 +690,7 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 	// Determine cache effectiveness based on timing patterns
 	// This is a simplified heuristic - in practice you might want more sophisticated logic
 	relayDurationMs := time.Since(rc.relayStartTime).Milliseconds()
-	switch {
-	case relayDurationMs < 100: // Very fast, likely cache hits
-		cacheEffectiveness = "all_hits"
-	case relayDurationMs < 1000: // Moderate, some cache usage
-		cacheEffectiveness = "some_misses"
-	default: // Slower, likely cache misses or network issues
-		cacheEffectiveness = "all_misses"
-	}
+	cacheEffectiveness = categorizeRequestSetupCachePerformance(float64(relayDurationMs))
 
 	return sessionState, cacheEffectiveness
 }
@@ -703,15 +701,15 @@ func (rc *requestContext) recordRelayLatencyMetrics(duration float64, sessionSta
 	if rc.protocol != nil {
 		// Check if this is a Shannon protocol (we could add a method to identify protocol type)
 		// For now, we'll record metrics for all protocols but with service_id differentiation
-		shannonmetrics.RecordRelayLatency(string(rc.serviceID), sessionState, cacheEffectiveness, duration)
+		shannonmetrics.RecordRelayLatency(rc.serviceID, sessionState, cacheEffectiveness, duration)
 	}
 }
 
 // HandleWebsocketRequest handles a websocket request.
-func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
+func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
-	// Only Shannon protocol supports WebSocket connections; requests to Morse will always return an error.
-	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {
+	// In this code path, we are always guaranteed to have exactly one protocol context.
+	if err := rc.protocolContexts[0].HandleWebsocketRequest(rc.logger, request, responseWriter); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err
 	}
@@ -884,16 +882,9 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		return
 	}
 
-	// Protocol context is setup: fetch and use observations.
-	if rc.protocolCtx != nil {
-		observations := rc.protocolCtx.GetObservations()
-		rc.protocolObservations = &observations
-		return
-	}
-
 	// Check if we have multiple protocol contexts and use the first successful one
 	if len(rc.protocolContexts) > 0 {
-		// TODO_IN_TEST: Refactor to all observations.
+		// TODO_IN_THIS_PR: Refactor to all observations.
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return

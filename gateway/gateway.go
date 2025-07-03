@@ -97,8 +97,12 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
+
+	// Handle WebSocket requests
 	case websocketServiceRequest:
 		g.handleWebSocketRequest(ctx, httpReq, gatewayRequestCtx, w)
+
+	// Handle HTTP requests by default
 	default:
 		g.handleHTTPServiceRequest(ctx, httpReq, gatewayRequestCtx, w)
 	}
@@ -138,7 +142,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	requestSetupStage = requestSetupStageProtocolContext
 
 	// Build protocol context
-	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
+	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
 	if err != nil {
 		return
 	}
@@ -158,7 +162,7 @@ func (g Gateway) handleWebSocketRequest(
 	_ context.Context,
 	httpReq *http.Request,
 	gatewayRequestCtx *requestContext,
-	w http.ResponseWriter,
+	responseWriter http.ResponseWriter,
 ) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
@@ -167,7 +171,7 @@ func (g Gateway) handleWebSocketRequest(
 	}
 
 	// Build the protocol context for the HTTP request.
-	err = gatewayRequestCtx.BuildProtocolContextFromHTTP(httpReq)
+	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
 	if err != nil {
 		return
 	}
@@ -175,7 +179,7 @@ func (g Gateway) handleWebSocketRequest(
 	// Use the gateway request context to process the websocket connection request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
+	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, responseWriter)
 }
 
 // categorizeRequestSetupCachePerformance categorizes request setup performance based on timing patterns.

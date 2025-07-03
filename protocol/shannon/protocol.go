@@ -173,10 +173,10 @@ func (p *Protocol) AvailableEndpoints(
 
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
-		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_active_sessions", "error", false, sessionsDuration)
+		shannonmetrics.RecordSessionOperationDuration(serviceID, "get_active_sessions", "error", false, sessionsDuration)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
-	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_active_sessions", "success", false, sessionsDuration)
+	shannonmetrics.RecordSessionOperationDuration(serviceID, "get_active_sessions", "success", false, sessionsDuration)
 
 	logger = logger.With("number_of_valid_sessions", len(activeSessions))
 	logger.Debug().Msg("fetched the set of active sessions.")
@@ -192,10 +192,10 @@ func (p *Protocol) AvailableEndpoints(
 
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
-		shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_unique_endpoints", "error", false, endpointsDuration)
+		shannonmetrics.RecordSessionOperationDuration(serviceID, "get_unique_endpoints", "error", false, endpointsDuration)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
-	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "get_unique_endpoints", "success", false, endpointsDuration)
+	shannonmetrics.RecordSessionOperationDuration(serviceID, "get_unique_endpoints", "success", false, endpointsDuration)
 
 	logger = logger.With("number_of_unique_endpoints", len(endpoints))
 	logger.Debug().Msg("Successfully fetched the set of available endpoints for the selected apps.")
@@ -208,7 +208,7 @@ func (p *Protocol) AvailableEndpoints(
 
 	// Record overall AvailableEndpoints duration
 	duration := time.Since(startTime).Seconds()
-	shannonmetrics.RecordSessionOperationDuration(string(serviceID), "available_endpoints", "success", false, duration)
+	shannonmetrics.RecordSessionOperationDuration(serviceID, "available_endpoints", "success", false, duration)
 
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }

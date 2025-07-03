@@ -308,7 +308,7 @@ var (
 // reported by the Shannon protocol.
 func PublishMetrics(
 	logger polylog.Logger,
-	observations *protocol.ShannonObservationsList,
+	observations *protocolobservations.ShannonObservationsList,
 ) {
 
 	shannonObservations := observations.GetObservations()
@@ -336,7 +336,7 @@ func PublishMetrics(
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 func recordRelayTotal(
 	logger polylog.Logger,
-	observations *protocol.ShannonRequestObservations,
+	observations *protocolobservations.ShannonRequestObservations,
 ) {
 	hydratedLogger := logger.With("method", "recordRelaysTotal")
 
@@ -398,7 +398,7 @@ func recordRelayTotal(
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
-func extractRequestError(observations *protocol.ShannonRequestObservations) (bool, string) {
+func extractRequestError(observations *protocolobservations.ShannonRequestObservations) (bool, string) {
 	requestErr := observations.GetRequestError()
 	// No request errors.
 	if requestErr == nil {
@@ -409,9 +409,9 @@ func extractRequestError(observations *protocol.ShannonRequestObservations) (boo
 }
 
 // isAnyObservationSuccessful returns true if any endpoint observation indicates a success.
-func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservation) bool {
+func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
-		if obs.GetErrorType() == protocol.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
+		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
 			return true
 		}
 	}
@@ -419,7 +419,7 @@ func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservat
 }
 
 // processEndpointErrors records error metrics with exemplars for high-cardinality data
-func processEndpointErrors(serviceID string, observations []*protocol.ShannonEndpointObservation) {
+func processEndpointErrors(serviceID string, observations []*protocolobservations.ShannonEndpointObservation) {
 	for _, endpointObs := range observations {
 		// Skip if there's no error
 		if endpointObs.ErrorType == nil {
@@ -466,7 +466,7 @@ func processEndpointErrors(serviceID string, observations []*protocol.ShannonEnd
 func processSanctionsByDomain(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction
