@@ -13,6 +13,7 @@ import (
 //
 // - Uses extractErrFromRelayError to identify the specific error type.
 // - Maps known errors to endpoint error types and sanctions.
+// - Enhanced error type identification for malformed endpoint payloads.
 // - Logs and returns a generic internal error for unknown cases.
 func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
 	if err == nil {
@@ -21,6 +22,16 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	}
 
 	switch {
+	// Endpoint payload failed to unmarshal/validate
+	case errors.Is(err, errMalformedEndpointPayload):
+		// Extract the payload content from the error message
+		errorStr := err.Error()
+		payloadContent := strings.TrimPrefix(errorStr, "raw_payload: ")
+		if idx := strings.LastIndex(payloadContent, ": endpoint returned malformed payload"); idx != -1 {
+			payloadContent = payloadContent[:idx]
+		}
+		return classifyMalformedEndpointPayload(logger, payloadContent)
+
 	// Endpoint payload failed to unmarshal into a RelayResponse struct
 	case errors.Is(err, sdk.ErrRelayResponseValidationUnmarshal):
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR,
@@ -81,4 +92,80 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
+}
+
+// classifyMalformedEndpointPayload classifies errors found in the malformed endpoint response payload
+// This is where the original error analysis data gets processed
+func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent string) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
+	logger = logger.With("payload_content_preview", payloadContent[:min(len(payloadContent), 200)])
+
+	// Connection refused errors - most common pattern in the data (~52% of errors)
+	if strings.Contains(payloadContent, "connection refused") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Service not configured - second most common pattern (~17% of errors)
+	if strings.Contains(payloadContent, "service endpoint not handled by relayer proxy") ||
+		regexp.MustCompile(`service "[^"]+" not configured`).MatchString(payloadContent) {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_PERMANENT
+	}
+
+	// Protocol parsing errors
+	if regexp.MustCompile(`proto: illegal wireType \d+`).MatchString(payloadContent) {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	if strings.Contains(payloadContent, "proto: RelayRequest: wiretype end group") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Unexpected EOF
+	if strings.Contains(payloadContent, "unexpected EOF") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Backend service errors
+	if regexp.MustCompile(`backend service returned an error with status code \d+`).MatchString(payloadContent) {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Suppliers not reachable
+	if strings.Contains(payloadContent, "supplier(s) not reachable") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Response size exceeded
+	if strings.Contains(payloadContent, "body size exceeds maximum allowed") ||
+		strings.Contains(payloadContent, "response limit exceed") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+	}
+
+	// Server closed connection
+	if strings.Contains(payloadContent, "server closed idle connection") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
+	}
+
+	// TCP connection errors
+	if strings.Contains(payloadContent, "write tcp") && strings.Contains(payloadContent, "connection") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// DNS resolution errors
+	if strings.Contains(payloadContent, "no such host") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// TLS handshake errors
+	if strings.Contains(payloadContent, "tls") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// General HTTP transport errors
+	if strings.Contains(payloadContent, "http:") || strings.Contains(payloadContent, "HTTP") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// If we can't classify the malformed payload, it's an internal error
+	logger.Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }
