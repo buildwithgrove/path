@@ -268,18 +268,20 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 	rc.protocolContexts = make([]ProtocolRequestContext, 0, len(selectedEndpoints))
 	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
 
-	for _, endpointAddr := range selectedEndpoints {
+	for i, endpointAddr := range selectedEndpoints {
+		rc.logger.Debug().Msgf("Building protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
 		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
 		if err != nil {
 			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
 			rc.logger.Warn().
 				Err(err).
 				Str("endpoint_addr", string(endpointAddr)).
-				Msg("Failed to build protocol context for endpoint, skipping")
+				Msgf("Failed to build protocol context for endpoint %d/%d, skipping", i+1, len(selectedEndpoints))
 			// Continue with other endpoints rather than failing completely
 			continue
 		}
 		rc.protocolContexts = append(rc.protocolContexts, protocolCtx)
+		rc.logger.Debug().Msgf("Successfully built protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
 	}
 
 	if len(rc.protocolContexts) == 0 {
@@ -338,23 +340,37 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 
 	// Create a channel to receive the first successful response
 	type relayResult struct {
-		response protocol.Response
-		err      error
-		index    int
+		response  protocol.Response
+		err       error
+		index     int
+		duration  time.Duration
+		startTime time.Time
 	}
 
 	resultChan := make(chan relayResult, len(rc.protocolContexts))
 	ctx, cancel := context.WithCancel(rc.context)
 	defer cancel()
 
+	overallStartTime := time.Now()
+
 	// Launch parallel requests
 	for i, protocolCtx := range rc.protocolContexts {
 		go func(index int, pCtx ProtocolRequestContext) {
+			startTime := time.Now()
 			response, err := pCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+			duration := time.Since(startTime)
+
 			select {
-			case resultChan <- relayResult{response: response, err: err, index: index}:
+			case resultChan <- relayResult{
+				response:  response,
+				err:       err,
+				index:     index,
+				duration:  duration,
+				startTime: startTime,
+			}:
 			case <-ctx.Done():
 				// Request was cancelled, don't send result
+				rc.logger.Debug().Msgf("Request to endpoint %d cancelled after %dms", index, duration.Milliseconds())
 			}
 		}(i, protocolCtx)
 	}
@@ -363,20 +379,26 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	var lastErr error
 	successfulResponses := 0
 	totalRequests := len(rc.protocolContexts)
+	var responseTimings []string
 
 	for successfulResponses < totalRequests {
 		select {
 		case result := <-resultChan:
 			successfulResponses++
+			timingLog := fmt.Sprintf("endpoint_%d=%dms", result.index, result.duration.Milliseconds())
+			responseTimings = append(responseTimings, timingLog)
+
 			if result.err == nil {
 				// First successful response - cancel other requests and return
-				rc.logger.Info().Msgf("Received successful response from endpoint %d, cancelling other requests", result.index)
+				overallDuration := time.Since(overallStartTime)
+				rc.logger.Info().Msgf("Received successful response from endpoint %d after %dms (overall: %dms), cancelling other requests. Timings: [%s]",
+					result.index, result.duration.Milliseconds(), overallDuration.Milliseconds(), strings.Join(responseTimings, ", "))
 				cancel()
 				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
 				return nil
 			}
 			// Log the error but continue waiting for other responses
-			rc.logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed", result.index)
+			rc.logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
 			// Context was cancelled, return the last error
@@ -385,7 +407,9 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	}
 
 	// All requests failed
-	rc.logger.Error().Msg("All parallel relay requests failed")
+	overallDuration := time.Since(overallStartTime)
+	rc.logger.Error().Msgf("All parallel relay requests failed after %dms. Timings: [%s]",
+		overallDuration.Milliseconds(), strings.Join(responseTimings, ", "))
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
 }
 
@@ -398,6 +422,17 @@ func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.En
 
 	// Get endpoint URLs to extract TLD information
 	endpointTLDs := rc.getEndpointTLDs(availableEndpoints)
+
+	// Count unique TLDs for logging
+	uniqueTLDs := make(map[string]bool)
+	for _, tld := range endpointTLDs {
+		if tld != "" {
+			uniqueTLDs[tld] = true
+		}
+	}
+
+	rc.logger.Debug().Msgf("Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
+		len(availableEndpoints), len(uniqueTLDs), maxCount)
 
 	var selectedEndpoints []protocol.EndpointAddr
 	usedTLDs := make(map[string]bool)
@@ -444,7 +479,26 @@ func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.En
 		remainingEndpoints = newRemainingEndpoints
 	}
 
-	rc.logger.Info().Msgf("Selected %d endpoints across %d different TLDs", len(selectedEndpoints), len(usedTLDs))
+	// Count fallback selections (endpoints without TLD diversity)
+	fallbackSelections := 0
+	for _, endpoint := range selectedEndpoints {
+		if tld, exists := endpointTLDs[endpoint]; exists && tld != "" {
+			// Count how many endpoints use this TLD
+			tldCount := 0
+			for _, otherEndpoint := range selectedEndpoints {
+				if otherTLD, exists := endpointTLDs[otherEndpoint]; exists && otherTLD == tld {
+					tldCount++
+				}
+			}
+			if tldCount > 1 {
+				fallbackSelections++
+			}
+		}
+	}
+
+	rc.logger.Info().Msgf("Selected %d endpoints across %d different TLDs (diversity: %.1f%%, fallback selections: %d)",
+		len(selectedEndpoints), len(usedTLDs),
+		float64(len(usedTLDs))/float64(len(selectedEndpoints))*100, fallbackSelections)
 	return selectedEndpoints
 }
 

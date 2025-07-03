@@ -285,6 +285,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
+		context:            ctx,
 	}, protocolobservations.Observations{}, nil
 }
 

@@ -49,7 +49,6 @@ func sendHttpRelay(
 
 	// Best practice in Go is to use a custom HTTP client Transport.
 	// See: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
-	ctx.Deadline()
 	client := &http.Client{
 		Timeout: timeout,
 	}

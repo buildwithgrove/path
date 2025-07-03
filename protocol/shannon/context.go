@@ -59,6 +59,10 @@ type requestContext struct {
 	// endpointObservations:
 	// - Captures observations about endpoints used during request handling.
 	endpointObservations []*protocolobservations.ShannonEndpointObservation
+
+	// context:
+	// - Upstream context for proper timeout propagation and cancellation.
+	context context.Context
 }
 
 // HandleServiceRequest:
@@ -207,7 +211,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), timeout)
+	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
 	defer cancelFn()
 
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.

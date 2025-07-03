@@ -134,7 +134,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 
 		// Compare session IDs - if they're different, return both sessions
 		if sessionWithGrace.Header.SessionId != sessionWithoutGrace.Header.SessionId {
-			logger.Info().Msgf("Sessions differ for app %s: with grace ID=%s, without grace ID=%s - returning both", 
+			logger.Info().Msgf("Sessions differ for app %s: with grace ID=%s, without grace ID=%s - returning both (session rollover active)", 
 				ownedAppAddr, sessionWithGrace.Header.SessionId, sessionWithoutGrace.Header.SessionId)
 			
 			// Verify both apps delegate to the gateway
@@ -152,7 +152,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 			ownedAppSessions = append(ownedAppSessions, sessionWithGrace, sessionWithoutGrace)
 		} else {
 			// Sessions are the same, just add one
-			logger.Debug().Msgf("Sessions are identical for app %s: ID=%s", ownedAppAddr, sessionWithGrace.Header.SessionId)
+			logger.Debug().Msgf("Sessions are identical for app %s: ID=%s (no session rollover)", ownedAppAddr, sessionWithGrace.Header.SessionId)
 			
 			// Verify the app delegates to the gateway
 			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionWithGrace.Application) {
@@ -172,7 +172,14 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.", len(ownedAppSessions), len(ownedAppsForService), serviceID)
+	// Count unique sessions to detect rollover scenarios
+	uniqueSessionIds := make(map[string]bool)
+	for _, session := range ownedAppSessions {
+		uniqueSessionIds[session.Header.SessionId] = true
+	}
+	
+	logger.Info().Msgf("Successfully fetched %d sessions (%d unique) for %d owned apps for service %s.", 
+		len(ownedAppSessions), len(uniqueSessionIds), len(ownedAppsForService), serviceID)
 
 	return ownedAppSessions, nil
 }
