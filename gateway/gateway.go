@@ -108,10 +108,10 @@ func (g Gateway) handleHTTPServiceRequest(_ context.Context, httpReq *http.Reque
 		gatewayRequestCtx.WriteHTTPUserResponse(w)
 	}()
 
-	// Record setup phase timing - starts before QoS context building
+	// Track setup phase timing to identify bottlenecks
 	setupStartTime := time.Now()
-	setupStage := "qos_context"   // Track which stage we reach
-	cachePerformance := "unknown" // Will be determined based on timing
+	setupStage := "qos_context"
+	cachePerformance := "unknown"
 
 	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
 	// Build the QoS context for the target service ID using the HTTP request's payload.
@@ -124,7 +124,7 @@ func (g Gateway) handleHTTPServiceRequest(_ context.Context, httpReq *http.Reque
 		return
 	}
 
-	// Update setup stage - QoS context built successfully
+	// QoS context built successfully - move to protocol context building
 	setupStage = "protocol_context"
 
 	// TODO_MVP(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.

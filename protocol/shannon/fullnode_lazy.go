@@ -229,6 +229,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	}
 
 	// Scale down the grace period to aggressively start using the new session
+	// TODO_IMPROVE: Make sessionGracePeriodScaleDownFactor configurable
 	prevSessionGracePeriodEndHeightScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionGracePeriodScaleDownFactor)
 	if currentHeight > prevSessionGracePeriodEndHeightScaled {
 		logger.Debug().

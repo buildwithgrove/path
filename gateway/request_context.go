@@ -225,17 +225,17 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 	return nil
 }
 
-// TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
-//
 // BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
-// This includes:
-// 1. Getting this list of available endpoints for the requested service from the Protocol instance.
-// 1. Using the QoS ctx to select an endpoint based on the service-specific QoS implementation.
-// 2. Building the Protocol ctx for the selected endpoint.
+// Steps:
+// 1. Get available endpoints for the requested service from the Protocol instance
+// 2. Select multiple endpoints for parallel relay attempts
+// 3. Build Protocol contexts for each selected endpoint
 //
-// The constructed Protocol instance will be used for:
-//   - Sending a relay to the selected endpoint
-//   - Getting the list of protocol-level observations.
+// The constructed Protocol instances will be used for:
+//   - Sending parallel relay requests to multiple endpoints
+//   - Getting the list of protocol-level observations
+//
+// TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
 func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
 	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
@@ -249,7 +249,7 @@ func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) er
 		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Select multiple endpoints for parallel requests
+	// Select up to 4 endpoints for parallel relay attempts
 	maxParallelRequests := 4
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
@@ -335,6 +335,10 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 
 // handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
 // and returns the first successful response
+//
+// TODO_IMPROVE: Add configuration for maxParallelRequests instead of hardcoding to 4
+// TODO_IMPROVE: Implement request cancellation timeout to avoid zombie goroutines
+// TODO_IMPROVE: Add circuit breaker pattern for repeatedly failing endpoints
 func (rc *requestContext) handleParallelRelayRequests() error {
 	rc.logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
 
