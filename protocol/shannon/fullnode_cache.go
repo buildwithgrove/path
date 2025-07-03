@@ -67,12 +67,13 @@ const (
 	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
 	blockHeightCacheCapacity = 10               // Only need to cache one entry
 
-	// TODO_TECHDEBT(@olshansk): Re-evaluate if we should have this at all, and if so, make it configurable.
-	// sessionGracePeriodScaleDownFactor forces the gateway to respect a slight
+	// sessionExtendedValidityScaleDownFactor forces the gateway to respect a slight
 	// smaller grace period than the one specified onchain to ensure we start using
 	// the new session as soon as possible.
 	// It must be between 0 and 1.
-	sessionGracePeriodScaleDownFactor = 0.8
+	//
+	// TODO_TECHDEBT(@olshansk): Re-evaluate if we should have this at all, and if so, make it configurable.
+	sessionExtendedValidityScaleDownFactor = 0.8
 )
 
 // getCacheDelays returns the min/max delays for SturdyC's Early Refresh strategy.
@@ -277,10 +278,22 @@ func (cfn *cachingFullNode) GetSession(
 	return session, err
 }
 
-// GetSessionWithGracePeriod implements grace period aware session fetching with caching.
+// GetSessionWithExtendedValidity implements session retrieval with support for
+// Pocket Network's "session grace period" business logic.
+//
+// It is used to account for the case when:
+// - RelayMiner.FullNode.Height > Gateway.FullNode.Height
+// AND
+// - RelayMiner.FullNodeSession > Gateway.FullNodeSession
+//
+// PATH is
 // This method extends the standard GetSession with grace period logic while maintaining
 // the caching benefits for session data.
-func (cfn *cachingFullNode) GetSessionWithGracePeriod(
+// Protocol References:
+// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
+// - https://dev.poktroll.com/protocol/governance/gov_params
+// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
+func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
@@ -289,7 +302,7 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	logger := cfn.logger.
 		With("service_id", string(serviceID)).
 		With("app_addr", appAddr).
-		With("method", "GetSessionWithGracePeriod")
+		With("method", "GetSessionWithExtendedValidity")
 
 	// Get the current session from cache
 	currentSessionStartTime := time.Now()
@@ -339,14 +352,14 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 
 	// Calculate when the previous session's grace period would end
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
-	prevSessionGracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
 	// If we're not within the grace period of the previous session, return the current session
-	if currentHeight > prevSessionGracePeriodEndHeight {
+	if currentHeight > prevSessionEndHeightWithExtendedValidity {
 		logger.Debug().
 			Int64("current_height", currentHeight).
 			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
 			Msg("IS NOT WITHIN grace period, returning current session")
 
 		// Record grace period usage metrics
@@ -360,13 +373,13 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	}
 
 	// Scale down the grace period to aggressively start using the new session
-	prevSessionGracePeriodEndHeightScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionGracePeriodScaleDownFactor)
-	if currentHeight > prevSessionGracePeriodEndHeightScaled {
+	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionExtendedValidityScaleDownFactor)
+	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
 		logger.Debug().
 			Int64("current_height", currentHeight).
 			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
-			Int64("prev_session_grace_period_end_height_scaled", prevSessionGracePeriodEndHeightScaled).
+			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
+			Int64("prev_session_end_height_with_extended_validity_scaled", prevSessionEndHeightWithExtendedValidityScaled).
 			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
 
 		// Record grace period usage metrics - scaled grace period applied
@@ -382,7 +395,7 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 	logger.Debug().
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+		Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
 		Msg("IS WITHIN grace period of previous session")
 
 	// Record that we are within grace period and will use previous session
@@ -410,7 +423,7 @@ func (cfn *cachingFullNode) GetSessionWithGracePeriod(
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			fetchStartTime := time.Now()
 			shannonmetrics.RecordSessionCacheOperation(serviceID, "fetch", "prev_session", "attempted")
-			session, fetchErr := cfn.lazyFullNode.GetSessionWithGracePeriod(fetchCtx, serviceID, appAddr)
+			session, fetchErr := cfn.lazyFullNode.GetSessionWithExtendedValidity(fetchCtx, serviceID, appAddr)
 			fetchDuration := time.Since(fetchStartTime).Seconds()
 
 			if fetchErr != nil {

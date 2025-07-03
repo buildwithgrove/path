@@ -175,10 +175,10 @@ func (lfn *LazyFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, erro
 	return height, nil
 }
 
-// GetSessionWithGracePeriod:
+// GetSessionWithExtendedValidity:
 // - Returns the appropriate session considering grace period logic.
 // - If within grace period of a session rollover, it may return the previous session.
-func (lfn *LazyFullNode) GetSessionWithGracePeriod(
+func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	appAddr string,
@@ -186,7 +186,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	logger := lfn.logger.
 		With("service_id", serviceID).
 		With("app_addr", appAddr).
-		With("method", "GetSessionWithGracePeriod")
+		With("method", "GetSessionWithExtendedValidity")
 
 	// Get the current session
 	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
@@ -216,27 +216,26 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 
 	// Calculate when the previous session's grace period would end
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
-	prevSessionGracePeriodEndHeight := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
 	// If we're not within the grace period of the previous session, return the current session
-	if currentHeight > prevSessionGracePeriodEndHeight {
+	if currentHeight > prevSessionEndHeightWithExtendedValidity {
 		logger.Debug().
 			Int64("current_height", currentHeight).
 			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+			Int64("prev_session_grace_period_end_height", prevSessionEndHeightWithExtendedValidity).
 			Msg("IS NOT WITHIN grace period of previous session, returning current session")
 		return currentSession, nil
 	}
 
 	// Scale down the grace period to aggressively start using the new session
-	// TODO_IMPROVE: Make sessionGracePeriodScaleDownFactor configurable
-	prevSessionGracePeriodEndHeightScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionGracePeriodScaleDownFactor)
-	if currentHeight > prevSessionGracePeriodEndHeightScaled {
+	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionExtendedValidityScaleDownFactor)
+	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
 		logger.Debug().
 			Int64("current_height", currentHeight).
 			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
-			Int64("prev_session_grace_period_end_height_scaled", prevSessionGracePeriodEndHeightScaled).
+			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
+			Int64("prev_session_end_height_with_extended_validity_scaled", prevSessionEndHeightWithExtendedValidityScaled).
 			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
 		return currentSession, nil
 	}
@@ -244,7 +243,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	logger.Debug().
 		Int64("current_height", currentHeight).
 		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+		Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
 		Msg("IS WITHIN grace period of previous session")
 
 	// Record that we are within grace period and will use previous session
@@ -265,7 +264,7 @@ func (lfn *LazyFullNode) GetSessionWithGracePeriod(
 	logger.Debug().
 		Int64("prev_session_start_height", prevSession.Header.SessionStartBlockHeight).
 		Int64("prev_session_end_height", prevSession.Header.SessionEndBlockHeight).
-		Int64("prev_session_grace_period_end_height", prevSessionGracePeriodEndHeight).
+		Int64("prev_session_grace_period_end_height", prevSessionEndHeightWithExtendedValidity).
 		Msg("USING PREVIOUS SESSION since its within the grace period")
 
 	// Record successful previous session usage

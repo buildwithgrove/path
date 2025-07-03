@@ -53,9 +53,32 @@ type FullNode interface {
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
 	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
-	// GetSessionWithGracePeriod returns the appropriate session considering grace period logic.
+	// GetSessionWithExtendedValidity implements session retrieval with support for
+	// Pocket Network's native "session grace period" business logic.
+	//
+	// At the protocol level, it is used to account for the case when:
+	// - RelayMiner.FullNode.Height > Gateway.FullNode.Height
+	// AND
+	// - RelayMiner.FullNode.Session > Gateway.FullNodeSession
+	//
+	// PATH leverages it by accounting for the case when:
+	// - RelayMiner.FullNode.Height < Gateway.FullNode.Height
+	// AND
+	// - Gateway.FullNode.Session > RelayMiner.FullNodeSession
+	//
+	// This enables signing and sending relays to Suppliers who are behind the Gateway.
+	//
+	// The recommendation usage is to use both GetSession and GetSessionWithExtendedValidity
+	// in order to account for both cases when selecting the pool of available Suppliers.
+	//
+	// Protocol References:
+	// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
+	// - https://dev.poktroll.com/protocol/governance/gov_params
+	// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
+
+	// GetSessionWithExtendedValidity returns the appropriate session considering grace period logic.
 	// If within grace period of a session rollover, it may return the previous session.
-	GetSessionWithGracePeriod(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+	GetSessionWithExtendedValidity(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
 	// GetSharedParams returns the shared module parameters from the blockchain.
 	GetSharedParams(ctx context.Context) (*sharedtypes.Params, error)
