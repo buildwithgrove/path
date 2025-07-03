@@ -445,6 +445,9 @@ var shannonServices = []ServiceQoSConfig{
 	cometbft.NewCometBFTServiceQoSConfig("pocket-beta4", "pocket-beta4"),
 	cometbft.NewCometBFTServiceQoSConfig("pocket-beta5", "pocket-beta5"),
 
+	// Pocket MainNet
+	cometbft.NewCometBFTServiceQoSConfig("pocket", "pocket"),
+
 	// Cosmos Hub
 	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
 

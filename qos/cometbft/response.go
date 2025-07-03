@@ -65,6 +65,7 @@ func unmarshalResponse(
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
 		// Return a generic response to the user.
+		logger.Info().Err(err).Msgf("OLSH: error unmarshaling response: %s", data)
 		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
 	}
 
@@ -83,5 +84,9 @@ func unmarshalResponse(
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
+
+	return responseGeneric{
+		logger:          logger,
+		jsonRPCResponse: jsonrpcResponse,
+	}, nil
 }
