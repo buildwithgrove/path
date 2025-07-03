@@ -83,8 +83,9 @@ function shannon_query_service_tlds_by_id() {
     echo "  • Maps service IDs to their comma-separated TLD lists for reporting."
     echo ""
     echo "PARAMETERS:"
-    echo "  <env>           Required. Network environment - must be one of: alpha, beta, main."
-    echo "  [--structured]  Optional. Output raw JSON only (no log output); otherwise, human-readable output."
+    echo "  <env>               Required. Network environment - must be one of: alpha, beta, main."
+    echo "  [--structured]      Optional. Output raw JSON only (no log output); otherwise, human-readable output."
+    echo "  [--service-id <id>] Optional. Only include suppliers for the given service ID."
     echo ""
     echo "OUTPUT:"
     echo "  Without --structured: Human-readable list showing colored service IDs and their TLDs."
@@ -99,24 +100,50 @@ function shannon_query_service_tlds_by_id() {
     echo "  {\"eth\": [\"nodefleet.net\", \"grove.city\"], \"bsc\": [\"ankr.com\", \"quicknode.com\"]}"
     echo ""
     echo "USAGE:"
-    echo "  shannon_query_service_tlds_by_id <env> [--structured]"
+    echo "  shannon_query_service_tlds_by_id <env> [--structured] [--service-id <id>]"
     echo ""
     echo "EXAMPLES:"
     echo "  shannon_query_service_tlds_by_id beta"
     echo "  shannon_query_service_tlds_by_id main --structured"
+    echo "  shannon_query_service_tlds_by_id alpha --service-id eth"
+    echo "  shannon_query_service_tlds_by_id main --structured --service-id bsc"
     return 0
   fi
 
   local ENV="$1"
-  local STRUCTURED="$2"
+  local STRUCTURED=""
+  local SERVICE_ID=""
   local HOME_DIR="$HOME/.pocket"
   local DUMP_FILE="/tmp/shannon_supplier_dump_${ENV}.json"
 
+  # Parse optional arguments
+  shift # Remove ENV
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --structured)
+      STRUCTURED="--structured"
+      shift
+      ;;
+    --service-id)
+      SERVICE_ID="$2"
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+    esac
+  done
+
   if [[ "$STRUCTURED" != "--structured" ]]; then
-    echo "Querying suppliers from network: $ENV"
+    echo "Querying suppliers from network: $ENV${SERVICE_ID:+ (service-id: $SERVICE_ID)}"
   fi
 
-  if ! pocketd query supplier list-suppliers --network="$ENV" --home="$HOME_DIR" --grpc-insecure=false -o json >"$DUMP_FILE"; then
+  POCKETD_ARGS=(query supplier list-suppliers --network="$ENV" --home="$HOME_DIR" --grpc-insecure=false --page-limit=10000 -o json)
+  if [[ -n "$SERVICE_ID" ]]; then
+    POCKETD_ARGS+=(--service-id "$SERVICE_ID")
+  fi
+
+  if ! pocketd "${POCKETD_ARGS[@]}" >"$DUMP_FILE"; then
     if [[ "$STRUCTURED" != "--structured" ]]; then
       echo "❌ Failed to query supplier list. Is the node running? Did you specify the right --home?"
       echo "Expected path: $HOME_DIR"
@@ -138,6 +165,7 @@ function shannon_query_service_tlds_by_id() {
             .url
             | sub("^https?://"; "")
             | split("/")[0]
+            | split(":")[0]  # Remove port if present
             | split(".")[-2:]
             | join(".")
           )
