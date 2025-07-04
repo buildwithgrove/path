@@ -256,7 +256,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Select multiple endpoints for parallel relay attempts  
+	// Select multiple endpoints for parallel relay attempts
 	maxParallelRequests := rc.gatewayConfig.MaxParallelRequests
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
@@ -355,7 +355,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	}
 
 	relayResultChan := make(chan relayResult, len(rc.protocolContexts))
-	
+
 	// Create context with timeout for parallel requests
 	parallelTimeout := rc.gatewayConfig.ParallelRequestTimeout
 	ctx, cancel := context.WithTimeout(rc.context, parallelTimeout)
@@ -414,7 +414,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			// Context was cancelled or timed out
 			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 			if ctx.Err() == context.DeadlineExceeded {
-				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses", 
+				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses",
 					totalParallelRelayDuration, parallelTimeout, successfulResponses, totalRequests)
 				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelTimeout, lastErr)
 			}
@@ -438,8 +438,12 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 // 🏗️ ARCHITECTURAL CONCERN: This TLD-based selection logic is tightly coupled to URL parsing
 // and makes assumptions about endpoint address format. Consider abstracting endpoint diversity
 // selection into a pluggable strategy pattern.
-func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
+func (rc *requestContext) selectMultipleEndpoints(
+	availableEndpoints protocol.EndpointAddrList,
+	maxCount int,
+) []protocol.EndpointAddr {
 	if len(availableEndpoints) == 0 {
+		rc.logger.Warn().Msgf("Want to select %d endpoints, but 0 endpoints are available for service %s", maxCount, rc.serviceID)
 		return nil
 	}
 
@@ -454,8 +458,14 @@ func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.En
 
 // selectEndpointsSequentially selects endpoints without diversity considerations
 func (rc *requestContext) selectEndpointsSequentially(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
-	var selectedEndpoints []protocol.EndpointAddr
-	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
+	logger := rc.logger.With("service_id", rc.serviceID).With("method", "selectEndpointsSequentially")
+
+	numAvailableEndpoints := len(availableEndpoints)
+	if maxCount > numAvailableEndpoints {
+		maxCount = numAvailableEndpoints
+	}
+	selectedEndpoints := make([]protocol.EndpointAddr, 0, maxCount)
+	remainingEndpoints := make(protocol.EndpointAddrList, numAvailableEndpoints)
 	copy(remainingEndpoints, availableEndpoints)
 
 	for i := 0; i < maxCount && len(remainingEndpoints) > 0; i++ {
@@ -464,20 +474,19 @@ func (rc *requestContext) selectEndpointsSequentially(availableEndpoints protoco
 			rc.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
 			break
 		}
-
 		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
 
-		// Remove the selected endpoint from the remaining pool
-		newRemainingEndpoints := make(protocol.EndpointAddrList, 0, len(remainingEndpoints)-1)
-		for _, endpoint := range remainingEndpoints {
-			if endpoint != selectedEndpoint {
-				newRemainingEndpoints = append(newRemainingEndpoints, endpoint)
+		// Remove the selected endpoint in O(1): swap with last and truncate
+		for idx, endpoint := range remainingEndpoints {
+			if endpoint == selectedEndpoint {
+				remainingEndpoints[idx] = remainingEndpoints[len(remainingEndpoints)-1]
+				remainingEndpoints = remainingEndpoints[:len(remainingEndpoints)-1]
+				break
 			}
 		}
-		remainingEndpoints = newRemainingEndpoints
 	}
 
-	rc.logger.Info().Msgf("Selected %d endpoints (diversity disabled)", len(selectedEndpoints))
+	logger.Info().Msgf("Selected %d endpoints (diversity disabled)", len(selectedEndpoints))
 	return selectedEndpoints
 }
 
@@ -595,25 +604,23 @@ func (rc *requestContext) extractTLDFromEndpointAddr(endpointAddr protocol.Endpo
 			if strings.Contains(part, ".") {
 				// Reconstruct potential URL from this point
 				urlPart := strings.Join(parts[i:], "-")
-				return rc.extractTLDFromURL(urlPart, true)
+				// Add scheme for parsing
+				if !strings.HasPrefix(urlPart, "http") {
+					urlPart = "https://" + urlPart
+				}
+				return rc.extractTLDFromURL(urlPart)
 			}
 		}
 		return ""
 	}
 
 	// Extract URL part starting from "http"
-	// 🐛 POTENTIAL BUG: This URL extraction is fragile and depends on specific formatting
 	urlPart := addrStr[httpIndex:]
-	return rc.extractTLDFromURL(urlPart, false)
+	return rc.extractTLDFromURL(urlPart)
 }
 
-// extractTLDFromURL extracts TLD from a URL string
-func (rc *requestContext) extractTLDFromURL(urlStr string, addScheme bool) string {
-	// Add scheme if needed for proper URL parsing
-	if addScheme && !strings.HasPrefix(urlStr, "http") {
-		urlStr = "https://" + urlStr
-	}
-
+// extractTLDFromURL extracts TLD from a URL string using Go's standard library
+func (rc *requestContext) extractTLDFromURL(urlStr string) string {
 	// Clean up any URL encoding issues
 	urlStr = strings.ReplaceAll(urlStr, "%3A", ":")
 	urlStr = strings.ReplaceAll(urlStr, "%2F", "/")
@@ -621,14 +628,12 @@ func (rc *requestContext) extractTLDFromURL(urlStr string, addScheme bool) strin
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		rc.logger.Debug().Err(err).Msgf("Failed to parse URL: %s", urlStr)
-		// Fallback: try to extract hostname manually
-		return rc.extractTLDManually(urlStr)
+		return ""
 	}
 
 	hostname := parsedURL.Hostname()
 	if hostname == "" {
-		// Fallback: try to extract hostname manually
-		return rc.extractTLDManually(urlStr)
+		return ""
 	}
 
 	// Extract TLD from hostname
@@ -638,49 +643,6 @@ func (rc *requestContext) extractTLDFromURL(urlStr string, addScheme bool) strin
 	}
 
 	// Return the TLD (last part of the domain)
-	tld := domainParts[len(domainParts)-1]
-	return tld
-}
-
-// extractTLDManually attempts to extract TLD when URL parsing fails
-func (rc *requestContext) extractTLDManually(urlStr string) string {
-	// Remove protocol if present
-	urlStr = strings.TrimPrefix(urlStr, "http://")
-	urlStr = strings.TrimPrefix(urlStr, "https://")
-
-	// Take only the host part (before any path, query, or fragment)
-	if idx := strings.Index(urlStr, "/"); idx != -1 {
-		urlStr = urlStr[:idx]
-	}
-	if idx := strings.Index(urlStr, "?"); idx != -1 {
-		urlStr = urlStr[:idx]
-	}
-	if idx := strings.Index(urlStr, "#"); idx != -1 {
-		urlStr = urlStr[:idx]
-	}
-
-	// Remove port if present
-	if idx := strings.LastIndex(urlStr, ":"); idx != -1 {
-		// Check if this is actually a port (numeric after the colon)
-		portPart := urlStr[idx+1:]
-		isPort := true
-		for _, char := range portPart {
-			if char < '0' || char > '9' {
-				isPort = false
-				break
-			}
-		}
-		if isPort {
-			urlStr = urlStr[:idx]
-		}
-	}
-
-	// Split by dots and get the last part
-	domainParts := strings.Split(urlStr, ".")
-	if len(domainParts) < 2 {
-		return ""
-	}
-
 	return domainParts[len(domainParts)-1]
 }
 
