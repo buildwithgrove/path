@@ -1,0 +1,55 @@
+# PATH Configuration Example
+# This file demonstrates the new configurable options for session rollover and parallel requests
+
+# Gateway-level configuration for relay handling
+gateway_config:
+  relay:
+    # Maximum number of parallel requests sent to different endpoints for a single user request
+    # This improves resilience by racing multiple requests and using the first successful response
+    # Default: 4, Min: 1, Max: 10
+    max_parallel_requests: 4
+    
+    # Maximum time to wait for parallel requests to complete before cancelling remaining requests
+    # This prevents zombie goroutines and ensures timely responses
+    # Default: 30s, Min: 1s, Max: 300s
+    parallel_request_timeout: 30s
+    
+    # Whether to prefer endpoints with different TLDs when selecting multiple endpoints
+    # This improves resilience by diversifying across different domains/providers
+    # Default: true
+    enable_endpoint_diversity: true
+
+# Shannon protocol configuration
+shannon_config:
+  gateway_config:
+    gateway_mode: "delegated"
+    gateway_address: "pokt1..."
+    gateway_private_key_hex: "..."
+    owned_apps_private_keys_hex: []
+
+  full_node_config:
+    rpc_url: "https://your-node.com:443"
+    grpc_config:
+      host_port: "your-node.com:9090"
+      insecure: false
+    
+    # Cache configuration (only applies when lazy_mode is false)
+    lazy_mode: false
+    cache_config:
+      session_ttl: "30s"
+    
+    # Session handling configuration
+    session_config:
+      # Scale factor for grace period to aggressively start using new sessions
+      # Must be between 0 and 1. Lower values mean shorter effective grace periods.
+      # Default: 0.8 (uses 80% of the onchain grace period)
+      grace_period_scale_down_factor: 0.8
+
+# Router configuration
+router_config:
+  port: "3070"
+
+# Logger configuration  
+logger_config:
+  level: "info"
+  format: "json"

@@ -43,6 +43,9 @@ type (
 
 		// Configuration options for the cache when LazyMode is false
 		CacheConfig CacheConfig `yaml:"cache_config"`
+
+		// Configuration options for session handling
+		SessionConfig SessionConfig `yaml:"session_config"`
 	}
 
 	GatewayConfig struct {
@@ -65,6 +68,14 @@ type (
 
 	CacheConfig struct {
 		SessionTTL time.Duration `yaml:"session_ttl"`
+	}
+
+	SessionConfig struct {
+		// GracePeriodScaleDownFactor forces the gateway to respect a smaller
+		// grace period than the one specified onchain to ensure we start using
+		// the new session as soon as possible.
+		// It must be between 0 and 1. Default: 0.8
+		GracePeriodScaleDownFactor float64 `yaml:"grace_period_scale_down_factor"`
 	}
 )
 
@@ -104,6 +115,9 @@ func (c FullNodeConfig) Validate() error {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
+		return err
+	}
+	if err := c.SessionConfig.validate(); err != nil {
 		return err
 	}
 	return nil
@@ -188,4 +202,26 @@ func isValidHostPort(hostPort string) bool {
 	}
 
 	return true
+}
+
+// validate validates the SessionConfig
+func (sc SessionConfig) validate() error {
+	if sc.GracePeriodScaleDownFactor < 0 || sc.GracePeriodScaleDownFactor > 1 {
+		return fmt.Errorf("grace_period_scale_down_factor must be between 0 and 1, got %f", sc.GracePeriodScaleDownFactor)
+	}
+	return nil
+}
+
+// hydrateDefaults applies default values to SessionConfig
+func (sc *SessionConfig) hydrateDefaults() {
+	if sc.GracePeriodScaleDownFactor == 0 {
+		sc.GracePeriodScaleDownFactor = 0.8
+	}
+}
+
+// hydrateDefaults applies default values to FullNodeConfig
+func (fnc *FullNodeConfig) hydrateDefaults() {
+	fnc.GRPCConfig.hydrateDefaults()
+	fnc.CacheConfig.hydrateDefaults()
+	fnc.SessionConfig.hydrateDefaults()
 }

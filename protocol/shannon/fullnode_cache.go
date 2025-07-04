@@ -67,13 +67,7 @@ const (
 	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
 	blockHeightCacheCapacity = 10               // Only need to cache one entry
 
-	// sessionExtendedValidityScaleDownFactor forces the gateway to respect a slight
-	// smaller grace period than the one specified onchain to ensure we start using
-	// the new session as soon as possible.
-	// It must be between 0 and 1.
-	//
-	// TODO_TECHDEBT(@olshansk): Re-evaluate if we should have this at all, and if so, make it configurable.
-	sessionExtendedValidityScaleDownFactor = 0.8
+	// sessionExtendedValidityScaleDownFactor is now configurable via SessionConfig.GracePeriodScaleDownFactor
 )
 
 // getCacheDelays returns the min/max delays for SturdyC's Early Refresh strategy.
@@ -373,7 +367,7 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Scale down the grace period to aggressively start using the new session
-	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionExtendedValidityScaleDownFactor)
+	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*cfn.lazyFullNode.sessionConfig.GracePeriodScaleDownFactor)
 	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
 		logger.Debug().
 			Int64("current_height", currentHeight).

@@ -43,16 +43,20 @@ type LazyFullNode struct {
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 	sharedClient  *sdk.SharedClient
+
+	// Configuration for session handling
+	sessionConfig SessionConfig
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
 func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
+	// Hydrate defaults for all config sections
+	config.hydrateDefaults()
+
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
 	}
-
-	config.GRPCConfig = config.GRPCConfig.hydrateDefaults()
 
 	sessionClient, err := newSessionClient(config.GRPCConfig)
 	if err != nil {
@@ -81,6 +85,7 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
+		sessionConfig: config.SessionConfig,
 	}
 
 	return fullNode, nil
@@ -229,7 +234,7 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	}
 
 	// Scale down the grace period to aggressively start using the new session
-	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*sessionExtendedValidityScaleDownFactor)
+	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*lfn.sessionConfig.GracePeriodScaleDownFactor)
 	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
 		logger.Debug().
 			Int64("current_height", currentHeight).

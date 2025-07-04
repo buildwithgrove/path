@@ -12,6 +12,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/buildwithgrove/path/config/relay"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -33,10 +34,7 @@ const (
 	sessionStateActive = "active"
 )
 
-var (
-	// TODO_IN_THIS_PR: Make this configurable
-	maxParallelRequests = 4
-)
+// Note: maxParallelRequests is now obtained from gateway configuration
 
 // Gateway requestContext is responsible for performing the steps necessary to complete a service request.
 //
@@ -101,6 +99,9 @@ type requestContext struct {
 
 	// Timing fields for relay latency tracking
 	relayStartTime time.Time
+
+	// Gateway configuration for relay handling
+	gatewayConfig relay.Config
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -255,7 +256,8 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: error getting available endpoints for service %s: %w", rc.serviceID, err)
 	}
 
-	// Select multiple endpoints for parallel relay attempts
+	// Select multiple endpoints for parallel relay attempts  
+	maxParallelRequests := rc.gatewayConfig.MaxParallelRequests
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
@@ -339,9 +341,6 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 
 // handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
 // and returns the first successful response
-//
-// TODO_IN_THIS_PR: Implement request cancellation timeout to avoid zombie goroutines
-// TODO_IN_THIS_PR: Add circuit breaker pattern for repeatedly failing endpoints
 func (rc *requestContext) handleParallelRelayRequests() error {
 	logger := rc.logger.With("service_id", rc.serviceID).With("method", "handleParallelRelayRequests")
 	logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
@@ -356,7 +355,10 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	}
 
 	relayResultChan := make(chan relayResult, len(rc.protocolContexts))
-	ctx, cancel := context.WithCancel(rc.context)
+	
+	// Create context with timeout for parallel requests
+	parallelTimeout := rc.gatewayConfig.ParallelRequestTimeout
+	ctx, cancel := context.WithTimeout(rc.context, parallelTimeout)
 	defer cancel()
 
 	overallStartTime := time.Now()
@@ -409,8 +411,15 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
-			// Context was cancelled, return the last error
-			return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
+			// Context was cancelled or timed out
+			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
+			if ctx.Err() == context.DeadlineExceeded {
+				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses", 
+					totalParallelRelayDuration, parallelTimeout, successfulResponses, totalRequests)
+				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelTimeout, lastErr)
+			}
+			logger.Debug().Msgf("Parallel relay requests cancelled after %dms", totalParallelRelayDuration)
+			return fmt.Errorf("parallel relay requests cancelled, last error: %w", lastErr)
 		}
 	}
 
@@ -424,7 +433,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 }
 
 // selectMultipleEndpoints selects up to maxCount endpoints from the available endpoints
-// with bias towards different TLDs for improved diversity and resilience
+// with optional bias towards different TLDs for improved diversity and resilience
 //
 // 🏗️ ARCHITECTURAL CONCERN: This TLD-based selection logic is tightly coupled to URL parsing
 // and makes assumptions about endpoint address format. Consider abstracting endpoint diversity
@@ -434,6 +443,46 @@ func (rc *requestContext) selectMultipleEndpoints(availableEndpoints protocol.En
 		return nil
 	}
 
+	// If diversity is disabled, use simple sequential selection
+	if !rc.gatewayConfig.EnableEndpointDiversity {
+		return rc.selectEndpointsSequentially(availableEndpoints, maxCount)
+	}
+
+	// Use diversity-aware selection
+	return rc.selectEndpointsWithDiversity(availableEndpoints, maxCount)
+}
+
+// selectEndpointsSequentially selects endpoints without diversity considerations
+func (rc *requestContext) selectEndpointsSequentially(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
+	var selectedEndpoints []protocol.EndpointAddr
+	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
+	copy(remainingEndpoints, availableEndpoints)
+
+	for i := 0; i < maxCount && len(remainingEndpoints) > 0; i++ {
+		selectedEndpoint, err := rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
+		if err != nil {
+			rc.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
+			break
+		}
+
+		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
+
+		// Remove the selected endpoint from the remaining pool
+		newRemainingEndpoints := make(protocol.EndpointAddrList, 0, len(remainingEndpoints)-1)
+		for _, endpoint := range remainingEndpoints {
+			if endpoint != selectedEndpoint {
+				newRemainingEndpoints = append(newRemainingEndpoints, endpoint)
+			}
+		}
+		remainingEndpoints = newRemainingEndpoints
+	}
+
+	rc.logger.Info().Msgf("Selected %d endpoints (diversity disabled)", len(selectedEndpoints))
+	return selectedEndpoints
+}
+
+// selectEndpointsWithDiversity selects endpoints with TLD diversity preference
+func (rc *requestContext) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
 	// Get endpoint URLs to extract TLD information
 	endpointTLDs := rc.getEndpointTLDs(availableEndpoints)
 
