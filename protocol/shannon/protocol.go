@@ -338,8 +338,8 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 
 }
 
-// ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
-// This is used by the hydrator to determine which service IDs to run QoS checks on.
+// ConfiguredServiceIDs returns the list of all all service IDs that are configured
+// to be supported by the Gateway.
 func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
 	// Currently hydrator is only enabled for Centralized gateway mode.
 	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.

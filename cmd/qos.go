@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -23,7 +24,7 @@ func getServiceQoSInstances(
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
 
-	logger = logger.With("module", "qos")
+	logger = logger.With("module", "qos").With("method", "getServiceQoSInstances").With("protocol", protocolInstance.Name())
 
 	// Wait for the protocol to become healthy BEFORE configuring and starting the hydrator.
 	// - Ensures the protocol instance's configured service IDs are available before hydrator startup.
@@ -34,34 +35,36 @@ func getServiceQoSInstances(
 
 	// Get configured service IDs from the protocol instance.
 	// - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
-	configuredServiceIDs := protocolInstance.ConfiguredServiceIDs()
+	gatewayServiceIDs := protocolInstance.ConfiguredServiceIDs()
+	logGatewayServiceIDs(logger, gatewayServiceIDs)
 
 	// Remove any service IDs that are manually disabled by the user.
-	for _, disabledServiceID := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {
+	for _, disabledQoSServiceIDForGateway := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {
 		// Throw error if any manually disabled service IDs are not found in the protocol's configured service IDs.
-		if _, found := configuredServiceIDs[disabledServiceID]; !found {
-			return nil, fmt.Errorf("invalid configuration: QoS manually disabled for service ID: %s, but not found in protocol's configured service IDs", disabledServiceID)
+		if _, found := gatewayServiceIDs[disabledQoSServiceIDForGateway]; !found {
+			return nil, fmt.Errorf("[INVALID CONFIGURATION] QoS manually disabled for service ID: %s BUT NOT not found in protocol's configured service IDs", disabledQoSServiceIDForGateway)
 		}
-		logger.Info().Msgf("QoS manually disabled for service ID: %s", disabledServiceID)
-		delete(configuredServiceIDs, disabledServiceID)
+		logger.Info().Msgf("Gateway manually disabled QoS for service ID: %s", disabledQoSServiceIDForGateway)
+		delete(gatewayServiceIDs, disabledQoSServiceIDForGateway)
 	}
 
 	// Get the service configs for the current protocol
-	serviceConfigs := config.ServiceConfigs.GetServiceConfigs(gatewayConfig)
+	qosServiceConfigs := config.QoSServiceConfigs.GetServiceConfigs(gatewayConfig)
+	logQoSServiceConfigs(logger, qosServiceConfigs)
 
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.
-	for _, serviceConfig := range serviceConfigs {
+	for _, qosServiceConfig := range qosServiceConfigs {
+		serviceID := qosServiceConfig.GetServiceID()
 		// Skip service IDs that are not configured for the PATH instance.
-		if _, found := configuredServiceIDs[serviceConfig.GetServiceID()]; !found {
+		if _, found := gatewayServiceIDs[serviceID]; !found {
+			logger.Warn().Msgf("Service ID %s has an available QoS configuration but is not configured for the gateway. Skipping...", serviceID)
 			continue
 		}
 
-		serviceID := serviceConfig.GetServiceID()
-
-		switch serviceConfig.GetServiceQoSType() {
+		switch qosServiceConfig.GetServiceQoSType() {
 		case evm.QoSType:
-			evmServiceQoSConfig, ok := serviceConfig.(evm.EVMServiceQoSConfig)
+			evmServiceQoSConfig, ok := qosServiceConfig.(evm.EVMServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not an EVM service", serviceID)
 			}
@@ -72,7 +75,7 @@ func getServiceQoSInstances(
 			logger.With("service_id", serviceID).Debug().Msg("Added EVM QoS instance for the service ID.")
 
 		case cometbft.QoSType:
-			cometBFTServiceQoSConfig, ok := serviceConfig.(cometbft.CometBFTServiceQoSConfig)
+			cometBFTServiceQoSConfig, ok := qosServiceConfig.(cometbft.CometBFTServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
 			}
@@ -81,7 +84,7 @@ func getServiceQoSInstances(
 			qosServices[serviceID] = cometBFTQoS
 
 		case solana.QoSType:
-			solanaServiceQoSConfig, ok := serviceConfig.(solana.SolanaServiceQoSConfig)
+			solanaServiceQoSConfig, ok := qosServiceConfig.(solana.SolanaServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a Solana service", serviceID)
 			}
@@ -96,4 +99,24 @@ func getServiceQoSInstances(
 	}
 
 	return qosServices, nil
+}
+
+// logGatewayServiceIDs outputs the available service IDs for the gateway.
+func logGatewayServiceIDs(logger polylog.Logger, serviceConfigs map[protocol.ServiceID]struct{}) {
+	// Output configured service IDs for gateway.
+	serviceIDs := make([]string, 0, len(serviceConfigs))
+	for serviceID := range serviceConfigs {
+		serviceIDs = append(serviceIDs, string(serviceID))
+	}
+	logger.Info().Msgf("Gateway available Service IDs: %s", strings.Join(serviceIDs, ", "))
+}
+
+// logQoSServiceConfigs outputs the configured service IDs for the gateway.
+func logQoSServiceConfigs(logger polylog.Logger, serviceConfigs []config.ServiceQoSConfig) {
+	// Output service IDs with QoS configurations
+	serviceIDs := make([]string, 0, len(serviceConfigs))
+	for _, serviceConfig := range serviceConfigs {
+		serviceIDs = append(serviceIDs, string(serviceConfig.GetServiceID()))
+	}
+	logger.Info().Msgf("QoS configured Service IDs: %s", strings.Join(serviceIDs, ", "))
 }

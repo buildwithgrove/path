@@ -361,7 +361,7 @@ func recordRelayTotal(
 	// Skip if there are no endpoint observations
 	// This happens if endpoint selection logic failed to select an endpoint from the available endpoints list.
 	if len(endpointObservations) == 0 {
-		hydratedLogger.Info().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
+		hydratedLogger.Warn().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
 		return
 	}
 
