@@ -108,7 +108,7 @@ func logGatewayServiceIDs(logger polylog.Logger, serviceConfigs map[protocol.Ser
 	for serviceID := range serviceConfigs {
 		serviceIDs = append(serviceIDs, string(serviceID))
 	}
-	logger.Info().Msgf("Gateway available Service IDs: %s", strings.Join(serviceIDs, ", "))
+	logger.Info().Msgf("Service IDs configured by the gateway: %s.", strings.Join(serviceIDs, ", "))
 }
 
 // logQoSServiceConfigs outputs the configured service IDs for the gateway.
@@ -118,5 +118,5 @@ func logQoSServiceConfigs(logger polylog.Logger, serviceConfigs []config.Service
 	for _, serviceConfig := range serviceConfigs {
 		serviceIDs = append(serviceIDs, string(serviceConfig.GetServiceID()))
 	}
-	logger.Info().Msgf("QoS configured Service IDs: %s", strings.Join(serviceIDs, ", "))
+	logger.Info().Msgf("Service IDs with available QoS configurations: %s.", strings.Join(serviceIDs, ", "))
 }

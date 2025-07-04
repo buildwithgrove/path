@@ -16,7 +16,7 @@ import (
 
 // TODO_TECHDEBT(@adshmh): support customization of the endpoint response's timeout.
 // defaultEndpointResponseTimeoutMillisec is the default timeout for an endpoint to return a response to a service request.
-const defaultEndpointResponseTimeoutMillisec = 5_000
+const defaultEndpointResponseTimeoutMillisec = 15_000
 
 var _ gateway.QoSService = NoOpQoS{}
 
