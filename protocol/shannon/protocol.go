@@ -362,7 +362,7 @@ func (p *Protocol) Name() string {
 
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
-	return p.FullNode.IsHealthy()
+	return p.IsHealthy()
 }
 
 // TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating

@@ -40,13 +40,6 @@ func DefaultGatewayRelayConfig() GatewayRelayConfig {
 	}
 }
 
-// hydrateDefaults applies default values to missing configuration
-func (grc *GatewayRelayConfig) hydrateDefaults() {
-	if err := grc.Relay.validateAndHydrate(); err != nil {
-		// If validation fails, use defaults
-		*grc = DefaultGatewayRelayConfig()
-	}
-}
 
 // Validate validates the gateway relay configuration
 func (grc *GatewayRelayConfig) Validate() error {

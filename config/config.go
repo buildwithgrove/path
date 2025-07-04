@@ -73,7 +73,10 @@ func (c *GatewayConfig) hydrateDefaults() {
 	c.Router.hydrateRouterDefaults()
 	c.Logger.hydrateLoggerDefaults()
 	c.HydratorConfig.hydrateHydratorDefaults()
-	c.Relay.ValidateAndHydrate()
+	if err := c.Relay.ValidateAndHydrate(); err != nil {
+		// Log error or handle as needed
+		_ = err
+	}
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */

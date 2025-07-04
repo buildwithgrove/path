@@ -149,13 +149,14 @@ func TestSelectMultipleEndpoints(t *testing.T) {
 
 			// Verify expected TLD count based on test case
 			expectedTLDCount := 0
-			if tt.name == "diverse_tlds" {
+			switch tt.name {
+			case "diverse_tlds":
 				expectedTLDCount = 4 // .com, .net, .org, .io
-			} else if tt.name == "same_tlds" {
+			case "same_tlds":
 				expectedTLDCount = 1 // all .com
-			} else if tt.name == "mixed_tlds" {
+			case "mixed_tlds":
 				expectedTLDCount = 3 // .com, .net, .org
-			} else if tt.name == "single_endpoint" {
+			case "single_endpoint":
 				expectedTLDCount = 1 // .com
 			}
 
@@ -339,7 +340,7 @@ func TestHandleParallelRelayRequests(t *testing.T) {
 						callOrderMutex.Lock()
 						callOrder = append(callOrder, endpointIndex)
 						callOrderMutex.Unlock()
-						return protocol.Response{}, errors.New(fmt.Sprintf("endpoint-%d-error", endpointIndex))
+						return protocol.Response{}, fmt.Errorf("endpoint-%d-error", endpointIndex)
 					}).AnyTimes() // Use AnyTimes for parallel execution
 				}
 			}

@@ -126,7 +126,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	observations := make([]*qosobservations.CometBFTEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
+		obs := endpointResponse.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		observations[idx] = &obs
 	}

@@ -89,7 +89,7 @@ func (drh *DataReporterHTTP) sendRecordOverHTTP(serializedDataRecord []byte) err
 
 	// Verify the data processor responded with OK
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error sending the data record: got HTTP status %d, expected %d", resp.StatusCode, http.StatusOK)
+		return fmt.Errorf("error sending the data record: got HTTP status %d, expected %d", resp.StatusCode, http.StatusOK)
 	}
 
 	return nil

@@ -42,10 +42,10 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
 
 	// Retrieve the session for the selected app, considering grace period logic.
-	selectedSession, err := p.FullNode.GetSessionWithExtendedValidity(ctx, serviceID, selectedAppAddr)
+	selectedSession, err := p.GetSessionWithExtendedValidity(ctx, serviceID, selectedAppAddr)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchSession, selectedAppAddr, err)
+		err = fmt.Errorf("%w: app %s: %w relay request will fail", errProtocolContextSetupFetchSession, selectedAppAddr, err)
 		logger.Error().Err(err).Msg("Relay request will fail because of an error fetching the session for the app.")
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: gateway %s app %s. Relay request will fail.", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
+		err = fmt.Errorf("%w: gateway %s app %s relay request will fail", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
 		logger.Error().Err(err).Msg("Relay request will fail because the gateway does not have delegation for the app.")
 		return nil, err
 	}

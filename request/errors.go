@@ -9,7 +9,7 @@ import (
 var (
 	// Wrap the Gateway error.
 	// Allows the gateway package to recognize the type of error.
-	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header: %w", HTTPHeaderTargetServiceID, gateway.GatewayErrNoServiceIDProvided)
+	errNoServiceIDProvided = fmt.Errorf("no service ID provided in '%s' header: %w", HTTPHeaderTargetServiceID, gateway.ErrNoServiceIDProvided)
 )
 
 // Use JSON-formatted HTTP payload for user errors.
