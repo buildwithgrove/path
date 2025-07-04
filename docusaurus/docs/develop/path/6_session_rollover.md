@@ -1,57 +1,27 @@
-# Session Rollover and Parallel Requests <!-- omit in toc -->
+---
+sidebar_position: 6
+title: Session Rollover & Parallel Requests
+description: Advanced session management and parallel request features
+---
+
+# Session Rollover & Parallel Requests <!-- omit in toc -->
 
 - [Overview](#overview)
-- [Configuration](#configuration)
-  - [Gateway Relay Configuration](#gateway-relay-configuration)
-  - [Shannon Session Configuration](#shannon-session-configuration)
 - [Parallel Request Feature](#parallel-request-feature)
   - [How It Works](#how-it-works)
   - [Benefits](#benefits)
-  - [Configuration Options](#configuration-options)
+  - [Configuration](#configuration)
 - [Session Grace Period Handling](#session-grace-period-handling)
   - [Grace Period Logic](#grace-period-logic)
   - [Scale Down Factor](#scale-down-factor)
-  - [Configuration Options](#configuration-options-1)
+  - [Configuration](#configuration-1)
 - [Monitoring and Metrics](#monitoring-and-metrics)
-  - [Session Rollover Metrics](#session-rollover-metrics)
-  - [Parallel Request Metrics](#parallel-request-metrics)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 
 ## Overview
 
 PATH implements advanced session rollover handling and parallel request features to improve reliability and performance during Pocket Network session transitions. These features help maintain service availability and reduce latency during the critical moments when sessions are rolling over.
-
-## Configuration
-
-### Gateway Relay Configuration
-
-Configure parallel request behavior at the gateway level:
-
-```yaml
-gateway_config:
-  relay:
-    # Number of parallel requests (1-10)
-    max_parallel_requests: 4
-    
-    # Timeout for parallel requests
-    parallel_request_timeout: 30s
-    
-    # Enable TLD diversity preference
-    enable_endpoint_diversity: true
-```
-
-### Shannon Session Configuration
-
-Configure session grace period handling in the Shannon protocol:
-
-```yaml
-shannon_config:
-  full_node_config:
-    session_config:
-      # Grace period scale factor (0.0-1.0)
-      grace_period_scale_down_factor: 0.8
-```
 
 ## Parallel Request Feature
 
@@ -61,7 +31,7 @@ shannon_config:
 2. **TLD Diversity**: When `enable_endpoint_diversity` is true, PATH prefers endpoints with different Top-Level Domains (TLDs)
 3. **Parallel Execution**: Requests are sent to all selected endpoints simultaneously
 4. **First Success Wins**: The first successful response is used, and other requests are cancelled
-5. **Fallback Handling**: If all requests fail, the last error is returned
+5. **Timeout Protection**: If requests exceed `parallel_request_timeout`, remaining requests are cancelled to prevent zombie goroutines
 
 ### Benefits
 
@@ -69,8 +39,23 @@ shannon_config:
 - **Improved Reliability**: If one endpoint fails, others can still succeed
 - **Better Resource Utilization**: Distributes load across multiple suppliers
 - **Resilience**: Reduces impact of individual endpoint failures
+- **Resource Management**: Proper timeout handling prevents goroutine leaks
 
-### Configuration Options
+### Configuration
+
+Configure parallel request behavior in your `.config.yaml`:
+
+```yaml
+relay_config:
+  # Maximum number of parallel endpoints to query (1-10)
+  max_parallel_requests: 4
+  
+  # Timeout for parallel operations (1s-300s)
+  parallel_request_timeout: 30s
+  
+  # Prefer endpoints with different TLDs
+  enable_endpoint_diversity: true
+```
 
 | Setting | Default | Range | Description |
 |---------|---------|-------|-------------|
@@ -98,7 +83,17 @@ The `grace_period_scale_down_factor` configuration (default: 0.8) reduces the ef
 - **Scaled Grace Period**: 80 blocks (100 × 0.8)
 - **Purpose**: Start using new sessions sooner to reduce rollover window
 
-### Configuration Options
+### Configuration
+
+Configure session grace period handling in Shannon protocol configuration:
+
+```yaml
+shannon_config:
+  full_node_config:
+    session_config:
+      # Grace period scale factor (0.0-1.0)
+      grace_period_scale_down_factor: 0.8
+```
 
 | Setting | Default | Range | Description |
 |---------|---------|-------|-------------|
@@ -106,18 +101,14 @@ The `grace_period_scale_down_factor` configuration (default: 0.8) reduces the ef
 
 ## Monitoring and Metrics
 
-### Session Rollover Metrics
+PATH exports comprehensive metrics for monitoring session behavior and parallel request performance:
 
-PATH exports comprehensive metrics for monitoring session behavior:
-
+**Session Rollover Metrics**:
 - `shannon_session_transitions_total`: Session transition events
 - `shannon_session_grace_period_usage_total`: Grace period usage patterns  
 - `shannon_session_operation_duration_seconds`: Session operation latencies
 
-### Parallel Request Metrics
-
-Monitor parallel request performance:
-
+**Parallel Request Metrics**:
 - `shannon_relay_latency_seconds`: End-to-end request latency
 - `shannon_backend_service_latency_seconds`: Backend service response times
 - `shannon_request_setup_latency_seconds`: Request setup overhead
@@ -130,6 +121,7 @@ Monitor parallel request performance:
 - **Monitor Backend Load**: Ensure suppliers can handle increased traffic
 - **Enable Diversity**: Keep `enable_endpoint_diversity: true` for better resilience
 - **Appropriate Timeouts**: Use 30s timeout for most use cases
+- **Resource Monitoring**: Watch for goroutine leaks if timeout issues occur
 
 ### Session Configuration
 
@@ -142,6 +134,7 @@ Monitor parallel request performance:
 - **Set up alerting** on session transition failures
 - **Monitor grace period usage** patterns to optimize scale factor
 - **Track parallel request success rates** to validate configuration
+- **Watch timeout metrics** to identify performance issues
 
 ## Troubleshooting
 
@@ -182,3 +175,13 @@ Monitor parallel request performance:
 - Check session cache hit rates
 - Verify proper configuration of both cache and session settings
 - Consider adjusting parallel request count based on supplier pool size
+
+### Resource Leaks
+
+**Symptoms**: Increasing goroutine count, memory usage
+
+**Solutions**:
+- Verify `parallel_request_timeout` is properly configured
+- Check for stuck requests in monitoring
+- Ensure proper context cancellation in application code
+- Review timeout values for your specific use case
