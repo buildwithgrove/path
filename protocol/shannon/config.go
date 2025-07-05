@@ -48,13 +48,6 @@ type (
 		SessionConfig SessionConfig `yaml:"session_config"`
 	}
 
-	GatewayConfig struct {
-		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
-		GatewayAddress          string               `yaml:"gateway_address"`
-		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
-		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
-	}
-
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
 	GRPCConfig struct {
 		HostPort          string        `yaml:"host_port"`
@@ -76,6 +69,13 @@ type (
 		// the new session as soon as possible.
 		// It must be between 0 and 1. Default: 0.8
 		GracePeriodScaleDownFactor float64 `yaml:"grace_period_scale_down_factor"`
+	}
+
+	GatewayConfig struct {
+		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
+		GatewayAddress          string               `yaml:"gateway_address"`
+		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
+		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
 	}
 )
 

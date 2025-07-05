@@ -22,7 +22,6 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/config/relay"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
@@ -53,9 +52,6 @@ type Gateway struct {
 	// It is declared separately from the `MetricsReporter` to be consistent with the gateway package's role
 	// of explicitly defining PATH gateway's components and their interactions.
 	DataReporter RequestResponseReporter
-
-	// Config contains gateway-level configuration settings
-	Config relay.Config
 }
 
 const (
@@ -85,7 +81,6 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
 		context:             ctx,
-		gatewayConfig:       g.Config,
 	}
 
 	defer func() {

@@ -2,17 +2,15 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/buildwithgrove/path/config/relay"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -23,49 +21,12 @@ func createTestRequestContext(t *testing.T) *requestContext {
 
 	logger := polyzero.NewLogger()
 
-	// Create default gateway config
-	gatewayConfig := relay.DefaultConfig()
-
 	return &requestContext{
-		context:       context.Background(),
-		logger:        logger,
-		serviceID:     "test-service",
-		gatewayConfig: gatewayConfig,
+		context:   context.Background(),
+		logger:    logger,
+		serviceID: "test-service",
 	}
 }
-
-// Test TLD extraction functionality (focused test)
-// func TestTLDExtractionLogic(t *testing.T) {
-// 	tests := []struct {
-// 		name         string
-// 		endpointAddr string
-// 		expectedTLD  string
-// 	}{
-// 		{
-// 			name:         "com_domain",
-// 			endpointAddr: "supplier1-https://api.example.com/v1",
-// 			expectedTLD:  "example.com",
-// 		},
-// 		{
-// 			name:         "org_domain",
-// 			endpointAddr: "supplier2-https://api.example.org:8080",
-// 			expectedTLD:  "example.org",
-// 		},
-// 		{
-// 			name:         "io_domain",
-// 			endpointAddr: "supplier3-api.example.io",
-// 			expectedTLD:  "example.io",
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			tld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(tt.endpointAddr)
-// 			require.NoError(t, err)
-// 			assert.Equal(t, tt.expectedTLD, tld, "TLD extraction failed for: %s", tt.endpointAddr)
-// 		})
-// 	}
-// }
 
 // Test endpoint selection with TLD diversity (simplified)
 func TestSelectMultipleEndpoints(t *testing.T) {
@@ -143,7 +104,7 @@ func TestSelectMultipleEndpoints(t *testing.T) {
 			uniqueEndpointTLDs := make(map[string]bool)
 			for _, endpoint := range availableEndpoints {
 				tld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(string(endpoint))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tld != "" {
 					uniqueEndpointTLDs[tld] = true
 				}
@@ -169,86 +130,21 @@ func TestSelectMultipleEndpoints(t *testing.T) {
 			}
 
 			// Verify results
-			assert.Equal(t, tt.expectedCount, len(selectedEndpoints), tt.description)
+			require.Equal(t, tt.expectedCount, len(selectedEndpoints), tt.description)
 
 			// Verify no duplicates
 			seen := make(map[protocol.EndpointAddr]bool)
 			for _, endpoint := range selectedEndpoints {
-				assert.False(t, seen[endpoint], "Should not have duplicate endpoints")
+				require.False(t, seen[endpoint], "Should not have duplicate endpoints")
 				seen[endpoint] = true
 			}
 
 			// Verify TLD extraction worked correctly
 			if expectedTLDCount > 0 {
-				assert.Equal(t, expectedTLDCount, len(uniqueEndpointTLDs), "Should extract correct number of unique TLDs")
+				require.Equal(t, expectedTLDCount, len(uniqueEndpointTLDs), "Should extract correct number of unique TLDs")
 			}
 		})
 	}
-}
-
-// Test TLD extraction functionality
-// func TestExtractTLDFromEndpointAddr(t *testing.T) {
-// 	tests := []struct {
-// 		name         string
-// 		endpointAddr string
-// 		expectedTLD  string
-// 	}{
-// 		{
-// 			name:         "standard_url",
-// 			endpointAddr: "supplier1-https://api.example.com/v1",
-// 			expectedTLD:  "example.com",
-// 		},
-// 		{
-// 			name:         "url_with_port",
-// 			endpointAddr: "supplier2-https://api.example.net:8080",
-// 			expectedTLD:  "example.net",
-// 		},
-// 		{
-// 			name:         "encoded_url",
-// 			endpointAddr: "supplier3-https%3A%2F%2Fapi.example.org",
-// 			expectedTLD:  "example.org",
-// 		},
-// 		{
-// 			name:         "no_protocol",
-// 			endpointAddr: "supplier4-api.example.io",
-// 			expectedTLD:  "example.io",
-// 		},
-// 		{
-// 			name:         "localhost",
-// 			endpointAddr: "supplier5-http://localhost:8080",
-// 			expectedTLD:  "localhost",
-// 		},
-// 		{
-// 			name:         "ip_address",
-// 			endpointAddr: "supplier6-http://192.168.1.1:8080",
-// 			expectedTLD:  "1.1", // Current behavior: extracts last part of IP as TLD
-// 		},
-// 		{
-// 			name:         "malformed_url",
-// 			endpointAddr: "invalid-endpoint",
-// 			expectedTLD:  "",
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			tld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(tt.endpointAddr)
-// 			require.NoError(t, err)
-// 			assert.Equal(t, tt.expectedTLD, tld, "TLD extraction failed for: %s", tt.endpointAddr)
-// 		})
-// 	}
-// }
-
-// Test endpoint diversity configuration logic
-func TestEndpointDiversityConfiguration(t *testing.T) {
-	rc := createTestRequestContext(t)
-
-	// Test diversity enabled (default)
-	assert.True(t, rc.gatewayConfig.EnableEndpointDiversity, "Endpoint diversity should be enabled by default")
-
-	// Test diversity disabled
-	rc.gatewayConfig.EnableEndpointDiversity = false
-	assert.False(t, rc.gatewayConfig.EnableEndpointDiversity, "Endpoint diversity should be configurable")
 }
 
 // Test parallel relay requests functionality using generated mocks
@@ -357,48 +253,12 @@ func TestHandleParallelRelayRequests(t *testing.T) {
 
 			// Verify results
 			if tt.expectedError {
-				assert.Error(t, err, tt.description)
+				require.Error(t, err, tt.description)
 			} else {
-				assert.NoError(t, err, tt.description)
+				require.NoError(t, err, tt.description)
 			}
 		})
 	}
-}
-
-// Test parallel request timeout functionality using generated mocks
-func TestParallelRelayRequestsTimeout(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	rc := createTestRequestContext(t)
-	mockQoS := NewMockRequestQoSContext(ctrl)
-	rc.qosCtx = mockQoS
-
-	// Set a very short timeout for testing
-	rc.gatewayConfig.ParallelRequestTimeout = 50 * time.Millisecond
-
-	// Set up 2 mock protocol contexts that take longer than the timeout
-	rc.protocolContexts = make([]ProtocolRequestContext, 2)
-	payload := protocol.Payload{Data: "test-payload", Method: "POST", Path: "/test"}
-	mockQoS.EXPECT().GetServicePayload().Return(payload).AnyTimes()
-
-	for i := 0; i < 2; i++ {
-		mockCtx := NewMockProtocolRequestContext(ctrl)
-		rc.protocolContexts[i] = mockCtx
-
-		// Both endpoints take longer than the timeout
-		mockCtx.EXPECT().HandleServiceRequest(gomock.Any()).DoAndReturn(func(p protocol.Payload) (protocol.Response, error) {
-			time.Sleep(100 * time.Millisecond) // Longer than 50ms timeout
-			return protocol.Response{}, errors.New("timeout")
-		}).AnyTimes() // Use AnyTimes because some might not be called due to timeout
-	}
-
-	// Execute
-	err := rc.handleParallelRelayRequests()
-
-	// Verify timeout error
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "timed out")
 }
 
 // Test single relay request fallback using generated mocks
@@ -429,5 +289,5 @@ func TestHandleSingleRelayRequest(t *testing.T) {
 	err := rc.handleSingleRelayRequest()
 
 	// Verify
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

@@ -7,7 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/buildwithgrove/path/config/morse"
-	"github.com/buildwithgrove/path/config/relay"
 	"github.com/buildwithgrove/path/config/shannon"
 )
 
@@ -26,9 +25,6 @@ type GatewayConfig struct {
 	HydratorConfig     EndpointHydratorConfig `yaml:"hydrator_config"`
 	MessagingConfig    MessagingConfig        `yaml:"messaging_config"`
 	DataReporterConfig HTTPDataReporterConfig `yaml:"data_reporter_config"`
-
-	// Gateway-level relay configuration
-	Relay relay.Config `yaml:"relay_config"`
 }
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path
@@ -63,20 +59,12 @@ func (c GatewayConfig) GetRouterConfig() RouterConfig {
 	return c.Router
 }
 
-func (c GatewayConfig) GetRelayConfig() relay.Config {
-	return c.Relay
-}
-
 /* --------------------------------- Gateway Config Hydration Helpers -------------------------------- */
 
 func (c *GatewayConfig) hydrateDefaults() {
 	c.Router.hydrateRouterDefaults()
 	c.Logger.hydrateLoggerDefaults()
 	c.HydratorConfig.hydrateHydratorDefaults()
-	if err := c.Relay.ValidateAndHydrate(); err != nil {
-		// Log error or handle as needed
-		_ = err
-	}
 }
 
 /* --------------------------------- Gateway Config Validation Helpers -------------------------------- */
@@ -86,9 +74,6 @@ func (c GatewayConfig) validate() error {
 		return err
 	}
 	if err := c.Logger.Validate(); err != nil {
-		return err
-	}
-	if err := c.Relay.ValidateAndHydrate(); err != nil {
 		return err
 	}
 	return nil

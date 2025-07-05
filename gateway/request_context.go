@@ -11,7 +11,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/buildwithgrove/path/config/relay"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
@@ -33,7 +32,11 @@ const (
 	sessionStateActive = "active"
 )
 
-// Note: maxParallelRequests is now obtained from gateway configuration
+const (
+	// TODO_TECHDEBT: Make these configurable in a new Gateway.RelayConfig struct.
+	maxParallelRequests    = 4
+	parallelRequestTimeout = 30 * time.Second
+)
 
 // Gateway requestContext is responsible for performing the steps necessary to complete a service request.
 //
@@ -98,9 +101,6 @@ type requestContext struct {
 
 	// Timing fields for relay latency tracking
 	relayStartTime time.Time
-
-	// Gateway configuration for relay handling
-	gatewayConfig relay.Config
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -256,7 +256,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	}
 
 	// Select multiple endpoints for parallel relay attempts
-	maxParallelRequests := rc.gatewayConfig.MaxParallelRequests
+
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
@@ -356,8 +356,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	relayResultChan := make(chan relayResult, len(rc.protocolContexts))
 
 	// Create context with timeout for parallel requests
-	parallelTimeout := rc.gatewayConfig.ParallelRequestTimeout
-	ctx, cancel := context.WithTimeout(rc.context, parallelTimeout)
+	ctx, cancel := context.WithTimeout(rc.context, parallelRequestTimeout)
 	defer cancel()
 
 	overallStartTime := time.Now()
@@ -414,8 +413,8 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 			if ctx.Err() == context.DeadlineExceeded {
 				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses",
-					totalParallelRelayDuration, parallelTimeout, successfulResponses, totalRequests)
-				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelTimeout, lastErr)
+					totalParallelRelayDuration, parallelRequestTimeout, successfulResponses, totalRequests)
+				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelRequestTimeout, lastErr)
 			}
 			logger.Debug().Msgf("Parallel relay requests cancelled after %dms", totalParallelRelayDuration)
 			return fmt.Errorf("parallel relay requests cancelled, last error: %w", lastErr)
@@ -446,202 +445,13 @@ func (rc *requestContext) selectMultipleEndpoints(
 		return nil
 	}
 
-	// If diversity is disabled, use simple sequential selection
-	if !rc.gatewayConfig.EnableEndpointDiversity {
-		return rc.selectEndpointsSequentially(availableEndpoints, maxCount)
-	}
-
 	// Use diversity-aware selection
-	return rc.selectEndpointsWithDiversity(availableEndpoints, maxCount)
-}
-
-// selectEndpointsSequentially selects endpoints without diversity considerations
-func (rc *requestContext) selectEndpointsSequentially(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
-	logger := rc.logger.With("service_id", rc.serviceID).With("method", "selectEndpointsSequentially")
-
-	numAvailableEndpoints := len(availableEndpoints)
-	if maxCount > numAvailableEndpoints {
-		maxCount = numAvailableEndpoints
+	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
+	if err != nil {
+		rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
+		return nil
 	}
-	selectedEndpoints := make([]protocol.EndpointAddr, 0, maxCount)
-	remainingEndpoints := make(protocol.EndpointAddrList, numAvailableEndpoints)
-	copy(remainingEndpoints, availableEndpoints)
-
-	for i := 0; i < maxCount && len(remainingEndpoints) > 0; i++ {
-		selectedEndpoint, err := rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
-		if err != nil {
-			rc.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
-			break
-		}
-		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
-
-		// Remove the selected endpoint in O(1): swap with last and truncate
-		for idx, endpoint := range remainingEndpoints {
-			if endpoint == selectedEndpoint {
-				remainingEndpoints[idx] = remainingEndpoints[len(remainingEndpoints)-1]
-				remainingEndpoints = remainingEndpoints[:len(remainingEndpoints)-1]
-				break
-			}
-		}
-	}
-
-	logger.Info().Msgf("Selected %d endpoints (diversity disabled)", len(selectedEndpoints))
-	return selectedEndpoints
-}
-
-// selectEndpointsWithDiversity selects endpoints with TLD diversity preference
-func (rc *requestContext) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
-	// Get endpoint URLs to extract TLD information
-	endpointTLDs := rc.getEndpointTLDs(availableEndpoints)
-
-	// Count unique TLDs for logging
-	uniqueTLDs := make(map[string]bool)
-	for _, tld := range endpointTLDs {
-		if tld != "" {
-			uniqueTLDs[tld] = true
-		}
-	}
-
-	rc.logger.Debug().Msgf("Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
-		len(availableEndpoints), len(uniqueTLDs), maxCount)
-
-	var selectedEndpoints []protocol.EndpointAddr
-	usedTLDs := make(map[string]bool)
-	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
-	copy(remainingEndpoints, availableEndpoints)
-
-	// First pass: Try to select endpoints with different TLDs
-	for i := 0; i < maxCount && len(remainingEndpoints) > 0; i++ {
-		var selectedEndpoint protocol.EndpointAddr
-		var err error
-
-		// Try to find an endpoint with a different TLD
-		if i > 0 && len(usedTLDs) > 0 {
-			selectedEndpoint, err = rc.selectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
-			if err != nil {
-				// Fallback to standard selection if no different TLD found
-				selectedEndpoint, err = rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
-			}
-		} else {
-			// First endpoint: use standard selection
-			selectedEndpoint, err = rc.qosCtx.GetEndpointSelector().Select(remainingEndpoints)
-		}
-
-		if err != nil {
-			rc.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
-			break
-		}
-
-		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
-
-		// Track the TLD of the selected endpoint
-		if tld, exists := endpointTLDs[selectedEndpoint]; exists {
-			usedTLDs[tld] = true
-			rc.logger.Debug().Msgf("Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
-		}
-
-		// Remove the selected endpoint from the remaining pool
-		newRemainingEndpoints := make(protocol.EndpointAddrList, 0, len(remainingEndpoints)-1)
-		for _, endpoint := range remainingEndpoints {
-			if endpoint != selectedEndpoint {
-				newRemainingEndpoints = append(newRemainingEndpoints, endpoint)
-			}
-		}
-		remainingEndpoints = newRemainingEndpoints
-	}
-
-	// Count fallback selections (endpoints without TLD diversity)
-	fallbackSelections := 0
-	for _, endpoint := range selectedEndpoints {
-		if tld, exists := endpointTLDs[endpoint]; exists && tld != "" {
-			// Count how many endpoints use this TLD
-			tldCount := 0
-			for _, otherEndpoint := range selectedEndpoints {
-				if otherTLD, exists := endpointTLDs[otherEndpoint]; exists && otherTLD == tld {
-					tldCount++
-				}
-			}
-			if tldCount > 1 {
-				fallbackSelections++
-			}
-		}
-	}
-
-	rc.logger.Info().Msgf("Selected %d endpoints across %d different TLDs (diversity: %.1f%%, fallback selections: %d)",
-		len(selectedEndpoints), len(usedTLDs),
-		float64(len(usedTLDs))/float64(len(selectedEndpoints))*100, fallbackSelections)
-	return selectedEndpoints
-}
-
-// getEndpointTLDs extracts TLD information from endpoint addresses
-func (rc *requestContext) getEndpointTLDs(endpoints protocol.EndpointAddrList) map[protocol.EndpointAddr]string {
-	endpointTLDs := make(map[protocol.EndpointAddr]string)
-
-	// extractTLDFromEndpointAddr extracts effective TLD+1 from endpoint address
-	extractTLDFromEndpointAddr := func(addr string) string {
-		// Try direct URL parsing first
-		if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(addr); err == nil {
-			return etld
-		}
-
-		// Handle embedded URLs (e.g., "supplier-https://example.com")
-		if idx := strings.Index(addr, "http"); idx != -1 {
-			if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(addr[idx:]); err == nil {
-				return etld
-			}
-		}
-
-		// Fallback: try adding https:// prefix for domain-like strings
-		parts := strings.FieldsFunc(addr, func(r rune) bool {
-			return r == '-' || r == '_' || r == ' '
-		})
-
-		for _, part := range parts {
-			if strings.Contains(part, ".") && !strings.HasPrefix(part, "http") {
-				if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne("https://" + part); err == nil {
-					return etld
-				}
-			}
-		}
-
-		return ""
-	}
-
-	for _, endpointAddr := range endpoints {
-		if tld := extractTLDFromEndpointAddr(string(endpointAddr)); tld != "" {
-			endpointTLDs[endpointAddr] = tld
-		}
-	}
-
-	return endpointTLDs
-}
-
-// selectEndpointWithDifferentTLD attempts to select an endpoint with a TLD that hasn't been used yet
-func (rc *requestContext) selectEndpointWithDifferentTLD(
-	availableEndpoints protocol.EndpointAddrList,
-	endpointTLDs map[protocol.EndpointAddr]string,
-	usedTLDs map[string]bool,
-) (protocol.EndpointAddr, error) {
-	// Filter endpoints to only those with different TLDs
-	var endpointsWithDifferentTLDs protocol.EndpointAddrList
-
-	for _, endpoint := range availableEndpoints {
-		if tld, exists := endpointTLDs[endpoint]; exists {
-			if !usedTLDs[tld] {
-				endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
-			}
-		} else {
-			// If we can't determine TLD, include it anyway
-			endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
-		}
-	}
-
-	if len(endpointsWithDifferentTLDs) == 0 {
-		return "", fmt.Errorf("no endpoints with different TLDs available")
-	}
-
-	// Use the QoS selector on the filtered list
-	return rc.qosCtx.GetEndpointSelector().Select(endpointsWithDifferentTLDs)
+	return []protocol.EndpointAddr{selectedEndpointAddr}
 }
 
 // determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.

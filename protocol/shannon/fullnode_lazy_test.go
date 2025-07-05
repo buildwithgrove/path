@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test helper to create a test LazyFullNode
@@ -67,7 +67,7 @@ func TestSessionConfigGracePeriodScaling(t *testing.T) {
 			scaledBlocks := int64(float64(tt.gracePeriodBlocks) * lfn.sessionConfig.GracePeriodScaleDownFactor)
 
 			// Verify the scaling calculation
-			assert.Equal(t, tt.expectedScaledBlocks, scaledBlocks, tt.description)
+			require.Equal(t, tt.expectedScaledBlocks, scaledBlocks, tt.description)
 		})
 	}
 }
@@ -119,18 +119,18 @@ func TestSessionConfigValidation(t *testing.T) {
 			config: SessionConfig{
 				GracePeriodScaleDownFactor: -0.1,
 			},
-			expectedValid: false,
+			expectedValid:  false,
 			expectedConfig: SessionConfig{},
-			description: "Should reject negative scale factor",
+			description:    "Should reject negative scale factor",
 		},
 		{
 			name: "invalid_too_large_factor",
 			config: SessionConfig{
 				GracePeriodScaleDownFactor: 1.5,
 			},
-			expectedValid: false,
+			expectedValid:  false,
 			expectedConfig: SessionConfig{},
-			description: "Should reject scale factor greater than 1",
+			description:    "Should reject scale factor greater than 1",
 		},
 	}
 
@@ -140,10 +140,10 @@ func TestSessionConfigValidation(t *testing.T) {
 			err := tt.config.validate()
 
 			if tt.expectedValid {
-				assert.NoError(t, err, tt.description)
-				assert.Equal(t, tt.expectedConfig.GracePeriodScaleDownFactor, tt.config.GracePeriodScaleDownFactor)
+				require.NoError(t, err, tt.description)
+				require.Equal(t, tt.expectedConfig.GracePeriodScaleDownFactor, tt.config.GracePeriodScaleDownFactor)
 			} else {
-				assert.Error(t, err, tt.description)
+				require.Error(t, err, tt.description)
 			}
 		})
 	}
@@ -153,20 +153,20 @@ func TestSessionConfigValidation(t *testing.T) {
 func TestDefaultSessionConfig(t *testing.T) {
 	config := SessionConfig{}
 	config.hydrateDefaults()
-	
+
 	// Verify the default grace period scale down factor
-	assert.Equal(t, 0.8, config.GracePeriodScaleDownFactor, "Default grace period scale down factor should be 0.8")
-	
+	require.Equal(t, 0.8, config.GracePeriodScaleDownFactor, "Default grace period scale down factor should be 0.8")
+
 	// Verify validation passes for defaults
 	err := config.validate()
-	assert.NoError(t, err, "Default config should be valid")
+	require.NoError(t, err, "Default config should be valid")
 }
 
 // Test grace period logic calculation without external dependencies
 func TestGracePeriodLogic(t *testing.T) {
 	// This test verifies the mathematical logic used in session grace period calculations
 	// without requiring complex SDK client mocking
-	
+
 	tests := []struct {
 		name                       string
 		currentHeight              int64
@@ -220,8 +220,8 @@ func TestGracePeriodLogic(t *testing.T) {
 			withinGracePeriod := tt.currentHeight <= prevSessionEndHeightWithExtendedValidity
 			withinScaledGrace := tt.currentHeight <= prevSessionEndHeightWithExtendedValidityScaled
 
-			assert.Equal(t, tt.expectWithinGracePeriod, withinGracePeriod, tt.description+" - grace period check")
-			assert.Equal(t, tt.expectWithinScaledGrace, withinScaledGrace, tt.description+" - scaled grace period check")
+			require.Equal(t, tt.expectWithinGracePeriod, withinGracePeriod, tt.description+" - grace period check")
+			require.Equal(t, tt.expectWithinScaledGrace, withinScaledGrace, tt.description+" - scaled grace period check")
 		})
 	}
 }
