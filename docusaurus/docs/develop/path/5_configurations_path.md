@@ -21,8 +21,6 @@ A `PATH` stack is configured via two files:
 - [Config File Location (Local Development)](#config-file-location-local-development)
 - [`shannon_config` (required)](#shannon_config-required)
 - [`morse_config` (required)](#morse_config-required)
-- [`relay_config` (optional)](#relay_config-optional)
-  - [Session Rollover and Parallel Requests](#session-rollover-and-parallel-requests)
 - [`hydrator_config` (optional)](#hydrator_config-optional)
   - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
@@ -175,12 +173,6 @@ shannon_config:
 | `keep_alive_time`     | string  | No       | "20s"   | Frequency of keepalive pings            |
 | `keep_alive_timeout`  | string  | No       | "20s"   | Timeout for keepalive pings             |
 
-**`full_node_config.session_config`**
-
-| Field                            | Type  | Required | Default | Description                                                           |
-| -------------------------------- | ----- | -------- | ------- | --------------------------------------------------------------------- |
-| `grace_period_scale_down_factor` | float | No       | 0.8     | Scale factor for grace period (0.0-1.0). Lower values mean shorter effective grace periods |
-
 **`gateway_config`**
 
 | Field                         | Type     | Required                 | Default | Description                                                           |
@@ -233,48 +225,6 @@ morse_config:
 | `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
 | `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
 | `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
-
----
-
-## `relay_config` (optional)
-
-Configures gateway-level relay handling behavior, including parallel requests and endpoint selection strategies.
-
-```yaml
-relay_config:
-  max_parallel_requests: 4        # Number of parallel endpoints to query
-  parallel_request_timeout: 30s   # Timeout for parallel operations  
-  enable_endpoint_diversity: true  # Prefer endpoints with different TLDs
-```
-
-| Field                      | Type     | Required | Default | Description                                                                      |
-| -------------------------- | -------- | -------- | ------- | -------------------------------------------------------------------------------- |
-| `max_parallel_requests`    | integer  | No       | 4       | Maximum number of parallel requests sent to different endpoints (range: 1-10)   |
-| `parallel_request_timeout` | duration | No       | 30s     | Maximum time to wait for parallel requests before cancelling (range: 1s-300s)  |
-| `enable_endpoint_diversity`| boolean  | No       | true    | Whether to prefer endpoints with different TLDs when selecting multiple endpoints|
-
-### Session Rollover and Parallel Requests
-
-PATH implements advanced session rollover handling and parallel request features to improve reliability and performance during Pocket Network session transitions.
-
-**Parallel Request Feature**:
-- **Endpoint Selection**: PATH selects up to `max_parallel_requests` endpoints from available suppliers
-- **TLD Diversity**: When `enable_endpoint_diversity` is true, PATH prefers endpoints with different Top-Level Domains (TLDs)
-- **Parallel Execution**: Requests are sent to all selected endpoints simultaneously
-- **First Success Wins**: The first successful response is used, and other requests are cancelled
-- **Fallback Handling**: If all requests fail, the last error is returned
-
-**Benefits**:
-- **Reduced Latency**: Uses the fastest responding endpoint
-- **Improved Reliability**: If one endpoint fails, others can still succeed
-- **Better Resource Utilization**: Distributes load across multiple suppliers
-- **Resilience**: Reduces impact of individual endpoint failures
-
-**Best Practices**:
-- Start with default `max_parallel_requests: 4` for most use cases
-- Monitor backend load to ensure suppliers can handle increased traffic
-- Keep `enable_endpoint_diversity: true` for better resilience
-- Use 30s timeout for most scenarios, adjust based on service requirements
 
 ---
 
@@ -349,10 +299,10 @@ data_reporter_config:
   post_timeout_ms: 5000
 ```
 
-| Field             | Type    | Required | Default | Description                                                                                       |
-| ----------------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `target_url`      | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)               |
-| `post_timeout_ms` | integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used |
+| Field            | Type    | Required | Default | Description                                                                                         |
+| ---------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `target_url`     | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)                 |
+| `post_timeout_ms`| integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used   |
 
 :::info
 Currently, only JSON-accepting data pipelines are supported as of PR #215.

@@ -127,12 +127,13 @@ func (c FullNodeConfig) Validate() error {
 // The config package is not a good fit for this, because it is designed to build the configuration structs for other packages,
 // and so it has dependencies on all other packages, including `relayer/shannon`. Therefore, no packages except `cmd` can have a dependency
 // on the `config` package.
+// TODO_TECHDEBT: Make all of these configurable
 const (
-	defaultBackoffBaseDelay  = 1 * time.Second
-	defaultBackoffMaxDelay   = 20 * time.Second
-	defaultMinConnectTimeout = 5 * time.Second
-	defaultKeepAliveTime     = 5 * time.Second
-	defaultKeepAliveTimeout  = 10 * time.Second
+	defaultBackoffBaseDelay  = 2 * time.Second
+	defaultBackoffMaxDelay   = 60 * time.Second
+	defaultMinConnectTimeout = 10 * time.Second
+	defaultKeepAliveTime     = 20 * time.Second
+	defaultKeepAliveTimeout  = 30 * time.Second
 )
 
 func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
