@@ -89,9 +89,9 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return errors.New("ApplyObservations: received nil CometBFT observation")
 	}
 
-	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(cometbftObservations)
+	updatedEndpoints := q.UpdateEndpointsFromObservations(cometbftObservations)
 
-	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+	return q.UpdateFromEndpoints(updatedEndpoints)
 }
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for the CometBFT QoS.

@@ -37,8 +37,8 @@ var (
 	// ErrInvalidResponse is returned when an endpoint returns an invalid response
 	ErrInvalidResponse = errors.New("invalid response from endpoint")
 
-	// ErrPocketCore is returned whan an endpoint returns an SDK or Pocket-core error.
-	ErrPocketCore = errors.New("endpoint returned SDK/Pocket-Core error.")
+	// ErrPocketCore is returned when an endpoint returns an SDK or Pocket-core error.
+	ErrPocketCore = errors.New("endpoint returned SDK/Pocket-Core error")
 
 	// ErrSDK4XX is the Morse SDK's 4XX error.
 	// https://github.com/pokt-foundation/pocket-go/blob/0cb5a3a2ab762e7af18b3482f864d2d9d211a71f/provider/provider.go#L24
@@ -57,10 +57,10 @@ var (
 	// ErrHTTPContentLengthIncorrect is returned when an endpoint returns an HTTP response with a mismatch between:
 	// - The ContentLength HTTP header
 	// - Actual body length
-	ErrHTTPContentLengthIncorrect = errors.New("endpoint returned HTTP response with ContentLength mismatching the actual length.")
+	ErrHTTPContentLengthIncorrect = errors.New("endpoint returned HTTP response with ContentLength mismatching the actual length")
 
 	// ErrExecutingHTTPRequest is returned when an endpoint returned an error indicating it encountered an error executing the HTTP request.
-	ErrExecutingHTTPRequest = errors.New("endpoint indicated error executing the HTTP request.")
+	ErrExecutingHTTPRequest = errors.New("endpoint indicated error executing the HTTP request")
 )
 
 // NewNoEndpointsError creates a formatted error for when no endpoints are available

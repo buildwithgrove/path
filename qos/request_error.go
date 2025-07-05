@@ -10,7 +10,7 @@ import (
 // GetRequestErrorForProtocolError returns a request error for a protocol error
 // E.g. the selected endpoint did not return a response.
 func GetRequestErrorForProtocolError() *qosobservations.RequestError {
-	err := errors.New("internal error: protocol error: no endpoint responses received.")
+	err := errors.New("internal error: protocol error: no endpoint responses received")
 	// initialize a JSONRPC error response to derive the HTTP status code.
 	jsonrpcErrorResponse := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
 

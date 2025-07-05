@@ -52,7 +52,7 @@ func (c cometBFTServiceQoSConfig) GetServiceID() protocol.ServiceID {
 
 // GetServiceQoSType returns the QoS type of the service.
 // Implements the config.ServiceQoSConfig interface.
-func (_ cometBFTServiceQoSConfig) GetServiceQoSType() string {
+func (cometBFTServiceQoSConfig) GetServiceQoSType() string {
 	return QoSType
 }
 
@@ -64,6 +64,6 @@ func (c cometBFTServiceQoSConfig) GetCometBFTChainID() string {
 
 // GetArchivalThreshold returns the archival threshold for the CometBFT service.
 // Implements the config.CometBFTServiceQoSConfig interface.
-func (_ cometBFTServiceQoSConfig) GetArchivalThreshold() int {
+func (cometBFTServiceQoSConfig) GetArchivalThreshold() int {
 	return defaultCometBFTArchivalThreshold
 }

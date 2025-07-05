@@ -42,9 +42,9 @@ type endpoint struct {
 	latestBlockHeightResponse *uint64
 }
 
-// Validate checks if endpoint has the required observations to be considered valid.
+// validate checks if endpoint has the required observations to be considered valid.
 // Returns error if the necessary responses are either lacking or invalid.
-func (e endpoint) Validate(chainID string) error {
+func (e endpoint) validate(chainID string) error {
 	switch {
 
 	// No health check has been performed yet.
@@ -80,10 +80,10 @@ func (e endpoint) Validate(chainID string) error {
 	}
 }
 
-// ApplyObservation updates the endpoint data using the provided observation.
+// applyObservation updates the endpoint data using the provided observation.
 // Returns true if the observation was recognized.
 // IMPORTANT: This function mutates the endpoint.
-func (e *endpoint) ApplyObservation(obs *qosobservations.CometBFTEndpointObservation) bool {
+func (e *endpoint) applyObservation(obs *qosobservations.CometBFTEndpointObservation) bool {
 	// Health check observation made - update healthResponse.
 	if healthResponse := obs.GetHealthResponse(); healthResponse != nil {
 		observedHealth := healthResponse.GetHealthStatusResponse()
@@ -116,8 +116,8 @@ func (e *endpoint) ApplyObservation(obs *qosobservations.CometBFTEndpointObserva
 	return false
 }
 
-// GetBlockNumber returns the parsed block number value for the endpoint if available.
-func (e endpoint) GetBlockNumber() (uint64, error) {
+// getBlockNumber returns the parsed block number value for the endpoint if available.
+func (e endpoint) getBlockNumber() (uint64, error) {
 	// No block height request has been made yet.
 	if e.latestBlockHeightResponse == nil {
 		return 0, errStatusReqNoBlockNumberObs

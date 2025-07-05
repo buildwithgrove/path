@@ -64,7 +64,7 @@ type FullNodeConfig struct {
 
 func (c FullNodeConfig) Validate() error {
 	if c.RelaySigningKey == "" {
-		return fmt.Errorf("Morse full node config invalid: no signing key specified")
+		return fmt.Errorf("morse full node config invalid: no signing key specified")
 	}
 
 	return nil

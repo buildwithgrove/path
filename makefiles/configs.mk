@@ -62,7 +62,7 @@ check_clear_confirmation:
 	@read -p "Are you sure you want to proceed? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "Operation cancelled"; \
+		echo "Operation canceled"; \
 		exit 1; \
 	fi
 	@echo "################################################################"

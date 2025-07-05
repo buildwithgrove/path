@@ -10,7 +10,7 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-const defaultServiceRequestTimeoutMillisec = 10_000
+const defaultServiceRequestTimeoutMillisec = 15_000
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
@@ -126,7 +126,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 func (rc requestContext) GetObservations() qosobservations.Observations {
 	observations := make([]*qosobservations.CometBFTEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
+		obs := endpointResponse.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		observations[idx] = &obs
 	}
@@ -156,6 +156,13 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	// Select an endpoint from the available endpoints using the endpoint store.
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
+// Implements the protocol.EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+	// Select multiple endpoints from the available endpoints using the endpoint store.
+	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }
 
 // isJSONRPCRequest checks if the request context contains a serialized JSON-RPC request.

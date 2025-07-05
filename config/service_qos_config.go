@@ -43,9 +43,9 @@ func (c qosServiceConfigs) GetServiceConfigs(config GatewayConfig) []ServiceQoSC
 	return nil
 }
 
-// The ServiceConfigs map associates each supported service ID with a specific
+// The QoSServiceConfigs map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
-var ServiceConfigs = qosServiceConfigs{
+var QoSServiceConfigs = qosServiceConfigs{
 	shannonServices: shannonServices,
 	morseServices:   morseServices,
 }

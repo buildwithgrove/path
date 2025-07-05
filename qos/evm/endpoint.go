@@ -1,6 +1,10 @@
 package evm
 
-import "time"
+import (
+	"time"
+
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
+)
 
 // endpoint captures the details required to validate an EVM endpoint.
 //
@@ -9,10 +13,12 @@ import "time"
 //
 // TODO_IMPROVE: Rename to 'endpointValidation'
 type endpoint struct {
+	invalidResponseLastObserved *time.Time
+
 	hasReturnedEmptyResponse   bool
 	hasReturnedInvalidResponse bool
 
-	invalidResponseLastObserved *time.Time
+	invalidResponseError qosobservations.EVMResponseValidationError
 
 	checkBlockNumber endpointCheckBlockNumber
 	checkChainID     endpointCheckChainID

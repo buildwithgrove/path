@@ -63,7 +63,7 @@ func (m *Messenger) Publish(observationSet message.ObservationSet) error {
 func (m *Messenger) Start() error {
 	// TODO_INCOMPLETE: validate the struct.
 
-	observationSetMsgCh := m.MessagePlatform.Subscribe(observationSetTopic)
+	observationSetMsgCh := m.Subscribe(observationSetTopic)
 
 	go func() {
 		m.run(observationSetMsgCh)

@@ -35,24 +35,24 @@ type endpoint struct {
 	// TODO_FUTURE: support archival endpoints.
 }
 
-// ValidateBasic checks if the endpoint has the required observations to be considered valid.
+// validateBasic checks if the endpoint has the required observations to be considered valid.
 // Returns an error if the necessary responses are either lacking or invalid.
-func (e endpoint) ValidateBasic() error {
+func (e endpoint) validateBasic() error {
 	switch {
 
 	case e.SolanaGetHealthResponse == nil:
 		return errNoGetHealthObs
 
-	case e.SolanaGetHealthResponse.Result != resultGetHealthOK:
-		return fmt.Errorf("❌Invalid solana health response: %s :%w", e.SolanaGetHealthResponse.Result, errInvalidGetHealthObs)
+	case e.Result != resultGetHealthOK:
+		return fmt.Errorf("❌Invalid solana health response: %s :%w", e.Result, errInvalidGetHealthObs)
 
 	case e.SolanaGetEpochInfoResponse == nil:
 		return errNoGetEpochInfoObs
 
-	case e.SolanaGetEpochInfoResponse.BlockHeight == 0:
+	case e.BlockHeight == 0:
 		return errInvalidGetEpochInfoHeightZeroObs
 
-	case e.SolanaGetEpochInfoResponse.Epoch == 0:
+	case e.Epoch == 0:
 		return errInvalidGetEpochInfoEpochZeroObs
 
 	default:
@@ -60,10 +60,10 @@ func (e endpoint) ValidateBasic() error {
 	}
 }
 
-// ApplyObservation updates the endpoint data using the provided observation.
+// applyObservation updates the endpoint data using the provided observation.
 // Returns true if the observation was recognized.
 // IMPORTANT: This function mutates the endpoint.
-func (e *endpoint) ApplyObservation(obs *qosobservations.SolanaEndpointObservation) bool {
+func (e *endpoint) applyObservation(obs *qosobservations.SolanaEndpointObservation) bool {
 	if epochInfoResponse := obs.GetGetEpochInfoResponse(); epochInfoResponse != nil {
 		e.SolanaGetEpochInfoResponse = epochInfoResponse
 		return true

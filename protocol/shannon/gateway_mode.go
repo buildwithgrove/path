@@ -66,18 +66,21 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	gatewayMode protocol.GatewayMode,
 ) (RelayRequestSigner, error) {
 	switch gatewayMode {
+
+	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
 		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
+			accountClient: *p.GetAccountClient(),
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
+
+	// Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 	case protocol.GatewayModeDelegated:
 		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
-			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
+			accountClient: *p.GetAccountClient(),
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
+
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
 	}

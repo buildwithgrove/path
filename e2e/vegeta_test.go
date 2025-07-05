@@ -82,7 +82,7 @@ func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (service
 func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *methodMetrics {
 	select {
 	case <-ctx.Done():
-		fmt.Printf("Method %s cancelled", method)
+		fmt.Printf("Method %s canceled", method)
 		return nil
 	default:
 	}

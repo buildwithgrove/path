@@ -23,7 +23,7 @@ func setupHTTPDataReporter(
 
 	// Error parsing the specified target URL.
 	if _, err := url.Parse(config.TargetURL); err != nil {
-		return nil, fmt.Errorf("Error processing the HTTP Data Reporter's target URL: %w", err)
+		return nil, fmt.Errorf("error processing the HTTP Data Reporter's target URL: %w", err)
 	}
 
 	return &data.DataReporterHTTP{

@@ -57,6 +57,70 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 }
 
+// SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
+// Valid endpoints are determined by filtering the available endpoints based on their
+// validity criteria. If numEndpoints is 0, it defaults to 1.
+func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+	logger := es.logger.With(
+		"qos", "Solana",
+		"method", "SelectMultiple",
+		"num_endpoints_available", len(allAvailableEndpoints),
+		"num_endpoints", numEndpoints,
+	)
+
+	if numEndpoints <= 0 {
+		numEndpoints = 1
+	}
+
+	logger.Debug().Msgf("filtering available endpoints to select up to %d.", numEndpoints)
+
+	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("error filtering endpoints: service request will fail.")
+		return nil, err
+	}
+
+	// No valid endpoints -> select random endpoints
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
+		if numEndpoints > len(allAvailableEndpoints) {
+			numEndpoints = len(allAvailableEndpoints)
+		}
+
+		// Create a copy to avoid modifying the original slice
+		availableCopy := make(protocol.EndpointAddrList, len(allAvailableEndpoints))
+		copy(availableCopy, allAvailableEndpoints)
+
+		// Fisher-Yates shuffle for random selection without replacement
+		var selectedEndpoints protocol.EndpointAddrList
+		for i := 0; i < numEndpoints; i++ {
+			j := rand.Intn(len(availableCopy)-i) + i
+			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
+			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
+		}
+		return selectedEndpoints, nil
+	}
+
+	// Select up to numEndpoints endpoints from filtered list
+	if numEndpoints > len(filteredEndpointsAddr) {
+		numEndpoints = len(filteredEndpointsAddr)
+	}
+
+	// Create a copy to avoid modifying the original slice
+	filteredCopy := make(protocol.EndpointAddrList, len(filteredEndpointsAddr))
+	copy(filteredCopy, filteredEndpointsAddr)
+
+	// Fisher-Yates shuffle for random selection without replacement
+	var selectedEndpoints protocol.EndpointAddrList
+	for i := 0; i < numEndpoints; i++ {
+		j := rand.Intn(len(filteredCopy)-i) + i
+		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
+		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])
+	}
+
+	return selectedEndpoints, nil
+}
+
 // filterValidEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
 func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddrList, error) {
 	es.endpointsMu.RLock()
@@ -84,17 +148,17 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Warn().Msgf("❓ Skipping endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
+			logger.Warn().Msgf("❓ Skipping endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
 			continue
 		}
 
 		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint %s because it failed validation due to: %v", availableEndpointAddr, err)
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it failed validation: %s", availableEndpointAddr)
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("✅ endpoint %s passed validation.", availableEndpointAddr)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("✅ endpoint passed validation: %s", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, nil

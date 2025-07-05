@@ -23,11 +23,11 @@ jobs:
         run: |
           git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: latest
-          args: --timeout 10m --verbose
+          version: v2.1
+          args: --timeout 20m --verbose
 
   run-unit-tests:
     name: Run unit tests

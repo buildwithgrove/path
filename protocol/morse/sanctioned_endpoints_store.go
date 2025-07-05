@@ -66,7 +66,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(morseObservations []*prot
 	for _, observationSet := range morseObservations {
 		// Process each endpoint observation in the set
 		for _, endpointObservation := range observationSet.GetEndpointObservations() {
-			logger := loggerWithEndpointObservation(ses.logger, endpointObservation)
+			logger := loggerWithEndpointObservation(ses.logger, endpointObservation).With("method", "ApplyObservations")
 			logger.Debug().Msg("processing endpoint observation.")
 
 			// Skip if no sanction is recommended
@@ -123,7 +123,7 @@ func (ses *sanctionedEndpointsStore) FilterSanctionedEndpoints(
 	for _, endpoint := range allEndpoints {
 		sanctioned, reason := ses.isSanctioned(endpoint.Addr(), appAddr, sessionKey)
 		if sanctioned {
-			logger := loggerWithEndpoint(ses.logger, appAddr, sessionKey, endpoint.Addr(), reason)
+			logger := loggerWithEndpoint(ses.logger, appAddr, sessionKey, endpoint.Addr(), reason).With("method", "FilterSanctionedEndpoints")
 			logger.Debug().Msg("Filtering out sanctioned endpoint")
 			continue
 		}

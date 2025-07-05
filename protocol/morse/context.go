@@ -43,7 +43,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
 	// Internal error: no endpoint selected.
-	// record reuqest error due to internal error.
+	// record request error due to internal error.
 	// no endpoint to sanction.
 	if rc.selectedEndpoint == nil {
 		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
