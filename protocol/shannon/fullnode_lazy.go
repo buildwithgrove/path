@@ -16,7 +16,6 @@ import (
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -43,9 +42,6 @@ type LazyFullNode struct {
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
 	sharedClient  *sdk.SharedClient
-
-	// Configuration for session handling
-	sessionConfig SessionConfig
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
@@ -85,7 +81,6 @@ func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNod
 		blockClient:   blockClient,
 		accountClient: accountClient,
 		sharedClient:  sharedClient,
-		sessionConfig: config.SessionConfig,
 	}
 
 	return fullNode, nil
@@ -225,53 +220,16 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 
 	// If we're not within the grace period of the previous session, return the current session
 	if currentHeight > prevSessionEndHeightWithExtendedValidity {
-		logger.Debug().
-			Int64("current_height", currentHeight).
-			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_grace_period_end_height", prevSessionEndHeightWithExtendedValidity).
-			Msg("IS NOT WITHIN grace period of previous session, returning current session")
 		return currentSession, nil
 	}
 
-	// Scale down the grace period to aggressively start using the new session
-	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*lfn.sessionConfig.GracePeriodScaleDownFactor)
-	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
-		logger.Debug().
-			Int64("current_height", currentHeight).
-			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
-			Int64("prev_session_end_height_with_extended_validity_scaled", prevSessionEndHeightWithExtendedValidityScaled).
-			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
-		return currentSession, nil
-	}
-
-	logger.Debug().
-		Int64("current_height", currentHeight).
-		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
-		Msg("IS WITHIN grace period of previous session")
-
-	// Record that we are within grace period and will use previous session
-	shannonmetrics.RecordSessionGracePeriodUsage(serviceID, "within_grace", "previous")
-
+	// Get the previous session
 	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
 	if err != nil || prevSession == nil {
-		logger.Warn().Err(err).
-			Int64("prev_session_end_height", prevSessionEndHeight).
-			Msg("Failed to get previous session, falling back to current session")
-
-		// Record fallback to current session due to error
-		shannonmetrics.RecordSessionGracePeriodUsage(serviceID, "within_grace_fallback", "current")
 		return currentSession, nil
 	}
 
-	logger.Debug().
-		Int64("prev_session_start_height", prevSession.Header.SessionStartBlockHeight).
-		Int64("prev_session_end_height", prevSession.Header.SessionEndBlockHeight).
-		Int64("prev_session_grace_period_end_height", prevSessionEndHeightWithExtendedValidity).
-		Msg("USING PREVIOUS SESSION since its within the grace period")
-
-	// Record successful previous session usage
+	// Return the previous session
 	return *prevSession, nil
 }
 

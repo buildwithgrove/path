@@ -252,11 +252,13 @@ func (cfn *cachingFullNode) GetSession(
 // It is used to account for the case when:
 // - RelayMiner.FullNode.Height > Gateway.FullNode.Height
 // AND
-// - RelayMiner.FullNodeSession > Gateway.FullNodeSession
+// - RelayMiner.FullNode.Session > Gateway.FullNode.Session
 //
-// PATH is
-// This method extends the standard GetSession with grace period logic while maintaining
-// the caching benefits for session data.
+// In the context of PATH, it is used to account for the case when:
+// - Gateway.FullNode.Height > RelayMiner.FullNode.Height
+// AND
+// - Gateway.FullNode.Session > RelayMiner.FullNode.Session
+//
 // Protocol References:
 // - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
 // - https://dev.poktroll.com/protocol/governance/gov_params

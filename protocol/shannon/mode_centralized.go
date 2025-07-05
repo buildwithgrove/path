@@ -38,58 +38,42 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	var ownedAppSessions []sessiontypes.Session
-
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
+	var ownedAppSessions []sessiontypes.Session
 	for _, ownedAppAddr := range ownedAppsForService {
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
 		// Retrieve the session for the owned app, without grace period logic.
 		sessionLatest, err := p.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
-			logger.Error().Err(err).Msg(err.Error())
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Error().Err(err).Msgf("Error getting the current session from the full node for app: %s", ownedAppAddr)
 			return nil, err
 		}
+		// Verify both apps delegate to the gateway
+		if !gatewayHasDelegationForApp(p.gatewayAddr, sessionLatest.Application) {
+			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionLatest.Application.Address, p.gatewayAddr)
+			logger.Error().Msg(err.Error())
+			return nil, err
+		}
+		ownedAppSessions = append(ownedAppSessions, sessionLatest)
 
 		// Retrieve the session for the owned app, considering grace period logic.
 		sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
-			logger.Error().Err(err).Msg(err.Error())
-			return nil, err
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Warn().Err(err).Msgf("Error getting the previous extended session from the full node for app: %s. Skipping it", ownedAppAddr)
+			continue
 		}
 
 		// Compare session IDs - if they're different, return both sessions
 		if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
-			logger.Info().Msgf("Sessions differ for app %s: with grace ID=%s, without grace ID=%s - returning both (session rollover active)",
-				ownedAppAddr, sessionPreviousExtended.Header.SessionId, sessionLatest.Header.SessionId)
-
-			// Verify both apps delegate to the gateway
-			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionPreviousExtended.Application) {
-				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionPreviousExtended.Application.Address, p.gatewayAddr)
-				logger.Error().Msg(err.Error())
-				return nil, err
-			}
 			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionLatest.Application) {
 				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionLatest.Application.Address, p.gatewayAddr)
 				logger.Error().Msg(err.Error())
-				return nil, err
+				continue
 			}
-
 			ownedAppSessions = append(ownedAppSessions, sessionPreviousExtended, sessionLatest)
-		} else {
-			// Sessions are the same, just add one
-			logger.Debug().Msgf("Sessions are identical for app %s: ID=%s (no session rollover)", ownedAppAddr, sessionPreviousExtended.Header.SessionId)
-
-			// Verify the app delegates to the gateway
-			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionPreviousExtended.Application) {
-				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionPreviousExtended.Application.Address, p.gatewayAddr)
-				logger.Error().Msg(err.Error())
-				return nil, err
-			}
-
-			ownedAppSessions = append(ownedAppSessions, sessionPreviousExtended)
 		}
 	}
 
@@ -100,14 +84,8 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	// Count unique sessions to detect rollover scenarios
-	uniqueSessionIds := make(map[string]bool)
-	for _, session := range ownedAppSessions {
-		uniqueSessionIds[session.Header.SessionId] = true
-	}
-
-	logger.Info().Msgf("Successfully fetched %d sessions (%d unique) for %d owned apps for service %s.",
-		len(ownedAppSessions), len(uniqueSessionIds), len(ownedAppsForService), serviceID)
+	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.",
+		len(ownedAppSessions), len(ownedAppsForService), serviceID)
 
 	return ownedAppSessions, nil
 }
