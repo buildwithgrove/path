@@ -7,11 +7,7 @@ import (
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -36,107 +32,6 @@ var (
 // This allows the protocol to report its sanctioned endpoints data to the devtools.DisqualifiedEndpointReporter.
 var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
-// FullNode defines the set of capabilities the Shannon protocol integration needs
-// from a fullnode for sending relays.
-//
-// A properly initialized fullNode struct can:
-// 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a (service,app) combination.
-// 3. Validate a relay response.
-// 4. Etc...
-type FullNode interface {
-	// GetApp returns the onchain application matching the application address
-	GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error)
-
-	// GetSession returns the latest session matching the supplied service+app combination.
-	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
-	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
-	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
-
-	// GetSessionWithExtendedValidity implements session retrieval with support for
-	// Pocket Network's native "session grace period" business logic.
-	//
-	// At the protocol level, it is used to account for the case when:
-	// - RelayMiner.FullNode.Height > Gateway.FullNode.Height
-	// AND
-	// - RelayMiner.FullNode.Session > Gateway.FullNodeSession
-	//
-	// PATH leverages it by accounting for the case when:
-	// - RelayMiner.FullNode.Height < Gateway.FullNode.Height
-	// AND
-	// - Gateway.FullNode.Session > RelayMiner.FullNodeSession
-	//
-	// This enables signing and sending relays to Suppliers who are behind the Gateway.
-	//
-	// The recommendation usage is to use both GetSession and GetSessionWithExtendedValidity
-	// in order to account for both cases when selecting the pool of available Suppliers.
-	//
-	// Protocol References:
-	// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
-	// - https://dev.poktroll.com/protocol/governance/gov_params
-	// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
-
-	// GetSessionWithExtendedValidity returns the appropriate session considering grace period logic.
-	// If within grace period of a session rollover, it may return the previous session.
-	GetSessionWithExtendedValidity(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
-
-	// GetSharedParams returns the shared module parameters from the blockchain.
-	GetSharedParams(ctx context.Context) (*sharedtypes.Params, error)
-
-	// GetCurrentBlockHeight returns the current block height from the blockchain.
-	GetCurrentBlockHeight(ctx context.Context) (int64, error)
-
-	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
-	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
-
-	// IsHealthy returns true if the FullNode instance is healthy.
-	// A LazyFullNode will always return true.
-	// A CachingFullNode will return true if it has data in app and session caches.
-	IsHealthy() bool
-
-	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
-	GetAccountClient() *sdk.AccountClient
-}
-
-// NewProtocol instantiates an instance of the Shannon protocol integration.
-func NewProtocol(
-	logger polylog.Logger,
-	config GatewayConfig,
-	fullNode FullNode,
-) (*Protocol, error) {
-	shannonLogger := logger.With("protocol", "shannon")
-
-	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
-	var ownedApps map[protocol.ServiceID][]string
-	if config.GatewayMode == protocol.GatewayModeCentralized {
-		var err error
-		if ownedApps, err = getCentralizedModeOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode); err != nil {
-			return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
-		}
-	}
-
-	protocolInstance := &Protocol{
-		logger: shannonLogger,
-
-		FullNode: fullNode,
-
-		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
-		// 1. Query onchain data for a gateway with the supplied address.
-		// 2. Query onchain data for app(s) matching the derived addresses.
-		gatewayAddr:          config.GatewayAddress,
-		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
-		gatewayMode:          config.GatewayMode,
-		// tracks sanctioned endpoints
-		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
-
-		// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
-		// If PATH is not running in Centralized mode, this field is nil.
-		ownedApps: ownedApps,
-	}
-
-	return protocolInstance, nil
-}
-
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
 	logger polylog.Logger
@@ -160,6 +55,41 @@ type Protocol struct {
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
+}
+
+// NewProtocol instantiates an instance of the Shannon protocol integration.
+func NewProtocol(
+	logger polylog.Logger,
+	config GatewayConfig,
+	fullNode FullNode,
+) (*Protocol, error) {
+	shannonLogger := logger.With("protocol", "shannon")
+
+	// Retrieve the list of apps owned by the gateway.
+	ownedApps, err := getOwnedApps(shannonLogger, config.OwnedAppsPrivateKeysHex, fullNode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
+	}
+
+	protocolInstance := &Protocol{
+		logger: shannonLogger,
+
+		FullNode: fullNode,
+
+		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
+		// 1. Query onchain data for a gateway with the supplied address.
+		// 2. Query onchain data for app(s) matching the derived addresses.
+		gatewayAddr:          config.GatewayAddress,
+		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
+		gatewayMode:          config.GatewayMode,
+		// tracks sanctioned endpoints
+		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
+
+		// ownedApps is the list of apps owned by the gateway operator
+		ownedApps: ownedApps,
+	}
+
+	return protocolInstance, nil
 }
 
 // AvailableEndpoints returns the available endpoints for a given service ID.
@@ -335,18 +265,11 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
 
 	return nil
-
 }
 
 // ConfiguredServiceIDs returns the list of all all service IDs that are configured
 // to be supported by the Gateway.
 func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
-	// Currently hydrator is only enabled for Centralized gateway mode.
-	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	if p.gatewayMode != protocol.GatewayModeCentralized {
-		return nil
-	}
-
 	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
 	for serviceID := range p.ownedApps {
 		configuredServiceIDs[serviceID] = struct{}{}

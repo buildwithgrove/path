@@ -476,7 +476,7 @@ func processSanctionsByDomain(
 
 		// Extract effective TLD+1 from endpoint URL
 		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		endpointTLDPlusOne, err := ExtractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
 		// error extracting TLD+1, skip.
 		if err != nil {
 			logger.With(
@@ -543,7 +543,7 @@ func processEndpointLatency(
 		}
 
 		// Extract effective TLD+1 from endpoint URL
-		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		endpointTLDPlusOne, err := ExtractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),

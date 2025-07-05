@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -575,75 +574,46 @@ func (rc *requestContext) selectEndpointsWithDiversity(availableEndpoints protoc
 }
 
 // getEndpointTLDs extracts TLD information from endpoint addresses
-// Returns a map of endpoint address to TLD for efficient lookup
 func (rc *requestContext) getEndpointTLDs(endpoints protocol.EndpointAddrList) map[protocol.EndpointAddr]string {
 	endpointTLDs := make(map[protocol.EndpointAddr]string)
 
+	// extractTLDFromEndpointAddr extracts effective TLD+1 from endpoint address
+	extractTLDFromEndpointAddr := func(addr string) string {
+		// Try direct URL parsing first
+		if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(addr); err == nil {
+			return etld
+		}
+
+		// Handle embedded URLs (e.g., "supplier-https://example.com")
+		if idx := strings.Index(addr, "http"); idx != -1 {
+			if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne(addr[idx:]); err == nil {
+				return etld
+			}
+		}
+
+		// Fallback: try adding https:// prefix for domain-like strings
+		parts := strings.FieldsFunc(addr, func(r rune) bool {
+			return r == '-' || r == '_' || r == ' '
+		})
+
+		for _, part := range parts {
+			if strings.Contains(part, ".") && !strings.HasPrefix(part, "http") {
+				if etld, err := shannonmetrics.ExtractEffectiveTLDPlusOne("https://" + part); err == nil {
+					return etld
+				}
+			}
+		}
+
+		return ""
+	}
+
 	for _, endpointAddr := range endpoints {
-		tld := rc.extractTLDFromEndpointAddr(endpointAddr)
-		if tld != "" {
+		if tld := extractTLDFromEndpointAddr(string(endpointAddr)); tld != "" {
 			endpointTLDs[endpointAddr] = tld
 		}
 	}
 
 	return endpointTLDs
-}
-
-// extractTLDFromEndpointAddr extracts the TLD from an endpoint address
-// Shannon endpoints are formatted as "supplier-url", so we need to extract the URL part
-func (rc *requestContext) extractTLDFromEndpointAddr(endpointAddr protocol.EndpointAddr) string {
-	addrStr := string(endpointAddr)
-
-	// Find the first occurrence of "http" to locate the URL part
-	httpIndex := strings.Index(addrStr, "http")
-	if httpIndex == -1 {
-		// No http found, try to find domain-like patterns
-		// Look for first part that contains a dot (likely a domain)
-		parts := strings.Split(addrStr, "-")
-		for i, part := range parts {
-			if strings.Contains(part, ".") {
-				// Reconstruct potential URL from this point
-				urlPart := strings.Join(parts[i:], "-")
-				// Add scheme for parsing
-				if !strings.HasPrefix(urlPart, "http") {
-					urlPart = "https://" + urlPart
-				}
-				return rc.extractTLDFromURL(urlPart)
-			}
-		}
-		return ""
-	}
-
-	// Extract URL part starting from "http"
-	urlPart := addrStr[httpIndex:]
-	return rc.extractTLDFromURL(urlPart)
-}
-
-// extractTLDFromURL extracts TLD from a URL string using Go's standard library
-func (rc *requestContext) extractTLDFromURL(urlStr string) string {
-	// Clean up any URL encoding issues
-	urlStr = strings.ReplaceAll(urlStr, "%3A", ":")
-	urlStr = strings.ReplaceAll(urlStr, "%2F", "/")
-
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		rc.logger.Debug().Err(err).Msgf("Failed to parse URL: %s", urlStr)
-		return ""
-	}
-
-	hostname := parsedURL.Hostname()
-	if hostname == "" {
-		return ""
-	}
-
-	// Extract TLD from hostname
-	domainParts := strings.Split(hostname, ".")
-	if len(domainParts) < 2 {
-		return ""
-	}
-
-	// Return the TLD (last part of the domain)
-	return domainParts[len(domainParts)-1]
 }
 
 // selectEndpointWithDifferentTLD attempts to select an endpoint with a TLD that hasn't been used yet

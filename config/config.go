@@ -26,7 +26,7 @@ type GatewayConfig struct {
 	HydratorConfig     EndpointHydratorConfig `yaml:"hydrator_config"`
 	MessagingConfig    MessagingConfig        `yaml:"messaging_config"`
 	DataReporterConfig HTTPDataReporterConfig `yaml:"data_reporter_config"`
-	
+
 	// Gateway-level relay configuration
 	Relay relay.Config `yaml:"relay_config"`
 }

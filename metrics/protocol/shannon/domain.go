@@ -7,12 +7,12 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// extractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
+// ExtractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
 // Example: "https://blog.example.co.uk" → "example.co.uk"
 // - Parses the URL and validates the host.
 // - Uses publicsuffix package to determine the registrable domain.
 // - Returns an error if input is malformed or domain is not derivable.
-func extractEffectiveTLDPlusOne(rawURL string) (string, error) {
+func ExtractEffectiveTLDPlusOne(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return "", err // malformed URL
