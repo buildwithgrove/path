@@ -193,3 +193,9 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
 }
+
+// SelectMultiple chooses multiple endpoints from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
+// It is required to satisfy the protocol package's EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
+	return rc.endpointStore.SelectMultiple(allEndpoints, maxCount)
+}

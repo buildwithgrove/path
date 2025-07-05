@@ -37,9 +37,9 @@ const (
 	requestSetupLatencyMetric = "shannon_request_setup_latency_seconds"
 
 	// Latency metrics
+	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayLatencyMetric          = "shannon_relay_latency_seconds"
 	backendServiceLatencyMetric = "shannon_backend_service_latency_seconds"
-	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 )
 
 func init() {
@@ -55,14 +55,8 @@ func init() {
 
 	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
-
-	// Session metrics
-	prometheus.MustRegister(sessionExtendedUsage)
-
-	// Latency metrics
 	prometheus.MustRegister(relayLatency)
 	prometheus.MustRegister(backendServiceLatency)
-
 }
 
 var (
@@ -165,25 +159,6 @@ var (
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
-	// sessionExtendedUsage tracks extended session usage patterns.
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - usage_type: Type of extended session usage (active, extended)
-	//   - session_decision: Which session was selected (current, previous)
-	//
-	// Use to analyze:
-	//   - Extended session effectiveness
-	//   - Session selection patterns during transitions
-	//   - Impact of grace period scaling factor
-	sessionExtendedUsage = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: pathProcess,
-			Name:      sessionExtendedUsageMetric,
-			Help:      "Total extended session usage patterns by service and decision type",
-		},
-		[]string{"service_id", "usage_type", "session_decision"},
-	)
-
 	// relayLatency tracks end-to-end relay request latency.
 	//
 	// Labels:
@@ -201,7 +176,7 @@ var (
 			Help:      "End-to-end relay request latency in seconds",
 			Buckets:   defaultBuckets,
 		},
-		[]string{"service_id", "session_state"},
+		[]string{"service_id"},
 	)
 
 	// backendServiceLatency tracks the time spent waiting for backend service responses.

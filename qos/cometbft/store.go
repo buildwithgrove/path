@@ -60,13 +60,13 @@ func (es *EndpointStore) Select(availableEndpoints protocol.EndpointAddrList) (p
 // SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If maxCount is 0, it defaults to 1.
-func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With("method", "SelectMultiple").With("chain_id", es.serviceState.chainID).With("max_count", maxCount)
-	
+
 	if maxCount <= 0 {
 		maxCount = 1
 	}
-	
+
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), maxCount)
 
 	filteredEndpointsAddr, err := es.filterValidEndpoints(availableEndpoints)
@@ -79,7 +79,7 @@ func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddr
 		logger.Warn().Msgf(
 			"SELECTING RANDOM ENDPOINTS because all endpoints failed validation. Available endpoints: %s",
 			availableEndpoints.String())
-		
+
 		countToSelect := maxCount
 		if countToSelect > len(availableEndpoints) {
 			countToSelect = len(availableEndpoints)
@@ -90,9 +90,9 @@ func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddr
 		copy(availableCopy, availableEndpoints)
 
 		// Fisher-Yates shuffle for random selection without replacement
-		var selectedEndpoints []protocol.EndpointAddr
+		var selectedEndpoints protocol.EndpointAddrList
 		for i := 0; i < countToSelect; i++ {
-			j := rand.Intn(len(availableCopy) - i) + i
+			j := rand.Intn(len(availableCopy)-i) + i
 			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
 			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
 		}
@@ -112,9 +112,9 @@ func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddr
 	copy(filteredCopy, filteredEndpointsAddr)
 
 	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints []protocol.EndpointAddr
+	var selectedEndpoints protocol.EndpointAddrList
 	for i := 0; i < countToSelect; i++ {
-		j := rand.Intn(len(filteredCopy) - i) + i
+		j := rand.Intn(len(filteredCopy)-i) + i
 		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
 		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])
 	}

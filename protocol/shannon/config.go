@@ -43,9 +43,6 @@ type (
 
 		// Configuration options for the cache when LazyMode is false
 		CacheConfig CacheConfig `yaml:"cache_config"`
-
-		// Configuration options for session handling
-		SessionConfig SessionConfig `yaml:"session_config"`
 	}
 
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
@@ -107,9 +104,6 @@ func (c FullNodeConfig) Validate() error {
 		return ErrShannonInvalidGrpcHostPort
 	}
 	if err := c.CacheConfig.validate(c.LazyMode); err != nil {
-		return err
-	}
-	if err := c.SessionConfig.validate(); err != nil {
 		return err
 	}
 	return nil
@@ -201,5 +195,4 @@ func isValidHostPort(hostPort string) bool {
 func (fnc *FullNodeConfig) hydrateDefaults() {
 	fnc.GRPCConfig.hydrateDefaults()
 	fnc.CacheConfig.hydrateDefaults()
-	fnc.SessionConfig.hydrateDefaults()
 }

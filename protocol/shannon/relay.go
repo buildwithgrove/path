@@ -3,6 +3,7 @@ package shannon
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,7 +61,10 @@ func sendHttpRelay(
 
 	// Extract labels for backend service latency metrics
 	serviceID := extractServiceIDFromContext(ctx)
-	endpointDomain := shannonmetrics.ExtractDomainFromURL(supplierUrlStr)
+	endpointDomain, err := shannonmetrics.ExtractEffectiveTLDPlusOne(supplierUrlStr)
+	if err != nil {
+		endpointDomain = fmt.Sprintf("error extracting domain from: %s", supplierUrlStr)
+	}
 	httpStatus := "timeout"
 	requestSizeBucket := categorizeRequestSize(len(relayRequestBz))
 

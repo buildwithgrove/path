@@ -423,28 +423,24 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
 }
 
-// selectMultipleEndpoints selects up to maxCount endpoints from the available endpoints
+// selectMultipleEndpoints selects up to maxNumEndpoints endpoints from the available endpoints
 // with optional bias towards different TLDs for improved diversity and resilience
-//
-// 🏗️ ARCHITECTURAL CONCERN: This TLD-based selection logic is tightly coupled to URL parsing
-// and makes assumptions about endpoint address format. Consider abstracting endpoint diversity
-// selection into a pluggable strategy pattern.
 func (rc *requestContext) selectMultipleEndpoints(
 	availableEndpoints protocol.EndpointAddrList,
-	maxCount int,
-) []protocol.EndpointAddr {
+	maxNumEndpoints int,
+) protocol.EndpointAddrList {
 	if len(availableEndpoints) == 0 {
-		rc.logger.Warn().Msgf("Want to select %d endpoints, but 0 endpoints are available for service %s", maxCount, rc.serviceID)
+		rc.logger.Warn().Msgf("Want to select %d endpoints, but 0 endpoints are available for service %s", maxNumEndpoints, rc.serviceID)
 		return nil
 	}
 
-	// Use diversity-aware selection
-	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
+	// Se
+	multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
 		return nil
 	}
-	return []protocol.EndpointAddr{selectedEndpointAddr}
+	return multipleSelectedEndpointAddr
 }
 
 // recordRelayLatencyMetrics records the end-to-end relay latency metrics.

@@ -28,7 +28,7 @@ func (RandomEndpointSelector) Select(endpoints protocol.EndpointAddrList) (proto
 
 // SelectMultiple returns multiple randomly selected endpoints from the set of supplied endpoints.
 // This method fulfills the protocol.EndpointSelector interface.
-func (RandomEndpointSelector) SelectMultiple(endpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+func (RandomEndpointSelector) SelectMultiple(endpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
 	if len(endpoints) == 0 {
 		return nil, errors.New("RandomEndpointSelector: an empty endpoint list was supplied to the selector")
 	}
@@ -48,9 +48,9 @@ func (RandomEndpointSelector) SelectMultiple(endpoints protocol.EndpointAddrList
 	copy(endpointsCopy, endpoints)
 
 	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints []protocol.EndpointAddr
+	var selectedEndpoints protocol.EndpointAddrList
 	for i := 0; i < countToSelect; i++ {
-		j := rand.Intn(len(endpointsCopy) - i) + i
+		j := rand.Intn(len(endpointsCopy)-i) + i
 		endpointsCopy[i], endpointsCopy[j] = endpointsCopy[j], endpointsCopy[i]
 		selectedEndpoints = append(selectedEndpoints, endpointsCopy[i])
 	}

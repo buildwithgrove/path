@@ -33,7 +33,7 @@ var _ protocol.EndpointSelector = &serviceState{}
 // Available endpoints are filtered based on their validity first.
 // Endpoints are selected with TLD diversity preference when possible.
 // If maxCount is 0, it defaults to 1. If maxCount is greater than available endpoints, it returns all valid endpoints.
-func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
 	logger := ss.logger.With("method", "SelectMultiple").
 		With("chain_id", ss.serviceConfig.getEVMChainID()).
 		With("service_id", ss.serviceConfig.GetServiceID()).
@@ -54,19 +54,19 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msgf("SELECTING RANDOM ENDPOINTS because all endpoints failed validation from: %s", availableEndpoints.String())
 		// Select random endpoints as fallback
-		var randomEndpoints []protocol.EndpointAddr
+		var randomEndpoints protocol.EndpointAddrList
 		countToSelect := maxCount
 		if countToSelect > len(availableEndpoints) {
 			countToSelect = len(availableEndpoints)
 		}
-		
+
 		// Create a copy to avoid modifying the original slice
 		availableCopy := make(protocol.EndpointAddrList, len(availableEndpoints))
 		copy(availableCopy, availableEndpoints)
-		
+
 		// Fisher-Yates shuffle for random selection without replacement
 		for i := 0; i < countToSelect; i++ {
-			j := rand.Intn(len(availableCopy) - i) + i
+			j := rand.Intn(len(availableCopy)-i) + i
 			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
 			randomEndpoints = append(randomEndpoints, availableCopy[i])
 		}
@@ -240,7 +240,7 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 
 // selectEndpointsWithDiversity selects endpoints with TLD diversity preference.
 // This method is now used internally by SelectMultiple to ensure endpoint diversity.
-func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
+func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, maxCount int) protocol.EndpointAddrList {
 	// Get endpoint URLs to extract TLD information
 	endpointTLDs := ss.getEndpointTLDs(availableEndpoints)
 
@@ -255,7 +255,7 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 	ss.logger.Debug().Msgf("Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
 		len(availableEndpoints), len(uniqueTLDs), maxCount)
 
-	var selectedEndpoints []protocol.EndpointAddr
+	var selectedEndpoints protocol.EndpointAddrList
 	usedTLDs := make(map[string]bool)
 	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
 	copy(remainingEndpoints, availableEndpoints)

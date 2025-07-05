@@ -60,7 +60,7 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 // SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If maxCount is 0, it defaults to 1.
-func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With(
 		"qos", "Solana",
 		"method", "SelectMultiple",
@@ -93,9 +93,9 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 		copy(availableCopy, allAvailableEndpoints)
 
 		// Fisher-Yates shuffle for random selection without replacement
-		var selectedEndpoints []protocol.EndpointAddr
+		var selectedEndpoints protocol.EndpointAddrList
 		for i := 0; i < countToSelect; i++ {
-			j := rand.Intn(len(availableCopy) - i) + i
+			j := rand.Intn(len(availableCopy)-i) + i
 			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
 			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
 		}
@@ -113,9 +113,9 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 	copy(filteredCopy, filteredEndpointsAddr)
 
 	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints []protocol.EndpointAddr
+	var selectedEndpoints protocol.EndpointAddrList
 	for i := 0; i < countToSelect; i++ {
-		j := rand.Intn(len(filteredCopy) - i) + i
+		j := rand.Intn(len(filteredCopy)-i) + i
 		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
 		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])
 	}
