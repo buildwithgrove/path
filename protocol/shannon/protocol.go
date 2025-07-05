@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -12,7 +11,6 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -110,8 +108,6 @@ func (p *Protocol) AvailableEndpoints(
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
 ) (protocol.EndpointAddrList, protocolobservations.Observations, error) {
-	startTime := time.Now()
-
 	// hydrate the logger.
 	logger := p.logger.With(
 		"service", serviceID,
@@ -120,16 +116,12 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	sessionsStartTime := time.Now()
 	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
-	sessionsDuration := time.Since(sessionsStartTime).Seconds()
 
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
-		shannonmetrics.RecordSessionOperationDuration(serviceID, "get_active_sessions", "error", false, sessionsDuration)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
-	shannonmetrics.RecordSessionOperationDuration(serviceID, "get_active_sessions", "success", false, sessionsDuration)
 
 	logger = logger.With("number_of_valid_sessions", len(activeSessions))
 	logger.Debug().Msg("fetched the set of active sessions.")
@@ -137,18 +129,12 @@ func (p *Protocol) AvailableEndpoints(
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpointsStartTime := time.Now()
-	// TODO_IN_THIS_PR: Maintain the session metadata alongside the endpoint so we can
-	// make sure we make requests across two different sessions.
 	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
-	endpointsDuration := time.Since(endpointsStartTime).Seconds()
 
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
-		shannonmetrics.RecordSessionOperationDuration(serviceID, "get_unique_endpoints", "error", false, endpointsDuration)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
-	shannonmetrics.RecordSessionOperationDuration(serviceID, "get_unique_endpoints", "success", false, endpointsDuration)
 
 	logger = logger.With("number_of_unique_endpoints", len(endpoints))
 	logger.Debug().Msg("Successfully fetched the set of available endpoints for the selected apps.")
@@ -158,10 +144,6 @@ func (p *Protocol) AvailableEndpoints(
 	for endpointAddr := range endpoints {
 		endpointAddrs = append(endpointAddrs, endpointAddr)
 	}
-
-	// Record overall AvailableEndpoints duration
-	duration := time.Since(startTime).Seconds()
-	shannonmetrics.RecordSessionOperationDuration(serviceID, "available_endpoints", "success", false, duration)
 
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }

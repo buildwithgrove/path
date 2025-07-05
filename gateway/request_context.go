@@ -455,7 +455,7 @@ func (rc *requestContext) selectMultipleEndpoints(
 }
 
 // determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.
-func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffectiveness string) {
+func (rc *requestContext) determineRelayMetricLabels() (sessionState string) {
 	// Default values
 	sessionState = sessionStateNormal
 
@@ -478,21 +478,16 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 		}
 	}
 
-	// Determine cache effectiveness based on timing patterns
-	// This is a simplified heuristic - in practice you might want more sophisticated logic
-	relayDurationMs := time.Since(rc.relayStartTime).Milliseconds()
-	cacheEffectiveness = categorizeRequestSetupCachePerformance(float64(relayDurationMs))
-
-	return sessionState, cacheEffectiveness
+	return sessionState
 }
 
 // recordRelayLatencyMetrics records the end-to-end relay latency metrics.
-func (rc *requestContext) recordRelayLatencyMetrics(duration float64, sessionState, cacheEffectiveness string) {
+func (rc *requestContext) recordRelayLatencyMetrics(duration float64, sessionState string) {
 	// Only record metrics for Shannon protocol
 	if rc.protocol != nil {
 		// Check if this is a Shannon protocol (we could add a method to identify protocol type)
 		// For now, we'll record metrics for all protocols but with service_id differentiation
-		shannonmetrics.RecordRelayLatency(rc.serviceID, sessionState, cacheEffectiveness, duration)
+		shannonmetrics.RecordRelayLatency(rc.serviceID, sessionState, duration)
 	}
 }
 
@@ -521,10 +516,10 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 		relayDuration := time.Since(rc.relayStartTime).Seconds()
 
 		// Determine session state and cache effectiveness
-		sessionState, cacheEffectiveness := rc.determineRelayMetricLabels()
+		sessionState := rc.determineRelayMetricLabels()
 
 		// Record the relay latency metrics
-		rc.recordRelayLatencyMetrics(relayDuration, sessionState, cacheEffectiveness)
+		rc.recordRelayLatencyMetrics(relayDuration, sessionState)
 	}()
 
 	// If the HTTP request was invalid, write a generic response.

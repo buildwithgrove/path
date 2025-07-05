@@ -47,7 +47,6 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		// Retrieve the session for the owned app, without grace period logic.
 		sessionLatest, err := p.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
 			logger.Error().Err(err).Msg(err.Error())
 			return nil, err
@@ -56,7 +55,6 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		// Retrieve the session for the owned app, considering grace period logic.
 		sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
 			logger.Error().Err(err).Msg(err.Error())
 			return nil, err

@@ -125,8 +125,7 @@ func (g Gateway) handleHTTPServiceRequest(
 		// Record setup metrics if setup didn't complete successfully
 		if !setupCompleted {
 			requestSetupDuration := time.Since(requestSetupStartTime).Seconds()
-			requestCachePerformance := categorizeRequestSetupCachePerformance(requestSetupDuration)
-			shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, requestCachePerformance, requestSetupDuration)
+			shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, requestSetupDuration)
 		}
 
 		// Write the HTTP response
@@ -138,8 +137,8 @@ func (g Gateway) handleHTTPServiceRequest(
 	if err != nil {
 		return
 	}
-
 	requestSetupStage = requestSetupStageProtocolContext
+	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, time.Since(requestSetupStartTime).Seconds())
 
 	// Build protocol context
 	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
@@ -148,9 +147,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	}
 
 	// Setup completed successfully - record metrics
-	requestSetupDuration := time.Since(requestSetupStartTime).Seconds()
-	requestCachePerformance := categorizeRequestSetupCachePerformance(requestSetupDuration)
-	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStageComplete, requestCachePerformance, requestSetupDuration)
+	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStageComplete, time.Since(requestSetupStartTime).Seconds())
 	setupCompleted = true
 
 	// Handle the actual relay request
@@ -180,24 +177,4 @@ func (g Gateway) handleWebSocketRequest(
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, responseWriter)
-}
-
-// categorizeRequestSetupCachePerformance categorizes request setup performance based on timing patterns.
-// This helps identify whether session cache hits/misses are affecting setup time.
-func categorizeRequestSetupCachePerformance(setupDurationSeconds float64) string {
-	setupDurationMs := setupDurationSeconds * 1000
-
-	switch {
-	// Very fast setup, likely all cache hits
-	case setupDurationMs < 50:
-		return "all_hits"
-
-	// Moderate setup time, some cache misses
-	case setupDurationMs < 500:
-		return "some_misses"
-
-	// Slow setup, likely session rollover or cache failures
-	default:
-		return "all_misses"
-	}
 }

@@ -262,7 +262,6 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 
 		// Record fallback to current session due to error
 		shannonmetrics.RecordSessionGracePeriodUsage(serviceID, "within_grace_fallback", "current")
-		shannonmetrics.RecordSessionTransition(serviceID, appAddr, "grace_period_fallback", false)
 		return currentSession, nil
 	}
 
@@ -273,7 +272,6 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 		Msg("USING PREVIOUS SESSION since its within the grace period")
 
 	// Record successful previous session usage
-	shannonmetrics.RecordSessionTransition(serviceID, appAddr, "grace_period_success", false)
 	return *prevSession, nil
 }
 

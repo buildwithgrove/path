@@ -26,31 +26,46 @@ const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
 
-	// The list of metrics being tracked for Shannon protocol
+	// Relay metrics
 	relaysTotalMetric       = "shannon_relays_total"
 	relaysErrorsTotalMetric = "shannon_relay_errors_total"
-	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
-	endpointLatencyMetric   = "shannon_endpoint_latency_seconds"
 
-	sessionTransitionMetric        = "shannon_session_transitions_total"
-	sessionCacheOperationsMetric   = "shannon_session_cache_operations_total"
-	sessionGracePeriodMetric       = "shannon_session_grace_period_usage_total"
-	sessionOperationDurationMetric = "shannon_session_operation_duration_seconds"
-	relayLatencyMetric             = "shannon_relay_latency_seconds"
-	backendServiceLatencyMetric    = "shannon_backend_service_latency_seconds"
-	requestSetupLatencyMetric      = "shannon_request_setup_latency_seconds"
+	// Sanctions metrics
+	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
+
+	// Internal performance metrics
+	requestSetupLatencyMetric = "shannon_request_setup_latency_seconds"
+
+	// Latency metrics
+	relayLatencyMetric          = "shannon_relay_latency_seconds"
+	backendServiceLatencyMetric = "shannon_backend_service_latency_seconds"
+	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
+
+	// Session metrics
+	sessionExtendedUsageMetric = "shannon_session_grace_period_usage_total"
 )
 
 func init() {
+	// Relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+
+	// Sanctions metrics
 	prometheus.MustRegister(sanctionsByDomain)
+
+	// Internal performance metrics
+	prometheus.MustRegister(requestSetupLatency)
+
+	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
+
+	// Session metrics
 	prometheus.MustRegister(sessionExtendedUsage)
-	prometheus.MustRegister(sessionOperationDuration)
+
+	// Latency metrics
 	prometheus.MustRegister(relayLatency)
 	prometheus.MustRegister(backendServiceLatency)
-	prometheus.MustRegister(requestSetupLatency)
+
 }
 
 var (
@@ -172,35 +187,11 @@ var (
 		[]string{"service_id", "usage_type", "session_decision"},
 	)
 
-	// sessionOperationDuration tracks latency of session-related operations.
-	//
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - operation: Type of operation (get_session, get_session_with_grace, get_active_sessions, cache_fetch, etc.)
-	//   - cache_result: Result of cache operation (hit, miss, fetch_success, fetch_error)
-	//   - grace_period_active: Whether grace period logic was applied (true/false)
-	//
-	// Use to analyze:
-	//   - Latency distribution during session rollovers
-	//   - Cache vs network fetch performance
-	//   - Grace period overhead
-	//   - P95/P99 latency trends during rollover windows
-	sessionOperationDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: pathProcess,
-			Name:      sessionOperationDurationMetric,
-			Help:      "Duration of session-related operations in seconds",
-			Buckets:   defaultBuckets,
-		},
-		[]string{"service_id", "operation", "cache_result", "grace_period_active"},
-	)
-
 	// relayLatency tracks end-to-end relay request latency.
 	//
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - session_state: State of session during request (current, grace_period, rollover)
-	//   - cache_effectiveness: Overall cache performance (all_hits, some_misses, all_misses)
 	//
 	// Use to analyze:
 	//   - Impact of session rollovers on end-user latency
@@ -213,7 +204,7 @@ var (
 			Help:      "End-to-end relay request latency in seconds",
 			Buckets:   defaultBuckets,
 		},
-		[]string{"service_id", "session_state", "cache_effectiveness"},
+		[]string{"service_id", "session_state"},
 	)
 
 	// backendServiceLatency tracks the time spent waiting for backend service responses.
@@ -243,12 +234,10 @@ var (
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - setup_stage: Which setup stage completed successfully (qos_context, protocol_context, complete)
-	//   - cache_performance: Overall cache hit rate during setup (all_hits, some_misses, all_misses)
 	//
 	// Use to analyze:
 	//   - Setup overhead vs backend service latency
 	//   - Impact of session rollovers on request preparation time
-	//   - Cache effectiveness during session transitions
 	//   - Bottlenecks in QoS vs Protocol context setup
 	requestSetupLatency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -257,7 +246,7 @@ var (
 			Help:      "Request setup latency before relay transmission in seconds",
 			Buckets:   defaultBuckets,
 		},
-		[]string{"service_id", "setup_stage", "cache_performance"},
+		[]string{"service_id", "setup_stage"},
 	)
 )
 
@@ -520,26 +509,6 @@ func processEndpointLatency(
 	}
 }
 
-// RecordSessionTransition records a session transition event with cache performance data.
-func RecordSessionTransition(
-	serviceID protocol.ServiceID,
-	appAddr, transitionType string,
-	cacheHit bool,
-) {
-	// Truncate app address to first 8 characters to reduce cardinality while maintaining uniqueness
-	appAddrPrefix := appAddr
-	if len(appAddr) > 8 {
-		appAddrPrefix = appAddr[:8]
-	}
-
-	sessionTransitions.With(prometheus.Labels{
-		"service_id":      string(serviceID),
-		"app_addr_prefix": appAddrPrefix,
-		"transition_type": transitionType,
-		"cache_hit":       fmt.Sprintf("%t", cacheHit),
-	}).Inc()
-}
-
 // RecordSessionGracePeriodUsage records grace period usage patterns.
 func RecordSessionGracePeriodUsage(
 	serviceID protocol.ServiceID,
@@ -552,31 +521,15 @@ func RecordSessionGracePeriodUsage(
 	}).Inc()
 }
 
-// RecordSessionOperationDuration records the duration of session-related operations.
-func RecordSessionOperationDuration(
-	serviceID protocol.ServiceID,
-	operation, cacheResult string,
-	isExtendedSession bool,
-	duration float64,
-) {
-	sessionOperationDuration.With(prometheus.Labels{
-		"service_id":          string(serviceID),
-		"operation":           operation,
-		"cache_result":        cacheResult,
-		"is_extended_session": fmt.Sprintf("%t", isExtendedSession),
-	}).Observe(duration)
-}
-
 // RecordRelayLatency records end-to-end relay request latency.
 func RecordRelayLatency(
 	serviceID protocol.ServiceID,
-	sessionState, cacheEffectiveness string,
+	sessionState string,
 	duration float64,
 ) {
 	relayLatency.With(prometheus.Labels{
-		"service_id":          string(serviceID),
-		"session_state":       sessionState,
-		"cache_effectiveness": cacheEffectiveness,
+		"service_id":    string(serviceID),
+		"session_state": sessionState,
 	}).Observe(duration)
 }
 
@@ -597,12 +550,11 @@ func RecordBackendServiceLatency(
 // RecordRequestSetupLatency records the time spent in PATH's request setup phase.
 func RecordRequestSetupLatency(
 	serviceID protocol.ServiceID,
-	setupStage, cachePerformance string,
+	setupStage string,
 	duration float64,
 ) {
 	requestSetupLatency.With(prometheus.Labels{
-		"service_id":        string(serviceID),
-		"setup_stage":       setupStage,
-		"cache_performance": cachePerformance,
+		"service_id":  string(serviceID),
+		"setup_stage": setupStage,
 	}).Observe(duration)
 }
