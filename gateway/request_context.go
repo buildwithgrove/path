@@ -463,7 +463,7 @@ func (rc *requestContext) determineRelayMetricLabels() (sessionState, cacheEffec
 	if rc.protocolObservations != nil && rc.protocolObservations.GetShannon() != nil {
 		shannonObs := rc.protocolObservations.GetShannon().GetObservations()
 		if len(shannonObs) > 0 {
-			// Look for grace period or rollover patterns in the observations
+			// Look for extended session patterns in the observations
 			// This is a simplified heuristic - could be improved with explicit session state tracking
 			for _, obs := range shannonObs {
 				if obs.GetRequestError() != nil {

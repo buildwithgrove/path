@@ -46,10 +46,7 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
 	prometheus.MustRegister(endpointLatency)
-
-	prometheus.MustRegister(sessionTransitions)
-	prometheus.MustRegister(sessionCacheOperations)
-	prometheus.MustRegister(sessionGracePeriodUsage)
+	prometheus.MustRegister(sessionExtendedUsage)
 	prometheus.MustRegister(sessionOperationDuration)
 	prometheus.MustRegister(relayLatency)
 	prometheus.MustRegister(backendServiceLatency)
@@ -156,61 +153,21 @@ var (
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
-	// sessionTransitions tracks session transitions and rollover events.
+	// sessionExtendedUsage tracks extended session usage patterns.
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - app_addr: Application address (truncated for cardinality)
-	//   - transition_type: Type of transition (new_session, rollover, grace_period)
-	//   - cache_hit: Whether the session was found in cache
-	//
-	// Use to analyze:
-	//   - Session rollover frequency patterns
-	//   - Cache effectiveness during transitions
-	//   - Identify services with high session turnover
-	sessionTransitions = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: pathProcess,
-			Name:      sessionTransitionMetric,
-			Help:      "Total session transitions by service, transition type and cache performance",
-		},
-		[]string{"service_id", "app_addr_prefix", "transition_type", "cache_hit"},
-	)
-
-	// sessionCacheOperations tracks cache operations for session-related data.
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - operation: Type of operation (get, fetch, evict, refresh)
-	//   - cache_type: Type of cache (session, shared_params, block_height)
-	//   - result: Result of operation (hit, miss, error)
-	//
-	// Use to analyze:
-	//   - Cache hit rates during session rollovers
-	//   - Cache refresh patterns
-	//   - Performance bottlenecks in cache operations
-	sessionCacheOperations = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: pathProcess,
-			Name:      sessionCacheOperationsMetric,
-			Help:      "Total cache operations for session-related data",
-		},
-		[]string{"service_id", "operation", "cache_type", "result"},
-	)
-
-	// sessionGracePeriodUsage tracks grace period usage patterns.
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - usage_type: Type of grace period usage (within_grace, outside_grace, scaled_grace)
+	//   - usage_type: Type of extended session usage (active, extended)
 	//   - session_decision: Which session was selected (current, previous)
 	//
 	// Use to analyze:
-	//   - Grace period effectiveness
+	//   - Extended session effectiveness
 	//   - Session selection patterns during transitions
 	//   - Impact of grace period scaling factor
-	sessionGracePeriodUsage = prometheus.NewCounterVec(
+	sessionExtendedUsage = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
-			Name:      sessionGracePeriodMetric,
-			Help:      "Total grace period usage patterns by service and decision type",
+			Name:      sessionExtendedUsageMetric,
+			Help:      "Total extended session usage patterns by service and decision type",
 		},
 		[]string{"service_id", "usage_type", "session_decision"},
 	)
@@ -583,25 +540,12 @@ func RecordSessionTransition(
 	}).Inc()
 }
 
-// RecordSessionCacheOperation records cache operations for session-related data.
-func RecordSessionCacheOperation(
-	serviceID protocol.ServiceID,
-	operation, cacheType, result string,
-) {
-	sessionCacheOperations.With(prometheus.Labels{
-		"service_id": string(serviceID),
-		"operation":  operation,
-		"cache_type": cacheType,
-		"result":     result,
-	}).Inc()
-}
-
 // RecordSessionGracePeriodUsage records grace period usage patterns.
 func RecordSessionGracePeriodUsage(
 	serviceID protocol.ServiceID,
 	usageType, sessionDecision string,
 ) {
-	sessionGracePeriodUsage.With(prometheus.Labels{
+	sessionExtendedUsage.With(prometheus.Labels{
 		"service_id":       string(serviceID),
 		"usage_type":       usageType,
 		"session_decision": sessionDecision,
@@ -612,14 +556,14 @@ func RecordSessionGracePeriodUsage(
 func RecordSessionOperationDuration(
 	serviceID protocol.ServiceID,
 	operation, cacheResult string,
-	gracePeriodActive bool,
+	isExtendedSession bool,
 	duration float64,
 ) {
 	sessionOperationDuration.With(prometheus.Labels{
 		"service_id":          string(serviceID),
 		"operation":           operation,
 		"cache_result":        cacheResult,
-		"grace_period_active": fmt.Sprintf("%t", gracePeriodActive),
+		"is_extended_session": fmt.Sprintf("%t", isExtendedSession),
 	}).Observe(duration)
 }
 

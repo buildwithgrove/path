@@ -3,6 +3,7 @@ package shannon
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"golang.org/x/net/publicsuffix"
 )
@@ -28,4 +29,32 @@ func ExtractEffectiveTLDPlusOne(rawURL string) (string, error) {
 		return "", err // domain may not be derivable (e.g., IP, localhost)
 	}
 	return etld, nil
+}
+
+// ExtractDomainFromURL extracts the domain from a URL for metrics labeling
+func ExtractDomainFromURL(urlStr string) string {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return "unknown"
+	}
+
+	// Extract hostname and remove port if present
+	hostname := parsedURL.Hostname()
+	if hostname == "" {
+		return "unknown"
+	}
+
+	// For IP addresses or localhost, return as-is
+	if strings.Contains(hostname, "127.0.0.1") || strings.Contains(hostname, "localhost") {
+		return "localhost"
+	}
+
+	// For domain names, try to extract TLD+1 (simplified)
+	parts := strings.Split(hostname, ".")
+	if len(parts) >= 2 {
+		// Return last two parts (domain.tld)
+		return strings.Join(parts[len(parts)-2:], ".")
+	}
+
+	return hostname
 }

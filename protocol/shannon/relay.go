@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
@@ -61,7 +60,7 @@ func sendHttpRelay(
 
 	// Extract labels for backend service latency metrics
 	serviceID := extractServiceIDFromContext(ctx)
-	endpointDomain := extractDomainFromURL(supplierUrlStr)
+	endpointDomain := shannonmetrics.ExtractDomainFromURL(supplierUrlStr)
 	httpStatus := "timeout"
 	requestSizeBucket := categorizeRequestSize(len(relayRequestBz))
 
@@ -100,34 +99,6 @@ func extractServiceIDFromContext(ctx context.Context) protocol.ServiceID {
 		}
 	}
 	return protocol.ServiceID("unknown")
-}
-
-// extractDomainFromURL extracts the domain from a URL for metrics labeling
-func extractDomainFromURL(urlStr string) string {
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return "unknown"
-	}
-
-	// Extract hostname and remove port if present
-	hostname := parsedURL.Hostname()
-	if hostname == "" {
-		return "unknown"
-	}
-
-	// For IP addresses or localhost, return as-is
-	if strings.Contains(hostname, "127.0.0.1") || strings.Contains(hostname, "localhost") {
-		return "localhost"
-	}
-
-	// For domain names, try to extract TLD+1 (simplified)
-	parts := strings.Split(hostname, ".")
-	if len(parts) >= 2 {
-		// Return last two parts (domain.tld)
-		return strings.Join(parts[len(parts)-2:], ".")
-	}
-
-	return hostname
 }
 
 // categorizeRequestSize buckets request size for metrics
