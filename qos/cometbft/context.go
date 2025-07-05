@@ -160,9 +160,9 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 
 // SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
-func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
 	// Select multiple endpoints from the available endpoints using the endpoint store.
-	return rc.endpointStore.SelectMultiple(allEndpoints, maxCount)
+	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }
 
 // isJSONRPCRequest checks if the request context contains a serialized JSON-RPC request.

@@ -435,12 +435,19 @@ func (rc *requestContext) selectMultipleEndpoints(
 	}
 
 	// Se
-	multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
+	// multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
+	// if err != nil {
+	// 	rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
+	// 	return nil
+	// }
+	// return multipleSelectedEndpointAddr
+
+	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
 	if err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
 		return nil
 	}
-	return multipleSelectedEndpointAddr
+	return protocol.EndpointAddrList{selectedEndpointAddr}
 }
 
 // recordRelayLatencyMetrics records the end-to-end relay latency metrics.

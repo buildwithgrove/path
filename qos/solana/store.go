@@ -59,20 +59,20 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 
 // SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
-// validity criteria. If maxCount is 0, it defaults to 1.
-func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, maxCount int) (protocol.EndpointAddrList, error) {
+// validity criteria. If numEndpoints is 0, it defaults to 1.
+func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With(
 		"qos", "Solana",
 		"method", "SelectMultiple",
-		"num_endpoints", len(allAvailableEndpoints),
-		"max_count", maxCount,
+		"num_endpoints_available", len(allAvailableEndpoints),
+		"num_endpoints", numEndpoints,
 	)
 
-	if maxCount <= 0 {
-		maxCount = 1
+	if numEndpoints <= 0 {
+		numEndpoints = 1
 	}
 
-	logger.Debug().Msgf("filtering available endpoints to select up to %d.", maxCount)
+	logger.Debug().Msgf("filtering available endpoints to select up to %d.", numEndpoints)
 
 	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
 	if err != nil {
@@ -83,9 +83,8 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 	// No valid endpoints -> select random endpoints
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
-		countToSelect := maxCount
-		if countToSelect > len(allAvailableEndpoints) {
-			countToSelect = len(allAvailableEndpoints)
+		if numEndpoints > len(allAvailableEndpoints) {
+			numEndpoints = len(allAvailableEndpoints)
 		}
 
 		// Create a copy to avoid modifying the original slice
@@ -94,7 +93,7 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 
 		// Fisher-Yates shuffle for random selection without replacement
 		var selectedEndpoints protocol.EndpointAddrList
-		for i := 0; i < countToSelect; i++ {
+		for i := 0; i < numEndpoints; i++ {
 			j := rand.Intn(len(availableCopy)-i) + i
 			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
 			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
@@ -102,10 +101,9 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 		return selectedEndpoints, nil
 	}
 
-	// Select up to maxCount endpoints from filtered list
-	countToSelect := maxCount
-	if countToSelect > len(filteredEndpointsAddr) {
-		countToSelect = len(filteredEndpointsAddr)
+	// Select up to numEndpoints endpoints from filtered list
+	if numEndpoints > len(filteredEndpointsAddr) {
+		numEndpoints = len(filteredEndpointsAddr)
 	}
 
 	// Create a copy to avoid modifying the original slice
@@ -114,7 +112,7 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 
 	// Fisher-Yates shuffle for random selection without replacement
 	var selectedEndpoints protocol.EndpointAddrList
-	for i := 0; i < countToSelect; i++ {
+	for i := 0; i < numEndpoints; i++ {
 		j := rand.Intn(len(filteredCopy)-i) + i
 		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
 		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])

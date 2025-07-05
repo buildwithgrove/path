@@ -54,17 +54,19 @@ func sendHttpRelay(
 		Timeout: timeout,
 	}
 
+	// Extract labels for backend service latency metrics
+	serviceID := extractServiceIDFromContext(ctx)
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(supplierUrlStr)
+	if err != nil {
+		endpointDomain = fmt.Sprintf("error extracting domain from: %s", supplierUrlStr)
+	}
+
 	// Record backend service latency metrics
 	backendStartTime := time.Now()
 	relayHTTPResponse, err := client.Do(relayHTTPRequest)
 	backendDuration := time.Since(backendStartTime).Seconds()
 
-	// Extract labels for backend service latency metrics
-	serviceID := extractServiceIDFromContext(ctx)
-	endpointDomain, err := shannonmetrics.ExtractEffectiveTLDPlusOne(supplierUrlStr)
-	if err != nil {
-		endpointDomain = fmt.Sprintf("error extracting domain from: %s", supplierUrlStr)
-	}
+	// Prepare metrics labels
 	httpStatus := "timeout"
 	requestSizeBucket := categorizeRequestSize(len(relayRequestBz))
 
