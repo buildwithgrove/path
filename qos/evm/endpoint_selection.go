@@ -29,6 +29,56 @@ const invalidResponseTimeout = 5 * time.Minute
 // by the protocol package for handling a service request.
 var _ protocol.EndpointSelector = &serviceState{}
 
+// SelectMultiple returns multiple endpoint addresses from the list of available endpoints.
+// Available endpoints are filtered based on their validity first.
+// Endpoints are selected with TLD diversity preference when possible.
+// If maxCount is 0, it defaults to 1. If maxCount is greater than available endpoints, it returns all valid endpoints.
+func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+	logger := ss.logger.With("method", "SelectMultiple").
+		With("chain_id", ss.serviceConfig.getEVMChainID()).
+		With("service_id", ss.serviceConfig.GetServiceID()).
+		With("max_count", maxCount)
+
+	if maxCount <= 0 {
+		maxCount = 1
+	}
+
+	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), maxCount)
+
+	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("error filtering endpoints")
+		return nil, err
+	}
+
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msgf("SELECTING RANDOM ENDPOINTS because all endpoints failed validation from: %s", availableEndpoints.String())
+		// Select random endpoints as fallback
+		var randomEndpoints []protocol.EndpointAddr
+		countToSelect := maxCount
+		if countToSelect > len(availableEndpoints) {
+			countToSelect = len(availableEndpoints)
+		}
+		
+		// Create a copy to avoid modifying the original slice
+		availableCopy := make(protocol.EndpointAddrList, len(availableEndpoints))
+		copy(availableCopy, availableEndpoints)
+		
+		// Fisher-Yates shuffle for random selection without replacement
+		for i := 0; i < countToSelect; i++ {
+			j := rand.Intn(len(availableCopy) - i) + i
+			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
+			randomEndpoints = append(randomEndpoints, availableCopy[i])
+		}
+		return randomEndpoints, nil
+	}
+
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
+
+	// Use the diversity-aware selection
+	return ss.selectEndpointsWithDiversity(filteredEndpointsAddr, maxCount), nil
+}
+
 // Select returns an endpoint address matching an entry from the list of available endpoints.
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
@@ -188,7 +238,8 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 	return nil
 }
 
-// selectEndpointsWithDiversity selects endpoints with TLD diversity preference
+// selectEndpointsWithDiversity selects endpoints with TLD diversity preference.
+// This method is now used internally by SelectMultiple to ensure endpoint diversity.
 func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, maxCount int) []protocol.EndpointAddr {
 	// Get endpoint URLs to extract TLD information
 	endpointTLDs := ss.getEndpointTLDs(availableEndpoints)
@@ -218,12 +269,13 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 		if i > 0 && len(usedTLDs) > 0 {
 			selectedEndpoint, err = ss.selectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
 			if err != nil {
-				// Fallback to standard selection if no different TLD found
-				selectedEndpoint, err = ss.Select(remainingEndpoints)
+				// Fallback to random selection if no different TLD found
+				selectedEndpoint = remainingEndpoints[rand.Intn(len(remainingEndpoints))]
+				err = nil
 			}
 		} else {
-			// First endpoint: use standard selection
-			selectedEndpoint, err = ss.Select(remainingEndpoints)
+			// First endpoint: use random selection
+			selectedEndpoint = remainingEndpoints[rand.Intn(len(remainingEndpoints))]
 		}
 
 		if err != nil {
@@ -339,6 +391,6 @@ func (ss *serviceState) selectEndpointWithDifferentTLD(
 		return "", fmt.Errorf("no endpoints with different TLDs available")
 	}
 
-	// Use the QoS selector on the filtered list
-	return ss.Select(endpointsWithDifferentTLDs)
+	// Select a random endpoint from the filtered list
+	return endpointsWithDifferentTLDs[rand.Intn(len(endpointsWithDifferentTLDs))], nil
 }

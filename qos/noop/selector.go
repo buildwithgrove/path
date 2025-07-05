@@ -25,3 +25,35 @@ func (RandomEndpointSelector) Select(endpoints protocol.EndpointAddrList) (proto
 	selectedEndpointAddr := endpoints[rand.Intn(len(endpoints))]
 	return selectedEndpointAddr, nil
 }
+
+// SelectMultiple returns multiple randomly selected endpoints from the set of supplied endpoints.
+// This method fulfills the protocol.EndpointSelector interface.
+func (RandomEndpointSelector) SelectMultiple(endpoints protocol.EndpointAddrList, maxCount int) ([]protocol.EndpointAddr, error) {
+	if len(endpoints) == 0 {
+		return nil, errors.New("RandomEndpointSelector: an empty endpoint list was supplied to the selector")
+	}
+
+	if maxCount <= 0 {
+		maxCount = 1
+	}
+
+	// Select up to maxCount endpoints (or all if less available)
+	countToSelect := maxCount
+	if countToSelect > len(endpoints) {
+		countToSelect = len(endpoints)
+	}
+
+	// Create a copy to avoid modifying the original slice
+	endpointsCopy := make(protocol.EndpointAddrList, len(endpoints))
+	copy(endpointsCopy, endpoints)
+
+	// Fisher-Yates shuffle for random selection without replacement
+	var selectedEndpoints []protocol.EndpointAddr
+	for i := 0; i < countToSelect; i++ {
+		j := rand.Intn(len(endpointsCopy) - i) + i
+		endpointsCopy[i], endpointsCopy[j] = endpointsCopy[j], endpointsCopy[i]
+		selectedEndpoints = append(selectedEndpoints, endpointsCopy[i])
+	}
+
+	return selectedEndpoints, nil
+}

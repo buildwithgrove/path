@@ -40,9 +40,6 @@ const (
 	relayLatencyMetric          = "shannon_relay_latency_seconds"
 	backendServiceLatencyMetric = "shannon_backend_service_latency_seconds"
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
-
-	// Session metrics
-	sessionExtendedUsageMetric = "shannon_session_grace_period_usage_total"
 )
 
 func init() {
@@ -509,27 +506,13 @@ func processEndpointLatency(
 	}
 }
 
-// RecordSessionGracePeriodUsage records grace period usage patterns.
-func RecordSessionGracePeriodUsage(
-	serviceID protocol.ServiceID,
-	usageType, sessionDecision string,
-) {
-	sessionExtendedUsage.With(prometheus.Labels{
-		"service_id":       string(serviceID),
-		"usage_type":       usageType,
-		"session_decision": sessionDecision,
-	}).Inc()
-}
-
 // RecordRelayLatency records end-to-end relay request latency.
 func RecordRelayLatency(
 	serviceID protocol.ServiceID,
-	sessionState string,
 	duration float64,
 ) {
 	relayLatency.With(prometheus.Labels{
-		"service_id":    string(serviceID),
-		"session_state": sessionState,
+		"service_id": string(serviceID),
 	}).Observe(duration)
 }
 

@@ -26,13 +26,6 @@ var (
 )
 
 const (
-	// Session state constants
-	sessionStateNormal = "normal"
-	sessionStateError  = "error"
-	sessionStateActive = "active"
-)
-
-const (
 	// TODO_TECHDEBT: Make these configurable in a new Gateway.RelayConfig struct.
 	maxParallelRequests    = 4
 	parallelRequestTimeout = 30 * time.Second
@@ -377,8 +370,8 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 				startTime: startTime,
 			}:
 			case <-ctx.Done():
-				// Request was cancelled, don't send result
-				logger.Debug().Msgf("Request to endpoint %d cancelled after %dms", index, duration.Milliseconds())
+				// Request was canceled, don't send result
+				logger.Debug().Msgf("Request to endpoint %d canceled after %dms", index, duration.Milliseconds())
 			}
 		}(i, protocolCtx)
 	}
@@ -409,15 +402,15 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
-			// Context was cancelled or timed out
+			// Context was canceled or timed out
 			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 			if ctx.Err() == context.DeadlineExceeded {
 				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses",
 					totalParallelRelayDuration, parallelRequestTimeout, successfulResponses, totalRequests)
 				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelRequestTimeout, lastErr)
 			}
-			logger.Debug().Msgf("Parallel relay requests cancelled after %dms", totalParallelRelayDuration)
-			return fmt.Errorf("parallel relay requests cancelled, last error: %w", lastErr)
+			logger.Debug().Msgf("Parallel relay requests canceled after %dms", totalParallelRelayDuration)
+			return fmt.Errorf("parallel relay requests canceled, last error: %w", lastErr)
 		}
 	}
 
@@ -454,40 +447,13 @@ func (rc *requestContext) selectMultipleEndpoints(
 	return []protocol.EndpointAddr{selectedEndpointAddr}
 }
 
-// determineRelayMetricLabels determines the session state and cache effectiveness for relay metrics.
-func (rc *requestContext) determineRelayMetricLabels() (sessionState string) {
-	// Default values
-	sessionState = sessionStateNormal
-
-	// Check if we have Shannon observations to determine session state
-	if rc.protocolObservations != nil && rc.protocolObservations.GetShannon() != nil {
-		shannonObs := rc.protocolObservations.GetShannon().GetObservations()
-		if len(shannonObs) > 0 {
-			// Look for extended session patterns in the observations
-			// This is a simplified heuristic - could be improved with explicit session state tracking
-			for _, obs := range shannonObs {
-				if obs.GetRequestError() != nil {
-					sessionState = sessionStateError
-					break
-				}
-				// If we have endpoint observations, we can infer some patterns
-				if len(obs.GetEndpointObservations()) > 0 {
-					sessionState = sessionStateActive
-				}
-			}
-		}
-	}
-
-	return sessionState
-}
-
 // recordRelayLatencyMetrics records the end-to-end relay latency metrics.
-func (rc *requestContext) recordRelayLatencyMetrics(duration float64, sessionState string) {
+func (rc *requestContext) recordRelayLatencyMetrics(duration float64) {
 	// Only record metrics for Shannon protocol
 	if rc.protocol != nil {
 		// Check if this is a Shannon protocol (we could add a method to identify protocol type)
 		// For now, we'll record metrics for all protocols but with service_id differentiation
-		shannonmetrics.RecordRelayLatency(rc.serviceID, sessionState, duration)
+		shannonmetrics.RecordRelayLatency(rc.serviceID, duration)
 	}
 }
 
@@ -515,11 +481,8 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 		// Calculate end-to-end relay duration
 		relayDuration := time.Since(rc.relayStartTime).Seconds()
 
-		// Determine session state and cache effectiveness
-		sessionState := rc.determineRelayMetricLabels()
-
 		// Record the relay latency metrics
-		rc.recordRelayLatencyMetrics(relayDuration, sessionState)
+		rc.recordRelayLatencyMetrics(relayDuration)
 	}()
 
 	// If the HTTP request was invalid, write a generic response.
@@ -532,15 +495,12 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request:
-	//		QoS returns a properly formatted error response.
-	//               e.g. a non-JSONRPC payload for an EVM service.
-	// 	2. Protocol relay failed for any reason:
-	//		QoS returns a generic, properly formatted response.
-	//.              e.g. a JSONRPC error response.
-	//	3. Protocol relay was sent successfully:
-	//		QoS returns the endpoint's response.
-	//               e.g. the chain ID for a `eth_chainId` request.
+	// 	1. The QoS instance rejected the request: QoS returns a properly formatted error response.
+	//     E.g. a non-JSONRPC payload for an EVM service.
+	// 	2. Protocol relay failed for any reason: QoS returns a generic, properly formatted response.
+	//     E.g. a JSONRPC error response.
+	// 	3. Protocol relay was sent successfully: QoS returns the endpoint's response.
+	//     E.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 
@@ -670,7 +630,7 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 
 	// Check if we have multiple protocol contexts and use the first successful one
 	if len(rc.protocolContexts) > 0 {
-		// TODO_IN_THIS_PR: Refactor to all observations.
+		// TODO_TECHDEBT: Align on how we want to manage multiple protocol contexts here.
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
