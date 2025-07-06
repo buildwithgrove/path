@@ -14,6 +14,10 @@ var (
 	// endpoint timeout
 	ErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
+	// PATH manually cancelled the context for the request.
+	// E.g. Parallel requests were made and one succeeded so the other was cancelled.
+	ErrContextCancelled = errors.New("context cancelled manually")
+
 	// Request context setup errors.
 	// Used to build observations:
 	// There is no request context to provide observations.
@@ -66,6 +70,11 @@ func extractErrFromRelayError(err error) error {
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
 		return ErrEndpointTimeout
+	}
+
+	// context cancelled manually
+	if strings.Contains(err.Error(), "context canceled") {
+		return ErrContextCancelled
 	}
 
 	// No known patterns matched.
