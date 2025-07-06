@@ -15,10 +15,11 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric       = "shannon_relays_total"
-	relaysErrorsTotalMetric = "shannon_relay_errors_total"
-	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
-	endpointLatencyMetric   = "shannon_endpoint_latency_seconds"
+	relaysTotalMetric           = "shannon_relays_total"
+	relaysErrorsTotalMetric     = "shannon_relay_errors_total"
+	sanctionsByDomainMetric     = "shannon_sanctions_by_domain"
+	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
+	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
 )
 
 var (
@@ -38,6 +39,7 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
 	prometheus.MustRegister(endpointLatency)
+	prometheus.MustRegister(relayMinerErrorsTotal)
 }
 
 var (
@@ -67,51 +69,43 @@ var (
 		[]string{"service_id", "success", "error_type"},
 	)
 
-	// relaysErrorsTotal tracks relay errors AND RelayMinerError occurrences
-	// This single metric allows cross-referencing Shannon protocol errors with RelayMinerError data
+	// relaysErrorsTotal tracks relay errors from Shannon protocol
 	// Labels:
 	//   - service_id: Target service identifier
-	//   - error_type: Type of error encountered (based on trusted classification, empty for successful responses with RelayMinerError)
-	//   - sanction_type: Type of sanction recommended (based on trusted classification, empty for successful responses)
-	//   - relay_miner_codespace: Codespace from RelayMinerError (empty if not available)
-	//   - relay_miner_code: Code from RelayMinerError (empty if not available)
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - error_type: Type of error encountered (based on trusted classification)
+	//   - sanction_type: Type of sanction recommended (based on trusted classification)
 	//
 	// Exemplars:
 	//   - endpoint_url: URL of the endpoint
-	//   - relay_miner_error_message: Message from RelayMinerError (if available)
 	//
-	// Usage patterns:
-	//   - Filter by error_type!="" for Shannon protocol errors with optional RelayMinerError context
-	//   - Filter by error_type="" AND relay_miner_codespace!="" for successful responses with RelayMinerError
-	//   - Group by relay_miner_codespace/code to analyze RelayMinerError patterns across all cases
+	// Use to analyze:
+	//   - Shannon protocol errors by service and type
+	//   - Sanctions recommended by the protocol
+	//
+	// TODO_TECHDEBT(@adshmh): Check whether merging SanctionsByDomain and relayErrorsTotal makes sense.
 	relaysErrorsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      relaysErrorsTotalMetric,
-			Help:      "Total relay errors and RelayMinerError occurrences by service, error type, sanction type, and relay miner details",
+			Help:      "Total relay errors by service, endpoint domain, error type, and sanction type",
 		},
-		[]string{"service_id", "error_type", "sanction_type", "relay_miner_codespace", "relay_miner_code"},
+		[]string{"service_id", "endpoint_domain", "error_type", "sanction_type"},
 	)
 
 	// sanctionsByDomain tracks sanctions applied by domain.
-	// Enhanced with RelayMinerError context for additional reporting visibility
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
 	//   - sanction_type: Type of sanction (based on trusted classification)
 	//   - sanction_reason: The endpoint error type that caused the sanction (trusted)
-	//   - relay_miner_codespace: Codespace from RelayMinerError (empty if not available)
-	//   - relay_miner_code: Code from RelayMinerError (empty if not available)
-	//
-	// Note: Sanctions are based on trusted error classification, not RelayMinerError data.
-	// RelayMinerError labels provide additional context for cross-referencing.
 	sanctionsByDomain = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      sanctionsByDomainMetric,
-			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type, reason, and relay miner error context",
+			Help:      "Total sanctions by service, endpoint domain (TLD+1), sanction type, and reason",
 		},
-		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason", "relay_miner_codespace", "relay_miner_code"},
+		[]string{"service_id", "endpoint_domain", "sanction_type", "sanction_reason"},
 	)
 
 	// endpointLatency tracks the latency distribution of endpoint responses.
@@ -139,11 +133,33 @@ var (
 		},
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
+
+	// relayMinerErrorsTotal tracks RelayMinerError occurrences separately from Shannon protocol errors
+	// This metric allows analysis of RelayMinerError patterns independently while including
+	// endpoint error type for cross-referencing with Shannon protocol errors.
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - endpoint_error_type: Shannon endpoint error type for cross-referencing (empty if no endpoint error)
+	//   - relay_miner_codespace: Codespace from RelayMinerError
+	//   - relay_miner_code: Code from RelayMinerError
+	//
+	// Use to analyze:
+	//   - RelayMinerError patterns by codespace and code
+	//   - Correlation between endpoint errors and RelayMinerError occurrences
+	//   - RelayMinerError distribution across services and endpoint domains
+	relayMinerErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      relayMinerErrorsTotalMetric,
+			Help:      "Total RelayMinerError occurrences by service, endpoint domain, endpoint error type, and relay miner details",
+		},
+		[]string{"service_id", "endpoint_domain", "endpoint_error_type", "relay_miner_codespace", "relay_miner_code"},
+	)
 )
 
 // PublishMetrics exports all Shannon-related Prometheus metrics using observations
 // reported by the Shannon protocol.
-// Enhanced to include RelayMinerError reporting for observability on the same metrics as endpoint errors.
 func PublishMetrics(
 	logger polylog.Logger,
 	observations *protocol.ShannonObservationsList,
@@ -159,14 +175,17 @@ func PublishMetrics(
 		// Record the relay total with success/failure status
 		recordRelayTotal(logger, observationSet)
 
-		// Process endpoint errors (includes RelayMinerError context)
-		processEndpointErrors(observationSet.GetServiceId(), observationSet.GetEndpointObservations())
+		// Process endpoint errors
+		processEndpointErrors(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
 
-		// Process sanctions by domain (with RelayMinerError context for reporting)
+		// Process sanctions by domain
 		processSanctionsByDomain(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
 
 		// Process endpoint latency metrics
 		processEndpointLatency(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
+
+		// Process RelayMinerError occurrences separately
+		processRelayMinerErrors(logger, observationSet.GetServiceId(), observationSet.GetEndpointObservations())
 	}
 }
 
@@ -255,12 +274,26 @@ func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservat
 	return false
 }
 
-// processEndpointErrors records error metrics with RelayMinerError data
-// RelayMinerError data is included for observability but not used for classification
-func processEndpointErrors(serviceID string, observations []*protocol.ShannonEndpointObservation) {
+// processEndpointErrors records error metrics
+func processEndpointErrors(
+	logger polylog.Logger,
+	serviceID string,
+	observations []*protocol.ShannonEndpointObservation,
+) {
 	for _, endpointObs := range observations {
 		// Skip if there's no error
 		if endpointObs.ErrorType == nil {
+			continue
+		}
+
+		// Extract effective TLD+1 from endpoint URL
+		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		if err != nil {
+			logger.With(
+				"endpoint_url", endpointObs.GetEndpointUrl(),
+			).
+				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for relay errors metric")
 			continue
 		}
 
@@ -273,13 +306,6 @@ func processEndpointErrors(serviceID string, observations []*protocol.ShannonEnd
 			sanctionType = endpointObs.GetRecommendedSanction().String()
 		}
 
-		// Extract RelayMinerError details for reporting (if available)
-		var relayMinerCodespace, relayMinerCode string
-		if endpointObs.RelayMinerError != nil {
-			relayMinerCodespace = endpointObs.RelayMinerError.GetCodespace()
-			relayMinerCode = fmt.Sprintf("%d", endpointObs.RelayMinerError.GetCode())
-		}
-
 		// Extract high-cardinality values for exemplars
 		endpointURL := endpointObs.GetEndpointUrl()
 
@@ -289,21 +315,19 @@ func processEndpointErrors(serviceID string, observations []*protocol.ShannonEnd
 			"endpoint_url": endpointURL[:min(len(endpointURL), 128)],
 		}
 
-		// Record relay error with RelayMinerError labels (for reporting, not classification)
+		// Record relay error
 		relaysErrorsTotal.With(
 			prometheus.Labels{
-				"service_id":               serviceID,
-				"error_type":               errorType,
-				"sanction_type":            sanctionType,
-				"relay_miner_codespace":    relayMinerCodespace,
-				"relay_miner_code":         relayMinerCode,
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"error_type":      errorType,
+				"sanction_type":   sanctionType,
 			},
 		).(prometheus.ExemplarAdder).AddWithExemplar(float64(1), exLabels)
 	}
 }
 
-// processSanctionsByDomain records sanctions with RelayMinerError context for reporting
-// RelayMinerError data provides additional context but doesn't influence sanctioning decisions
+// processSanctionsByDomain records sanctions without RelayMinerError context
 func processSanctionsByDomain(
 	logger polylog.Logger,
 	serviceID string,
@@ -332,22 +356,13 @@ func processSanctionsByDomain(
 			sanctionReason = endpointObs.GetErrorType().String()
 		}
 
-		// Extract RelayMinerError details for additional reporting context
-		var relayMinerCodespace, relayMinerCode string
-		if endpointObs.RelayMinerError != nil {
-			relayMinerCodespace = endpointObs.RelayMinerError.GetCodespace()
-			relayMinerCode = fmt.Sprintf("%d", endpointObs.RelayMinerError.GetCode())
-		}
-
-		// Increment the sanctions counter with RelayMinerError context for reporting
+		// Increment the sanctions counter without RelayMinerError context
 		sanctionsByDomain.With(
 			prometheus.Labels{
-				"service_id":               serviceID,
-				"endpoint_domain":          endpointTLDPlusOne,
-				"sanction_type":            endpointObs.GetRecommendedSanction().String(),
-				"sanction_reason":          sanctionReason,
-				"relay_miner_codespace":    relayMinerCodespace,
-				"relay_miner_code":         relayMinerCode,
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
+				"sanction_reason": sanctionReason,
 			},
 		).Inc()
 	}
@@ -407,5 +422,51 @@ func processEndpointLatency(
 				"success":         fmt.Sprintf("%t", success),
 			},
 		).Observe(latencySeconds)
+	}
+}
+
+// processRelayMinerErrors records RelayMinerError occurrences separately from Shannon protocol errors
+func processRelayMinerErrors(
+	logger polylog.Logger,
+	serviceID string,
+	observations []*protocol.ShannonEndpointObservation,
+) {
+	for _, endpointObs := range observations {
+		// Skip if there's no RelayMinerError
+		if endpointObs.RelayMinerError == nil {
+			continue
+		}
+
+		// Extract effective TLD+1 from endpoint URL
+		endpointTLDPlusOne, err := extractEffectiveTLDPlusOne(endpointObs.GetEndpointUrl())
+		if err != nil {
+			logger.With(
+				"endpoint_url", endpointObs.GetEndpointUrl(),
+			).
+				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
+				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for RelayMinerError metric")
+			continue
+		}
+
+		// Extract RelayMinerError details
+		relayMinerCodespace := endpointObs.RelayMinerError.GetCodespace()
+		relayMinerCode := fmt.Sprintf("%d", endpointObs.RelayMinerError.GetCode())
+
+		// Extract endpoint error type for cross-referencing (empty if no endpoint error)
+		var endpointErrorType string
+		if endpointObs.ErrorType != nil {
+			endpointErrorType = endpointObs.GetErrorType().String()
+		}
+
+		// Record RelayMinerError occurrence
+		relayMinerErrorsTotal.With(
+			prometheus.Labels{
+				"service_id":            serviceID,
+				"endpoint_domain":       endpointTLDPlusOne,
+				"endpoint_error_type":   endpointErrorType,
+				"relay_miner_codespace": relayMinerCodespace,
+				"relay_miner_code":      relayMinerCode,
+			},
+		).Inc()
 	}
 }
