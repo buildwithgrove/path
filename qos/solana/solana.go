@@ -40,7 +40,7 @@ type QoS struct {
 //
 // Implements the gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	return qos.requestValidator.validateHTTPRequest(req)
+	return qos.validateHTTPRequest(req)
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
@@ -69,10 +69,10 @@ func (q *QoS) ApplyObservations(observations *qosobservations.Observations) erro
 		return errors.New("ApplyObservations: received nil Solana observation")
 	}
 
-	updatedEndpoints := q.EndpointStore.UpdateEndpointsFromObservations(solanaObservations)
+	updatedEndpoints := q.UpdateEndpointsFromObservations(solanaObservations)
 
 	// update the perceived current state of the blockchain.
-	return q.ServiceState.UpdateFromEndpoints(updatedEndpoints)
+	return q.UpdateFromEndpoints(updatedEndpoints)
 }
 
 // HydrateDisqualifiedEndpointsResponse is a no-op for the Solana QoS.

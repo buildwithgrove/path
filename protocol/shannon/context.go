@@ -214,7 +214,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	if err != nil {
 		// endpoint failed to respond before the timeout expires.
 		hydratedLogger.Error().Err(err).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, fmt.Errorf("Error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), err)
+		return nil, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), err)
 	}
 
 	// Validate the response.

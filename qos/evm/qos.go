@@ -87,7 +87,7 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 //
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {
-	return qos.evmRequestValidator.validateHTTPRequest(req)
+	return qos.validateHTTPRequest(req)
 }
 
 // ParseWebsocketRequest builds a request context from the provided WebSocket request.
@@ -106,5 +106,5 @@ func (qos *QoS) ParseWebsocketRequest(_ context.Context) (gateway.RequestQoSCont
 //   - called by the devtools.DisqualifiedEndpointReporter to fill it with the QoS-specific data.
 func (qos *QoS) HydrateDisqualifiedEndpointsResponse(serviceID protocol.ServiceID, details *devtools.DisqualifiedEndpointResponse) {
 	qos.logger.Info().Msgf("hydrating disqualified endpoints response for service ID: %s", serviceID)
-	details.QoSLevelDisqualifiedEndpoints = qos.serviceState.getDisqualifiedEndpointsResponse(serviceID)
+	details.QoSLevelDisqualifiedEndpoints = qos.getDisqualifiedEndpointsResponse(serviceID)
 }
