@@ -35,7 +35,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	s.serviceStateLock.RLock()
 	defer s.serviceStateLock.RUnlock()
 
-	if err := endpoint.ValidateBasic(); err != nil {
+	if err := endpoint.validateBasic(); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 	defer s.serviceStateLock.Unlock()
 
 	for endpointAddr, endpoint := range updatedEndpoints {
-		if err := endpoint.ValidateBasic(); err != nil {
+		if err := endpoint.validateBasic(); err != nil {
 			continue
 		}
 
