@@ -80,7 +80,7 @@ var (
 			Help:      "Histogram of response sizes in bytes for performance analysis.",
 			// TODO_IMPROVE: Consider configuring bucket sizes externally for flexible adjustments
 			// in response to different data patterns or deployment scenarios.
-			Buckets: []float64{100, 500, 1000, 5000, 10000, 50000},
+			Buckets: []float64{100, 500, 1_000, 5_000, 10_000, 50_000},
 		},
 		[]string{"service_id"},
 	)
