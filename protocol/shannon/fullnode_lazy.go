@@ -115,6 +115,11 @@ func (lfn *LazyFullNode) GetSession(
 	return *session, nil
 }
 
+// LatestBlockHeight returns the current blockchain height from the full node.
+func (lfn *LazyFullNode) LatestBlockHeight(ctx context.Context) (height int64, err error) {
+	return lfn.blockClient.LatestBlockHeight(ctx)
+}
+
 // ValidateRelayResponse:
 //   - Validates the raw response bytes received from an endpoint.
 //   - Uses the SDK and the lazy full node's account client for validation.

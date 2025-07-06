@@ -15,6 +15,8 @@ import (
 	shannonprotocol "github.com/buildwithgrove/path/protocol/shannon"
 )
 
+var defaultUseCache = true
+
 func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -67,9 +69,8 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 						GRPCConfig: shannonprotocol.GRPCConfig{
 							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
 						},
-						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
-							SessionTTL: 30 * time.Second,
+							UseCache: &defaultUseCache,
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
