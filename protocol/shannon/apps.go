@@ -11,11 +11,16 @@ import (
 )
 
 // getOwnedApps:
-//   - Returns list of apps owned by the gateway, built from supplied private keys
-//   - Supplied private keys are ONLY used to build app addresses for relay signing
+//   - Returns list of apps owned by the gateway.
+//   - It is built from supplied private keys
+//   - Supplied private keys are used for either:
+//   - Signing organic relays for Centralized gateway mode (i.e. real usage)
+//   - Signing synthetic relays for both Centralized and Delegated gateway modes (i.e. QoS eval)
 //   - Populates `appAddr` and `stakedServiceID` for each app
 //
-// ownedAppsMap maps service IDs to a list of app addresses owned by the gateway operator in Centralized Gateway Mode.
+// Returns:
+//   - ownedAppsMap maps service IDs to a list of app addresses owned by the gateway operator.
+//
 // Note that one service ID can have multiple apps owned by the gateway operator.
 //
 // Example:
