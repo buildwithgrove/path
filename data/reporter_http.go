@@ -14,7 +14,7 @@ import (
 )
 
 // defaultPostTimeoutMS defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
-const defaultPostTimeoutMS = 10000
+const defaultPostTimeoutMS = 10_000
 
 // DataReporterHTTP exports observations to an external components over HTTP (e.g. Flentd HTTP Plugin, a Messaging system, or a database)
 var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
