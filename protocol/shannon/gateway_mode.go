@@ -71,6 +71,7 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	case protocol.GatewayModeCentralized:
 		return &signer{
 			accountClient: *p.GetAccountClient(),
+			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
 
@@ -78,6 +79,7 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	case protocol.GatewayModeDelegated:
 		return &signer{
 			accountClient: *p.GetAccountClient(),
+			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
 

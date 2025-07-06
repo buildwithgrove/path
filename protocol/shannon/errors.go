@@ -9,10 +9,10 @@ var (
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
-	ErrEndpointConfigError = errors.New("endpoint configuration error")
+	ErrRelayEndpointConfig = errors.New("endpoint configuration error")
 
 	// endpoint timeout
-	ErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	ErrRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
 	// PATH manually cancelled the context for the request.
 	// E.g. Parallel requests were made and one succeeded so the other was cancelled.
@@ -64,12 +64,12 @@ var (
 // • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
 	if isEndpointConfigError(err) {
-		return ErrEndpointConfigError
+		return ErrRelayEndpointConfig
 	}
 
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
-		return ErrEndpointTimeout
+		return ErrRelayEndpointTimeout
 	}
 
 	// context cancelled manually
