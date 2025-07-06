@@ -138,7 +138,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 
 	// If no sessions were found, return an error.
 	if len(ownedAppSessions) == 0 {
-		err := fmt.Errorf("%w: service %s.", errProtocolContextSetupCentralizedNoSessions, serviceID)
+		err := fmt.Errorf("%w: service %s", errProtocolContextSetupCentralizedNoSessions, serviceID)
 		logger.Error().Msg(err.Error())
 		return nil, err
 	}

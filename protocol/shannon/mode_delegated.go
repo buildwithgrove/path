@@ -45,7 +45,7 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	selectedSession, err := p.FullNode.GetSession(ctx, serviceID, selectedAppAddr)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: app %s: %w. Relay request will fail.", errProtocolContextSetupFetchSession, selectedAppAddr, err)
+		err = fmt.Errorf("%w: app %s: %w", errProtocolContextSetupFetchSession, selectedAppAddr, err)
 		logger.Error().Err(err).Msg("Relay request will fail because of an error fetching the session for the app.")
 		return nil, err
 	}
