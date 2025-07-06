@@ -47,8 +47,7 @@ type Protocol struct {
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
-	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
+	// ownedApps is the list of apps owned by the gateway operator
 	ownedApps map[protocol.ServiceID][]string
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
