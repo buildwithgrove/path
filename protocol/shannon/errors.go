@@ -9,10 +9,10 @@ var (
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
-	RelayErrEndpointConfigError = errors.New("endpoint configuration error")
+	ErrRelayEndpointConfig = errors.New("endpoint configuration error")
 
 	// endpoint timeout
-	RelayErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	ErrRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
 	// Request context setup errors.
 	// Used to build observations:
@@ -60,12 +60,12 @@ var (
 // • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
 	if isEndpointConfigError(err) {
-		return RelayErrEndpointConfigError
+		return ErrRelayEndpointConfig
 	}
 
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
-		return RelayErrEndpointTimeout
+		return ErrRelayEndpointTimeout
 	}
 
 	// No known patterns matched.

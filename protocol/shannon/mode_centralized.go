@@ -115,7 +115,7 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
 		// Retrieve the session for the owned app.
-		session, err := p.FullNode.GetSession(ctx, serviceID, ownedAppAddr)
+		session, err := p.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
 			// Wrap the protocol context setup error.
 			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
