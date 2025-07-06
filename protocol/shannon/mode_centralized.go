@@ -38,32 +38,43 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	var ownedAppSessions []sessiontypes.Session
-
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
+	var ownedAppSessions []sessiontypes.Session
 	for _, ownedAppAddr := range ownedAppsForService {
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
-		// Retrieve the session for the owned app.
-		session, err := p.GetSession(ctx, serviceID, ownedAppAddr)
+		// Retrieve the session for the owned app, without grace period logic.
+		sessionLatest, err := p.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			// Wrap the protocol context setup error.
-			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
-			logger.Error().Err(err).Msg(err.Error())
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Error().Err(err).Msgf("Error getting the current session from the full node for app: %s", ownedAppAddr)
 			return nil, err
 		}
-
-		app := session.Application
-
-		// Verify the app delegates to the gateway	.
-		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
-			// Wrap the protocol context setup error.
-			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, app.Address, p.gatewayAddr)
+		// Verify both apps delegate to the gateway
+		if !gatewayHasDelegationForApp(p.gatewayAddr, sessionLatest.Application) {
+			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionLatest.Application.Address, p.gatewayAddr)
 			logger.Error().Msg(err.Error())
 			return nil, err
 		}
+		ownedAppSessions = append(ownedAppSessions, sessionLatest)
 
-		ownedAppSessions = append(ownedAppSessions, session)
+		// Retrieve the session for the owned app, considering grace period logic.
+		sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, ownedAppAddr)
+		if err != nil {
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Warn().Err(err).Msgf("Error getting the previous extended session from the full node for app: %s. Skipping it", ownedAppAddr)
+			continue
+		}
+
+		// Compare session IDs - if they're different, return both sessions
+		if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
+			if !gatewayHasDelegationForApp(p.gatewayAddr, sessionLatest.Application) {
+				err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, sessionLatest.Application.Address, p.gatewayAddr)
+				logger.Error().Msg(err.Error())
+				continue
+			}
+			ownedAppSessions = append(ownedAppSessions, sessionPreviousExtended, sessionLatest)
+		}
 	}
 
 	// If no sessions were found, return an error.
@@ -73,7 +84,8 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.", len(ownedAppSessions), len(ownedAppsForService), serviceID)
+	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.",
+		len(ownedAppSessions), len(ownedAppsForService), serviceID)
 
 	return ownedAppSessions, nil
 }

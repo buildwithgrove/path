@@ -17,7 +17,7 @@ func getShannonFullNode(logger polylog.Logger, config *shannonconfig.ShannonGate
 
 	// TODO_MVP(@adshmh): rename the variables here once a more accurate name is selected for `LazyFullNode`
 	// LazyFullNode skips all caching and queries the onchain data for serving each relay request.
-	lazyFullNode, err := shannon.NewLazyFullNode(fullNodeConfig)
+	lazyFullNode, err := shannon.NewLazyFullNode(logger, fullNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Shannon lazy full node: %w", err)
 	}

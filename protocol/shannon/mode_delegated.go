@@ -31,7 +31,7 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With("method", "getDelegatedGatewayModeActiveSession")
 
-	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
+	extractedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: %+v: %w. ", errProtocolContextSetupGetAppFromHTTPReq, httpReq, err)
@@ -39,18 +39,34 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 		return nil, err
 	}
 
-	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
+	logger.Debug().Msgf("fetching the app with the selected address %s.", extractedAppAddr)
 
-	// Retrieve the session for the selected app.
-	selectedSession, err := p.GetSession(ctx, serviceID, selectedAppAddr)
+	// Retrieve the session for the owned app, without grace period logic.
+	sessionLatest, err := p.GetSession(ctx, serviceID, extractedAppAddr)
 	if err != nil {
-		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: app %s: %w", errProtocolContextSetupFetchSession, selectedAppAddr, err)
-		logger.Error().Err(err).Msg("Relay request will fail because of an error fetching the session for the app.")
+		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
+		logger.Error().Err(err).Msg(err.Error())
 		return nil, err
 	}
 
-	selectedApp := selectedSession.Application
+	// Retrieve the session for the owned app, considering grace period logic.
+	sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, extractedAppAddr)
+	if err != nil {
+		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
+		logger.Error().Err(err).Msg(err.Error())
+		return nil, err
+	}
+
+	// Append the latest session to the list.
+	selectedSessions := make([]sessiontypes.Session, 0)
+	selectedSessions = append(selectedSessions, sessionLatest)
+	if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
+		// Append the previous session to the list if the session IDs are different.
+		selectedSessions = append(selectedSessions, sessionPreviousExtended)
+	}
+
+	// Select the first session in the list.
+	selectedApp := selectedSessions[0].Application
 
 	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
 
@@ -63,14 +79,14 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: gateway %s app %s", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
+		err = fmt.Errorf("%w: gateway %s app %s relay request will fail", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
 		logger.Error().Err(err).Msg("Relay request will fail because the gateway does not have delegation for the app.")
 		return nil, err
 	}
 
 	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
 
-	return []sessiontypes.Session{selectedSession}, nil
+	return selectedSessions, nil
 }
 
 // appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
@@ -89,10 +105,10 @@ func getAppAddrFromHTTPReq(httpReq *http.Request) (string, error) {
 		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied")
 	}
 
-	selectedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)
-	if selectedAppAddr == "" {
+	extractedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)
+	if extractedAppAddr == "" {
 		return "", fmt.Errorf("getAppAddrFromHTTPReq: a target app must be supplied as HTTP header %s", request.HTTPHeaderAppAddress)
 	}
 
-	return selectedAppAddr, nil
+	return extractedAppAddr, nil
 }

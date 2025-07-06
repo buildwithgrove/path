@@ -10,6 +10,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	"github.com/viccon/sturdyc"
 
@@ -51,6 +52,26 @@ const (
 	//   - 0.9 = 90% of TTL (e.g. 27s for 30s TTL)
 	//   - Ensures refresh always completes before expiry
 	maxEarlyRefreshPercentage = 0.9
+
+	// Cache key prefixes to avoid collisions between different data types.
+	sessionCacheKeyPrefix = "session"
+	sharedParamsCacheKey  = "shared_params"
+	blockHeightCacheKey   = "block_height"
+
+	// TODO_IMPROVE: Make this configurable
+	sharedParamsCacheTTL      = 10 * time.Minute // Shared params change infrequently
+	sharedParamsCacheCapacity = 1                // Only need to cache one entry
+
+	// TODO_IMPROVE: Make this configurable
+	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
+	blockHeightCacheCapacity = 1                // Only need to cache one entry
+
+	// TODO_IMPROVE: Make this configurable
+	// - Grace period scale down factor forces the gateway to respect a smaller
+	//   grace period than the one specified onchain to ensure we start using
+	//   the new session as soon as possible.
+	// - It must be between 0 and 1. Default: 0.8
+	gracePeriodScaleDownFactor = 0.8
 )
 
 // getCacheDelays returns the min/max delays for SturdyC's Early Refresh strategy.
@@ -68,9 +89,6 @@ func getCacheDelays(ttl time.Duration) (min, max time.Duration) {
 	return
 }
 
-// Prefix for session cache keys to avoid collisions with other keys.
-const sessionCacheKeyPrefix = "session"
-
 var _ FullNode = &cachingFullNode{}
 
 // cachingFullNode wraps a LazyFullNode with SturdyC-based caching.
@@ -84,9 +102,15 @@ type cachingFullNode struct {
 	// Underlying node for protocol data fetches
 	lazyFullNode *LazyFullNode
 
-	// Session cache (5 min on Beta TestNet, see #275)
+	// Session cache
 	// TODO_MAINNET_MIGRATION(@Olshansk): Revisit after mainnet
 	sessionCache *sturdyc.Client[sessiontypes.Session]
+
+	// Shared params cache
+	sharedParamsCache *sturdyc.Client[*sharedtypes.Params]
+
+	// Block height cache
+	blockHeightCache *sturdyc.Client[int64]
 
 	// Account client wrapped with SturdyC cache
 	cachingAccountClient *sdk.AccountClient
@@ -110,10 +134,8 @@ func NewCachingFullNode(
 		Str("cache_config_session_ttl", cacheConfig.SessionTTL.String()).
 		Msgf("cachingFullNode - Cache Configuration")
 
-	// Configure session cache with early refreshes
-	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
-
 	// Create the session cache with early refreshes
+	sessionMinRefreshDelay, sessionMaxRefreshDelay := getCacheDelays(cacheConfig.SessionTTL)
 	sessionCache := sturdyc.New[sessiontypes.Session](
 		cacheCapacity,
 		numShards,
@@ -136,11 +158,43 @@ func NewCachingFullNode(
 		evictionPercentage,
 	)
 
+	// Shared params cache
+	sharedParamsMinRefreshDelay, sharedParamsMaxRefreshDelay := getCacheDelays(sharedParamsCacheTTL)
+	sharedParamsCache := sturdyc.New[*sharedtypes.Params](
+		sharedParamsCacheCapacity,
+		1,
+		sharedParamsCacheTTL,
+		evictionPercentage,
+		sturdyc.WithEarlyRefreshes(
+			sharedParamsMinRefreshDelay,
+			sharedParamsMaxRefreshDelay,
+			sharedParamsCacheTTL,
+			retryBaseDelay,
+		),
+	)
+
+	// Block height cache
+	blockHeightMinRefreshDelay, blockHeightMaxRefreshDelay := getCacheDelays(blockHeightCacheTTL)
+	blockHeightCache := sturdyc.New[int64](
+		blockHeightCacheCapacity,
+		1,
+		blockHeightCacheTTL,
+		evictionPercentage,
+		sturdyc.WithEarlyRefreshes(
+			blockHeightMinRefreshDelay,
+			blockHeightMaxRefreshDelay,
+			blockHeightCacheTTL,
+			retryBaseDelay,
+		),
+	)
+
 	// Initialize the caching full node with the modified lazy full node
 	return &cachingFullNode{
-		logger:       logger,
-		lazyFullNode: lazyFullNode,
-		sessionCache: sessionCache,
+		logger:            logger,
+		lazyFullNode:      lazyFullNode,
+		sessionCache:      sessionCache,
+		sharedParamsCache: sharedParamsCache,
+		blockHeightCache:  blockHeightCache,
 		// Wrap the underlying account fetcher with a SturdyC caching layer.
 		cachingAccountClient: getCachingAccountClient(
 			logger,
@@ -161,22 +215,151 @@ func (cfn *cachingFullNode) GetSession(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
+	logger := cfn.logger.With(
+		"service_id", string(serviceID),
+		"app_addr", appAddr,
+		"method", "GetSession",
+	)
+
+	height, err := cfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msgf(
+			"[cachingFullNode.GetSession] Failed to get current block height",
+		)
+		return sessiontypes.Session{}, err
+	}
+	sessionKey := getSessionCacheKey(serviceID, appAddr, height)
+
 	// See: https://github.com/viccon/sturdyc?tab=readme-ov-file#get-or-fetch
-	return cfn.sessionCache.GetOrFetch(
+	session, err := cfn.sessionCache.GetOrFetch(
 		ctx,
-		getSessionCacheKey(serviceID, appAddr),
+		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
-			cfn.logger.Debug().Str("session_key", getSessionCacheKey(serviceID, appAddr)).Msgf(
-				"[cachingFullNode.GetSession] Fetching from full node",
-			)
-			return cfn.lazyFullNode.GetSession(fetchCtx, serviceID, appAddr)
+			logger.Debug().Str("session_key", sessionKey).Msgf("Fetching session from full node")
+			session, fetchErr := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
+
+			if fetchErr != nil {
+				logger.Error().Err(fetchErr).Msgf("Failed to fetch session from full node")
+			} else {
+				logger.Debug().Msgf("Successfully fetched session from full node")
+			}
+			return session, fetchErr
 		},
 	)
+
+	return session, err
 }
 
-// getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>
-func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
-	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
+// GetSessionWithExtendedValidity implements session retrieval with support for
+// Pocket Network's "session grace period" business logic.
+//
+// It is used to account for the case when:
+// - RelayMiner.FullNode.Height > Gateway.FullNode.Height
+// AND
+// - RelayMiner.FullNode.Session > Gateway.FullNode.Session
+//
+// In the context of PATH, it is used to account for the case when:
+// - Gateway.FullNode.Height > RelayMiner.FullNode.Height
+// AND
+// - Gateway.FullNode.Session > RelayMiner.FullNode.Session
+//
+// Protocol References:
+// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
+// - https://dev.poktroll.com/protocol/governance/gov_params
+// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
+func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
+	logger := cfn.logger.
+		With("service_id", string(serviceID)).
+		With("app_addr", appAddr).
+		With("method", "GetSessionWithExtendedValidity")
+
+	// Get the current session from cache
+	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
+
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to get current session")
+		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
+	}
+
+	logger.Debug().
+		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
+		Int64("current_session_end_height", currentSession.Header.SessionEndBlockHeight).
+		Msg("Got the current session from cache")
+
+	// Get shared parameters to determine grace period
+	sharedParams, err := cfn.GetSharedParams(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to get shared params, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Get current block height
+	currentHeight, err := cfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to get current block height, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Calculate when the previous session's grace period would end
+	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
+	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+
+	// If we're not within the grace period of the previous session, return the current session
+	if currentHeight > prevSessionEndHeightWithExtendedValidity {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
+			Msg("IS NOT WITHIN grace period, returning current session")
+
+		return currentSession, nil
+	}
+
+	// Scale down the grace period to aggressively start using the new session
+	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*gracePeriodScaleDownFactor)
+	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
+		logger.Debug().
+			Int64("current_height", currentHeight).
+			Int64("prev_session_end_height", prevSessionEndHeight).
+			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
+			Int64("prev_session_end_height_with_extended_validity_scaled", prevSessionEndHeightWithExtendedValidityScaled).
+			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
+
+		return currentSession, nil
+	}
+
+	logger.Debug().
+		Int64("current_height", currentHeight).
+		Int64("prev_session_end_height", prevSessionEndHeight).
+		Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
+		Msg("IS WITHIN grace period of previous session")
+
+	// Use cache for previous session lookup with a specific key
+	prevSessionKey := getSessionCacheKey(serviceID, appAddr, prevSessionEndHeight)
+
+	prevSession, err := cfn.sessionCache.GetOrFetch(
+		ctx,
+		prevSessionKey,
+		func(fetchCtx context.Context) (sessiontypes.Session, error) {
+			cfn.logger.Debug().Msg("Fetching previous session from full node")
+			session, fetchErr := cfn.lazyFullNode.GetSessionWithExtendedValidity(fetchCtx, serviceID, appAddr)
+			if fetchErr != nil {
+				cfn.logger.Error().Err(fetchErr).Msg("Failed to fetch previous session from full node")
+			}
+			return session, fetchErr
+		},
+	)
+
+	return prevSession, err
+}
+
+// getSessionCacheKey builds a unique cache key for session: <prefix>:<serviceID>:<appAddr>:<height>
+func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string, height int64) string {
+	return fmt.Sprintf("%s:%s:%s:%d", sessionCacheKeyPrefix, serviceID, appAddr, height)
 }
 
 // ValidateRelayResponse:
@@ -206,4 +389,40 @@ func (cfn *cachingFullNode) GetAccountClient() *sdk.AccountClient {
 //   - Currently always true (cache fills as needed)
 func (cfn *cachingFullNode) IsHealthy() bool {
 	return cfn.lazyFullNode.IsHealthy()
+}
+
+// GetSharedParams: cached shared params with early refresh for governance changes.
+func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Params, error) {
+	params, err := cfn.sharedParamsCache.GetOrFetch(
+		ctx,
+		sharedParamsCacheKey,
+		func(fetchCtx context.Context) (*sharedtypes.Params, error) {
+			cfn.logger.Debug().Msg("Fetching shared params from full node")
+			params, fetchErr := cfn.lazyFullNode.GetSharedParams(fetchCtx)
+			if fetchErr != nil {
+				cfn.logger.Error().Err(fetchErr).Msg("Failed to fetch shared params from full node")
+			}
+			return params, fetchErr
+		},
+	)
+
+	return params, err
+}
+
+// GetCurrentBlockHeight: cached block height with 20sec TTL and early refresh.
+func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
+	height, err := cfn.blockHeightCache.GetOrFetch(
+		ctx,
+		blockHeightCacheKey,
+		func(fetchCtx context.Context) (int64, error) {
+			cfn.logger.Debug().Msg("Fetching current block height from full node")
+			height, fetchErr := cfn.lazyFullNode.GetCurrentBlockHeight(fetchCtx)
+			if fetchErr != nil {
+				cfn.logger.Error().Err(fetchErr).Msg("Failed to fetch current block height from full node")
+			}
+			return height, fetchErr
+		},
+	)
+
+	return height, err
 }
