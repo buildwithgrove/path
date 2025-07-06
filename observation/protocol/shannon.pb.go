@@ -330,6 +330,70 @@ func (x *ShannonRequestError) GetErrorDetails() string {
 	return ""
 }
 
+// ShannonRelayMinerError captures relay miner error details from the RelayResponse
+type ShannonRelayMinerError struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Codespace from the RelayMinerError
+	Codespace string `protobuf:"bytes,1,opt,name=codespace,proto3" json:"codespace,omitempty"`
+	// Code from the RelayMinerError
+	Code uint32 `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
+	// Message from the RelayMinerError
+	Message       string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShannonRelayMinerError) Reset() {
+	*x = ShannonRelayMinerError{}
+	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShannonRelayMinerError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShannonRelayMinerError) ProtoMessage() {}
+
+func (x *ShannonRelayMinerError) ProtoReflect() protoreflect.Message {
+	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShannonRelayMinerError.ProtoReflect.Descriptor instead.
+func (*ShannonRelayMinerError) Descriptor() ([]byte, []int) {
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ShannonRelayMinerError) GetCodespace() string {
+	if x != nil {
+		return x.Codespace
+	}
+	return ""
+}
+
+func (x *ShannonRelayMinerError) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *ShannonRelayMinerError) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 type ShannonRequestObservations struct {
@@ -350,7 +414,7 @@ type ShannonRequestObservations struct {
 
 func (x *ShannonRequestObservations) Reset() {
 	*x = ShannonRequestObservations{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -362,7 +426,7 @@ func (x *ShannonRequestObservations) String() string {
 func (*ShannonRequestObservations) ProtoMessage() {}
 
 func (x *ShannonRequestObservations) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -375,7 +439,7 @@ func (x *ShannonRequestObservations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonRequestObservations.ProtoReflect.Descriptor instead.
 func (*ShannonRequestObservations) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{1}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ShannonRequestObservations) GetServiceId() string {
@@ -427,13 +491,15 @@ type ShannonEndpointObservation struct {
 	ErrorDetails *string `protobuf:"bytes,11,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
 	RecommendedSanction *ShannonSanctionType `protobuf:"varint,12,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// RelayMiner error details if the endpoint returned a RelayMinerError
+	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,13,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
 	*x = ShannonEndpointObservation{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[2]
+	mi := &file_path_protocol_shannon_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +511,7 @@ func (x *ShannonEndpointObservation) String() string {
 func (*ShannonEndpointObservation) ProtoMessage() {}
 
 func (x *ShannonEndpointObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[2]
+	mi := &file_path_protocol_shannon_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +524,7 @@ func (x *ShannonEndpointObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonEndpointObservation.ProtoReflect.Descriptor instead.
 func (*ShannonEndpointObservation) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{2}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ShannonEndpointObservation) GetSupplier() string {
@@ -545,6 +611,13 @@ func (x *ShannonEndpointObservation) GetRecommendedSanction() ShannonSanctionTyp
 	return ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 }
 
+func (x *ShannonEndpointObservation) GetRelayMinerError() *ShannonRelayMinerError {
+	if x != nil {
+		return x.RelayMinerError
+	}
+	return nil
+}
+
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -556,7 +629,7 @@ type ShannonObservationsList struct {
 
 func (x *ShannonObservationsList) Reset() {
 	*x = ShannonObservationsList{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[3]
+	mi := &file_path_protocol_shannon_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +641,7 @@ func (x *ShannonObservationsList) String() string {
 func (*ShannonObservationsList) ProtoMessage() {}
 
 func (x *ShannonObservationsList) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[3]
+	mi := &file_path_protocol_shannon_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +654,7 @@ func (x *ShannonObservationsList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonObservationsList.ProtoReflect.Descriptor instead.
 func (*ShannonObservationsList) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{3}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShannonObservationsList) GetObservations() []*ShannonRequestObservations {
@@ -599,13 +672,17 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x13ShannonRequestError\x12E\n" +
 	"\n" +
 	"error_type\x18\x01 \x01(\x0e2&.path.protocol.ShannonRequestErrorTypeR\terrorType\x12#\n" +
-	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\"\xfb\x01\n" +
+	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\"d\n" +
+	"\x16ShannonRelayMinerError\x12\x1c\n" +
+	"\tcodespace\x18\x01 \x01(\tR\tcodespace\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xfb\x01\n" +
 	"\x1aShannonRequestObservations\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\x9e\x06\n" +
+	"\x0e_request_error\"\x8c\a\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -621,11 +698,13 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"error_type\x18\n" +
 	" \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x01R\terrorType\x88\x01\x01\x12(\n" +
 	"\rerror_details\x18\v \x01(\tH\x02R\ferrorDetails\x88\x01\x01\x12Z\n" +
-	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01B\x1e\n" +
+	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
+	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01B\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
-	"\x15_recommended_sanction\"h\n" +
+	"\x15_recommended_sanctionB\x14\n" +
+	"\x12_relay_miner_error\"h\n" +
 	"\x17ShannonObservationsList\x12M\n" +
 	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*\x9e\x05\n" +
 	"\x17ShannonRequestErrorType\x12%\n" +
@@ -682,31 +761,33 @@ func file_path_protocol_shannon_proto_rawDescGZIP() []byte {
 }
 
 var file_path_protocol_shannon_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_path_protocol_shannon_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_path_protocol_shannon_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_path_protocol_shannon_proto_goTypes = []any{
 	(ShannonRequestErrorType)(0),       // 0: path.protocol.ShannonRequestErrorType
 	(ShannonEndpointErrorType)(0),      // 1: path.protocol.ShannonEndpointErrorType
 	(ShannonSanctionType)(0),           // 2: path.protocol.ShannonSanctionType
 	(*ShannonRequestError)(nil),        // 3: path.protocol.ShannonRequestError
-	(*ShannonRequestObservations)(nil), // 4: path.protocol.ShannonRequestObservations
-	(*ShannonEndpointObservation)(nil), // 5: path.protocol.ShannonEndpointObservation
-	(*ShannonObservationsList)(nil),    // 6: path.protocol.ShannonObservationsList
-	(*timestamppb.Timestamp)(nil),      // 7: google.protobuf.Timestamp
+	(*ShannonRelayMinerError)(nil),     // 4: path.protocol.ShannonRelayMinerError
+	(*ShannonRequestObservations)(nil), // 5: path.protocol.ShannonRequestObservations
+	(*ShannonEndpointObservation)(nil), // 6: path.protocol.ShannonEndpointObservation
+	(*ShannonObservationsList)(nil),    // 7: path.protocol.ShannonObservationsList
+	(*timestamppb.Timestamp)(nil),      // 8: google.protobuf.Timestamp
 }
 var file_path_protocol_shannon_proto_depIdxs = []int32{
 	0, // 0: path.protocol.ShannonRequestError.error_type:type_name -> path.protocol.ShannonRequestErrorType
 	3, // 1: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
-	5, // 2: path.protocol.ShannonRequestObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
-	7, // 3: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
-	7, // 4: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
+	6, // 2: path.protocol.ShannonRequestObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
+	8, // 3: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
+	8, // 4: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
 	1, // 5: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
 	2, // 6: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4, // 7: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	4, // 7: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	5, // 8: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_path_protocol_shannon_proto_init() }
@@ -714,15 +795,15 @@ func file_path_protocol_shannon_proto_init() {
 	if File_path_protocol_shannon_proto != nil {
 		return
 	}
-	file_path_protocol_shannon_proto_msgTypes[1].OneofWrappers = []any{}
 	file_path_protocol_shannon_proto_msgTypes[2].OneofWrappers = []any{}
+	file_path_protocol_shannon_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_protocol_shannon_proto_rawDesc), len(file_path_protocol_shannon_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

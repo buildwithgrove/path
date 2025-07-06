@@ -84,6 +84,16 @@ enum ShannonSanctionType {
   SHANNON_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
 }
 
+// ShannonRelayMinerError captures relay miner error details from the RelayResponse
+message ShannonRelayMinerError {
+  // Codespace from the RelayMinerError
+  string codespace = 1;
+  // Code from the RelayMinerError
+  uint32 code = 2;
+  // Message from the RelayMinerError
+  string message = 3;
+}
+
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 message ShannonRequestObservations {
@@ -139,6 +149,9 @@ message ShannonEndpointObservation {
 
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 12;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError
+  optional ShannonRelayMinerError relay_miner_error = 13;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
