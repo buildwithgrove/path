@@ -11,6 +11,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -259,6 +260,9 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 
 	rc.logger.Info().Msgf("Selected %d endpoints for parallel relay requests", len(selectedEndpoints))
 
+	// Log TLD diversity of selected endpoints
+	rc.logEndpointTLDDiversity(selectedEndpoints)
+	
 	// Prepare Protocol contexts for all selected endpoints
 	rc.protocolContexts = make([]ProtocolRequestContext, 0, len(selectedEndpoints))
 	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
@@ -303,8 +307,18 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
+	// Track whether this is a parallel or single request
+	isParallel := len(rc.protocolContexts) > 1
+	
+	// Log request type for monitoring
+	rc.logger.Debug().
+		Bool("is_parallel", isParallel).
+		Int("protocol_contexts", len(rc.protocolContexts)).
+		Str("service_id", string(rc.serviceID)).
+		Msg("Handling relay request")
+	
 	// If we have multiple protocol contexts, send parallel requests
-	if len(rc.protocolContexts) > 1 {
+	if isParallel {
 		return rc.handleParallelRelayRequests()
 	}
 
@@ -331,7 +345,12 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 // and returns the first successful response
 func (rc *requestContext) handleParallelRelayRequests() error {
 	logger := rc.logger.With("service_id", rc.serviceID).With("method", "handleParallelRelayRequests")
-	logger.Info().Msgf("Sending parallel relay requests to %d endpoints", len(rc.protocolContexts))
+	
+	// Log comprehensive request information
+	logger.Info().
+		Int("endpoint_count", len(rc.protocolContexts)).
+		Str("service_id", string(rc.serviceID)).
+		Msg("Starting parallel relay requests")
 
 	// Create a channel to receive the first successful response
 	type relayResult struct {
@@ -388,8 +407,24 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			if result.err == nil {
 				// First successful response - cancel other requests and return
 				overallDuration := time.Since(overallStartTime)
-				logger.Info().Msgf("Received successful response from endpoint %d after %dms (overall: %dms), cancelling other requests. Timings: [%s]",
-					result.index, result.duration.Milliseconds(), overallDuration.Milliseconds(), strings.Join(responseTimings, ", "))
+				
+				// Extract endpoint TLD for logging
+				endpointTLD := ""
+				if tlds := shannonmetrics.GetEndpointTLDs(protocol.EndpointAddrList{result.response.EndpointAddr}); len(tlds) > 0 {
+					endpointTLD = tlds[result.response.EndpointAddr]
+				}
+				
+				logger.Info().
+					Int("winning_endpoint_index", result.index).
+					Int64("winning_request_duration_ms", result.duration.Milliseconds()).
+					Int64("overall_duration_ms", overallDuration.Milliseconds()).
+					Str("winning_endpoint_addr", string(result.response.EndpointAddr)).
+					Str("winning_endpoint_tld", endpointTLD).
+					Int("completed_requests", successfulResponses).
+					Int("total_requests", totalRequests).
+					Str("all_response_timings", strings.Join(responseTimings, ", ")).
+					Msg("Parallel relay race completed - first successful response received")
+				
 				cancel()
 				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
 				return nil
@@ -401,11 +436,20 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			// Context was canceled or timed out
 			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 			if ctx.Err() == context.DeadlineExceeded {
-				logger.Error().Msgf("Parallel relay requests timed out after %dms (timeout: %v), received %d/%d responses",
-					totalParallelRelayDuration, parallelRequestTimeout, successfulResponses, totalRequests)
+				logger.Error().
+					Int64("total_duration_ms", totalParallelRelayDuration).
+					Int64("timeout_ms", parallelRequestTimeout.Milliseconds()).
+					Int("completed_requests", successfulResponses).
+					Int("total_requests", totalRequests).
+					Str("response_timings", strings.Join(responseTimings, ", ")).
+					Msg("Parallel relay requests timed out")
 				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelRequestTimeout, lastErr)
 			}
-			logger.Debug().Msgf("Parallel relay requests canceled after %dms", totalParallelRelayDuration)
+			logger.Debug().
+				Int64("total_duration_ms", totalParallelRelayDuration).
+				Int("completed_requests", successfulResponses).
+				Int("total_requests", totalRequests).
+				Msg("Parallel relay requests canceled")
 			return fmt.Errorf("parallel relay requests canceled, last error: %w", lastErr)
 		}
 	}
@@ -413,7 +457,11 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	// All requests failed
 	totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 	individualRequestDurationsStr := strings.Join(responseTimings, ", ")
-	logger.Error().Msgf("All parallel relay requests failed after %dms. Timings: [%s]", totalParallelRelayDuration, individualRequestDurationsStr)
+	logger.Error().
+		Int64("total_duration_ms", totalParallelRelayDuration).
+		Int("failed_requests", totalRequests).
+		Str("all_response_timings", individualRequestDurationsStr).
+		Msg("All parallel relay requests failed")
 
 	// Return the last error
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
@@ -425,17 +473,48 @@ func (rc *requestContext) selectMultipleEndpoints(
 	availableEndpoints protocol.EndpointAddrList,
 	maxNumEndpoints int,
 ) protocol.EndpointAddrList {
+	logger := rc.logger.With("method", "selectMultipleEndpoints")
+	
 	if len(availableEndpoints) == 0 {
-		rc.logger.Warn().Msgf("Want to select %d endpoints, but 0 endpoints are available for service %s", maxNumEndpoints, rc.serviceID)
+		logger.Warn().
+			Int("requested_endpoints", maxNumEndpoints).
+			Str("service_id", string(rc.serviceID)).
+			Msg("No endpoints available for selection")
 		return nil
 	}
+	
+	// Log available endpoints information
+	availableTLDs := shannonmetrics.GetEndpointTLDs(availableEndpoints)
+	uniqueTLDs := make(map[string]bool)
+	for _, tld := range availableTLDs {
+		if tld != "" {
+			uniqueTLDs[tld] = true
+		}
+	}
+	
+	logger.Info().
+		Int("available_endpoints", len(availableEndpoints)).
+		Int("requested_endpoints", maxNumEndpoints).
+		Int("unique_tlds_available", len(uniqueTLDs)).
+		Str("service_id", string(rc.serviceID)).
+		Msg("Selecting multiple endpoints for parallel requests")
 
-	// Se
+	// Select multiple endpoints
 	multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
 	if err != nil {
-		rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
+		logger.Warn().
+			Err(err).
+			Int("available_endpoints", len(availableEndpoints)).
+			Int("requested_endpoints", maxNumEndpoints).
+			Msg("Failed to select multiple endpoints")
 		return nil
 	}
+	
+	logger.Info().
+		Int("selected_endpoints", len(multipleSelectedEndpointAddr)).
+		Int("requested_endpoints", maxNumEndpoints).
+		Msg("Successfully selected endpoints")
+	
 	return multipleSelectedEndpointAddr
 
 	// selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
@@ -444,6 +523,31 @@ func (rc *requestContext) selectMultipleEndpoints(
 	// 	return nil
 	// }
 	// return protocol.EndpointAddrList{selectedEndpointAddr}
+}
+
+// logEndpointTLDDiversity logs TLD diversity information for selected endpoints
+func (rc *requestContext) logEndpointTLDDiversity(endpoints protocol.EndpointAddrList) {
+	endpointTLDs := shannonmetrics.GetEndpointTLDs(endpoints)
+	
+	// Count unique TLDs
+	tldCounts := make(map[string]int)
+	for _, tld := range endpointTLDs {
+		if tld != "" {
+			tldCounts[tld]++
+		}
+	}
+	
+	// Log TLD distribution
+	tldDistribution := make([]string, 0, len(tldCounts))
+	for tld, count := range tldCounts {
+		tldDistribution = append(tldDistribution, fmt.Sprintf("%s=%d", tld, count))
+	}
+	
+	rc.logger.Info().
+		Int("unique_tlds", len(tldCounts)).
+		Int("endpoint_count", len(endpoints)).
+		Str("tld_distribution", strings.Join(tldDistribution, ", ")).
+		Msg("Endpoint TLD diversity for parallel requests")
 }
 
 // HandleWebsocketRequest handles a websocket request.
