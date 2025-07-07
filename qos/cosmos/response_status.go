@@ -1,4 +1,4 @@
-package cometbft
+package cosmos
 
 import (
 	"encoding/json"
@@ -86,10 +86,10 @@ type responseToStatus struct {
 
 // GetObservation returns an observation using a block height request's response.
 // Implements the response interface.
-func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObservation {
-	return qosobservations.CometBFTEndpointObservation{
-		ResponseObservation: &qosobservations.CometBFTEndpointObservation_StatusResponse{
-			StatusResponse: &qosobservations.CometBFTStatusResponse{
+func (r responseToStatus) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+	return qosobservations.CosmosSDKEndpointObservation{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_StatusResponse{
+			StatusResponse: &qosobservations.CosmosSDKStatusResponse{
 				ChainIdResponse:           r.chainID,
 				CatchingUpResponse:        r.catchingUp,
 				LatestBlockHeightResponse: r.latestBlockHeight,
@@ -113,11 +113,20 @@ func (r responseToStatus) GetResponsePayload() []byte {
 // CometBFT response codes:
 // - 200: Success
 // - 500: Error
-// Reference: https://docs.cometbft.com/v0.38/rpc/
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 // Implements the response interface.
 func (r responseToStatus) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
 		return http.StatusInternalServerError
 	}
 	return http.StatusOK
+}
+
+// GetHTTPResponse builds and returns the httpResponse matching the responseToStatus instance.
+// Implements the response interface.
+func (r responseToStatus) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.GetResponsePayload(),
+		httpStatusCode:  r.GetResponseStatusCode(),
+	}
 }

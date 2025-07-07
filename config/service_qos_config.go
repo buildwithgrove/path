@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/cometbft"
+	"github.com/buildwithgrove/path/qos/cosmos"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
 )
@@ -13,7 +13,7 @@ import (
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
 var _ ServiceQoSConfig = (evm.EVMServiceQoSConfig)(nil)
-var _ ServiceQoSConfig = (cometbft.CometBFTServiceQoSConfig)(nil)
+var _ ServiceQoSConfig = (cosmos.CosmosSDKServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (solana.SolanaServiceQoSConfig)(nil)
 
 type ServiceQoSConfig interface {
@@ -414,39 +414,27 @@ var shannonServices = []ServiceQoSConfig{
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
 	// the correct chain ID is being used for each service in the CometBFT config.
 
-	// Celestia Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da", "celestia-archival"),
-
-	// Celestia Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons", "celestia-consensus-archival"),
-
-	// Celestia Testnet DA Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da_test", "celestia-testnet-da-archival"),
-
-	// Celestia Testnet Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons_test", "celestia-testnet-consensus-archival"),
-
 	// Osmosis
-	cometbft.NewCometBFTServiceQoSConfig("osmosis", "osmosis"),
+	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis"),
 
 	// *** Pocket Services ***
 
 	// Pocket Mainnet and Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket", "pocket"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket"),
 
 	// Pocket Mainnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-alpha", "pocket-alpha"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta", "pocket-beta"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta"),
 
 	// Pocket Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta1", "pocket-beta1"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta2", "pocket-beta2"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta3", "pocket-beta3"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta4", "pocket-beta4"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta5", "pocket-beta5"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta5", "pocket-beta5"),
 
 	// Cosmos Hub
-	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
+	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4"),
 
 	// *** Solana Services ***
 
@@ -804,20 +792,8 @@ var morseServices = []ServiceQoSConfig{
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
 	// the correct chain ID is being used for each service in the CometBFT config.
 
-	// Celestia Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
-
-	// Celestia Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
-
-	// Celestia Testnet DA Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),
-
-	// Celestia Testnet Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CD", "celestia-testnet-consensus-archival"),
-
 	// Osmosis
-	cometbft.NewCometBFTServiceQoSConfig("F020", "osmosis"),
+	cosmos.NewCosmosSDKServiceQoSConfig("F020", "osmosis"),
 
 	// *** Solana Services ***
 

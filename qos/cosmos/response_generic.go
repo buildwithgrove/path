@@ -1,4 +1,4 @@
-package cometbft
+package cosmos
 
 import (
 	"encoding/json"
@@ -24,6 +24,11 @@ const (
 	errDataFieldUnmarshalingErr = "unmarshaling_error"
 )
 
+var (
+	// errorID represents the ID for error responses.
+	errorID = jsonrpc.IDFromInt(1)
+)
+
 // responseGeneric represents the standard response structure for CometBFT-based blockchain requests.
 // Used as a fallback when:
 // - No validation/observation is needed for the JSON-RPC method
@@ -38,10 +43,10 @@ type responseGeneric struct {
 // GetObservation returns an observation that is NOT used in validating endpoints.
 // This allows sharing data with other entities, e.g. a data pipeline.
 // Implements the response interface.
-func (r responseGeneric) GetObservation() qosobservations.CometBFTEndpointObservation {
-	return qosobservations.CometBFTEndpointObservation{
-		ResponseObservation: &qosobservations.CometBFTEndpointObservation_UnrecognizedResponse{
-			UnrecognizedResponse: &qosobservations.CometBFTUnrecognizedResponse{
+func (r responseGeneric) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+	return qosobservations.CosmosSDKEndpointObservation{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
+			UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
 					Id: r.jsonRPCResponse.ID.String(),
 				},
@@ -66,7 +71,7 @@ func (r responseGeneric) GetResponsePayload() []byte {
 // CometBFT response codes:
 // - 200: Success
 // - 500: Error
-// Reference: https://docs.cometbft.com/v0.38/rpc/
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/
 // Implements the response interface.
 func (r responseGeneric) GetResponseStatusCode() int {
 	if r.jsonRPCResponse.IsError() {
@@ -75,21 +80,37 @@ func (r responseGeneric) GetResponseStatusCode() int {
 	return http.StatusOK
 }
 
+// GetHTTPResponse builds and returns the httpResponse matching the responseGeneric instance.
+// Implements the response interface.
+func (r responseGeneric) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.GetResponsePayload(),
+		httpStatusCode:  r.GetResponseStatusCode(),
+	}
+}
+
 // responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
 // It extracts and stores any data needed for generating a response payload.
 func responseUnmarshallerGeneric(
 	logger polylog.Logger,
-	_ jsonrpc.Response,
+	jsonrpcResp jsonrpc.Response,
 	data []byte,
 ) (response, error) {
-	var response jsonrpc.Response
-	if err := json.Unmarshal(data, &response); err != nil {
-		return getGenericJSONRPCErrResponse(logger, response, data, err), nil
+	// If data is provided, try to unmarshal it; otherwise use the provided response
+	if len(data) > 0 {
+		var response jsonrpc.Response
+		if err := json.Unmarshal(data, &response); err != nil {
+			return getGenericJSONRPCErrResponse(logger, response, data, err), nil
+		}
+		return responseGeneric{
+			logger:          logger,
+			jsonRPCResponse: response,
+		}, nil
 	}
 
 	return responseGeneric{
 		logger:          logger,
-		jsonRPCResponse: response,
+		jsonRPCResponse: jsonrpcResp,
 	}, nil
 }
 
