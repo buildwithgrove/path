@@ -38,7 +38,7 @@ const (
 	containerExpirySeconds = 240
 	// maxPathHealthCheckWaitTimeMillisec is the maximum amount of time a started PATH container has to report its status as healthy.
 	// Once this time expires, the associated E2E test is marked as failed and the PATH container is removed.
-	maxPathHealthCheckWaitTimeMillisec = 120000
+	maxPathHealthCheckWaitTimeMillisec = 120_000
 )
 
 // eg. 3069/tcp

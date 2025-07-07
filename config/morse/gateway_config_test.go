@@ -78,7 +78,7 @@ func Test_Validate(t *testing.T) {
 				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "https://full-node-url.io",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5_000_000_000},
 				},
 				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {
@@ -96,7 +96,7 @@ func Test_Validate(t *testing.T) {
 				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "https://full-node-url.io",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5_000_000_000},
 				},
 				SignedAATs: map[string]SignedAAT{
 					"invalid_app_id": {
@@ -114,7 +114,7 @@ func Test_Validate(t *testing.T) {
 				FullNodeConfig: morseprotocol.FullNodeConfig{
 					URL:             "invalid-url",
 					RelaySigningKey: "05d126124d35fd7c645b78bf3128b989d03fa2c38cd69a81742b0dedbf9ca05aab35ab6f5137076136d0ef926a37fb3ac70249c3b0266b95d4b5db85a11fef8e",
-					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5000000000},
+					HttpConfig:      morseprotocol.HttpConfig{Retries: 3, Timeout: 5_000_000_000},
 				},
 				SignedAATs: map[string]SignedAAT{
 					"af929e588bb37d8e6bbc8cb25ba4b4d9383f9238": {

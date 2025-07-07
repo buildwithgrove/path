@@ -44,9 +44,9 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		endpoint := es.endpoints[endpointAddr]
 
 		// Apply the observation to the endpoint.
-		isMutated := endpoint.ApplyObservation(observation)
+		isEndpointMutatedByObservations := endpoint.ApplyObservation(observation)
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
-		if !isMutated {
+		if !isEndpointMutatedByObservations {
 			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
 			continue
 		}

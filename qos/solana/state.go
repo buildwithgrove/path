@@ -39,12 +39,12 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 		return err
 	}
 
-	if endpoint.SolanaGetEpochInfoResponse.Epoch < s.perceivedEpoch {
-		return fmt.Errorf("solana endpoint epoch is less than chain perceived epoch: %d < %d", endpoint.SolanaGetEpochInfoResponse.Epoch, s.perceivedEpoch)
+	if endpoint.Epoch < s.perceivedEpoch {
+		return fmt.Errorf("solana endpoint epoch is less than chain perceived epoch: %d < %d", endpoint.Epoch, s.perceivedEpoch)
 	}
 
-	if endpoint.SolanaGetEpochInfoResponse.BlockHeight < s.perceivedBlockHeight {
-		return fmt.Errorf("solana endpoint block height is less than chain perceived block height: %d < %d", endpoint.SolanaGetEpochInfoResponse.BlockHeight, s.perceivedBlockHeight)
+	if endpoint.BlockHeight < s.perceivedBlockHeight {
+		return fmt.Errorf("solana endpoint block height is less than chain perceived block height: %d < %d", endpoint.BlockHeight, s.perceivedBlockHeight)
 	}
 
 	return nil
@@ -62,20 +62,20 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		}
 
 		// The endpoint's Epoch should be at-least equal to the perceived epoch before being used to update the perceived state of Solana blockchain.
-		if endpoint.SolanaGetEpochInfoResponse.Epoch < s.perceivedEpoch {
+		if endpoint.Epoch < s.perceivedEpoch {
 			continue
 		}
 
 		// The endpoint's BlockHeight should be greater than the perceived block height before being used to update the perceived state of Solana blockchain.
-		if endpoint.SolanaGetEpochInfoResponse.BlockHeight <= s.perceivedBlockHeight {
+		if endpoint.BlockHeight <= s.perceivedBlockHeight {
 			continue
 		}
 
 		// TODO_TECHDEBT: use a more resilient method for updating block height.
 		// e.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
-		s.perceivedEpoch = endpoint.SolanaGetEpochInfoResponse.Epoch
-		s.perceivedBlockHeight = endpoint.SolanaGetEpochInfoResponse.BlockHeight
+		s.perceivedEpoch = endpoint.Epoch
+		s.perceivedBlockHeight = endpoint.BlockHeight
 
 		s.logger.With(
 			"endpoint", endpointAddr,

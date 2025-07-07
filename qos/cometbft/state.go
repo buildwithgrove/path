@@ -34,7 +34,7 @@ func (s *ServiceState) ValidateEndpoint(endpoint endpoint) error {
 	defer s.serviceStateLock.RUnlock()
 
 	// Basic validation of the endpoint based on prior observations.
-	if err := endpoint.Validate(s.chainID); err != nil {
+	if err := endpoint.validate(s.chainID); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 
 		// DO NOT use the endpoint for updating the perceived state of the CometBFT blockchain if the endpoint is not considered valid.
 		// E.g. an endpoint with an invalid response to `/status` will not be used to update the perceived block number.
-		if err := endpoint.Validate(s.chainID); err != nil {
+		if err := endpoint.validate(s.chainID); err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint with invalid chain id '%s' for endpoint '%s'", s.chainID, endpointAddr)
 			continue
 		}
@@ -69,7 +69,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 		// TODO_TECHDEBT: use a more resilient method for updating block height.
 		// E.g. one endpoint returning a very large number as block height should
 		// not result in all other endpoints being marked as invalid.
-		blockNumber, err := endpoint.GetBlockNumber()
+		blockNumber, err := endpoint.getBlockNumber()
 		if err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint with invalid block number '%d' for endpoint '%s'", blockNumber, endpointAddr)
 			continue
@@ -86,7 +86,7 @@ func (s *ServiceState) UpdateFromEndpoints(updatedEndpoints map[protocol.Endpoin
 // validateEndpointBlockNumber validates the supplied endpoint against the supplied
 // perceived block number for the CometBFT blockchain.
 func validateEndpointBlockNumber(endpoint endpoint, perceivedBlockNumber uint64) error {
-	blockNumber, err := endpoint.GetBlockNumber()
+	blockNumber, err := endpoint.getBlockNumber()
 	if err != nil {
 		return err
 	}
