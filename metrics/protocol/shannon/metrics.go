@@ -38,7 +38,6 @@ const (
 
 	// Latency metrics
 	endpointLatencyMetric = "shannon_endpoint_latency_seconds"
-	relayLatencyMetric    = "shannon_relay_latency_seconds"
 )
 
 func init() {
@@ -54,7 +53,6 @@ func init() {
 
 	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
-	prometheus.MustRegister(relayLatency)
 }
 
 var (

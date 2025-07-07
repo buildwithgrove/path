@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	shannonprotocol "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
 
@@ -241,7 +240,7 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 // This method is now used internally by SelectMultiple to ensure endpoint diversity.
 func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, numEndpoints int) protocol.EndpointAddrList {
 	// Get endpoint URLs to extract TLD information
-	endpointTLDs := ss.getEndpointTLDs(availableEndpoints)
+	endpointTLDs := shannonprotocol.GetEndpointTLDs(availableEndpoints)
 
 	// Count unique TLDs for logging
 	uniqueTLDs := make(map[string]bool)
@@ -266,7 +265,7 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 
 		// Try to find an endpoint with a different TLD
 		if i > 0 && len(usedTLDs) > 0 {
-			selectedEndpoint, err = ss.selectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
+			selectedEndpoint, err = shannonprotocol.SelectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
 			if err != nil {
 				// Fallback to random selection if no different TLD found
 				selectedEndpoint = remainingEndpoints[rand.Intn(len(remainingEndpoints))]
@@ -321,75 +320,4 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 		len(selectedEndpoints), len(usedTLDs),
 		float64(len(usedTLDs))/float64(len(selectedEndpoints))*100, fallbackSelections)
 	return selectedEndpoints
-}
-
-// getEndpointTLDs extracts TLD information from endpoint addresses
-func (ss *serviceState) getEndpointTLDs(endpoints protocol.EndpointAddrList) map[protocol.EndpointAddr]string {
-	endpointTLDs := make(map[protocol.EndpointAddr]string)
-
-	// extractTLDFromEndpointAddr extracts effective TLD+1 from endpoint address
-	extractTLDFromEndpointAddr := func(addr string) string {
-		// Try direct URL parsing first
-		if etld, err := shannonmetrics.ExtractDomainOrHost(addr); err == nil {
-			return etld
-		}
-
-		// Handle embedded URLs (e.g., "supplier-https://example.com")
-		if idx := strings.Index(addr, "http"); idx != -1 {
-			if etld, err := shannonmetrics.ExtractDomainOrHost(addr[idx:]); err == nil {
-				return etld
-			}
-		}
-
-		// Fallback: try adding https:// prefix for domain-like strings
-		parts := strings.FieldsFunc(addr, func(r rune) bool {
-			return r == '-' || r == '_' || r == ' '
-		})
-
-		for _, part := range parts {
-			if strings.Contains(part, ".") && !strings.HasPrefix(part, "http") {
-				if etld, err := shannonmetrics.ExtractDomainOrHost("https://" + part); err == nil {
-					return etld
-				}
-			}
-		}
-
-		return ""
-	}
-
-	for _, endpointAddr := range endpoints {
-		if tld := extractTLDFromEndpointAddr(string(endpointAddr)); tld != "" {
-			endpointTLDs[endpointAddr] = tld
-		}
-	}
-
-	return endpointTLDs
-}
-
-// selectEndpointWithDifferentTLD attempts to select an endpoint with a TLD that hasn't been used yet
-func (ss *serviceState) selectEndpointWithDifferentTLD(
-	availableEndpoints protocol.EndpointAddrList,
-	endpointTLDs map[protocol.EndpointAddr]string,
-	usedTLDs map[string]bool,
-) (protocol.EndpointAddr, error) {
-	// Filter endpoints to only those with different TLDs
-	var endpointsWithDifferentTLDs protocol.EndpointAddrList
-
-	for _, endpoint := range availableEndpoints {
-		if tld, exists := endpointTLDs[endpoint]; exists {
-			if !usedTLDs[tld] {
-				endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
-			}
-		} else {
-			// If we can't determine TLD, include it anyway
-			endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
-		}
-	}
-
-	if len(endpointsWithDifferentTLDs) == 0 {
-		return "", fmt.Errorf("no endpoints with different TLDs available")
-	}
-
-	// Select a random endpoint from the filtered list
-	return endpointsWithDifferentTLDs[rand.Intn(len(endpointsWithDifferentTLDs))], nil
 }
