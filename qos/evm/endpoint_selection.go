@@ -4,11 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/buildwithgrove/path/protocol"
 )
 
-var errEmptyResponseObs = errors.New("endpoint is invalid: history of empty responses")
+var (
+	errEmptyResponseObs         = errors.New("endpoint is invalid: history of empty responses")
+	errRecentInvalidResponseObs = errors.New("endpoint is invalid: recent invalid response")
+	errEmptyEndpointListObs     = errors.New("received empty list of endpoints to select from")
+)
+
+// TODO_UPNEXT(@adshmh): make the invalid response timeout duration configurable
+// It is set to 30 minutes because that is the session time as of #321.
+const invalidResponseTimeout = 30 * time.Minute
 
 /* -------------------- QoS Valid Endpoint Selector -------------------- */
 // This section contains methods for the `serviceState` struct
@@ -56,10 +65,10 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 	logger := ss.logger.With("method", "filterValidEndpoints").With("qos_instance", "evm")
 
 	if len(availableEndpoints) == 0 {
-		return nil, errors.New("received empty list of endpoints to select from")
+		return nil, errEmptyEndpointListObs
 	}
 
-	logger.Info().Msg(fmt.Sprintf("About to filter through %d available endpoints", len(availableEndpoints)))
+	logger.Info().Msgf("About to filter through %d available endpoints", len(availableEndpoints))
 
 	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
@@ -70,59 +79,70 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 
 		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Info().Msg(fmt.Sprintf("endpoint %s not found in the store. Skipping...", availableEndpointAddr))
+			logger.Error().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
 			continue
 		}
 
-		if err := ss.validateEndpoint(endpoint); err != nil {
-			logger.Info().Err(err).Msg(fmt.Sprintf("skipping endpoint that failed validation: %v", endpoint))
+		if err := ss.basicEndpointValidation(endpoint); err != nil {
+			logger.Error().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msg(fmt.Sprintf("endpoint %s passed validation", availableEndpointAddr))
+		logger.Info().Msgf("✅ endpoint %s passed validation", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, nil
 }
 
-// validateEndpoint returns an error if the supplied endpoint is not
+// basicEndpointValidation returns an error if the supplied endpoint is not
 // valid based on the perceived state of the EVM blockchain.
 //
 // It returns an error if:
 // - The endpoint has returned an empty response in the past.
+// - The endpoint has returned an invalid response within the last 30 minutes.
 // - The endpoint's response to an `eth_chainId` request is not the expected chain ID.
 // - The endpoint's response to an `eth_blockNumber` request is greater than the perceived block number.
 // - The endpoint's archival check is invalid, if enabled.
-func (ss *serviceState) validateEndpoint(endpoint endpoint) error {
+func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	ss.serviceStateLock.RLock()
 	defer ss.serviceStateLock.RUnlock()
 
-	// Ensure the endpoint has not returned an empty response.
+	// Check if the endpoint has returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
-		return errEmptyResponseObs
+		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
 	}
 
-	// Ensure the endpoint's block number is not more than the sync allowance behind the perceived block number.
+	// Check if the endpoint has returned an invalid response within the invalid response timeout period.
+	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
+		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
+		if timeSinceInvalidResponse < invalidResponseTimeout {
+			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+		}
+	}
+
+	// Check if the endpoint's block number is not more than the sync allowance behind the perceived block number.
 	if err := ss.isBlockNumberValid(endpoint.checkBlockNumber); err != nil {
-		return err
+		return fmt.Errorf("block number validation failed: %w", err)
 	}
 
-	// Ensure the endpoint's EVM chain ID matches the expected chain ID.
+	// Check if the endpoint's EVM chain ID matches the expected chain ID.
 	if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-		return err
+		return fmt.Errorf("chain ID validation failed: %w", err)
 	}
 
-	// Ensure the endpoint has returned an archival balance for the perceived block number.
+	// Check if the endpoint has returned an archival balance for the perceived block number.
 	if err := ss.archivalState.isArchivalBalanceValid(endpoint.checkArchival); err != nil {
-		return err
+		return fmt.Errorf("archival balance validation failed: %w", err)
 	}
 
 	return nil
 }
 
-// isValid returns an error if the endpoint's block height is less
-// than the perceived block height minus the sync allowance.
+// isBlockNumberValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_blockNumber` request.
+//   - The endpoint's block height is less than the perceived block height minus the sync allowance.
 func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error {
 	if ss.perceivedBlockNumber == 0 {
 		return errNoBlockNumberObs
@@ -132,25 +152,36 @@ func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error
 		return errNoBlockNumberObs
 	}
 
+	// Dereference pointer to show actual block number instead of memory address in error logs
+	parsedBlockNumber := *check.parsedBlockNumberResponse
+
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
-	minAllowedBlockNumber := ss.perceivedBlockNumber - ss.serviceConfig.getSyncAllowance()
-
-	if *check.parsedBlockNumberResponse < minAllowedBlockNumber {
-		return errInvalidBlockNumberObs
+	syncAllowance := ss.serviceConfig.getSyncAllowance()
+	minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
+	if parsedBlockNumber < minAllowedBlockNumber {
+		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
+			errOutsideSyncAllowanceBlockNumberObs, parsedBlockNumber, minAllowedBlockNumber, syncAllowance)
 	}
 
 	return nil
 }
 
-// isChainIDValid returns an error if the endpoint's chain ID does not
-// match the expected chain ID in the service state.
+// isChainIDValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_chainId` request.
+//   - The endpoint's chain ID does not match the expected chain ID in the service state.
 func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 	if check.chainID == nil {
 		return errNoChainIDObs
 	}
-	if *check.chainID != ss.serviceConfig.getEVMChainID() {
-		return errInvalidChainIDObs
+
+	// Dereference pointer to show actual chain ID instead of memory address in error logs
+	chainID := *check.chainID
+
+	expectedChainID := ss.serviceConfig.getEVMChainID()
+	if chainID != expectedChainID {
+		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
+			errInvalidChainIDObs, chainID, expectedChainID)
 	}
 	return nil
 }

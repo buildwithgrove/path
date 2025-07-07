@@ -71,6 +71,10 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 	case errors.Is(err, errProtocolContextSetupCentralizedNoSessions):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS
 
+	// Centralized gateway mode: no apps found for service
+	case errors.Is(err, errProtocolContextSetupCentralizedNoAppsForService):
+		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE
+
 	// Delegated gateway mode: could not extract app from HTTP request.
 	case errors.Is(err, errProtocolContextSetupGetAppFromHTTPReq):
 		return protocolobservations.ShannonRequestErrorType_SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP
@@ -174,7 +178,7 @@ func buildEndpointObservationFromSession(
 	header := session.Header
 	// Nil session: skip.
 	if header == nil {
-		logger.With("method", "buildEndpointObservationFromSession").Warn().Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
+		logger.With("method", "buildEndpointObservationFromSession").ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
 		return &protocolobservations.ShannonEndpointObservation{}
 	}
 

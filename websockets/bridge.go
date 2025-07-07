@@ -39,7 +39,7 @@ type SelectedEndpoint interface {
 //
 // Full data flow: Client <---clientConn---> PATH Bridge <---endpointConn---> Relay Miner Bridge <------> Endpoint
 type bridge struct {
-	// ctx is used to stop the bridge when the context is cancelled from either connection
+	// ctx is used to stop the bridge when the context is canceled from either connection
 	ctx context.Context
 
 	logger polylog.Logger
@@ -79,7 +79,7 @@ func NewBridge(
 		return nil, fmt.Errorf("NewBridge: %s", err.Error())
 	}
 
-	// Create a context that can be cancelled from either connection
+	// Create a context that can be canceled from either connection
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	// Create a channel to pass messages between the Client and Endpoint
@@ -123,10 +123,10 @@ func NewBridge(
 func (b *bridge) Run() {
 	b.logger.Info().Msg("bridge operation started successfully")
 
-	// Listen for the context to be cancelled and shut down the bridge
+	// Listen for the context to be canceled and shut down the bridge
 	go func() {
 		<-b.ctx.Done()
-		b.Shutdown(fmt.Errorf("context cancelled"))
+		b.Shutdown(fmt.Errorf("context canceled"))
 	}()
 
 	for msg := range b.msgChan {
@@ -148,7 +148,7 @@ func (b *bridge) Run() {
 // This is important as it is expected that the RelayMiner connection will be closed on every session rollover
 // and it is critical that the closing of the connection propagates to the Client so they can reconnect.
 func (b *bridge) Shutdown(err error) {
-	b.logger.Info().Err(err).Msg("bridge shutting down due to error")
+	b.logger.Error().Err(err).Msg("🔌 ❌ Websocket bridge shutting down due to error!")
 
 	// Send close message to both connections and close the connections
 	errMsg := fmt.Sprintf("bridge shutting down: %s", err.Error())

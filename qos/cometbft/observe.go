@@ -3,8 +3,6 @@
 package cometbft
 
 import (
-	"fmt"
-
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -27,7 +25,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		"qos_instance", "cometbft",
 		"method", "UpdateEndpointsFromObservations",
 	)
-	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
+	logger.Info().Msgf("About to update endpoints from %d observations.", len(endpointObservations))
 
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
@@ -46,8 +44,8 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		endpoint := es.endpoints[endpointAddr]
 
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
-		isMutated := endpoint.ApplyObservation(observation)
-		if !isMutated {
+		isEndpointMutatedByObservations := endpoint.applyObservation(observation)
+		if !isEndpointMutatedByObservations {
 			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
 			continue
 		}

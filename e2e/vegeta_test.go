@@ -9,6 +9,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -74,15 +75,14 @@ func runServiceTest(t *testing.T, ctx context.Context, ts *TestService) (service
 		fmt.Printf("Error stopping progress bars: %v", err)
 	}
 
-	calculateServiceSummary(t, ts.testMethodsMap, results, ts.summary, &serviceTestFailed)
-	return serviceTestFailed
+	return calculateServiceSummary(t, ts, results)
 }
 
 // runMethodAttack executes the attack for a single JSON-RPC method and returns metrics.
 func runMethodAttack(ctx context.Context, method string, ts *TestService, progBar *pb.ProgressBar) *methodMetrics {
 	select {
 	case <-ctx.Done():
-		fmt.Printf("Method %s cancelled", method)
+		fmt.Printf("Method %s canceled", method)
 		return nil
 	default:
 	}
@@ -341,6 +341,7 @@ type methodMetrics struct {
 type serviceSummary struct {
 	serviceID protocol.ServiceID
 
+	avgP50Latency  time.Duration
 	avgP90Latency  time.Duration
 	avgLatency     time.Duration
 	avgSuccessRate float64
@@ -369,15 +370,19 @@ func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig
 // calculateServiceSummary validates method results, aggregates summary metrics, and updates the service summary.
 func calculateServiceSummary(
 	t *testing.T,
-	methodConfigs map[string]testMethodConfig,
+	ts *TestService,
 	results map[string]*methodMetrics,
-	summary *serviceSummary,
-	serviceTestFailed *bool,
-) {
+) bool {
+	var serviceTestFailed bool = false
 	var totalLatency time.Duration
+	var totalP50Latency time.Duration
 	var totalP90Latency time.Duration
 	var totalSuccessRate float64
 	var methodsWithResults int
+
+	methodConfigs := ts.testMethodsMap
+	summary := ts.summary
+	serviceId := ts.ServiceID
 
 	// Track service totals
 	summary.totalRequests = 0
@@ -404,11 +409,11 @@ func calculateServiceSummary(
 			MaxP99LatencyMS:   methodDef.serviceConfig.MaxP99LatencyMS,
 		}
 
-		validateResults(t, serviceConfig, methodTestConfig)
+		validateResults(t, serviceId, serviceConfig, methodTestConfig)
 
 		// If the test has failed after validation, set the service failure flag
 		if t.Failed() {
-			*serviceTestFailed = true
+			serviceTestFailed = true
 		}
 
 		// Accumulate totals for the service summary
@@ -422,12 +427,14 @@ func calculateServiceSummary(
 			latencies = append(latencies, res.Latency)
 		}
 
-		// Calculate P90 for this method
+		// Calculate p50 and p90 latencies for this method
+		p50 := calculateP50(latencies)
 		p90 := calculateP90(latencies)
 		avgLatency := calculateAvgLatency(latencies)
 
 		// Add to summary totals
 		totalLatency += avgLatency
+		totalP50Latency += p50
 		totalP90Latency += p90
 		totalSuccessRate += serviceConfig.successRate
 		methodsWithResults++
@@ -450,9 +457,12 @@ func calculateServiceSummary(
 	// Calculate averages if we have methods with results
 	if methodsWithResults > 0 {
 		summary.avgLatency = time.Duration(int64(totalLatency) / int64(methodsWithResults))
+		summary.avgP50Latency = time.Duration(int64(totalP50Latency) / int64(methodsWithResults))
 		summary.avgP90Latency = time.Duration(int64(totalP90Latency) / int64(methodsWithResults))
 		summary.avgSuccessRate = totalSuccessRate / float64(methodsWithResults)
 	}
+
+	return serviceTestFailed
 }
 
 // ===== Metric Calculation Helpers =====
@@ -529,7 +539,7 @@ func percentile(sorted []time.Duration, p int) time.Duration {
 }
 
 // validateResults performs assertions on test metrics
-func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig) {
+func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetrics, serviceConfig ServiceConfig) {
 	// Create a slice to collect all assertion failures
 	var failures []string
 
@@ -537,14 +547,14 @@ func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig
 	fmt.Println()
 
 	// Print metrics header with method name in blue
-	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
+	fmt.Printf("%s~~~~~~~~~~ %s - %s ~~~~~~~~%s\n\n", BOLD_CYAN, serviceId, m.method, RESET)
 
-	// Print success rate with color (green ≥99%, yellow ≥95%, red <95%)
+	// Print success rate with color (green ≥90%, yellow ≥70%, red <70%)
 	successColor := RED // Red by default
-	if m.successRate >= 0.99 {
-		successColor = GREEN // Green for ≥99%
-	} else if m.successRate >= 0.95 {
-		successColor = YELLOW // Yellow for ≥95%
+	if m.successRate >= 0.90 {
+		successColor = GREEN // Green for ≥90%
+	} else if m.successRate >= 0.70 {
+		successColor = YELLOW // Yellow for ≥70%
 	}
 	fmt.Printf("%sHTTP Success Rate%s: %s%.2f%%%s (%d/%d requests)\n",
 		BOLD, RESET, successColor, m.successRate*100, RESET, m.success, m.requestCount)
@@ -642,7 +652,6 @@ func validateResults(t *testing.T, m *methodMetrics, serviceConfig ServiceConfig
 	} else {
 		fmt.Printf("\n%s✅ Method %s passed all assertions%s\n", GREEN, m.method, RESET)
 	}
-	fmt.Printf("%s====================== %s ======================%s\n", BOLD_BLUE, m.method, RESET)
 }
 
 // collectHTTPSuccessRateFailures checks HTTP success rate and returns failure message if not met
@@ -730,7 +739,7 @@ func collectLatencyFailures(m *methodMetrics, serviceConfig ServiceConfig) []str
 func getRateColor(rate, requiredRate float64) string {
 	if rate >= requiredRate {
 		return GREEN // Green for meeting requirement
-	} else if rate >= requiredRate*0.75 {
+	} else if rate >= requiredRate*0.50 {
 		return YELLOW // Yellow for close
 	}
 	return RED // Red for failing
@@ -740,7 +749,7 @@ func getRateColor(rate, requiredRate float64) string {
 func getRateEmoji(rate, requiredRate float64) string {
 	if rate >= requiredRate {
 		return "🟢" // Green for meeting requirement
-	} else if rate >= requiredRate*0.75 {
+	} else if rate >= requiredRate*0.50 {
 		return "🟡" // Yellow for close
 	}
 	return "🔴" // Red for failing
@@ -748,10 +757,10 @@ func getRateEmoji(rate, requiredRate float64) string {
 
 // Helper function to get color for latency values
 func getLatencyColor(actual, maxAllowed time.Duration) string {
-	if float64(actual) <= float64(maxAllowed)*0.7 {
-		return GREEN // Green if well under limit (≤70%)
+	if float64(actual) <= float64(maxAllowed)*0.5 {
+		return GREEN // Green if well under limit (≤50%)
 	} else if float64(actual) <= float64(maxAllowed) {
-		return YELLOW // Yellow if close to limit (70-100%)
+		return YELLOW // Yellow if close to limit (50-100%)
 	}
 	return RED // Red if over limit
 }
@@ -759,6 +768,18 @@ func getLatencyColor(actual, maxAllowed time.Duration) string {
 // formatLatency formats latency values to whole milliseconds
 func formatLatency(d time.Duration) string {
 	return fmt.Sprintf("%dms", d/time.Millisecond)
+}
+
+// calculateP50 computes the 50th percentile latency
+func calculateP50(latencies []time.Duration) time.Duration {
+	if len(latencies) == 0 {
+		return 0
+	}
+
+	// Sort latencies if they aren't already sorted
+	slices.Sort(latencies)
+
+	return percentile(latencies, 50)
 }
 
 // calculateP90 computes the 90th percentile latency
@@ -800,48 +821,79 @@ func printServiceSummaries(summaries map[protocol.ServiceID]*serviceSummary) {
 		return string(serviceIDs[i]) < string(serviceIDs[j])
 	})
 
-	// Print summary for each service
+	type row struct {
+		service      string
+		status       string
+		totalReq     int
+		totalSuccess int
+		failuresStr  string
+		successRate  string
+		p50Latency   string
+		p90Latency   string
+		avgLatency   string
+	}
+
+	rows := make([]row, 0, len(serviceIDs))
+
 	for _, svcID := range serviceIDs {
 		summary := summaries[svcID]
-		// TODO_TECHDEBT: Using a random key for now to avoid the effort of computing a mean (there are nuances involved).
 		serviceConfig := summary.serviceConfig
 
-		// Header with service ID
 		successEmoji := getRateEmoji(summary.avgSuccessRate, serviceConfig.SuccessRate)
-		fmt.Printf("\n%s⛓️  Service: %s%s - %s\n", BOLD_BLUE, svcID, RESET, successEmoji)
 
-		// Use helpers for coloring based on method config
-		successColor := getRateColor(summary.avgSuccessRate, serviceConfig.SuccessRate)
-		p90Color := getLatencyColor(summary.avgP90Latency, serviceConfig.MaxP95LatencyMS) // P90 closest to P95
-		avgColor := getLatencyColor(summary.avgLatency, serviceConfig.MaxP50LatencyMS)    // Avg closest to P50
-
-		// Calculate allowed failure rate
 		maxFailureRate := 1.0 - serviceConfig.SuccessRate
 		maxAllowedFailures := int(float64(summary.totalRequests) * maxFailureRate)
-
-		// Color for failures based on whether they exceed the allowed threshold
-		failureColor := GREEN
-		if summary.totalFailure > maxAllowedFailures {
-			failureColor = RED
-		}
-
-		// Print request stats
-		fmt.Printf("  • Total Requests: %d\n", summary.totalRequests)
-		fmt.Printf("  • Total Successes: %s%d%s\n", GREEN, summary.totalSuccess, RESET)
-		fmt.Printf("  • Total Failures: %s%d%s", failureColor, summary.totalFailure, RESET)
-
-		// Add context about allowed failures if there are any failures
+		failuresStr := fmt.Sprintf("%d", summary.totalFailure)
 		if summary.totalFailure > 0 {
-			fmt.Printf(" (max allowed: %d)", maxAllowedFailures)
+			failuresStr += fmt.Sprintf(" (max allowed: %d)", maxAllowedFailures)
 		}
-		fmt.Println()
 
-		fmt.Printf("  • Average Success Rate: %s%.2f%%%s\n",
-			successColor, summary.avgSuccessRate*100, RESET)
-		fmt.Printf("  • Average P90 Latency: %s%s%s\n",
-			p90Color, formatLatency(summary.avgP90Latency), RESET)
-		fmt.Printf("  • Average Latency: %s%s%s\n",
-			avgColor, formatLatency(summary.avgLatency), RESET)
+		rows = append(rows, row{
+			service:      string(svcID),
+			status:       successEmoji,
+			totalReq:     summary.totalRequests,
+			totalSuccess: summary.totalSuccess,
+			failuresStr:  failuresStr,
+			successRate:  fmt.Sprintf("%.2f%%", summary.avgSuccessRate*100),
+			p50Latency:   formatLatency(summary.avgP50Latency),
+			p90Latency:   formatLatency(summary.avgP90Latency),
+			avgLatency:   formatLatency(summary.avgLatency),
+		})
+	}
+
+	// Sort rows by descending success rate, then ascending P90 latency, then ascending avg latency
+	sort.Slice(rows, func(i, j int) bool {
+		// Parse success rates
+		srI, _ := strconv.ParseFloat(strings.TrimSuffix(rows[i].successRate, "%"), 64)
+		srJ, _ := strconv.ParseFloat(strings.TrimSuffix(rows[j].successRate, "%"), 64)
+		if srI != srJ {
+			return srI > srJ // Descending success rate
+		}
+		// Parse P50 latency (remove "ms")
+		p50I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p50Latency, "ms"))
+		p50J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p50Latency, "ms"))
+		if p50I != p50J {
+			return p50I < p50J // Ascending P50 latency
+		}
+		// Parse P90 latency (remove "ms")
+		p90I, _ := strconv.Atoi(strings.TrimSuffix(rows[i].p90Latency, "ms"))
+		p90J, _ := strconv.Atoi(strings.TrimSuffix(rows[j].p90Latency, "ms"))
+		if p90I != p90J {
+			return p90I < p90J // Ascending P90 latency
+		}
+		// Parse avg latency (remove "ms")
+		avgI, _ := strconv.Atoi(strings.TrimSuffix(rows[i].avgLatency, "ms"))
+		avgJ, _ := strconv.Atoi(strings.TrimSuffix(rows[j].avgLatency, "ms"))
+		return avgI < avgJ // Ascending avg latency
+	})
+
+	// Print table header
+	fmt.Printf("| %-16s | %-6s | %-8s | %-9s | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
+		"Service", "Status", "Requests", "Successes", "Failures", "Success Rate", "P50 Latency", "P90 Latency", "Avg Latency")
+	fmt.Printf("|------------------|--------|----------|-----------|----------------------|--------------|-------------|-------------|-------------|\n")
+	for _, r := range rows {
+		fmt.Printf("| %-16s | %-6s | %-8d | %-9d | %-20s | %-12s | %-11s | %-11s | %-11s |\n",
+			r.service, r.status, r.totalReq, r.totalSuccess, r.failuresStr, r.successRate, r.p50Latency, r.p90Latency, r.avgLatency)
 	}
 
 	fmt.Printf("\n%s===== END SERVICE SUMMARY =====%s\n", BOLD_CYAN, RESET)

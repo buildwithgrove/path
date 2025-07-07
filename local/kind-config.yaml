@@ -10,15 +10,81 @@ nodes:
     - containerPort: 30070 
       hostPort: 3070
       protocol: TCP
-    # # WATCH (Grafana)
-    # # For usage instructions see:
-    # #   https://github.com/buildwithgrove/helm-charts/blob/main/charts/watch/docs/accessing-grafana.md
-    # - containerPort: 80
-    #   hostPort: 3000
-    #   protocol: TCP
+    # WATCH (Grafana)
+    # For usage instructions see:
+    #   https://github.com/buildwithgrove/helm-charts/blob/main/charts/watch/docs/accessing-grafana.md
+    - containerPort: 80
+      hostPort: 3000
+      protocol: TCP
+    # Configure kubelet for complete log retention and debugging
+    # This ensures all container logs (especially PATH application logs) are preserved
+    # for debugging and analysis without loss of initial log entries or periodic rotation
+    kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      apiVersion: kubeadm.k8s.io/v1beta3
+      nodeRegistration:
+        kubeletExtraArgs:
+          container-log-max-size: "1Gi"
+          container-log-max-files: "10"
+    - |
+      kind: JoinConfiguration
+      apiVersion: kubeadm.k8s.io/v1beta3
+      nodeRegistration:
+        kubeletExtraArgs:
+          container-log-max-size: "1Gi"
+          container-log-max-files: "10"
+    - |
+      kind: KubeletConfiguration
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      containerLogMaxSize: "1Gi"
+      containerLogMaxFiles: 10
+      # Optimize log rotation for debugging - reduces monitoring frequency and concurrency
+      # to prevent aggressive log cleanup that was causing missing initial log entries
+      containerLogMaxWorkers: 1
+      containerLogMonitorInterval: "30s"
+      # Additional kubelet settings for log retention
+      imageGCHighThresholdPercent: 85
+      imageGCLowThresholdPercent: 80
+      evictionHard:
+        memory.available: "100Mi"
+        nodefs.available: "1Gi"
+        imagefs.available: "1Gi"
+      evictionSoft:
+        memory.available: "200Mi"
+        nodefs.available: "2Gi"
+        imagefs.available: "2Gi"
+      evictionSoftGracePeriod:
+        memory.available: "30s"
+        nodefs.available: "1m"
+        imagefs.available: "1m"
+    # Mount host directory to preserve logs
+    extraMounts:
+    - hostPath: /tmp/kind-logs
+      containerPath: /var/log/containers-backup
+      # This gives us a backup location for logs on the host
+
 containerdConfigPatches:
   # Ensure kind can pull images from GitHub Container Registry
   - |
     [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
       [plugins."io.containerd.grpc.v1.cri".registry.mirrors."ghcr.io"]
         endpoint = ["https://ghcr.io"]
+  # Configure containerd logging to prevent aggressive cleanup
+  - |
+    [plugins."io.containerd.grpc.v1.cri"]
+      # Disable containerd's built-in log rotation
+      disable_cgroup = false
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+    # Configure garbage collection to be less aggressive
+    [plugins."io.containerd.gc.v1.scheduler"]
+      pause_threshold = 0.02
+      deletion_threshold = 0
+      mutation_threshold = 100
+      schedule_delay = "0s"
+      startup_delay = "100ms"

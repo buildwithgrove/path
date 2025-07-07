@@ -9,10 +9,10 @@ var (
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
-	RelayErrEndpointConfigError = errors.New("endpoint configuration error")
+	ErrRelayEndpointConfig = errors.New("endpoint configuration error")
 
 	// endpoint timeout
-	RelayErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	ErrRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
 	// Request context setup errors.
 	// Used to build observations:
@@ -26,6 +26,8 @@ var (
 	errProtocolContextSetupCentralizedAppDelegation = errors.New("centralized gateway mode app does not delegate to the gateway")
 	// Centralized gateway mode: no active sessions could be retrieved for the service.
 	errProtocolContextSetupCentralizedNoSessions = errors.New("no active sessions could be retrieved for the service")
+	// Centralized gateway mode: no owned apps found for the service.
+	errProtocolContextSetupCentralizedNoAppsForService = errors.New("ZERO owned apps found for service")
 
 	// Delegated gateway mode: could not extract app from HTTP request.
 	errProtocolContextSetupGetAppFromHTTPReq = errors.New("error getting the selected app from the HTTP request")
@@ -58,12 +60,12 @@ var (
 // • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
 	if isEndpointConfigError(err) {
-		return RelayErrEndpointConfigError
+		return ErrRelayEndpointConfig
 	}
 
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
-		return RelayErrEndpointTimeout
+		return ErrRelayEndpointTimeout
 	}
 
 	// No known patterns matched.

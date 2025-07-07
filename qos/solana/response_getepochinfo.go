@@ -31,14 +31,14 @@ func responseUnmarshallerGetEpochInfo(
 
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	if err != nil {
-		logger.Info().Err(err).Msg("JSONRPC response result field is not a byte slice: endpoint will fail QoS check.")
+		logger.Error().Err(err).Msg("❌ Solana endpoint will fail QoS check because JSONRPC response result field is not a byte slice.")
 		return getEpochInfoResponse
 	}
 
 	var epochInfo epochInfo
 	err = json.Unmarshal(resultBz, &epochInfo)
 	if err != nil {
-		logger.Info().Err(err).Msg("JSONRPC response result field failed to parse: endpoint will fail QoS check.")
+		logger.Error().Err(err).Msg("❌ Solana endpoint will fail QoS check because JSONRPC response result failed to parse.")
 		return getEpochInfoResponse
 	}
 

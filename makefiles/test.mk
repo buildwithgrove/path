@@ -9,12 +9,16 @@
 
 .PHONY: test_all ## Run all unit tests and E2E test a subset of key services.
 test_all: test_unit
-	@$(MAKE) e2e_test eth,poly,xrpl_evm_test,oasys
+	@$(MAKE) e2e_test eth,poly,xrplevm-testnet,oasys
 	@$(MAKE) morse_e2e_test F00C,F021,F036,F01C
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
+
+.PHONY: go_lint
+go_lint: ## Run all go linters
+	golangci-lint run --timeout 5m --build-tags test
 
 #################
 ### E2E Tests ###
@@ -66,7 +70,7 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 		echo "  💡 To run with default service IDs, use: make load_test_defaults"; \
 		exit 1; \
 	fi
-	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 # Targets are also provided to run a morse load test, which use the `morse_load_test` targets
 
@@ -82,7 +86,7 @@ morse_load_test: morse_e2e_config_warning ## Run a Morse load test with specifie
 		echo "  💡 To run with default service IDs, use: make morse_load_test_defaults"; \
 		exit 1; \
 	fi
-	(cd e2e && TEST_MODE=load TEST_PROTOCOL=morse TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
+	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=morse TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: copy_e2e_load_test_config
 copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials

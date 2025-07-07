@@ -51,7 +51,7 @@ e2e_load_test_config:
 
     # [Optional] Custom API key for the test (i.e. portal-api-key)
     #
-    # DEV_NOTE: This field IS required if your Grove Portal Application ID 
+    # DEV_NOTE: This field IS required if your Grove Portal Application ID
     # requires an API key to be set in the `Authorization` header.
     #
     # This field is NOT required if you are testing against a local PATH instance.

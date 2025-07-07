@@ -14,7 +14,7 @@ import (
 )
 
 // defaultPostTimeoutMS defines the default timeout for HTTP POST operations in milliseconds (10 seconds)
-const defaultPostTimeoutMS = 10000
+const defaultPostTimeoutMS = 10_000
 
 // DataReporterHTTP exports observations to an external components over HTTP (e.g. Flentd HTTP Plugin, a Messaging system, or a database)
 var _ gateway.RequestResponseReporter = &DataReporterHTTP{}
@@ -89,7 +89,7 @@ func (drh *DataReporterHTTP) sendRecordOverHTTP(serializedDataRecord []byte) err
 
 	// Verify the data processor responded with OK
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error sending the data record: got HTTP status %d, expected %d", resp.StatusCode, http.StatusOK)
+		return fmt.Errorf("error sending the data record: got HTTP status %d, expected %d", resp.StatusCode, http.StatusOK)
 	}
 
 	return nil

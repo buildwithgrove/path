@@ -36,12 +36,16 @@ definitions:
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
-        examples: ["F00C", "anvil", "eth", "arb_one"]
+        examples: ["F00C", "anvil", "eth", "arb-one"]
       service_type:
         description: "Type of service to test"
         type: string
         enum: ["evm"]
         examples: ["evm"]
+      alias:
+        description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
+        type: string
+        examples: ["arbitrum-one", "eth-mainnet"]
       archival:
         description: "Whether this is an archival test (historical data access)"
         type: boolean
@@ -99,6 +103,10 @@ definitions:
         type: string
         enum: ["solana"]
         examples: ["solana"]
+      alias:
+        description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
+        type: string
+        examples: ["solana-mainnet"]
       service_params:
         $ref: "#/definitions/solana_service_params"
   solana_service_params:
@@ -138,6 +146,9 @@ definitions:
         type: string
         enum: ["cometbft"]
         examples: ["cometbft"]
+      alias:
+        description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
+        type: string
 
   anvil_service:
     description: "Anvil service definition"
@@ -159,3 +170,6 @@ definitions:
         type: string
         enum: ["anvil"]
         examples: ["anvil"]
+      alias:
+        description: "(Optional) Alias for the service, used for subdomain routing or test aliasing. Only present if different from shannonServiceId."
+        type: string

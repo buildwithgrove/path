@@ -38,7 +38,7 @@ func (p *Params) UnmarshalJSON(data []byte) error {
 	// First validate the input is valid JSON.
 	var rawMessage json.RawMessage
 	if err := json.Unmarshal(data, &rawMessage); err != nil {
-		return fmt.Errorf("failed to unmarshal params field: %v", err)
+		return fmt.Errorf("failed to unmarshal params field: %w", err)
 	}
 
 	// Validate that params follows JSON-RPC 2.0 spec: must be array or object.

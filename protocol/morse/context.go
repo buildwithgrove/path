@@ -43,7 +43,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	hydratedLogger := rc.getHydratedLogger("HandleServiceRequest")
 
 	// Internal error: no endpoint selected.
-	// record reuqest error due to internal error.
+	// record request error due to internal error.
 	// no endpoint to sanction.
 	if rc.selectedEndpoint == nil {
 		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
@@ -56,7 +56,7 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// record request error due to internal error.
 	// no endpoint to sanction.
 	if err != nil {
-		return rc.handleInternalError(fmt.Errorf("error matching endpoint against session's nodes: %v", err))
+		return rc.handleInternalError(fmt.Errorf("error matching endpoint against session's nodes: %w", err))
 	}
 
 	// record the endpoint query time.

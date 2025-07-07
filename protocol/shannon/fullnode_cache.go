@@ -179,12 +179,20 @@ func getSessionCacheKey(serviceID protocol.ServiceID, appAddr string) string {
 	return fmt.Sprintf("%s:%s:%s", sessionCacheKeyPrefix, serviceID, appAddr)
 }
 
-// ValidateRelayResponse: passthrough to underlying node.
+// ValidateRelayResponse:
+//   - Validates the raw response bytes received from an endpoint.
+//   - Uses the SDK and the caching full node's account client for validation.
+//   - Will use the caching account client to fetch the account pub key.
 func (cfn *cachingFullNode) ValidateRelayResponse(
 	supplierAddr sdk.SupplierAddress,
 	responseBz []byte,
 ) (*servicetypes.RelayResponse, error) {
-	return cfn.lazyFullNode.ValidateRelayResponse(supplierAddr, responseBz)
+	return sdk.ValidateRelayResponse(
+		context.Background(),
+		supplierAddr,
+		responseBz,
+		cfn.cachingAccountClient,
+	)
 }
 
 // GetAccountClient: passthrough to underlying node (returns caching client).

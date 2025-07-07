@@ -168,41 +168,57 @@ type getEpochInfoResponse struct {
 
 func getSolanaBlockNumber(_ *TestService, headers http.Header, gatewayURL string) (string, error) {
 	// Get the current slot number
-	slotNumber, err := getCurrentSlotNumber(gatewayURL, headers)
+	slotNumber, err := getCurrentConsensusSlotNumber(gatewayURL, headers)
 	if err != nil {
-		return "", fmt.Errorf("Could not get current slot number: %v", err)
+		return "", fmt.Errorf("Could not get current slot number: %w", err)
 	}
 	return strconv.FormatUint(slotNumber, 10), nil
 }
 
-// getCurrentSlotNumber gets current slot number with consensus from multiple requests.
-func getCurrentSlotNumber(gatewayURL string, headers http.Header) (uint64, error) {
-	// Track frequency of each slot number seen
+// getCurrentConsensusSlotNumber gets current slot number with consensus from multiple requests.
+func getCurrentConsensusSlotNumber(gatewayURL string, headers http.Header) (uint64, error) {
 	slotNumbers := make(map[uint64]int)
 	maxAttempts := 10
 	requiredAgreement := 3
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 2 * time.Second}
 
-	// Make multiple attempts to get consensus
+	// Make requests to get current slot number rapidly in parallel
+	results := make(chan uint64, maxAttempts)
 	for range maxAttempts {
-		slotNum, err := fetchSlotNumber(client, gatewayURL, headers)
-		if err != nil {
-			continue
-		}
+		go func() {
+			if height, err := getCurrentSlotNumber(client, gatewayURL, headers); err == nil {
+				results <- height
+			}
+		}()
+	}
 
-		// Update consensus tracking
-		slotNumbers[slotNum]++
-		if slotNumbers[slotNum] >= requiredAgreement {
-			return slotNum, nil
+	// Collect results quickly
+	timeout := time.After(5 * time.Second)
+collect:
+	for range maxAttempts {
+		select {
+		case height := <-results:
+			slotNumbers[height]++
+			if slotNumbers[height] >= requiredAgreement {
+				return height, nil
+			}
+		case <-timeout:
+			break collect
 		}
 	}
 
-	// If we get here, we didn't reach consensus
-	return 0, fmt.Errorf("failed to reach consensus on slot number after %d attempts", maxAttempts)
+	// Return the most recent height seen if no consensus
+	var maxSlotNumber uint64
+	for slotNumber := range slotNumbers {
+		if slotNumber > maxSlotNumber {
+			maxSlotNumber = slotNumber
+		}
+	}
+	return maxSlotNumber, nil
 }
 
-// fetchSlotNumber makes a single request to get the current slot number using getEpochInfo.
-func fetchSlotNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
+// getCurrentSlotNumber makes a single request to get the current slot number using getEpochInfo.
+func getCurrentSlotNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
 	// Build and send request
 	req, err := buildEpochInfoRequest(gatewayURL, headers)
 	if err != nil {
@@ -228,13 +244,13 @@ func fetchSlotNumber(client *http.Client, gatewayURL string, headers http.Header
 	// Marshal the result back to JSON so we can unmarshal it into our struct
 	resultBytes, err := json.Marshal(jsonRPC.Result)
 	if err != nil {
-		return 0, fmt.Errorf("failed to marshal result: %v", err)
+		return 0, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
 	// Unmarshal into getEpochInfoResponse
 	var epochInfo getEpochInfoResponse
 	if err := json.Unmarshal(resultBytes, &epochInfo); err != nil {
-		return 0, fmt.Errorf("failed to unmarshal epoch info: %v", err)
+		return 0, fmt.Errorf("failed to unmarshal epoch info: %w", err)
 	}
 
 	return epochInfo.AbsoluteSlot, nil

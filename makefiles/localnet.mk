@@ -22,6 +22,22 @@ path_up: check_docker ## Brings up local Tilt development environment in Docker
 .PHONY: path_up_local_helm
 path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
 	@./local/scripts/localnet.sh up --use-local-helm
+	
+.PHONY: check_docker
+# Internal helper: Check if Docker is installed locally
+check_docker:
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "Docker is not installed. Make sure you review README.md before continuing"; \
+		exit 1; \
+	fi;
+	@if ! docker info >/dev/null 2>&1; then \
+		echo "Docker daemon is not running. Please start Docker and try again."; \
+		echo "You can start Docker by doing one of the following:"; \
+		echo "  - Opening Docker Desktop application"; \
+		echo "  - Running 'sudo systemctl start docker' on Linux"; \
+		echo "  - Running 'open /Applications/Docker.app' on macOS"; \
+		exit 1; \
+	fi;
 
 .PHONY: path_down
 path_down: ## Tears down local Tilt development environment in Docker

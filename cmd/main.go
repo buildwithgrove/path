@@ -15,10 +15,18 @@ import (
 	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolPkg "github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
+)
+
+// Version information injected at build time via ldflags
+var (
+	Version   string
+	Commit    string
+	BuildDate string
 )
 
 // defaultConfigPath will be appended to the location of
@@ -27,6 +35,9 @@ const defaultConfigPath = "config/.config.yaml"
 
 func main() {
 	log.Printf("🌿 PATH gateway starting...")
+
+	// Initialize version metrics for Prometheus monitoring
+	metrics.SetVersionInfo(Version, Commit, BuildDate)
 
 	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
@@ -183,7 +194,7 @@ func getConfigPath(defaultConfigPath string) (string, error) {
 	// Get executable directory for default path
 	exeDir, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("failed to get executable path: %v", err)
+		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
 
 	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)

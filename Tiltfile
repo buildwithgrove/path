@@ -182,6 +182,11 @@ local_resource(
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
+    # TODO_TECHDEBT: Look for a way to make helm secret size smaller for local development.
+    # Reduce Helm secret size for local development
+    # "--skip-crds",
+    # "--atomic=false",
+
     # Enable GUARD resources.
     "--set", "guard.enabled=true",
     # Enable PATH to load the config from a secret.
@@ -192,6 +197,10 @@ flags = [
     "--set", "config.fromSecret.key=.config.yaml",
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
+
+    # TODO_TECHDEBT: Respect local_config["observability"]
+    # "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
+    # "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
 ]
 
 # Optional: Use a local values.yaml file to override the default values.

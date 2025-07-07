@@ -38,7 +38,7 @@ const (
 	containerExpirySeconds = 240
 	// maxPathHealthCheckWaitTimeMillisec is the maximum amount of time a started PATH container has to report its status as healthy.
 	// Once this time expires, the associated E2E test is marked as failed and the PATH container is removed.
-	maxPathHealthCheckWaitTimeMillisec = 120000
+	maxPathHealthCheckWaitTimeMillisec = 120_000
 )
 
 // eg. 3069/tcp
@@ -267,7 +267,7 @@ func setupPathDocker(
 	retryConnectFn := func() error {
 		resp, err := http.Get(healthCheckURL)
 		if err != nil {
-			return fmt.Errorf("unable to connect to health check endpoint: %v", err)
+			return fmt.Errorf("unable to connect to health check endpoint: %w", err)
 		}
 		defer resp.Body.Close()
 

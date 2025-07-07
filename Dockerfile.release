@@ -1,0 +1,32 @@
+# Multi-architecture Dockerfile that uses pre-built binaries
+# This Dockerfile expects binaries to be built beforehand using:
+# make release_build_cross
+
+FROM alpine:3.19 AS final
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set working directory
+WORKDIR /app
+
+# Add runtime dependencies and prepare directories
+RUN apk add --no-cache ca-certificates tzdata && \
+    mkdir -p /app/config && \
+    chown -R appuser:appgroup /app
+
+ARG IMAGE_TAG
+ENV IMAGE_TAG=${IMAGE_TAG}
+
+# Determine the architecture and copy the appropriate binary
+ARG TARGETARCH
+COPY release/path-linux-${TARGETARCH} /app/path
+
+# Set the binary as executable
+RUN chmod +x /app/path
+
+# Use non-root user
+USER appuser
+
+# Command to run
+CMD ["./path"]

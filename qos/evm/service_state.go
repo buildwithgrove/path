@@ -14,6 +14,11 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+var (
+	errNilApplyObservations    = errors.New("ApplyObservations: received nil")
+	errNilApplyEVMObservations = errors.New("ApplyObservations: received nil EVM observation")
+)
+
 // The serviceState struct maintains the expected current state of the EVM blockchain
 // based on the endpoints' responses to different requests.
 //
@@ -109,12 +114,12 @@ func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
 // ApplyObservations updates endpoint storage and blockchain state from observations.
 func (ss *serviceState) ApplyObservations(observations *qosobservations.Observations) error {
 	if observations == nil {
-		return errors.New("ApplyObservations: received nil")
+		return errNilApplyObservations
 	}
 
 	evmObservations := observations.GetEvm()
 	if evmObservations == nil {
-		return errors.New("ApplyObservations: received nil EVM observation")
+		return errNilApplyEVMObservations
 	}
 
 	updatedEndpoints := ss.endpointStore.updateEndpointsFromObservations(
@@ -125,8 +130,9 @@ func (ss *serviceState) ApplyObservations(observations *qosobservations.Observat
 	return ss.updateFromEndpoints(updatedEndpoints)
 }
 
-// updateFromEndpoints updates the service state using estimation(s) derived from the set of updated
-// endpoints. This only includes the set of endpoints for which an observation was received.
+// updateFromEndpoints updates the service state based on new observations from endpoints.
+// - Only endpoints with received observations are considered.
+// - Estimations are derived from these updated endpoints.
 func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.EndpointAddr]endpoint) error {
 	ss.serviceStateLock.Lock()
 	defer ss.serviceStateLock.Unlock()
@@ -139,19 +145,24 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 
 		// Do not update the perceived block number if the chain ID is invalid.
 		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			logger.Info().Err(err).Msg("Skipping endpoint with invalid chain id")
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid chain id", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
 		blockNumber, err := endpoint.checkBlockNumber.getBlockNumber()
 		if err != nil {
-			logger.Info().Err(err).Msg("Skipping endpoint with invalid block number")
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid block number", endpointAddr)
 			continue
 		}
 
-		// Update the perceived block number.
-		ss.perceivedBlockNumber = blockNumber
+		// Update perceived block number to maximum instead of overwriting with last endpoint.
+		// Per perceivedBlockNumber field documentation, it should be "the maximum of block height reported by any endpoint"
+		// but code was incorrectly overwriting with each endpoint, causing validation failures.
+		if blockNumber > ss.perceivedBlockNumber {
+			logger.Debug().Msgf("Updating perceived block number from %d to %d", ss.perceivedBlockNumber, blockNumber)
+			ss.perceivedBlockNumber = blockNumber
+		}
 	}
 
 	// If archival checks are enabled for the service, update the archival state.
@@ -174,7 +185,7 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 
 	// Populate the data response object using the endpoints in the endpoint store.
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
-		if err := ss.validateEndpoint(endpoint); err != nil {
+		if err := ss.basicEndpointValidation(endpoint); err != nil {
 			qosLevelDataResponse.DisqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
 				EndpointAddr: endpointAddr,
 				Reason:       err.Error(),
