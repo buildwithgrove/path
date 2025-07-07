@@ -239,16 +239,3 @@ func buildInternalRequestProcessingErrorObservation(internalErr error) *protocol
 		ErrorDetails: internalErr.Error(),
 	}
 }
-
-// buildRelayMinerErrorObservation creates observation data for RelayMinerError
-func buildRelayMinerErrorObservation(relayMinerError *servicetypes.RelayMinerError) *protocolobservations.ShannonRelayMinerError {
-	if relayMinerError == nil {
-		return nil
-	}
-
-	return &protocolobservations.ShannonRelayMinerError{
-		Codespace: relayMinerError.Codespace,
-		Code:      relayMinerError.Code,
-		Message:   relayMinerError.Message,
-	}
-}

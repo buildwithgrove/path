@@ -222,7 +222,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
 
 		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, fmt.Errorf("Error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
+		return nil, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
 	}
 
 	// Validate the response - check for specific validation errors that indicate raw payload issues
