@@ -61,30 +61,33 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	selectedSessions := make([]sessiontypes.Session, 0)
 	selectedSessions = append(selectedSessions, sessionLatest)
 	if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
-		// Append the previous session to the list if the session IDs are different.
-		selectedSessions = append(selectedSessions, sessionPreviousExtended)
+		if sessionLatest.Application.Address != sessionPreviousExtended.Application.Address {
+			logger.Warn().Msgf("SHOULD NEVER HAPPEN: The current session app address (%s) and the previous session app address (%s) are different. Only using the latest session.", sessionLatest.Application.Address, sessionPreviousExtended.Application.Address)
+		} else {
+			// Append the previous session to the list if the session IDs are different.
+			selectedSessions = append(selectedSessions, sessionPreviousExtended)
+		}
 	}
 
 	// Select the first session in the list.
 	selectedApp := selectedSessions[0].Application
-
 	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
 
 	// Skip the session's app if it is not staked for the requested service.
 	if !appIsStakedForService(serviceID, selectedApp) {
-		err = fmt.Errorf("%w: app %s is not staked for the service", errProtocolContextSetupAppNotStaked, selectedApp.Address)
-		logger.Error().Err(err).Msg("Relay request will fail because the app is not staked for the service.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not staked for the service %s.", errProtocolContextSetupAppNotStaked, selectedApp.Address, serviceID)
+		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Trying to use an app that is not staked for the service. Relay request will fail.")
 		return nil, err
 	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: gateway %s app %s relay request will fail", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
-		logger.Error().Err(err).Msg("Relay request will fail because the gateway does not have delegation for the app.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not delegated to the gateway %s.", errProtocolContextSetupAppDoesNotDelegate, selectedApp.Address, p.gatewayAddr)
+		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Trying to use an app that is not delegated to the gateway. Relay request will fail.")
 		return nil, err
 	}
 
-	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
+	logger.Debug().Msgf("successfully verified the gateway (%s) has delegation for the selected app (%s) for service (%s).", p.gatewayAddr, selectedApp.Address, serviceID)
 
 	return selectedSessions, nil
 }

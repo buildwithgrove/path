@@ -41,8 +41,14 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
+	// context:
+	// - Upstream context for proper timeout propagation and cancellation.
+	context context.Context
+
 	fullNode FullNode
+
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
+
 	serviceID protocol.ServiceID
 
 	relayRequestSigner RelayRequestSigner
@@ -59,10 +65,6 @@ type requestContext struct {
 	// endpointObservations:
 	// - Captures observations about endpoints used during request handling.
 	endpointObservations []*protocolobservations.ShannonEndpointObservation
-
-	// context:
-	// - Upstream context for proper timeout propagation and cancellation.
-	context context.Context
 }
 
 // HandleServiceRequest:

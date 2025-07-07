@@ -66,12 +66,12 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
+		context:             ctx,
 		gatewayObservations: getUserRequestGatewayObservations(httpReq),
 		protocol:            g.Protocol,
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		context:             ctx,
 	}
 
 	defer func() {

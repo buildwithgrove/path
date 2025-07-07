@@ -213,6 +213,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
+		context:            ctx,
 		fullNode:           p.FullNode,
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,

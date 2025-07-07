@@ -183,10 +183,11 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	logger := lfn.logger.
-		With("service_id", serviceID).
-		With("app_addr", appAddr).
-		With("method", "GetSessionWithExtendedValidity")
+	logger := lfn.logger.With(
+		"service_id", serviceID,
+		"app_addr", appAddr,
+		"method", "GetSessionWithExtendedValidity",
+	)
 
 	// Get the current session
 	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
@@ -194,11 +195,6 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 		logger.Error().Err(err).Msg("failed to get current session")
 		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
 	}
-
-	logger.Debug().
-		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
-		Int64("current_session_end_height", currentSession.Header.SessionEndBlockHeight).
-		Msg("Got the current session")
 
 	// Get shared parameters to determine grace period
 	sharedParams, err := lfn.GetSharedParams(ctx)
@@ -218,14 +214,24 @@ func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
 	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
+	logger = logger.With(
+		"prev_session_end_height", prevSessionEndHeight,
+		"prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity,
+		"current_height", currentHeight,
+		"current_session_start_height", currentSession.Header.SessionStartBlockHeight,
+		"current_session_end_height", currentSession.Header.SessionEndBlockHeight,
+	)
+
 	// If we're not within the grace period of the previous session, return the current session
 	if currentHeight > prevSessionEndHeightWithExtendedValidity {
+		logger.Debug().Msg("IS NOT WITHIN GRACE PERIOD: Returning current session")
 		return currentSession, nil
 	}
 
 	// Get the previous session
 	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
 	if err != nil || prevSession == nil {
+		logger.Warn().Err(err).Msg("Failed to get previous session, falling back to current session")
 		return currentSession, nil
 	}
 

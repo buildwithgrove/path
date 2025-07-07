@@ -60,10 +60,11 @@ enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY = 7;
   // RelayResponse's signature failed validation.
   SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR = 8;
-  // TODO_TECHDEBT: Uncomment when this is used.
-  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 9;
-  // RelayRe
+  // RelayRequest was canceled by PATH intentionally.
   SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 9;
+
+  // TODO_TECHDEBT: Uncomment when this is used.
+  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = ???;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

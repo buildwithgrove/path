@@ -55,13 +55,15 @@ const (
 
 	// Cache key prefixes to avoid collisions between different data types.
 	sessionCacheKeyPrefix = "session"
-	sharedParamsCacheKey  = "shared_params"
-	blockHeightCacheKey   = "block_height"
 
+	// TODO_IMPROVE: Make this configurable
+	sharedParamsCacheKey = "shared_params"
 	// TODO_IMPROVE: Make this configurable
 	sharedParamsCacheTTL      = 10 * time.Minute // Shared params change infrequently
 	sharedParamsCacheCapacity = 1                // Only need to cache one entry
 
+	// TODO_IMPROVE: Make this configurable
+	blockHeightCacheKey = "block_height"
 	// TODO_IMPROVE: Make this configurable
 	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
 	blockHeightCacheCapacity = 1                // Only need to cache one entry
@@ -236,14 +238,7 @@ func (cfn *cachingFullNode) GetSession(
 		sessionKey,
 		func(fetchCtx context.Context) (sessiontypes.Session, error) {
 			logger.Debug().Str("session_key", sessionKey).Msgf("Fetching session from full node")
-			session, fetchErr := cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
-
-			if fetchErr != nil {
-				logger.Error().Err(fetchErr).Msgf("Failed to fetch session from full node")
-			} else {
-				logger.Debug().Msgf("Successfully fetched session from full node")
-			}
-			return session, fetchErr
+			return cfn.lazyFullNode.GetSession(ctx, serviceID, appAddr)
 		},
 	)
 
@@ -272,23 +267,18 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	serviceID protocol.ServiceID,
 	appAddr string,
 ) (sessiontypes.Session, error) {
-	logger := cfn.logger.
-		With("service_id", string(serviceID)).
-		With("app_addr", appAddr).
-		With("method", "GetSessionWithExtendedValidity")
+	logger := cfn.logger.With(
+		"service_id", string(serviceID),
+		"app_addr", appAddr,
+		"method", "GetSessionWithExtendedValidity",
+	)
 
 	// Get the current session from cache
 	currentSession, err := cfn.GetSession(ctx, serviceID, appAddr)
-
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to get current session")
 		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
 	}
-
-	logger.Debug().
-		Int64("current_session_start_height", currentSession.Header.SessionStartBlockHeight).
-		Int64("current_session_end_height", currentSession.Header.SessionEndBlockHeight).
-		Msg("Got the current session from cache")
 
 	// Get shared parameters to determine grace period
 	sharedParams, err := cfn.GetSharedParams(ctx)
@@ -308,14 +298,17 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
 	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
 
+	logger = logger.With(
+		"prev_session_end_height", prevSessionEndHeight,
+		"prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity,
+		"current_height", currentHeight,
+		"current_session_start_height", currentSession.Header.SessionStartBlockHeight,
+		"current_session_end_height", currentSession.Header.SessionEndBlockHeight,
+	)
+
 	// If we're not within the grace period of the previous session, return the current session
 	if currentHeight > prevSessionEndHeightWithExtendedValidity {
-		logger.Debug().
-			Int64("current_height", currentHeight).
-			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
-			Msg("IS NOT WITHIN grace period, returning current session")
-
+		logger.Debug().Msg("IS NOT WITHIN GRACE PERIOD: Returning current session")
 		return currentSession, nil
 	}
 
@@ -323,24 +316,15 @@ func (cfn *cachingFullNode) GetSessionWithExtendedValidity(
 	prevSessionEndHeightWithExtendedValidityScaled := prevSessionEndHeight + int64(float64(sharedParams.GracePeriodEndOffsetBlocks)*gracePeriodScaleDownFactor)
 	if currentHeight > prevSessionEndHeightWithExtendedValidityScaled {
 		logger.Debug().
-			Int64("current_height", currentHeight).
-			Int64("prev_session_end_height", prevSessionEndHeight).
-			Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
 			Int64("prev_session_end_height_with_extended_validity_scaled", prevSessionEndHeightWithExtendedValidityScaled).
-			Msg("IS WITHIN grace period BUT returning current session to aggressively start using the new session")
-
+			Msg("IS WITHIN GRACE PERIOD BUT: Returning current session to aggressively start using the new session")
 		return currentSession, nil
 	}
 
-	logger.Debug().
-		Int64("current_height", currentHeight).
-		Int64("prev_session_end_height", prevSessionEndHeight).
-		Int64("prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity).
-		Msg("IS WITHIN grace period of previous session")
+	logger.Debug().Msg("IS WITHIN GRACE PERIOD: Going to fetch previous session")
 
 	// Use cache for previous session lookup with a specific key
 	prevSessionKey := getSessionCacheKey(serviceID, appAddr, prevSessionEndHeight)
-
 	prevSession, err := cfn.sessionCache.GetOrFetch(
 		ctx,
 		prevSessionKey,
