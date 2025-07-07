@@ -234,10 +234,7 @@ else:
     # This prevents the "no matches for kind "Alertmanager" in version "monitoring.coreos.com/v1"" error
     local_resource(
         'install-prometheus-operator-crds',
-        '''
-        echo "Installing Prometheus Operator CRDs..."
-        kubectl apply --server-side -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
-        ''',
+        'kubectl apply --server-side -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml',
         labels=["configuration"],
     )
 
