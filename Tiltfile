@@ -207,7 +207,8 @@ WORKDIR /app
 #    --set config.fromSecret.key=.config.yaml
 flags = [
     # Reduce Helm secret size for local development
-    "--skip-crds",
+    # NOTE: CRDs are required for observability stack (Prometheus Operator, Alertmanager, etc.)
+    # Only skip CRDs if observability is explicitly disabled
     "--atomic=false",
     # Enable GUARD resources - disabled in .values.yaml for local dev
     "--set", "guard.enabled=false",
@@ -223,6 +224,22 @@ flags = [
     "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
     "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
 ]
+
+# Only skip CRDs if observability is explicitly disabled
+# CRDs are required for the Prometheus Operator and Alertmanager to work properly
+if not local_config["observability"]["enabled"]:
+    flags.append("--skip-crds")
+else:
+    # When observability is enabled, ensure Prometheus Operator CRDs are installed
+    # This prevents the "no matches for kind "Alertmanager" in version "monitoring.coreos.com/v1"" error
+    local_resource(
+        'install-prometheus-operator-crds',
+        '''
+        echo "Installing Prometheus Operator CRDs..."
+        kubectl apply --server-side -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
+        ''',
+        labels=["configuration"],
+    )
 
 # Optional: Use a local values.yaml file to override the default values.
 #
@@ -240,6 +257,11 @@ if read_yaml(valuesFile, default=None) != None:
 
 
 # Run PATH Helm chart, including GUARD & WATCH.
+# Build the resource dependencies list
+resource_deps = ["path-config-updater"]
+if local_config["observability"]["enabled"]:
+    resource_deps.append("install-prometheus-operator-crds")
+
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -254,7 +276,7 @@ helm_resource(
         ),
     ],
     flags=flags,
-    resource_deps=["path-config-updater"],
+    resource_deps=resource_deps,
     labels=["path"],
 )
 update_settings(

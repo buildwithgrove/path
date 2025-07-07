@@ -211,7 +211,7 @@ func setupSIGINTHandler(cancel context.CancelFunc) {
 	signal.Notify(sigCh, os.Interrupt)
 	go func() {
 		<-sigCh
-		fmt.Println("🛑 Received SIGINT, cancelling test...")
+		fmt.Println("🛑 Received SIGINT, canceling test...")
 		cancel()
 
 		// Give a short time for cleanup to happen in the other handlers

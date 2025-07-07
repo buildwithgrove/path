@@ -63,7 +63,7 @@ enum ShannonEndpointErrorType {
   // TODO_TECHDEBT: Uncomment when this is used.
   // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 9;
   // RelayRe
-  SHANNON_ENDPOINT_REQUEST_CANCELLED_BY_PATH = 9;
+  SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 9;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions

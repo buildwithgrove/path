@@ -115,10 +115,10 @@ func (c FullNodeConfig) Validate() error {
 // on the `config` package.
 // TODO_TECHDEBT: Make all of these configurable
 const (
-	defaultBackoffBaseDelay  = 2 * time.Second
+	defaultBackoffBaseDelay  = 1 * time.Second
 	defaultBackoffMaxDelay   = 60 * time.Second
 	defaultMinConnectTimeout = 10 * time.Second
-	defaultKeepAliveTime     = 20 * time.Second
+	defaultKeepAliveTime     = 30 * time.Second
 	defaultKeepAliveTimeout  = 30 * time.Second
 )
 
