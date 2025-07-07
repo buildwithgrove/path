@@ -2,6 +2,8 @@ package shannon
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sdk "github.com/pokt-network/shannon-sdk"
@@ -22,6 +24,10 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	}
 
 	switch {
+	// HTTP relay errors - check first to handle HTTP-specific classifications
+	case errors.Is(err, errSendHTTPRelay):
+		return classifyHttpError(logger, err)
+
 	// Endpoint payload failed to unmarshal/validate
 	case errors.Is(err, errMalformedEndpointPayload):
 		// Extract the payload content from the error message
@@ -92,6 +98,66 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
+}
+
+// classifyHttpError classifies HTTP-related errors and returns the appropriate endpoint error type and sanction
+// Analyzes the raw error from sendHttpRelay and maps it to defined error types
+func classifyHttpError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
+	logger = logger.With("error_message", err.Error())
+	errStr := err.Error()
+
+	// Connection establishment failures
+	switch {
+	case strings.Contains(errStr, "connection refused"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "connection reset"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "no route to host"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "network is unreachable"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Transport layer errors
+	switch {
+	case strings.Contains(errStr, "broken pipe"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "i/o timeout"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Connection timeout (separate from i/o timeout)
+	if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "timeout") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// HTTP protocol errors
+	switch {
+	case strings.Contains(errStr, "malformed HTTP"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	case strings.Contains(errStr, "invalid status"):
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// Generic transport errors (catch-all for other transport issues)
+	if strings.Contains(errStr, "transport") {
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+	}
+
+	// If we can't classify the HTTP error, it's an internal error
+	logger.Warn().Msg("Unable to classify HTTP error - defaulting to internal error")
+	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL,
+		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }
 
 // classifyMalformedEndpointPayload classifies errors found in the malformed endpoint response payload

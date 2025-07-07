@@ -16,6 +16,9 @@ var (
 	// endpoint timeout
 	RelayErrEndpointTimeout = errors.New("timeout waiting for endpoint response")
 
+	// HTTP relay request failed - wraps net/http package errors
+	errSendHTTPRelay = errors.New("HTTP relay request failed")
+
 	// Request context setup errors.
 	// Used to build observations:
 	// There is no request context to provide observations.
@@ -64,7 +67,14 @@ var (
 //   - Fallback: String analysis for unrecognized types
 //
 // • Centralizes error recognition logic to avoid duplicate string matching
+// • Provides fine-grained HTTP error classification
 func extractErrFromRelayError(err error) error {
+	// HTTP relay request failed.
+	// Return as-is for further classification
+	if errors.Is(err, errSendHTTPRelay) {
+		return err
+	}
+
 	if isEndpointConfigError(err) {
 		return RelayErrEndpointConfigError
 	}

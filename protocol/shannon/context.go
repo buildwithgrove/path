@@ -214,10 +214,14 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
 	defer cancelFn()
 
+	// Wrap sendHttpRelay errors with errSendHTTPRelay for classification
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
-		hydratedLogger.Error().Err(err).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, fmt.Errorf("Error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), err)
+		// Wrap the net/http error with our classification error
+		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
+
+		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
+		return nil, fmt.Errorf("Error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
 	}
 
 	// Validate the response - check for specific validation errors that indicate raw payload issues
@@ -439,7 +443,7 @@ func (rc *requestContext) handleEndpointSuccess(
 		rc.logger,
 		*rc.selectedEndpoint,
 		endpointQueryTime,
-		time.Now(), // Timestamp: endpoint query completed.
+		time.Now(),                // Timestamp: endpoint query completed.
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
 
