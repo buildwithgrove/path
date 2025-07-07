@@ -21,7 +21,7 @@ import (
 )
 
 // Maximum length of the endpoint payload logged on error.
-const maxLenLoggedEndpointPayload = 1000
+const maxEndpointPayloadLenForLogging = 100
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
@@ -46,9 +46,7 @@ type requestContext struct {
 	context context.Context
 
 	fullNode FullNode
-
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
-
 	serviceID protocol.ServiceID
 
 	relayRequestSigner RelayRequestSigner
@@ -239,9 +237,8 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		// - RelayMiner returns generic HTTP on errors (expired sessions, etc.)
 		// - Enables error analysis via PATH logs
 		responseStr := string(responseBz)
-		hydratedLogger.With(
-			"endpoint_payload", responseStr[:min(len(responseStr), maxLenLoggedEndpointPayload)],
-		).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
+		responseStrForLogging := responseStr[:min(len(responseStr), maxEndpointPayloadLenForLogging)]
+		hydratedLogger.With("endpoint_payload", responseStrForLogging).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, rc.selectedEndpoint.url, err)
 	}
 
@@ -408,6 +405,7 @@ func (rc *requestContext) handleEndpointSuccess(
 			*rc.selectedEndpoint,
 			endpointQueryTime,
 			time.Now(), // Timestamp: endpoint query completed.
+			endpointResponse,
 		),
 	)
 

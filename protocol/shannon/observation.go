@@ -112,9 +112,10 @@ func buildEndpointSuccessObservation(
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
 	endpointResponseTimestamp time.Time,
+	endpointResponse protocol.Response,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(logger, endpoint)
+	endpointObs := buildEndpointObservation(logger, endpoint, endpointResponse)
 
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -157,6 +158,7 @@ func buildEndpointErrorObservation(
 func buildEndpointObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
+	endpointResponse protocol.Response,
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
@@ -165,6 +167,10 @@ func buildEndpointObservation(
 	// Add endpoint-level details: supplier, URL.
 	observation.Supplier = endpoint.supplier
 	observation.EndpointUrl = endpoint.url
+
+	// Add endpoint response details: HTTP status code.
+	*observation.EndpointResponseHttpStatusCode = int32(endpointResponse.HTTPStatusCode)
+	*observation.EndpointResponseHttpPayloadSize = int64(len(endpointResponse.Bytes))
 
 	return observation
 }

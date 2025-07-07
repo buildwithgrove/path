@@ -8,7 +8,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -20,9 +19,6 @@ const (
 	relaysErrorsTotalMetric = "shannon_relay_errors_total"
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 	endpointLatencyMetric   = "shannon_endpoint_latency_seconds"
-
-	// Latency metrics
-	backendServiceLatencyMetric = "shannon_backend_service_latency_seconds"
 )
 
 var (
@@ -42,7 +38,6 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
 	prometheus.MustRegister(endpointLatency)
-	prometheus.MustRegister(backendServiceLatency)
 }
 
 var (
@@ -142,30 +137,7 @@ var (
 			Help:      "Histogram of endpoint response latencies in seconds",
 			Buckets:   defaultBuckets,
 		},
-		[]string{"service_id", "endpoint_domain", "success"},
-	)
-
-	// backendServiceLatency tracks the time spent waiting for backend service responses.
-	//
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - endpoint_domain: Backend service domain (TLD+1 for cardinality control)
-	//   - http_status: HTTP response status (2xx, 4xx, 5xx, timeout)
-	//   - request_size_bucket: Request size category (small, medium, large)
-	//
-	// Use to analyze:
-	//   - Pure backend service performance (excluding PATH overhead)
-	//   - Backend service degradation patterns
-	//   - Correlation between backend latency and total request latency
-	//   - Impact of request size on backend response time
-	backendServiceLatency = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: pathProcess,
-			Name:      backendServiceLatencyMetric,
-			Help:      "Backend service response latency in seconds",
-			Buckets:   defaultBuckets,
-		},
-		[]string{"service_id", "endpoint_domain", "http_status", "request_size_bucket"},
+		[]string{"service_id", "endpoint_domain", "success", "http_status", "request_size_bucket"},
 	)
 )
 
@@ -420,24 +392,12 @@ func processEndpointLatency(
 		// Record latency
 		endpointLatency.With(
 			prometheus.Labels{
-				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
-				"success":         fmt.Sprintf("%t", success),
+				"service_id":          serviceID,
+				"endpoint_domain":     endpointTLDPlusOne,
+				"success":             fmt.Sprintf("%t", success),
+				"http_status":         endpointObs.GetEndpointResponseHttpStatusCode(),
+				"request_size_bucket": requestSizeBucket,
 			},
 		).Observe(latencySeconds)
 	}
-}
-
-// RecordBackendServiceLatency records backend service response latency.
-func RecordBackendServiceLatency(
-	serviceID protocol.ServiceID,
-	endpointDomain, httpStatus, requestSizeBucket string,
-	duration float64,
-) {
-	backendServiceLatency.With(prometheus.Labels{
-		"service_id":          string(serviceID),
-		"endpoint_domain":     endpointDomain,
-		"http_status":         httpStatus,
-		"request_size_bucket": requestSizeBucket,
-	}).Observe(duration)
 }

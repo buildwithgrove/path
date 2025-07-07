@@ -126,6 +126,13 @@ message ShannonEndpointObservation {
 
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 12;
+
+  // HTTP status code of the endpoint response
+  optional int32 endpoint_response_http_status_code = 13;
+
+  // HTTP Response payload size
+  optional int64 endpoint_response_http_payload_size = 14;
+
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,

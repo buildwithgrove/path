@@ -47,7 +47,7 @@ func sendHttpRelay(
 	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
 	//  - allow configuring the defaultTransport.
 	//  - allow PATH users to override default transport config.
-
+	//
 	// Best practice in Go is to use a custom HTTP client Transport.
 	// See: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
 	client := &http.Client{
@@ -105,30 +105,4 @@ func extractServiceIDFromContext(ctx context.Context) protocol.ServiceID {
 		}
 	}
 	return protocol.ServiceID("unknown")
-}
-
-// categorizeRequestSize buckets request size for metrics
-func categorizeRequestSize(size int) string {
-	switch {
-	case size < 1024: // < 1KB
-		return "small"
-	case size < 10240: // < 10KB
-		return "medium"
-	default: // >= 10KB
-		return "large"
-	}
-}
-
-// categorizeHTTPStatus converts HTTP status codes to metric categories
-func categorizeHTTPStatus(statusCode int) string {
-	switch {
-	case statusCode >= 200 && statusCode < 300:
-		return "2xx"
-	case statusCode >= 400 && statusCode < 500:
-		return "4xx"
-	case statusCode >= 500:
-		return "5xx"
-	default:
-		return "other"
-	}
 }
