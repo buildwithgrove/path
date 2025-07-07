@@ -104,7 +104,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// Success:
 	// - Record observation
 	// - Return response received from endpoint.
-	return rc.handleEndpointSuccess(endpointQueryTime, relayResponse)
+	rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
+	return relayResponse, nil
 }
 
 // HandleWebsocketRequest:
@@ -392,8 +393,7 @@ func (rc *requestContext) handleEndpointError(
 // - Builds and returns protocol response from endpoint's returned data.
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
-	endpointResponse protocol.Response,
-) (protocol.Response, error) {
+	endpointResponse *protocol.Response) {
 	hydratedLogger := rc.getHydratedLogger("handleEndpointSuccess")
 	hydratedLogger = hydratedLogger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
 	hydratedLogger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
@@ -408,7 +408,4 @@ func (rc *requestContext) handleEndpointSuccess(
 			endpointResponse,
 		),
 	)
-
-	// Return relay response received from endpoint.
-	return endpointResponse, nil
 }

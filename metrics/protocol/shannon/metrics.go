@@ -392,11 +392,11 @@ func processEndpointLatency(
 		// Record latency
 		endpointLatency.With(
 			prometheus.Labels{
-				"service_id":          serviceID,
-				"endpoint_domain":     endpointTLDPlusOne,
-				"success":             fmt.Sprintf("%t", success),
-				"http_status":         endpointObs.GetEndpointResponseHttpStatusCode(),
-				"request_size_bucket": requestSizeBucket,
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"success":         fmt.Sprintf("%t", success),
+				"http_status":     fmt.Sprintf("%d", endpointObs.GetEndpointResponseHttpStatusCode()),
+				"response_size":   fmt.Sprintf("%d", endpointObs.GetEndpointResponseHttpPayloadSize()),
 			},
 		).Observe(latencySeconds)
 	}
