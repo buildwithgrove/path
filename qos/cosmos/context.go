@@ -2,7 +2,9 @@ package cosmos
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -89,9 +91,11 @@ type requestContext struct {
 // It accounts for both REST-like and JSON-RPC requests.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetServicePayload() protocol.Payload {
+	fmt.Println("GetServicePayload", rc.httpReq.URL.Path)
 	payload := protocol.Payload{
 		Method:          rc.httpReq.Method,
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
+		Headers:         getCosmosSDKHeaders(rc.httpReq.URL.Path),
 	}
 
 	// If the request is REST-like (GET to /health or /status), set the path including query parameters.
@@ -112,6 +116,19 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	}
 
 	return payload
+}
+
+// TODO_IN_THIS_PR(@commoddity): productionize this determination of how to set RPC-Type header.
+// eg. save strings as consts, etc.
+func getCosmosSDKHeaders(urlPath string) map[string]string {
+	// If the URL path starts with /cosmos, set the "RPC-Type" header to "rest"
+	if strings.HasPrefix(urlPath, "/cosmos") {
+		return map[string]string{
+			"RPC-Type": "rest",
+		}
+	}
+
+	return map[string]string{}
 }
 
 // isEmptyJSONRPCRequest checks if the JSON-RPC request is empty/uninitialized.

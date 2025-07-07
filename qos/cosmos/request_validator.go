@@ -45,8 +45,12 @@ func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (ga
 		"method", "validateHTTPRequest",
 	)
 
-	// Check if this is a REST endpoint request (GET /health or /status)
-	if req.Method == http.MethodGet && crv.isRESTEndpoint(req.URL.Path) {
+	// TODO_IN_THIS_PR(@commoddity): update this to better handle determining the correct request context for:
+	// 		- 1. Cosmos SDK requests - REST but supports POST & GET
+	// 		- 2. CometBFT - Can be JSON-RPC or REST (GET only)
+
+	// Check if this is a REST endpoint request
+	if req.Method == http.MethodGet {
 		return crv.createRESTRequestContext(req), true
 	}
 
@@ -58,11 +62,6 @@ func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (ga
 	// Unsupported method or path
 	logger.Warn().Msgf("Unsupported HTTP method %s or path %s", req.Method, req.URL.Path)
 	return crv.createUnsupportedMethodContext(req), false
-}
-
-// isRESTEndpoint checks if the path corresponds to a supported REST endpoint
-func (crv *cosmosSDKRequestValidator) isRESTEndpoint(path string) bool {
-	return path == apiPathHealthCheck || path == apiPathStatus
 }
 
 // createRESTRequestContext creates a request context for REST endpoint requests
