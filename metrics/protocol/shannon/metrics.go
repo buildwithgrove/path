@@ -7,7 +7,8 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/buildwithgrove/path/observation/protocol"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
+	"github.com/buildwithgrove/path/protocol"
 )
 
 const (
@@ -19,6 +20,9 @@ const (
 	relaysErrorsTotalMetric = "shannon_relay_errors_total"
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 	endpointLatencyMetric   = "shannon_endpoint_latency_seconds"
+
+	// Latency metrics
+	backendServiceLatencyMetric = "shannon_backend_service_latency_seconds"
 )
 
 var (
@@ -38,6 +42,7 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
 	prometheus.MustRegister(endpointLatency)
+	prometheus.MustRegister(backendServiceLatency)
 }
 
 var (
@@ -139,13 +144,36 @@ var (
 		},
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
+
+	// backendServiceLatency tracks the time spent waiting for backend service responses.
+	//
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Backend service domain (TLD+1 for cardinality control)
+	//   - http_status: HTTP response status (2xx, 4xx, 5xx, timeout)
+	//   - request_size_bucket: Request size category (small, medium, large)
+	//
+	// Use to analyze:
+	//   - Pure backend service performance (excluding PATH overhead)
+	//   - Backend service degradation patterns
+	//   - Correlation between backend latency and total request latency
+	//   - Impact of request size on backend response time
+	backendServiceLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      backendServiceLatencyMetric,
+			Help:      "Backend service response latency in seconds",
+			Buckets:   defaultBuckets,
+		},
+		[]string{"service_id", "endpoint_domain", "http_status", "request_size_bucket"},
+	)
 )
 
 // PublishMetrics exports all Shannon-related Prometheus metrics using observations
 // reported by the Shannon protocol.
 func PublishMetrics(
 	logger polylog.Logger,
-	observations *protocol.ShannonObservationsList,
+	observations *protocolobservations.ShannonObservationsList,
 ) {
 
 	shannonObservations := observations.GetObservations()
@@ -173,7 +201,7 @@ func PublishMetrics(
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 func recordRelayTotal(
 	logger polylog.Logger,
-	observations *protocol.ShannonRequestObservations,
+	observations *protocolobservations.ShannonRequestObservations,
 ) {
 	hydratedLogger := logger.With("method", "recordRelaysTotal")
 
@@ -235,7 +263,7 @@ func recordRelayTotal(
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
-func extractRequestError(observations *protocol.ShannonRequestObservations) (bool, string) {
+func extractRequestError(observations *protocolobservations.ShannonRequestObservations) (bool, string) {
 	requestErr := observations.GetRequestError()
 	// No request errors.
 	if requestErr == nil {
@@ -246,9 +274,9 @@ func extractRequestError(observations *protocol.ShannonRequestObservations) (boo
 }
 
 // isAnyObservationSuccessful returns true if any endpoint observation indicates a success.
-func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservation) bool {
+func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
-		if obs.GetErrorType() == protocol.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
+		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
 			return true
 		}
 	}
@@ -256,7 +284,7 @@ func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservat
 }
 
 // processEndpointErrors records error metrics with exemplars for high-cardinality data
-func processEndpointErrors(serviceID string, observations []*protocol.ShannonEndpointObservation) {
+func processEndpointErrors(serviceID string, observations []*protocolobservations.ShannonEndpointObservation) {
 	for _, endpointObs := range observations {
 		// Skip if there's no error
 		if endpointObs.ErrorType == nil {
@@ -303,7 +331,7 @@ func processEndpointErrors(serviceID string, observations []*protocol.ShannonEnd
 func processSanctionsByDomain(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction
@@ -349,7 +377,7 @@ func processSanctionsByDomain(
 func processEndpointLatency(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
@@ -398,4 +426,18 @@ func processEndpointLatency(
 			},
 		).Observe(latencySeconds)
 	}
+}
+
+// RecordBackendServiceLatency records backend service response latency.
+func RecordBackendServiceLatency(
+	serviceID protocol.ServiceID,
+	endpointDomain, httpStatus, requestSizeBucket string,
+	duration float64,
+) {
+	backendServiceLatency.With(prometheus.Labels{
+		"service_id":          string(serviceID),
+		"endpoint_domain":     endpointDomain,
+		"http_status":         httpStatus,
+		"request_size_bucket": requestSizeBucket,
+	}).Observe(duration)
 }
