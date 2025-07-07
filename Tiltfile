@@ -206,12 +206,13 @@ WORKDIR /app
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
+    # TODO_TECHDEBT: Look for a way to make helm secret size smaller for local development.
     # Reduce Helm secret size for local development
-    # NOTE: CRDs are required for observability stack (Prometheus Operator, Alertmanager, etc.)
-    # Only skip CRDs if observability is explicitly disabled
-    "--atomic=false",
-    # Enable GUARD resources - disabled in .values.yaml for local dev
-    "--set", "guard.enabled=false",
+    # "--skip-crds",
+    # "--atomic=false",
+
+    # Enable GUARD resources.
+    "--set", "guard.enabled=true",
     # Enable PATH to load the config from a secret.
     # PATH supports loading the config from either a Secret or a ConfigMap.
     # See: https://github.com/buildwithgrove/helm-charts/blob/main/charts/path/values.yaml
@@ -220,23 +221,11 @@ flags = [
     "--set", "config.fromSecret.key=.config.yaml",
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
-    # Disable observability for local development
-    "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
-    "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
-]
 
-# Only skip CRDs if observability is explicitly disabled
-# CRDs are required for the Prometheus Operator and Alertmanager to work properly
-if not local_config["observability"]["enabled"]:
-    flags.append("--skip-crds")
-else:
-    # When observability is enabled, ensure Prometheus Operator CRDs are installed
-    # This prevents the "no matches for kind "Alertmanager" in version "monitoring.coreos.com/v1"" error
-    local_resource(
-        'install-prometheus-operator-crds',
-        'kubectl apply --server-side -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml',
-        labels=["configuration"],
-    )
+    # TODO_TECHDEBT: Respect local_config["observability"]
+    # "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
+    # "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
+]
 
 # Optional: Use a local values.yaml file to override the default values.
 #
@@ -254,11 +243,6 @@ if read_yaml(valuesFile, default=None) != None:
 
 
 # Run PATH Helm chart, including GUARD & WATCH.
-# Build the resource dependencies list
-resource_deps = ["path-config-updater"]
-if local_config["observability"]["enabled"]:
-    resource_deps.append("install-prometheus-operator-crds")
-
 helm_resource(
     "path",
     chart_prefix + "path",
@@ -273,7 +257,7 @@ helm_resource(
         ),
     ],
     flags=flags,
-    resource_deps=resource_deps,
+    resource_deps=["path-config-updater"],
     labels=["path"],
 )
 update_settings(
