@@ -42,30 +42,32 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 	logger.Debug().Msgf("fetching the app with the selected address %s.", extractedAppAddr)
 
 	// Retrieve the session for the owned app, without grace period logic.
+	selectedSessions := make([]sessiontypes.Session, 0)
 	sessionLatest, err := p.GetSession(ctx, serviceID, extractedAppAddr)
 	if err != nil {
 		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
-		logger.Error().Err(err).Msg(err.Error())
+		logger.Warn().Err(err).Msgf("SHOULD NEVER HAPPEN: Error getting the current session from the full node for app: %s. Cannot continue.", extractedAppAddr)
 		return nil, err
 	}
+	selectedSessions = append(selectedSessions, sessionLatest)
 
 	// Retrieve the session for the owned app, considering grace period logic.
 	sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, extractedAppAddr)
 	if err != nil {
 		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
-		logger.Error().Err(err).Msg(err.Error())
-		return nil, err
-	}
-
-	// Append the latest session to the list.
-	selectedSessions := make([]sessiontypes.Session, 0)
-	selectedSessions = append(selectedSessions, sessionLatest)
-	if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
-		if sessionLatest.Application.Address != sessionPreviousExtended.Application.Address {
-			logger.Warn().Msgf("SHOULD NEVER HAPPEN: The current session app address (%s) and the previous session app address (%s) are different. Only using the latest session.", sessionLatest.Application.Address, sessionPreviousExtended.Application.Address)
-		} else {
-			// Append the previous session to the list if the session IDs are different.
-			selectedSessions = append(selectedSessions, sessionPreviousExtended)
+		logger.Warn().Err(err).Msgf("SHOULD RARELY HAPPEN: Error getting the previous extended session from the full node for app: %s. Going to use the latest session only", extractedAppAddr)
+	} else {
+		if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
+			if sessionLatest.Application.Address != sessionPreviousExtended.Application.Address {
+				logger.Warn().Msg("SHOULD NEVER HAPPEN: The current session app address and the previous session app address are different. Only using the latest session.")
+			} else {
+				// Append the previous session to the list if the session IDs are different.
+				// selectedSessions = append(selectedSessions, sessionPreviousExtended)
+				// TODO_IN_THIS_PR: Revert this change.
+				// We are experimenting by forcing it to always use the previous session.
+				selectedSessions = []sessiontypes.Session{sessionPreviousExtended}
+				logger.Info().Msg("EXPERIMENT: Overriding the latest session with the previous session for the app.")
+			}
 		}
 	}
 
@@ -75,15 +77,15 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 
 	// Skip the session's app if it is not staked for the requested service.
 	if !appIsStakedForService(serviceID, selectedApp) {
-		err = fmt.Errorf("%w: Trying to use app %s that is not staked for the service %s.", errProtocolContextSetupAppNotStaked, selectedApp.Address, serviceID)
-		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Trying to use an app that is not staked for the service. Relay request will fail.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not staked for the service %s", errProtocolContextSetupAppNotStaked, selectedApp.Address, serviceID)
+		logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Trying to use an app that is not staked for the service. Relay request will fail.")
 		return nil, err
 	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: Trying to use app %s that is not delegated to the gateway %s.", errProtocolContextSetupAppDoesNotDelegate, selectedApp.Address, p.gatewayAddr)
-		logger.Error().Err(err).Msg("SHOULD NEVER HAPPEN: Trying to use an app that is not delegated to the gateway. Relay request will fail.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not delegated to the gateway %s", errProtocolContextSetupAppDoesNotDelegate, selectedApp.Address, p.gatewayAddr)
+		logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Trying to use an app that is not delegated to the gateway. Relay request will fail.")
 		return nil, err
 	}
 
