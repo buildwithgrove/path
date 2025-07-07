@@ -11,7 +11,6 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -91,9 +90,6 @@ type requestContext struct {
 	// Tracks whether the request was rejected by the QoS.
 	// This is needed for handling the observations: there will be no protocol context/observations in this case.
 	requestRejectedByQoS bool
-
-	// Timing fields for relay latency tracking
-	relayStartTime time.Time
 }
 
 // InitFromHTTPRequest builds the required context for serving an HTTP request.
@@ -450,16 +446,6 @@ func (rc *requestContext) selectMultipleEndpoints(
 	// return protocol.EndpointAddrList{selectedEndpointAddr}
 }
 
-// recordRelayLatencyMetrics records the end-to-end relay latency metrics.
-func (rc *requestContext) recordRelayLatencyMetrics(duration float64) {
-	// Only record metrics for Shannon protocol
-	if rc.protocol != nil {
-		// Check if this is a Shannon protocol (we could add a method to identify protocol type)
-		// For now, we'll record metrics for all protocols but with service_id differentiation
-		shannonmetrics.RecordRelayLatency(rc.serviceID, duration)
-	}
-}
-
 // HandleWebsocketRequest handles a websocket request.
 func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
@@ -474,20 +460,6 @@ func (rc *requestContext) HandleWebsocketRequest(request *http.Request, response
 
 // WriteHTTPUserResponse uses the data contained in the gateway request context to write the user-facing HTTP response.
 func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
-	// Always record relay latency metrics when writing the response
-	defer func() {
-		if rc.relayStartTime.IsZero() {
-			// No start time recorded, skip metrics
-			return
-		}
-
-		// Calculate end-to-end relay duration
-		relayDuration := time.Since(rc.relayStartTime).Seconds()
-
-		// Record the relay latency metrics
-		rc.recordRelayLatencyMetrics(relayDuration)
-	}()
-
 	// If the HTTP request was invalid, write a generic response.
 	// e.g. if the specified target service ID was invalid.
 	if rc.presetFailureHTTPResponse != nil {

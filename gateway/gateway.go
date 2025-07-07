@@ -114,8 +114,6 @@ func (g Gateway) handleHTTPServiceRequest(
 	gatewayRequestCtx *requestContext,
 	w http.ResponseWriter,
 ) {
-	gatewayRequestCtx.relayStartTime = time.Now()
-
 	// Track setup phase timing
 	requestSetupStartTime := time.Now()
 	requestSetupStage := requestSetupStageQoSContext

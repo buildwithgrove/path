@@ -157,26 +157,6 @@ var (
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
-	// relayLatency tracks end-to-end relay request latency.
-	//
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - session_state: State of session during request (current, grace_period, rollover)
-	//
-	// Use to analyze:
-	//   - Impact of session rollovers on end-user latency
-	//   - Correlation between cache misses and request latency
-	//   - Session transition impact on user experience
-	relayLatency = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: pathProcess,
-			Name:      relayLatencyMetric,
-			Help:      "End-to-end relay request latency in seconds",
-			Buckets:   defaultBuckets,
-		},
-		[]string{"service_id"},
-	)
-
 	// requestSetupLatency tracks the time spent in PATH's request setup phase before sending the relay.
 	// Labels:
 	//   - service_id: Target service identifier
@@ -454,16 +434,6 @@ func processEndpointLatency(
 			},
 		).Observe(latencySeconds)
 	}
-}
-
-// RecordRelayLatency records end-to-end relay request latency.
-func RecordRelayLatency(
-	serviceID protocol.ServiceID,
-	duration float64,
-) {
-	relayLatency.With(prometheus.Labels{
-		"service_id": string(serviceID),
-	}).Observe(duration)
 }
 
 // RecordRequestSetupLatency records the time spent in PATH's request setup phase.
