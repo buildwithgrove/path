@@ -217,6 +217,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	// Wrap sendHttpRelay errors with errSendHTTPRelay for classification
 	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
+		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error
 		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
 

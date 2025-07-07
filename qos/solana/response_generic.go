@@ -65,7 +65,7 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.Response.ID.String(),
+					Id: r.ID.String(),
 				},
 			},
 		},

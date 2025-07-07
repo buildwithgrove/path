@@ -71,12 +71,9 @@ func NewProtocol(
 	shannonLogger := logger.With("protocol", "shannon")
 
 	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
-	var ownedApps map[protocol.ServiceID][]string
-	if config.GatewayMode == protocol.GatewayModeCentralized {
-		var err error
-		if ownedApps, err = getCentralizedModeOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode); err != nil {
-			return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
-		}
+	ownedApps, err := getOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
 	}
 
 	protocolInstance := &Protocol{
@@ -93,8 +90,7 @@ func NewProtocol(
 		// tracks sanctioned endpoints
 		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
 
-		// ownedApps is the list of apps owned by the gateway operator running PATH in Centralized gateway mode.
-		// If PATH is not running in Centralized mode, this field is nil.
+		// ownedApps is the list of apps owned by the gateway operator
 		ownedApps: ownedApps,
 	}
 
@@ -118,8 +114,7 @@ type Protocol struct {
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
-	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
+	// ownedApps is the list of apps owned by the gateway operator
 	ownedApps map[protocol.ServiceID][]string
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
@@ -307,7 +302,7 @@ func (p *Protocol) Name() string {
 
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
-	return p.FullNode.IsHealthy()
+	return p.IsHealthy()
 }
 
 // TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating

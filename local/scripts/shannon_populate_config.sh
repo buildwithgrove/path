@@ -21,7 +21,7 @@ echo -n "> "
 read -r response
 if [[ "$response" != "yes" && "$response" != "y" ]]; then
     echo -e ""
-    echo -e "${RED}❌  Operation cancelled  ❌${NC}"
+    echo -e "${RED}❌  Operation canceled  ❌${NC}"
     echo -e ""
     exit 0
 fi
@@ -32,14 +32,14 @@ if [[ -f "$CONFIG_FILE" ]]; then
     echo -n "> "
     read -r response
     if [[ "$response" != "yes" && "$response" != "y" ]]; then
-        echo "Operation cancelled."
+        echo "Operation canceled."
         exit 0
     fi
     echo -e "${RED}❗ Are you sure you want to overwrite the existing configuration file? (y/n)${NC}"
     echo -n "> "
     read -r response
     if [[ "$response" != "yes" && "$response" != "y" ]]; then
-        echo "Operation cancelled."
+        echo "Operation canceled."
         exit 0
     fi
 fi

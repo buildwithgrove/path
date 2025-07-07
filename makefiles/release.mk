@@ -160,3 +160,11 @@ release_build_local: ## Build binary for current platform only
 	@mkdir -p $(RELEASE_DIR)
 	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
 	@echo "✓ Built $(RELEASE_DIR)/path-local"
+
+.PHONY: build_ghcr_image_current_branch
+build_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
+	@echo "Triggering main-build workflow for current branch..."
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
+	gh workflow run main-build.yml --ref $$BRANCH
+	@echo "Workflow triggered for branch: $$(git rev-parse --abbrev-ref HEAD)"
+	@echo "Check the workflow status at: https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml"
