@@ -341,12 +341,12 @@ func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 // - Logs RelayMinerError details for visibility.
 func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.RelayResponse) {
 	// Check if RelayResponse contains RelayMinerError data
-	if relayResponse == nil || relayResponse.Meta == nil || relayResponse.Meta.RelayMinerError == nil {
+	if relayResponse == nil || relayResponse.RelayMinerError == nil {
 		// No RelayMinerError data to track
 		return
 	}
 
-	relayMinerErr := relayResponse.Meta.RelayMinerError
+	relayMinerErr := relayResponse.RelayMinerError
 	hydratedLogger := rc.getHydratedLogger("trackRelayMinerError")
 
 	// Log RelayMinerError details for visibility
