@@ -186,8 +186,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 					// Prepare a request context to submit a synthetic relay request to the endpoint on behalf of the gateway for QoS purposes.
 					gatewayRequestCtx := requestContext{
-						logger:  endpointLogger,
-						context: context.TODO(),
+						logger: endpointLogger,
 						// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 						// Mark the request as Synthetic using the following steps:
 						// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -203,6 +202,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						metricsReporter: eph.MetricsReporter,
 						// data reporter for exporting data on hydrator service requests to the data pipeline.
 						dataReporter: eph.DataReporter,
+						context:      context.TODO(),
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()

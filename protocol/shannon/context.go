@@ -41,14 +41,8 @@ type RelayRequestSigner interface {
 type requestContext struct {
 	logger polylog.Logger
 
-	// context:
-	// - Upstream context for proper timeout propagation and cancellation.
-	context context.Context
-
 	fullNode FullNode
-
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
-
 	serviceID protocol.ServiceID
 
 	relayRequestSigner RelayRequestSigner
@@ -180,7 +174,7 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 // - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 // - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.RelayResponse, error) {
-	hydratedLogger := rc.getHydratedLogger("sendRelay").With("method", "sendRelay")
+	hydratedLogger := rc.getHydratedLogger("sendRelay")
 	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
 
 	// TODO_MVP(@adshmh): enhance Shannon metrics, e.g. request error kind, to capture all potential errors via metrics.
@@ -212,12 +206,11 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
-	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
+	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
 	defer cancelFn()
 
 	// TODO_MVP(@adshmh): Check the HTTP status code returned by the endpoint.
-	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, timeout)
+	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
 		// endpoint failed to respond before the timeout expires.
 		hydratedLogger.Error().Err(err).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
