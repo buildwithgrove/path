@@ -60,11 +60,8 @@ enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY = 7;
   // RelayResponse's signature failed validation.
   SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR = 8;
-  // RelayRequest was canceled by PATH intentionally.
-  SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 9;
-
   // TODO_TECHDEBT: Uncomment when this is used.
-  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = ???;
+  // SHANNON_ENDPOINT_ERROR_MAXED_OUT = 9;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions
@@ -72,7 +69,6 @@ enum ShannonSanctionType {
   SHANNON_SANCTION_UNSPECIFIED = 0;
   SHANNON_SANCTION_SESSION = 1;  // Valid only for current session
   SHANNON_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
-  SHANNON_SANCTION_DO_NOT_SANCTION = 3; // Do not sanction the endpoint based on this error
 }
 
 // ShannonRequestObservations represents observations collected during the processing
