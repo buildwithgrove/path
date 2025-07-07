@@ -72,7 +72,7 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	case ErrContextCancelled:
-		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELLED_BY_PATH,
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 
 	default:
