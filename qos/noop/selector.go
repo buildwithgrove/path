@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 // RandomEndpointSelector provides the functionality defined by the protocol.EndpointSelector interface.
@@ -37,22 +38,5 @@ func (RandomEndpointSelector) SelectMultiple(endpoints protocol.EndpointAddrList
 		numEndpoints = 1
 	}
 
-	// Select up to numEndpoints endpoints (or all if less available)
-	if numEndpoints > len(endpoints) {
-		numEndpoints = len(endpoints)
-	}
-
-	// Create a copy to avoid modifying the original slice
-	endpointsCopy := make(protocol.EndpointAddrList, len(endpoints))
-	copy(endpointsCopy, endpoints)
-
-	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints protocol.EndpointAddrList
-	for i := 0; i < numEndpoints; i++ {
-		j := rand.Intn(len(endpointsCopy)-i) + i
-		endpointsCopy[i], endpointsCopy[j] = endpointsCopy[j], endpointsCopy[i]
-		selectedEndpoints = append(selectedEndpoints, endpointsCopy[i])
-	}
-
-	return selectedEndpoints, nil
+	return selector.RandomSelectMultiple(endpoints, numEndpoints), nil
 }

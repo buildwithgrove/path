@@ -8,6 +8,7 @@ import (
 
 	shannonprotocol "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 var (
@@ -53,22 +54,7 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msgf("SELECTING RANDOM ENDPOINTS because all endpoints failed validation from: %s", availableEndpoints.String())
 		// Select random endpoints as fallback
-		var randomEndpoints protocol.EndpointAddrList
-		if numEndpoints > len(availableEndpoints) {
-			numEndpoints = len(availableEndpoints)
-		}
-
-		// Create a copy to avoid modifying the original slice
-		availableCopy := make(protocol.EndpointAddrList, len(availableEndpoints))
-		copy(availableCopy, availableEndpoints)
-
-		// Fisher-Yates shuffle for random selection without replacement
-		for i := 0; i < numEndpoints; i++ {
-			j := rand.Intn(len(availableCopy)-i) + i
-			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
-			randomEndpoints = append(randomEndpoints, availableCopy[i])
-		}
-		return randomEndpoints, nil
+		return selector.RandomSelectMultiple(availableEndpoints, numEndpoints), nil
 	}
 
 	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
@@ -250,7 +236,7 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 		}
 	}
 
-	ss.logger.Debug().Msgf("Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
+	ss.logger.Debug().Msgf("[Parallel Requests] Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
 		len(availableEndpoints), len(uniqueTLDs), numEndpoints)
 
 	var selectedEndpoints protocol.EndpointAddrList
@@ -286,7 +272,7 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 		// Track the TLD of the selected endpoint
 		if tld, exists := endpointTLDs[selectedEndpoint]; exists {
 			usedTLDs[tld] = true
-			ss.logger.Debug().Msgf("Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
+			ss.logger.Debug().Msgf("[Parallel Requests] Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
 		}
 
 		// Remove the selected endpoint from the remaining pool
@@ -316,7 +302,7 @@ func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol
 		}
 	}
 
-	ss.logger.Info().Msgf("Selected %d endpoints across %d different TLDs (diversity: %.1f%%, fallback selections: %d)",
+	ss.logger.Info().Msgf("[Parallel Requests] TLD diversity achieved: %d endpoints across %d different TLDs (diversity: %.1f%%, duplicate TLDs: %d)",
 		len(selectedEndpoints), len(usedTLDs),
 		float64(len(usedTLDs))/float64(len(selectedEndpoints))*100, fallbackSelections)
 	return selectedEndpoints

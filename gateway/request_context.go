@@ -244,7 +244,6 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	}
 
 	// Select multiple endpoints for parallel relay attempts
-
 	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
 	if len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
@@ -256,7 +255,18 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: no endpoints could be selected")
 	}
 
-	rc.logger.Info().Msgf("Selected %d endpoints for parallel relay requests", len(selectedEndpoints))
+	// Determine if this will be a parallel or single request
+	if len(selectedEndpoints) > 1 {
+		rc.logger.Info().
+			Int("num_endpoints", len(selectedEndpoints)).
+			Str("service_id", string(rc.serviceID)).
+			Msg("[Parallel Requests] ENABLED - Multiple endpoints selected for parallel relay")
+	} else {
+		rc.logger.Info().
+			Int("num_endpoints", len(selectedEndpoints)).
+			Str("service_id", string(rc.serviceID)).
+			Msg("[Parallel Requests] DISABLED - Single endpoint selected (fallback mode)")
+	}
 
 	// Log TLD diversity of selected endpoints
 	rc.logEndpointTLDDiversity(selectedEndpoints)
@@ -266,19 +276,28 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
 
 	for i, endpointAddr := range selectedEndpoints {
-		rc.logger.Debug().Msgf("Building protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
+		rc.logger.Debug().Msgf("[Parallel Requests] Building protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
 		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
 		if err != nil {
 			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
 			rc.logger.Warn().
 				Err(err).
 				Str("endpoint_addr", string(endpointAddr)).
-				Msgf("Failed to build protocol context for endpoint %d/%d, skipping", i+1, len(selectedEndpoints))
+				Msgf("[Parallel Requests] Failed to build protocol context for endpoint %d/%d, skipping", i+1, len(selectedEndpoints))
 			// Continue with other endpoints rather than failing completely
 			continue
 		}
 		rc.protocolContexts = append(rc.protocolContexts, protocolCtx)
-		rc.logger.Debug().Msgf("Successfully built protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
+		rc.logger.Debug().Msgf("[Parallel Requests] Successfully built protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
+	}
+
+	// Log summary of protocol context building
+	if len(rc.protocolContexts) > 0 {
+		rc.logger.Info().
+			Int("successful_contexts", len(rc.protocolContexts)).
+			Int("total_endpoints", len(selectedEndpoints)).
+			Float64("success_rate", float64(len(rc.protocolContexts))/float64(len(selectedEndpoints))*100).
+			Msg("[Parallel Requests] Protocol context building completed")
 	}
 
 	if len(rc.protocolContexts) == 0 {

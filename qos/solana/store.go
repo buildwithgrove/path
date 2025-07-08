@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 // EndpointStore provides the endpoint selection capability required
@@ -83,42 +84,11 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 	// No valid endpoints -> select random endpoints
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
-		if numEndpoints > len(allAvailableEndpoints) {
-			numEndpoints = len(allAvailableEndpoints)
-		}
-
-		// Create a copy to avoid modifying the original slice
-		availableCopy := make(protocol.EndpointAddrList, len(allAvailableEndpoints))
-		copy(availableCopy, allAvailableEndpoints)
-
-		// Fisher-Yates shuffle for random selection without replacement
-		var selectedEndpoints protocol.EndpointAddrList
-		for i := 0; i < numEndpoints; i++ {
-			j := rand.Intn(len(availableCopy)-i) + i
-			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
-			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
-		}
-		return selectedEndpoints, nil
+		return selector.RandomSelectMultiple(allAvailableEndpoints, numEndpoints), nil
 	}
 
 	// Select up to numEndpoints endpoints from filtered list
-	if numEndpoints > len(filteredEndpointsAddr) {
-		numEndpoints = len(filteredEndpointsAddr)
-	}
-
-	// Create a copy to avoid modifying the original slice
-	filteredCopy := make(protocol.EndpointAddrList, len(filteredEndpointsAddr))
-	copy(filteredCopy, filteredEndpointsAddr)
-
-	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints protocol.EndpointAddrList
-	for i := 0; i < numEndpoints; i++ {
-		j := rand.Intn(len(filteredCopy)-i) + i
-		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
-		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])
-	}
-
-	return selectedEndpoints, nil
+	return selector.RandomSelectMultiple(filteredEndpointsAddr, numEndpoints), nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid according to previously processed observations.

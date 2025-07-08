@@ -25,11 +25,19 @@ func (rc *requestContext) HandleRelayRequest() error {
 	isParallel := len(rc.protocolContexts) > 1
 
 	// Log request type for monitoring
-	rc.logger.Debug().
-		Bool("is_parallel", isParallel).
-		Int("protocol_contexts", len(rc.protocolContexts)).
-		Str("service_id", string(rc.serviceID)).
-		Msg("Handling relay request")
+	if isParallel {
+		rc.logger.Info().
+			Bool("is_parallel", isParallel).
+			Int("protocol_contexts", len(rc.protocolContexts)).
+			Str("service_id", string(rc.serviceID)).
+			Msg("[Parallel Requests] Handling parallel relay request")
+	} else {
+		rc.logger.Debug().
+			Bool("is_parallel", isParallel).
+			Int("protocol_contexts", len(rc.protocolContexts)).
+			Str("service_id", string(rc.serviceID)).
+			Msg("Handling single relay request")
+	}
 
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
@@ -64,7 +72,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	logger.Info().
 		Int("endpoint_count", len(rc.protocolContexts)).
 		Str("service_id", string(rc.serviceID)).
-		Msg("Starting parallel relay requests")
+		Msg("[Parallel Requests] Starting parallel relay race")
 
 	// Create a channel to receive the first successful response
 	type relayResult struct {
@@ -100,7 +108,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 			}:
 			case <-ctx.Done():
 				// Request was canceled, don't send result
-				logger.Debug().Msgf("Request to endpoint %d canceled after %dms", index, duration.Milliseconds())
+				logger.Debug().Msgf("[Parallel Requests] Request to endpoint %d canceled after %dms", index, duration.Milliseconds())
 			}
 		}(i, protocolCtx)
 	}
@@ -137,14 +145,15 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 					Int("completed_requests", successfulResponses).
 					Int("total_requests", totalRequests).
 					Str("all_response_timings", strings.Join(responseTimings, ", ")).
-					Msg("Parallel relay race completed - first successful response received")
+					Float64("time_saved_ms", float64(result.duration.Milliseconds())-float64(overallDuration.Milliseconds())).
+					Msg("[Parallel Requests] SUCCESS - First response received")
 
 				cancel()
 				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
 				return nil
 			}
 			// Log the error but continue waiting for other responses
-			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
+			logger.Warn().Err(result.err).Msgf("[Parallel Requests] Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
 			// Context was canceled or timed out
@@ -156,14 +165,14 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 					Int("completed_requests", successfulResponses).
 					Int("total_requests", totalRequests).
 					Str("response_timings", strings.Join(responseTimings, ", ")).
-					Msg("Parallel relay requests timed out")
+					Msg("[Parallel Requests] TIMEOUT - Requests exceeded deadline")
 				return fmt.Errorf("parallel relay requests timed out after %v, last error: %w", parallelRequestTimeout, lastErr)
 			}
 			logger.Debug().
 				Int64("total_duration_ms", totalParallelRelayDuration).
 				Int("completed_requests", successfulResponses).
 				Int("total_requests", totalRequests).
-				Msg("Parallel relay requests canceled")
+				Msg("[Parallel Requests] CANCELED - Requests interrupted")
 			return fmt.Errorf("parallel relay requests canceled, last error: %w", lastErr)
 		}
 	}
@@ -175,7 +184,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 		Int64("total_duration_ms", totalParallelRelayDuration).
 		Int("failed_requests", totalRequests).
 		Str("all_response_timings", individualRequestDurationsStr).
-		Msg("All parallel relay requests failed")
+		Msg("[Parallel Requests] FAILURE - All requests failed")
 
 	// Return the last error
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
@@ -211,7 +220,7 @@ func (rc *requestContext) selectMultipleEndpoints(
 		Int("requested_endpoints", maxNumEndpoints).
 		Int("unique_tlds_available", len(uniqueTLDs)).
 		Str("service_id", string(rc.serviceID)).
-		Msg("Selecting multiple endpoints for parallel requests")
+		Msg("[Parallel Requests] Selecting endpoints for parallel relay")
 
 	// Select multiple endpoints
 	multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
@@ -227,16 +236,9 @@ func (rc *requestContext) selectMultipleEndpoints(
 	logger.Info().
 		Int("selected_endpoints", len(multipleSelectedEndpointAddr)).
 		Int("requested_endpoints", maxNumEndpoints).
-		Msg("Successfully selected endpoints")
+		Msg("[Parallel Requests] Successfully selected endpoints")
 
 	return multipleSelectedEndpointAddr
-
-	// selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
-	// if err != nil {
-	// 	rc.logger.Warn().Err(err).Msg("Failed to select endpoint")
-	// 	return nil
-	// }
-	// return protocol.EndpointAddrList{selectedEndpointAddr}
 }
 
 // logEndpointTLDDiversity logs TLD diversity information for selected endpoints
@@ -261,5 +263,6 @@ func (rc *requestContext) logEndpointTLDDiversity(endpoints protocol.EndpointAdd
 		Int("unique_tlds", len(tldCounts)).
 		Int("endpoint_count", len(endpoints)).
 		Str("tld_distribution", strings.Join(tldDistribution, ", ")).
-		Msg("Endpoint TLD diversity for parallel requests")
+		Float64("diversity_ratio", float64(len(tldCounts))/float64(len(endpoints))).
+		Msg("[Parallel Requests] Endpoint TLD diversity analysis")
 }

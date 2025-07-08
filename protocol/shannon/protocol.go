@@ -116,7 +116,6 @@ func (p *Protocol) AvailableEndpoints(
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
 	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
-
 	if err != nil {
 		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -129,7 +128,6 @@ func (p *Protocol) AvailableEndpoints(
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
 	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
-
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err

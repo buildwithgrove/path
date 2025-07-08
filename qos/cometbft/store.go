@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 // EndpointStore provides the endpoint selection capability required
@@ -80,44 +81,13 @@ func (es *EndpointStore) SelectMultiple(availableEndpoints protocol.EndpointAddr
 			"SELECTING RANDOM ENDPOINTS because all endpoints failed validation. Available endpoints: %s",
 			availableEndpoints.String())
 
-		if numEndpoints > len(availableEndpoints) {
-			numEndpoints = len(availableEndpoints)
-		}
-
-		// Create a copy to avoid modifying the original slice
-		availableCopy := make(protocol.EndpointAddrList, len(availableEndpoints))
-		copy(availableCopy, availableEndpoints)
-
-		// Fisher-Yates shuffle for random selection without replacement
-		var selectedEndpoints protocol.EndpointAddrList
-		for i := 0; i < numEndpoints; i++ {
-			j := rand.Intn(len(availableCopy)-i) + i
-			availableCopy[i], availableCopy[j] = availableCopy[j], availableCopy[i]
-			selectedEndpoints = append(selectedEndpoints, availableCopy[i])
-		}
-		return selectedEndpoints, nil
+		return selector.RandomSelectMultiple(availableEndpoints, numEndpoints), nil
 	}
 
 	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
 
 	// Select up to numEndpoints endpoints from filtered list
-	if numEndpoints > len(filteredEndpointsAddr) {
-		numEndpoints = len(filteredEndpointsAddr)
-	}
-
-	// Create a copy to avoid modifying the original slice
-	filteredCopy := make(protocol.EndpointAddrList, len(filteredEndpointsAddr))
-	copy(filteredCopy, filteredEndpointsAddr)
-
-	// Fisher-Yates shuffle for random selection without replacement
-	var selectedEndpoints protocol.EndpointAddrList
-	for i := 0; i < numEndpoints; i++ {
-		j := rand.Intn(len(filteredCopy)-i) + i
-		filteredCopy[i], filteredCopy[j] = filteredCopy[j], filteredCopy[i]
-		selectedEndpoints = append(selectedEndpoints, filteredCopy[i])
-	}
-
-	return selectedEndpoints, nil
+	return selector.RandomSelectMultiple(filteredEndpointsAddr, numEndpoints), nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
