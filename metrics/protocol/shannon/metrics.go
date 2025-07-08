@@ -8,7 +8,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
-	protocol "github.com/buildwithgrove/path/protocol"
 )
 
 var (
@@ -33,9 +32,6 @@ const (
 	// Sanctions metrics
 	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
 
-	// Internal performance metrics
-	requestSetupLatencyMetric = "shannon_request_setup_latency_seconds"
-
 	// Latency metrics
 	endpointLatencyMetric = "shannon_endpoint_latency_seconds"
 )
@@ -47,9 +43,6 @@ func init() {
 
 	// Sanctions metrics
 	prometheus.MustRegister(sanctionsByDomain)
-
-	// Internal performance metrics
-	prometheus.MustRegister(requestSetupLatency)
 
 	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
@@ -153,25 +146,6 @@ var (
 			Buckets:   defaultBuckets,
 		},
 		[]string{"service_id", "endpoint_domain", "success"},
-	)
-
-	// requestSetupLatency tracks the time spent in PATH's request setup phase before sending the relay.
-	// Labels:
-	//   - service_id: Target service identifier
-	//   - setup_stage: Which setup stage completed successfully (qos_context, protocol_context, complete)
-	//
-	// Use to analyze:
-	//   - Setup overhead vs backend service latency
-	//   - Impact of session rollovers on request preparation time
-	//   - Bottlenecks in QoS vs Protocol context setup
-	requestSetupLatency = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: pathProcess,
-			Name:      requestSetupLatencyMetric,
-			Help:      "Request setup latency before relay transmission in seconds",
-			Buckets:   defaultBuckets,
-		},
-		[]string{"service_id", "setup_stage"},
 	)
 )
 
@@ -432,16 +406,4 @@ func processEndpointLatency(
 			},
 		).Observe(latencySeconds)
 	}
-}
-
-// RecordRequestSetupLatency records the time spent in PATH's request setup phase.
-func RecordRequestSetupLatency(
-	serviceID protocol.ServiceID,
-	setupStage string,
-	duration float64,
-) {
-	requestSetupLatency.With(prometheus.Labels{
-		"service_id":  string(serviceID),
-		"setup_stage": setupStage,
-	}).Observe(duration)
 }

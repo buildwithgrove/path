@@ -18,11 +18,8 @@ package gateway
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-
-	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 )
 
 // Gateway handles end-to-end service requests via HandleHTTPServiceRequest:
@@ -54,12 +51,6 @@ type Gateway struct {
 	DataReporter RequestResponseReporter
 }
 
-const (
-	requestSetupStageQoSContext      = "qos_context"
-	requestSetupStageProtocolContext = "protocol_context"
-	requestSetupStageComplete        = "complete"
-)
-
 // HandleHTTPServiceRequest implements PATH gateway's HTTP request processing:
 //
 // This is written as a template method to allow customization of steps.
@@ -71,16 +62,20 @@ const (
 // TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
 // - Extract generic processing into common method
 // - Keep HTTP-specific details separate
-func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request, w http.ResponseWriter) {
+func (g Gateway) HandleServiceRequest(
+	ctx context.Context,
+	httpReq *http.Request,
+	responseWriter http.ResponseWriter,
+) {
 	// build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
+		context:             ctx,
 		gatewayObservations: getUserRequestGatewayObservations(httpReq),
 		protocol:            g.Protocol,
 		httpRequestParser:   g.HTTPRequestParser,
 		metricsReporter:     g.MetricsReporter,
 		dataReporter:        g.DataReporter,
-		context:             ctx,
 	}
 
 	defer func() {
@@ -97,58 +92,48 @@ func (g Gateway) HandleServiceRequest(ctx context.Context, httpReq *http.Request
 
 	// Determine the type of service request and handle it accordingly.
 	switch determineServiceRequestType(httpReq) {
-
-	// Handle WebSocket requests
 	case websocketServiceRequest:
-		g.handleWebSocketRequest(ctx, httpReq, gatewayRequestCtx, w)
-
-	// Handle HTTP requests by default
+		g.handleWebSocketRequest(ctx, httpReq, gatewayRequestCtx, responseWriter)
 	default:
-		g.handleHTTPServiceRequest(ctx, httpReq, gatewayRequestCtx, w)
+		g.handleHTTPServiceRequest(ctx, httpReq, gatewayRequestCtx, responseWriter)
 	}
 }
 
+// handleHTTPRequest handles a standard HTTP service request.
 func (g Gateway) handleHTTPServiceRequest(
 	_ context.Context,
 	httpReq *http.Request,
 	gatewayRequestCtx *requestContext,
-	w http.ResponseWriter,
+	responseWriter http.ResponseWriter,
 ) {
-	// Track setup phase timing
-	requestSetupStartTime := time.Now()
-	requestSetupStage := requestSetupStageQoSContext
-	var setupCompleted bool
-
 	defer func() {
-		// Record setup metrics if setup didn't complete successfully
-		if !setupCompleted {
-			requestSetupDuration := time.Since(requestSetupStartTime).Seconds()
-			shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, requestSetupDuration)
-		}
-
-		// Write the HTTP response
-		gatewayRequestCtx.WriteHTTPUserResponse(w)
+		// Write the user-facing HTTP response. This is deliberately not called for websocket requests as they do not return an HTTP response.
+		gatewayRequestCtx.WriteHTTPUserResponse(responseWriter)
 	}()
 
-	// Build QoS context
+	// TODO_TECHDEBT(@adshmh): Pass the context with deadline to QoS once it can handle deadlines.
+	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromHTTP(httpReq)
 	if err != nil {
 		return
 	}
-	requestSetupStage = requestSetupStageProtocolContext
-	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStage, time.Since(requestSetupStartTime).Seconds())
 
-	// Build protocol context
+	// TODO_MVP(@adshmh): Enhance the protocol interface used by the gateway to provide explicit error classification.
+	// Implementation should:
+	//   1. Differentiate between user errors (e.g., invalid Service ID in request) and system errors (e.g., endpoint timeout)
+	//   2. Add error type field to protocol response structure
+	//   3. Pass specific error codes from the protocol back to QoS service
+	// This will allow the QoS service to return more helpful diagnostic messages and enable better metrics collection for different failure modes.
+	//
+	// Build the protocol context for the HTTP request.
 	err = gatewayRequestCtx.BuildProtocolContextsFromHTTPRequest(httpReq)
 	if err != nil {
 		return
 	}
 
-	// Setup completed successfully - record metrics
-	shannonmetrics.RecordRequestSetupLatency(gatewayRequestCtx.serviceID, requestSetupStageComplete, time.Since(requestSetupStartTime).Seconds())
-	setupCompleted = true
-
-	// Handle the actual relay request
+	// Use the gateway request context to process the relay(s) corresponding to the HTTP request.
+	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
+	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
@@ -157,7 +142,7 @@ func (g Gateway) handleWebSocketRequest(
 	_ context.Context,
 	httpReq *http.Request,
 	gatewayRequestCtx *requestContext,
-	responseWriter http.ResponseWriter,
+	w http.ResponseWriter,
 ) {
 	// Build the QoS context for the target service ID using the HTTP request's payload.
 	err := gatewayRequestCtx.BuildQoSContextFromWebsocket(httpReq)
@@ -174,5 +159,5 @@ func (g Gateway) handleWebSocketRequest(
 	// Use the gateway request context to process the websocket connection request.
 	// Any returned errors are ignored here and processed by the gateway context in the deferred calls.
 	// See the `BroadcastAllObservations` method of `gateway.requestContext` struct for details.
-	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, responseWriter)
+	_ = gatewayRequestCtx.HandleWebsocketRequest(httpReq, w)
 }

@@ -10,7 +10,7 @@ import (
 
 var (
 	// endpointHydratorRunInterval specifies the run interval of an endpoint hydrator in milliseconds.
-	defaultEndpointHydratorRunInterval = 30_000 * time.Millisecond
+	defaultEndpointHydratorRunInterval = 10_000 * time.Millisecond
 
 	// defaultMaxEndpointCheckWorkers specifies the maximum number of workers that will be used to concurrently check endpoints.
 	defaultMaxEndpointCheckWorkers = 100
