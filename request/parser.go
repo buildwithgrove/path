@@ -30,6 +30,9 @@ const (
 	// HTTPHeaderAppAddress is the key of the entry in HTTP headers that holds the target app's address
 	// in delegated mode. The target app will be used for sending the relay request.
 	HTTPHeaderAppAddress = "App-Address"
+
+	// HTTPHeaderRPCType is the key of the entry in HTTP headers that holds the RPC type.
+	HTTPHeaderRPCType = "Rpc-Type"
 )
 
 // The Parser struct is responsible for parsing the authoritative service ID from the request's

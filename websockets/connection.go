@@ -15,6 +15,12 @@ import (
 )
 
 const (
+	// rpcTypeWS is the value of the RPC type header for websocket RPC type requests.
+	// This is used in the Relay Miner to specify that the request is a websocket RPC type request.
+	rpcTypeWS = "websocket"
+)
+
+const (
 	// Time allowed (in seconds) to write a message to the peer.
 	writeWait = 10 * time.Second
 
@@ -86,10 +92,16 @@ func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error)
 
 // getBridgeRequestHeaders returns the headers that should be sent to the RelayMiner
 // when establishing a new websocket connection to the Endpoint.
+//
+// The headers are:
+//   - `Target-Service-Id`: The service ID of the target service.
+//   - `App-Address:` The address of the session's application.
+//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
 func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 	headers := http.Header{}
 	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
 	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
+	headers.Add(request.HTTPHeaderRPCType, rpcTypeWS)
 	return headers
 }
 
