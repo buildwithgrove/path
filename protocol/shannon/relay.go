@@ -73,7 +73,7 @@ func sendHttpRelay(
 
 	// Validate HTTP status code is a 2xx code
 	if relayHTTPResponse.StatusCode < http.StatusOK || relayHTTPResponse.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("non-2xx status code: %d", relayHTTPResponse.StatusCode)
+		return nil, fmt.Errorf("%w: %d", errRelayEndpointHTTPError, relayHTTPResponse.StatusCode)
 	}
 
 	return responseBody, nil

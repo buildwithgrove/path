@@ -15,11 +15,13 @@ import (
 // - Maps known errors to endpoint error types and sanctions.
 // - Logs and returns a generic internal error for unknown cases.
 func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.ShannonEndpointErrorType, protocolobservations.ShannonSanctionType) {
+	// No error: return unspecified.
 	if err == nil {
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 	}
 
+	// Classify shannon-sdk errors
 	switch {
 	// Endpoint payload failed to unmarshal into a RelayResponse struct
 	case errors.Is(err, sdk.ErrRelayResponseValidationUnmarshal):
@@ -52,7 +54,6 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 	}
 
-	// No known error matched:
 	// Fallback to error matching using the error string.
 	// Extract the specific error type using centralized error matching.
 	extractedErr := extractErrFromRelayError(err)
@@ -62,14 +63,20 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	switch extractedErr {
 
 	// Endpoint Configuration error
-	case ErrRelayEndpointConfig:
+	case errRelayEndpointConfig:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// endpoint timeout error
-	case ErrRelayEndpointTimeout:
+	case errRelayEndpointTimeout:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	// Endpoint's backend service returned a non 2xx HTTP status code.
+	case errRelayEndpointHTTPError:
+		// TODO_IMPROVE: Make this a sanction that just lasts a few blocks
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_ERROR,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 
 	default:
 		// Unknown error: log and return generic internal error.

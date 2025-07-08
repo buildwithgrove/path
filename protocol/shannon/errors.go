@@ -6,20 +6,21 @@ import (
 )
 
 var (
+	// ** Network errors **
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
-	ErrRelayEndpointConfig = errors.New("endpoint configuration error")
-
+	errRelayEndpointConfig = errors.New("endpoint configuration error")
 	// endpoint timeout
-	ErrRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	errRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	// Endpoint's backend service returned a non 2xx HTTP status code.
+	errRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
 
-	// Request context setup errors.
-	// Used to build observations:
-	// There is no request context to provide observations.
-	//
 	// Unsupported gateway mode
 	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
+
+	// ** Centralized gateway mode errors **
+
 	// Centralized gateway mode: Error getting onchain data for app
 	errProtocolContextSetupCentralizedAppFetchErr = errors.New("error getting onchain data for app owned by the gateway")
 	// Centralized gateway mode app does not delegate to the gateway.
@@ -37,6 +38,9 @@ var (
 	errProtocolContextSetupAppDoesNotDelegate = errors.New("gateway does not have delegation for app")
 	// Delegated gateway mode: app is not staked for the service.
 	errProtocolContextSetupAppNotStaked = errors.New("app is not staked for the service")
+
+	// ** Request context setup errors **
+
 	// No endpoints available for the service.
 	// Can be due to one or more of the following:
 	// - Any of the gateway mode errors above.
@@ -59,13 +63,18 @@ var (
 //
 // • Centralizes error recognition logic to avoid duplicate string matching
 func extractErrFromRelayError(err error) error {
-	if isEndpointConfigError(err) {
-		return ErrRelayEndpointConfig
+	if isEndpointNetworkConfigError(err) {
+		return errRelayEndpointConfig
 	}
 
-	// endpoint timeout
+	// http endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
-		return ErrRelayEndpointTimeout
+		return errRelayEndpointTimeout
+	}
+
+	// Endpoint's backend service returned a non 2xx HTTP status code.
+	if strings.Contains(err.Error(), "non 2xx HTTP status code") {
+		return errRelayEndpointHTTPError
 	}
 
 	// No known patterns matched.
@@ -73,11 +82,12 @@ func extractErrFromRelayError(err error) error {
 	return err
 }
 
-// returns true if the error indicating an endpoint configuration error.
+// isEndpointNetworkConfigError returns true if the error indicating an endpoint configuration error.
+//
 // Examples:
 // - Error verifying endpoint's TLS certificate
 // - Error on DNS lookup of endpoint's URL.
-func isEndpointConfigError(err error) bool {
+func isEndpointNetworkConfigError(err error) bool {
 	errStr := err.Error()
 	switch {
 	case strings.Contains(errStr, "dial tcp: lookup"):
