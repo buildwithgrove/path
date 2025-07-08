@@ -170,8 +170,10 @@ func buildEndpointObservation(
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
-		*observation.EndpointBackendServiceHttpResponseStatusCode = int32(endpointResponse.HTTPStatusCode)
-		*observation.EndpointBackendServiceHttpResponsePayloadSize = int64(len(endpointResponse.Bytes))
+		statusCode := int32(endpointResponse.HTTPStatusCode)
+		payloadSize := int64(len(endpointResponse.Bytes))
+		observation.EndpointBackendServiceHttpResponseStatusCode = &statusCode
+		observation.EndpointBackendServiceHttpResponsePayloadSize = &payloadSize
 	}
 
 	return observation
@@ -183,11 +185,18 @@ func buildEndpointObservationFromSession(
 	logger polylog.Logger,
 	session sessiontypes.Session,
 ) *protocolobservations.ShannonEndpointObservation {
+	defaultStatusCode := int32(0)
+	defaultPayloadSize := int64(0)
+
 	header := session.Header
 	// Nil session: skip.
 	if header == nil {
 		logger.With("method", "buildEndpointObservationFromSession").ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
-		return &protocolobservations.ShannonEndpointObservation{}
+		// Initialize with empty values and nil pointers properly initialized
+		return &protocolobservations.ShannonEndpointObservation{
+			EndpointBackendServiceHttpResponseStatusCode:  &defaultStatusCode,
+			EndpointBackendServiceHttpResponsePayloadSize: &defaultPayloadSize,
+		}
 	}
 
 	// Build an endpoint observation using session fields.
@@ -197,6 +206,8 @@ func buildEndpointObservationFromSession(
 		SessionId:          header.SessionId,
 		SessionStartHeight: header.SessionStartBlockHeight,
 		SessionEndHeight:   header.SessionEndBlockHeight,
+		EndpointBackendServiceHttpResponseStatusCode:  &defaultStatusCode,
+		EndpointBackendServiceHttpResponsePayloadSize: &defaultPayloadSize,
 	}
 }
 
