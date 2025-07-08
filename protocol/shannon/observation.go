@@ -170,8 +170,8 @@ func buildEndpointObservation(
 
 	// Add endpoint response details if not nil (i.e. success)
 	if endpointResponse != nil {
-		*observation.EndpointResponseHttpStatusCode = int32(endpointResponse.HTTPStatusCode)
-		*observation.EndpointResponseHttpPayloadSize = int64(len(endpointResponse.Bytes))
+		*observation.EndpointBackendServiceHttpResponseStatusCode = int32(endpointResponse.HTTPStatusCode)
+		*observation.EndpointBackendServiceHttpResponsePayloadSize = int64(len(endpointResponse.Bytes))
 	}
 
 	return observation

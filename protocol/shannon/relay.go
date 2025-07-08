@@ -3,6 +3,7 @@ package shannon
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,8 +17,7 @@ func sendHttpRelay(
 	ctx context.Context,
 	supplierUrlStr string,
 	relayRequest *servicetypes.RelayRequest,
-	timeout time.Duration,
-) (relayResponseBz []byte, err error) {
+) (httpRelayResponseBz []byte, err error) {
 	_, err = url.Parse(supplierUrlStr)
 	if err != nil {
 		return nil, err
@@ -40,16 +40,25 @@ func sendHttpRelay(
 
 	relayHTTPRequest.Header.Add("Content-Type", "application/json")
 
-	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
-	//  - allow configuring the defaultTransport.
-	//  - allow PATH users to override default transport config.
-	//
-	// Best practice in Go is to use a custom HTTP client Transport.
-	// See: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
-	client := &http.Client{
-		Timeout: timeout,
+	var clientTimeout time.Duration
+	if deadline, hasDeadline := ctx.Deadline(); hasDeadline {
+		// Context has timeout, use a slightly longer client timeout as fallback
+		remaining := time.Until(deadline)
+		clientTimeout = remaining + (2 * time.Second)
+	} else {
+		// No context timeout, use the default keep alive time
+		clientTimeout = defaultKeepAliveTime
 	}
 
+	// Create custom HTTP client with timeout
+	// Ref: https://vishnubharathi.codes/blog/know-when-to-break-up-with-go-http-defaultclient/
+	client := &http.Client{
+		Timeout: clientTimeout,
+		// TODO_IMPROVE: Allow PATH users to override default transport configs
+		Transport: http.DefaultTransport,
+	}
+
+	// Send the HTTP relay request
 	relayHTTPResponse, err := client.Do(relayHTTPRequest)
 	if err != nil {
 		return nil, err
@@ -60,6 +69,11 @@ func sendHttpRelay(
 	responseBody, readErr := io.ReadAll(relayHTTPResponse.Body)
 	if readErr != nil {
 		return nil, readErr
+	}
+
+	// Validate HTTP status code is a 2xx code
+	if relayHTTPResponse.StatusCode < http.StatusOK || relayHTTPResponse.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("non-2xx status code: %d", relayHTTPResponse.StatusCode)
 	}
 
 	return responseBody, nil

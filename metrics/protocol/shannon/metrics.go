@@ -137,7 +137,7 @@ var (
 			Help:      "Histogram of endpoint response latencies in seconds",
 			Buckets:   defaultBuckets,
 		},
-		[]string{"service_id", "endpoint_domain", "success", "http_status", "request_size_bucket"},
+		[]string{"service_id", "endpoint_domain", "success", "http_status", "response_size"},
 	)
 )
 
@@ -395,9 +395,8 @@ func processEndpointLatency(
 				"service_id":      serviceID,
 				"endpoint_domain": endpointTLDPlusOne,
 				"success":         fmt.Sprintf("%t", success),
-				"http_status":     fmt.Sprintf("%d", endpointObs.GetEndpointResponseHttpStatusCode()),
-				"response_size":   fmt.Sprintf("%d", endpointObs.GetEndpointResponseHttpPayloadSize()),
-			},
-		).Observe(latencySeconds)
+				"http_status":     fmt.Sprintf("%d", endpointObs.GetEndpointBackendServiceHttpResponseStatusCode()),
+				"response_size":   fmt.Sprintf("%d", endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize()),
+			}).Observe(latencySeconds)
 	}
 }
