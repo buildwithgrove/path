@@ -145,8 +145,12 @@ func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 // serviceRequestPayload:
 // - Contents of the request received by the underlying service's API server.
 
-func shannonJsonRpcHttpRequest(serviceRequestPayload []byte, url string) (*http.Request, error) {
-	jsonRpcServiceReq, err := http.NewRequest(http.MethodPost, url, io.NopCloser(bytes.NewReader(serviceRequestPayload)))
+func shannonJsonRpcHttpRequest(payload protocol.Payload, url string) (*http.Request, error) {
+	jsonRpcServiceReq, err := http.NewRequest(
+		payload.Method,
+		url,
+		io.NopCloser(bytes.NewReader([]byte(payload.Data))),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("shannonJsonRpcHttpRequest: failed to create a new HTTP request for url %s: %w", url, err)
 	}

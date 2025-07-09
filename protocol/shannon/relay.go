@@ -3,7 +3,6 @@ package shannon
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -42,8 +41,6 @@ func sendHttpRelay(
 	for key, value := range headers {
 		relayHTTPRequest.Header.Add(key, value)
 	}
-
-	fmt.Println("DEBUG - relayHTTPRequest Headers", relayHTTPRequest.Header)
 
 	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
 	//  - allow configuring the defaultTransport.

@@ -31,18 +31,18 @@ var (
 	}
 )
 
-// unmarshalResponse parses the supplied raw byte slice from an endpoint into a JSON-RPC response.
+// unmarshalResponse parses the supplied raw byte slice from an endpoint into either a JSON-RPC or REST response.
 func unmarshalResponse(
 	logger polylog.Logger,
 	apiPath string,
 	data []byte,
 ) (response, error) {
-	// Unmarshal the raw response payload into a JSON-RPC response.
+	// Try to unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
-		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSON-RPC response.
-		// Return a generic response to the user.
-		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
+		// The response raw payload could not be unmarshalled as a JSON-RPC response.
+		// Treat it as a REST response and use the generic unmarshaller.
+		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
 	}
 
 	// NOTE: We intentionally skip validating the JSON-RPC response ID here because

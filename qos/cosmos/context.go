@@ -2,8 +2,8 @@ package cosmos
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -93,7 +93,6 @@ type requestContext struct {
 // It accounts for both REST-like and JSON-RPC requests.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetServicePayload() protocol.Payload {
-	fmt.Println("GetServicePayload", rc.httpReq.URL.Path)
 	payload := protocol.Payload{
 		Method:          rc.httpReq.Method,
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
@@ -112,7 +111,7 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	// Determine if request is a JSON-RPC request by checking if:
 	//  - The request method is POST
 	//  - The JSON-RPC request is not empty.
-	if rc.httpReq.Method == http.MethodPost && !rc.isEmptyJSONRPCRequest() {
+	if rc.isJsonRpcRequest() {
 		reqBz, err := json.Marshal(rc.jsonrpcReq)
 		if err == nil {
 			payload.Data = string(reqBz)
@@ -125,11 +124,13 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 // TODO_IN_THIS_PR(@commoddity): productionize this determination of how to set RPC-Type header.
 // eg. save strings as consts, etc.
 func getCosmosSDKHeaders(urlPath string) map[string]string {
-	// If the URL path starts with /cosmos, set the "RPC-Type" header to "rest"
-	if strings.HasPrefix(urlPath, "/cosmos") {
+	// If the URL path starts with /cosmos/, set the "RPC-Type" header to "rest"
+	// All Cosmos SDK endpoints start with /cosmos/
+	// Ref: https://docs.cosmos.network/api
+	if strings.HasPrefix(urlPath, "/cosmos/") {
 		return map[string]string{
 			// eg. "Rpc-Type: 4" -> "REST"
-			proxy.RPCTypeHeader: string(sharedtypes.RPCType_REST),
+			proxy.RPCTypeHeader: strconv.Itoa(int(sharedtypes.RPCType_REST)),
 		}
 	}
 
@@ -137,8 +138,8 @@ func getCosmosSDKHeaders(urlPath string) map[string]string {
 }
 
 // isEmptyJSONRPCRequest checks if the JSON-RPC request is empty/uninitialized.
-func (rc requestContext) isEmptyJSONRPCRequest() bool {
-	return rc.jsonrpcReq.Method == "" && rc.jsonrpcReq.ID.IsEmpty()
+func (rc requestContext) isJsonRpcRequest() bool {
+	return rc.httpReq.Method == http.MethodPost && !rc.jsonrpcReq.ID.IsEmpty()
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
@@ -214,7 +215,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		if rc.httpReq.URL.RawQuery != "" {
 			routeRequest += "?" + rc.httpReq.URL.RawQuery
 		}
-	} else if !rc.isEmptyJSONRPCRequest() {
+	} else if rc.isJsonRpcRequest() {
 		// For JSON-RPC requests, serialize the request
 		routeRequestBytes, _ := json.Marshal(rc.jsonrpcReq)
 		routeRequest = string(routeRequestBytes)
