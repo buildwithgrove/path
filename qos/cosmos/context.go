@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -98,7 +100,7 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		Headers:         getCosmosSDKHeaders(rc.httpReq.URL.Path),
 	}
 
-	// If the request is REST-like (GET to /health or /status), set the path including query parameters.
+	// If the request is REST-like set the path including query parameters.
 	if rc.httpReq.URL.Path != "" {
 		payload.Path = rc.httpReq.URL.Path
 
@@ -107,7 +109,9 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 		}
 	}
 
-	// If the request is JSON-RPC (POST), set the data from the JSON-RPC request.
+	// Determine if request is a JSON-RPC request by checking if:
+	//  - The request method is POST
+	//  - The JSON-RPC request is not empty.
 	if rc.httpReq.Method == http.MethodPost && !rc.isEmptyJSONRPCRequest() {
 		reqBz, err := json.Marshal(rc.jsonrpcReq)
 		if err == nil {
@@ -124,7 +128,8 @@ func getCosmosSDKHeaders(urlPath string) map[string]string {
 	// If the URL path starts with /cosmos, set the "RPC-Type" header to "rest"
 	if strings.HasPrefix(urlPath, "/cosmos") {
 		return map[string]string{
-			"RPC-Type": "rest",
+			// eg. "Rpc-Type: 4" -> "REST"
+			proxy.RPCTypeHeader: string(sharedtypes.RPCType_REST),
 		}
 	}
 

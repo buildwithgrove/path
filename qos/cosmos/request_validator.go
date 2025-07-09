@@ -2,7 +2,6 @@ package cosmos
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -25,9 +24,8 @@ const maxErrMessageLen = 1000
 // TODO_TECHDEBT(@adshmh): Refactor the cosmosSDKRequestValidator struct to be more generic and reusable.
 //
 // cosmosSDKRequestValidator handles request validation for CosmosSDK chains, generating:
-// - Error contexts when validation fails
-// - Request contexts when validation succeeds
-// Supports both REST endpoints (/health, /status) and JSON-RPC requests
+//   - Error contexts when validation fails
+//   - Request contexts when validation succeeds
 type cosmosSDKRequestValidator struct {
 	logger       polylog.Logger
 	chainID      string
@@ -36,7 +34,16 @@ type cosmosSDKRequestValidator struct {
 }
 
 // validateHTTPRequest validates an HTTP request for CosmosSDK chains.
-// Handles both REST endpoints (GET /health, /status) and JSON-RPC POST requests.
+//
+// CosmosSDK chains (like XRPL EVM) expose multiple API interfaces:
+//  1. REST API (port 1317): GET /cosmos/gov/v1/proposals, POST /cosmos/tx/v1beta1/txs
+//  2. CometBFT RPC (port 26657): JSON-RPC requests with {"jsonrpc":"2.0","method":"...","id":...}
+//  3. gRPC (port 9090): Binary protocol (handled elsewhere)
+//
+// This validator handles both REST and JSON-RPC requests:
+//   - REST: Any HTTP method (GET, POST, PUT, DELETE) to REST endpoints
+//   - JSON-RPC: POST requests with JSON-RPC payload structure
+//
 // If validation fails, an errorContext is returned along with false.
 // If validation succeeds, a fully initialized requestContext is returned along with true.
 func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
@@ -45,40 +52,30 @@ func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (ga
 		"method", "validateHTTPRequest",
 	)
 
-	// TODO_IN_THIS_PR(@commoddity): update this to better handle determining the correct request context for:
-	// 		- 1. Cosmos SDK requests - REST but supports POST & GET
-	// 		- 2. CometBFT - Can be JSON-RPC or REST (GET only)
-
-	// Check if this is a REST endpoint request
-	if req.Method == http.MethodGet {
-		return crv.createRESTRequestContext(req), true
-	}
-
-	// Handle JSON-RPC POST requests
+	// For POST requests, we need to distinguish between:
+	// 	1. REST API calls: POST /cosmos/tx/v1beta1/txs with transaction data
+	// 	2. CometBFT RPC calls: POST with JSON-RPC payload like {"jsonrpc":"2.0","method":"abci_query",...}
 	if req.Method == http.MethodPost {
-		return crv.validateJSONRPCRequest(req, logger)
+		return crv.validatePOSTRequest(req, logger)
 	}
 
-	// Unsupported method or path
-	logger.Warn().Msgf("Unsupported HTTP method %s or path %s", req.Method, req.URL.Path)
-	return crv.createUnsupportedMethodContext(req), false
+	// All other HTTP methods (GET, PUT, DELETE, etc.) are REST API calls
+	// Examples: GET /cosmos/gov/v1/proposals, GET /health, GET /status
+	return crv.createRESTRequestContext(req, nil), true
 }
 
-// createRESTRequestContext creates a request context for REST endpoint requests
-func (crv *cosmosSDKRequestValidator) createRESTRequestContext(req *http.Request) *requestContext {
-	return &requestContext{
-		logger:               crv.logger,
-		httpReq:              req,
-		chainID:              crv.chainID,
-		serviceID:            crv.serviceID,
-		requestPayloadLength: 0, // REST requests have no body
-		serviceState:         crv.serviceState,
-		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-	}
-}
-
-// validateJSONRPCRequest validates a JSON-RPC POST request
-func (crv *cosmosSDKRequestValidator) validateJSONRPCRequest(req *http.Request, logger polylog.Logger) (gateway.RequestQoSContext, bool) {
+// validatePOSTRequest handles POST request validation, distinguishing between REST and JSON-RPC.
+//
+// POST requests can be either:
+//  1. REST API: POST /cosmos/tx/v1beta1/txs (submitting transactions)
+//  2. CometBFT RPC: JSON-RPC calls to CometBFT interface
+//
+// Strategy:
+//   - Read the request body
+//   - Attempt JSON-RPC parsing
+//   - If JSON-RPC parsing succeeds, treat as JSON-RPC
+//   - If JSON-RPC parsing fails for any reason, treat as REST (CosmosSDK supports POST for REST)
+func (crv *cosmosSDKRequestValidator) validatePOSTRequest(req *http.Request, logger polylog.Logger) (gateway.RequestQoSContext, bool) {
 	// Read the HTTP request body
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -86,16 +83,25 @@ func (crv *cosmosSDKRequestValidator) validateJSONRPCRequest(req *http.Request, 
 		return crv.createHTTPBodyReadFailureContext(err), false
 	}
 
-	// Parse and validate the JSONRPC request
-	jsonrpcReq, err := parseJSONRPCFromRequestBody(logger, body)
-	if err != nil {
-		return crv.createRequestUnmarshalingFailureContext(jsonrpcReq.ID, err), false
+	// Empty body POST requests are treated as REST
+	// Example: POST /some/endpoint with no payload
+	if len(body) == 0 {
+		return crv.createRESTRequestContext(req, body), true
 	}
 
-	// TODO_MVP(@adshmh): Add JSON-RPC request validation to block invalid requests
-	// TODO_IMPROVE(@adshmh): Add method-specific JSONRPC request validation
+	// Attempt to parse as JSON-RPC first
+	jsonrpcReq, err := parseJSONRPCFromRequestBody(logger, body)
+	if err != nil {
+		// JSON-RPC parsing failed - treat as REST API call
+		// Examples of valid REST POST requests:
+		// 	- POST /cosmos/tx/v1beta1/txs with {"tx_bytes":"...", "mode":"BROADCAST_MODE_SYNC"}
+		// 	- POST /cosmos/gov/v1/proposals with proposal JSON
+		// 	- Any malformed JSON that was intended for REST endpoints
+		logger.Debug().Msg("POST request failed JSON-RPC parsing, treating as REST request")
+		return crv.createRESTRequestContext(req, body), true
+	}
 
-	// Request is valid, return a fully initialized requestContext
+	// Valid JSON-RPC request - create JSON-RPC request context
 	return &requestContext{
 		logger:               crv.logger,
 		httpReq:              req,
@@ -104,23 +110,25 @@ func (crv *cosmosSDKRequestValidator) validateJSONRPCRequest(req *http.Request, 
 		requestPayloadLength: uint(len(body)),
 		jsonrpcReq:           jsonrpcReq,
 		serviceState:         crv.serviceState,
-		// Set the origin of the request as ORGANIC (i.e. from a user).
-		requestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
 }
 
-// createUnsupportedMethodContext creates an error context for unsupported HTTP methods or paths
-func (crv *cosmosSDKRequestValidator) createUnsupportedMethodContext(req *http.Request) gateway.RequestQoSContext {
-	err := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{},
-		fmt.Errorf("unsupported method %s or path %s", req.Method, req.URL.Path))
+// createRESTRequestContext creates a request context for REST endpoint requests
+func (crv *cosmosSDKRequestValidator) createRESTRequestContext(req *http.Request, body []byte) *requestContext {
+	payloadLength := uint(0)
+	if body != nil {
+		payloadLength = uint(len(body))
+	}
 
-	observations := createUnsupportedMethodObservation(crv.serviceID, crv.chainID, req.Method, req.URL.Path)
-
-	return &errorContext{
-		logger:                 crv.logger,
-		response:               err,
-		responseHTTPStatusCode: http.StatusMethodNotAllowed,
-		cosmosSDKObservations:  observations,
+	return &requestContext{
+		logger:               crv.logger,
+		httpReq:              req,
+		chainID:              crv.chainID,
+		serviceID:            crv.serviceID,
+		requestPayloadLength: payloadLength,
+		serviceState:         crv.serviceState,
+		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}
 }
 
@@ -159,31 +167,6 @@ func (crv *cosmosSDKRequestValidator) createRequestUnmarshalingFailureContext(id
 		response:               response,
 		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
 		cosmosSDKObservations:  observations,
-	}
-}
-
-// createUnsupportedMethodObservation creates an observation for unsupported HTTP method or path
-func createUnsupportedMethodObservation(
-	serviceID protocol.ServiceID,
-	chainID string,
-	method string,
-	path string,
-) *qosobservations.Observations_Cosmos {
-	return &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			RouteRequest: fmt.Sprintf("%s %s", method, path),
-			EndpointObservations: []*qosobservations.CosmosSDKEndpointObservation{
-				{
-					ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
-						UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
-							JsonrpcResponse: &qosobservations.JsonRpcResponse{
-								Id: "",
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 }
 

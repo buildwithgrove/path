@@ -4,7 +4,8 @@ go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
 // replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
-// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
+// TODO_IN_THIS_PR(@commoddity): remove this once the poktroll PR is merged.
+replace github.com/pokt-network/poktroll => ../pocket
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
