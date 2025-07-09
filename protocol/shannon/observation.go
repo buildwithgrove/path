@@ -107,11 +107,13 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 // builds a Shannon endpoint success observation to include:
 // - endpoint details: address, url, app
 // - endpoint query and response timestamps.
+// - relay miner error if present: for tracking/cross referencing against endpoint errors.
 func buildEndpointSuccessObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
 	endpointResponseTimestamp time.Time,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
 	endpointObs := buildEndpointObservation(logger, endpoint)
@@ -119,6 +121,8 @@ func buildEndpointSuccessObservation(
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
 	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+	// Track RelayMiner error.
+	endpointObs.RelayMinerError = relayMinerError
 
 	return endpointObs
 }
@@ -127,6 +131,7 @@ func buildEndpointSuccessObservation(
 // - endpoint details
 // - the encountered error
 // - any sanctions resulting from the error.
+// - relay miner error if present: for tracking/cross referencing against endpoint errors.
 func buildEndpointErrorObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
@@ -135,6 +140,7 @@ func buildEndpointErrorObservation(
 	errorType protocolobservations.ShannonEndpointErrorType,
 	errorDetails string,
 	sanctionType protocolobservations.ShannonSanctionType,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
 	endpointObs := buildEndpointObservation(logger, endpoint)
@@ -147,6 +153,8 @@ func buildEndpointErrorObservation(
 	endpointObs.ErrorType = &errorType
 	endpointObs.ErrorDetails = &errorDetails
 	endpointObs.RecommendedSanction = &sanctionType
+	// Track RelayMiner error
+	endpointObs.RelayMinerError = relayMinerError
 
 	return endpointObs
 }
