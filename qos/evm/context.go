@@ -177,7 +177,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		// Otherwise, process all responses as individual observations.
 		observations = make([]*qosobservations.EVMEndpointObservation, len(rc.endpointResponses))
 		for idx, endpointResponse := range rc.endpointResponses {
-			obs := endpointResponse.response.GetObservation()
+			obs := endpointResponse.GetObservation()
 			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 			observations[idx] = &obs
 		}

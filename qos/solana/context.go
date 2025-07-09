@@ -165,7 +165,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	// Build the endpoint(s) observations.
 	endpointObservations := make([]*qosobservations.SolanaEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
+		obs := endpointResponse.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		endpointObservations[idx] = &obs
 	}
