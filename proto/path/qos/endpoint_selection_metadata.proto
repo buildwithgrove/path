@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+// TODO_TECHDEBT(@adshmh): Package name "path.qos" should be suffixed with a correctly formed version, such as "path.qos.v1"
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+// EndpointValidationFailureReason enumerates the possible reasons why an endpoint fails validation.
+enum EndpointValidationFailureReason {
+  ENDPOINT_VALIDATION_FAILURE_REASON_UNSPECIFIED = 0;
+  // Endpoint has returned empty responses in the past
+  ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY = 1;
+  // Endpoint returned an invalid response within the timeout period
+  ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE = 2;
+  // Endpoint's block number is outside the sync allowance (too far behind)
+  ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND = 3;
+  // Endpoint's chain ID doesn't match the expected chain ID
+  ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH = 4;
+  // No block number observation available for the endpoint
+  ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION = 5;
+  // No chain ID observation available for the endpoint
+  ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION = 6;
+  // Endpoint failed archival balance validation
+  ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED = 7;
+  // Endpoint was not found in PATH's endpoint store
+  ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND = 8;
+  // Unknown or unclassified validation failure
+  ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN = 9;
+}
+
+// EndpointValidationResult represents the result of validating a single endpoint.
+// This captures both successful and failed validation attempts with optional failure details.
+message EndpointValidationResult {
+  // The endpoint address that was validated
+  string endpoint_addr = 1;
+  
+  // Whether the validation was successful
+  bool success = 2;
+  
+  // The specific reason why validation failed (only set when success = false)
+  optional EndpointValidationFailureReason failure_reason = 3;
+  
+  // Optional additional details about the failure (only set when success = false)
+  optional string failure_details = 4;
+}
+
+// EndpointSelectionMetadata captures metadata about the endpoint selection process.
+// This message can be embedded in various QoS observation types to provide
+// consistent endpoint selection tracking across different blockchain services.
+// 
+// Note: Multiple endpoint validations occur during each service request processing:
+// - All available endpoints are validated before selection
+// - Failed endpoints are filtered out
+// - One endpoint is selected from the valid set
+// - This metadata captures the validation results for all endpoints checked
+message EndpointSelectionMetadata {
+  // random_endpoint_fallback indicates random endpoint selection was used
+  // when all available endpoints failed QoS validation.
+  bool random_endpoint_fallback = 1;
+
+  // validation_results contains detailed information about each endpoint
+  // validation attempt during the selection process (both successful and failed).
+  // 
+  // Derived counts can be calculated from this field:
+  // - available_endpoints_count = len(validation_results)
+  // - valid_endpoints_count = count(validation_results where success = true)
+  repeated EndpointValidationResult validation_results = 2;
+}
