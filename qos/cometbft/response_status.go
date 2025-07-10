@@ -110,14 +110,9 @@ func (r responseToStatus) GetResponsePayload() []byte {
 	return bz
 }
 
-// CometBFT response codes:
-// - 200: Success
-// - 500: Error
-// Reference: https://docs.cometbft.com/v0.38/rpc/
+// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 // Implements the response interface.
 func (r responseToStatus) GetResponseStatusCode() int {
-	if r.jsonRPCResponse.IsError() {
-		return http.StatusInternalServerError
-	}
-	return http.StatusOK
+	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }

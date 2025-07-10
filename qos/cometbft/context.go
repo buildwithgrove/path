@@ -118,6 +118,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Default to generic response if no endpoint responses exist
 	return httpResponse{
 		responsePayload: response.GetResponsePayload(),
+		responseStatus:  response.GetResponseStatusCode(),
 	}
 }
 
