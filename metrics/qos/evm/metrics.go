@@ -2,10 +2,12 @@ package evm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
+	metricshttp "github.com/buildwithgrove/path/metrics/http"
 	"github.com/buildwithgrove/path/observation/qos"
 )
 
@@ -14,11 +16,17 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for EVM QoS
-	requestsTotalMetric = "evm_requests_total"
+	requestsTotalMetric            = "evm_requests_total"
+	availableEndpointsMetric       = "evm_available_endpoints"
+	validEndpointsMetric           = "evm_valid_endpoints"
+	endpointValidationsTotalMetric = "evm_endpoint_validations_total"
 )
 
 func init() {
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(availableEndpoints)
+	prometheus.MustRegister(validEndpoints)
+	prometheus.MustRegister(endpointValidationsTotal)
 }
 
 var (
@@ -41,6 +49,7 @@ var (
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (or "" for successful requests)
 	//   - http_status_code: The HTTP status code returned to the user
+	//   - random_endpoint_fallback: Random endpoint selected when all failed validation
 	//
 	// Use to analyze:
 	//   - Request volume by chain and method
@@ -49,13 +58,92 @@ var (
 	//   - End-to-end request success rates
 	//   - Error types by JSON-RPC method and chain
 	//   - HTTP status code distribution
+	//   - Service degradation when random endpoint fallback is used
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by EVM QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code", "random_endpoint_fallback"},
+	)
+
+	// availableEndpoints tracks the number of available endpoints per service.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//
+	// Use to analyze:
+	//   - Endpoint pool size per service
+	//   - Service capacity trends
+	availableEndpoints = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      availableEndpointsMetric,
+			Help:      "Number of available endpoints for EVM QoS instance(s)",
+		},
+		[]string{"chain_id", "service_id"},
+	)
+
+	// validEndpoints tracks the number of valid endpoints per service after filtering.
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//
+	// Use to analyze:
+	//   - Endpoint health per service
+	//   - Validation failure rates
+	//   - Service quality trends
+	validEndpoints = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: pathProcess,
+			Name:      validEndpointsMetric,
+			Help:      "Number of valid endpoints for EVM QoS instance(s) after validation",
+		},
+		[]string{"chain_id", "service_id"},
+	)
+
+	// endpointValidationsTotal tracks all endpoint validation attempts with detailed results.
+	// This metric provides comprehensive validation tracking for calculating success rates and analyzing failure patterns.
+	//
+	// Note: Multiple endpoint validations occur during each service request processing:
+	// - All available endpoints are validated before selection for the service request
+	// - Failed endpoints are filtered out with specific failure reasons captured
+	// - Valid endpoints are identified and one is selected to handle the request
+	// - This metric captures ALL validation attempts (both successful and failed) that occurred during endpoint selection
+	//
+	// Labels:
+	//   - chain_id: Target EVM chain identifier
+	//   - service_id: Service ID of the EVM QoS instance
+	//   - domain: eTLD+1 of endpoint URL for provider analysis (extracted from endpoint_addr)
+	//   - success: "true" for successful validations, "false" for failed validations
+	//   - validation_failure_reason: Specific failure reason for failed validations (empty for successful ones)
+	//
+	// Validation failure reasons include:
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND"
+	//   - "ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN"
+	//
+	// Use to analyze:
+	//   - Validation success rate: sum(success="true") / sum(all) by domain
+	//   - Validation failure rate: sum(success="false") / sum(all) by domain
+	//   - Most common failure types: sum by (validation_failure_reason) where success="false"
+	//   - Provider reliability comparison across domains
+	//   - Service capacity utilization per provider
+	//   - Trends in endpoint quality over time by domain
+	endpointValidationsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      endpointValidationsTotalMetric,
+			Help:      "Total endpoint validation attempts with success status and failure reasons at EVM QoS level",
+		},
+		[]string{"chain_id", "service_id", "domain", "success", "validation_failure_reason"},
 	)
 )
 
@@ -86,6 +174,9 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Extract request method
 	method := extractRequestMethod(logger, interpreter)
 
+	// Extract endpoint selection metadata
+	endpointSelectionMetadata := extractEndpointSelectionMetadata(interpreter)
+
 	// Get request status
 	statusCode, requestError, err := interpreter.GetRequestStatus()
 	// If we couldn't get status info due to missing observations, skip metrics.
@@ -105,15 +196,120 @@ func PublishMetrics(logger polylog.Logger, observations *qos.EVMRequestObservati
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
-			"chain_id":         chainID,
-			"service_id":       serviceID,
-			"request_origin":   interpreter.GetRequestOrigin(),
-			"request_method":   method,
-			"success":          fmt.Sprintf("%t", requestError == nil),
-			"error_type":       errorType,
-			"http_status_code": fmt.Sprintf("%d", statusCode),
+			"chain_id":                 chainID,
+			"service_id":               serviceID,
+			"request_origin":           interpreter.GetRequestOrigin(),
+			"request_method":           method,
+			"success":                  fmt.Sprintf("%t", requestError == nil),
+			"error_type":               errorType,
+			"http_status_code":         fmt.Sprintf("%d", statusCode),
+			"random_endpoint_fallback": fmt.Sprintf("%t", endpointSelectionMetadata.RandomEndpointFallback),
 		},
 	).Inc()
+
+	// Update endpoint count gauges (calculated from validation results)
+	availableCount := calculateAvailableEndpointsCount(endpointSelectionMetadata)
+	validCount := calculateValidEndpointsCount(endpointSelectionMetadata)
+
+	availableEndpoints.With(
+		prometheus.Labels{
+			"chain_id":   chainID,
+			"service_id": serviceID,
+		},
+	).Set(float64(availableCount))
+
+	validEndpoints.With(
+		prometheus.Labels{
+			"chain_id":   chainID,
+			"service_id": serviceID,
+		},
+	).Set(float64(validCount))
+
+	// Publish validation failure metrics using the structured data from metadata
+	publishValidationMetricsFromMetadata(logger, chainID, serviceID, endpointSelectionMetadata)
+}
+
+// publishValidationMetricsFromMetadata publishes validation metrics (both failures and successes)
+// using the structured data from endpoint selection metadata.
+// Extracts domain information from endpoint addresses at metrics time.
+func publishValidationMetricsFromMetadata(logger polylog.Logger, chainID, serviceID string, metadata *qos.EndpointSelectionMetadata) {
+	if metadata == nil {
+		return
+	}
+
+	// Process all validation results in a single loop
+	for _, result := range metadata.ValidationResults {
+		domain := extractDomainFromEndpointAddr(logger, result.EndpointAddr)
+
+		// Determine failure reason for failed validations
+		failureReason := ""
+		if !result.Success && result.FailureReason != nil {
+			failureReason = result.FailureReason.String()
+		}
+
+		// Track validation result
+		endpointValidationsTotal.With(
+			prometheus.Labels{
+				"chain_id":                  chainID,
+				"service_id":                serviceID,
+				"domain":                    domain,
+				"success":                   fmt.Sprintf("%t", result.Success),
+				"validation_failure_reason": failureReason,
+			},
+		).Inc()
+	}
+}
+
+// calculateAvailableEndpointsCount returns the total number of endpoints that were validated.
+func calculateAvailableEndpointsCount(metadata *qos.EndpointSelectionMetadata) int {
+	if metadata == nil {
+		return 0
+	}
+	return len(metadata.ValidationResults)
+}
+
+// calculateValidEndpointsCount returns the number of endpoints that passed validation.
+func calculateValidEndpointsCount(metadata *qos.EndpointSelectionMetadata) int {
+	if metadata == nil {
+		return 0
+	}
+
+	validCount := 0
+	for _, result := range metadata.ValidationResults {
+		if result.Success {
+			validCount++
+		}
+	}
+	return validCount
+}
+
+// extractDomainFromEndpointAddr extracts the eTLD+1 domain from an endpoint address.
+// Handles the format: "pokt1eetcwfv2agdl2nvpf4cprhe89rdq3cxdf037wq-https://relayminer.shannon-mainnet.eu.nodefleet.net"
+// Returns "unknown" if domain cannot be extracted.
+func extractDomainFromEndpointAddr(logger polylog.Logger, endpointAddr string) string {
+	// Split by dash to separate the address part from the URL part
+	parts := strings.Split(endpointAddr, "-")
+	if len(parts) < 2 {
+		// No dash found, try to extract domain directly from the entire string
+		if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(endpointAddr); err == nil {
+			return domain
+		}
+		logger.Debug().Str("endpoint_addr", endpointAddr).Msg("Could not extract domain from endpoint address - no dash separator found")
+		return "unknown"
+	}
+
+	// Take everything after the first dash as the URL
+	urlPart := strings.Join(parts[1:], "-")
+
+	// Try to extract domain from the URL part
+	if domain, err := metricshttp.ExtractEffectiveTLDPlusOne(urlPart); err == nil {
+		return domain
+	}
+
+	logger.Debug().Str("endpoint_addr", endpointAddr).Str("url_part", urlPart).Msg("Could not extract eTLD+1 from URL part")
+
+	// If domain extraction failed, return unknown
+	return "unknown"
 }
 
 // extractChainID extracts the chain ID from the interpreter.
@@ -153,4 +349,15 @@ func extractRequestMethod(logger polylog.Logger, interpreter *qos.EVMObservation
 		logger.Debug().Msgf("Should happen very rarely: Unable to determine request method for EVM metrics: %+v", interpreter)
 	}
 	return method
+}
+
+// extractEndpointSelectionMetadata extracts endpoint selection metadata from observations.
+// Returns metadata about the endpoint selection process including counts and fallback status.
+func extractEndpointSelectionMetadata(interpreter *qos.EVMObservationInterpreter) *qos.EndpointSelectionMetadata {
+	// Return the endpoint selection metadata directly from observations
+	if interpreter.Observations.EndpointSelectionMetadata != nil {
+		return interpreter.Observations.EndpointSelectionMetadata
+	}
+	// Return empty metadata if not set
+	return &qos.EndpointSelectionMetadata{}
 }

@@ -61,17 +61,22 @@ type requestContext struct {
 
 	// endpointObservations:
 	// - Captures observations about endpoints used during request handling.
+	// - Includes enhanced error classification for raw payload analysis.
 	endpointObservations []*protocolobservations.ShannonEndpointObservation
+
+	// currentRelayMinerError:
+	// - Tracks RelayMinerError data from the current relay response for reporting.
+	// - Set by trackRelayMinerError method and used when building observations.
+	currentRelayMinerError *protocolobservations.ShannonRelayMinerError
 }
 
 // HandleServiceRequest:
 // - Satisfies gateway.ProtocolRequestContext interface.
 // - Uses supplied payload to send a relay request to an endpoint.
 // - Verifies and returns the response.
+// - Captures RelayMinerError data when available for reporting purposes.
 func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protocol.Response, error) {
 	// Internal error: No endpoint selected.
-	// - Record request error due to internal error.
-	// - No endpoint to sanction.
 	if rc.selectedEndpoint == nil {
 		return rc.handleInternalError(fmt.Errorf("HandleServiceRequest: no endpoint has been selected on service %s", rc.serviceID))
 	}
@@ -82,10 +87,9 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// Send the relay request.
 	response, err := rc.sendRelay(payload)
 
-	// Handle endpoint error:
-	// - Record observation
-	// - Return error
+	// Handle endpoint error and capture RelayMinerError data if available
 	if err != nil {
+		// Pass the response (which may contain RelayMinerError data) to error handler
 		return rc.handleEndpointError(endpointQueryTime, err)
 	}
 
@@ -103,8 +107,8 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 	// Success:
 	// - Record observation
 	// - Return response received from endpoint.
-	rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
-	return relayResponse, nil
+	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
+	return relayResponse, err
 }
 
 // HandleWebsocketRequest:
@@ -152,6 +156,7 @@ func (rc *requestContext) HandleWebsocketRequest(logger polylog.Logger, req *htt
 
 // GetObservations:
 // - Returns Shannon protocol-level observations for the current request context.
+// - Enhanced observations include detailed error classification for metrics generation.
 // - Used to:
 //   - Update Shannon's endpoint store
 //   - Report PATH metrics (metrics package)
@@ -176,12 +181,13 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 
 // sendRelay:
 // - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
+// - Enhanced error handling for more fine-grained endpoint error type classification.
+// - Captures RelayMinerError data for reporting (but doesn't use it for classification).
 // - Required to fulfill the FullNode interface.
 func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.RelayResponse, error) {
 	hydratedLogger := rc.getHydratedLogger("sendRelay")
 	hydratedLogger = hydrateLoggerWithPayload(hydratedLogger, &payload)
 
-	// TODO_MVP(@adshmh): enhance Shannon metrics, e.g. request error kind, to capture all potential errors via metrics.
 	if rc.selectedEndpoint == nil {
 		hydratedLogger.Warn().Msg("SHOULD NEVER HAPPEN: No endpoint has been selected. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: no endpoint has been selected on service %s", rc.serviceID)
@@ -218,29 +224,36 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	// Send the HTTP relay request
 	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
-		// endpoint failed to respond before the timeout expires.
-		hydratedLogger.Error().Err(err).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
-		return nil, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), err)
+		// Endpoint failed to respond before the timeout expires.
+		// Wrap the net/http error with our classification error
+		wrappedErr := fmt.Errorf("%w: %v", errSendHTTPRelay, err)
+
+		hydratedLogger.Error().Err(wrappedErr).Msgf("❌ Failed to receive a response from the selected endpoint: '%s'. Relay request will FAIL 😢", rc.selectedEndpoint.Addr())
+		return nil, fmt.Errorf("error sending request to endpoint %s: %w", rc.selectedEndpoint.Addr(), wrappedErr)
 	}
 
-	// Validate the response.
+	// Validate the response - check for specific validation errors that indicate raw payload issues
 	supplierAddr := sdk.SupplierAddress(rc.selectedEndpoint.supplier)
 	response, err := rc.fullNode.ValidateRelayResponse(supplierAddr, httpRelayResponseBz)
+
+	// Track RelayMinerError data for tracking, regardless of validation result.
+	// Cross referenced against endpoint payload parse results via metrics.
+	rc.trackRelayMinerError(response)
+
 	if err != nil {
-		// TODO_TECHDEBT(@adshmh): Complete the following steps to track endpoint errors and sanction as needed:
-		// 1. Enhance the `RelayResponse` struct with an error field:
-		// 	https://github.com/pokt-network/poktroll/blob/2ba8b60d6bd8d21949211844161f932dd383bb76/proto/pocket/service/relay.proto#L46
-		// 2. Update the classifyRelayError function to sanction endpoints depending on the error.
-		// 3. Enhance the Shannon metrics: proto/path/protocol/shannon.proto, specifically the RequestErrorType enum, to track the errors.
-		// 4. Update the files in `metrics.protocol.shannon` package to add/update metrics according to the above.
-		//
-		// Log raw payload for error tracking:
-		// • RelayResponse lacks error field (see TODO above)
-		// • RelayMiner returns generic HTTP errors
-		// • Enables error analysis via PATH logs
+		// Log raw payload for error tracking
 		responseStr := string(httpRelayResponseBz)
-		responseStrForLogging := responseStr[:min(len(responseStr), maxEndpointPayloadLenForLogging)]
-		hydratedLogger.With("endpoint_payload", responseStrForLogging).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
+		hydratedLogger.With(
+			"endpoint_payload", responseStr[:min(len(responseStr), maxEndpointPayloadLenForLogging)],
+			"endpoint_payload_length", len(httpRelayResponseBz),
+			"validation_error", err.Error(),
+		).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
+
+		// Check if this is a validation error that requires raw payload analysis
+		if errors.Is(err, sdk.ErrRelayResponseValidationUnmarshal) || errors.Is(err, sdk.ErrRelayResponseValidationBasicValidation) {
+			return nil, fmt.Errorf("raw_payload: %s: %w", responseStr, errMalformedEndpointPayload)
+		}
+
 		return nil, fmt.Errorf("relay: error verifying the relay response for app %s, endpoint %s: %w", app.Address, rc.selectedEndpoint.url, err)
 	}
 
@@ -329,6 +342,36 @@ func (rc *requestContext) getHydratedLogger(methodName string) polylog.Logger {
 	return logger
 }
 
+// trackRelayMinerError:
+// - Tracks RelayMinerError data from the RelayResponse for reporting purposes.
+// - Updates the requestContext with RelayMinerError data.
+// - Will be included in observations.
+// - Logs RelayMinerError details for visibility.
+func (rc *requestContext) trackRelayMinerError(relayResponse *servicetypes.RelayResponse) {
+	// Check if RelayResponse contains RelayMinerError data
+	if relayResponse == nil || relayResponse.RelayMinerError == nil {
+		// No RelayMinerError data to track
+		return
+	}
+
+	relayMinerErr := relayResponse.RelayMinerError
+	hydratedLogger := rc.getHydratedLogger("trackRelayMinerError")
+
+	// Log RelayMinerError details for visibility
+	hydratedLogger.With(
+		"relay_miner_error_codespace", relayMinerErr.Codespace,
+		"relay_miner_error_code", relayMinerErr.Code,
+		"relay_miner_error_message", relayMinerErr.Message,
+	).Info().Msg("RelayMiner returned an error in RelayResponse (captured for reporting)")
+
+	// Store RelayMinerError data in request context for use in observations
+	rc.currentRelayMinerError = &protocolobservations.ShannonRelayMinerError{
+		Codespace: relayMinerErr.Codespace,
+		Code:      relayMinerErr.Code,
+		Message:   relayMinerErr.Message,
+	}
+}
+
 // handleInternalError:
 // - Called if request processing fails (before sending to any endpoints).
 // - DEV_NOTE: Should NEVER happen; investigate any logged entries from this method.
@@ -347,9 +390,9 @@ func (rc *requestContext) handleInternalError(internalErr error) (protocol.Respo
 }
 
 // handleEndpointError:
-// - Records endpoint error observation and returns the response.
-// - Tracks endpoint error in observations.
-// - Builds and returns protocol response from endpoint's returned data.
+// - Records endpoint error observation with enhanced classification and returns the response.
+// - Tracks endpoint error in observations with detailed categorization for metrics.
+// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
 func (rc *requestContext) handleEndpointError(
 	endpointQueryTime time.Time,
 	endpointErr error,
@@ -357,29 +400,32 @@ func (rc *requestContext) handleEndpointError(
 	hydratedLogger := rc.getHydratedLogger("handleEndpointError")
 	selectedEndpointAddr := rc.selectedEndpoint.Addr()
 
-	// Classify endpoint error for observation.
-	// Determine any applicable sanctions.
+	// Error classification based on trusted error sources only
 	endpointErrorType, recommendedSanctionType := classifyRelayError(hydratedLogger, endpointErr)
 
-	// Log endpoint error.
+	// Enhanced logging with error type and error source classification
+	isMalformedPayloadErr := isMalformedEndpointPayloadError(endpointErrorType)
 	hydratedLogger.Error().
 		Err(endpointErr).
 		Str("error_type", endpointErrorType.String()).
 		Str("sanction_type", recommendedSanctionType.String()).
+		Bool("is_malformed_payload_error", isMalformedPayloadErr).
 		Msg("relay error occurred. Service request will fail.")
 
-	// Track endpoint error observation.
-	rc.endpointObservations = append(rc.endpointObservations,
-		buildEndpointErrorObservation(
-			rc.logger,
-			*rc.selectedEndpoint,
-			endpointQueryTime,
-			time.Now(), // Timestamp: endpoint query completed.
-			endpointErrorType,
-			fmt.Sprintf("relay error: %v", endpointErr),
-			recommendedSanctionType,
-		),
+	// Build enhanced observation with RelayMinerError data from request context
+	endpointObs := buildEndpointErrorObservation(
+		rc.logger,
+		*rc.selectedEndpoint,
+		endpointQueryTime,
+		time.Now(), // Timestamp: endpoint query completed.
+		endpointErrorType,
+		fmt.Sprintf("relay error: %v", endpointErr),
+		recommendedSanctionType,
+		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
+
+	// Track endpoint error observation for metrics and sanctioning
+	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
 
 	// Return error.
 	return protocol.Response{EndpointAddr: selectedEndpointAddr},
@@ -390,23 +436,30 @@ func (rc *requestContext) handleEndpointError(
 
 // handleEndpointSuccess:
 // - Records successful endpoint observation and returns the response.
-// - Tracks endpoint success in observations.
+// - Tracks endpoint success in observations with timing data for performance metrics.
+// - Includes any RelayMinerError data that was captured via trackRelayMinerError.
 // - Builds and returns protocol response from endpoint's returned data.
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
-	endpointResponse *protocol.Response) {
+	endpointResponse *protocol.Response,
+) error {
 	hydratedLogger := rc.getHydratedLogger("handleEndpointSuccess")
 	hydratedLogger = hydratedLogger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
 	hydratedLogger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
 
-	// Track endpoint success observation.
-	rc.endpointObservations = append(rc.endpointObservations,
-		buildEndpointSuccessObservation(
-			rc.logger,
-			*rc.selectedEndpoint,
-			endpointQueryTime,
-			time.Now(), // Timestamp: endpoint query completed.
-			endpointResponse,
-		),
+	// Build success observation with timing data and any RelayMinerError data from request context
+	endpointObs := buildEndpointSuccessObservation(
+		rc.logger,
+		*rc.selectedEndpoint,
+		endpointQueryTime,
+		time.Now(), // Timestamp: endpoint query completed.
+		endpointResponse,
+		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
+
+	// Track endpoint success observation for metrics
+	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
+
+	// Return relay response received from endpoint.
+	return nil
 }

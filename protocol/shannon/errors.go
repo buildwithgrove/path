@@ -3,6 +3,8 @@ package shannon
 import (
 	"errors"
 	"strings"
+
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
 var (
@@ -15,6 +17,9 @@ var (
 	errRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
 	// Endpoint's backend service returned a non 2xx HTTP status code.
 	errRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
+
+	// HTTP relay request failed - wraps net/http package errors
+	errSendHTTPRelay = errors.New("HTTP relay request failed")
 
 	// Unsupported gateway mode
 	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
@@ -53,6 +58,10 @@ var (
 	errRequestContextSetupInvalidEndpointSelected = errors.New("selected endpoint is not available: relay request will fail")
 	// Error initializing a signer for the current gateway mode.
 	errRequestContextSetupErrSignerSetup = errors.New("error getting the permitted signer: relay request will fail")
+
+	// The endpoint returned a malformed payload.
+	// Helps track more fine-grained metrics on endpoint errors.
+	errMalformedEndpointPayload = errors.New("endpoint returned malformed payload")
 )
 
 // extractErrFromRelayError:
@@ -62,7 +71,14 @@ var (
 //   - Fallback: String analysis for unrecognized types
 //
 // • Centralizes error recognition logic to avoid duplicate string matching
+// • Provides fine-grained HTTP error classification
 func extractErrFromRelayError(err error) error {
+	// HTTP relay request failed.
+	// Return as-is for further classification
+	if errors.Is(err, errSendHTTPRelay) {
+		return err
+	}
+
 	if isEndpointNetworkConfigError(err) {
 		return errRelayEndpointConfig
 	}
@@ -93,6 +109,29 @@ func isEndpointNetworkConfigError(err error) bool {
 	case strings.Contains(errStr, "dial tcp: lookup"):
 		return true
 	case strings.Contains(errStr, "tls: failed to verify certificate"):
+		return true
+	default:
+		return false
+	}
+}
+
+// isMalformedEndpointPayloadError returns true if the error indicates a malformed endpoint payload.
+// Used for metrics categorization of endpoint errors.
+func isMalformedEndpointPayloadError(errorType protocolobservations.ShannonEndpointErrorType) bool {
+	switch errorType {
+	case protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION,
+		protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE:
 		return true
 	default:
 		return false
