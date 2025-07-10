@@ -3,7 +3,6 @@ package cometbft
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"

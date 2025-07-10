@@ -2,7 +2,6 @@ package cometbft
 
 import (
 	"encoding/json"
-	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 

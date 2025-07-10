@@ -236,7 +236,7 @@ func classifyMalformedEndpointPayload(logger polylog.Logger, payloadContent stri
 
 	// If we can't classify the malformed payload, it's an internal error
 	logger.With(
-		"endpoint_payload_preview", payloadContents[:min(100, len(payloadContents))],
+		"endpoint_payload_preview", payloadContent[:min(100, len(payloadContent))],
 	).Warn().Msg("Unable to classify malformed endpoint payload - defaulting to internal error")
 	return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_INTERNAL, protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 }
