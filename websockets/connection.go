@@ -5,19 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/request"
-)
-
-const (
-	// rpcTypeWS is the value of the RPC type header for websocket RPC type requests.
-	// This is used in the Relay Miner to specify that the request is a websocket RPC type request.
-	rpcTypeWS = "websocket"
 )
 
 const (
@@ -74,9 +71,18 @@ type connection struct {
 }
 
 // connectEndpoint makes a websocket connection to the websocket Endpoint.
-func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
-	u, err := url.Parse(selectedEndpoint.PublicURL())
+func connectEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
+	logger.Info().Msgf("🔗 Connecting to endpoint: %s", selectedEndpoint.PublicURL())
+
+	websocketURL, err := selectedEndpoint.WebsocketURL()
 	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
+		return nil, err
+	}
+
+	u, err := url.Parse(websocketURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", selectedEndpoint.PublicURL())
 		return nil, err
 	}
 
@@ -84,6 +90,7 @@ func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error)
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
 	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
 		return nil, err
 	}
 
@@ -101,7 +108,10 @@ func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
 	headers := http.Header{}
 	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
 	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
-	headers.Add(request.HTTPHeaderRPCType, rpcTypeWS)
+
+	// Get the "WEBSOCKET" RPC type enum value and add it to the headers.
+	rpcTypeWebsocket := strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))
+	headers.Add(proxy.RPCTypeHeader, rpcTypeWebsocket)
 	return headers
 }
 

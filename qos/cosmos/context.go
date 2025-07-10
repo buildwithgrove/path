@@ -3,12 +3,8 @@ package cosmos
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -60,7 +56,7 @@ type requestContext struct {
 	logger polylog.Logger
 
 	// httpReq is the original HTTP request from the user
-	httpReq *http.Request
+	httpReq http.Request
 
 	// chainID is the chain identifier for CosmosSDK QoS implementation.
 	chainID string
@@ -82,7 +78,7 @@ type requestContext struct {
 	serviceState *serviceState
 
 	// For JSON-RPC POST requests (when applicable)
-	jsonrpcReq jsonrpc.Request
+	jsonrpcReq *jsonrpc.Request
 
 	// endpointResponses is the set of responses received from one or
 	// more endpoints as part of handling this service request.
@@ -96,7 +92,7 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	payload := protocol.Payload{
 		Method:          rc.httpReq.Method,
 		TimeoutMillisec: defaultServiceRequestTimeoutMillisec,
-		Headers:         getCosmosSDKHeaders(rc.httpReq.URL.Path),
+		Headers:         getRPCTypeHeaders(rc.httpReq.URL.Path, rc.jsonrpcReq),
 	}
 
 	// If the request is REST-like set the path including query parameters.
@@ -121,30 +117,14 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	return payload
 }
 
-// TODO_IN_THIS_PR(@commoddity): productionize this determination of how to set RPC-Type header.
-// eg. save strings as consts, etc.
-func getCosmosSDKHeaders(urlPath string) map[string]string {
-	// If the URL path starts with /cosmos/, set the "RPC-Type" header to "rest"
-	// All Cosmos SDK endpoints start with /cosmos/
-	// Ref: https://docs.cosmos.network/api
-	if strings.HasPrefix(urlPath, "/cosmos/") {
-		return map[string]string{
-			// eg. "Rpc-Type: 4" -> "REST"
-			proxy.RPCTypeHeader: strconv.Itoa(int(sharedtypes.RPCType_REST)),
-		}
-	}
-
-	return map[string]string{}
-}
-
 // isEmptyJSONRPCRequest checks if the JSON-RPC request is empty/uninitialized.
 func (rc requestContext) isJsonRpcRequest() bool {
-	return rc.httpReq.Method == http.MethodPost && !rc.jsonrpcReq.ID.IsEmpty()
+	return rc.httpReq.Method == http.MethodPost && rc.jsonrpcReq != nil
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
 func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
-	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
+	// TODO_IMPROVE: check whether the request was valid, and return an error if it waisJsonRpcRequests not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
@@ -174,6 +154,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
 			logger:     rc.logger,
+			httpReq:    rc.httpReq,
 			jsonrpcReq: rc.jsonrpcReq,
 		}
 
@@ -193,6 +174,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
 			logger:     rc.logger,
+			httpReq:    rc.httpReq,
 			jsonrpcReq: rc.jsonrpcReq,
 		}
 		responseNoneObs := responseNoneObj.GetObservation()
@@ -209,7 +191,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 
 	// Return the set of observations for the single request.
 	var routeRequest string
-	if rc.httpReq.URL.Path != "" {
+	if rc.httpReq.URL != nil && rc.httpReq.URL.Path != "" {
 		// For REST-like requests, use the path
 		routeRequest = rc.httpReq.URL.Path
 		if rc.httpReq.URL.RawQuery != "" {

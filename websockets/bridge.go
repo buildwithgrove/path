@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -28,7 +29,9 @@ type RelayRequestSigner interface {
 
 // SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
 type SelectedEndpoint interface {
+	Addr() protocol.EndpointAddr
 	PublicURL() string
+	WebsocketURL() (string, error)
 	Supplier() string
 	Session() *sessiontypes.Session
 }
@@ -74,7 +77,7 @@ func NewBridge(
 	)
 
 	// Connect to the Endpoint
-	endpointWSSConn, err := connectEndpoint(selectedEndpoint)
+	endpointWSSConn, err := connectEndpoint(logger, selectedEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("NewBridge: %s", err.Error())
 	}

@@ -104,11 +104,11 @@ func (crv *cosmosSDKRequestValidator) validatePOSTRequest(req *http.Request, log
 	// Valid JSON-RPC request - create JSON-RPC request context
 	return &requestContext{
 		logger:               crv.logger,
-		httpReq:              req,
+		httpReq:              *req,
 		chainID:              crv.chainID,
 		serviceID:            crv.serviceID,
 		requestPayloadLength: uint(len(body)),
-		jsonrpcReq:           jsonrpcReq,
+		jsonrpcReq:           &jsonrpcReq,
 		serviceState:         crv.serviceState,
 		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	}, true
@@ -123,7 +123,7 @@ func (crv *cosmosSDKRequestValidator) createRESTRequestContext(req *http.Request
 
 	return &requestContext{
 		logger:               crv.logger,
-		httpReq:              req,
+		httpReq:              *req,
 		chainID:              crv.chainID,
 		serviceID:            crv.serviceID,
 		requestPayloadLength: payloadLength,

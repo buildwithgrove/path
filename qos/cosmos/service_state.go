@@ -77,7 +77,7 @@ func (ss *serviceState) getEndpointCheckFromHTTPRequest(httpReq *http.Request) *
 	return &requestContext{
 		logger:       ss.logger,
 		serviceState: ss,
-		httpReq:      httpReq,
+		httpReq:      *httpReq,
 		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
 		chainID:   ss.serviceConfig.getCosmosSDKChainID(),
 		serviceID: ss.serviceConfig.GetServiceID(),

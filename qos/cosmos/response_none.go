@@ -2,6 +2,7 @@ package cosmos
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -18,20 +19,36 @@ var _ response = responseNone{}
 // This can occur due to protocol-level failures or when no endpoint was selected.
 type responseNone struct {
 	logger     polylog.Logger
-	jsonrpcReq jsonrpc.Request
+	httpReq    http.Request     // HTTP request context for determining request type
+	jsonrpcReq *jsonrpc.Request // JSON-RPC request (can be nil for REST requests)
+}
+
+// isJsonRpcRequest checks if this is a JSON-RPC request
+// Uses the same logic as requestContext.isJsonRpcRequest()
+func (r responseNone) isJsonRpcRequest() bool {
+	return r.httpReq.Method == http.MethodPost && r.jsonrpcReq != nil
 }
 
 // GetObservation returns an observation indicating no endpoint provided a response.
 // This allows tracking metrics for scenarios where endpoint selection or communication failed.
 // Implements the response interface.
 func (r responseNone) GetObservation() qosobservations.CosmosSDKEndpointObservation {
-	return qosobservations.CosmosSDKEndpointObservation{
-		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
-			UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
-				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.jsonrpcReq.ID.String(),
+	if r.isJsonRpcRequest() {
+		return qosobservations.CosmosSDKEndpointObservation{
+			ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
+				UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
+					JsonrpcResponse: &qosobservations.JsonRpcResponse{
+						Id: r.jsonrpcReq.ID.String(),
+					},
 				},
 			},
+		}
+	}
+
+	// For REST requests or when jsonrpcReq is nil
+	return qosobservations.CosmosSDKEndpointObservation{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
+			UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{},
 		},
 	}
 }
@@ -45,16 +62,36 @@ func (r responseNone) GetHTTPResponse() httpResponse {
 	}
 }
 
-// getResponsePayload constructs a JSONRPC error response indicating no endpoint response was received.
-// Uses request ID in response per JSONRPC spec: https://www.jsonrpc.org/specification#response_object
+// getResponsePayload constructs an appropriate error response based on request type.
+// For JSON-RPC requests: returns a JSONRPC error response with request ID
+// For REST requests: returns a simple JSON error message
 func (r responseNone) getResponsePayload() []byte {
-	userResponse := newErrResponseNoEndpointResponse(r.jsonrpcReq.ID)
-	bz, err := json.Marshal(userResponse)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseNone: Marshaling JSONRPC response failed.")
+	var responsePayload []byte
+	var err error
+
+	if r.isJsonRpcRequest() {
+		// JSON-RPC error response with proper ID
+		userResponse := newErrResponseNoEndpointResponse(r.jsonrpcReq.ID)
+		responsePayload, err = json.Marshal(userResponse)
+	} else {
+		// REST error response - simple JSON error message
+		restErrorResponse := map[string]interface{}{
+			"error": map[string]interface{}{
+				"code":    -1,
+				"message": "No endpoint response received",
+				"data":    "The request could not be processed because no endpoint provided a response",
+			},
+		}
+		responsePayload, err = json.Marshal(restErrorResponse)
 	}
-	return bz
+
+	if err != nil {
+		// This should never happen: log an entry but return a fallback response
+		r.logger.Warn().Err(err).Msg("responseNone: Marshaling error response failed.")
+		return []byte(`{"error":{"code":-1,"message":"Internal error: failed to marshal error response"}}`)
+	}
+
+	return responsePayload
 }
 
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.

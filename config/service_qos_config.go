@@ -338,15 +338,6 @@ var shannonServices = []ServiceQoSConfig{
 		// Contract start block
 		420_139,
 	)),
-
-	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrplevm-testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-		// Contract start block
-		368_266,
-	)),
-
 	// zkLink
 	evm.NewEVMServiceQoSConfig("zklink-nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
@@ -417,7 +408,7 @@ var shannonServices = []ServiceQoSConfig{
 	// Osmosis
 	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis"),
 
-	// *** Pocket Services ***
+	// *** Cosmos SDK Services ***
 
 	// Pocket Mainnet and Beta Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket"),
@@ -435,6 +426,11 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Cosmos Hub
 	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4"),
+
+	// XRPL EVM Testnet
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "0x161c28"),
+	// TODO_IN_THIS_PR(@commoddity): Remove this once the Relay Miner changes are completed.
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "0x161c28"),
 
 	// *** Solana Services ***
 
