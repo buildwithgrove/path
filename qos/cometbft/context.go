@@ -108,7 +108,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
-	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())
+	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest(), protocol.EndpointAddr(""))
 
 	// If at least one endpoint response exists, return the last one
 	if len(rc.endpointResponses) >= 1 {
