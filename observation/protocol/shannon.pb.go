@@ -130,35 +130,109 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY ShannonEndpointErrorType = 7
 	// RelayResponse's signature failed validation.
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR ShannonEndpointErrorType = 8
+	// HTTP relay errors - fine-grained network and transport failures
+	// Connection establishment failures
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED  ShannonEndpointErrorType = 10
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET    ShannonEndpointErrorType = 11
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT  ShannonEndpointErrorType = 12
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST    ShannonEndpointErrorType = 13
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE ShannonEndpointErrorType = 14
+	// Transport layer errors
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE     ShannonEndpointErrorType = 15
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT      ShannonEndpointErrorType = 16
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR ShannonEndpointErrorType = 17
+	// HTTP protocol errors
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE   ShannonEndpointErrorType = 18
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS ShannonEndpointErrorType = 19
+	// Raw payload analysis error types (when unmarshal/validation fails)
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED       ShannonEndpointErrorType = 20
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED   ShannonEndpointErrorType = 21
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF           ShannonEndpointErrorType = 22
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE       ShannonEndpointErrorType = 23
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST   ShannonEndpointErrorType = 24
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE  ShannonEndpointErrorType = 25
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE          ShannonEndpointErrorType = 26
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION           ShannonEndpointErrorType = 27
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED   ShannonEndpointErrorType = 28
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION ShannonEndpointErrorType = 29
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT           ShannonEndpointErrorType = 30
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION           ShannonEndpointErrorType = 31
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
 	// RelayRequest was canceled by PATH intentionally.
-	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 9
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
 )
 
 // Enum value maps for ShannonEndpointErrorType.
 var (
 	ShannonEndpointErrorType_name = map[int32]string{
-		0: "SHANNON_ENDPOINT_ERROR_UNSPECIFIED",
-		1: "SHANNON_ENDPOINT_ERROR_INTERNAL",
-		2: "SHANNON_ENDPOINT_ERROR_CONFIG",
-		3: "SHANNON_ENDPOINT_ERROR_TIMEOUT",
-		4: "SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR",
-		5: "SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR",
-		6: "SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR",
-		7: "SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY",
-		8: "SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR",
-		9: "SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH",
+		0:  "SHANNON_ENDPOINT_ERROR_UNSPECIFIED",
+		1:  "SHANNON_ENDPOINT_ERROR_INTERNAL",
+		2:  "SHANNON_ENDPOINT_ERROR_CONFIG",
+		3:  "SHANNON_ENDPOINT_ERROR_TIMEOUT",
+		4:  "SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR",
+		5:  "SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR",
+		6:  "SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR",
+		7:  "SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY",
+		8:  "SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR",
+		10: "SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED",
+		11: "SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET",
+		12: "SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT",
+		13: "SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST",
+		14: "SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE",
+		15: "SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE",
+		16: "SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT",
+		17: "SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR",
+		18: "SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE",
+		19: "SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS",
+		20: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED",
+		21: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED",
+		22: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF",
+		23: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE",
+		24: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST",
+		25: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE",
+		26: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE",
+		27: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION",
+		28: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED",
+		29: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION",
+		30: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT",
+		31: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION",
+		32: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE",
+		33: "SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
-		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                       0,
-		"SHANNON_ENDPOINT_ERROR_INTERNAL":                          1,
-		"SHANNON_ENDPOINT_ERROR_CONFIG":                            2,
-		"SHANNON_ENDPOINT_ERROR_TIMEOUT":                           3,
-		"SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR":             4,
-		"SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR":           5,
-		"SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR":           6,
-		"SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY":               7,
-		"SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR": 8,
-		"SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH":                9,
+		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
+		"SHANNON_ENDPOINT_ERROR_INTERNAL":                             1,
+		"SHANNON_ENDPOINT_ERROR_CONFIG":                               2,
+		"SHANNON_ENDPOINT_ERROR_TIMEOUT":                              3,
+		"SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR":                4,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR":              5,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR":              6,
+		"SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY":                  7,
+		"SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR":    8,
+		"SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED":              10,
+		"SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET":                11,
+		"SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT":              12,
+		"SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST":                13,
+		"SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE":             14,
+		"SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE":                     15,
+		"SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT":                      16,
+		"SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR":                 17,
+		"SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE":                    18,
+		"SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS":                  19,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED":       20,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED":   21,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF":           22,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE":       23,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST":   24,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE":  25,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE":          26,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION":           27,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED":   28,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION": 29,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT":           30,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION":           31,
+		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE":            32,
+		"SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH":                   33,
 	}
 )
 
@@ -297,6 +371,70 @@ func (x *ShannonRequestError) GetErrorDetails() string {
 	return ""
 }
 
+// ShannonRelayMinerError captures relay miner error details from the RelayResponse
+type ShannonRelayMinerError struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Codespace from the RelayMinerError
+	Codespace string `protobuf:"bytes,1,opt,name=codespace,proto3" json:"codespace,omitempty"`
+	// Code from the RelayMinerError
+	Code uint32 `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
+	// Message from the RelayMinerError
+	Message       string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShannonRelayMinerError) Reset() {
+	*x = ShannonRelayMinerError{}
+	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShannonRelayMinerError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShannonRelayMinerError) ProtoMessage() {}
+
+func (x *ShannonRelayMinerError) ProtoReflect() protoreflect.Message {
+	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShannonRelayMinerError.ProtoReflect.Descriptor instead.
+func (*ShannonRelayMinerError) Descriptor() ([]byte, []int) {
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ShannonRelayMinerError) GetCodespace() string {
+	if x != nil {
+		return x.Codespace
+	}
+	return ""
+}
+
+func (x *ShannonRelayMinerError) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *ShannonRelayMinerError) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 type ShannonRequestObservations struct {
@@ -317,7 +455,7 @@ type ShannonRequestObservations struct {
 
 func (x *ShannonRequestObservations) Reset() {
 	*x = ShannonRequestObservations{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -329,7 +467,7 @@ func (x *ShannonRequestObservations) String() string {
 func (*ShannonRequestObservations) ProtoMessage() {}
 
 func (x *ShannonRequestObservations) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[1]
+	mi := &file_path_protocol_shannon_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -342,7 +480,7 @@ func (x *ShannonRequestObservations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonRequestObservations.ProtoReflect.Descriptor instead.
 func (*ShannonRequestObservations) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{1}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ShannonRequestObservations) GetServiceId() string {
@@ -394,13 +532,15 @@ type ShannonEndpointObservation struct {
 	ErrorDetails *string `protobuf:"bytes,11,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
 	RecommendedSanction *ShannonSanctionType `protobuf:"varint,12,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// RelayMiner error details if the endpoint returned a RelayMinerError
+	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,13,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
 	*x = ShannonEndpointObservation{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[2]
+	mi := &file_path_protocol_shannon_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -412,7 +552,7 @@ func (x *ShannonEndpointObservation) String() string {
 func (*ShannonEndpointObservation) ProtoMessage() {}
 
 func (x *ShannonEndpointObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[2]
+	mi := &file_path_protocol_shannon_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -425,7 +565,7 @@ func (x *ShannonEndpointObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonEndpointObservation.ProtoReflect.Descriptor instead.
 func (*ShannonEndpointObservation) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{2}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ShannonEndpointObservation) GetSupplier() string {
@@ -512,6 +652,13 @@ func (x *ShannonEndpointObservation) GetRecommendedSanction() ShannonSanctionTyp
 	return ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 }
 
+func (x *ShannonEndpointObservation) GetRelayMinerError() *ShannonRelayMinerError {
+	if x != nil {
+		return x.RelayMinerError
+	}
+	return nil
+}
+
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -523,7 +670,7 @@ type ShannonObservationsList struct {
 
 func (x *ShannonObservationsList) Reset() {
 	*x = ShannonObservationsList{}
-	mi := &file_path_protocol_shannon_proto_msgTypes[3]
+	mi := &file_path_protocol_shannon_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -535,7 +682,7 @@ func (x *ShannonObservationsList) String() string {
 func (*ShannonObservationsList) ProtoMessage() {}
 
 func (x *ShannonObservationsList) ProtoReflect() protoreflect.Message {
-	mi := &file_path_protocol_shannon_proto_msgTypes[3]
+	mi := &file_path_protocol_shannon_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -548,7 +695,7 @@ func (x *ShannonObservationsList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShannonObservationsList.ProtoReflect.Descriptor instead.
 func (*ShannonObservationsList) Descriptor() ([]byte, []int) {
-	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{3}
+	return file_path_protocol_shannon_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShannonObservationsList) GetObservations() []*ShannonRequestObservations {
@@ -566,13 +713,17 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"\x13ShannonRequestError\x12E\n" +
 	"\n" +
 	"error_type\x18\x01 \x01(\x0e2&.path.protocol.ShannonRequestErrorTypeR\terrorType\x12#\n" +
-	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\"\xfb\x01\n" +
+	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\"d\n" +
+	"\x16ShannonRelayMinerError\x12\x1c\n" +
+	"\tcodespace\x18\x01 \x01(\tR\tcodespace\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xfb\x01\n" +
 	"\x1aShannonRequestObservations\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\x9e\x06\n" +
+	"\x0e_request_error\"\x8c\a\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -588,11 +739,13 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"error_type\x18\n" +
 	" \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x01R\terrorType\x88\x01\x01\x12(\n" +
 	"\rerror_details\x18\v \x01(\tH\x02R\ferrorDetails\x88\x01\x01\x12Z\n" +
-	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01B\x1e\n" +
+	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
+	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01B\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
-	"\x15_recommended_sanction\"h\n" +
+	"\x15_recommended_sanctionB\x14\n" +
+	"\x12_relay_miner_error\"h\n" +
 	"\x17ShannonObservationsList\x12M\n" +
 	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*\x9e\x05\n" +
 	"\x17ShannonRequestErrorType\x12%\n" +
@@ -607,7 +760,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\xe5\x03\n" +
+	"*\xcc\r\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
@@ -617,8 +770,32 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	".SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR\x10\x05\x122\n" +
 	".SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR\x10\x06\x12.\n" +
 	"*SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY\x10\a\x12<\n" +
-	"8SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR\x10\b\x12-\n" +
-	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10\t*\x9b\x01\n" +
+	"8SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR\x10\b\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED\x10\n" +
+	"\x120\n" +
+	",SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET\x10\v\x122\n" +
+	".SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT\x10\f\x120\n" +
+	",SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST\x10\r\x123\n" +
+	"/SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE\x10\x0e\x12+\n" +
+	"'SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE\x10\x0f\x12*\n" +
+	"&SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT\x10\x10\x12/\n" +
+	"+SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR\x10\x11\x12,\n" +
+	"(SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE\x10\x12\x12.\n" +
+	"*SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS\x10\x13\x129\n" +
+	"5SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED\x10\x14\x12=\n" +
+	"9SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED\x10\x15\x125\n" +
+	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF\x10\x16\x129\n" +
+	"5SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE\x10\x17\x12=\n" +
+	"9SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST\x10\x18\x12>\n" +
+	":SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE\x10\x19\x126\n" +
+	"2SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE\x10\x1a\x125\n" +
+	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION\x10\x1b\x12=\n" +
+	"9SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED\x10\x1c\x12?\n" +
+	";SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION\x10\x1d\x125\n" +
+	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT\x10\x1e\x125\n" +
+	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION\x10\x1f\x124\n" +
+	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 \x12-\n" +
+	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
@@ -638,31 +815,33 @@ func file_path_protocol_shannon_proto_rawDescGZIP() []byte {
 }
 
 var file_path_protocol_shannon_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_path_protocol_shannon_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_path_protocol_shannon_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_path_protocol_shannon_proto_goTypes = []any{
 	(ShannonRequestErrorType)(0),       // 0: path.protocol.ShannonRequestErrorType
 	(ShannonEndpointErrorType)(0),      // 1: path.protocol.ShannonEndpointErrorType
 	(ShannonSanctionType)(0),           // 2: path.protocol.ShannonSanctionType
 	(*ShannonRequestError)(nil),        // 3: path.protocol.ShannonRequestError
-	(*ShannonRequestObservations)(nil), // 4: path.protocol.ShannonRequestObservations
-	(*ShannonEndpointObservation)(nil), // 5: path.protocol.ShannonEndpointObservation
-	(*ShannonObservationsList)(nil),    // 6: path.protocol.ShannonObservationsList
-	(*timestamppb.Timestamp)(nil),      // 7: google.protobuf.Timestamp
+	(*ShannonRelayMinerError)(nil),     // 4: path.protocol.ShannonRelayMinerError
+	(*ShannonRequestObservations)(nil), // 5: path.protocol.ShannonRequestObservations
+	(*ShannonEndpointObservation)(nil), // 6: path.protocol.ShannonEndpointObservation
+	(*ShannonObservationsList)(nil),    // 7: path.protocol.ShannonObservationsList
+	(*timestamppb.Timestamp)(nil),      // 8: google.protobuf.Timestamp
 }
 var file_path_protocol_shannon_proto_depIdxs = []int32{
 	0, // 0: path.protocol.ShannonRequestError.error_type:type_name -> path.protocol.ShannonRequestErrorType
 	3, // 1: path.protocol.ShannonRequestObservations.request_error:type_name -> path.protocol.ShannonRequestError
-	5, // 2: path.protocol.ShannonRequestObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
-	7, // 3: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
-	7, // 4: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
+	6, // 2: path.protocol.ShannonRequestObservations.endpoint_observations:type_name -> path.protocol.ShannonEndpointObservation
+	8, // 3: path.protocol.ShannonEndpointObservation.endpoint_query_timestamp:type_name -> google.protobuf.Timestamp
+	8, // 4: path.protocol.ShannonEndpointObservation.endpoint_response_timestamp:type_name -> google.protobuf.Timestamp
 	1, // 5: path.protocol.ShannonEndpointObservation.error_type:type_name -> path.protocol.ShannonEndpointErrorType
 	2, // 6: path.protocol.ShannonEndpointObservation.recommended_sanction:type_name -> path.protocol.ShannonSanctionType
-	4, // 7: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	4, // 7: path.protocol.ShannonEndpointObservation.relay_miner_error:type_name -> path.protocol.ShannonRelayMinerError
+	5, // 8: path.protocol.ShannonObservationsList.observations:type_name -> path.protocol.ShannonRequestObservations
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_path_protocol_shannon_proto_init() }
@@ -670,15 +849,15 @@ func file_path_protocol_shannon_proto_init() {
 	if File_path_protocol_shannon_proto != nil {
 		return
 	}
-	file_path_protocol_shannon_proto_msgTypes[1].OneofWrappers = []any{}
 	file_path_protocol_shannon_proto_msgTypes[2].OneofWrappers = []any{}
+	file_path_protocol_shannon_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_protocol_shannon_proto_rawDesc), len(file_path_protocol_shannon_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

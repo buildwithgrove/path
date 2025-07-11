@@ -20,6 +20,10 @@ const defaultServiceRequestTimeoutMillisec = 10_500
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
 
+// requestContext provides the endpoint selection capability required
+// by the protocol package for handling a service request.
+var _ protocol.EndpointSelector = &requestContext{}
+
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
 // in the metrics/qos/evm and qos/evm packages, and elsewhere names like `response` are used.
 // Consider renaming:
@@ -84,6 +88,9 @@ type requestContext struct {
 	// enhancing to support batch JSONRPC requests will involve the
 	// modification of this field's type.
 	endpointResponses []endpointResponse
+
+	// endpointSelectionMetadata contains metadata about the endpoint selection process
+	endpointSelectionMetadata EndpointSelectionMetadata
 }
 
 // TODO_MVP(@adshmh): Ensure the JSONRPC request struct
@@ -117,7 +124,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz, endpointAddr)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
@@ -176,6 +183,10 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		}
 	}
 
+	// Convert validation results to proto format
+	var validationResults []*qosobservations.EndpointValidationResult
+	validationResults = append(validationResults, rc.endpointSelectionMetadata.ValidationResults...)
+
 	// Return the set of observations for the single JSONRPC request.
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Evm{
@@ -186,6 +197,10 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 				RequestPayloadLength: uint32(rc.requestPayloadLength),
 				RequestOrigin:        rc.requestOrigin,
 				EndpointObservations: observations,
+				EndpointSelectionMetadata: &qosobservations.EndpointSelectionMetadata{
+					RandomEndpointFallback: rc.endpointSelectionMetadata.RandomEndpointFallback,
+					ValidationResults:      validationResults,
+				},
 			},
 		},
 	}
@@ -195,10 +210,22 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// Select returns the address of an endpoint using the request context's endpoint store.
-// Implements the protocol.EndpointSelector interface.
+// Select returns endpoint address using request context's endpoint store.
+// Implements protocol.EndpointSelector interface.
+// Tracks random selection when all endpoints fail validation.
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	return rc.serviceState.Select(allEndpoints)
+	// TODO_FUTURE(@adshmh): Enhance the endpoint selection meta data to track, e.g.:
+	// * Endpoint Selection Latency
+	// * Number of available endpoints
+	selectionResult, err := rc.serviceState.SelectWithMetadata(allEndpoints)
+	if err != nil {
+		return protocol.EndpointAddr(""), err
+	}
+
+	// Store selection metadata for observation tracking
+	rc.endpointSelectionMetadata = selectionResult.Metadata
+
+	return selectionResult.SelectedEndpoint, nil
 }
 
 // SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.

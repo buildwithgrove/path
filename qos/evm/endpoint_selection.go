@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	shannonprotocol "github.com/buildwithgrove/path/metrics/protocol/shannon"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/selector"
 )
@@ -21,13 +23,21 @@ var (
 // It is set to 5 minutes because that is the session time as of #321.
 const invalidResponseTimeout = 5 * time.Minute
 
-/* -------------------- QoS Valid Endpoint Selector -------------------- */
-// This section contains methods for the `serviceState` struct
-// but are kept in a separate file for clarity and readability.
+// EndpointSelectionResult contains endpoint selection results and metadata.
+type EndpointSelectionResult struct {
+	// SelectedEndpoint is the chosen endpoint address
+	SelectedEndpoint protocol.EndpointAddr
+	// Metadata contains endpoint selection process metadata
+	Metadata EndpointSelectionMetadata
+}
 
-// serviceState provides the endpoint selection capability required
-// by the protocol package for handling a service request.
-var _ protocol.EndpointSelector = &serviceState{}
+// EndpointSelectionMetadata contains metadata about the endpoint selection process.
+type EndpointSelectionMetadata struct {
+	// RandomEndpointFallback indicates random endpoint selection when all endpoints failed validation
+	RandomEndpointFallback bool
+	// ValidationResults contains detailed information about each validation attempt (both successful and failed)
+	ValidationResults []*qosobservations.EndpointValidationResult
+}
 
 // SelectMultiple returns multiple endpoint addresses from the list of available endpoints.
 // Available endpoints are filtered based on their validity first.
@@ -45,7 +55,7 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), numEndpoints)
 
-	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
+	filteredEndpointsAddr, _, err := ss.filterValidEndpointsWithDetails(availableEndpoints)
 	if err != nil {
 		logger.Error().Err(err).Msg("error filtering endpoints")
 		return nil, err
@@ -63,72 +73,155 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 	return ss.selectEndpointsWithDiversity(filteredEndpointsAddr, numEndpoints), nil
 }
 
-// Select returns an endpoint address matching an entry from the list of available endpoints.
-// available endpoints are filtered based on their validity first.
-// A random endpoint is then returned from the filtered list of valid endpoints.
-func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select").
+// SelectWithMetadata returns endpoint address and selection metadata.
+// Filters endpoints by validity and captures detailed validation failure information.
+// Selects random endpoint if all fail validation.
+func (ss *serviceState) SelectWithMetadata(availableEndpoints protocol.EndpointAddrList) (EndpointSelectionResult, error) {
+	logger := ss.logger.With("method", "SelectWithMetadata").
 		With("chain_id", ss.serviceConfig.getEVMChainID()).
 		With("service_id", ss.serviceConfig.GetServiceID())
 
-	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
+	availableCount := len(availableEndpoints)
+	logger.Info().Msgf("filtering %d available endpoints.", availableCount)
 
-	filteredEndpointsAddr, err := ss.filterValidEndpoints(availableEndpoints)
+	filteredEndpointsAddr, validationResults, err := ss.filterValidEndpointsWithDetails(availableEndpoints)
 	if err != nil {
 		logger.Error().Err(err).Msg("error filtering endpoints")
-		return protocol.EndpointAddr(""), err
+		return EndpointSelectionResult{}, err
 	}
 
-	if len(filteredEndpointsAddr) == 0 {
+	validCount := len(filteredEndpointsAddr)
+	// Handle case where all endpoints failed validation
+	if validCount == 0 {
 		logger.Warn().Msgf("SELECTING A RANDOM ENDPOINT because all endpoints failed validation from: %s", availableEndpoints.String())
-		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(len(availableEndpoints))]
-		return randomAvailableEndpointAddr, nil
+		randomAvailableEndpointAddr := availableEndpoints[rand.Intn(availableCount)]
+		return EndpointSelectionResult{
+			SelectedEndpoint: randomAvailableEndpointAddr,
+			Metadata: EndpointSelectionMetadata{
+				RandomEndpointFallback: true,
+				ValidationResults:      validationResults,
+			},
+		}, nil
 	}
 
-	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", validCount, availableCount)
 
-	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
-	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
-	return selectedEndpointAddr, nil
+	// Select random endpoint from valid candidates
+	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(validCount)]
+	return EndpointSelectionResult{
+		SelectedEndpoint: selectedEndpointAddr,
+		Metadata: EndpointSelectionMetadata{
+			RandomEndpointFallback: false,
+			ValidationResults:      validationResults,
+		},
+	}, nil
 }
 
-// filterValidEndpoints returns the subset of available endpoints that are valid
-// according to previously processed observations.
-func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddrList, error) {
+// filterValidEndpointsWithDetails returns the subset of available endpoints that are valid
+// according to previously processed observations, along with detailed validation results for all endpoints.
+//
+// Note: This function performs validation on ALL available endpoints for a service request:
+// - Each endpoint undergoes validation checks (chain ID, block number, response history, etc.)
+// - Failed endpoints are captured with specific failure reasons
+// - Successful endpoints are captured for metrics tracking
+// - Only valid endpoints are returned for potential selection
+func (ss *serviceState) filterValidEndpointsWithDetails(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddrList, []*qosobservations.EndpointValidationResult, error) {
 	ss.endpointStore.endpointsMu.RLock()
 	defer ss.endpointStore.endpointsMu.RUnlock()
 
-	logger := ss.logger.With("method", "filterValidEndpoints").With("qos_instance", "evm")
+	logger := ss.logger.With("method", "filterValidEndpointsWithDetails").With("qos_instance", "evm")
 
 	if len(availableEndpoints) == 0 {
-		return nil, errEmptyEndpointListObs
+		return nil, nil, errEmptyEndpointListObs
 	}
 
 	logger.Info().Msgf("About to filter through %d available endpoints", len(availableEndpoints))
 
+	var filteredEndpointsAddr protocol.EndpointAddrList
+	var validationResults []*qosobservations.EndpointValidationResult
+
 	// TODO_FUTURE: use service-specific metrics to add an endpoint ranking method
 	// which can be used to assign a rank/score to a valid endpoint to guide endpoint selection.
-	var filteredEndpointsAddr protocol.EndpointAddrList
 	for _, availableEndpointAddr := range availableEndpoints {
 		logger := logger.With("endpoint_addr", availableEndpointAddr)
 		logger.Info().Msg("processing endpoint")
 
 		endpoint, found := ss.endpointStore.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Error().Msgf("❓ SKIPPING endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
+			logger.Error().Msgf("❓ SKIPPING endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
+
+			// Create validation result for endpoint not found
+			failureDetails := "endpoint not found in PATH's endpoint store"
+			result := &qosobservations.EndpointValidationResult{
+				EndpointAddr:   string(availableEndpointAddr),
+				Success:        false,
+				FailureReason:  qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_FOUND.Enum(),
+				FailureDetails: &failureDetails,
+			}
+			validationResults = append(validationResults, result)
 			continue
 		}
 
 		if err := ss.basicEndpointValidation(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ SKIPPING endpoint because it failed basic validation: %s", availableEndpointAddr)
+
+			logger.Error().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
+
+			// Create validation result for validation failure
+			failureReason := ss.categorizeValidationFailure(err)
+			errorMsg := err.Error()
+			result := &qosobservations.EndpointValidationResult{
+				EndpointAddr:   string(availableEndpointAddr),
+				Success:        false,
+				FailureReason:  &failureReason,
+				FailureDetails: &errorMsg,
+			}
+			validationResults = append(validationResults, result)
 			continue
 		}
 
+		// Endpoint passed validation - record success and add to valid list
+		result := &qosobservations.EndpointValidationResult{
+			EndpointAddr: string(availableEndpointAddr),
+			Success:      true,
+			// FailureReason and FailureDetails are nil for successful validations
+		}
+		validationResults = append(validationResults, result)
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
 		logger.Info().Msgf("✅ endpoint passed validation: %s", availableEndpointAddr)
 	}
 
-	return filteredEndpointsAddr, nil
+	return filteredEndpointsAddr, validationResults, nil
+}
+
+// categorizeValidationFailure determines the failure reason category based on the validation error.
+func (ss *serviceState) categorizeValidationFailure(err error) qosobservations.EndpointValidationFailureReason {
+	if errors.Is(err, errEmptyResponseObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_EMPTY_RESPONSE_HISTORY
+	}
+	if errors.Is(err, errRecentInvalidResponseObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_RECENT_INVALID_RESPONSE
+	}
+	if errors.Is(err, errOutsideSyncAllowanceBlockNumberObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_BLOCK_NUMBER_BEHIND
+	}
+	if errors.Is(err, errInvalidChainIDObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_CHAIN_ID_MISMATCH
+	}
+	if errors.Is(err, errNoBlockNumberObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_NO_BLOCK_NUMBER_OBSERVATION
+	}
+	if errors.Is(err, errNoChainIDObs) {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_NO_CHAIN_ID_OBSERVATION
+	}
+
+	// Check for archival validation failures
+	errorStr := err.Error()
+	if strings.Contains(errorStr, "archival") {
+		return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_ARCHIVAL_CHECK_FAILED
+	}
+
+	// Default category for unknown validation failures
+	return qosobservations.EndpointValidationFailureReason_ENDPOINT_VALIDATION_FAILURE_REASON_UNKNOWN
 }
 
 // basicEndpointValidation returns an error if the supplied endpoint is not

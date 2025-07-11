@@ -86,7 +86,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz, rc.isJSONRPCRequest())
+	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz, rc.isJSONRPCRequest(), endpointAddr)
 
 	// Multiple responses can be associated with a single request for multiple reasons, such as:
 	// - Retries from single/multiple endpoints
@@ -108,7 +108,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
 	// By default, return a generic HTTP response if no endpoint responses
 	// have been reported to the request context.
-	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest())
+	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest(), protocol.EndpointAddr(""))
 
 	// If at least one endpoint response exists, return the last one
 	if len(rc.endpointResponses) >= 1 {
@@ -118,6 +118,7 @@ func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// Default to generic response if no endpoint responses exist
 	return httpResponse{
 		responsePayload: response.GetResponsePayload(),
+		responseStatus:  response.GetResponseStatusCode(),
 	}
 }
 
