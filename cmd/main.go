@@ -76,7 +76,7 @@ func main() {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
 
-	// setup metrics reporter, to be used by Gateway and Hydrator.
+	// Setup metrics reporter, to be used by Gateway and Hydrator
 	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
 	if err != nil {
 		log.Fatalf("failed to start metrics server: %v", err)
@@ -158,9 +158,9 @@ func main() {
 		config.GetRouterConfig(),
 	)
 
-	// -------------------- Log PATH Startup Info -------------------- */
+	// -------------------- Log PATH Startup Info --------------------
 
-	// Log out some basic info about the running PATH instance.
+	// Log out some basic info about the running PATH instance
 	configuredServiceIDs := make([]string, 0, len(protocol.ConfiguredServiceIDs()))
 	for serviceID := range protocol.ConfiguredServiceIDs() {
 		configuredServiceIDs = append(configuredServiceIDs, string(serviceID))
@@ -168,7 +168,7 @@ func main() {
 	logger.Info().Msgf("🌿 PATH gateway starting on port %d for Protocol: %s with Configured Service IDs: %s",
 		config.GetRouterConfig().Port, protocol.Name(), strings.Join(configuredServiceIDs, ", "))
 
-	// -------------------- Start PATH API Router -------------------- */
+	// -------------------- Start PATH API Router --------------------
 
 	// This will block until the router is stopped.
 	server, err := apiRouter.Start()
@@ -176,13 +176,14 @@ func main() {
 		logger.Error().Err(err).Msg("failed to start PATH API router")
 	}
 
-	// -------------------- PATH Shutdown -------------------- */
+	// -------------------- PATH Shutdown --------------------
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
 	logger.Info().Msg("Shutting down PATH...")
 
+	// TODO_IMPROVE: Make shutdown timeout configurable and add graceful shutdown of dependencies
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {

@@ -27,17 +27,16 @@ const maxEndpointPayloadLenForLogging = 100
 // for handling a single service request.
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
-// RelayRequestSigner:
-// - Used by requestContext to sign relay requests.
-// - Takes an unsigned relay request and an application.
-// - Returns a relay request signed by the gateway (with delegation from the app).
-// - In future Permissionless Gateway Mode, may use the app's own private key for signing.
+// RelayRequestSigner signs relay requests for the Shannon protocol.
+// Key responsibilities:
+// • Takes an unsigned relay request and an application
+// • Returns a relay request signed by the gateway (with delegation from the app)
+// • In future Permissionless Gateway Mode, may use the app's own private key for signing
 type RelayRequestSigner interface {
 	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
 
-// requestContext:
-// - Captures all data required for handling a single service request.
+// requestContext captures all data required for handling a single service request.
 type requestContext struct {
 	logger polylog.Logger
 
