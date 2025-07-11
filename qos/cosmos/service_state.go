@@ -84,6 +84,7 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 }
 
 // getCometBFTEndpointChecks generates the endpoint checks for the CometBFT RPC type.
+// API reference: https://docs.cometbft.com/v1.0/rpc/
 func (ss *serviceState) getCometBFTEndpointChecks(endpoint *endpoint) []gateway.RequestQoSContext {
 	checks := []gateway.RequestQoSContext{}
 

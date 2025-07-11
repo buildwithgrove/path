@@ -87,6 +87,7 @@ func getRPCTypeFromJSONRPCMethod(jsonRPCMethod string) map[string]string {
 // ------------------------------------------------------------------------------------------------
 
 // Cosmos REST API prefixes
+// API reference: https://docs.cosmos.network/api
 var cosmosRestPrefixes = []string{
 	"/cosmos/",       // - /cosmos/* (Cosmos SDK modules)
 	"/ibc/",          // - /ibc/* (IBC protocol)
@@ -115,6 +116,7 @@ func isCosmosRestAPI(urlPath string) bool {
 }
 
 // CometBFT RPC paths
+// API reference: https://docs.cometbft.com/v1.0/rpc/
 var cometBftPaths = []string{
 	"/status",               // - /status (node status)
 	"/broadcast_tx_sync",    // - /broadcast_tx_sync (transaction broadcast)
@@ -150,16 +152,11 @@ func isCometBftRpc(urlPath string) bool {
 }
 
 // EVM JSON-RPC prefixes
+// API reference: https://ethereum.org/en/developers/docs/apis/json-rpc/
 var evmPrefixes = []string{
-	"eth_",      // Ethereum standard methods
-	"net_",      // Network information
-	"web3_",     // Web3 provider methods
-	"txpool_",   // Transaction pool
-	"debug_",    // Debug namespace
-	"trace_",    // Tracing methods
-	"engine_",   // Engine API (for consensus)
-	"personal_", // Personal namespace
-	"admin_",    // Admin namespace
+	"eth_",  // Ethereum standard methods
+	"net_",  // Network information
+	"web3_", // Web3 provider methods
 }
 
 // isEVMMethod checks if the JSON-RPC method corresponds to Ethereum/EVM endpoints
@@ -175,12 +172,14 @@ func isEVMMethod(method string) bool {
 }
 
 // CometBFT JSON-RPC prefixes
+// API reference: https://docs.cometbft.com/v1.0/rpc/
 var cometBftPrefixes = []string{
 	"abci_",        // Application Blockchain Interface
 	"broadcast_tx", // Transaction broadcasting (broadcast_tx_sync, broadcast_tx_async, etc.)
 }
 
 // Direct method matches for common CometBFT RPC methods
+// API reference: https://docs.cometbft.com/v1.0/rpc/
 var cometBftMethods = []string{
 	"status",               // Node status
 	"block",                // Block information
