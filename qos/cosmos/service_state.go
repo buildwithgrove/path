@@ -49,6 +49,16 @@ type serviceState struct {
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
 
+// TODO_NEXT(@commoddity): Add endpoint checks for the following:
+//  1. CosmosSDK URL paths:
+//     - Node Info (/cosmos/base/tendermint/v1beta1/node_info)
+//     https://docs.cosmos.network/api#tag/Service/operation/GetNodeInfo
+//     - Syncing Status (/cosmos/base/tendermint/v1beta1/syncing)
+//     https://docs.cosmos.network/api#tag/Service/operation/GetSyncing
+//  2. JSON-RPC methods:
+//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
+//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
+//
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {

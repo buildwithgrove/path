@@ -428,9 +428,9 @@ var shannonServices = []ServiceQoSConfig{
 	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4"),
 
 	// XRPL EVM Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "0x161c28"),
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1"),
 	// TODO_IN_THIS_PR(@commoddity): Remove this once the Relay Miner changes are completed.
-	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "0x161c28"),
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "xrplevm_1449000-1"),
 
 	// *** Solana Services ***
 
