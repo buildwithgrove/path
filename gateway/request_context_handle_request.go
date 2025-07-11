@@ -11,10 +11,11 @@ import (
 )
 
 // HandleRelayRequest sends a relay from the perspective of a gateway.
+//
 // It performs the following steps:
-//  1. Selects endpoints using the QoS context.
-//  2. Sends the relay to multiple selected endpoints in parallel, using the protocol contexts.
-//  3. Processes the first successful endpoint's response using the QoS context.
+//   1. Selects endpoints using the QoS context
+//   2. Sends the relay to multiple selected endpoints in parallel, using the protocol contexts  
+//   3. Processes the first successful endpoint's response using the QoS context
 //
 // HandleRelayRequest is written as a template method to allow the customization of key steps,
 // e.g. endpoint selection and protocol-specific details of sending a relay.
@@ -64,7 +65,7 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 }
 
 // handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
-// and returns the first successful response
+// and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
 	logger := rc.logger.With("service_id", rc.serviceID).With("method", "handleParallelRelayRequests")
 
@@ -118,6 +119,8 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	successfulResponses := 0
 	totalRequests := len(rc.protocolContexts)
 	var responseTimings []string
+
+	// TODO_OBSERVABILITY: Add metrics for parallel request success rates and timing distributions
 
 	for successfulResponses < totalRequests {
 		select {
@@ -191,7 +194,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 }
 
 // selectMultipleEndpoints selects up to maxNumEndpoints endpoints from the available endpoints
-// with optional bias towards different TLDs for improved diversity and resilience
+// with optional bias towards different TLDs for improved diversity and resilience.
 func (rc *requestContext) selectMultipleEndpoints(
 	availableEndpoints protocol.EndpointAddrList,
 	maxNumEndpoints int,
@@ -222,7 +225,8 @@ func (rc *requestContext) selectMultipleEndpoints(
 		Str("service_id", string(rc.serviceID)).
 		Msg("[Parallel Requests] Selecting endpoints for parallel relay")
 
-	// Select multiple endpoints
+	// Select multiple endpoints using QoS-specific selection logic
+	// TODO_PERFORMANCE: Consider endpoint health metrics in selection algorithm
 	multipleSelectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxNumEndpoints)
 	if err != nil {
 		logger.Warn().
@@ -241,7 +245,7 @@ func (rc *requestContext) selectMultipleEndpoints(
 	return multipleSelectedEndpointAddr
 }
 
-// logEndpointTLDDiversity logs TLD diversity information for selected endpoints
+// logEndpointTLDDiversity logs TLD diversity information for selected endpoints.
 func (rc *requestContext) logEndpointTLDDiversity(endpoints protocol.EndpointAddrList) {
 	endpointTLDs := shannonmetrics.GetEndpointTLDs(endpoints)
 

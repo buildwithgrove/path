@@ -60,14 +60,14 @@ type Gateway struct {
 // Reference: https://en.wikipedia.org/wiki/Template_method_pattern
 //
 // TODO_FUTURE: Refactor when adding other protocols (e.g. gRPC):
-// - Extract generic processing into common method
-// - Keep HTTP-specific details separate
+//   - Extract generic processing into common method  
+//   - Keep HTTP-specific details separate
 func (g Gateway) HandleServiceRequest(
 	ctx context.Context,
 	httpReq *http.Request,
 	responseWriter http.ResponseWriter,
 ) {
-	// build a gatewayRequestContext with components necessary to process requests.
+	// Build a gatewayRequestContext with components necessary to process requests.
 	gatewayRequestCtx := &requestContext{
 		logger:              g.Logger,
 		context:             ctx,
@@ -99,7 +99,7 @@ func (g Gateway) HandleServiceRequest(
 	}
 }
 
-// handleHTTPRequest handles a standard HTTP service request.
+// handleHTTPServiceRequest handles a standard HTTP service request.
 func (g Gateway) handleHTTPServiceRequest(
 	_ context.Context,
 	httpReq *http.Request,
@@ -137,7 +137,7 @@ func (g Gateway) handleHTTPServiceRequest(
 	_ = gatewayRequestCtx.HandleRelayRequest()
 }
 
-// handleWebsocketRequest handles WebSocket connection requests
+// handleWebSocketRequest handles WebSocket connection requests.
 func (g Gateway) handleWebSocketRequest(
 	_ context.Context,
 	httpReq *http.Request,

@@ -25,23 +25,24 @@ var (
 
 const (
 	// TODO_TECHDEBT: Make these configurable in a new Gateway.RelayConfig struct.
+	// TODO_PERFORMANCE: Consider adaptive parallel request count based on service load/health
 	maxParallelRequests    = 4
 	parallelRequestTimeout = 30 * time.Second
 )
 
-// Gateway requestContext is responsible for performing the steps necessary to complete a service request.
+// requestContext is responsible for performing the steps necessary to complete a service request.
 //
 // It contains two main contexts:
 //
 //  1. Protocol context
-//     - Supplies the list of available endpoints for the requested service to the QoS ctx.
-//     - Builds the Protocol ctx for the selected endpoint once it has been selected.
-//     - Sends the relay request to the selected endpoint using the protocol-specific implementation.
+//     - Supplies the list of available endpoints for the requested service to the QoS ctx
+//     - Builds the Protocol ctx for the selected endpoint once it has been selected
+//     - Sends the relay request to the selected endpoint using the protocol-specific implementation
 //
 //  2. QoS context
-//     - Receives the list of available endpoints for the requested service from the Protocol instance.
-//     - Selects a valid endpoint from among them based on the service-specific QoS implementation.
-//     - Updates its internal store based on observations made during the handling of the request.
+//     - Receives the list of available endpoints for the requested service from the Protocol instance
+//     - Selects a valid endpoint from among them based on the service-specific QoS implementation
+//     - Updates its internal store based on observations made during the handling of the request
 //
 // As of PR #72, it is limited in scope to HTTP service requests.
 type requestContext struct {
@@ -177,9 +178,9 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http (L7) level.
 	// Required steps:
-	//  	1. Update QoSService interface to parse custom struct with []byte payload
-	//  	2. Read HTTP request body in `request` package and return struct for QoS Service
-	//  	3. Export HTTP observations from `request` package when reading body
+	//	1. Update QoSService interface to parse custom struct with []byte payload
+	//	2. Read HTTP request body in `request` package and return struct for QoS Service
+	//	3. Export HTTP observations from `request` package when reading body
 
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
@@ -221,9 +222,9 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 // BuildProtocolContextsFromHTTPRequest builds multiple Protocol contexts using the supplied HTTP request.
 //
 // Steps:
-// 1. Get available endpoints for the requested service from the Protocol instance
-// 2. Select multiple endpoints for parallel relay attempts
-// 3. Build Protocol contexts for each selected endpoint
+//   1. Get available endpoints for the requested service from the Protocol instance
+//   2. Select multiple endpoints for parallel relay attempts  
+//   3. Build Protocol contexts for each selected endpoint
 //
 // The constructed Protocol instances will be used for:
 //   - Sending parallel relay requests to multiple endpoints
@@ -337,12 +338,12 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request: QoS returns a properly formatted error response.
-	//     E.g. a non-JSONRPC payload for an EVM service.
-	// 	2. Protocol relay failed for any reason: QoS returns a generic, properly formatted response.
-	//     E.g. a JSONRPC error response.
-	// 	3. Protocol relay was sent successfully: QoS returns the endpoint's response.
-	//     E.g. the chain ID for a `eth_chainId` request.
+	//   1. The QoS instance rejected the request: QoS returns a properly formatted error response.
+	//      E.g. a non-JSONRPC payload for an EVM service.
+	//   2. Protocol relay failed for any reason: QoS returns a generic, properly formatted response.
+	//      E.g. a JSONRPC error response.
+	//   3. Protocol relay was sent successfully: QoS returns the endpoint's response.
+	//      E.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 
@@ -472,7 +473,8 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 
 	// Check if we have multiple protocol contexts and use the first successful one
 	if len(rc.protocolContexts) > 0 {
-		// TODO_IN_THIS_PR: Align on how we want to manage multiple protocol contexts here.
+		// TODO_PERFORMANCE: Aggregate observations from all protocol contexts for better insights
+		// Currently using only the first context's observations for backward compatibility
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
