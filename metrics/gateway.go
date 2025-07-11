@@ -121,18 +121,21 @@ var (
 	// Increment for each parallel request made with labels:
 	//   - service_id: Identifies the service
 	//   - multiplicity: Total number of parallel requests in the batch (1, 2, 3, etc.)
-	//   - outcome: "success", "failed", or "cancelled"
+	//   - num_successful: Number of successful parallel requests
+	//   - num_failed: Number of failed parallel requests
+	//   - num_cancelled: Number of cancelled parallel requests
 	//
 	// Usage:
 	// - Track how many parallel requests are made per incoming request
 	// - Monitor success/failure/cancellation rates within parallel batches
+	// - This is ONLY intended for very low cardinality (i.e. multiplicity <= 5)
 	parallelRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      parallelRequestsTotalMetricName,
 			Help:      "Total parallel requests made, labeled by batch size and outcome.",
 		},
-		[]string{"service_id", "multiplicity", "outcome"},
+		[]string{"service_id", "multiplicity", "num_successful", "num_failed", "num_cancelled"},
 	)
 )
 
@@ -221,11 +224,21 @@ func SetVersionInfo(version, commit, buildDate string) {
 // Call this for each parallel request made with:
 //   - serviceID: The service identifier
 //   - multiplicity: Total number of parallel requests in the batch
-//   - outcome: "success", "failed", or "cancelled"
-func RecordParallelRequestOutcome(serviceID string, multiplicity int, outcome string) {
+//   - numSuccessful: Number of successful parallel requests
+//   - numFailed: Number of failed parallel requests
+//   - numCancelled: Number of cancelled parallel requests
+func RecordParallelRequestOutcome(
+	serviceID string,
+	multiplicity int,
+	numSuccessful int,
+	numFailed int,
+	numCancelled int,
+) {
 	parallelRequestsTotal.With(prometheus.Labels{
-		"service_id":   serviceID,
-		"multiplicity": fmt.Sprintf("%d", multiplicity),
-		"outcome":      outcome,
+		"service_id":     serviceID,
+		"multiplicity":   fmt.Sprintf("%d", multiplicity),
+		"num_successful": fmt.Sprintf("%d", numSuccessful),
+		"num_failed":     fmt.Sprintf("%d", numFailed),
+		"num_cancelled":  fmt.Sprintf("%d", numCancelled),
 	}).Inc()
 }

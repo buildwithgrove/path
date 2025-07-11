@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buildwithgrove/path/metrics"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -58,12 +59,17 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 // handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
 // and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
+	totalRequests := len(rc.protocolContexts)
+	var numSuccessful, numFailed int
+	defer func() {
+		numCancelled := totalRequests - numSuccessful - numFailed
+		metrics.RecordParallelRequestOutcome(string(rc.serviceID), totalRequests, numSuccessful, numFailed, numCancelled)
+	}()
+
 	logger := rc.logger.
 		With("method", "handleParallelRelayRequests").
 		With("num_protocol_contexts", len(rc.protocolContexts)).
 		With("service_id", rc.serviceID)
-
-	// Log comprehensive request information
 	logger.Debug().Msg("Starting parallel relay race")
 
 	// Create a channel to receive the first successful response
@@ -109,22 +115,16 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 
 	// Wait for the first successful response
 	var lastErr error
-	successfulResponses := 0
-	totalRequests := len(rc.protocolContexts)
 	var responseTimings []string
-
-	// TODO_IN_THIS_PR: Add metrics for parallel request success rates and timing distributions
-
-	for successfulResponses < totalRequests {
+	for numSuccessful < totalRequests {
 		select {
 		case result := <-relayResultChan:
-			successfulResponses++
 			timingLog := fmt.Sprintf("endpoint_%d=%dms", result.index, result.duration.Milliseconds())
 			responseTimings = append(responseTimings, timingLog)
 
 			// First successful response - cancel other requests and return
 			if result.err == nil {
-				// Extract and log results
+				numSuccessful++
 				overallDurationToFirstSuccess := time.Since(overallStartTime)
 				endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(result.response.EndpointAddr))
 				logger.Info().
@@ -135,18 +135,20 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
 				return nil
 			}
+
 			// Log the error but continue waiting for other responses
-			logger.Warn().Err(result.err).Msgf("[Parallel Requests] Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
+			numFailed++
+			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
 			lastErr = result.err
 		case <-ctx.Done():
 			// Context was canceled or timed out
 			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
 			if ctx.Err() == context.DeadlineExceeded {
-				logger.Error().Msgf("Parallel requests timed out after %dms and %d completed requests", totalParallelRelayDuration, successfulResponses)
-				return fmt.Errorf("parallel relay requests timed out after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, successfulResponses, lastErr)
+				logger.Error().Msgf("Parallel requests timed out after %dms and %d completed requests", totalParallelRelayDuration, numSuccessful)
+				return fmt.Errorf("parallel relay requests timed out after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, numSuccessful, lastErr)
 			}
 			logger.Debug().Msg("Parallel requests canceled")
-			return fmt.Errorf("parallel relay requests canceled after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, successfulResponses, lastErr)
+			return fmt.Errorf("parallel relay requests canceled after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, numSuccessful, lastErr)
 		}
 	}
 

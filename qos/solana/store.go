@@ -88,7 +88,7 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 	}
 
 	// Select up to numEndpoints endpoints from filtered list
-	return selector.RandomSelectMultiple(filteredEndpointsAddr, numEndpoints), nil
+	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
