@@ -31,7 +31,7 @@ description: End-to-End & Load Tests for PATH
 
 ## tl;dr How do I run the tests?
 
-### 1. **Run E2E tests** 
+### 1. **Run E2E tests**
 
 ```bash
 # Shannon E2E tests with all service IDs
@@ -111,9 +111,9 @@ PATH E2E tests support two distinct modes of operation:
 
 | Configuration File                                 | E2E Test (Required?) | Load Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-------------------: | :-----------------------------------------: |
-| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅           |           ❌           |                      ❌                      |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |           ❌           |                      ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌           |           ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.morse.config.yaml` (for Morse)      |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |          ❌           |                     ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌          |          ✅           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
 :::tip Populate Configs
 
