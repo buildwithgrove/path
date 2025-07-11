@@ -17,7 +17,7 @@ import (
 const (
 	// The default timeout when sending a request to
 	// a Solana blockchain endpoint.
-	defaultServiceRequestTimeoutMillisec = 5000
+	defaultServiceRequestTimeoutMillisec = 15_000
 )
 
 // requestContext provides the support required by the gateway
@@ -192,4 +192,10 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// SelectMultiple chooses multiple endpoints from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
+// It is required to satisfy the protocol package's EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }

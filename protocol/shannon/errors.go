@@ -11,10 +11,14 @@ var (
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
-	ErrRelayEndpointConfig = errors.New("endpoint configuration error")
+	errRelayEndpointConfig = errors.New("endpoint configuration error")
 
 	// endpoint timeout
-	ErrRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
+	errRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
+
+	// PATH manually canceled the context for the request.
+	// E.g. Parallel requests were made and one succeeded so the other was canceled.
+	errContextCancelled = errors.New("context canceled manually")
 
 	// HTTP relay request failed - wraps net/http package errors
 	errSendHTTPRelay = errors.New("HTTP relay request failed")
@@ -76,12 +80,17 @@ func extractErrFromRelayError(err error) error {
 	}
 
 	if isEndpointConfigError(err) {
-		return ErrRelayEndpointConfig
+		return errRelayEndpointConfig
 	}
 
 	// endpoint timeout
 	if strings.Contains(err.Error(), "context deadline exceeded") {
-		return ErrRelayEndpointTimeout
+		return errRelayEndpointTimeout
+	}
+
+	// context canceled manually
+	if strings.Contains(err.Error(), "context canceled") {
+		return errContextCancelled
 	}
 
 	// No known patterns matched.

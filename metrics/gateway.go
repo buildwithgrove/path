@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"fmt"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -13,14 +15,16 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for gateway-level observations
-	requestsTotal        = "requests_total"
-	responseSizeBytes    = "response_size_bytes"
-	relayDurationSeconds = "relay_duration_seconds"
-	versionInfoMetric    = "version_info"
+	requestsTotalMetricName         = "requests_total" // TODO_TECHDEBT: Align the relays/requests terminology
+	parallelRequestsTotalMetricName = "parallel_requests_total"
+	responseSizeBytesMetricName     = "response_size_bytes"
+	relayDurationSecondsMetricName  = "relay_duration_seconds"
+	versionInfoMetricName           = "version_info"
 )
 
 func init() {
 	prometheus.MustRegister(relaysTotal)
+	prometheus.MustRegister(parallelRequestsTotal)
 	prometheus.MustRegister(relaysDurationSeconds)
 	prometheus.MustRegister(relayResponseSizeBytes)
 	prometheus.MustRegister(versionInfo)
@@ -39,7 +43,7 @@ var (
 	relaysTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
-			Name:      requestsTotal,
+			Name:      requestsTotalMetricName,
 			Help:      "Total number of requests processed, labeled by service ID.",
 		},
 		[]string{"service_id", "request_type", "request_error_kind"},
@@ -55,7 +59,7 @@ var (
 	relaysDurationSeconds = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
-			Name:      relayDurationSeconds,
+			Name:      relayDurationSecondsMetricName,
 			Help:      "Histogram of request processing time (duration) in seconds",
 			// Buckets are selected as: [0, 0.1), [0.1, 0.5), [0.5, 1), [1, 2), [2, 5), [5, 15)
 			// This is because the request processing time is expected to be normally distributed.
@@ -76,7 +80,7 @@ var (
 	relayResponseSizeBytes = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
-			Name:      responseSizeBytes,
+			Name:      responseSizeBytesMetricName,
 			Help:      "Histogram of response sizes in bytes for performance analysis.",
 			// TODO_IMPROVE: Consider configuring bucket sizes externally for flexible adjustments
 			// in response to different data patterns or deployment scenarios.
@@ -107,10 +111,28 @@ var (
 	versionInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Subsystem: pathProcess,
-			Name:      versionInfoMetric,
+			Name:      versionInfoMetricName,
 			Help:      "Version information about the running PATH instance",
 		},
 		[]string{"version", "commit", "build_date"},
+	)
+
+	// parallelRequestsTotal tracks individual parallel requests within a batch.
+	// Increment for each parallel request made with labels:
+	//   - service_id: Identifies the service
+	//   - multiplicity: Total number of parallel requests in the batch (1, 2, 3, etc.)
+	//   - outcome: "success", "failed", or "cancelled"
+	//
+	// Usage:
+	// - Track how many parallel requests are made per incoming request
+	// - Monitor success/failure/cancellation rates within parallel batches
+	parallelRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      parallelRequestsTotalMetricName,
+			Help:      "Total parallel requests made, labeled by batch size and outcome.",
+		},
+		[]string{"service_id", "multiplicity", "outcome"},
 	)
 )
 
@@ -160,12 +182,12 @@ func publishGatewayMetrics(
 		},
 	).Observe(float64(gatewayObservations.GetResponseSize()))
 
-	// log a meessage if there were any request errors.
+	// log a message if there were any request errors.
 	if requestErr != nil {
 		logger.With(
 			"service_id", serviceID,
 			"request_type", requestType,
-			"reques_error_kind", requestErrorKind,
+			"request_error_kind", requestErrorKind,
 			"request_error_details", requestErr.GetDetails(),
 		).Error().Msg("Invalid request: No Protocol or QoS observations were made.")
 	}
@@ -193,4 +215,17 @@ func SetVersionInfo(version, commit, buildDate string) {
 		"commit":     commit,
 		"build_date": buildDate,
 	}).Set(1)
+}
+
+// RecordParallelRequestOutcome records the outcome of parallel requests within a batch.
+// Call this for each parallel request made with:
+//   - serviceID: The service identifier
+//   - multiplicity: Total number of parallel requests in the batch
+//   - outcome: "success", "failed", or "cancelled"
+func RecordParallelRequestOutcome(serviceID string, multiplicity int, outcome string) {
+	parallelRequestsTotal.With(prometheus.Labels{
+		"service_id":   serviceID,
+		"multiplicity": fmt.Sprintf("%d", multiplicity),
+		"outcome":      outcome,
+	}).Inc()
 }

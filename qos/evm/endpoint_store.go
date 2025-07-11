@@ -58,15 +58,15 @@ func (es *endpointStore) updateEndpointsFromObservations(
 		// e.g. when the first observation(s) are received for an endpoint.
 		storedEndpoint := es.endpoints[endpointAddr]
 
-		endpointWasMutated := applyObservation(
+		isEndpointMutatedByObservation := applyObservation(
 			&storedEndpoint,
 			observation,
 			archivalBlockHeight,
 		)
 
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
-		if !endpointWasMutated {
-			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
+		if !isEndpointMutatedByObservation {
+			logger.Info().Msg("endpoint was not mutated by observations. Skipping update of internal endpoint store.")
 			continue
 		}
 
@@ -78,7 +78,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 }
 
 // applyObservation updates the data stored regarding the endpoint using the supplied observation.
-// It returns true if the observation was not unrecognized, i.e. mutated the endpoint.
+// It returns true if the observation was recognized (i.e. mutated the endpoint).
 //
 // For archival balance observations:
 // - Only updates the archival balance if the balance was observed at the specified archival block height
@@ -186,6 +186,7 @@ func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedRespon
 	validationError := unrecognizedResponse.GetResponseValidationError()
 	if validationError != qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNSPECIFIED {
 		endpoint.hasReturnedInvalidResponse = true
+		endpoint.invalidResponseError = validationError
 		now := time.Now()
 		endpoint.invalidResponseLastObserved = &now
 	}

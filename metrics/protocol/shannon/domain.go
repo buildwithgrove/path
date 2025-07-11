@@ -9,8 +9,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// ExtractDomainOrHost extracts the effective TLD+1 from a URL, with fallbacks
-// for localhost, IP addresses, and other non-standard hosts.
+// ExtractDomainOrHost extracts the effective TLD+1 from a URL.
+// It falls back to a reasonable domain extraction for localhost, IP addresses, and other non-standard hosts.
 func ExtractDomainOrHost(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {

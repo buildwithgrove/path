@@ -7,23 +7,29 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/buildwithgrove/path/observation/protocol"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
+
+// TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
+// used through the codebase or vice versa.
 
 const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
 
-	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric           = "shannon_relays_total"
-	relaysErrorsTotalMetric     = "shannon_relay_errors_total"
-	sanctionsByDomainMetric     = "shannon_sanctions_by_domain"
+	// Relay metrics
+	relaysTotalMetric       = "shannon_relays_total"
+	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+
+	// Sanctions metrics
+	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
+
+	// Relay metrics
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
 )
 
 var (
-	// defaultBuckets defines latency buckets optimized for Shannon endpoint responses
 	defaultBuckets = []float64{
 		// Sub-50ms (cache hits, internal optimization, fast responses, potential internal errors, etc.)
 		0.01, 0.025, 0.05,
@@ -35,9 +41,14 @@ var (
 )
 
 func init() {
+	// Relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+
+	// Sanctions metrics
 	prometheus.MustRegister(sanctionsByDomain)
+
+	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
 	prometheus.MustRegister(relayMinerErrorsTotal)
 }
@@ -162,7 +173,7 @@ var (
 // reported by the Shannon protocol.
 func PublishMetrics(
 	logger polylog.Logger,
-	observations *protocol.ShannonObservationsList,
+	observations *protocolobservations.ShannonObservationsList,
 ) {
 	shannonObservations := observations.GetObservations()
 	if len(shannonObservations) == 0 {
@@ -192,7 +203,7 @@ func PublishMetrics(
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 func recordRelayTotal(
 	logger polylog.Logger,
-	observations *protocol.ShannonRequestObservations,
+	observations *protocolobservations.ShannonRequestObservations,
 ) {
 	hydratedLogger := logger.With("method", "recordRelaysTotal")
 
@@ -217,7 +228,7 @@ func recordRelayTotal(
 	// Skip if there are no endpoint observations
 	// This happens if endpoint selection logic failed to select an endpoint from the available endpoints list.
 	if len(endpointObservations) == 0 {
-		hydratedLogger.Info().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
+		hydratedLogger.Warn().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
 		return
 	}
 
@@ -254,7 +265,7 @@ func recordRelayTotal(
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
-func extractRequestError(observations *protocol.ShannonRequestObservations) (bool, string) {
+func extractRequestError(observations *protocolobservations.ShannonRequestObservations) (bool, string) {
 	requestErr := observations.GetRequestError()
 	// No request errors.
 	if requestErr == nil {
@@ -265,20 +276,20 @@ func extractRequestError(observations *protocol.ShannonRequestObservations) (boo
 }
 
 // isAnyObservationSuccessful returns true if any endpoint observation indicates a success.
-func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservation) bool {
+func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
-		if obs.GetErrorType() == protocol.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
+		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
 			return true
 		}
 	}
 	return false
 }
 
-// processEndpointErrors records error metrics
+// processEndpointErrors records error metrics with exemplars for high-cardinality data
 func processEndpointErrors(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no error
@@ -288,7 +299,7 @@ func processEndpointErrors(
 
 		// Extract effective TLD+1 from endpoint URL
 		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),
@@ -320,7 +331,7 @@ func processEndpointErrors(
 		relaysErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"error_type":      errorType,
 				"sanction_type":   sanctionType,
 			},
@@ -332,7 +343,7 @@ func processEndpointErrors(
 func processSanctionsByDomain(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction (based on trusted error classification)
@@ -340,9 +351,8 @@ func processSanctionsByDomain(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		// error extracting TLD+1, skip.
 		if err != nil {
 			logger.With(
@@ -363,7 +373,7 @@ func processSanctionsByDomain(
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
 				"sanction_reason": sanctionReason,
 			},
@@ -377,7 +387,7 @@ func processSanctionsByDomain(
 func processEndpointLatency(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
@@ -407,8 +417,8 @@ func processEndpointLatency(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),
@@ -421,7 +431,7 @@ func processEndpointLatency(
 		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
 			},
 		).Observe(latencySeconds)
@@ -432,7 +442,7 @@ func processEndpointLatency(
 func processRelayMinerErrors(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no RelayMinerError
@@ -440,9 +450,8 @@ func processRelayMinerErrors(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),
@@ -466,7 +475,7 @@ func processRelayMinerErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointTLDPlusOne,
+				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   endpointErrorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,
