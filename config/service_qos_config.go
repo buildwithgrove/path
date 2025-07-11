@@ -1,6 +1,8 @@
 package config
 
 import (
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/cosmos"
 	"github.com/buildwithgrove/path/qos/evm"
@@ -406,31 +408,66 @@ var shannonServices = []ServiceQoSConfig{
 	// the correct chain ID is being used for each service in the CometBFT config.
 
 	// Osmosis
-	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis"),
+	//
+	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_GRPC:      {},
+	}),
 
 	// *** Cosmos SDK Services ***
 
 	// Pocket Mainnet and Beta Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Mainnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha"),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Beta Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1"),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2"),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3"),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4"),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta5", "pocket-beta5"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Cosmos Hub
-	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4"),
+	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// XRPL EVM Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1"),
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {},
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 	// TODO_IN_THIS_PR(@commoddity): Remove this once the Relay Miner changes are completed.
-	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "xrplevm_1449000-1"),
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {},
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// *** Solana Services ***
 
@@ -789,7 +826,11 @@ var morseServices = []ServiceQoSConfig{
 	// the correct chain ID is being used for each service in the CometBFT config.
 
 	// Osmosis
-	cosmos.NewCosmosSDKServiceQoSConfig("F020", "osmosis"),
+	cosmos.NewCosmosSDKServiceQoSConfig("F020", "osmosis", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_GRPC:      {},
+	}),
 
 	// *** Solana Services ***
 

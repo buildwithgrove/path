@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -49,16 +50,6 @@ type serviceState struct {
 // using synthetic service requests.
 var _ gateway.QoSEndpointCheckGenerator = &serviceState{}
 
-// TODO_NEXT(@commoddity): Add endpoint checks for the following:
-//  1. CosmosSDK URL paths:
-//     - Node Info (/cosmos/base/tendermint/v1beta1/node_info)
-//     https://docs.cosmos.network/api#tag/Service/operation/GetNodeInfo
-//     - Syncing Status (/cosmos/base/tendermint/v1beta1/syncing)
-//     https://docs.cosmos.network/api#tag/Service/operation/GetSyncing
-//  2. JSON-RPC methods:
-//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
-//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
-//
 // GetRequiredQualityChecks returns the list of quality checks required for an endpoint.
 // It is called in the `gateway/hydrator.go` file on each run of the hydrator.
 func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointAddr) []gateway.RequestQoSContext {
@@ -67,7 +58,34 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 
 	endpoint := ss.endpointStore.endpoints[endpointAddr]
 
+	// Get the RPC types supported by the CosmosSDK service.
+	rpcTypes := ss.serviceConfig.getRPCTypes()
+
 	var checks []gateway.RequestQoSContext
+
+	// If the service supports CometBFT, add the CometBFT endpoint checks.
+	if _, ok := rpcTypes[sharedtypes.RPCType_COMET_BFT]; ok {
+		checks = append(checks, ss.getCometBFTEndpointChecks(&endpoint)...)
+	}
+
+	// TODO_NEXT(@commoddity): Add endpoint checks for the following:
+	//
+	//  1. CosmosSDK URL paths (sharedtypes.RPCType_REST):
+	//     - Node Info (/cosmos/base/tendermint/v1beta1/node_info)
+	//     https://docs.cosmos.network/api#tag/Service/operation/GetNodeInfo
+	//     - Syncing Status (/cosmos/base/tendermint/v1beta1/syncing)
+	//     https://docs.cosmos.network/api#tag/Service/operation/GetSyncing
+	//
+	//  2. JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
+	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
+	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
+
+	return checks
+}
+
+// getCometBFTEndpointChecks generates the endpoint checks for the CometBFT RPC type.
+func (ss *serviceState) getCometBFTEndpointChecks(endpoint *endpoint) []gateway.RequestQoSContext {
+	checks := []gateway.RequestQoSContext{}
 
 	// Health check should always run
 	if ss.shouldHealthCheckRun(endpoint.checkHealth) {
