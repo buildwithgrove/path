@@ -18,14 +18,18 @@ guard:
   #
   # 1. Each service must have a unique service ID.
   # 2. Each service can have a list of aliases that can be used to route requests to the service.
+  # TODO_MIGRATION(@commoddity): once GUARD is updated, remove `shannonServiceId` and use `serviceId` instead.
   services:
     - serviceId: F00C
+      shannonServiceId: eth
       aliases:
         - eth
     - serviceId: F021
+      shannonServiceId: poly
       aliases:
         - polygon
     #- serviceId: F000
+    #  shannonServiceId: pocket
     #  aliases:
     #    - pocket
     #    - mainnet
