@@ -168,14 +168,14 @@ message ShannonEndpointObservation {
   // Recommended sanction type based on the error
   optional ShannonSanctionType recommended_sanction = 12;
 
+  // RelayMiner error details if the endpoint returned a RelayMinerError
+  optional ShannonRelayMinerError relay_miner_error = 13;
+
   // HTTP status code of the endpoint response
-  optional int32 endpoint_backend_service_http_response_status_code = 13;
+  optional int32 endpoint_backend_service_http_response_status_code = 14;
 
   // HTTP Response payload size
-  optional int64 endpoint_backend_service_http_response_payload_size = 14;
-
-  // RelayMiner error details if the endpoint returned a RelayMinerError
-  optional ShannonRelayMinerError relay_miner_error = 15;
+  optional int64 endpoint_backend_service_http_response_payload_size = 15;
 }
 
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,

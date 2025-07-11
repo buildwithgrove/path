@@ -136,10 +136,10 @@ var (
 	)
 
 	// endpointResponseSize tracks the distribution of response payload sizes
-	// This is a separate metric to avoid high cardinality in the latency histogram
 	// Labels:
 	//   - service_id: Target service identifier
 	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the request was successful (true if at least one endpoint had no error)
 	//
 	// Use to analyze:
 	//   - Response size distribution patterns
@@ -150,9 +150,18 @@ var (
 			Subsystem: pathProcess,
 			Name:      "endpoint_response_size_bytes",
 			Help:      "Histogram of endpoint response payload sizes in bytes",
-			Buckets:   []float64{1024, 10240, 51200, 102400, 512000, 1048576, 5242880, 10485760}, // 1KB to 10MB
+			Buckets: []float64{
+				1_024,      // 1KB
+				10_240,     // 10KB
+				51_200,     // 50KB
+				102_400,    // 100KB
+				512_000,    // 500KB
+				1_048_576,  // 1MB
+				5_242_880,  // 5MB
+				10_485_760, // 10MB
+			},
 		},
-		[]string{"service_id", "endpoint_domain"},
+		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
 	// relayMinerErrorsTotal tracks RelayMinerError occurrences separately from Shannon protocol errors
@@ -438,34 +447,21 @@ func processEndpointLatency(
 			continue
 		}
 
-		// Record latency with exemplars for high-cardinality data
-		observer := endpointLatency.With(
+		// Record latency
+		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
 				"endpoint_domain": endpointTLDPlusOne,
 				"success":         fmt.Sprintf("%t", success),
-			})
+			}).Observe(latencySeconds)
 
-		// Use exemplars for high-cardinality data (HTTP status, response size)
-		// Exemplars provide sample data without creating new metric series
-		exemplar := prometheus.Labels{
-			"http_status":   fmt.Sprintf("%d", endpointObs.GetEndpointBackendServiceHttpResponseStatusCode()),
-			"response_size": fmt.Sprintf("%d", endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize()),
-		}
-
-		// Record the observation with exemplar
-		if histogramObserver, ok := observer.(prometheus.ExemplarObserver); ok {
-			histogramObserver.ObserveWithExemplar(latencySeconds, exemplar)
-		} else {
-			observer.Observe(latencySeconds)
-		}
-
-		// Record response size separately to avoid high cardinality
+		// Record response size
 		responseSize := float64(endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize())
 		endpointResponseSize.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
 				"endpoint_domain": endpointTLDPlusOne,
+				"success":         fmt.Sprintf("%t", success),
 			}).Observe(responseSize)
 	}
 }

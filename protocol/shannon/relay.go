@@ -44,6 +44,8 @@ func sendHttpRelay(
 	if deadline, hasDeadline := ctx.Deadline(); hasDeadline {
 		// Context has timeout, use a slightly longer client timeout as fallback
 		remaining := time.Until(deadline)
+		// DEV_NOTE: This will not take effect unless the relayHTTPResponseTimestamp is created without a context.
+		// It serves as a secondary timeout in case the context deadline is not respected.
 		clientTimeout = remaining + (2 * time.Second)
 	} else {
 		// No context timeout, use the default keep alive time
