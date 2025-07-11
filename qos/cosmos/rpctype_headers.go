@@ -44,9 +44,9 @@ func getRPCTypeHeaders(
 	case isCosmosRestAPI(urlPath):
 		rpcType = sharedtypes.RPCType_REST
 
-	// Priority 3: Check for Tendermint RPC patterns (supports both REST + JSON-RPC)
-	case isTendermintRPC(urlPath):
-		rpcType = sharedtypes.RPCType_HYBRID
+	// Priority 3: Check for CometBFT RPC patterns (supports both REST + JSON-RPC)
+	case isCometBftRpc(urlPath):
+		rpcType = sharedtypes.RPCType_COMET_BFT
 
 	// Default case - no specific pattern matches
 	default:
@@ -68,9 +68,9 @@ func getRPCTypeFromJSONRPCMethod(jsonRPCMethod string) map[string]string {
 	case isEVMMethod(jsonRPCMethod):
 		rpcType = sharedtypes.RPCType_JSON_RPC
 
-	// Check for Tendermint JSON-RPC methods (supports both REST + JSON-RPC)
-	case isTendermintMethod(jsonRPCMethod):
-		rpcType = sharedtypes.RPCType_HYBRID
+	// Check for CometBFT JSON-RPC methods (supports both REST + JSON-RPC)
+	case isCometBftMethod(jsonRPCMethod):
+		rpcType = sharedtypes.RPCType_COMET_BFT
 
 	// Unknown JSON-RPC method - default to JSON-RPC type
 	default:
@@ -114,8 +114,8 @@ func isCosmosRestAPI(urlPath string) bool {
 	return false
 }
 
-// Tendermint RPC paths
-var tendermintPaths = []string{
+// CometBFT RPC paths
+var cometBftPaths = []string{
 	"/status",               // - /status (node status)
 	"/broadcast_tx_sync",    // - /broadcast_tx_sync (transaction broadcast)
 	"/broadcast_tx_async",   // - /broadcast_tx_async (transaction broadcast)
@@ -137,10 +137,10 @@ var tendermintPaths = []string{
 	"/consensus_params",     // - /consensus_params (consensus parameters)
 }
 
-// isTendermintRPC checks if the URL path corresponds to Tendermint RPC endpoints
+// isCometBftRpc checks if the URL path corresponds to CometBFT RPC endpoints
 // These typically run on port :26657
-func isTendermintRPC(urlPath string) bool {
-	for _, path := range tendermintPaths {
+func isCometBftRpc(urlPath string) bool {
+	for _, path := range cometBftPaths {
 		if strings.HasPrefix(urlPath, path) {
 			return true
 		}
@@ -174,14 +174,14 @@ func isEVMMethod(method string) bool {
 	return false
 }
 
-// Tendermint JSON-RPC prefixes
-var tendermintPrefixes = []string{
+// CometBFT JSON-RPC prefixes
+var cometBftPrefixes = []string{
 	"abci_",        // Application Blockchain Interface
 	"broadcast_tx", // Transaction broadcasting (broadcast_tx_sync, broadcast_tx_async, etc.)
 }
 
-// Direct method matches for common Tendermint RPC methods
-var tendermintMethods = []string{
+// Direct method matches for common CometBFT RPC methods
+var cometBftMethods = []string{
 	"status",               // Node status
 	"block",                // Block information
 	"commit",               // Block commit information
@@ -205,16 +205,16 @@ var tendermintMethods = []string{
 	"unsubscribe_all",      // Unsubscribe from all events
 }
 
-// isTendermintMethod checks if the JSON-RPC method corresponds to Tendermint RPC
+// isCometBftMethod checks if the JSON-RPC method corresponds to CometBFT RPC
 // These are consensus layer methods typically exposed on port :26657
-func isTendermintMethod(method string) bool {
-	for _, prefix := range tendermintPrefixes {
+func isCometBftMethod(method string) bool {
+	for _, prefix := range cometBftPrefixes {
 		if strings.HasPrefix(method, prefix) {
 			return true
 		}
 	}
 
-	for _, tmMethod := range tendermintMethods {
+	for _, tmMethod := range cometBftMethods {
 		if method == tmMethod {
 			return true
 		}
