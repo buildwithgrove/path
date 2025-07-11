@@ -30,7 +30,7 @@ An easy way to think about **PATH** and **Pocket Network** is:
 
 ## Where do I get started?
 
-To get started, allocate 1-3 hours of time and start with the [PATH Introduction](develop/path/1_introduction.md).
+To get started, allocate 1-3 hours of time and start with the [PATH Quick Start](develop/path/1_quick_start.md).
 
 It will go through all the details of how PATH works, how to configure it, and how to run it locally.
 
