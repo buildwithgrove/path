@@ -38,32 +38,53 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	var ownedAppSessions []sessiontypes.Session
-
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
+	var ownedAppSessions []sessiontypes.Session
 	for _, ownedAppAddr := range ownedAppsForService {
 		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
 
-		// Retrieve the session for the owned app.
-		session, err := p.GetSession(ctx, serviceID, ownedAppAddr)
+		// Retrieve the session for the owned app, without grace period logic.
+		selectedSessions := make([]sessiontypes.Session, 0)
+		sessionLatest, err := p.GetSession(ctx, serviceID, ownedAppAddr)
 		if err != nil {
-			// Wrap the protocol context setup error.
-			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
-			logger.Error().Err(err).Msg(err.Error())
-			return nil, err
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Warn().Err(err).Msgf("SHOULD NEVER HAPPEN: Error getting the current session from the full node for app: %s. Continuing to the next app.", ownedAppAddr)
+			continue
+		}
+		selectedSessions = append(selectedSessions, sessionLatest)
+
+		// Retrieve the session for the owned app, considering grace period logic.
+		sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, ownedAppAddr)
+		if err != nil {
+			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupFetchSession, ownedAppAddr, err)
+			logger.Warn().Err(err).Msgf("SHOULD RARELY HAPPEN: Error getting the previous extended session from the full node for app: %s. Going to use the latest session only", ownedAppAddr)
+		} else {
+			if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
+				if sessionLatest.Application.Address != sessionPreviousExtended.Application.Address {
+					logger.Warn().Msg("SHOULD NEVER HAPPEN: The current session app address and the previous session app address are different. Only using the latest session.")
+				} else {
+					// Append the previous session to the list if the session IDs are different.
+					// selectedSessions = append(selectedSessions, sessionPreviousExtended)
+					// TODO_IN_THIS_PR: Revert this change.
+					// We are experimenting by forcing it to always use the previous session.
+					selectedSessions = []sessiontypes.Session{sessionPreviousExtended}
+					logger.Info().Msg("EXPERIMENT: Overriding the latest session with the previous session for the app.")
+				}
+			}
 		}
 
-		app := session.Application
+		// Select the first session in the list.
+		selectedApp := selectedSessions[0].Application
+		logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
 
-		// Verify the app delegates to the gateway	.
-		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
-			// Wrap the protocol context setup error.
-			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, app.Address, p.gatewayAddr)
-			logger.Error().Msg(err.Error())
-			return nil, err
+		// Verify both apps delegate to the gateway
+		if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
+			err = fmt.Errorf("%w: Trying to use app %s that is not delegated to the gateway %s", errProtocolContextSetupAppDoesNotDelegate, selectedApp.Address, p.gatewayAddr)
+			logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Trying to use an app that is not delegated to the gateway. Continuing to the next app.")
+			continue
 		}
+		ownedAppSessions = append(ownedAppSessions, selectedSessions...)
 
-		ownedAppSessions = append(ownedAppSessions, session)
 	}
 
 	// If no sessions were found, return an error.
@@ -73,7 +94,8 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.", len(ownedAppSessions), len(ownedAppsForService), serviceID)
+	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.",
+		len(ownedAppSessions), len(ownedAppsForService), serviceID)
 
 	return ownedAppSessions, nil
 }

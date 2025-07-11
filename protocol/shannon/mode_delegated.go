@@ -31,7 +31,7 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 ) ([]sessiontypes.Session, error) {
 	logger := p.logger.With("method", "getDelegatedGatewayModeActiveSession")
 
-	selectedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
+	extractedAppAddr, err := getAppAddrFromHTTPReq(httpReq)
 	if err != nil {
 		// Wrap the context setup error: used for observations.
 		err = fmt.Errorf("%w: %+v: %w. ", errProtocolContextSetupGetAppFromHTTPReq, httpReq, err)
@@ -39,38 +39,59 @@ func (p *Protocol) getDelegatedGatewayModeActiveSession(
 		return nil, err
 	}
 
-	logger.Debug().Msgf("fetching the app with the selected address %s.", selectedAppAddr)
+	logger.Debug().Msgf("fetching the app with the selected address %s.", extractedAppAddr)
 
-	// Retrieve the session for the selected app.
-	selectedSession, err := p.GetSession(ctx, serviceID, selectedAppAddr)
+	// Retrieve the session for the owned app, without grace period logic.
+	selectedSessions := make([]sessiontypes.Session, 0)
+	sessionLatest, err := p.GetSession(ctx, serviceID, extractedAppAddr)
 	if err != nil {
-		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: app %s: %w", errProtocolContextSetupFetchSession, selectedAppAddr, err)
-		logger.Error().Err(err).Msg("Relay request will fail because of an error fetching the session for the app.")
+		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
+		logger.Warn().Err(err).Msgf("SHOULD NEVER HAPPEN: Error getting the current session from the full node for app: %s. Cannot continue.", extractedAppAddr)
 		return nil, err
 	}
+	selectedSessions = append(selectedSessions, sessionLatest)
 
-	selectedApp := selectedSession.Application
+	// Retrieve the session for the owned app, considering grace period logic.
+	sessionPreviousExtended, err := p.GetSessionWithExtendedValidity(ctx, serviceID, extractedAppAddr)
+	if err != nil {
+		err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, extractedAppAddr, err)
+		logger.Warn().Err(err).Msgf("SHOULD RARELY HAPPEN: Error getting the previous extended session from the full node for app: %s. Going to use the latest session only", extractedAppAddr)
+	} else {
+		if sessionLatest.Header.SessionId != sessionPreviousExtended.Header.SessionId {
+			if sessionLatest.Application.Address != sessionPreviousExtended.Application.Address {
+				logger.Warn().Msg("SHOULD NEVER HAPPEN: The current session app address and the previous session app address are different. Only using the latest session.")
+			} else {
+				// Append the previous session to the list if the session IDs are different.
+				// selectedSessions = append(selectedSessions, sessionPreviousExtended)
+				// TODO_IN_THIS_PR: Revert this change.
+				// We are experimenting by forcing it to always use the previous session.
+				selectedSessions = []sessiontypes.Session{sessionPreviousExtended}
+				logger.Info().Msg("EXPERIMENT: Overriding the latest session with the previous session for the app.")
+			}
+		}
+	}
 
+	// Select the first session in the list.
+	selectedApp := selectedSessions[0].Application
 	logger.Debug().Msgf("fetched the app with the selected address %s.", selectedApp.Address)
 
 	// Skip the session's app if it is not staked for the requested service.
 	if !appIsStakedForService(serviceID, selectedApp) {
-		err = fmt.Errorf("%w: app %s is not staked for the service", errProtocolContextSetupAppNotStaked, selectedApp.Address)
-		logger.Error().Err(err).Msg("Relay request will fail because the app is not staked for the service.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not staked for the service %s", errProtocolContextSetupAppNotStaked, selectedApp.Address, serviceID)
+		logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Trying to use an app that is not staked for the service. Relay request will fail.")
 		return nil, err
 	}
 
 	if !gatewayHasDelegationForApp(p.gatewayAddr, selectedApp) {
 		// Wrap the context setup error: used for observations.
-		err = fmt.Errorf("%w: gateway %s app %s", errProtocolContextSetupAppDoesNotDelegate, p.gatewayAddr, selectedApp.Address)
-		logger.Error().Err(err).Msg("Relay request will fail because the gateway does not have delegation for the app.")
+		err = fmt.Errorf("%w: Trying to use app %s that is not delegated to the gateway %s", errProtocolContextSetupAppDoesNotDelegate, selectedApp.Address, p.gatewayAddr)
+		logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: Trying to use an app that is not delegated to the gateway. Relay request will fail.")
 		return nil, err
 	}
 
-	logger.Debug().Msgf("successfully verified the gateway has delegation for the selected app with address %s.", selectedApp.Address)
+	logger.Debug().Msgf("successfully verified the gateway (%s) has delegation for the selected app (%s) for service (%s).", p.gatewayAddr, selectedApp.Address, serviceID)
 
-	return []sessiontypes.Session{selectedSession}, nil
+	return selectedSessions, nil
 }
 
 // appIsStakedForService returns true if the supplied application is staked for the supplied service ID.
@@ -89,10 +110,10 @@ func getAppAddrFromHTTPReq(httpReq *http.Request) (string, error) {
 		return "", fmt.Errorf("getAppAddrFromHTTPReq: no HTTP headers supplied")
 	}
 
-	selectedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)
-	if selectedAppAddr == "" {
+	extractedAppAddr := httpReq.Header.Get(request.HTTPHeaderAppAddress)
+	if extractedAppAddr == "" {
 		return "", fmt.Errorf("getAppAddrFromHTTPReq: a target app must be supplied as HTTP header %s", request.HTTPHeaderAppAddress)
 	}
 
-	return selectedAppAddr, nil
+	return extractedAppAddr, nil
 }

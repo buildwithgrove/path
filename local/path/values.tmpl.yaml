@@ -19,16 +19,18 @@ guard:
   # 1. Each service must have a unique service ID.
   # 2. Each service can have a list of aliases that can be used to route requests to the service.
   services:
-    - serviceId: F00C
+    - serviceId: eth
       aliases:
         - eth
-    - serviceId: F021
+    - serviceId: anvil
+      aliases:
+        - anvil
+    - serviceId: pocket
+      aliases:
+        - pocket
+    - serviceId: polygon
       aliases:
         - polygon
-    #- serviceId: F000
-    #  aliases:
-    #    - pocket
-    #    - mainnet
     # etc...
 
   # The auth section allows configuring the API key authentication for the PATH service.

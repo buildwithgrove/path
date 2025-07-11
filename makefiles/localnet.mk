@@ -50,7 +50,19 @@ k8s_prepare_local_env: check_kind
 		kubectl config set-context --current --namespace=path; \
 		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
 	else \
-		echo "[DEBUG] Cluster 'path-localnet' already exists. Skipping creation."; \
+		echo "[DEBUG] Cluster 'path-localnet' already exists. Checking context..."; \
+		if ! kubectl config get-contexts | grep -q "^[* ]*kind-path-localnet"; then \
+			echo "[INFO] Context 'kind-path-localnet' not found. Setting up kubeconfig..."; \
+			kind export kubeconfig --name path-localnet; \
+		fi; \
+		if ! kubectl get namespace path >/dev/null 2>&1; then \
+			echo "[INFO] Creating missing namespaces..."; \
+			kubectl create namespace path; \
+			kubectl create namespace monitoring; \
+			kubectl create namespace middleware; \
+			kubectl config set-context --current --namespace=path; \
+			kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
+		fi; \
 	fi; \
 	kubectl config use-context kind-path-localnet;
 
