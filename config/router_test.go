@@ -59,11 +59,11 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 			name: "should set all defaults",
 			cfg:  RouterConfig{},
 			want: RouterConfig{
-				Port:               defaultPort,
-				MaxRequestBodySize: defaultMaxRequestBodySize,
-				ReadTimeout:        defaultHTTPServerReadTimeout,
-				WriteTimeout:       defaultHTTPServerWriteTimeout,
-				IdleTimeout:        defaultHTTPServerIdleTimeout,
+				Port:                  defaultPort,
+				MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
+				ReadTimeout:           defaultHTTPServerReadTimeout,
+				WriteTimeout:          defaultHTTPServerWriteTimeout,
+				IdleTimeout:           defaultHTTPServerIdleTimeout,
 			},
 		},
 		{
@@ -72,11 +72,11 @@ func TestRouterConfig_hydrateRouterDefaults(t *testing.T) {
 				Port: 8080,
 			},
 			want: RouterConfig{
-				Port:               8080,
-				MaxRequestBodySize: defaultMaxRequestBodySize,
-				ReadTimeout:        defaultHTTPServerReadTimeout,
-				WriteTimeout:       defaultHTTPServerWriteTimeout,
-				IdleTimeout:        defaultHTTPServerIdleTimeout,
+				Port:                  8080,
+				MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
+				ReadTimeout:           defaultHTTPServerReadTimeout,
+				WriteTimeout:          defaultHTTPServerWriteTimeout,
+				IdleTimeout:           defaultHTTPServerIdleTimeout,
 			},
 		},
 	}

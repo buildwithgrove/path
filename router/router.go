@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -106,21 +107,23 @@ func (r *router) handleRoutes() {
 }
 
 // Start starts the API server on the specified port
-func (r *router) Start() error {
+func (r *router) Start() (*http.Server, error) {
 	server := &http.Server{
 		Addr:           fmt.Sprintf(":%d", r.config.Port),
 		Handler:        r.mux,
 		ReadTimeout:    r.config.ReadTimeout,
 		WriteTimeout:   r.config.WriteTimeout,
 		IdleTimeout:    r.config.IdleTimeout,
-		MaxHeaderBytes: r.config.MaxRequestBodySize,
+		MaxHeaderBytes: r.config.MaxRequestHeaderBytes,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		return err
-	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe error: %v", err)
+		}
+	}()
 
-	return nil
+	return server, nil
 }
 
 /* --------------------------------- Middleware -------------------------------- */

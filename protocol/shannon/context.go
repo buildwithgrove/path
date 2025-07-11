@@ -20,26 +20,28 @@ import (
 	"github.com/buildwithgrove/path/websockets"
 )
 
-// Maximum length of the endpoint payload logged on error.
-const maxLenLoggedEndpointPayload = 1000
+// Maximum endpoint payload length for error logging (100 chars)
+const maxEndpointPayloadLenForLogging = 100
 
 // requestContext provides all the functionality required by the gateway package
 // for handling a single service request.
 var _ gateway.ProtocolRequestContext = &requestContext{}
 
 // RelayRequestSigner:
-// - Used by requestContext to sign relay requests.
-// - Takes an unsigned relay request and an application.
-// - Returns a relay request signed by the gateway (with delegation from the app).
-// - In future Permissionless Gateway Mode, may use the app's own private key for signing.
+// - Used by requestContext to sign relay requests
+// - Takes an unsigned relay request and an application
+// - Returns a relay request signed by the gateway (with delegation from the app)
+// - In future Permissionless Gateway Mode, may use the app's own private key for signing
 type RelayRequestSigner interface {
 	SignRelayRequest(req *servicetypes.RelayRequest, app apptypes.Application) (*servicetypes.RelayRequest, error)
 }
 
-// requestContext:
-// - Captures all data required for handling a single service request.
+// requestContext captures all data required for handling a single service request.
 type requestContext struct {
 	logger polylog.Logger
+
+	// Upstream context for timeout propagation and cancellation
+	context context.Context
 
 	fullNode FullNode
 	// TODO_TECHDEBT(@adshmh): add sanctionedEndpointsStore to the request context.
@@ -101,9 +103,11 @@ func (rc *requestContext) HandleServiceRequest(payload protocol.Payload) (protoc
 		return rc.handleEndpointError(endpointQueryTime, deserializeErr)
 	}
 
-	// Success: Record observation including any RelayMinerError data for reporting
-	// Note: Even successful responses might contain RelayMinerError data
-	return rc.handleEndpointSuccess(endpointQueryTime, relayResponse)
+	// Success:
+	// - Record observation
+	// - Return response received from endpoint.
+	err = rc.handleEndpointSuccess(endpointQueryTime, &relayResponse)
+	return relayResponse, err
 }
 
 // HandleWebsocketRequest:
@@ -198,24 +202,26 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 	app := *session.Application
 
+	// Prepare and sign the relay request.
 	payloadBz := []byte(payload.Data)
 	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payloadBz, payload.Path)
 	if err != nil {
 		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to build the unsigned relay request. Relay request will fail.")
 		return nil, err
 	}
-
 	signedRelayReq, err := rc.signRelayRequest(relayRequest, app)
 	if err != nil {
 		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to sign the relay request. Relay request will fail.")
 		return nil, fmt.Errorf("sendRelay: error signing the relay request for app %s: %w", app.Address, err)
 	}
 
-	ctxWithTimeout, cancelFn := context.WithTimeout(context.Background(), time.Duration(payload.TimeoutMillisec)*time.Millisecond)
+	// Prepare a timeout context for the relay request.
+	timeout := time.Duration(payload.TimeoutMillisec) * time.Millisecond
+	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
 	defer cancelFn()
 
-	// Wrap sendHttpRelay errors with errSendHTTPRelay for classification
-	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
+	// Send the HTTP relay request
+	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error
@@ -226,7 +232,8 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 
 	// Validate the response - check for specific validation errors that indicate raw payload issues
-	response, err := rc.fullNode.ValidateRelayResponse(sdk.SupplierAddress(rc.selectedEndpoint.supplier), responseBz)
+	supplierAddr := sdk.SupplierAddress(rc.selectedEndpoint.supplier)
+	response, err := rc.fullNode.ValidateRelayResponse(supplierAddr, httpRelayResponseBz)
 
 	// Track RelayMinerError data for tracking, regardless of validation result.
 	// Cross referenced against endpoint payload parse results via metrics.
@@ -234,10 +241,10 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 
 	if err != nil {
 		// Log raw payload for error tracking
-		responseStr := string(responseBz)
+		responseStr := string(httpRelayResponseBz)
 		hydratedLogger.With(
-			"endpoint_payload", responseStr[:min(len(responseStr), maxLenLoggedEndpointPayload)],
-			"endpoint_payload_length", len(responseBz),
+			"endpoint_payload", responseStr[:min(len(responseStr), maxEndpointPayloadLenForLogging)],
+			"endpoint_payload_length", len(httpRelayResponseBz),
 			"validation_error", err.Error(),
 		).Warn().Err(err).Msg("Failed to validate the payload from the selected endpoint. Relay request will fail.")
 
@@ -433,8 +440,8 @@ func (rc *requestContext) handleEndpointError(
 // - Builds and returns protocol response from endpoint's returned data.
 func (rc *requestContext) handleEndpointSuccess(
 	endpointQueryTime time.Time,
-	endpointResponse protocol.Response,
-) (protocol.Response, error) {
+	endpointResponse *protocol.Response,
+) error {
 	hydratedLogger := rc.getHydratedLogger("handleEndpointSuccess")
 	hydratedLogger = hydratedLogger.With("endpoint_response_payload_len", len(endpointResponse.Bytes))
 	hydratedLogger.Debug().Msg("Successfully deserialized the response received from the selected endpoint.")
@@ -444,7 +451,8 @@ func (rc *requestContext) handleEndpointSuccess(
 		rc.logger,
 		*rc.selectedEndpoint,
 		endpointQueryTime,
-		time.Now(),                // Timestamp: endpoint query completed.
+		time.Now(), // Timestamp: endpoint query completed.
+		endpointResponse,
 		rc.currentRelayMinerError, // Use RelayMinerError data from request context
 	)
 
@@ -452,5 +460,5 @@ func (rc *requestContext) handleEndpointSuccess(
 	rc.endpointObservations = append(rc.endpointObservations, endpointObs)
 
 	// Return relay response received from endpoint.
-	return endpointResponse, nil
+	return nil
 }

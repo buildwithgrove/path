@@ -264,13 +264,13 @@ hydrator_config:
 
 In particular, allows specifying server parameters for how the gateway handles incoming requests.
 
-| Field                   | Type    | Required | Default           | Description                                     |
-| ----------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
-| `port`                  | integer | No       | 3070              | Port number on which the gateway server listens |
-| `max_request_body_size` | integer | No       | 1MB               | Maximum request size in bytes                   |
-| `read_timeout`          | string  | No       | "5000ms" (5s)     | Time limit for reading request data             |
-| `write_timeout`         | string  | No       | "10000ms" (10s)   | Time limit for writing response data            |
-| `idle_timeout`          | string  | No       | "120000ms" (120s) | Time limit for closing idle connections         |
+| Field                      | Type    | Required | Default           | Description                                     |
+| -------------------------- | ------- | -------- | ----------------- | ----------------------------------------------- |
+| `port`                     | integer | No       | 3069              | Port number on which the gateway server listens |
+| `max_request_header_bytes` | integer | No       | 1MB               | Maximum request header size in bytes            |
+| `read_timeout`             | string  | No       | "5000ms" (5s)     | Time limit for reading request data             |
+| `write_timeout`            | string  | No       | "10000ms" (10s)   | Time limit for writing response data            |
+| `idle_timeout`             | string  | No       | "120000ms" (120s) | Time limit for closing idle connections         |
 
 ---
 
@@ -299,10 +299,10 @@ data_reporter_config:
   post_timeout_ms: 5000
 ```
 
-| Field            | Type    | Required | Default | Description                                                                                         |
-| ---------------- | ------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
-| `target_url`     | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)                 |
-| `post_timeout_ms`| integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used   |
+| Field             | Type    | Required | Default | Description                                                                                       |
+| ----------------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `target_url`      | string  | Yes      | -       | HTTP endpoint URL where data will be reported (must start with http:// or https://)               |
+| `post_timeout_ms` | integer | No       | 10000   | Timeout in milliseconds for HTTP POST operations. If zero or negative, default of 10000ms is used |
 
 :::info
 Currently, only JSON-accepting data pipelines are supported as of PR #215.

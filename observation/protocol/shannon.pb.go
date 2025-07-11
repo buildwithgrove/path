@@ -525,8 +525,12 @@ type ShannonEndpointObservation struct {
 	ErrorDetails *string `protobuf:"bytes,11,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
 	// Recommended sanction type based on the error
 	RecommendedSanction *ShannonSanctionType `protobuf:"varint,12,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
+	// HTTP status code of the endpoint response
+	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,13,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
+	// HTTP Response payload size
+	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
 	// RelayMiner error details if the endpoint returned a RelayMinerError
-	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,13,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
+	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,15,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -645,6 +649,20 @@ func (x *ShannonEndpointObservation) GetRecommendedSanction() ShannonSanctionTyp
 	return ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED
 }
 
+func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponseStatusCode() int32 {
+	if x != nil && x.EndpointBackendServiceHttpResponseStatusCode != nil {
+		return *x.EndpointBackendServiceHttpResponseStatusCode
+	}
+	return 0
+}
+
+func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloadSize() int64 {
+	if x != nil && x.EndpointBackendServiceHttpResponsePayloadSize != nil {
+		return *x.EndpointBackendServiceHttpResponsePayloadSize
+	}
+	return 0
+}
+
 func (x *ShannonEndpointObservation) GetRelayMinerError() *ShannonRelayMinerError {
 	if x != nil {
 		return x.RelayMinerError
@@ -716,7 +734,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\x8c\a\n" +
+	"\x0e_request_error\"\xdb\t\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -732,12 +750,16 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"error_type\x18\n" +
 	" \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x01R\terrorType\x88\x01\x01\x12(\n" +
 	"\rerror_details\x18\v \x01(\tH\x02R\ferrorDetails\x88\x01\x01\x12Z\n" +
-	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
-	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01B\x1e\n" +
+	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12m\n" +
+	"2endpoint_backend_service_http_response_status_code\x18\r \x01(\x05H\x04R,endpointBackendServiceHttpResponseStatusCode\x88\x01\x01\x12o\n" +
+	"3endpoint_backend_service_http_response_payload_size\x18\x0e \x01(\x03H\x05R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01\x12V\n" +
+	"\x11relay_miner_error\x18\x0f \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x06R\x0frelayMinerError\x88\x01\x01B\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
-	"\x15_recommended_sanctionB\x14\n" +
+	"\x15_recommended_sanctionB5\n" +
+	"3_endpoint_backend_service_http_response_status_codeB6\n" +
+	"4_endpoint_backend_service_http_response_payload_sizeB\x14\n" +
 	"\x12_relay_miner_error\"h\n" +
 	"\x17ShannonObservationsList\x12M\n" +
 	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*\x9e\x05\n" +

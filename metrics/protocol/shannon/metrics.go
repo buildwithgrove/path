@@ -7,7 +7,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/buildwithgrove/path/observation/protocol"
+	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
 const (
@@ -39,6 +39,7 @@ func init() {
 	prometheus.MustRegister(relaysErrorsTotal)
 	prometheus.MustRegister(sanctionsByDomain)
 	prometheus.MustRegister(endpointLatency)
+	prometheus.MustRegister(endpointResponseSize)
 	prometheus.MustRegister(relayMinerErrorsTotal)
 }
 
@@ -134,6 +135,35 @@ var (
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
 
+	// endpointResponseSize tracks the distribution of response payload sizes
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the request was successful (true if at least one endpoint had no error)
+	//
+	// Use to analyze:
+	//   - Response size distribution patterns
+	//   - Bandwidth usage across services and endpoints
+	//   - Payload size percentiles
+	endpointResponseSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      "endpoint_response_size_bytes",
+			Help:      "Histogram of endpoint response payload sizes in bytes",
+			Buckets: []float64{
+				1_024,      // 1KB
+				10_240,     // 10KB
+				51_200,     // 50KB
+				102_400,    // 100KB
+				512_000,    // 500KB
+				1_048_576,  // 1MB
+				5_242_880,  // 5MB
+				10_485_760, // 10MB
+			},
+		},
+		[]string{"service_id", "endpoint_domain", "success"},
+	)
+
 	// relayMinerErrorsTotal tracks RelayMinerError occurrences separately from Shannon protocol errors
 	// This metric allows analysis of RelayMinerError patterns independently while including
 	// endpoint error type for cross-referencing with Shannon protocol errors.
@@ -162,7 +192,7 @@ var (
 // reported by the Shannon protocol.
 func PublishMetrics(
 	logger polylog.Logger,
-	observations *protocol.ShannonObservationsList,
+	observations *protocolobservations.ShannonObservationsList,
 ) {
 	shannonObservations := observations.GetObservations()
 	if len(shannonObservations) == 0 {
@@ -192,7 +222,7 @@ func PublishMetrics(
 // recordRelayTotal tracks relay counts with exemplars for high-cardinality data.
 func recordRelayTotal(
 	logger polylog.Logger,
-	observations *protocol.ShannonRequestObservations,
+	observations *protocolobservations.ShannonRequestObservations,
 ) {
 	hydratedLogger := logger.With("method", "recordRelaysTotal")
 
@@ -254,7 +284,7 @@ func recordRelayTotal(
 // Returns:
 // - false, "" if the relay was successful.
 // - true, error_type if the relay failed.
-func extractRequestError(observations *protocol.ShannonRequestObservations) (bool, string) {
+func extractRequestError(observations *protocolobservations.ShannonRequestObservations) (bool, string) {
 	requestErr := observations.GetRequestError()
 	// No request errors.
 	if requestErr == nil {
@@ -265,20 +295,20 @@ func extractRequestError(observations *protocol.ShannonRequestObservations) (boo
 }
 
 // isAnyObservationSuccessful returns true if any endpoint observation indicates a success.
-func isAnyObservationSuccessful(observations []*protocol.ShannonEndpointObservation) bool {
+func isAnyObservationSuccessful(observations []*protocolobservations.ShannonEndpointObservation) bool {
 	for _, obs := range observations {
-		if obs.GetErrorType() == protocol.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
+		if obs.GetErrorType() == protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_UNSPECIFIED {
 			return true
 		}
 	}
 	return false
 }
 
-// processEndpointErrors records error metrics
+// processEndpointErrors records error metrics with exemplars for high-cardinality data
 func processEndpointErrors(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no error
@@ -288,10 +318,10 @@ func processEndpointErrors(
 
 		// Extract effective TLD+1 from endpoint URL
 		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.EndpointUrl)
 		if err != nil {
 			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
+				"endpoint_url", endpointObs.EndpointUrl,
 			).
 				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for relay errors metric")
@@ -299,16 +329,16 @@ func processEndpointErrors(
 		}
 
 		// Extract low-cardinality labels (based on trusted error classification)
-		errorType := endpointObs.GetErrorType().String()
+		errorType := endpointObs.ErrorType.String()
 
 		// Extract sanction type (based on trusted error classification)
 		var sanctionType string
 		if endpointObs.RecommendedSanction != nil {
-			sanctionType = endpointObs.GetRecommendedSanction().String()
+			sanctionType = endpointObs.RecommendedSanction.String()
 		}
 
 		// Extract high-cardinality values for exemplars
-		endpointURL := endpointObs.GetEndpointUrl()
+		endpointURL := endpointObs.EndpointUrl
 
 		// Create exemplar with high-cardinality data
 		// Truncate to 128 runes (Prometheus exemplar limit)
@@ -332,7 +362,7 @@ func processEndpointErrors(
 func processSanctionsByDomain(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no recommended sanction (based on trusted error classification)
@@ -377,7 +407,7 @@ func processSanctionsByDomain(
 func processEndpointLatency(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	// Calculate overall success status for the request
 	success := isAnyObservationSuccessful(observations)
@@ -423,8 +453,16 @@ func processEndpointLatency(
 				"service_id":      serviceID,
 				"endpoint_domain": endpointTLDPlusOne,
 				"success":         fmt.Sprintf("%t", success),
-			},
-		).Observe(latencySeconds)
+			}).Observe(latencySeconds)
+
+		// Record response size
+		responseSize := float64(endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize())
+		endpointResponseSize.With(
+			prometheus.Labels{
+				"service_id":      serviceID,
+				"endpoint_domain": endpointTLDPlusOne,
+				"success":         fmt.Sprintf("%t", success),
+			}).Observe(responseSize)
 	}
 }
 
@@ -432,7 +470,7 @@ func processEndpointLatency(
 func processRelayMinerErrors(
 	logger polylog.Logger,
 	serviceID string,
-	observations []*protocol.ShannonEndpointObservation,
+	observations []*protocolobservations.ShannonEndpointObservation,
 ) {
 	for _, endpointObs := range observations {
 		// Skip if there's no RelayMinerError
