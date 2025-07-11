@@ -461,12 +461,15 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_JSON_RPC:  {},
 		sharedtypes.RPCType_REST:      {},
 		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {},
 	}),
 	// TODO_IN_THIS_PR(@commoddity): Remove this once the Relay Miner changes are completed.
+	// TODO_IN_THIS_PR(@commoddity): Run `make make gen_service_qos_docs` once Relay Miner changes are completed.
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet-dev", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC:  {},
 		sharedtypes.RPCType_REST:      {},
 		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {},
 	}),
 
 	// *** Solana Services ***
