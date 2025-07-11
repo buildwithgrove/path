@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	shannonprotocol "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/selector"
@@ -70,7 +69,7 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
 
 	// Use the diversity-aware selection
-	return ss.selectEndpointsWithDiversity(filteredEndpointsAddr, numEndpoints), nil
+	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 
 // SelectWithMetadata returns endpoint address and selection metadata.
@@ -313,90 +312,4 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 			errInvalidChainIDObs, chainID, expectedChainID)
 	}
 	return nil
-}
-
-// selectEndpointsWithDiversity selects endpoints with TLD diversity preference.
-// This method is now used internally by SelectMultiple to ensure endpoint diversity.
-func (ss *serviceState) selectEndpointsWithDiversity(availableEndpoints protocol.EndpointAddrList, numEndpoints int) protocol.EndpointAddrList {
-	// Get endpoint URLs to extract TLD information
-	endpointTLDs := shannonprotocol.GetEndpointTLDs(availableEndpoints)
-
-	// Count unique TLDs for logging
-	uniqueTLDs := make(map[string]bool)
-	for _, tld := range endpointTLDs {
-		if tld != "" {
-			uniqueTLDs[tld] = true
-		}
-	}
-
-	ss.logger.Debug().Msgf("[Parallel Requests] Endpoint selection: %d available endpoints across %d unique TLDs, selecting up to %d endpoints",
-		len(availableEndpoints), len(uniqueTLDs), numEndpoints)
-
-	var selectedEndpoints protocol.EndpointAddrList
-	usedTLDs := make(map[string]bool)
-	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
-	copy(remainingEndpoints, availableEndpoints)
-
-	// First pass: Try to select endpoints with different TLDs
-	for i := 0; i < numEndpoints && len(remainingEndpoints) > 0; i++ {
-		var selectedEndpoint protocol.EndpointAddr
-		var err error
-
-		// Try to find an endpoint with a different TLD
-		if i > 0 && len(usedTLDs) > 0 {
-			selectedEndpoint, err = shannonprotocol.SelectEndpointWithDifferentTLD(remainingEndpoints, endpointTLDs, usedTLDs)
-			if err != nil {
-				// Fallback to random selection if no different TLD found
-				selectedEndpoint = remainingEndpoints[rand.Intn(len(remainingEndpoints))]
-				err = nil
-			}
-		} else {
-			// First endpoint: use random selection
-			selectedEndpoint = remainingEndpoints[rand.Intn(len(remainingEndpoints))]
-		}
-
-		if err != nil {
-			ss.logger.Warn().Err(err).Msgf("Failed to select endpoint %d, stopping selection", i+1)
-			break
-		}
-
-		selectedEndpoints = append(selectedEndpoints, selectedEndpoint)
-
-		// Track the TLD of the selected endpoint
-		if tld, exists := endpointTLDs[selectedEndpoint]; exists {
-			usedTLDs[tld] = true
-			ss.logger.Debug().Msgf("[Parallel Requests] Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
-		}
-
-		// Remove the selected endpoint from the remaining pool
-		newRemainingEndpoints := make(protocol.EndpointAddrList, 0, len(remainingEndpoints)-1)
-		for _, endpoint := range remainingEndpoints {
-			if endpoint != selectedEndpoint {
-				newRemainingEndpoints = append(newRemainingEndpoints, endpoint)
-			}
-		}
-		remainingEndpoints = newRemainingEndpoints
-	}
-
-	// Count fallback selections (endpoints without TLD diversity)
-	fallbackSelections := 0
-	for _, endpoint := range selectedEndpoints {
-		if tld, exists := endpointTLDs[endpoint]; exists && tld != "" {
-			// Count how many endpoints use this TLD
-			tldCount := 0
-			for _, otherEndpoint := range selectedEndpoints {
-				if otherTLD, exists := endpointTLDs[otherEndpoint]; exists && otherTLD == tld {
-					tldCount++
-				}
-			}
-			if tldCount > 1 {
-				fallbackSelections++
-			}
-		}
-	}
-
-	ss.logger.Info().Msgf("[Parallel Requests] TLD diversity achieved: %d endpoints across %d different TLDs (diversity: %.1f%%, duplicate TLDs: %d)",
-		len(selectedEndpoints), len(usedTLDs),
-		float64(len(usedTLDs))/float64(len(selectedEndpoints))*100, fallbackSelections)
-	return selectedEndpoints
 }

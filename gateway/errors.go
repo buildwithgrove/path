@@ -12,6 +12,6 @@ var (
 	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
 	errGatewayRejectedByQoS = errors.New("QoS instance rejected the request")
 
-	//
+	// Error building protocol contexts from HTTP request.
 	errBuildProtocolContextsFromHTTPRequest = errors.New("error building protocol contexts from HTTP request")
 )

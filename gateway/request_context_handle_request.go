@@ -158,27 +158,3 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	// Return the last error
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
 }
-
-// logEndpointTLDDiversity logs TLD diversity information for selected endpoints.
-func (rc *requestContext) logEndpointTLDDiversity(endpoints protocol.EndpointAddrList) {
-	logger := rc.logger.
-		With("method", "logEndpointTLDDiversity").
-		With("service_id", rc.serviceID).
-		With("num_endpoints", len(endpoints))
-
-	// Count unique TLDs
-	endpointTLDs := shannonmetrics.GetEndpointTLDs(endpoints)
-	tldCounts := make(map[string]int)
-	for _, tld := range endpointTLDs {
-		if tld != "" {
-			tldCounts[tld]++
-		}
-	}
-
-	// Log TLD distribution
-	tldDistribution := make([]string, 0, len(tldCounts))
-	for tld, count := range tldCounts {
-		tldDistribution = append(tldDistribution, fmt.Sprintf("%s=%d", tld, count))
-	}
-	logger.Info().Msgf("Endpoint TLD diversity: %s", strings.Join(tldDistribution, ", "))
-}

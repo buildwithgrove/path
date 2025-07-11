@@ -2,8 +2,9 @@ package shannon
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -50,30 +51,24 @@ func ExtractTLDFromEndpointAddr(addr string) string {
 	return ""
 }
 
-// SelectEndpointWithDifferentTLD attempts to select an endpoint with a TLD that hasn't been used yet
-func SelectEndpointWithDifferentTLD(
-	availableEndpoints protocol.EndpointAddrList,
-	endpointTLDs map[protocol.EndpointAddr]string,
-	usedTLDs map[string]bool,
-) (protocol.EndpointAddr, error) {
-	// Filter endpoints to only those with different TLDs
-	var endpointsWithDifferentTLDs protocol.EndpointAddrList
+func LogEndpointTLDDiversity(logger polylog.Logger, endpoints protocol.EndpointAddrList) {
+	logger = logger.
+		With("method", "logEndpointTLDDiversity").
+		With("num_endpoints", len(endpoints))
 
-	for _, endpoint := range availableEndpoints {
-		if tld, exists := endpointTLDs[endpoint]; exists {
-			if !usedTLDs[tld] {
-				endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
-			}
-		} else {
-			// If we can't determine TLD, include it anyway
-			endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
+	// Count unique TLDs
+	endpointTLDs := GetEndpointTLDs(endpoints)
+	tldCounts := make(map[string]int)
+	for _, tld := range endpointTLDs {
+		if tld != "" {
+			tldCounts[tld]++
 		}
 	}
 
-	if len(endpointsWithDifferentTLDs) == 0 {
-		return "", fmt.Errorf("no endpoints with different TLDs available")
+	// Log TLD distribution
+	tldDistribution := make([]string, 0, len(tldCounts))
+	for tld, count := range tldCounts {
+		tldDistribution = append(tldDistribution, fmt.Sprintf("%s=%d", tld, count))
 	}
-
-	// Select a random endpoint from the filtered list
-	return endpointsWithDifferentTLDs[rand.Intn(len(endpointsWithDifferentTLDs))], nil
+	logger.Info().Msgf("Endpoint TLD diversity: %s", strings.Join(tldDistribution, ", "))
 }

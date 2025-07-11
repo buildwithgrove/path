@@ -10,6 +10,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -256,7 +257,7 @@ func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Req
 	}
 
 	// Log TLD diversity of selected endpoints
-	rc.logEndpointTLDDiversity(selectedEndpoints)
+	shannonmetrics.LogEndpointTLDDiversity(logger, selectedEndpoints)
 
 	// Prepare Protocol contexts for all selected endpoints
 	numSelectedEndpoints := len(selectedEndpoints)
