@@ -72,8 +72,9 @@ type requestContext struct {
 	qosCtx     RequestQoSContext
 
 	// Protocol related request context
-	protocol         Protocol
-	protocolContexts []ProtocolRequestContext // Multiplicity of protocol contexts for parallel requests
+	protocol Protocol
+	// Multiplicity of protocol contexts to support parallel requests
+	protocolContexts []ProtocolRequestContext
 
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
@@ -153,7 +154,7 @@ func (rc *requestContext) updateGatewayObservations(err error) {
 
 	// Request was rejected by the QoS instance.
 	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
-	case errors.Is(err, ErrGatewayRejectedByQoS):
+	case errors.Is(err, errGatewayRejectedByQoS):
 		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
 		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
 			// Set the error kind
@@ -192,7 +193,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 		rc.requestRejectedByQoS = true
 
 		// Update gateway observations
-		rc.updateGatewayObservations(ErrGatewayRejectedByQoS)
+		rc.updateGatewayObservations(errGatewayRejectedByQoS)
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
 		return errHTTPRequestRejectedByQoS
 	}
@@ -222,9 +223,9 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 // BuildProtocolContextsFromHTTPRequest builds multiple Protocol contexts using the supplied HTTP request.
 //
 // Steps:
-//   1. Get available endpoints for the requested service from the Protocol instance
-//   2. Select multiple endpoints for parallel relay attempts  
-//   3. Build Protocol contexts for each selected endpoint
+//  1. Get available endpoints for the requested service from the Protocol instance
+//  2. Select multiple endpoints for parallel relay attempts
+//  3. Build Protocol contexts for each selected endpoint
 //
 // The constructed Protocol instances will be used for:
 //   - Sending parallel relay requests to multiple endpoints
@@ -232,84 +233,58 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 //
 // TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
 func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Request) error {
+	logger := rc.logger.With("method", "BuildProtocolContextsFromHTTPRequest").With("service_id", rc.serviceID)
+
 	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&endpointLookupObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("error getting available endpoints for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: error getting available endpoints for service %s: %w", rc.serviceID, err)
+		// log and return the error
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msg("no available endpoints could be found for the request")
+		return fmt.Errorf("%w: no available endpoints could be found for the request: %w", errBuildProtocolContextsFromHTTPRequest, err)
 	}
 
 	// Select multiple endpoints for parallel relay attempts
-	selectedEndpoints := rc.selectMultipleEndpoints(availableEndpoints, maxParallelRequests)
-	if len(selectedEndpoints) == 0 {
+	selectedEndpoints, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxParallelRequests)
+	if err != nil || len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Msg("error selecting endpoints for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextsFromHTTPRequest: no endpoints could be selected")
-	}
-
-	// Determine if this will be a parallel or single request
-	if len(selectedEndpoints) > 1 {
-		rc.logger.Info().
-			Int("num_endpoints", len(selectedEndpoints)).
-			Str("service_id", string(rc.serviceID)).
-			Msg("[Parallel Requests] ENABLED - Multiple endpoints selected for parallel relay")
-	} else {
-		rc.logger.Info().
-			Int("num_endpoints", len(selectedEndpoints)).
-			Str("service_id", string(rc.serviceID)).
-			Msg("[Parallel Requests] DISABLED - Single endpoint selected (fallback mode)")
+		// log and return the error
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("no endpoints could be selected for the request from %d available endpoints", len(availableEndpoints))
+		return fmt.Errorf("%w: no endpoints could be selected from %d available endpoints", errBuildProtocolContextsFromHTTPRequest, len(availableEndpoints))
 	}
 
 	// Log TLD diversity of selected endpoints
 	rc.logEndpointTLDDiversity(selectedEndpoints)
 
 	// Prepare Protocol contexts for all selected endpoints
-	rc.protocolContexts = make([]ProtocolRequestContext, 0, len(selectedEndpoints))
+	numSelectedEndpoints := len(selectedEndpoints)
+	rc.protocolContexts = make([]ProtocolRequestContext, 0, numSelectedEndpoints)
 	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
 
 	for i, endpointAddr := range selectedEndpoints {
-		rc.logger.Debug().Msgf("[Parallel Requests] Building protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
+		logger.Debug().Msgf("Building protocol context for endpoint %d/%d: %s", i+1, numSelectedEndpoints, endpointAddr)
 		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
 		if err != nil {
 			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
-			rc.logger.Warn().
-				Err(err).
-				Str("endpoint_addr", string(endpointAddr)).
-				Msgf("[Parallel Requests] Failed to build protocol context for endpoint %d/%d, skipping", i+1, len(selectedEndpoints))
+			logger.Warn().Err(err).Str("endpoint_addr", string(endpointAddr)).Msgf("Failed to build protocol context for endpoint %d/%d, skipping", i+1, numSelectedEndpoints)
 			// Continue with other endpoints rather than failing completely
 			continue
 		}
 		rc.protocolContexts = append(rc.protocolContexts, protocolCtx)
-		rc.logger.Debug().Msgf("[Parallel Requests] Successfully built protocol context for endpoint %d/%d: %s", i+1, len(selectedEndpoints), endpointAddr)
-	}
-
-	// Log summary of protocol context building
-	if len(rc.protocolContexts) > 0 {
-		rc.logger.Info().
-			Int("successful_contexts", len(rc.protocolContexts)).
-			Int("total_endpoints", len(selectedEndpoints)).
-			Float64("success_rate", float64(len(rc.protocolContexts))/float64(len(selectedEndpoints))*100).
-			Msg("[Parallel Requests] Protocol context building completed")
+		logger.Debug().Msgf("Successfully built protocol context for endpoint %d/%d: %s", i+1, numSelectedEndpoints, endpointAddr)
 	}
 
 	if len(rc.protocolContexts) == 0 {
+		logger.Error().Msgf("Zero protocol contexts were built for the request with %d selected endpoints", numSelectedEndpoints)
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(lastProtocolCtxSetupErrObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Msg(errHTTPRequestRejectedByProtocol.Error())
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
+
+	logger.Info().Msgf("Successfully built %d protocol contexts for the request with %d selected endpoints", len(rc.protocolContexts), numSelectedEndpoints)
 
 	return nil
 }
@@ -394,16 +369,10 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 func (rc *requestContext) BroadcastAllObservations() {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
-		var (
-			qosObservations qosobservations.Observations
-		)
-
 		// update gateway-level observations: no request error encountered.
 		rc.updateGatewayObservations(nil)
-
 		// update protocol-level observations: no errors encountered setting up the protocol context.
 		rc.updateProtocolObservations(nil)
-
 		if rc.protocolObservations != nil {
 			err := rc.protocol.ApplyObservations(rc.protocolObservations)
 			if err != nil {
@@ -415,6 +384,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		// The QoS context will be nil if the target service ID is not specified correctly by the request.
+		var qosObservations qosobservations.Observations
 		if rc.qosCtx != nil {
 			qosObservations = rc.qosCtx.GetObservations()
 			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
@@ -422,17 +392,16 @@ func (rc *requestContext) BroadcastAllObservations() {
 			}
 		}
 
+		// Prepare and publish observations to both the metrics and data reporters.
 		observations := &observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
 			Gateway:     rc.gatewayObservations,
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
-
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
-
 		if rc.dataReporter != nil {
 			rc.dataReporter.Publish(observations)
 		}
@@ -473,8 +442,9 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 
 	// Check if we have multiple protocol contexts and use the first successful one
 	if len(rc.protocolContexts) > 0 {
-		// TODO_PERFORMANCE: Aggregate observations from all protocol contexts for better insights
+		// TODO_TECHDEBT: Aggregate observations from all protocol contexts for better insights.
 		// Currently using only the first context's observations for backward compatibility
+		rc.logger.Debug().Msgf("%d protocol contexts were built for the request, but only using the first one for observations", len(rc.protocolContexts))
 		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
