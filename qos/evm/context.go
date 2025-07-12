@@ -124,7 +124,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
 
-	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz)
+	response, err := unmarshalResponse(rc.logger, rc.jsonrpcReq, responseBz, endpointAddr)
 
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
