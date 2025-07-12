@@ -1,11 +1,9 @@
-package cometbft
+package cosmos
 
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -14,6 +12,42 @@ import (
 
 // responseToStatus provides the functionality required from a response by a requestContext instance.
 var _ response = responseToStatus{}
+
+// TODO_IMPROVE(@commoddity): The actual `coretypes.ResultStatus` struct causes
+// an unmarshalling error due to type mismatch in a number of fields:
+//   - Node returns string values for the following required field:
+//   - `sync_info.latest_block_height`
+//   - The `coretypes.ResultStatus` struct expects this field to be int64.
+//   - Many other non-required fields are also of the wrong type and will
+//     cause an unmarshalling error if the `coretypes.ResultStatus` struct is used.
+//
+// Update to use the CometBFT `coretypes.ResultStatus` struct once the issue is fixed.
+//
+// The following structs are a workaround to fix the unmarshalling error.
+//
+// These structs represent the subset of the JSON data from the CometBFT `ResultStatus` struct
+// needed to satisfy the `/status` endpoint checks.
+//
+// Reference: https://github.com/cometbft/cometbft/blob/4226b0ea6ab4725ef807a16b86d6d24835bb45d4/rpc/core/types/responses.go#L100
+type (
+	// Node Status
+	ResultStatus struct {
+		NodeInfo DefaultNodeInfo `json:"node_info"`
+		SyncInfo SyncInfo        `json:"sync_info"`
+	}
+
+	// Info about the node's syncing state
+	SyncInfo struct {
+		LatestBlockHeight string `json:"latest_block_height"`
+		CatchingUp        bool   `json:"catching_up"`
+	}
+
+	// DefaultNodeInfo is the basic node information exchanged
+	// between two peers during the CometBFT P2P handshake.
+	DefaultNodeInfo struct {
+		Network string `json:"network"` // network/chain ID
+	}
+)
 
 // responseUnmarshallerStatus deserializes the provided payloadxz
 // into a responseToStatus struct, adding any encountered errors
@@ -39,9 +73,7 @@ func responseUnmarshallerStatus(
 	}
 
 	// Then unmarshal the JSON bytes into the ResultStatus struct
-	// from the CometBFT's `coretypes` package.
-	// Reference: https://github.com/cometbft/cometbft/blob/4226b0ea6ab4725ef807a16b86d6d24835bb45d4/rpc/core/types/responses.go#L100
-	var result coretypes.ResultStatus
+	var result ResultStatus
 	if err := json.Unmarshal(resultBytes, &result); err != nil {
 		return responseToStatus{
 			logger:          logger,
@@ -49,13 +81,15 @@ func responseUnmarshallerStatus(
 		}, fmt.Errorf("failed to unmarshal result: %w", err)
 	}
 
-	return responseToStatus{
+	here := responseToStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResp,
 		chainID:           result.NodeInfo.Network,
 		catchingUp:        result.SyncInfo.CatchingUp,
-		latestBlockHeight: strconv.FormatInt(result.SyncInfo.LatestBlockHeight, 10),
-	}, nil
+		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
+	}
+
+	return here, nil
 }
 
 // responseToStatus captures the fields expected in a
@@ -85,10 +119,10 @@ type responseToStatus struct {
 
 // GetObservation returns an observation using a block height request's response.
 // Implements the response interface.
-func (r responseToStatus) GetObservation() qosobservations.CometBFTEndpointObservation {
-	return qosobservations.CometBFTEndpointObservation{
-		ResponseObservation: &qosobservations.CometBFTEndpointObservation_StatusResponse{
-			StatusResponse: &qosobservations.CometBFTStatusResponse{
+func (r responseToStatus) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+	return qosobservations.CosmosSDKEndpointObservation{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_StatusResponse{
+			StatusResponse: &qosobservations.CosmosSDKStatusResponse{
 				ChainIdResponse:           r.chainID,
 				CatchingUpResponse:        r.catchingUp,
 				LatestBlockHeightResponse: r.latestBlockHeight,
@@ -114,4 +148,13 @@ func (r responseToStatus) GetResponsePayload() []byte {
 // Implements the response interface.
 func (r responseToStatus) GetResponseStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
+// GetHTTPResponse builds and returns the httpResponse matching the responseToStatus instance.
+// Implements the response interface.
+func (r responseToStatus) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.GetResponsePayload(),
+		httpStatusCode:  r.GetResponseStatusCode(),
+	}
 }

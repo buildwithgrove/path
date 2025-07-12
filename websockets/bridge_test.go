@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
@@ -103,6 +104,7 @@ func Test_Bridge_Run(t *testing.T) {
 			// Return the URL of the test server to pass to NewBridge
 			testEndpointConnURL := testEndpointConnURL(t, test.jsonrpcRequests, test.subscriptionEvents)
 			test.selectedEndpoint.url = testEndpointConnURL
+			test.selectedEndpoint.websocketUrl = testEndpointConnURL
 
 			// Call NewBridge with the clientConn and testEndpointConnURL
 			bridge, err := NewBridge(
@@ -285,13 +287,22 @@ func getRelayResponseBz(endpointResp endpointResp) ([]byte, error) {
 // Note these mocks do not test the unerlying logic provided by the `protocol/shannon` structs; they will always return the "happy path"
 
 type selectedEndpoint struct {
-	url      string // Assigned to the value of the `url` returned by `testEndpointConnURL`
-	session  *sessiontypes.Session
-	supplier string
+	url          string // Assigned nil as it'
+	websocketUrl string // Assigned to the value of the `websocketUrl` returned by `testEndpointConnURL`
+	session      *sessiontypes.Session
+	supplier     string
+}
+
+func (e *selectedEndpoint) Addr() protocol.EndpointAddr {
+	return protocol.EndpointAddr(fmt.Sprintf("%s-%s", e.supplier, e.url))
 }
 
 func (e *selectedEndpoint) PublicURL() string {
 	return e.url
+}
+
+func (e *selectedEndpoint) WebsocketURL() (string, error) {
+	return e.websocketUrl, nil
 }
 
 func (e *selectedEndpoint) Supplier() string {

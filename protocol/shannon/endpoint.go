@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -20,6 +21,8 @@ var _ protocol.Endpoint = endpoint{}
 type endpoint struct {
 	supplier string
 	url      string
+	// TODO_TECHDEBT(@commoddity): Investigate if we should allow supporting additional RPC type endpoints.
+	websocketUrl string
 
 	// TODO_IMPROVE: If the same endpoint is in the session of multiple apps at the same time,
 	// the first app will be chosen. A randomization among the apps in this (unlikely) scenario
@@ -38,6 +41,14 @@ func (e endpoint) Addr() protocol.EndpointAddr {
 // PublicURL returns the URL of the endpoint.
 func (e endpoint) PublicURL() string {
 	return e.url
+}
+
+// WebsocketURL returns the URL of the endpoint.
+func (e endpoint) WebsocketURL() (string, error) {
+	if e.websocketUrl == "" {
+		return "", fmt.Errorf("websocket URL is not set")
+	}
+	return e.websocketUrl, nil
 }
 
 // Session returns a pointer to the session associated with the endpoint.
@@ -65,15 +76,24 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, supplierEndpoints := range allEndpoints {
-		for _, supplierEndpoint := range supplierEndpoints {
-			endpoint := endpoint{
-				supplier: string(supplierEndpoint.Supplier()),
-				url:      supplierEndpoint.Endpoint().Url,
-				// Set the session field on the endpoint for efficient lookup when sending relays.
-				session: session,
-			}
-			endpoints[endpoint.Addr()] = endpoint
+		endpoint := endpoint{
+			supplier: string(supplierEndpoints[0].Supplier()),
+			// Set the session field on the endpoint for efficient lookup when sending relays.
+			session: session,
 		}
+
+		for _, supplierEndpoint := range supplierEndpoints {
+			switch supplierEndpoint.RPCType() {
+			// If the endpoint is a websocket RPC type endpoint, set the websocket URL.
+			case sharedtypes.RPCType_WEBSOCKET:
+				endpoint.websocketUrl = supplierEndpoint.Endpoint().Url
+			// For now, only websocket & JSON-RPC types are supported, so JSON-RPC is the default.
+			default:
+				endpoint.url = supplierEndpoint.Endpoint().Url
+			}
+		}
+
+		endpoints[endpoint.Addr()] = endpoint
 	}
 
 	return endpoints, nil

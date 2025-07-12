@@ -198,8 +198,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	}
 	app := *session.Application
 
-	payloadBz := []byte(payload.Data)
-	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payloadBz, payload.Path)
+	relayRequest, err := buildUnsignedRelayRequest(*rc.selectedEndpoint, session, payload)
 	if err != nil {
 		hydratedLogger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: Failed to build the unsigned relay request. Relay request will fail.")
 		return nil, err
@@ -215,7 +214,7 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	defer cancelFn()
 
 	// Wrap sendHttpRelay errors with errSendHTTPRelay for classification
-	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq)
+	responseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, payload.Headers)
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error
@@ -276,13 +275,12 @@ func (rc *requestContext) signRelayRequest(unsignedRelayReq *servicetypes.RelayR
 func buildUnsignedRelayRequest(
 	endpoint endpoint,
 	session sessiontypes.Session,
-	payload []byte,
-	path string,
+	payload protocol.Payload,
 ) (*servicetypes.RelayRequest, error) {
 	// If path is not empty (e.g. for REST service request), append to endpoint URL.
 	url := endpoint.url
-	if path != "" {
-		url = fmt.Sprintf("%s%s", url, path)
+	if payload.Path != "" {
+		url = fmt.Sprintf("%s%s", url, payload.Path)
 	}
 
 	// TODO_TECHDEBT: Select the correct underlying request (HTTP, etc.) based on selected service.

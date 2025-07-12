@@ -1,4 +1,4 @@
-package cometbft
+package cosmos
 
 import (
 	"encoding/json"
@@ -38,7 +38,7 @@ func responseUnmarshallerHealth(
 }
 
 // responseToHealth captures a CometBFT-based blockchain's /health endpoint response.
-// Reference: https://docs.cometbft.com/v0.38/rpc/#/Info/health
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 type responseToHealth struct {
 	logger polylog.Logger
 
@@ -49,12 +49,12 @@ type responseToHealth struct {
 	healthy bool
 }
 
-// GetObservation returns a CometBFT-based /health observation
+// GetObservation returns a CosmosSDK-based /health observation
 // Implements the response interface.
-func (r responseToHealth) GetObservation() qosobservations.CometBFTEndpointObservation {
-	return qosobservations.CometBFTEndpointObservation{
-		ResponseObservation: &qosobservations.CometBFTEndpointObservation_HealthResponse{
-			HealthResponse: &qosobservations.CometBFTHealthResponse{
+func (r responseToHealth) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+	return qosobservations.CosmosSDKEndpointObservation{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_HealthResponse{
+			HealthResponse: &qosobservations.CosmosSDKHealthResponse{
 				HealthStatusResponse: r.healthy,
 			},
 		},
@@ -78,4 +78,13 @@ func (r responseToHealth) GetResponsePayload() []byte {
 // Implements the response interface.
 func (r responseToHealth) GetResponseStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+}
+
+// GetHTTPResponse builds and returns the httpResponse matching the responseToHealth instance.
+// Implements the response interface.
+func (r responseToHealth) GetHTTPResponse() httpResponse {
+	return httpResponse{
+		responsePayload: r.GetResponsePayload(),
+		httpStatusCode:  r.GetResponseStatusCode(),
+	}
 }

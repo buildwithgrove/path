@@ -84,7 +84,7 @@ func Test_connectEndpoint(t *testing.T) {
 
 			selectedEndpoint := test.getSelectedEndpoint(server.URL)
 
-			conn, err := connectEndpoint(selectedEndpoint)
+			conn, err := connectEndpoint(polyzero.NewLogger(), selectedEndpoint)
 			if test.expectedError {
 				c.Error(err)
 			} else {

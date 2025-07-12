@@ -37,6 +37,11 @@ func (e endpoint) PublicURL() string {
 	return e.url
 }
 
+// NoOp for Morse - only here to satisfy the Endpoint interface.
+func (e endpoint) WebsocketURL() (string, error) {
+	return "", nil
+}
+
 func getEndpointsFromAppSession(app app, session provider.Session) []endpoint {
 	endpoints := make([]endpoint, len(session.Nodes))
 	for i, sessionNode := range session.Nodes {

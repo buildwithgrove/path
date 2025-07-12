@@ -12,5 +12,6 @@ type Payload struct {
 	Data            string
 	Method          string
 	Path            string
+	Headers         map[string]string
 	TimeoutMillisec int
 }

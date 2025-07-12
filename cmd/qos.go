@@ -9,7 +9,7 @@ import (
 	"github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/cometbft"
+	"github.com/buildwithgrove/path/qos/cosmos"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
 )
@@ -74,14 +74,14 @@ func getServiceQoSInstances(
 
 			logger.With("service_id", serviceID).Debug().Msg("Added EVM QoS instance for the service ID.")
 
-		case cometbft.QoSType:
-			cometBFTServiceQoSConfig, ok := qosServiceConfig.(cometbft.CometBFTServiceQoSConfig)
+		case cosmos.QoSType:
+			cosmosSDKServiceQoSConfig, ok := qosServiceConfig.(cosmos.CosmosSDKServiceQoSConfig)
 			if !ok {
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
 			}
 
-			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceQoSConfig)
-			qosServices[serviceID] = cometBFTQoS
+			cosmosSDKQoS := cosmos.NewQoSInstance(logger, cosmosSDKServiceQoSConfig)
+			qosServices[serviceID] = cosmosSDKQoS
 
 		case solana.QoSType:
 			solanaServiceQoSConfig, ok := qosServiceConfig.(solana.SolanaServiceQoSConfig)

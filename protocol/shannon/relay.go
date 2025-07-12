@@ -15,6 +15,7 @@ func sendHttpRelay(
 	ctx context.Context,
 	supplierUrlStr string,
 	relayRequest *servicetypes.RelayRequest,
+	headers map[string]string,
 ) (relayResponseBz []byte, err error) {
 	_, err = url.Parse(supplierUrlStr)
 	if err != nil {
@@ -37,6 +38,9 @@ func sendHttpRelay(
 	}
 
 	relayHTTPRequest.Header.Add("Content-Type", "application/json")
+	for key, value := range headers {
+		relayHTTPRequest.Header.Add(key, value)
+	}
 
 	// TODO_IMPROVE(@commoddity): Use a custom HTTP client to:
 	//  - allow configuring the defaultTransport.
