@@ -7,9 +7,11 @@ import (
 // NewQoSInstance builds and returns an instance of the CometBFT QoS service.
 func NewQoSInstance(logger polylog.Logger, config CometBFTServiceQoSConfig) *QoS {
 	cometBFTChainID := config.GetCometBFTChainID()
+	serviceId := config.GetServiceID()
 
 	logger = logger.With(
 		"qos_instance", "cometbft",
+		"service_id", serviceId,
 		"cometbft_chain_id", cometBFTChainID,
 	)
 
