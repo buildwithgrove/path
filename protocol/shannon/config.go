@@ -156,10 +156,11 @@ func (c *CacheConfig) validate(lazyMode bool) error {
 	return nil
 }
 
-func (c *CacheConfig) hydrateDefaults() {
+func (c *CacheConfig) hydrateDefaults() CacheConfig {
 	if c.SessionTTL == 0 {
 		c.SessionTTL = defaultSessionCacheTTL
 	}
+	return *c
 }
 
 // isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
@@ -193,6 +194,6 @@ func isValidHostPort(hostPort string) bool {
 
 // hydrateDefaults applies default values to FullNodeConfig
 func (fnc *FullNodeConfig) hydrateDefaults() {
-	fnc.GRPCConfig.hydrateDefaults()
-	fnc.CacheConfig.hydrateDefaults()
+	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
+	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
 }

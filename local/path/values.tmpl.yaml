@@ -27,7 +27,6 @@ guard:
     - serviceId: poly
       aliases:
         - polygon
-    # etc...
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:

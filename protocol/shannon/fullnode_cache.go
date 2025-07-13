@@ -59,14 +59,14 @@ const (
 	// TODO_IMPROVE: Make this configurable
 	sharedParamsCacheKey = "shared_params"
 	// TODO_IMPROVE: Make this configurable
-	sharedParamsCacheTTL      = 10 * time.Minute // Shared params change infrequently
-	sharedParamsCacheCapacity = 1                // Only need to cache one entry
+	sharedParamsCacheTTL      = 2 * time.Minute // Shared params change infrequently
+	sharedParamsCacheCapacity = 3               // Only need to cache the last couple of shared params at any point in time
 
 	// TODO_IMPROVE: Make this configurable
 	blockHeightCacheKey = "block_height"
 	// TODO_IMPROVE: Make this configurable
 	blockHeightCacheTTL      = 15 * time.Second // Block height changes frequently
-	blockHeightCacheCapacity = 1                // Only need to cache one entry
+	blockHeightCacheCapacity = 5                // Only need to cache the last few blocks at any point in time
 
 	// TODO_IMPROVE: Make this configurable
 	// - Grace period scale down factor forces the gateway to respect a smaller
@@ -393,7 +393,7 @@ func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.P
 	return params, err
 }
 
-// GetCurrentBlockHeight: cached block height with a short TTL and early refresh.
+// GetCurrentBlockHeight: cached block height with a sho TTL and early refresh.
 func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 	height, err := cfn.blockHeightCache.GetOrFetch(
 		ctx,

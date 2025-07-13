@@ -51,8 +51,6 @@ type FullNode interface {
 	// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
 	// - https://dev.poktroll.com/protocol/governance/gov_params
 	// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
-
-	// GetSessionWithExtendedValidity returns the appropriate session considering grace period logic.
 	// If within grace period of a session rollover, it may return the previous session.
 	GetSessionWithExtendedValidity(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
 
