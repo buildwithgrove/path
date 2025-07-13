@@ -10,12 +10,13 @@
 package observation
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -310,8 +311,8 @@ type GatewayParallelRequestObservations struct {
 	NumSuccessful int32 `protobuf:"varint,2,opt,name=num_successful,json=numSuccessful,proto3" json:"num_successful,omitempty"`
 	// The number of failed requests
 	NumFailed int32 `protobuf:"varint,3,opt,name=num_failed,json=numFailed,proto3" json:"num_failed,omitempty"`
-	// The number of cancelled requests
-	NumCancelled  int32 `protobuf:"varint,4,opt,name=num_cancelled,json=numCancelled,proto3" json:"num_cancelled,omitempty"`
+	// The number of canceled requests
+	NumCancelled  int32 `protobuf:"varint,4,opt,name=num_canceled,json=numCanceled,proto3" json:"num_canceled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,7 +401,7 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\x0enum_successful\x18\x02 \x01(\x05R\rnumSuccessful\x12\x1d\n" +
 	"\n" +
 	"num_failed\x18\x03 \x01(\x05R\tnumFailed\x12#\n" +
-	"\rnum_cancelled\x18\x04 \x01(\x05R\fnumCancelled*a\n" +
+	"\rnum_canceled\x18\x04 \x01(\x05R\fnumCanceled*a\n" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +

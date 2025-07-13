@@ -135,23 +135,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// UpdateWithParallelRequests updates the context with parallel request metrics.
-// This is called when multiple requests are sent in parallel to track their outcomes.
-func (rc *requestContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
-	// TODO_IMPLEMENT: Store parallel request metrics for potential QoS improvements
-	// For now, this is a no-op as EVM QoS doesn't currently use these metrics
-	// for endpoint selection or quality assessment
-	
-	// Log the parallel request outcome for debugging
-	rc.logger.Debug().
-		Str("service_id", serviceID).
-		Int("num_requests", numRequests).
-		Int("num_successful", numSuccessful).
-		Int("num_failed", numFailed).
-		Int("num_cancelled", numCancelled).
-		Msg("Parallel request metrics recorded")
-}
-
 // TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
 // single JSONRPC requests and tracking endpoints' response(s) to each.
 // This would also require combining the responses into a single, valid

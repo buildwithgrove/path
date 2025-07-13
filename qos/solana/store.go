@@ -61,7 +61,10 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 // SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If numEndpoints is 0, it defaults to 1.
-func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+func (es *EndpointStore) SelectMultiple(
+	allAvailableEndpoints protocol.EndpointAddrList,
+	numEndpoints int,
+) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With(
 		"qos", "Solana",
 		"method", "SelectMultiple",
@@ -70,24 +73,26 @@ func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointA
 	)
 
 	if numEndpoints <= 0 {
+		logger.Warn().Msg("SHOULD NEVER HAPPEN: numEndpoints requested is 0. Defaulting to 1.")
 		numEndpoints = 1
 	}
-
 	logger.Debug().Msgf("filtering available endpoints to select up to %d.", numEndpoints)
 
+	// Filter valid endpoints
 	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
 	if err != nil {
 		logger.Error().Err(err).Msg("error filtering endpoints: service request will fail.")
 		return nil, err
 	}
 
-	// No valid endpoints -> select random endpoints
+	// Select random endpoints as fallback
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
 		return selector.RandomSelectMultiple(allAvailableEndpoints, numEndpoints), nil
 	}
 
 	// Select up to numEndpoints endpoints from filtered list
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(allAvailableEndpoints))
 	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 

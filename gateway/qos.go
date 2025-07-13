@@ -32,10 +32,6 @@ type RequestQoSContext interface {
 	// - Response is for the service payload produced by GetServicePayload.
 	UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte)
 
-	// UpdateWithParallelRequests is used to inform the request QoS context of the
-	// number of retries performed for a service request.
-	UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int)
-
 	// GetHTTPResponse:
 	// - Returns the user-facing HTTP response.
 	// - Response depends on the current state of the service request context.

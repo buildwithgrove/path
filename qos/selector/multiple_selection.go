@@ -40,7 +40,7 @@ func RandomSelectMultiple(
 
 	// Fisher-Yates shuffle for random selection without replacement
 	selectedEndpoints := make(protocol.EndpointAddrList, 0, numEndpoints)
-	for i := range endpointsCopy {
+	for i := 0; i < numEndpoints; i++ {
 		j := rand.Intn(len(endpointsCopy)-i) + i
 		endpointsCopy[i], endpointsCopy[j] = endpointsCopy[j], endpointsCopy[i]
 		selectedEndpoints = append(selectedEndpoints, endpointsCopy[i])

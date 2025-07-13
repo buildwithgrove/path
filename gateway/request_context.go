@@ -122,70 +122,6 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
-// updateGatewayObservationsWithParallelRequests updates the gateway observations with parallel request metrics.
-func (rc *requestContext) updateGatewayObservationsWithParallelRequests(numRequests, numSuccessful, numFailed, numCancelled int) {
-	rc.gatewayObservations.GatewayParallelRequestObservations = &observation.GatewayParallelRequestObservations{
-		NumRequests:   int32(numRequests),
-		NumSuccessful: int32(numSuccessful),
-		NumFailed:     int32(numFailed),
-		NumCancelled:  int32(numCancelled),
-	}
-}
-
-// updateGatewayObservations
-// - updates the gateway-level observations in the request context with other metadata in the request context.
-// - sets the gateway observation error with the one provided, if not already set
-func (rc *requestContext) updateGatewayObservations(err error) {
-	// set the service ID on the gateway observations.
-	rc.gatewayObservations.ServiceId = string(rc.serviceID)
-
-	// Update the request completion time on the gateway observation
-	rc.gatewayObservations.CompletedTime = timestamppb.Now()
-
-	// No errors: skip.
-	if err == nil {
-		return
-	}
-
-	// Request error already set: skip.
-	if rc.gatewayObservations.GetRequestError() != nil {
-		return
-	}
-
-	switch {
-	// Service ID not specified
-	case errors.Is(err, ErrGatewayNoServiceIDProvided):
-		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-
-	// Request was rejected by the QoS instance.
-	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
-	case errors.Is(err, errGatewayRejectedByQoS):
-		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-
-	default:
-		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
-		// Set a generic request error observation
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// unspecified error kind: this should not happen
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-	}
-}
-
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http (L7) level.
@@ -471,4 +407,70 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		With("service_id", rc.serviceID).
 		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 		Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
+}
+
+// updateGatewayObservations
+// - updates the gateway-level observations in the request context with other metadata in the request context.
+// - sets the gateway observation error with the one provided, if not already set
+func (rc *requestContext) updateGatewayObservations(err error) {
+	// set the service ID on the gateway observations.
+	rc.gatewayObservations.ServiceId = string(rc.serviceID)
+
+	// Update the request completion time on the gateway observation
+	rc.gatewayObservations.CompletedTime = timestamppb.Now()
+
+	// No errors: skip.
+	if err == nil {
+		return
+	}
+
+	// Request error already set: skip.
+	if rc.gatewayObservations.GetRequestError() != nil {
+		return
+	}
+
+	switch {
+	// Service ID not specified
+	case errors.Is(err, ErrGatewayNoServiceIDProvided):
+		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	// Request was rejected by the QoS instance.
+	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
+	case errors.Is(err, errGatewayRejectedByQoS):
+		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	default:
+		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
+		// Set a generic request error observation
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// unspecified error kind: this should not happen
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+	}
+}
+
+// updateGatewayObservationsWithParallelRequests updates the gateway observations with parallel request metrics.
+//
+// It is called when the gateway handles a parallel request and used for downstream metrics.
+func (rc *requestContext) updateGatewayObservationsWithParallelRequests(numRequests, numSuccessful, numFailed, numCanceled int) {
+	rc.gatewayObservations.GatewayParallelRequestObservations = &observation.GatewayParallelRequestObservations{
+		NumRequests:   int32(numRequests),
+		NumSuccessful: int32(numSuccessful),
+		NumFailed:     int32(numFailed),
+		NumCancelled:  int32(numCanceled),
+	}
 }

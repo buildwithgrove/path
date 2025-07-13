@@ -49,26 +49,26 @@ func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrL
 		With("num_endpoints", numEndpoints)
 
 	if numEndpoints <= 0 {
+		logger.Warn().Msg("SHOULD NEVER HAPPEN: numEndpoints must be greater than 0. Defaulting to 1.")
 		numEndpoints = 1
 	}
-
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), numEndpoints)
 
+	// Filter valid endpoints
 	filteredEndpointsAddr, _, err := ss.filterValidEndpointsWithDetails(availableEndpoints)
 	if err != nil {
 		logger.Error().Err(err).Msg("error filtering endpoints")
 		return nil, err
 	}
 
+	// Select random endpoints as fallback
 	if len(filteredEndpointsAddr) == 0 {
 		logger.Warn().Msgf("SELECTING RANDOM ENDPOINTS because all endpoints failed validation from: %s", availableEndpoints.String())
-		// Select random endpoints as fallback
 		return selector.RandomSelectMultiple(availableEndpoints, numEndpoints), nil
 	}
 
-	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
-
 	// Use the diversity-aware selection
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
 	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 

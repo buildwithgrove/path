@@ -119,14 +119,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// UpdateWithParallelRequests updates the context with parallel request metrics.
-// This is called when multiple requests are sent in parallel to track their outcomes.
-func (rc *requestContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
-	// TODO_IMPLEMENT: Store parallel request metrics for potential QoS improvements
-	// For now, this is a no-op as Solana QoS doesn't currently use these metrics
-	// for endpoint selection or quality assessment
-}
-
 // TODO_MVP(@adshmh): add `Content-Type: application/json` header.
 // GetHTTPResponse builds the HTTP response that should be returned for
 // a Solana blockchain service request.
@@ -187,21 +179,23 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	}
 }
 
-// GetEndpointSelector is required to satisfy the gateway package's ResquestQoSContext interface.
-// The request context is queried for the correct endpoint selector to use because this allows different
-// endpoint selectors based on the request's context.
+// GetEndpointSelector is required to satisfy the gateway package's RequestQoSContext interface.
+// The request context is queried for the correct endpoint selector.
+// This allows different endpoint selectors based on the request's context.
 // e.g. the request context for a particular request method can potentially rank endpoints based on their latency when responding to requests with matching method.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// Select chooses an endpoint from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
+// Select chooses an endpoint from the list of supplied endpoints.
+// It uses the perceived state of the Solana chain using other endpoints' responses.
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
 }
 
-// SelectMultiple chooses multiple endpoints from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
+// SelectMultiple chooses multiple endpoints from the list of supplied endpoints.
+// It uses the perceived state of the Solana chain using other endpoints' responses.
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
 	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)

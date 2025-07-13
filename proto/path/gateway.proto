@@ -78,6 +78,6 @@ message GatewayParallelRequestObservations {
   int32 num_successful = 2;
   // The number of failed requests
   int32 num_failed = 3;
-  // The number of cancelled requests
-  int32 num_cancelled = 4;
+  // The number of canceled requests
+  int32 num_canceled = 4;
 }

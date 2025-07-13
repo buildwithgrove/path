@@ -70,12 +70,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	rc.receivedResponses = append(rc.receivedResponses, endpointResponse{EndpointAddr: endpointAddr, ResponseBytes: endpointSerializedResponse})
 }
 
-// UpdateWithParallelRequests updates the context with parallel request metrics.
-// This is called when multiple requests are sent in parallel to track their outcomes.
-func (rc *requestContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
-	// No-op implementation since NoOp QoS doesn't track metrics or use them for endpoint selection
-}
-
 // GetHTTPResponse returns a user-facing response that fulfills the gateway.HTTPResponse interface.
 // Any preset failure responses, e.g. set during the construction of the requestContext instance, take priority.
 // After that, this method simply returns an HTTP response based on the most recently reported endpoint response.

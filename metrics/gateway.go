@@ -123,7 +123,7 @@ var (
 	//   - multiplicity: Total number of parallel requests in the batch (1, 2, 3, etc.)
 	//   - num_successful: Number of successful parallel requests
 	//   - num_failed: Number of failed parallel requests
-	//   - num_cancelled: Number of cancelled parallel requests
+	//   - num_canceled: Number of canceled parallel requests
 	//
 	// Usage:
 	// - Track how many parallel requests are made per incoming request
@@ -135,7 +135,7 @@ var (
 			Name:      parallelRequestsTotalMetricName,
 			Help:      "Total parallel requests made, labeled by batch size and outcome.",
 		},
-		[]string{"service_id", "multiplicity", "num_successful", "num_failed", "num_cancelled"},
+		[]string{"service_id", "multiplicity", "num_successful", "num_failed", "num_canceled"},
 	)
 )
 
@@ -197,7 +197,7 @@ func publishGatewayMetrics(
 			"multiplicity":   fmt.Sprintf("%d", parallelObs.GetNumRequests()),
 			"num_successful": fmt.Sprintf("%d", parallelObs.GetNumSuccessful()),
 			"num_failed":     fmt.Sprintf("%d", parallelObs.GetNumFailed()),
-			"num_cancelled":  fmt.Sprintf("%d", parallelObs.GetNumCancelled()),
+			"num_canceled":   fmt.Sprintf("%d", parallelObs.GetNumCancelled()),
 		}).Inc()
 	}
 
