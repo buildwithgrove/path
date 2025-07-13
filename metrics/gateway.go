@@ -120,7 +120,7 @@ var (
 	// parallelRequestsTotal tracks individual parallel requests within a batch.
 	// Increment for each parallel request made with labels:
 	//   - service_id: Identifies the service
-	//   - multiplicity: Total number of parallel requests in the batch (1, 2, 3, etc.)
+	//   - num_requests: Total number of parallel requests in the batch (1, 2, 3, etc.)
 	//   - num_successful: Number of successful parallel requests
 	//   - num_failed: Number of failed parallel requests
 	//   - num_canceled: Number of canceled parallel requests
@@ -135,7 +135,7 @@ var (
 			Name:      parallelRequestsTotalMetricName,
 			Help:      "Total parallel requests made, labeled by batch size and outcome.",
 		},
-		[]string{"service_id", "multiplicity", "num_successful", "num_failed", "num_canceled"},
+		[]string{"service_id", "num_requests", "num_successful", "num_failed", "num_canceled"},
 	)
 )
 
@@ -191,13 +191,13 @@ func publishGatewayMetrics(
 
 	// Record the outcome of parallel requests within a batch.
 	// Only record if parallel request observations are available
-	if parallelObs := gatewayObservations.GetGatewayParallelRequestObservations(); parallelObs != nil {
+	if parallelRequestsObs := gatewayObservations.GetGatewayParallelRequestObservations(); parallelRequestsObs != nil {
 		parallelRequestsTotal.With(prometheus.Labels{
 			"service_id":     serviceID,
-			"multiplicity":   fmt.Sprintf("%d", parallelObs.GetNumRequests()),
-			"num_successful": fmt.Sprintf("%d", parallelObs.GetNumSuccessful()),
-			"num_failed":     fmt.Sprintf("%d", parallelObs.GetNumFailed()),
-			"num_canceled":   fmt.Sprintf("%d", parallelObs.GetNumCancelled()),
+			"num_requests":   fmt.Sprintf("%d", parallelRequestsObs.GetNumRequests()),
+			"num_successful": fmt.Sprintf("%d", parallelRequestsObs.GetNumSuccessful()),
+			"num_failed":     fmt.Sprintf("%d", parallelRequestsObs.GetNumFailed()),
+			"num_canceled":   fmt.Sprintf("%d", parallelRequestsObs.GetNumCanceled()),
 		}).Inc()
 	}
 

@@ -25,9 +25,14 @@ var (
 )
 
 const (
-	// TODO_TECHDEBT: Make these configurable in a new Gateway.RelayConfig struct.
-	// TODO_PERFORMANCE: Consider adaptive parallel request count based on service load/health
-	maxParallelRequests    = 4
+	// As of PR #340, the goal was to get the large set of changes in and enable focused investigation on the impact of parallel requests.
+	// TODO_UPNEXT(@olshansk): Experiment and turn on this feature.
+	// - Experiment with this feature in a single gateway and evaluate the results.
+	// - Collect and analyze the metrics of this feature, ensuring it does not lead to excessive resource usage or token burn
+	// - If all endpoints are sanctioned, send parallel requests by default
+	// - Make this configurable at the gateway level yaml config
+	// - Enable parallel requests for gateways that maintain their own backend nodes as a special config
+	maxParallelRequests    = 1
 	parallelRequestTimeout = 30 * time.Second
 )
 
@@ -471,6 +476,6 @@ func (rc *requestContext) updateGatewayObservationsWithParallelRequests(numReque
 		NumRequests:   int32(numRequests),
 		NumSuccessful: int32(numSuccessful),
 		NumFailed:     int32(numFailed),
-		NumCancelled:  int32(numCanceled),
+		NumCanceled:   int32(numCanceled),
 	}
 }

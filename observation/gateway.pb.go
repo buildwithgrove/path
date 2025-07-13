@@ -10,13 +10,12 @@
 package observation
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -312,7 +311,7 @@ type GatewayParallelRequestObservations struct {
 	// The number of failed requests
 	NumFailed int32 `protobuf:"varint,3,opt,name=num_failed,json=numFailed,proto3" json:"num_failed,omitempty"`
 	// The number of canceled requests
-	NumCancelled  int32 `protobuf:"varint,4,opt,name=num_canceled,json=numCanceled,proto3" json:"num_canceled,omitempty"`
+	NumCanceled   int32 `protobuf:"varint,4,opt,name=num_canceled,json=numCanceled,proto3" json:"num_canceled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -368,9 +367,9 @@ func (x *GatewayParallelRequestObservations) GetNumFailed() int32 {
 	return 0
 }
 
-func (x *GatewayParallelRequestObservations) GetNumCancelled() int32 {
+func (x *GatewayParallelRequestObservations) GetNumCanceled() int32 {
 	if x != nil {
-		return x.NumCancelled
+		return x.NumCanceled
 	}
 	return 0
 }
@@ -395,13 +394,13 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\x13GatewayRequestError\x12<\n" +
 	"\n" +
 	"error_kind\x18\x01 \x01(\x0e2\x1d.path.GatewayRequestErrorKindR\terrorKind\x12\x18\n" +
-	"\adetails\x18\x02 \x01(\tR\adetails\"\xb2\x01\n" +
+	"\adetails\x18\x02 \x01(\tR\adetails\"\xb0\x01\n" +
 	"\"GatewayParallelRequestObservations\x12!\n" +
 	"\fnum_requests\x18\x01 \x01(\x05R\vnumRequests\x12%\n" +
 	"\x0enum_successful\x18\x02 \x01(\x05R\rnumSuccessful\x12\x1d\n" +
 	"\n" +
-	"num_failed\x18\x03 \x01(\x05R\tnumFailed\x12#\n" +
-	"\rnum_canceled\x18\x04 \x01(\x05R\fnumCanceled*a\n" +
+	"num_failed\x18\x03 \x01(\x05R\tnumFailed\x12!\n" +
+	"\fnum_canceled\x18\x04 \x01(\x05R\vnumCanceled*a\n" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
