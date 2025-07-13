@@ -393,7 +393,7 @@ func (cfn *cachingFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.P
 	return params, err
 }
 
-// GetCurrentBlockHeight: cached block height with 20sec TTL and early refresh.
+// GetCurrentBlockHeight: cached block height with a short TTL and early refresh.
 func (cfn *cachingFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 	height, err := cfn.blockHeightCache.GetOrFetch(
 		ctx,

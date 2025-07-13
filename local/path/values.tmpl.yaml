@@ -21,14 +21,10 @@ guard:
   services:
     - serviceId: eth
       aliases:
-        - eth
+        - ethereum
     - serviceId: anvil
-      aliases:
-        - anvil
     - serviceId: pocket
-      aliases:
-        - pocket
-    - serviceId: polygon
+    - serviceId: poly
       aliases:
         - polygon
     # etc...

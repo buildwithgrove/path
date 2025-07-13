@@ -132,7 +132,7 @@ func (p *Protocol) AvailableEndpoints(
 // BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
-	ctx context.Context,
+	_ context.Context,
 	serviceID protocol.ServiceID,
 	selectedEndpointAddr protocol.EndpointAddr,
 	_ *http.Request,
