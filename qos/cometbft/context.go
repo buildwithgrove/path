@@ -101,6 +101,14 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
+// UpdateWithParallelRequests updates the context with parallel request metrics.
+// This is called when multiple requests are sent in parallel to track their outcomes.
+func (rc *requestContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
+	// TODO_IMPLEMENT: Store parallel request metrics for potential QoS improvements
+	// For now, this is a no-op as CometBFT QoS doesn't currently use these metrics
+	// for endpoint selection or quality assessment
+}
+
 // GetHTTPResponse builds the HTTP response for a CometBFT blockchain service request.
 // Returns the last endpoint response if available, otherwise returns generic response.
 // Implements gateway.RequestQoSContext interface.

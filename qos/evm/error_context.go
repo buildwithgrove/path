@@ -94,6 +94,19 @@ func (ec *errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, e
 	).Warn().Msg("Invalid usage: errorContext.UpdateWithResponse() should never be called.")
 }
 
+// UpdateWithParallelRequests should never be called.
+// Only logs a warning.
+// Implements the gateway.RequestQoSContext interface.
+func (ec *errorContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
+	ec.logger.With(
+		"service_id", serviceID,
+		"num_requests", numRequests,
+		"num_successful", numSuccessful,
+		"num_failed", numFailed,
+		"num_cancelled", numCancelled,
+	).Warn().Msg("Invalid usage: errorContext.UpdateWithParallelRequests() should never be called.")
+}
+
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.

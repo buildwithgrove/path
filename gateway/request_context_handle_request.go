@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buildwithgrove/path/metrics"
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -63,7 +62,10 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 	var numSuccessful, numFailed int
 	defer func() {
 		numCancelled := totalRequests - numSuccessful - numFailed
-		metrics.RecordParallelRequestOutcome(string(rc.serviceID), totalRequests, numSuccessful, numFailed, numCancelled)
+		// Update QoS context with parallel request metrics
+		rc.qosCtx.UpdateWithParallelRequests(string(rc.serviceID), totalRequests, numSuccessful, numFailed, numCancelled)
+		// Update gateway observations with parallel request metrics
+		rc.updateGatewayObservationsWithParallelRequests(totalRequests, numSuccessful, numFailed, numCancelled)
 	}()
 
 	logger := rc.logger.

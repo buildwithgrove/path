@@ -105,7 +105,6 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-
 	response := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz)
 
 	// TODO_MVP(@adshmh): Drop the unmarshaling error: the returned response interface should provide methods to allow the caller to:
@@ -118,6 +117,14 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 			response:     response,
 		},
 	)
+}
+
+// UpdateWithParallelRequests updates the context with parallel request metrics.
+// This is called when multiple requests are sent in parallel to track their outcomes.
+func (rc *requestContext) UpdateWithParallelRequests(serviceID string, numRequests, numSuccessful, numFailed, numCancelled int) {
+	// TODO_IMPLEMENT: Store parallel request metrics for potential QoS improvements
+	// For now, this is a no-op as Solana QoS doesn't currently use these metrics
+	// for endpoint selection or quality assessment
 }
 
 // TODO_MVP(@adshmh): add `Content-Type: application/json` header.

@@ -122,7 +122,17 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
-// hydrateGatewayObservations
+// updateGatewayObservationsWithParallelRequests updates the gateway observations with parallel request metrics.
+func (rc *requestContext) updateGatewayObservationsWithParallelRequests(numRequests, numSuccessful, numFailed, numCancelled int) {
+	rc.gatewayObservations.GatewayParallelRequestObservations = &observation.GatewayParallelRequestObservations{
+		NumRequests:   int32(numRequests),
+		NumSuccessful: int32(numSuccessful),
+		NumFailed:     int32(numFailed),
+		NumCancelled:  int32(numCancelled),
+	}
+}
+
+// updateGatewayObservations
 // - updates the gateway-level observations in the request context with other metadata in the request context.
 // - sets the gateway observation error with the one provided, if not already set
 func (rc *requestContext) updateGatewayObservations(err error) {

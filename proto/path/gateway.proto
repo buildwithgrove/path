@@ -56,6 +56,9 @@ message GatewayObservations {
   // gateway-level request error, if any.
   // e.g. no service ID specified.
   optional GatewayRequestError request_error = 7;
+
+  // parallel_request_observations tracks the outcome of parallel requests within a batch.
+  optional GatewayParallelRequestObservations gateway_parallel_request_observations = 8;
 }
 
 // Tracks any errors encountered at the gateway level.
@@ -65,4 +68,16 @@ message GatewayRequestError {
   GatewayRequestErrorKind error_kind = 1;
   // Detailed reason
   string details = 2;
+}
+
+// Tracks the outcome of parallel requests within a batch.
+message GatewayParallelRequestObservations {
+  // The number of requests made
+  int32 num_requests = 1;
+  // The number of successful requests
+  int32 num_successful = 2;
+  // The number of failed requests
+  int32 num_failed = 3;
+  // The number of cancelled requests
+  int32 num_cancelled = 4;
 }

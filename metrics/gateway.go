@@ -147,52 +147,58 @@ func publishGatewayMetrics(
 	logger polylog.Logger,
 	gatewayObservations *observation.GatewayObservations,
 ) bool {
+	// Extract the service ID from the gateway observations
 	serviceID := gatewayObservations.GetServiceId()
 
+	// Extract the request type from the gateway observations
+	requestType := observation.RequestType_name[int32(gatewayObservations.GetRequestType())]
+
+	// Extract the request error kind from the gateway observations
 	var requestErrorKind string
 	requestErr := gatewayObservations.GetRequestError()
 	if requestErr != nil {
 		requestErrorKind = requestErr.GetErrorKind().String()
-	}
-
-	requestType := observation.RequestType_name[int32(gatewayObservations.GetRequestType())]
-	// Increment on each service request with labels:
-	//   - service_id: Identifies the service
-	//   - request_type: "organic" or "synthetic"
-	//   - request_error_kind: any gateway-level request errors: e.g. no service ID specified in request's HTTP headers.
-	relaysTotal.With(
-		prometheus.Labels{
-			"service_id":         serviceID,
-			"request_type":       requestType,
-			"request_error_kind": requestErrorKind,
-		},
-	).Inc()
-
-	// Publish request duration in seconds with the following labels
-	// 	- service_id
-	duration := gatewayObservations.GetCompletedTime().AsTime().Sub(gatewayObservations.GetReceivedTime().AsTime()).Seconds()
-	relaysDurationSeconds.With(
-		prometheus.Labels{
-			"service_id": serviceID,
-		},
-	).Observe(duration)
-
-	// Publish response_size in bytes with the following labels
-	// 	- service_id
-	relayResponseSizeBytes.With(
-		prometheus.Labels{
-			"service_id": serviceID,
-		},
-	).Observe(float64(gatewayObservations.GetResponseSize()))
-
-	// log a message if there were any request errors.
-	if requestErr != nil {
 		logger.With(
 			"service_id", serviceID,
 			"request_type", requestType,
 			"request_error_kind", requestErrorKind,
 			"request_error_details", requestErr.GetDetails(),
 		).Error().Msg("Invalid request: No Protocol or QoS observations were made.")
+	}
+
+	// Increment on each service request with labels:
+	//   - service_id: Identifies the service
+	//   - request_type: "organic" or "synthetic"
+	//   - request_error_kind: any gateway-level request errors: e.g. no service ID specified in request's HTTP headers.
+	relaysTotal.
+		With(prometheus.Labels{
+			"service_id":         serviceID,
+			"request_type":       requestType,
+			"request_error_kind": requestErrorKind,
+		}).
+		Inc()
+
+	// Publish request duration in seconds
+	duration := gatewayObservations.GetCompletedTime().AsTime().Sub(gatewayObservations.GetReceivedTime().AsTime()).Seconds()
+	relaysDurationSeconds.
+		With(prometheus.Labels{"service_id": serviceID}).
+		Observe(duration)
+
+	// Publish response_size in bytes
+	relayResponseSizeBytes.
+		With(prometheus.Labels{"service_id": serviceID}).
+		Observe(float64(gatewayObservations.GetResponseSize()))
+
+	// Record the outcome of parallel requests within a batch.
+	// Only record if parallel request observations are available
+	if parallelObs := gatewayObservations.GetGatewayParallelRequestObservations(); parallelObs != nil {
+		parallelRequestsTotal.With(prometheus.Labels{
+			"service_id":     serviceID,
+			"multiplicity":   fmt.Sprintf("%d", parallelObs.GetNumRequests()),
+			"num_successful": fmt.Sprintf("%d", parallelObs.GetNumSuccessful()),
+			"num_failed":     fmt.Sprintf("%d", parallelObs.GetNumFailed()),
+			"num_cancelled":  fmt.Sprintf("%d", parallelObs.GetNumCancelled()),
+		}).Inc()
 	}
 
 	// Return the validity status of the request.
@@ -218,27 +224,4 @@ func SetVersionInfo(version, commit, buildDate string) {
 		"commit":     commit,
 		"build_date": buildDate,
 	}).Set(1)
-}
-
-// RecordParallelRequestOutcome records the outcome of parallel requests within a batch.
-// Call this for each parallel request made with:
-//   - serviceID: The service identifier
-//   - multiplicity: Total number of parallel requests in the batch
-//   - numSuccessful: Number of successful parallel requests
-//   - numFailed: Number of failed parallel requests
-//   - numCancelled: Number of cancelled parallel requests
-func RecordParallelRequestOutcome(
-	serviceID string,
-	multiplicity int,
-	numSuccessful int,
-	numFailed int,
-	numCancelled int,
-) {
-	parallelRequestsTotal.With(prometheus.Labels{
-		"service_id":     serviceID,
-		"multiplicity":   fmt.Sprintf("%d", multiplicity),
-		"num_successful": fmt.Sprintf("%d", numSuccessful),
-		"num_failed":     fmt.Sprintf("%d", numFailed),
-		"num_cancelled":  fmt.Sprintf("%d", numCancelled),
-	}).Inc()
 }

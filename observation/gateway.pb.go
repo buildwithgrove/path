@@ -152,9 +152,11 @@ type GatewayObservations struct {
 	ResponseSize uint64 `protobuf:"varint,6,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
 	// gateway-level request error, if any.
 	// e.g. no service ID specified.
-	RequestError  *GatewayRequestError `protobuf:"bytes,7,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	RequestError *GatewayRequestError `protobuf:"bytes,7,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
+	// parallel_request_observations tracks the outcome of parallel requests within a batch.
+	GatewayParallelRequestObservations *GatewayParallelRequestObservations `protobuf:"bytes,8,opt,name=gateway_parallel_request_observations,json=gatewayParallelRequestObservations,proto3,oneof" json:"gateway_parallel_request_observations,omitempty"`
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
 }
 
 func (x *GatewayObservations) Reset() {
@@ -236,6 +238,13 @@ func (x *GatewayObservations) GetRequestError() *GatewayRequestError {
 	return nil
 }
 
+func (x *GatewayObservations) GetGatewayParallelRequestObservations() *GatewayParallelRequestObservations {
+	if x != nil {
+		return x.GatewayParallelRequestObservations
+	}
+	return nil
+}
+
 // Tracks any errors encountered at the gateway level.
 // e.g.: No Service ID specified by the request's HTTP headers.
 type GatewayRequestError struct {
@@ -292,11 +301,84 @@ func (x *GatewayRequestError) GetDetails() string {
 	return ""
 }
 
+// Tracks the outcome of parallel requests within a batch.
+type GatewayParallelRequestObservations struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The number of requests made
+	NumRequests int32 `protobuf:"varint,1,opt,name=num_requests,json=numRequests,proto3" json:"num_requests,omitempty"`
+	// The number of successful requests
+	NumSuccessful int32 `protobuf:"varint,2,opt,name=num_successful,json=numSuccessful,proto3" json:"num_successful,omitempty"`
+	// The number of failed requests
+	NumFailed int32 `protobuf:"varint,3,opt,name=num_failed,json=numFailed,proto3" json:"num_failed,omitempty"`
+	// The number of cancelled requests
+	NumCancelled  int32 `protobuf:"varint,4,opt,name=num_cancelled,json=numCancelled,proto3" json:"num_cancelled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewayParallelRequestObservations) Reset() {
+	*x = GatewayParallelRequestObservations{}
+	mi := &file_path_gateway_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewayParallelRequestObservations) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayParallelRequestObservations) ProtoMessage() {}
+
+func (x *GatewayParallelRequestObservations) ProtoReflect() protoreflect.Message {
+	mi := &file_path_gateway_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayParallelRequestObservations.ProtoReflect.Descriptor instead.
+func (*GatewayParallelRequestObservations) Descriptor() ([]byte, []int) {
+	return file_path_gateway_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GatewayParallelRequestObservations) GetNumRequests() int32 {
+	if x != nil {
+		return x.NumRequests
+	}
+	return 0
+}
+
+func (x *GatewayParallelRequestObservations) GetNumSuccessful() int32 {
+	if x != nil {
+		return x.NumSuccessful
+	}
+	return 0
+}
+
+func (x *GatewayParallelRequestObservations) GetNumFailed() int32 {
+	if x != nil {
+		return x.NumFailed
+	}
+	return 0
+}
+
+func (x *GatewayParallelRequestObservations) GetNumCancelled() int32 {
+	if x != nil {
+		return x.NumCancelled
+	}
+	return 0
+}
+
 var File_path_gateway_proto protoreflect.FileDescriptor
 
 const file_path_gateway_proto_rawDesc = "" +
 	"\n" +
-	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\xa0\x03\n" +
+	"\x12path/gateway.proto\x12\x04path\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0fpath/auth.proto\"\xcd\x04\n" +
 	"\x13GatewayObservations\x124\n" +
 	"\frequest_auth\x18\x01 \x01(\v2\x11.path.RequestAuthR\vrequestAuth\x124\n" +
 	"\frequest_type\x18\x02 \x01(\x0e2\x11.path.RequestTypeR\vrequestType\x12\x1d\n" +
@@ -305,12 +387,20 @@ const file_path_gateway_proto_rawDesc = "" +
 	"\rreceived_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\freceivedTime\x12A\n" +
 	"\x0ecompleted_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rcompletedTime\x12#\n" +
 	"\rresponse_size\x18\x06 \x01(\x04R\fresponseSize\x12C\n" +
-	"\rrequest_error\x18\a \x01(\v2\x19.path.GatewayRequestErrorH\x00R\frequestError\x88\x01\x01B\x10\n" +
-	"\x0e_request_error\"m\n" +
+	"\rrequest_error\x18\a \x01(\v2\x19.path.GatewayRequestErrorH\x00R\frequestError\x88\x01\x01\x12\x80\x01\n" +
+	"%gateway_parallel_request_observations\x18\b \x01(\v2(.path.GatewayParallelRequestObservationsH\x01R\"gatewayParallelRequestObservations\x88\x01\x01B\x10\n" +
+	"\x0e_request_errorB(\n" +
+	"&_gateway_parallel_request_observations\"m\n" +
 	"\x13GatewayRequestError\x12<\n" +
 	"\n" +
 	"error_kind\x18\x01 \x01(\x0e2\x1d.path.GatewayRequestErrorKindR\terrorKind\x12\x18\n" +
-	"\adetails\x18\x02 \x01(\tR\adetails*a\n" +
+	"\adetails\x18\x02 \x01(\tR\adetails\"\xb2\x01\n" +
+	"\"GatewayParallelRequestObservations\x12!\n" +
+	"\fnum_requests\x18\x01 \x01(\x05R\vnumRequests\x12%\n" +
+	"\x0enum_successful\x18\x02 \x01(\x05R\rnumSuccessful\x12\x1d\n" +
+	"\n" +
+	"num_failed\x18\x03 \x01(\x05R\tnumFailed\x12#\n" +
+	"\rnum_cancelled\x18\x04 \x01(\x05R\fnumCancelled*a\n" +
 	"\vRequestType\x12\x1c\n" +
 	"\x18REQUEST_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14REQUEST_TYPE_ORGANIC\x10\x01\x12\x1a\n" +
@@ -333,27 +423,29 @@ func file_path_gateway_proto_rawDescGZIP() []byte {
 }
 
 var file_path_gateway_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_path_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_path_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_path_gateway_proto_goTypes = []any{
-	(RequestType)(0),              // 0: path.RequestType
-	(GatewayRequestErrorKind)(0),  // 1: path.GatewayRequestErrorKind
-	(*GatewayObservations)(nil),   // 2: path.GatewayObservations
-	(*GatewayRequestError)(nil),   // 3: path.GatewayRequestError
-	(*RequestAuth)(nil),           // 4: path.RequestAuth
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(RequestType)(0),                           // 0: path.RequestType
+	(GatewayRequestErrorKind)(0),               // 1: path.GatewayRequestErrorKind
+	(*GatewayObservations)(nil),                // 2: path.GatewayObservations
+	(*GatewayRequestError)(nil),                // 3: path.GatewayRequestError
+	(*GatewayParallelRequestObservations)(nil), // 4: path.GatewayParallelRequestObservations
+	(*RequestAuth)(nil),                        // 5: path.RequestAuth
+	(*timestamppb.Timestamp)(nil),              // 6: google.protobuf.Timestamp
 }
 var file_path_gateway_proto_depIdxs = []int32{
-	4, // 0: path.GatewayObservations.request_auth:type_name -> path.RequestAuth
+	5, // 0: path.GatewayObservations.request_auth:type_name -> path.RequestAuth
 	0, // 1: path.GatewayObservations.request_type:type_name -> path.RequestType
-	5, // 2: path.GatewayObservations.received_time:type_name -> google.protobuf.Timestamp
-	5, // 3: path.GatewayObservations.completed_time:type_name -> google.protobuf.Timestamp
+	6, // 2: path.GatewayObservations.received_time:type_name -> google.protobuf.Timestamp
+	6, // 3: path.GatewayObservations.completed_time:type_name -> google.protobuf.Timestamp
 	3, // 4: path.GatewayObservations.request_error:type_name -> path.GatewayRequestError
-	1, // 5: path.GatewayRequestError.error_kind:type_name -> path.GatewayRequestErrorKind
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4, // 5: path.GatewayObservations.gateway_parallel_request_observations:type_name -> path.GatewayParallelRequestObservations
+	1, // 6: path.GatewayRequestError.error_kind:type_name -> path.GatewayRequestErrorKind
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_path_gateway_proto_init() }
@@ -369,7 +461,7 @@ func file_path_gateway_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_gateway_proto_rawDesc), len(file_path_gateway_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
