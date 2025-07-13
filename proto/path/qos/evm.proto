@@ -18,6 +18,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
 import "path/qos/request_origin.proto";
+import "path/qos/endpoint_selection_metadata.proto";
 import "path/metadata/metadata.proto";
 
 // EVMRequestValidationError enumerates possible causes for EVM request rejection:
@@ -63,7 +64,7 @@ enum EVMResponseValidationError {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 message EVMRequestObservations {
-  // Next ID: 9
+  // Next ID: 10
 
   // chain_id is the blockchain identifier for the evm QoS implementation.
   // This is preset by the processor and not determined by the request.
@@ -110,6 +111,9 @@ message EVMRequestObservations {
   // * Request is sent to additional endpoints for data collection
   // This field will only be populated if request validation succeeds.
   repeated EVMEndpointObservation endpoint_observations = 6;
+
+  // endpoint_selection_metadata contains metadata about the endpoint selection process.
+  EndpointSelectionMetadata endpoint_selection_metadata = 9;
 }
 
 // TODO_MVP(@adshmh): Remove HTTP body read validation once QoS interface is updated
