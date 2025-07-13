@@ -1,10 +1,8 @@
 package selector
 
 import (
-	"math/rand"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
 	"github.com/stretchr/testify/require"
@@ -13,8 +11,6 @@ import (
 )
 
 func TestRandomSelectMultiple(t *testing.T) {
-	// Seed for reproducible tests
-	rand.Seed(time.Now().UnixNano())
 
 	testCases := []struct {
 		name            string
