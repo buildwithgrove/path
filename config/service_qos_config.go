@@ -408,7 +408,6 @@ var shannonServices = []ServiceQoSConfig{
 	// the correct chain ID is being used for each service in the CometBFT config.
 
 	// Osmosis
-	//
 	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {},
 		sharedtypes.RPCType_COMET_BFT: {},
