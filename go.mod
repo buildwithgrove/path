@@ -4,9 +4,7 @@ go 1.24.3
 
 // DEVELOPER_TIP: Uncomment to use a local copy of poktroll
 // replace github.com/pokt-network/shannon-sdk => /Users/olshansky/workspace/pocket/shannon-sdk
-
-// TODO_IN_THIS_PR(@commoddity): remove this once the poktroll PR is merged.
-replace github.com/pokt-network/poktroll => ../pocket
+// replace github.com/pokt-network/poktroll => /Users/olshansky/workspace/pocket/poktroll2
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
@@ -16,7 +14,7 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pokt-foundation/pocket-go v0.21.0
-	github.com/pokt-network/poktroll v0.1.26-0.20250704150000-317746c0d64f
+	github.com/pokt-network/poktroll v0.1.27-dev2.0.20250714134233-fab8a5d1f2e4
 	github.com/pokt-network/shannon-sdk v0.0.0-20250711180840-8854f9d2cdcc
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0

@@ -1010,6 +1010,8 @@ github.com/pokt-foundation/pocket-go v0.21.0 h1:LbCPHQWdlaHzWatPrmghRR2+lrh40jmo
 github.com/pokt-foundation/pocket-go v0.21.0/go.mod h1:TyJgMIbfVF9qhjTMU9u+TeiBwYKLq6+YZhq6POLNeHE=
 github.com/pokt-foundation/utils-go v0.7.0 h1:+BwAZj9Wfac6zkD4eQstRoz8lHc+6xBEtySys9WE5Ec=
 github.com/pokt-foundation/utils-go v0.7.0/go.mod h1:VMYNYtm1NKfCceLqzs6QSRhLcivafktirc3FSnB7Hxs=
+github.com/pokt-network/poktroll v0.1.27-dev2.0.20250714134233-fab8a5d1f2e4 h1:hRGW5Is5JeF9S6zGabQzCsF6WlUx+Ld3hxVxMJogpu4=
+github.com/pokt-network/poktroll v0.1.27-dev2.0.20250714134233-fab8a5d1f2e4/go.mod h1:HJKAjcb4qePkKrBTQozBS+eyNLHm5BeH1tqbJfzvI2s=
 github.com/pokt-network/ring-go v0.1.0 h1:hF7mDR4VVCIqqDAsrloP8azM9y1mprc99YgnTjKSSwk=
 github.com/pokt-network/ring-go v0.1.0/go.mod h1:8NHPH7H3EwrPX3XHfpyRI6bz4gApkE3+fd0XZRbMWP0=
 github.com/pokt-network/shannon-sdk v0.0.0-20250711180840-8854f9d2cdcc h1:GUwMBDRwNEhjfA+vpp/ui2ZiYyydyGQ7ixWdifxzMl4=
