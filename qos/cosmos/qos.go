@@ -31,8 +31,6 @@ type QoS struct {
 	*cosmosSDKRequestValidator
 }
 
-// TODO_IN_THIS_PR(@commoddity): Add the observability changes introduced in PRs #347 and #348 to the new `cosmos` QoS package.
-
 // NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
 func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *QoS {
 	cosmosSDKChainID := config.getCosmosSDKChainID()
