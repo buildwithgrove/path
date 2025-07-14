@@ -97,30 +97,45 @@ func (rc requestContext) GetServicePayload() protocol.Payload {
 	}
 
 	// If the request is REST-like set the path including query parameters.
-	if rc.httpReq.URL.Path != "" {
-		payload.Path = rc.httpReq.URL.Path
-
-		if rc.httpReq.URL.RawQuery != "" {
-			payload.Path += "?" + rc.httpReq.URL.RawQuery
-		}
+	if rc.isRESTLikeRequest() {
+		rc.setPathWithQueryParams(&payload)
 	}
 
 	// Determine if request is a JSON-RPC request by checking if:
 	//  - The request method is POST
 	//  - The JSON-RPC request is not empty.
 	if rc.isJsonRpcRequest() {
-		reqBz, err := json.Marshal(rc.jsonrpcReq)
-		if err == nil {
-			payload.Data = string(reqBz)
-		}
+		rc.setJSONRPCRequest(&payload)
 	}
 
 	return payload
 }
 
+// isRESTLikeRequest checks if the request is a REST-like request.
+func (rc *requestContext) isRESTLikeRequest() bool {
+	return rc.httpReq.URL.Path != ""
+}
+
+// setPathWithQueryParams sets the path of the payload with the query parameters from the request.
+func (rc *requestContext) setPathWithQueryParams(payload *protocol.Payload) {
+	payload.Path = rc.httpReq.URL.Path
+	if rc.httpReq.URL.RawQuery != "" {
+		payload.Path += "?" + rc.httpReq.URL.RawQuery
+	}
+}
+
 // isEmptyJSONRPCRequest checks if the JSON-RPC request is empty/uninitialized.
 func (rc requestContext) isJsonRpcRequest() bool {
 	return rc.httpReq.Method == http.MethodPost && rc.jsonrpcReq != nil
+}
+
+// setJSONRPCRequest sets the JSON-RPC request in the payload.
+func (rc *requestContext) setJSONRPCRequest(payload *protocol.Payload) {
+	reqBz, err := json.Marshal(rc.jsonrpcReq)
+	if err != nil {
+		rc.logger.Error().Err(err).Msg("failed to marshal JSON-RPC request")
+	}
+	payload.Data = string(reqBz)
 }
 
 // UpdateWithResponse is NOT safe for concurrent use
@@ -203,8 +218,8 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 		ServiceObservations: &qosobservations.Observations_Cosmos{
 			// TODO_TECHDEBT(@adshmh): Set JSON-RPCRequest field.
 			// Requires utility function to convert between:
-			// - qos.jsonrpc.Request
-			// - observation.qos.JsonRpcRequest
+			// 		- qos.jsonrpc.Request
+			// 		- observation.qos.JsonRpcRequest
 			// Needed for setting JSON-RPC fields in any QoS service's observations.
 			Cosmos: observations,
 		},
