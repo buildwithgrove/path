@@ -81,11 +81,13 @@ func getServiceQoSInstances(
 		case cosmos.QoSType:
 			cosmosSDKServiceQoSConfig, ok := qosServiceConfig.(cosmos.CosmosSDKServiceQoSConfig)
 			if !ok {
-				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
+				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CosmosSDK service", serviceID)
 			}
 
-			cosmosSDKQoS := cosmos.NewQoSInstance(logger, cosmosSDKServiceQoSConfig)
+			cosmosSDKQoS := cosmos.NewQoSInstance(qosLogger, cosmosSDKServiceQoSConfig)
 			qosServices[serviceID] = cosmosSDKQoS
+
+			hydratedLogger.With("service_id", serviceID).Debug().Msg("Added CosmosSDK QoS instance for the service ID.")
 
 		case solana.QoSType:
 			solanaServiceQoSConfig, ok := qosServiceConfig.(solana.SolanaServiceQoSConfig)

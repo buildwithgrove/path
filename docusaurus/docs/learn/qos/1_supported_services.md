@@ -98,3 +98,13 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | TRON                                                       | tron                     | EVM              | 728126428                |                           |
 | Sei                                                        | sei                      | EVM              | 1329                     |                           |
 | Solana                                                     | solana                   | Solana           |                          |                           |
+| Osmosis                                                    | osmosis                  | CosmosSDK        | osmosis                  |                           |
+| Pocket Network                                             | pocket                   | CosmosSDK        | pocket                   |                           |
+| Pocket Network Alpha                                       | pocket-alpha             | CosmosSDK        | pocket-alpha             |                           |
+| Pocket Network Beta                                        | pocket-beta              | CosmosSDK        | pocket-beta              |                           |
+| Pocket Network Beta 1                                      | pocket-beta1             | CosmosSDK        | pocket-beta1             |                           |
+| Pocket Network Beta 2                                      | pocket-beta2             | CosmosSDK        | pocket-beta2             |                           |
+| Pocket Network Beta 3                                      | pocket-beta3             | CosmosSDK        | pocket-beta3             |                           |
+| Pocket Network Beta 4                                      | pocket-beta4             | CosmosSDK        | pocket-beta4             |                           |
+| Cosmos Hub                                                 | cometbft                 | CosmosSDK        | cosmoshub-4              |                           |
+| XRPL EVM Testnet                                           | xrplevm-testnet          | CosmosSDK        | xrplevm_1449000-1        |                           |
