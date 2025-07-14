@@ -10,8 +10,6 @@ import (
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
 const apiPathHealthCheck = "/health"
 
-const idHealthCheck = 2002
-
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the health.
 const checkHealthInterval = 30 * time.Second
 

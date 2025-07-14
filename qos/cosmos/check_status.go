@@ -10,8 +10,6 @@ import (
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 const apiPathStatus = "/status"
 
-const idStatusCheck = 2001
-
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status.
 const checkStatusInterval = 10 * time.Second
 

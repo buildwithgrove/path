@@ -153,61 +153,6 @@ func (crv *cosmosSDKRequestValidator) createHTTPBodyReadFailureContext(err error
 	}
 }
 
-// createRequestUnmarshalingFailureContext creates an error context for request unmarshaling failures.
-func (crv *cosmosSDKRequestValidator) createRequestUnmarshalingFailureContext(id jsonrpc.ID, err error) gateway.RequestQoSContext {
-
-	// Create the observations object with the request unmarshaling failure observation
-	observations := createRequestUnmarshalingFailureObservation(id, crv.serviceID, crv.chainID, err)
-	// Create the JSON-RPC error response
-	response := newErrResponseInvalidRequest(err, id)
-
-	// Build and return the error context
-	return &errorContext{
-		logger:                 crv.logger,
-		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureUnmarshalFailure,
-		cosmosSDKObservations:  observations,
-	}
-}
-
-// createRequestUnmarshalingFailureObservation creates an observation for a CosmosSDK request
-// that failed to unmarshal from JSON.
-//
-// This observation:
-// - Captures details about the validation failure (request ID, error message, chain ID)
-// - Is used for both reporting metrics and providing context for debugging
-//
-// Parameters:
-// - id: The JSON-RPC request ID associated with the failed request
-// - err: The error that occurred during unmarshaling
-// - chainID: The CosmosSDK chain identifier for which the request was intended
-//
-// Returns:
-// - qosobservations.Observations: A structured observation containing details about the validation failure
-func createRequestUnmarshalingFailureObservation(
-	_ jsonrpc.ID,
-	serviceID protocol.ServiceID,
-	chainID string,
-	err error,
-) *qosobservations.Observations_Cosmos {
-	return &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			RouteRequest: "JSON-RPC unmarshaling failed",
-			EndpointObservations: []*qosobservations.CosmosSDKEndpointObservation{
-				{
-					ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
-						UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
-							JsonrpcResponse: &qosobservations.JsonRpcResponse{
-								Id: "",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 // createHTTPBodyReadFailureObservation creates an observation for cases where
 // reading the HTTP request body for a CosmosSDK service request has failed.
 //

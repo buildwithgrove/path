@@ -7,18 +7,12 @@ import (
 )
 
 const (
-	// HTTP status code 400 bad request is used if the request cannot be deserialized into JSONRPC.
-	httpStatusRequestValidationFailureUnmarshalFailure = http.StatusBadRequest
-
 	// TODO_MVP(@adshmh): Remove the error below once the qos interface is updated to replace ParseHTTPRequest with ParseRequest, decoupling the QoS service from the HTTP request.
 	// HTTP status code 500 internal server error is used if reading the HTTP request's body fails
 	httpStatusRequestValidationFailureReadHTTPBodyFailure = http.StatusInternalServerError
 
 	// HTTP status codes returned on response validation failure: no response received
 	httpStatusResponseValidationFailureNoResponse = http.StatusInternalServerError
-
-	// HTTP status codes returned on response validation failure: empty response received
-	httpStatusResponseValidationFailureEmptyResponse = http.StatusInternalServerError
 )
 
 // httpHeadersApplicationJSON is the `Content-Type` HTTP header used in all CosmosSDK responses.
