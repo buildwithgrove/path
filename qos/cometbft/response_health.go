@@ -1,8 +1,6 @@
 package cometbft
 
 import (
-	"encoding/json"
-
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -61,21 +59,8 @@ func (r responseToHealth) GetObservation() qosobservations.CometBFTEndpointObser
 	}
 }
 
-// GetResponsePayload returns the payload for the response to a `/health` request.
+// Returns the parsed JSONRPC response.
 // Implements the response interface.
-func (r responseToHealth) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshaling failed.
-	bz, err := json.Marshal(r.jsonRPCResponse)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
-	}
-	return bz
-}
-
-// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
-// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
-// Implements the response interface.
-func (r responseToHealth) GetResponseStatusCode() int {
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+func (r responseToHealth) GetJSONRPCResponse() jsonrpc.Response {
+	return r.jsonRPCResponse
 }
