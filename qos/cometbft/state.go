@@ -20,6 +20,9 @@ type ServiceState struct {
 	// Corresponds with with the `network` field returned by the `/status` endpoint.
 	chainID string
 
+	// Used by observations of requests.
+	serviceID protocol.ServiceID
+
 	// perceivedBlockNumber is the perceived current block number based on endpoints' responses to `/status` requests.
 	// It is calculated as the maximum of block height reported by any of the endpoints.
 	//

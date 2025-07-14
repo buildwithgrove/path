@@ -5,17 +5,36 @@ package path.qos;
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/jsonrpc.proto";
+import "path/qos/request_origin.proto";
+import "path/qos/request_error.proto";
 
 // CometBFTRequestObservations captures all observations made while serving a single CometBFT blockchain service request.
 message CometBFTRequestObservations {
-    // The CometBFT blockchain service's route request, including all params
-    string route_request = 1;
+  // The CometBFT blockchain service's route request, including all params
+  string route_request = 1;
 
-    // CometBFT-specific observations from endpoint(s) that responded to the service request.
-    // Multiple observations may occur when:
-    // * Original endpoint fails
-    // * Request is sent to additional endpoints for data collection
-    repeated CometBFTEndpointObservation endpoint_observations = 2;
+  // chain_id is the blockchain identifier for the QoS implementation.
+  // This is preset by the processor and not determined by the request.
+  // Used by metrics and data pipeline.
+  string chain_id = 2;
+
+  // service_id is the identifier for the QoS implementation.
+  // It is the "alias" or human readable interpretation of the chain_id.
+  string service_id = 3;
+
+  // The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
+  RequestOrigin request_origin = 4;
+
+  // Tracks request errors, if any.
+  optional RequestError request_error = 5;
+
+  // CometBFT-specific observations from endpoint(s) that responded to the service request.
+  // Multiple observations may occur when:
+  // * Original endpoint fails
+  // * Request is sent to additional endpoints for data collection
+  repeated CometBFTEndpointObservation endpoint_observations = 6;
+
+  // TODO_UPNEXT(@adshmh): Add endpoint selection metadata.
 }
 
 // CometBFTEndpointObservation stores a single observation from an endpoint servicing the protocol response.
