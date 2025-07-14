@@ -101,11 +101,22 @@ type CosmosSDKRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The CosmosSDK blockchain service's route request, including all params
 	RouteRequest string `protobuf:"bytes,1,opt,name=route_request,json=routeRequest,proto3" json:"route_request,omitempty"`
+	// chain_id is the blockchain identifier for the QoS implementation.
+	// This is preset by the processor and not determined by the request.
+	// Used by metrics and data pipeline.
+	ChainId string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// service_id is the identifier for the QoS implementation.
+	// It is the "alias" or human readable interpretation of the chain_id.
+	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
+	// The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
+	RequestOrigin RequestOrigin `protobuf:"varint,4,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`
+	// Tracks request errors, if any.
+	RequestError *RequestError `protobuf:"bytes,5,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
 	// CosmosSDK-specific observations from endpoint(s) that responded to the service request.
 	// Multiple observations may occur when:
 	// * Original endpoint fails
 	// * Request is sent to additional endpoints for data collection
-	EndpointObservations []*CosmosSDKEndpointObservation `protobuf:"bytes,2,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	EndpointObservations []*CosmosSDKEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -145,6 +156,34 @@ func (x *CosmosSDKRequestObservations) GetRouteRequest() string {
 		return x.RouteRequest
 	}
 	return ""
+}
+
+func (x *CosmosSDKRequestObservations) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *CosmosSDKRequestObservations) GetServiceId() string {
+	if x != nil {
+		return x.ServiceId
+	}
+	return ""
+}
+
+func (x *CosmosSDKRequestObservations) GetRequestOrigin() RequestOrigin {
+	if x != nil {
+		return x.RequestOrigin
+	}
+	return RequestOrigin_REQUEST_ORIGIN_UNSPECIFIED
+}
+
+func (x *CosmosSDKRequestObservations) GetRequestError() *RequestError {
+	if x != nil {
+		return x.RequestError
+	}
+	return nil
 }
 
 func (x *CosmosSDKRequestObservations) GetEndpointObservations() []*CosmosSDKEndpointObservation {
@@ -515,10 +554,16 @@ var File_path_qos_cosmos_proto protoreflect.FileDescriptor
 
 const file_path_qos_cosmos_proto_rawDesc = "" +
 	"\n" +
-	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\xa0\x01\n" +
+	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xee\x02\n" +
 	"\x1cCosmosSDKRequestObservations\x12#\n" +
-	"\rroute_request\x18\x01 \x01(\tR\frouteRequest\x12[\n" +
-	"\x15endpoint_observations\x18\x02 \x03(\v2&.path.qos.CosmosSDKEndpointObservationR\x14endpointObservations\"\xa2\x03\n" +
+	"\rroute_request\x18\x01 \x01(\tR\frouteRequest\x12\x19\n" +
+	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x1d\n" +
+	"\n" +
+	"service_id\x18\x03 \x01(\tR\tserviceId\x12>\n" +
+	"\x0erequest_origin\x18\x04 \x01(\x0e2\x17.path.qos.RequestOriginR\rrequestOrigin\x12@\n" +
+	"\rrequest_error\x18\x05 \x01(\v2\x16.path.qos.RequestErrorH\x00R\frequestError\x88\x01\x01\x12[\n" +
+	"\x15endpoint_observations\x18\x06 \x03(\v2&.path.qos.CosmosSDKEndpointObservationR\x14endpointObservationsB\x10\n" +
+	"\x0e_request_error\"\xa2\x03\n" +
 	"\x1cCosmosSDKEndpointObservation\x12#\n" +
 	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12L\n" +
 	"\x0fhealth_response\x18\x02 \x01(\v2!.path.qos.CosmosSDKHealthResponseH\x00R\x0ehealthResponse\x12L\n" +
@@ -565,21 +610,25 @@ var file_path_qos_cosmos_proto_goTypes = []any{
 	(*CosmosSDKStatusResponse)(nil),       // 4: path.qos.CosmosSDKStatusResponse
 	(*CosmosSDKUnrecognizedResponse)(nil), // 5: path.qos.CosmosSDKUnrecognizedResponse
 	(*CosmosSDKEmptyResponse)(nil),        // 6: path.qos.CosmosSDKEmptyResponse
-	(*JsonRpcResponse)(nil),               // 7: path.qos.JsonRpcResponse
+	(RequestOrigin)(0),                    // 7: path.qos.RequestOrigin
+	(*RequestError)(nil),                  // 8: path.qos.RequestError
+	(*JsonRpcResponse)(nil),               // 9: path.qos.JsonRpcResponse
 }
 var file_path_qos_cosmos_proto_depIdxs = []int32{
-	2, // 0: path.qos.CosmosSDKRequestObservations.endpoint_observations:type_name -> path.qos.CosmosSDKEndpointObservation
-	3, // 1: path.qos.CosmosSDKEndpointObservation.health_response:type_name -> path.qos.CosmosSDKHealthResponse
-	4, // 2: path.qos.CosmosSDKEndpointObservation.status_response:type_name -> path.qos.CosmosSDKStatusResponse
-	5, // 3: path.qos.CosmosSDKEndpointObservation.unrecognized_response:type_name -> path.qos.CosmosSDKUnrecognizedResponse
-	6, // 4: path.qos.CosmosSDKEndpointObservation.empty_response:type_name -> path.qos.CosmosSDKEmptyResponse
-	7, // 5: path.qos.CosmosSDKUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	0, // 6: path.qos.CosmosSDKEmptyResponse.response_validation_error:type_name -> path.qos.CosmosSDKResponseValidationError
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	7, // 0: path.qos.CosmosSDKRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
+	8, // 1: path.qos.CosmosSDKRequestObservations.request_error:type_name -> path.qos.RequestError
+	2, // 2: path.qos.CosmosSDKRequestObservations.endpoint_observations:type_name -> path.qos.CosmosSDKEndpointObservation
+	3, // 3: path.qos.CosmosSDKEndpointObservation.health_response:type_name -> path.qos.CosmosSDKHealthResponse
+	4, // 4: path.qos.CosmosSDKEndpointObservation.status_response:type_name -> path.qos.CosmosSDKStatusResponse
+	5, // 5: path.qos.CosmosSDKEndpointObservation.unrecognized_response:type_name -> path.qos.CosmosSDKUnrecognizedResponse
+	6, // 6: path.qos.CosmosSDKEndpointObservation.empty_response:type_name -> path.qos.CosmosSDKEmptyResponse
+	9, // 7: path.qos.CosmosSDKUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	0, // 8: path.qos.CosmosSDKEmptyResponse.response_validation_error:type_name -> path.qos.CosmosSDKResponseValidationError
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_cosmos_proto_init() }
@@ -588,6 +637,9 @@ func file_path_qos_cosmos_proto_init() {
 		return
 	}
 	file_path_qos_jsonrpc_proto_init()
+	file_path_qos_request_origin_proto_init()
+	file_path_qos_request_error_proto_init()
+	file_path_qos_cosmos_proto_msgTypes[0].OneofWrappers = []any{}
 	file_path_qos_cosmos_proto_msgTypes[1].OneofWrappers = []any{
 		(*CosmosSDKEndpointObservation_HealthResponse)(nil),
 		(*CosmosSDKEndpointObservation_StatusResponse)(nil),

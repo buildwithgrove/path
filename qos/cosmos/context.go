@@ -9,6 +9,7 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -41,15 +42,6 @@ type response interface {
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
 	GetHTTPResponse() httpResponse
-
-	// GetResponsePayload returns the payload for the response to a `/status` request.
-	// Implements the response interface.
-	GetResponsePayload() []byte
-
-	// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
-	// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
-	// Implements the response interface.
-	GetResponseStatusCode() int
 }
 
 var _ response = &endpointResponse{}
@@ -159,67 +151,62 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // a CosmosSDK blockchain service request.
 // Implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
-	// By default, return a generic HTTP response if no endpoint responses
-	// have been reported to the request context.
-	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""))
-
-	// If at least one endpoint response exists, return the last one
-	if len(rc.endpointResponses) >= 1 {
-		response = rc.endpointResponses[len(rc.endpointResponses)-1]
-	}
-
-	// Default to generic response if no endpoint responses exist
-	return httpResponse{
-		responsePayload: response.GetResponsePayload(),
-		httpStatusCode:  response.GetResponseStatusCode(),
-	}
-}
-
-// GetObservations returns all endpoint observations from the request context.
-// Implements gateway.RequestQoSContext interface.
-func (rc requestContext) GetObservations() qosobservations.Observations {
-	var observations []*qosobservations.CosmosSDKEndpointObservation
-
-	// If no (zero) responses were received, create a single observation for the no-response scenario.
+	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
 	if len(rc.endpointResponses) == 0 {
 		responseNoneObj := responseNone{
 			logger:     rc.logger,
 			httpReq:    rc.httpReq,
 			jsonrpcReq: rc.jsonrpcReq,
 		}
-		responseNoneObs := responseNoneObj.GetObservation()
-		observations = append(observations, &responseNoneObs)
-	} else {
-		// Otherwise, process all responses as individual observations.
-		observations = make([]*qosobservations.CosmosSDKEndpointObservation, len(rc.endpointResponses))
-		for idx, endpointResponse := range rc.endpointResponses {
-			obs := endpointResponse.GetObservation()
-			obs.EndpointAddr = string(endpointResponse.EndpointAddr)
-			observations[idx] = &obs
+
+		return responseNoneObj.GetHTTPResponse()
+	}
+
+	// return the last endpoint response reported to the context.
+	return rc.endpointResponses[len(rc.endpointResponses)-1].GetHTTPResponse()
+}
+
+// GetObservations returns all endpoint observations from the request context.
+// Implements gateway.RequestQoSContext interface.
+func (rc requestContext) GetObservations() qosobservations.Observations {
+	// Set the observation fields common for all requests: successful or failed.
+	observations := &qosobservations.CosmosSDKRequestObservations{
+		ChainId:       rc.chainID,
+		ServiceId:     string(rc.serviceID),
+		RequestOrigin: rc.requestOrigin,
+	}
+
+	// No endpoint responses received.
+	// Set request error.
+	if len(rc.endpointResponses) == 0 {
+		observations.RequestError = qos.GetRequestErrorForProtocolError()
+
+		return qosobservations.Observations{
+			ServiceObservations: &qosobservations.Observations_Cosmos{
+				Cosmos: observations,
+			},
 		}
 	}
 
-	// Return the set of observations for the single request.
-	var routeRequest string
-	if rc.httpReq.URL != nil && rc.httpReq.URL.Path != "" {
-		// For REST-like requests, use the path
-		routeRequest = rc.httpReq.URL.Path
-		if rc.httpReq.URL.RawQuery != "" {
-			routeRequest += "?" + rc.httpReq.URL.RawQuery
-		}
-	} else if rc.isJsonRpcRequest() {
-		// For JSON-RPC requests, serialize the request
-		routeRequestBytes, _ := json.Marshal(rc.jsonrpcReq)
-		routeRequest = string(routeRequestBytes)
+	// Build the endpoint(s) observations.
+	endpointObservations := make([]*qosobservations.CosmosSDKEndpointObservation, len(rc.endpointResponses))
+	for idx, endpointResponse := range rc.endpointResponses {
+		obs := endpointResponse.GetObservation()
+		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
+		endpointObservations[idx] = &obs
 	}
+
+	// Set the endpoint observations fields.
+	observations.EndpointObservations = endpointObservations
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Cosmos{
-			Cosmos: &qosobservations.CosmosSDKRequestObservations{
-				RouteRequest:         routeRequest,
-				EndpointObservations: observations,
-			},
+			// TODO_TECHDEBT(@adshmh): Set JSON-RPCRequest field.
+			// Requires utility function to convert between:
+			// - qos.jsonrpc.Request
+			// - observation.qos.JsonRpcRequest
+			// Needed for setting JSON-RPC fields in any QoS service's observations.
+			Cosmos: observations,
 		},
 	}
 }

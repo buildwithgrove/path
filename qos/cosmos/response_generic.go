@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	// errCodeUnmarshaling is set as the JSON-RPC response's error code if the endpoint returns a malformed response.
-	errCodeUnmarshaling = -32600
+	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling = -32000
 
 	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSON-RPC response"
