@@ -46,7 +46,7 @@ func unmarshalResponse(
 	}
 
 	// NOTE: We intentionally skip validating the JSON-RPC response ID here because
-	// CometBFT endpoints may use different ID conventions.
+	// CosmosSDK endpoints may use different ID conventions.
 	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Unmarshal the JSON-RPC response into a method-specific response.

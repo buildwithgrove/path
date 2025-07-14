@@ -57,15 +57,15 @@ func (r responseNone) GetObservation() qosobservations.CosmosSDKEndpointObservat
 // Implements the response interface.
 func (r responseNone) GetHTTPResponse() httpResponse {
 	return httpResponse{
-		responsePayload: r.getResponsePayload(),
-		httpStatusCode:  r.getHTTPStatusCode(),
+		responsePayload: r.GetResponsePayload(),
+		httpStatusCode:  r.GetResponseStatusCode(),
 	}
 }
 
 // getResponsePayload constructs an appropriate error response based on request type.
 // For JSON-RPC requests: returns a JSONRPC error response with request ID
 // For REST requests: returns a simple JSON error message
-func (r responseNone) getResponsePayload() []byte {
+func (r responseNone) GetResponsePayload() []byte {
 	var responsePayload []byte
 	var err error
 
@@ -75,8 +75,8 @@ func (r responseNone) getResponsePayload() []byte {
 		responsePayload, err = json.Marshal(userResponse)
 	} else {
 		// REST error response - simple JSON error message
-		restErrorResponse := map[string]interface{}{
-			"error": map[string]interface{}{
+		restErrorResponse := map[string]any{
+			"error": map[string]any{
 				"code":    -1,
 				"message": "No endpoint response received",
 				"data":    "The request could not be processed because no endpoint provided a response",
@@ -96,6 +96,6 @@ func (r responseNone) getResponsePayload() []byte {
 
 // getHTTPStatusCode returns the HTTP status code to be returned to the client.
 // Always a 500 Internal Server Error for the responseNone struct.
-func (r responseNone) getHTTPStatusCode() int {
+func (r responseNone) GetResponseStatusCode() int {
 	return httpStatusResponseValidationFailureNoResponse
 }

@@ -41,6 +41,15 @@ type response interface {
 
 	// GetHTTPResponse returns the HTTP response to be sent back to the client.
 	GetHTTPResponse() httpResponse
+
+	// GetResponsePayload returns the payload for the response to a `/status` request.
+	// Implements the response interface.
+	GetResponsePayload() []byte
+
+	// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+	// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
+	// Implements the response interface.
+	GetResponseStatusCode() int
 }
 
 var _ response = &endpointResponse{}
@@ -150,19 +159,21 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // a CosmosSDK blockchain service request.
 // Implements the gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// Use a noResponses struct if no responses were reported by the protocol from any endpoints.
-	if len(rc.endpointResponses) == 0 {
-		responseNoneObj := responseNone{
-			logger:     rc.logger,
-			httpReq:    rc.httpReq,
-			jsonrpcReq: rc.jsonrpcReq,
-		}
+	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
+	// By default, return a generic HTTP response if no endpoint responses
+	// have been reported to the request context.
+	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""))
 
-		return responseNoneObj.GetHTTPResponse()
+	// If at least one endpoint response exists, return the last one
+	if len(rc.endpointResponses) >= 1 {
+		response = rc.endpointResponses[len(rc.endpointResponses)-1]
 	}
 
-	// return the last endpoint response reported to the context.
-	return rc.endpointResponses[len(rc.endpointResponses)-1].GetHTTPResponse()
+	// Default to generic response if no endpoint responses exist
+	return httpResponse{
+		responsePayload: response.GetResponsePayload(),
+		httpStatusCode:  response.GetResponseStatusCode(),
+	}
 }
 
 // GetObservations returns all endpoint observations from the request context.
