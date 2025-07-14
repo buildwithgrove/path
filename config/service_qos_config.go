@@ -54,7 +54,7 @@ var QoSServiceConfigs = qosServiceConfigs{
 
 const (
 	defaultEVMChainID      = "0x1" // ETH Mainnet (1)
-	defaultCometBFTChainID = "cosmoshub-4"
+	defaultCosmosSDKChainID = "cosmoshub-4"
 )
 
 // shannonServices is the list of QoS service configs for the Shannon protocol.
@@ -398,23 +398,20 @@ var shannonServices = []ServiceQoSConfig{
 
 	// *** Near EVM Services ***
 
-	// Near
 	// TODO_TECHDEBT: Add support for Near QoS
+	// Near
 	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
 
-	// *** CometBFT Services ***
+	// *** Cosmos SDK Services ***
 
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CometBFT config.
+	// the correct chain ID is being used for each service in the CosmosSDK config.
 
 	// Osmosis
 	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
-		sharedtypes.RPCType_GRPC:      {}, // NOTE: gRPC is not supported in the `cosmos` qos implementation.
 	}),
-
-	// *** Cosmos SDK Services ***
 
 	// Pocket Mainnet and Beta Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
@@ -462,6 +459,9 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
 	}),
+
+	// TODO_UPNEXT(@commoddity): XRPL EVM MainNet
+	// TODO_UPNEXT(@commoddity): XRPL EVM Devnet
 
 	// *** Solana Services ***
 
@@ -814,17 +814,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("F034", "0x531", nil),
-
-	// *** CometBFT Services ***
-	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CometBFT config.
-
-	// Osmosis
-	cosmos.NewCosmosSDKServiceQoSConfig("F020", "osmosis", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
-		sharedtypes.RPCType_COMET_BFT: {},
-		sharedtypes.RPCType_GRPC:      {},
-	}),
 
 	// *** Solana Services ***
 

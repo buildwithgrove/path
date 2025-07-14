@@ -76,13 +76,14 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, supplierEndpoints := range allEndpoints {
-		endpoint := endpoint{
-			supplier: string(supplierEndpoints[0].Supplier()),
-			// Set the session field on the endpoint for efficient lookup when sending relays.
-			session: session,
-		}
 
 		for _, supplierEndpoint := range supplierEndpoints {
+			endpoint := endpoint{
+				supplier: string(supplierEndpoint.Supplier()),
+				// Set the session field on the endpoint for efficient lookup when sending relays.
+				session: session,
+			}
+
 			switch supplierEndpoint.RPCType() {
 			// If the endpoint is a websocket RPC type endpoint, set the websocket URL.
 			case sharedtypes.RPCType_WEBSOCKET:
@@ -91,9 +92,9 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 			default:
 				endpoint.url = supplierEndpoint.Endpoint().Url
 			}
-		}
 
-		endpoints[endpoint.Addr()] = endpoint
+			endpoints[endpoint.Addr()] = endpoint
+		}
 	}
 
 	return endpoints, nil
