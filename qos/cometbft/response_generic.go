@@ -49,25 +49,10 @@ func (r responseGeneric) GetObservation() qosobservations.CometBFTEndpointObserv
 	}
 }
 
-// GetResponsePayload returns the payload for the response to a `/health` request.
+// Returns the parsed JSONRPC response.
 // Implements the response interface.
-//
-// TODO_MVP(@adshmh): handle any unmarshaling errors and build a method-specific payload generator.
-func (r responseGeneric) GetResponsePayload() []byte {
-	bz, err := json.Marshal(r.jsonRPCResponse)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseGeneric: Marshaling JSON-RPC response failed.")
-	}
-	return bz
-}
-
-// CometBFT response codes:
-// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
-// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
-// Implements the response interface.
-func (r responseGeneric) GetResponseStatusCode() int {
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
+func (r responseGeneric) GetJSONRPCResponse() jsonrpc.Response {
+	return r.jsonRPCResponse
 }
 
 // responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.

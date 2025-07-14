@@ -46,6 +46,8 @@ func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.
 		httpReq:       req,
 		endpointStore: qos.EndpointStore,
 		isValid:       true,
+		serviceID:     qos.serviceState.serviceID,
+		chainID:       qos.serviceState.chainID,
 	}
 
 	// Parse both REST and JSON-RPC requests (CometBFT supports both).

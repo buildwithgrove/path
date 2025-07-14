@@ -26,11 +26,22 @@ type CometBFTRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The CometBFT blockchain service's route request, including all params
 	RouteRequest string `protobuf:"bytes,1,opt,name=route_request,json=routeRequest,proto3" json:"route_request,omitempty"`
+	// chain_id is the blockchain identifier for the QoS implementation.
+	// This is preset by the processor and not determined by the request.
+	// Used by metrics and data pipeline.
+	ChainId string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// service_id is the identifier for the QoS implementation.
+	// It is the "alias" or human readable interpratation of the chain_id.
+	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
+	// The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
+	RequestOrigin RequestOrigin `protobuf:"varint,4,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`
+	// Tracks request errors, if any.
+	RequestError *RequestError `protobuf:"bytes,5,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
 	// CometBFT-specific observations from endpoint(s) that responded to the service request.
 	// Multiple observations may occur when:
 	// * Original endpoint fails
 	// * Request is sent to additional endpoints for data collection
-	EndpointObservations []*CometBFTEndpointObservation `protobuf:"bytes,2,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	EndpointObservations []*CometBFTEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -70,6 +81,34 @@ func (x *CometBFTRequestObservations) GetRouteRequest() string {
 		return x.RouteRequest
 	}
 	return ""
+}
+
+func (x *CometBFTRequestObservations) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *CometBFTRequestObservations) GetServiceId() string {
+	if x != nil {
+		return x.ServiceId
+	}
+	return ""
+}
+
+func (x *CometBFTRequestObservations) GetRequestOrigin() RequestOrigin {
+	if x != nil {
+		return x.RequestOrigin
+	}
+	return RequestOrigin_REQUEST_ORIGIN_UNSPECIFIED
+}
+
+func (x *CometBFTRequestObservations) GetRequestError() *RequestError {
+	if x != nil {
+		return x.RequestError
+	}
+	return nil
 }
 
 func (x *CometBFTRequestObservations) GetEndpointObservations() []*CometBFTEndpointObservation {
@@ -362,10 +401,16 @@ var File_path_qos_cometbft_proto protoreflect.FileDescriptor
 
 const file_path_qos_cometbft_proto_rawDesc = "" +
 	"\n" +
-	"\x17path/qos/cometbft.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\x9e\x01\n" +
+	"\x17path/qos/cometbft.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xec\x02\n" +
 	"\x1bCometBFTRequestObservations\x12#\n" +
-	"\rroute_request\x18\x01 \x01(\tR\frouteRequest\x12Z\n" +
-	"\x15endpoint_observations\x18\x02 \x03(\v2%.path.qos.CometBFTEndpointObservationR\x14endpointObservations\"\xd3\x02\n" +
+	"\rroute_request\x18\x01 \x01(\tR\frouteRequest\x12\x19\n" +
+	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x1d\n" +
+	"\n" +
+	"service_id\x18\x03 \x01(\tR\tserviceId\x12>\n" +
+	"\x0erequest_origin\x18\x04 \x01(\x0e2\x17.path.qos.RequestOriginR\rrequestOrigin\x12@\n" +
+	"\rrequest_error\x18\x05 \x01(\v2\x16.path.qos.RequestErrorH\x00R\frequestError\x88\x01\x01\x12Z\n" +
+	"\x15endpoint_observations\x18\x06 \x03(\v2%.path.qos.CometBFTEndpointObservationR\x14endpointObservationsB\x10\n" +
+	"\x0e_request_error\"\xd3\x02\n" +
 	"\x1bCometBFTEndpointObservation\x12#\n" +
 	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12K\n" +
 	"\x0fhealth_response\x18\x02 \x01(\v2 .path.qos.CometBFTHealthResponseH\x00R\x0ehealthResponse\x12K\n" +
@@ -400,19 +445,23 @@ var file_path_qos_cometbft_proto_goTypes = []any{
 	(*CometBFTHealthResponse)(nil),       // 2: path.qos.CometBFTHealthResponse
 	(*CometBFTStatusResponse)(nil),       // 3: path.qos.CometBFTStatusResponse
 	(*CometBFTUnrecognizedResponse)(nil), // 4: path.qos.CometBFTUnrecognizedResponse
-	(*JsonRpcResponse)(nil),              // 5: path.qos.JsonRpcResponse
+	(RequestOrigin)(0),                   // 5: path.qos.RequestOrigin
+	(*RequestError)(nil),                 // 6: path.qos.RequestError
+	(*JsonRpcResponse)(nil),              // 7: path.qos.JsonRpcResponse
 }
 var file_path_qos_cometbft_proto_depIdxs = []int32{
-	1, // 0: path.qos.CometBFTRequestObservations.endpoint_observations:type_name -> path.qos.CometBFTEndpointObservation
-	2, // 1: path.qos.CometBFTEndpointObservation.health_response:type_name -> path.qos.CometBFTHealthResponse
-	3, // 2: path.qos.CometBFTEndpointObservation.status_response:type_name -> path.qos.CometBFTStatusResponse
-	4, // 3: path.qos.CometBFTEndpointObservation.unrecognized_response:type_name -> path.qos.CometBFTUnrecognizedResponse
-	5, // 4: path.qos.CometBFTUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	5, // 0: path.qos.CometBFTRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
+	6, // 1: path.qos.CometBFTRequestObservations.request_error:type_name -> path.qos.RequestError
+	1, // 2: path.qos.CometBFTRequestObservations.endpoint_observations:type_name -> path.qos.CometBFTEndpointObservation
+	2, // 3: path.qos.CometBFTEndpointObservation.health_response:type_name -> path.qos.CometBFTHealthResponse
+	3, // 4: path.qos.CometBFTEndpointObservation.status_response:type_name -> path.qos.CometBFTStatusResponse
+	4, // 5: path.qos.CometBFTEndpointObservation.unrecognized_response:type_name -> path.qos.CometBFTUnrecognizedResponse
+	7, // 6: path.qos.CometBFTUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_cometbft_proto_init() }
@@ -421,6 +470,9 @@ func file_path_qos_cometbft_proto_init() {
 		return
 	}
 	file_path_qos_jsonrpc_proto_init()
+	file_path_qos_request_origin_proto_init()
+	file_path_qos_request_error_proto_init()
+	file_path_qos_cometbft_proto_msgTypes[0].OneofWrappers = []any{}
 	file_path_qos_cometbft_proto_msgTypes[1].OneofWrappers = []any{
 		(*CometBFTEndpointObservation_HealthResponse)(nil),
 		(*CometBFTEndpointObservation_StatusResponse)(nil),
