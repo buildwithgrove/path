@@ -409,44 +409,44 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Osmosis
 	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
-		sharedtypes.RPCType_GRPC:      {},
+		sharedtypes.RPCType_GRPC:      {}, // NOTE: gRPC is not supported in the `cosmos` qos implementation.
 	}),
 
 	// *** Cosmos SDK Services ***
 
 	// Pocket Mainnet and Beta Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
 	// Pocket Mainnet
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
 	// Pocket Beta Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
@@ -457,10 +457,10 @@ var shannonServices = []ServiceQoSConfig{
 
 	// XRPL EVM Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_JSON_RPC:  {},
-		sharedtypes.RPCType_REST:      {},
+		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
-		sharedtypes.RPCType_WEBSOCKET: {},
+		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
 	}),
 
 	// *** Solana Services ***
