@@ -24,11 +24,15 @@ func getServiceQoSInstances(
 	// need to manually add entries for every new QoS implementation.
 	qosServices := make(map[protocol.ServiceID]gateway.QoSService)
 
-	logger = logger.With("module", "qos").With("method", "getServiceQoSInstances").With("protocol", protocolInstance.Name())
+	// Create a logger for this function's own messages with method-specific context
+	hydratedLogger := logger.With("module", "qos").With("method", "getServiceQoSInstances").With("protocol", protocolInstance.Name())
+
+	// Create a separate logger for QoS instances without method-specific context
+	qosLogger := logger.With("module", "qos").With("protocol", protocolInstance.Name())
 
 	// Wait for the protocol to become healthy BEFORE configuring and starting the hydrator.
 	// - Ensures the protocol instance's configured service IDs are available before hydrator startup.
-	err := waitForProtocolHealth(logger, protocolInstance, defaultProtocolHealthTimeout)
+	err := waitForProtocolHealth(hydratedLogger, protocolInstance, defaultProtocolHealthTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +40,7 @@ func getServiceQoSInstances(
 	// Get configured service IDs from the protocol instance.
 	// - Used to run hydrator checks on all configured service IDs (except those manually disabled by the user).
 	gatewayServiceIDs := protocolInstance.ConfiguredServiceIDs()
-	logGatewayServiceIDs(logger, gatewayServiceIDs)
+	logGatewayServiceIDs(hydratedLogger, gatewayServiceIDs)
 
 	// Remove any service IDs that are manually disabled by the user.
 	for _, disabledQoSServiceIDForGateway := range gatewayConfig.HydratorConfig.QoSDisabledServiceIDs {
@@ -44,13 +48,13 @@ func getServiceQoSInstances(
 		if _, found := gatewayServiceIDs[disabledQoSServiceIDForGateway]; !found {
 			return nil, fmt.Errorf("[INVALID CONFIGURATION] QoS manually disabled for service ID: %s BUT NOT not found in protocol's configured service IDs", disabledQoSServiceIDForGateway)
 		}
-		logger.Info().Msgf("Gateway manually disabled QoS for service ID: %s", disabledQoSServiceIDForGateway)
+		hydratedLogger.Info().Msgf("Gateway manually disabled QoS for service ID: %s", disabledQoSServiceIDForGateway)
 		delete(gatewayServiceIDs, disabledQoSServiceIDForGateway)
 	}
 
 	// Get the service configs for the current protocol
 	qosServiceConfigs := config.QoSServiceConfigs.GetServiceConfigs(gatewayConfig)
-	logQoSServiceConfigs(logger, qosServiceConfigs)
+	logQoSServiceConfigs(hydratedLogger, qosServiceConfigs)
 
 	// Initialize QoS services for all service IDs with a corresponding QoS
 	// implementation, as defined in the `config/service_qos.go` file.
@@ -58,7 +62,7 @@ func getServiceQoSInstances(
 		serviceID := qosServiceConfig.GetServiceID()
 		// Skip service IDs that are not configured for the PATH instance.
 		if _, found := gatewayServiceIDs[serviceID]; !found {
-			logger.Warn().Msgf("Service ID %s has an available QoS configuration but is not configured for the gateway. Skipping...", serviceID)
+			hydratedLogger.Warn().Msgf("Service ID %s has an available QoS configuration but is not configured for the gateway. Skipping...", serviceID)
 			continue
 		}
 
@@ -69,10 +73,10 @@ func getServiceQoSInstances(
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not an EVM service", serviceID)
 			}
 
-			evmQoS := evm.NewQoSInstance(logger, evmServiceQoSConfig)
+			evmQoS := evm.NewQoSInstance(qosLogger, evmServiceQoSConfig)
 			qosServices[serviceID] = evmQoS
 
-			logger.With("service_id", serviceID).Debug().Msg("Added EVM QoS instance for the service ID.")
+			hydratedLogger.With("service_id", serviceID).Debug().Msg("Added EVM QoS instance for the service ID.")
 
 		case cometbft.QoSType:
 			cometBFTServiceQoSConfig, ok := qosServiceConfig.(cometbft.CometBFTServiceQoSConfig)
@@ -80,7 +84,7 @@ func getServiceQoSInstances(
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a CometBFT service", serviceID)
 			}
 
-			cometBFTQoS := cometbft.NewQoSInstance(logger, cometBFTServiceQoSConfig)
+			cometBFTQoS := cometbft.NewQoSInstance(qosLogger, cometBFTServiceQoSConfig)
 			qosServices[serviceID] = cometBFTQoS
 
 		case solana.QoSType:
@@ -89,10 +93,10 @@ func getServiceQoSInstances(
 				return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q is not a Solana service", serviceID)
 			}
 
-			solanaQoS := solana.NewQoSInstance(logger, solanaServiceQoSConfig)
+			solanaQoS := solana.NewQoSInstance(qosLogger, solanaServiceQoSConfig)
 			qosServices[serviceID] = solanaQoS
 
-			logger.With("service_id", serviceID).Debug().Msg("Added Solana QoS instance for the service ID.")
+			hydratedLogger.With("service_id", serviceID).Debug().Msg("Added Solana QoS instance for the service ID.")
 		default:
 			return nil, fmt.Errorf("SHOULD NEVER HAPPEN: error building QoS instances: service ID %q not supported by PATH", serviceID)
 		}
