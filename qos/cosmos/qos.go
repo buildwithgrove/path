@@ -49,9 +49,9 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	}
 
 	serviceState := &serviceState{
-		logger:        logger,
-		serviceConfig: config,
-		endpointStore: store,
+		logger:           logger,
+		serviceQoSConfig: config,
+		endpointStore:    store,
 	}
 
 	cosmosSDKRequestValidator := &cosmosSDKRequestValidator{

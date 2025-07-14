@@ -28,6 +28,7 @@ type endpointCheckHealth struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to a `/health` request.
 	healthy *bool
 
+	// expiresAt stores the time at which the last check expires.
 	expiresAt time.Time
 }
 

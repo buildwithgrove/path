@@ -35,8 +35,8 @@ var _ protocol.EndpointSelector = &serviceState{}
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	logger := ss.logger.With("method", "Select").
-		With("chain_id", ss.serviceConfig.getCosmosSDKChainID()).
-		With("service_id", ss.serviceConfig.GetServiceID())
+		With("chain_id", ss.serviceQoSConfig.getCosmosSDKChainID()).
+		With("service_id", ss.serviceQoSConfig.GetServiceID())
 
 	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
 
@@ -167,7 +167,7 @@ func (ss *serviceState) isStatusValid(check endpointCheckStatus) error {
 		return fmt.Errorf("%w: %v", errNoStatusObs, err)
 	}
 
-	expectedChainID := ss.serviceConfig.getCosmosSDKChainID()
+	expectedChainID := ss.serviceQoSConfig.getCosmosSDKChainID()
 	if chainID != expectedChainID {
 		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
 			errInvalidChainIDObs, chainID, expectedChainID)
@@ -190,7 +190,7 @@ func (ss *serviceState) isStatusValid(check endpointCheckStatus) error {
 	}
 
 	if ss.perceivedBlockNumber > 0 {
-		syncAllowance := ss.serviceConfig.getSyncAllowance()
+		syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
 		minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
 		if latestBlockHeight < minAllowedBlockNumber {
 			return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
