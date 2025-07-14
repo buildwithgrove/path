@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 	sdktypes "github.com/pokt-network/shannon-sdk/types"
 
@@ -33,22 +35,24 @@ var _ FullNode = &LazyFullNode{}
 //   - Enables support for short block times (e.g. LocalNet)
 //   - Use CachingFullNode struct if caching is desired for performance
 type LazyFullNode struct {
-	// logger polylog.Logger
+	logger polylog.Logger
 
 	appClient     *sdk.ApplicationClient
 	sessionClient *sdk.SessionClient
 	blockClient   *sdk.BlockClient
 	accountClient *sdk.AccountClient
+	sharedClient  *sdk.SharedClient
 }
 
 // NewLazyFullNode builds and returns a LazyFullNode using the provided configuration.
-func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
+func NewLazyFullNode(logger polylog.Logger, config FullNodeConfig) (*LazyFullNode, error) {
+	// Hydrate defaults for all config sections
+	config.hydrateDefaults()
+
 	blockClient, err := newBlockClient(config.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("NewSdk: error creating new Shannon block client at URL %s: %w", config.RpcURL, err)
 	}
-
-	config.GRPCConfig = config.GRPCConfig.hydrateDefaults()
 
 	sessionClient, err := newSessionClient(config.GRPCConfig)
 	if err != nil {
@@ -65,11 +69,18 @@ func NewLazyFullNode(config FullNodeConfig) (*LazyFullNode, error) {
 		return nil, fmt.Errorf("NewSdk: error creating new account client using url %s: %w", config.GRPCConfig.HostPort, err)
 	}
 
+	sharedClient, err := newSharedClient(config.GRPCConfig)
+	if err != nil {
+		return nil, fmt.Errorf("NewSdk: error creating new shared client using url %s: %w", config.GRPCConfig.HostPort, err)
+	}
+
 	fullNode := &LazyFullNode{
+		logger:        logger,
 		sessionClient: sessionClient,
 		appClient:     appClient,
 		blockClient:   blockClient,
 		accountClient: accountClient,
+		sharedClient:  sharedClient,
 	}
 
 	return fullNode, nil
@@ -140,6 +151,92 @@ func (lfn *LazyFullNode) IsHealthy() bool {
 // - Used to create relay request signers.
 func (lfn *LazyFullNode) GetAccountClient() *sdk.AccountClient {
 	return lfn.accountClient
+}
+
+// GetSharedParams:
+// - Returns the shared module parameters from the blockchain.
+// - Used to get grace period and session configuration.
+func (lfn *LazyFullNode) GetSharedParams(ctx context.Context) (*sharedtypes.Params, error) {
+	params, err := lfn.sharedClient.GetParams(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetSharedParams: error getting shared module parameters: %w", err)
+	}
+	return &params, nil
+}
+
+// GetCurrentBlockHeight:
+// - Returns the current block height from the blockchain.
+// - Used for session validation and grace period calculations.
+func (lfn *LazyFullNode) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
+	height, err := lfn.blockClient.LatestBlockHeight(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("GetCurrentBlockHeight: error getting latest block height: %w", err)
+	}
+	return height, nil
+}
+
+// GetSessionWithExtendedValidity:
+// - Returns the appropriate session considering grace period logic.
+// - If within grace period of a session rollover, it may return the previous session.
+func (lfn *LazyFullNode) GetSessionWithExtendedValidity(
+	ctx context.Context,
+	serviceID protocol.ServiceID,
+	appAddr string,
+) (sessiontypes.Session, error) {
+	logger := lfn.logger.With(
+		"service_id", serviceID,
+		"app_addr", appAddr,
+		"method", "GetSessionWithExtendedValidity",
+	)
+
+	// Get the current session
+	currentSession, err := lfn.GetSession(ctx, serviceID, appAddr)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to get current session")
+		return sessiontypes.Session{}, fmt.Errorf("error getting current session: %w", err)
+	}
+
+	// Get shared parameters to determine grace period
+	sharedParams, err := lfn.GetSharedParams(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to get shared params, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Get current block height
+	currentHeight, err := lfn.GetCurrentBlockHeight(ctx)
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to get current block height, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Calculate when the previous session's grace period would end
+	prevSessionEndHeight := currentSession.Header.SessionStartBlockHeight - 1
+	prevSessionEndHeightWithExtendedValidity := prevSessionEndHeight + int64(sharedParams.GracePeriodEndOffsetBlocks)
+
+	logger = logger.With(
+		"prev_session_end_height", prevSessionEndHeight,
+		"prev_session_end_height_with_extended_validity", prevSessionEndHeightWithExtendedValidity,
+		"current_height", currentHeight,
+		"current_session_start_height", currentSession.Header.SessionStartBlockHeight,
+		"current_session_end_height", currentSession.Header.SessionEndBlockHeight,
+	)
+
+	// If we're not within the grace period of the previous session, return the current session
+	if currentHeight > prevSessionEndHeightWithExtendedValidity {
+		logger.Debug().Msg("IS NOT WITHIN GRACE PERIOD: Returning current session")
+		return currentSession, nil
+	}
+
+	// Get the previous session
+	prevSession, err := lfn.sessionClient.GetSession(ctx, appAddr, string(serviceID), prevSessionEndHeight)
+	if err != nil || prevSession == nil {
+		logger.Warn().Err(err).Msg("Failed to get previous session, falling back to current session")
+		return currentSession, nil
+	}
+
+	// Return the previous session
+	return *prevSession, nil
 }
 
 // serviceRequestPayload:
@@ -237,4 +334,13 @@ func newAccClient(config GRPCConfig) (*sdk.AccountClient, error) {
 	}
 
 	return &sdk.AccountClient{PoktNodeAccountFetcher: sdk.NewPoktNodeAccountFetcher(conn)}, nil
+}
+
+func newSharedClient(config GRPCConfig) (*sdk.SharedClient, error) {
+	conn, err := connectGRPC(config)
+	if err != nil {
+		return nil, fmt.Errorf("newSharedClient: error creating new GRPC connection for shared client at url %s: %w", config.HostPort, err)
+	}
+
+	return &sdk.SharedClient{QueryClient: sharedtypes.NewQueryClient(conn)}, nil
 }
