@@ -43,12 +43,12 @@ type requestContext struct {
 	logger        polylog.Logger
 	endpointStore *EndpointStore
 
-	// chainID is the chain identifier for EVM QoS implementation.
+	// chainID is the chain identifier for CometBFT QoS implementation.
 	// Expected as the `Result` field in eth_chainId responses.
 	chainID string
 
 	// service_id is the identifier for the evm QoS implementation.
-	// It is the "alias" or human readable interpratation of the chain_id.
+	// It is the "alias" or human readable interpretation of the chain_id.
 	// Used in generating observations.
 	serviceID protocol.ServiceID
 

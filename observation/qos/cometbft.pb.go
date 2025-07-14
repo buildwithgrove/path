@@ -31,7 +31,7 @@ type CometBFTRequestObservations struct {
 	// Used by metrics and data pipeline.
 	ChainId string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// service_id is the identifier for the QoS implementation.
-	// It is the "alias" or human readable interpratation of the chain_id.
+	// It is the "alias" or human readable interpretation of the chain_id.
 	ServiceId string `protobuf:"bytes,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
 	RequestOrigin RequestOrigin `protobuf:"varint,4,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`

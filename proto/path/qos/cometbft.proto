@@ -19,7 +19,7 @@ message CometBFTRequestObservations {
   string chain_id = 2;
 
   // service_id is the identifier for the QoS implementation.
-  // It is the "alias" or human readable interpratation of the chain_id.
+  // It is the "alias" or human readable interpretation of the chain_id.
   string service_id = 3;
 
   // The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
