@@ -94,7 +94,7 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 
 	resultChan := rc.launchParallelRequests(ctx, logger)
 
-	return rc.waitForFirstSuccessfulResponse(ctx, resultChan, metrics, logger)
+	return rc.waitForFirstSuccessfulResponse(ctx, logger, resultChan, metrics)
 }
 
 // updateParallelRequestMetrics updates gateway observations with parallel request metrics
@@ -113,7 +113,7 @@ func (rc *requestContext) launchParallelRequests(ctx context.Context, logger pol
 	resultChan := make(chan parallelRelayResult, len(rc.protocolContexts))
 
 	for protocolCtxIdx, protocolCtx := range rc.protocolContexts {
-		go rc.executeRelayRequest(ctx, protocolCtx, protocolCtxIdx, resultChan, logger)
+		go rc.executeRelayRequest(ctx, logger, protocolCtx, protocolCtxIdx, resultChan)
 	}
 
 	return resultChan
@@ -122,10 +122,10 @@ func (rc *requestContext) launchParallelRequests(ctx context.Context, logger pol
 // executeRelayRequest handles a single relay request in a goroutine
 func (rc *requestContext) executeRelayRequest(
 	ctx context.Context,
+	logger polylog.Logger,
 	protocolCtx ProtocolRequestContext,
 	index int,
 	resultChan chan<- parallelRelayResult,
-	logger polylog.Logger,
 ) {
 	startTime := time.Now()
 	response, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
@@ -150,9 +150,9 @@ func (rc *requestContext) executeRelayRequest(
 // waitForFirstSuccessfulResponse waits for the first successful response or handles all failures
 func (rc *requestContext) waitForFirstSuccessfulResponse(
 	ctx context.Context,
+	logger polylog.Logger,
 	resultChan <-chan parallelRelayResult,
 	metrics *parallelRequestMetrics,
-	logger polylog.Logger,
 ) error {
 	var lastErr error
 	var responseTimings []string
