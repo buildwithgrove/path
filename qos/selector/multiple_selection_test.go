@@ -252,7 +252,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 		name               string
 		availableEndpoints protocol.EndpointAddrList
 		endpointTLDs       map[protocol.EndpointAddr]string
-		usedTLDs           map[string]bool
+		usedTLDs           map[string]struct{}
 		expectError        bool
 		expectedTLDNotUsed bool
 	}{
@@ -264,7 +264,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 				"endpoint2.net": "net",
 				"endpoint3.org": "org",
 			},
-			usedTLDs:           map[string]bool{"com": true},
+			usedTLDs:           map[string]struct{}{"com": {}},
 			expectError:        false,
 			expectedTLDNotUsed: true,
 		},
@@ -275,7 +275,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 				"endpoint1.com": "com",
 				"endpoint2.com": "com",
 			},
-			usedTLDs:           map[string]bool{"com": true},
+			usedTLDs:           map[string]struct{}{"com": {}},
 			expectError:        true,
 			expectedTLDNotUsed: false,
 		},
@@ -285,7 +285,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 			endpointTLDs: map[protocol.EndpointAddr]string{
 				"endpoint1.com": "com",
 			},
-			usedTLDs:           map[string]bool{"com": true},
+			usedTLDs:           map[string]struct{}{"com": {}},
 			expectError:        false,
 			expectedTLDNotUsed: true,
 		},
@@ -293,7 +293,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 			name:               "empty available endpoints",
 			availableEndpoints: protocol.EndpointAddrList{},
 			endpointTLDs:       map[protocol.EndpointAddr]string{},
-			usedTLDs:           map[string]bool{"com": true},
+			usedTLDs:           map[string]struct{}{"com": {}},
 			expectError:        true,
 			expectedTLDNotUsed: false,
 		},
@@ -304,7 +304,7 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 				"endpoint1.com": "com",
 				"endpoint2.net": "net",
 			},
-			usedTLDs:           map[string]bool{},
+			usedTLDs:           map[string]struct{}{},
 			expectError:        false,
 			expectedTLDNotUsed: true,
 		},
@@ -327,7 +327,8 @@ func TestSelectEndpointWithDifferentTLD(t *testing.T) {
 			if tc.expectedTLDNotUsed {
 				// Verify the selected endpoint's TLD is not in usedTLDs
 				if tld, exists := tc.endpointTLDs[result]; exists {
-					require.False(t, tc.usedTLDs[tld], "selected endpoint TLD should not be in used TLDs")
+					_, used := tc.usedTLDs[tld]
+					require.False(t, used, "selected endpoint TLD should not be in used TLDs")
 				}
 			}
 		})
