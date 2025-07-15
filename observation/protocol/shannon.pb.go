@@ -158,6 +158,8 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT           ShannonEndpointErrorType = 30
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION           ShannonEndpointErrorType = 31
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
+	// RelayRequest was canceled by PATH intentionally.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -195,6 +197,7 @@ var (
 		30: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT",
 		31: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION",
 		32: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE",
+		33: "SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
 		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
@@ -229,6 +232,7 @@ var (
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT":           30,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION":           31,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE":            32,
+		"SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH":                   33,
 	}
 )
 
@@ -263,9 +267,10 @@ func (ShannonEndpointErrorType) EnumDescriptor() ([]byte, []int) {
 type ShannonSanctionType int32
 
 const (
-	ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED ShannonSanctionType = 0
-	ShannonSanctionType_SHANNON_SANCTION_SESSION     ShannonSanctionType = 1 // Valid only for current session
-	ShannonSanctionType_SHANNON_SANCTION_PERMANENT   ShannonSanctionType = 2 // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED     ShannonSanctionType = 0
+	ShannonSanctionType_SHANNON_SANCTION_SESSION         ShannonSanctionType = 1 // Valid only for current session
+	ShannonSanctionType_SHANNON_SANCTION_PERMANENT       ShannonSanctionType = 2 // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION ShannonSanctionType = 3 // Do not sanction the endpoint based on this error
 )
 
 // Enum value maps for ShannonSanctionType.
@@ -274,11 +279,13 @@ var (
 		0: "SHANNON_SANCTION_UNSPECIFIED",
 		1: "SHANNON_SANCTION_SESSION",
 		2: "SHANNON_SANCTION_PERMANENT",
+		3: "SHANNON_SANCTION_DO_NOT_SANCTION",
 	}
 	ShannonSanctionType_value = map[string]int32{
-		"SHANNON_SANCTION_UNSPECIFIED": 0,
-		"SHANNON_SANCTION_SESSION":     1,
-		"SHANNON_SANCTION_PERMANENT":   2,
+		"SHANNON_SANCTION_UNSPECIFIED":     0,
+		"SHANNON_SANCTION_SESSION":         1,
+		"SHANNON_SANCTION_PERMANENT":       2,
+		"SHANNON_SANCTION_DO_NOT_SANCTION": 3,
 	}
 )
 
@@ -753,7 +760,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\x9d\r\n" +
+	"*\xcc\r\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
@@ -787,11 +794,13 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	";SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION\x10\x1d\x125\n" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT\x10\x1e\x125\n" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION\x10\x1f\x124\n" +
-	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 *u\n" +
+	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 \x12-\n" +
+	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
-	"\x1aSHANNON_SANCTION_PERMANENT\x10\x02B5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
+	"\x1aSHANNON_SANCTION_PERMANENT\x10\x02\x12$\n" +
+	" SHANNON_SANCTION_DO_NOT_SANCTION\x10\x03B5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
 
 var (
 	file_path_protocol_shannon_proto_rawDescOnce sync.Once

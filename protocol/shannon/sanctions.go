@@ -79,14 +79,18 @@ func classifyRelayError(logger polylog.Logger, err error) (protocolobservations.
 	switch extractedErr {
 
 	// Endpoint Configuration error
-	case ErrRelayEndpointConfig:
+	case errRelayEndpointConfig:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_CONFIG,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
 
 	// endpoint timeout error
-	case ErrRelayEndpointTimeout:
+	case errRelayEndpointTimeout:
 		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_TIMEOUT,
 			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION
+
+	case errContextCancelled:
+		return protocolobservations.ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION
 
 	default:
 		// Unknown error: log and return generic internal error.

@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 // EndpointStore provides the endpoint selection capability required
@@ -55,6 +56,31 @@ func (es *EndpointStore) Select(availableEndpoints protocol.EndpointAddrList) (p
 	// TODO_FUTURE: consider ranking filtered endpoints, e.g. based on latency, rather than randomization.
 	selectedEndpointAddr := filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))]
 	return selectedEndpointAddr, nil
+}
+
+// TODO_NEXT(@commoddity): Ensure all changes to `qos/cometbft` package are captured and transferred to new `qos/cosmos` package that replaces comet bft in PR #345
+// SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
+// Valid endpoints are determined by filtering the available endpoints based on their
+// validity criteria. If numEndpoints is 0, it defaults to 1.
+func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	logger := es.logger.With("method", "SelectMultiple").With("chain_id", es.serviceState.chainID).With("num_endpoints", numEndpoints)
+	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(allAvailableEndpoints), numEndpoints)
+
+	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("error filtering endpoints")
+		return nil, err
+	}
+
+	// Select random endpoints as fallback
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
+		return selector.RandomSelectMultiple(allAvailableEndpoints, numEndpoints), nil
+	}
+
+	// Select up to numEndpoints endpoints from filtered list
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(allAvailableEndpoints))
+	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 
 // filterValidEndpoints returns the subset of available endpoints that are valid
