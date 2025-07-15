@@ -72,6 +72,93 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
+
+##################
+### Portal Tests ###
+##################
+
+.PHONY: make_load_test_portal_local_path
+make_load_test_portal_local_path: ## Run a Shannon load test against local PATH with Portal credentials
+	@echo "📋 Copying archival config..."
+	@cp e2e/config/.grove.archival.e2e_load_test.config.yaml e2e/config/.e2e_load_test.config.yaml
+	@echo "✅ Config copied successfully"
+	@echo ""
+	@echo "🔍 Checking environment variables..."
+	@if [ -z "$(PORTAL_APPLICATION_ID)" ]; then \
+		echo "❌ Error: PORTAL_APPLICATION_ID environment variable is not set"; \
+		echo "  🔐 Grove employees: Get credentials from https://share.1password.com/s#x4x-cWnkf4GUw50BwV166aWEEevZV1nmaO2RxJssWjg"; \
+		echo "  💡 Set with: export PORTAL_APPLICATION_ID=your_app_id"; \
+		exit 1; \
+	fi
+	@if [ -z "$(PORTAL_API_KEY)" ]; then \
+		echo "❌ Error: PORTAL_API_KEY environment variable is not set"; \
+		echo "  🔐 Grove employees: Get credentials from https://share.1password.com/s#x4x-cWnkf4GUw50BwV166aWEEevZV1nmaO2RxJssWjg"; \
+		echo "  💡 Set with: export PORTAL_API_KEY=your_api_key"; \
+		exit 1; \
+	fi
+	@echo "✅ Environment variables are set"
+	@echo ""
+	@echo "⚙️  Configuring for LOCAL PATH..."
+	@if [[ "$$(uname)" == "Darwin" ]]; then \
+		sed -i '' 's/portal_application_id: ""/portal_application_id: "$(PORTAL_APPLICATION_ID)"/; s/portal_api_key: ""/portal_api_key: "test_api_key"/' e2e/config/.e2e_load_test.config.yaml; \
+	else \
+		sed -i 's/portal_application_id: ""/portal_application_id: "$(PORTAL_APPLICATION_ID)"/; s/portal_api_key: ""/portal_api_key: "test_api_key"/' e2e/config/.e2e_load_test.config.yaml; \
+	fi
+	@echo "✅ Config updated for local PATH"
+	@echo ""
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "🚀 Running load test with default service IDs: bsc,eth,pocket,poly,gnosis,xrpl_evm_test"; \
+		(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=bsc,eth,pocket,poly,gnosis,xrpl_evm_test go test -v -tags=e2e -count=1 -run Test_PATH_E2E); \
+	else \
+		echo "🚀 Running load test with service IDs: $(filter-out $@,$(MAKECMDGOALS))"; \
+		(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E); \
+	fi
+
+.PHONY: make_load_test_portal_prod_path
+make_load_test_portal_prod_path: ## Run a Shannon load test against production PATH with Portal credentials
+	@echo "📋 Copying archival config..."
+	@cp e2e/config/.grove.archival.e2e_load_test.config.yaml e2e/config/.e2e_load_test.config.yaml
+	@echo "✅ Config copied successfully"
+	@echo ""
+	@echo "🔍 Checking environment variables..."
+	@if [ -z "$(PORTAL_APPLICATION_ID)" ]; then \
+		echo "❌ Error: PORTAL_APPLICATION_ID environment variable is not set"; \
+		echo "  🔐 Grove employees: Get credentials from https://share.1password.com/s#x4x-cWnkf4GUw50BwV166aWEEevZV1nmaO2RxJssWjg"; \
+		echo "  💡 Set with: export PORTAL_APPLICATION_ID=your_app_id"; \
+		exit 1; \
+	fi
+	@if [ -z "$(PORTAL_API_KEY)" ]; then \
+		echo "❌ Error: PORTAL_API_KEY environment variable is not set"; \
+		echo "  🔐 Grove employees: Get credentials from https://share.1password.com/s#x4x-cWnkf4GUw50BwV166aWEEevZV1nmaO2RxJssWjg"; \
+		echo "  💡 Set with: export PORTAL_API_KEY=your_api_key"; \
+		exit 1; \
+	fi
+	@echo "✅ Environment variables are set"
+	@echo ""
+	@echo "⚙️  Configuring for PRODUCTION PATH..."
+	@if [[ "$$(uname)" == "Darwin" ]]; then \
+		sed -i '' 's/portal_application_id: ""/portal_application_id: "$(PORTAL_APPLICATION_ID)"/; s/portal_api_key: ""/portal_api_key: "$(PORTAL_API_KEY)"/' e2e/config/.e2e_load_test.config.yaml; \
+	else \
+		sed -i 's/portal_application_id: ""/portal_application_id: "$(PORTAL_APPLICATION_ID)"/; s/portal_api_key: ""/portal_api_key: "$(PORTAL_API_KEY)"/' e2e/config/.e2e_load_test.config.yaml; \
+	fi
+	@echo "✅ Config updated for production PATH"
+	@echo ""
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		echo "🚀 Running load test with default service IDs: bsc,eth,pocket,poly,gnosis,xrpl_evm_test"; \
+		(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=bsc,eth,pocket,poly,gnosis,xrpl_evm_test go test -v -tags=e2e -count=1 -run Test_PATH_E2E); \
+	else \
+		echo "🚀 Running load test with service IDs: $(filter-out $@,$(MAKECMDGOALS))"; \
+		(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E); \
+	fi
+
+# Allow service IDs to be passed as arguments
+%:
+	@:
+
+##################
+### Morse Tests ###
+##################
+
 # Targets are also provided to run a morse load test, which use the `morse_load_test` targets
 
 .PHONY: morse_load_test_all
