@@ -24,11 +24,6 @@ const (
 	errDataFieldUnmarshalingErr = "unmarshaling_error"
 )
 
-var (
-	// errorID represents the ID for error responses.
-	errorID = jsonrpc.IDFromInt(1)
-)
-
 // responseGeneric represents the standard response structure for CometBFT-based blockchain requests.
 // Used as a fallback when:
 // - No validation/observation is needed for the JSON-RPC method

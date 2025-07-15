@@ -5,8 +5,32 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/log"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+var (
+	// CometBFT response IDs for different request types:
+	// - JSON-RPC success: 1
+	// - REST success: -1
+	// - Any error: 1
+	jsonrpcSuccessID = jsonrpc.IDFromInt(1)
+	restSuccessID    = jsonrpc.IDFromInt(-1)
+	errorID          = jsonrpc.IDFromInt(1)
+)
+
+// getExpectedResponseID returns the expected ID for a CometBFT response depending
+// on the request type (REST/JSON-RPC) and the response result (error/success).
+func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
+	if response.IsError() {
+		return errorID
+	}
+	if isJSONRPC {
+		return jsonrpcSuccessID
+	}
+	return restSuccessID
+}
 
 // responseUnmarshaller is the entrypoint for processing new supported response types.
 //
@@ -36,6 +60,8 @@ func unmarshalResponse(
 	logger polylog.Logger,
 	apiPath string,
 	data []byte,
+	isJSONRPC bool,
+	endpointAddr protocol.EndpointAddr,
 ) (response, error) {
 	// Try to unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
@@ -45,8 +71,20 @@ func unmarshalResponse(
 		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
 	}
 
-	// NOTE: We intentionally skip validating the JSON-RPC response ID here because
-	// CosmosSDK endpoints may use different ID conventions.
+	// Validate the JSON-RPC response.
+	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, isJSONRPC)); err != nil {
+		payloadStr := string(data)
+		logger.With(
+			"api_path", apiPath,
+			"validation_err", err,
+			"raw_payload", log.Preview(payloadStr),
+			"endpoint_addr", endpointAddr,
+		).Debug().Msg("JSON-RPC response validation failed")
+
+		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
+	}
+
+	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Unmarshal the JSON-RPC response into a method-specific response.
