@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	// CometBFT response IDs for different request types:
+	// CosmosSDK response IDs for different request types:
 	// - JSON-RPC success: 1
 	// - REST success: -1
 	// - Any error: 1
@@ -20,7 +20,7 @@ var (
 	errorID          = jsonrpc.IDFromInt(1)
 )
 
-// getExpectedResponseID returns the expected ID for a CometBFT response depending
+// getExpectedResponseID returns the expected ID for a CosmosSDK response depending
 // on the request type (REST/JSON-RPC) and the response result (error/success).
 func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
 	if response.IsError() {
