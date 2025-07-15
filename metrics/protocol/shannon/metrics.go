@@ -50,6 +50,7 @@ func init() {
 
 	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
+	prometheus.MustRegister(endpointResponseSize)
 	prometheus.MustRegister(relayMinerErrorsTotal)
 }
 
@@ -141,6 +142,35 @@ var (
 			Name:      endpointLatencyMetric,
 			Help:      "Histogram of endpoint response latencies in seconds",
 			Buckets:   defaultBuckets,
+		},
+		[]string{"service_id", "endpoint_domain", "success"},
+	)
+
+	// endpointResponseSize tracks the distribution of response payload sizes
+	// Labels:
+	//   - service_id: Target service identifier
+	//   - endpoint_domain: Effective TLD+1 domain extracted from endpoint URL
+	//   - success: Whether the request was successful (true if at least one endpoint had no error)
+	//
+	// Use to analyze:
+	//   - Response size distribution patterns
+	//   - Bandwidth usage across services and endpoints
+	//   - Payload size percentiles
+	endpointResponseSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: pathProcess,
+			Name:      "endpoint_response_size_bytes",
+			Help:      "Histogram of endpoint response payload sizes in bytes",
+			Buckets: []float64{
+				1_024,      // 1KB
+				10_240,     // 10KB
+				51_200,     // 50KB
+				102_400,    // 100KB
+				512_000,    // 500KB
+				1_048_576,  // 1MB
+				5_242_880,  // 5MB
+				10_485_760, // 10MB
+			},
 		},
 		[]string{"service_id", "endpoint_domain", "success"},
 	)
@@ -302,7 +332,7 @@ func processEndpointErrors(
 		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
-				"endpoint_url", endpointObs.GetEndpointUrl(),
+				"endpoint_url", endpointObs.EndpointUrl,
 			).
 				ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 				Err(err).Msg("SHOULD NEVER HAPPEN: Could not extract domain from Shannon endpoint URL for relay errors metric")
@@ -310,16 +340,16 @@ func processEndpointErrors(
 		}
 
 		// Extract low-cardinality labels (based on trusted error classification)
-		errorType := endpointObs.GetErrorType().String()
+		errorType := endpointObs.ErrorType.String()
 
 		// Extract sanction type (based on trusted error classification)
 		var sanctionType string
 		if endpointObs.RecommendedSanction != nil {
-			sanctionType = endpointObs.GetRecommendedSanction().String()
+			sanctionType = endpointObs.RecommendedSanction.String()
 		}
 
 		// Extract high-cardinality values for exemplars
-		endpointURL := endpointObs.GetEndpointUrl()
+		endpointURL := endpointObs.EndpointUrl
 
 		// Create exemplar with high-cardinality data
 		// Truncate to 128 runes (Prometheus exemplar limit)
@@ -433,8 +463,16 @@ func processEndpointLatency(
 				"service_id":      serviceID,
 				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
-			},
-		).Observe(latencySeconds)
+			}).Observe(latencySeconds)
+
+		// Record response size
+		responseSize := float64(endpointObs.GetEndpointBackendServiceHttpResponsePayloadSize())
+		endpointResponseSize.With(
+			prometheus.Labels{
+				"service_id":      serviceID,
+				"endpoint_domain": endpointDomain,
+				"success":         fmt.Sprintf("%t", success),
+			}).Observe(responseSize)
 	}
 }
 
