@@ -69,6 +69,10 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 		Session: &session,
 	}
 
+	// AllEndpoints will return a map of supplier address to a list of supplier endpoints.
+	//
+	// Each supplier address will have one or more endpoints, one per RPC-type.
+	// For example, a supplier may have one endpoint for JSON-RPC and one for websocket.
 	allEndpoints, err := sf.AllEndpoints()
 	if err != nil {
 		return nil, err
@@ -76,25 +80,38 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, supplierEndpoints := range allEndpoints {
-
-		for _, supplierEndpoint := range supplierEndpoints {
-			endpoint := endpoint{
-				supplier: string(supplierEndpoint.Supplier()),
-				// Set the session field on the endpoint for efficient lookup when sending relays.
-				session: session,
-			}
-
-			switch supplierEndpoint.RPCType() {
-			// If the endpoint is a websocket RPC type endpoint, set the websocket URL.
-			case sharedtypes.RPCType_WEBSOCKET:
-				endpoint.websocketUrl = supplierEndpoint.Endpoint().Url
-			// For now, only websocket & JSON-RPC types are supported, so JSON-RPC is the default.
-			default:
-				endpoint.url = supplierEndpoint.Endpoint().Url
-			}
-
-			endpoints[endpoint.Addr()] = endpoint
+		// All endpoints for a supplier will have the same supplier address & session,
+		// so we can use the first item to set the supplier address & session.
+		endpoint := endpoint{
+			supplier: string(supplierEndpoints[0].Supplier()),
+			// Set the session field on the endpoint for efficient lookup when sending relays.
+			session: session,
 		}
+
+		// Set the URL of the endpoint based on the RPC type.
+		// Each supplier endpoint may have multiple RPC types, so we need to set the URL for each.
+		//
+		// IMPORTANT: As of PATH PR #345 the only supported RPC types are:
+		// 	- `JSON_RPC`
+		// 	- `WEBSOCKET`
+		//
+		// References:
+		// 	- PATH PR #345 - https://github.com/buildwithgrove/path/pull/345
+		// 	- poktroll `RPCType` enum - https://github.com/pokt-network/poktroll/blob/main/x/shared/types/service.pb.go#L31
+		for _, supplierRPCTypeEndpoint := range supplierEndpoints {
+			switch supplierRPCTypeEndpoint.RPCType() {
+
+			// If the endpoint is a `WEBSOCKET` RPC type endpoint, set the websocket URL.
+			case sharedtypes.RPCType_WEBSOCKET:
+				endpoint.websocketUrl = supplierRPCTypeEndpoint.Endpoint().Url
+
+			// Currently only `WEBSOCKET` & `JSON_RPC` types are supported, so `JSON_RPC` is the default.
+			default:
+				endpoint.url = supplierRPCTypeEndpoint.Endpoint().Url
+			}
+		}
+
+		endpoints[endpoint.Addr()] = endpoint
 	}
 
 	return endpoints, nil
