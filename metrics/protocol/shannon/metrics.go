@@ -470,7 +470,7 @@ func processEndpointLatency(
 		endpointResponseSize.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
 			}).Observe(responseSize)
 	}
