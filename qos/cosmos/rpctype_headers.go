@@ -4,10 +4,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
+
+// TODO_DOCUMENT(@commodity): Document this in the official docs while keeping it simple.
+// Use tables and mermaid diagram flows to show what happens depending on the port number.
 
 // ------------------------------------------------------------------------------------------------
 // RPC Type Header Determination

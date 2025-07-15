@@ -8,24 +8,6 @@ import "path/qos/jsonrpc.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/request_error.proto";
 
-// TODO_DOCUMENT(@adshmh): Create a design document for the feature described below.
-//
-// Purpose: Distinguish between endpoint technical failures and user input errors
-//
-// Background:
-// - Currently we only track endpoint/technical failures
-// - Need to identify when request seems valid but fails due to user input issues (e.g., non-existent hash)
-//
-// Implementation:
-// 1. Create new EVMUserErrorType enum with categories like RESOURCE_NOT_FOUND, INVALID_PARAMETER
-// 2. Add user_error field to appropriate response types
-// 3. Update HTTP status code selection logic to consider user errors
-//
-// Benefits:
-// - More accurate error reporting to clients
-// - Appropriate HTTP status codes (e.g., 404 vs 500)
-// - Better client debugging experience
-//
 // CosmosSDKResponseValidationError defines why an endpoint response was rejected.
 // Current invalid response types (as of PR #186):
 //   1. EmptyResponse - endpoint returned no data
@@ -60,9 +42,11 @@ message CosmosSDKRequestObservations {
 
     // CosmosSDK-specific observations from endpoint(s) that responded to the service request.
     // Multiple observations may occur when:
-    // * Original endpoint fails
-    // * Request is sent to additional endpoints for data collection
+    // - Original endpoint fails
+    // - Request is sent to additional endpoints for data collection
     repeated CosmosSDKEndpointObservation endpoint_observations = 6;
+
+    // TODO_UPNEXT(@adshmh): Add endpoint selection metadata.
 }
 
 // CosmosSDKEndpointObservation stores a single observation from an endpoint servicing the protocol response.

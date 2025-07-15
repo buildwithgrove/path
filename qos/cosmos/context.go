@@ -15,11 +15,14 @@ import (
 
 // TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses CosmosSDK QoS.
 // The default timeout when sending a request to a CosmosSDK blockchain endpoint.
-const defaultServiceRequestTimeoutMillisec = 10000
+const defaultServiceRequestTimeoutMillisec = 10_000
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
 var _ gateway.RequestQoSContext = &requestContext{}
+
+// endpointResponse implements the response interface for CosmosSDK-based blockchain services.
+var _ response = &endpointResponse{}
 
 // TODO_REFACTOR: Improve naming clarity by distinguishing between interfaces and adapters
 // in the metrics/qos/cosmos and qos/cosmos packages, and elsewhere names like `response` are used.
@@ -44,8 +47,7 @@ type response interface {
 	GetHTTPResponse() httpResponse
 }
 
-var _ response = &endpointResponse{}
-
+// endpointResponse stores the response received from an endpoint.
 type endpointResponse struct {
 	protocol.EndpointAddr
 	response
@@ -138,14 +140,19 @@ func (rc *requestContext) setJSONRPCRequest(payload *protocol.Payload) {
 	payload.Data = string(reqBz)
 }
 
-// UpdateWithResponse is NOT safe for concurrent use
+// UpdateWithResponse stores (appends) the response from an endpoint in the request context.
+// CRITICAL: NOT safe for concurrent use.
+// Implements gateway.RequestQoSContext interface.
 func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
-	// TODO_IMPROVE: check whether the request was valid, and return an error if it waisJsonRpcRequests not.
+	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-
 	response, err := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, responseBz)
 
+	// Multiple responses can be associated with a single request for multiple reasons, such as:
+	// - Retries from single/multiple endpoints
+	// - Collecting a quorum of from different endpoints
+	// - Organic vs synthetic responses
 	rc.endpointResponses = append(rc.endpointResponses,
 		endpointResponse{
 			EndpointAddr: endpointAddr,
@@ -155,10 +162,8 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	)
 }
 
-// TODO_TECHDEBT: support batch JSONRPC requests by breaking them into
-// single JSONRPC requests and tracking endpoints' response(s) to each.
-// This would also require combining the responses into a single, valid
-// response to the batch JSONRPC request.
+// TODO_TECHDEBT: support batch JSONRPC requests by breaking them into single JSONRPC requests and tracking endpoints' response(s) to each.
+// This would also require combining the responses into a single, valid response to the batch JSONRPC request.
 // See the following link for more details:
 // https://www.jsonrpc.org/specification#batch
 //
@@ -226,6 +231,8 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	}
 }
 
+// GetEndpointSelector returns the endpoint selector for the request context.
+// Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }

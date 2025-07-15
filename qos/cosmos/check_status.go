@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-// Get CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
+// GET CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 const apiPathStatus = "/status"
 
-// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status.
+// TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
 const checkStatusInterval = 10 * time.Second
 
 var (
@@ -35,6 +35,7 @@ type endpointCheckStatus struct {
 	// It is nil if there has NOT been an observation of the endpoint's response to a `/status` request.
 	latestBlockHeight *uint64
 
+	// expiresAt stores the time at which the last check expires.
 	expiresAt time.Time
 }
 

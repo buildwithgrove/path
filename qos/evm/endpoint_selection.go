@@ -42,8 +42,8 @@ type EndpointSelectionMetadata struct {
 // Selects random endpoint if all fail validation.
 func (ss *serviceState) SelectWithMetadata(availableEndpoints protocol.EndpointAddrList) (EndpointSelectionResult, error) {
 	logger := ss.logger.With("method", "SelectWithMetadata").
-		With("chain_id", ss.serviceConfig.getEVMChainID()).
-		With("service_id", ss.serviceConfig.GetServiceID())
+		With("chain_id", ss.serviceQoSConfig.getEVMChainID()).
+		With("service_id", ss.serviceQoSConfig.GetServiceID())
 
 	availableCount := len(availableEndpoints)
 	logger.Info().Msgf("filtering %d available endpoints.", availableCount)
@@ -249,7 +249,7 @@ func (ss *serviceState) isBlockNumberValid(check endpointCheckBlockNumber) error
 
 	// If the endpoint's block height is less than the perceived block height minus the sync allowance,
 	// then the endpoint is behind the chain and should be filtered out.
-	syncAllowance := ss.serviceConfig.getSyncAllowance()
+	syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
 	minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
 	if parsedBlockNumber < minAllowedBlockNumber {
 		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
@@ -270,7 +270,7 @@ func (ss *serviceState) isChainIDValid(check endpointCheckChainID) error {
 	// Dereference pointer to show actual chain ID instead of memory address in error logs
 	chainID := *check.chainID
 
-	expectedChainID := ss.serviceConfig.getEVMChainID()
+	expectedChainID := ss.serviceQoSConfig.getEVMChainID()
 	if chainID != expectedChainID {
 		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
 			errInvalidChainIDObs, chainID, expectedChainID)
