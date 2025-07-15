@@ -38,31 +38,13 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	var ownedAppSessions []sessiontypes.Session
-
 	// Loop over the address of apps owned by the gateway in Centralized gateway mode.
+	var ownedAppSessions []sessiontypes.Session
 	for _, ownedAppAddr := range ownedAppsForService {
-		logger.Info().Msgf("About to get a session for  owned app %s for service %s", ownedAppAddr, serviceID)
-
-		// Retrieve the session for the owned app.
-		session, err := p.GetSession(ctx, serviceID, ownedAppAddr)
+		session, err := p.getSession(ctx, logger, ownedAppAddr, serviceID)
 		if err != nil {
-			// Wrap the protocol context setup error.
-			err = fmt.Errorf("%w: app: %s, error: %w", errProtocolContextSetupCentralizedAppFetchErr, ownedAppAddr, err)
-			logger.Error().Err(err).Msg(err.Error())
 			return nil, err
 		}
-
-		app := session.Application
-
-		// Verify the app delegates to the gateway	.
-		if !gatewayHasDelegationForApp(p.gatewayAddr, app) {
-			// Wrap the protocol context setup error.
-			err := fmt.Errorf("%w: app: %s, gateway: %s", errProtocolContextSetupCentralizedAppDelegation, app.Address, p.gatewayAddr)
-			logger.Error().Msg(err.Error())
-			return nil, err
-		}
-
 		ownedAppSessions = append(ownedAppSessions, session)
 	}
 
@@ -73,7 +55,8 @@ func (p *Protocol) getCentralizedGatewayModeActiveSessions(
 		return nil, err
 	}
 
-	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.", len(ownedAppSessions), len(ownedAppsForService), serviceID)
+	logger.Info().Msgf("Successfully fetched %d sessions for %d owned apps for service %s.",
+		len(ownedAppSessions), len(ownedAppsForService), serviceID)
 
 	return ownedAppSessions, nil
 }

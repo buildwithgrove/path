@@ -14,8 +14,8 @@ func TestMarshalJSON(t *testing.T) {
 		rawPayload string
 	}{
 		{
-			name:       "empty id and param fields are omitted from the serialized format",
-			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId"}`,
+			name:       "empty id field is automatically set to null for JSONRPC compliance",
+			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId","id":null}`,
 		},
 		{
 			name: "param field as empty array is present in the serialized format",
@@ -23,16 +23,28 @@ func TestMarshalJSON(t *testing.T) {
 			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`,
 		},
 		{
-			name: "empty id field is omitted but param field with single object as value is present in the serialized format",
+			name: "null id field is preserved and param field with single object as value is present in the serialized format",
 			// payload example from: https://polkadot.js.org/docs/substrate/rpc/#querystorageatkeys-vec-storagehash-at-hash-option-vec-storagedata
 			// DEV_NOTE: the order of fields should be the same as that of the Request struct, to get the same string post deserialization and serialization.
-			rawPayload: `{"jsonrpc":"2.0","method":"state_queryStorageAt","params":{"keys":["0x5f3e4907f716ac89b6347d15ececedca1c0000000000000000"],"at":"0x6857c3c171f65f77f52cd566c574c1f59b0a3738b8d487967e9c54789ee621dd"}}`,
+			rawPayload: `{"jsonrpc":"2.0","method":"state_queryStorageAt","params":{"keys":["0x5f3e4907f716ac89b6347d15ececedca1c0000000000000000"],"at":"0x6857c3c171f65f77f52cd566c574c1f59b0a3738b8d487967e9c54789ee621dd"},"id":null}`,
 		},
 		{
 			name: "id and params fields are both present in the serialized format when specified",
 			// rawPayload is from: https://solana.com/docs/rpc/http/getblockcommitment
 			// DEV_NOTE: the order of fields should be the same as that of the Request struct, to get the same string post deserialization and serialization.
 			rawPayload: `{"jsonrpc":"2.0","method":"getBlockCommitment","params":[5],"id":1}`,
+		},
+		{
+			name:       "string id is properly serialized",
+			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId","id":"test-id-123"}`,
+		},
+		{
+			name:       "explicit null id in input is preserved",
+			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId","id":null}`,
+		},
+		{
+			name:       "empty string id is converted to null",
+			rawPayload: `{"jsonrpc":"2.0","method":"eth_chainId","id":null}`,
 		},
 	}
 
@@ -50,6 +62,59 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
+// Test edge cases for ID handling
+func TestIDHandling(t *testing.T) {
+	testCases := []struct {
+		name           string
+		inputPayload   string
+		expectedOutput string
+	}{
+		{
+			name:           "missing id field becomes null",
+			inputPayload:   `{"jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":null}`,
+		},
+		{
+			name:           "empty string id becomes null",
+			inputPayload:   `{"id":"","jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":null}`,
+		},
+		{
+			name:           "null id stays null",
+			inputPayload:   `{"id":null,"jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":null}`,
+		},
+		{
+			name:           "zero integer id is preserved",
+			inputPayload:   `{"id":0,"jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":0}`,
+		},
+		{
+			name:           "negative integer id is preserved",
+			inputPayload:   `{"id":-1,"jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":-1}`,
+		},
+		{
+			name:           "string id is preserved",
+			inputPayload:   `{"id":"abc123","jsonrpc":"2.0","method":"test"}`,
+			expectedOutput: `{"jsonrpc":"2.0","method":"test","id":"abc123"}`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var req Request
+			err := json.Unmarshal([]byte(testCase.inputPayload), &req)
+			require.NoError(t, err)
+
+			marshaledRequest, err := json.Marshal(req)
+			require.NoError(t, err)
+
+			require.Equal(t, testCase.expectedOutput, string(marshaledRequest))
+		})
+	}
+}
+
 // TODO_MVP(@adshmh): add a test case for batch JSONRPC requests
 func TestUnmarshalParams(t *testing.T) {
 	testCases := []struct {
@@ -63,7 +128,7 @@ func TestUnmarshalParams(t *testing.T) {
 			expectErr:  true,
 		},
 		{
-			name:       "params field not speicifed",
+			name:       "params field not specified",
 			rawPayload: []byte(`{"jsonrpc":"2.0","id":12345678,"method":"eth_chainId"}`),
 		},
 		{
@@ -97,6 +162,18 @@ func TestUnmarshalParams(t *testing.T) {
 		{
 			name:       "params as an empty object",
 			rawPayload: []byte(`{"jsonrpc":"2.0","method":"eth_chainId","id":1,"params":{}}`),
+		},
+		{
+			name:       "missing id field with params",
+			rawPayload: []byte(`{"jsonrpc":"2.0","method":"test","params":[1,2,3]}`),
+		},
+		{
+			name:       "null id with params",
+			rawPayload: []byte(`{"jsonrpc":"2.0","id":null,"method":"test","params":[1,2,3]}`),
+		},
+		{
+			name:       "empty string id with params",
+			rawPayload: []byte(`{"jsonrpc":"2.0","id":"","method":"test","params":[1,2,3]}`),
 		},
 	}
 

@@ -6,6 +6,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -27,6 +28,37 @@ type FullNode interface {
 	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
 	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
 	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+
+	// GetSessionWithExtendedValidity implements session retrieval with support for
+	// Pocket Network's native "session grace period" business logic.
+	//
+	// At the protocol level, it is used to account for the case when:
+	// - RelayMiner.FullNode.Height > Gateway.FullNode.Height
+	// AND
+	// - RelayMiner.FullNode.Session > Gateway.FullNodeSession
+	//
+	// PATH leverages it by accounting for the case when:
+	// - RelayMiner.FullNode.Height < Gateway.FullNode.Height
+	// AND
+	// - Gateway.FullNode.Session > RelayMiner.FullNodeSession
+	//
+	// This enables signing and sending relays to Suppliers who are behind the Gateway.
+	//
+	// The recommendation usage is to use both GetSession and GetSessionWithExtendedValidity
+	// in order to account for both cases when selecting the pool of available Suppliers.
+	//
+	// Protocol References:
+	// - https://github.com/pokt-network/poktroll/blob/main/proto/pocket/shared/params.proto
+	// - https://dev.poktroll.com/protocol/governance/gov_params
+	// - https://dev.poktroll.com/protocol/primitives/claim_and_proof_lifecycle
+	// If within grace period of a session rollover, it may return the previous session.
+	GetSessionWithExtendedValidity(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
+
+	// GetSharedParams returns the shared module parameters from the blockchain.
+	GetSharedParams(ctx context.Context) (*sharedtypes.Params, error)
+
+	// GetCurrentBlockHeight returns the current block height from the blockchain.
+	GetCurrentBlockHeight(ctx context.Context) (int64, error)
 
 	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
 	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
