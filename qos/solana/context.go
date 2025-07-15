@@ -105,7 +105,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-	response := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz)
+	response := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz, endpointAddr)
 
 	// TODO_MVP(@adshmh): Drop the unmarshaling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
