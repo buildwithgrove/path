@@ -58,15 +58,12 @@ func (es *EndpointStore) Select(availableEndpoints protocol.EndpointAddrList) (p
 	return selectedEndpointAddr, nil
 }
 
+// TODO_NEXT(@commoddity): Ensure all changes to `qos/cometbft` package are captured and transferred to new `qos/cosmos` package that replaces comet bft in PR #345
 // SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If numEndpoints is 0, it defaults to 1.
-func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+func (es *EndpointStore) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With("method", "SelectMultiple").With("chain_id", es.serviceState.chainID).With("num_endpoints", numEndpoints)
-
-	if numEndpoints <= 0 {
-		numEndpoints = 1
-	}
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(allAvailableEndpoints), numEndpoints)
 
 	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)

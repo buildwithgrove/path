@@ -12,6 +12,7 @@ import (
 
 // RandomSelectMultiple performs Fisher-Yates shuffle for random selection without replacement.
 // This is a shared utility to avoid code duplication across QoS services.
+// Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
 //
 // Parameters:
 // - endpoints: The list of endpoints to select from
@@ -21,13 +22,9 @@ import (
 // If numEndpoints is greater than len(endpoints), returns all endpoints.
 func RandomSelectMultiple(
 	endpoints protocol.EndpointAddrList,
-	numEndpoints int,
+	numEndpoints uint,
 ) protocol.EndpointAddrList {
-	if numEndpoints <= 0 {
-		return nil
-	}
-
-	if numEndpoints >= len(endpoints) {
+	if int(numEndpoints) >= len(endpoints) {
 		// Return a copy of all endpoints
 		result := make(protocol.EndpointAddrList, len(endpoints))
 		copy(result, endpoints)
@@ -40,7 +37,7 @@ func RandomSelectMultiple(
 
 	// Fisher-Yates shuffle for random selection without replacement
 	selectedEndpoints := make(protocol.EndpointAddrList, 0, numEndpoints)
-	for i := 0; i < numEndpoints; i++ {
+	for i := 0; i < int(numEndpoints); i++ {
 		j := rand.Intn(len(endpointsCopy)-i) + i
 		endpointsCopy[i], endpointsCopy[j] = endpointsCopy[j], endpointsCopy[i]
 		selectedEndpoints = append(selectedEndpoints, endpointsCopy[i])
@@ -53,7 +50,7 @@ func RandomSelectMultiple(
 func SelectEndpointsWithDiversity(
 	logger polylog.Logger,
 	availableEndpoints protocol.EndpointAddrList,
-	numEndpoints int,
+	numEndpoints uint,
 ) protocol.EndpointAddrList {
 	// Get endpoint TLDs to extract TLD information
 	endpointTLDs := shannonmetrics.GetEndpointTLDs(availableEndpoints)
@@ -75,7 +72,7 @@ func SelectEndpointsWithDiversity(
 	copy(remainingEndpoints, availableEndpoints)
 
 	// First pass: Try to select endpoints with different TLDs
-	for i := 0; i < numEndpoints && len(remainingEndpoints) > 0; i++ {
+	for i := 0; i < int(numEndpoints) && len(remainingEndpoints) > 0; i++ {
 		var selectedEndpoint protocol.EndpointAddr
 		var err error
 

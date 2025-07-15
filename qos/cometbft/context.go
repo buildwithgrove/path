@@ -207,9 +207,10 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 	return rc.endpointStore.Select(allEndpoints)
 }
 
+// TODO_NEXT(@commoddity): Ensure all changes to `qos/cometbft` package are captured and transferred to new `qos/cosmos` package that replaces comet bft in PR #345
 // SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
 // Implements the protocol.EndpointSelector interface.
-func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	// Select multiple endpoints from the available endpoints using the endpoint store.
 	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }

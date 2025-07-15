@@ -197,6 +197,6 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 // SelectMultiple chooses multiple endpoints from the list of supplied endpoints.
 // It uses the perceived state of the Solana chain using other endpoints' responses.
 // It is required to satisfy the protocol package's EndpointSelector interface.
-func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }

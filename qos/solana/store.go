@@ -63,7 +63,7 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 // validity criteria. If numEndpoints is 0, it defaults to 1.
 func (es *EndpointStore) SelectMultiple(
 	allAvailableEndpoints protocol.EndpointAddrList,
-	numEndpoints int,
+	numEndpoints uint,
 ) (protocol.EndpointAddrList, error) {
 	logger := es.logger.With(
 		"qos", "Solana",
@@ -71,11 +71,6 @@ func (es *EndpointStore) SelectMultiple(
 		"num_endpoints_available", len(allAvailableEndpoints),
 		"num_endpoints", numEndpoints,
 	)
-
-	if numEndpoints <= 0 {
-		logger.Warn().Msg("SHOULD NEVER HAPPEN: numEndpoints requested is 0. Defaulting to 1.")
-		numEndpoints = 1
-	}
 	logger.Debug().Msgf("filtering available endpoints to select up to %d.", numEndpoints)
 
 	// Filter valid endpoints

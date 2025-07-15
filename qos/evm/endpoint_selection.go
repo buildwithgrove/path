@@ -42,16 +42,11 @@ type EndpointSelectionMetadata struct {
 // Available endpoints are filtered based on their validity first.
 // Endpoints are selected with TLD diversity preference when possible.
 // If numEndpoints is 0, it defaults to 1. If numEndpoints is greater than available endpoints, it returns all valid endpoints.
-func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, numEndpoints int) (protocol.EndpointAddrList, error) {
+func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
 	logger := ss.logger.With("method", "SelectMultiple").
 		With("chain_id", ss.serviceConfig.getEVMChainID()).
 		With("service_id", ss.serviceConfig.GetServiceID()).
 		With("num_endpoints", numEndpoints)
-
-	if numEndpoints <= 0 {
-		logger.Warn().Msg("SHOULD NEVER HAPPEN: numEndpoints must be greater than 0. Defaulting to 1.")
-		numEndpoints = 1
-	}
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), numEndpoints)
 
 	// Filter valid endpoints

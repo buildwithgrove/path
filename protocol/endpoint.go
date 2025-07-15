@@ -27,7 +27,7 @@ type Endpoint interface {
 // E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
 	Select(EndpointAddrList) (EndpointAddr, error)
-	SelectMultiple(EndpointAddrList, int) (EndpointAddrList, error)
+	SelectMultiple(EndpointAddrList, uint) (EndpointAddrList, error)
 }
 
 func (e EndpointAddr) String() string {

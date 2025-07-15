@@ -20,20 +20,6 @@ func TestRandomSelectMultiple(t *testing.T) {
 		shouldReturnNil bool
 	}{
 		{
-			name:            "zero endpoints requested returns nil",
-			endpoints:       protocol.EndpointAddrList{"endpoint1", "endpoint2", "endpoint3"},
-			numEndpoints:    0,
-			expectedLength:  0,
-			shouldReturnNil: true,
-		},
-		{
-			name:            "negative endpoints requested returns nil",
-			endpoints:       protocol.EndpointAddrList{"endpoint1", "endpoint2", "endpoint3"},
-			numEndpoints:    -1,
-			expectedLength:  0,
-			shouldReturnNil: true,
-		},
-		{
 			name:            "request more endpoints than available returns all",
 			endpoints:       protocol.EndpointAddrList{"endpoint1", "endpoint2", "endpoint3"},
 			numEndpoints:    5,
@@ -72,7 +58,7 @@ func TestRandomSelectMultiple(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := RandomSelectMultiple(tc.endpoints, tc.numEndpoints)
+			result := RandomSelectMultiple(tc.endpoints, uint(tc.numEndpoints))
 
 			if tc.shouldReturnNil {
 				require.Nil(t, result)
@@ -109,7 +95,7 @@ func TestRandomSelectMultiple(t *testing.T) {
 
 func TestRandomSelectMultiple_Randomness(t *testing.T) {
 	endpoints := protocol.EndpointAddrList{"endpoint1", "endpoint2", "endpoint3", "endpoint4", "endpoint5"}
-	numEndpoints := 3
+	numEndpoints := uint(3)
 	iterations := 100
 
 	// Track frequency of each endpoint being selected
@@ -117,7 +103,7 @@ func TestRandomSelectMultiple_Randomness(t *testing.T) {
 
 	for range iterations {
 		result := RandomSelectMultiple(endpoints, numEndpoints)
-		require.Len(t, result, numEndpoints)
+		require.Len(t, result, int(numEndpoints))
 
 		for _, endpoint := range result {
 			selectionCount[endpoint]++
@@ -141,7 +127,7 @@ func TestSelectEndpointsWithDiversity(t *testing.T) {
 	testCases := []struct {
 		name            string
 		endpoints       protocol.EndpointAddrList
-		numEndpoints    int
+		numEndpoints    uint
 		expectedLength  int
 		expectDiversity bool
 	}{

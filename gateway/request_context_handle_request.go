@@ -6,9 +6,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pokt-network/poktroll/pkg/polylog"
+
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/protocol"
 )
+
+// parallelRelayResult is used to track the result of a parallel relay request.
+// It is intended for internal use by the requestContext.
+type parallelRelayResult struct {
+	response  protocol.Response
+	err       error
+	index     int
+	duration  time.Duration
+	startTime time.Time
+}
+
+// parallelRequestMetrics tracks metrics for parallel requests
+type parallelRequestMetrics struct {
+	numRequestsToAttempt     int
+	numCompletedSuccessfully int
+	numFailedOrErrored       int
+	overallStartTime         time.Time
+}
 
 // HandleRelayRequest sends a relay from the perspective of a gateway.
 //
@@ -22,13 +42,13 @@ import (
 // See the following link for more details:
 // https://en.wikipedia.org/wiki/Template_method_pattern
 func (rc *requestContext) HandleRelayRequest() error {
-	// Track whether this is a parallel or single request
-	isParallel := len(rc.protocolContexts) > 1
-
 	logger := rc.logger.
 		With("service_id", rc.serviceID).
 		With("method", "HandleRelayRequest").
 		With("num_protocol_contexts", len(rc.protocolContexts))
+
+	// Track whether this is a parallel or single request
+	isParallel := len(rc.protocolContexts) > 1
 
 	// If we have multiple protocol contexts, send parallel requests
 	if isParallel {
@@ -55,16 +75,13 @@ func (rc *requestContext) handleSingleRelayRequest() error {
 	return nil
 }
 
-// handleParallelRelayRequests sends relay requests to multiple endpoints in parallel
-// and returns the first successful response.
+// handleParallelRelayRequests orchestrates parallel relay requests and returns the first successful response.
 func (rc *requestContext) handleParallelRelayRequests() error {
-	totalRequests := len(rc.protocolContexts)
-	var numSuccessful, numFailed int
-	defer func() {
-		numCanceled := totalRequests - numSuccessful - numFailed
-		// Update gateway observations with parallel request metrics
-		rc.updateGatewayObservationsWithParallelRequests(totalRequests, numSuccessful, numFailed, numCanceled)
-	}()
+	metrics := &parallelRequestMetrics{
+		numRequestsToAttempt: len(rc.protocolContexts),
+		overallStartTime:     time.Now(),
+	}
+	defer rc.updateParallelRequestMetrics(metrics)
 
 	logger := rc.logger.
 		With("method", "handleParallelRelayRequests").
@@ -72,91 +89,163 @@ func (rc *requestContext) handleParallelRelayRequests() error {
 		With("service_id", rc.serviceID)
 	logger.Debug().Msg("Starting parallel relay race")
 
-	// Create a channel to receive the first successful response
-	type relayResult struct {
-		response  protocol.Response
-		err       error
-		index     int
-		duration  time.Duration
-		startTime time.Time
-	}
-
-	// Channel to capture successful responses
-	relayResultChan := make(chan relayResult, len(rc.protocolContexts))
-
-	// Create context with timeout for parallel requests
 	ctx, cancel := context.WithTimeout(rc.context, parallelRequestTimeout)
 	defer cancel()
 
-	// Track overall request start time
-	overallStartTime := time.Now()
+	resultChan := rc.launchParallelRequests(ctx, logger)
 
-	// Launch parallel requests
+	return rc.waitForFirstSuccessfulResponse(ctx, resultChan, metrics, logger)
+}
+
+// updateParallelRequestMetrics updates gateway observations with parallel request metrics
+func (rc *requestContext) updateParallelRequestMetrics(metrics *parallelRequestMetrics) {
+	numCanceledByContext := metrics.numRequestsToAttempt - metrics.numCompletedSuccessfully - metrics.numFailedOrErrored
+	rc.updateGatewayObservationsWithParallelRequests(
+		metrics.numRequestsToAttempt,
+		metrics.numCompletedSuccessfully,
+		metrics.numFailedOrErrored,
+		numCanceledByContext,
+	)
+}
+
+// launchParallelRequests starts all parallel relay requests and returns a result channel
+func (rc *requestContext) launchParallelRequests(ctx context.Context, logger polylog.Logger) <-chan parallelRelayResult {
+	resultChan := make(chan parallelRelayResult, len(rc.protocolContexts))
+
 	for protocolCtxIdx, protocolCtx := range rc.protocolContexts {
-		go func(index int, pCtx ProtocolRequestContext) {
-			specificRelayStartTime := time.Now()
-			relayResponse, err := pCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
-			duration := time.Since(specificRelayStartTime)
-
-			select {
-			case relayResultChan <- relayResult{
-				response:  relayResponse,
-				err:       err,
-				index:     index,
-				duration:  duration,
-				startTime: specificRelayStartTime,
-			}:
-			case <-ctx.Done():
-				// Request was canceled, don't send result
-				logger.Debug().Msgf("Request to endpoint %d canceled after %dms", index, duration.Milliseconds())
-			}
-		}(protocolCtxIdx, protocolCtx)
+		go rc.executeRelayRequest(ctx, protocolCtx, protocolCtxIdx, resultChan, logger)
 	}
 
-	// Wait for the first successful response
+	return resultChan
+}
+
+// executeRelayRequest handles a single relay request in a goroutine
+func (rc *requestContext) executeRelayRequest(
+	ctx context.Context,
+	protocolCtx ProtocolRequestContext,
+	index int,
+	resultChan chan<- parallelRelayResult,
+	logger polylog.Logger,
+) {
+	startTime := time.Now()
+	response, err := protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
+	duration := time.Since(startTime)
+
+	result := parallelRelayResult{
+		response:  response,
+		err:       err,
+		index:     index,
+		duration:  duration,
+		startTime: startTime,
+	}
+
+	select {
+	case resultChan <- result:
+		// Result sent successfully
+	case <-ctx.Done():
+		logger.Debug().Msgf("Request to endpoint %d canceled after %dms", index, duration.Milliseconds())
+	}
+}
+
+// waitForFirstSuccessfulResponse waits for the first successful response or handles all failures
+func (rc *requestContext) waitForFirstSuccessfulResponse(
+	ctx context.Context,
+	resultChan <-chan parallelRelayResult,
+	metrics *parallelRequestMetrics,
+	logger polylog.Logger,
+) error {
 	var lastErr error
 	var responseTimings []string
-	for numSuccessful < totalRequests {
+
+	for metrics.numCompletedSuccessfully < metrics.numRequestsToAttempt {
 		select {
-		case result := <-relayResultChan:
-			timingLog := fmt.Sprintf("endpoint_%d=%dms", result.index, result.duration.Milliseconds())
-			responseTimings = append(responseTimings, timingLog)
+		case result := <-resultChan:
+			responseTimings = append(responseTimings, rc.formatTimingLog(result))
 
-			// First successful response - cancel other requests and return
 			if result.err == nil {
-				numSuccessful++
-				overallDurationToFirstSuccess := time.Since(overallStartTime)
-				endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(result.response.EndpointAddr))
-				logger.Info().
-					Str("endpoint_domain", endpointDomain).
-					Msgf("Parallel request success: endpoint %d/%d responded in %dms", result.index+1, totalRequests, overallDurationToFirstSuccess.Milliseconds())
-
-				// Update QoS context and return
-				rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
-				return nil
+				return rc.handleSuccessfulResponse(logger, result, metrics)
+			} else {
+				rc.handleFailedResponse(logger, result, metrics, &lastErr)
 			}
 
-			// Log the error but continue waiting for other responses
-			numFailed++
-			logger.Warn().Err(result.err).Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
-			lastErr = result.err
 		case <-ctx.Done():
-			// Context was canceled or timed out
-			totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
-			if ctx.Err() == context.DeadlineExceeded {
-				logger.Error().Msgf("Parallel requests timed out after %dms and %d completed requests", totalParallelRelayDuration, numSuccessful)
-				return fmt.Errorf("parallel relay requests timed out after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, numSuccessful, lastErr)
-			}
-			logger.Debug().Msg("Parallel requests canceled")
-			return fmt.Errorf("parallel relay requests canceled after %dms and %d completed requests, last error: %w", totalParallelRelayDuration, numSuccessful, lastErr)
+			return rc.handleContextDone(ctx, logger, metrics, lastErr)
 		}
 	}
 
-	// All requests failed
-	totalParallelRelayDuration := time.Since(overallStartTime).Milliseconds()
-	individualRequestDurationsStr := strings.Join(responseTimings, ", ")
-	logger.Error().Msgf("All %d parallel requests failed after %dms with individual request durations: %s", totalRequests, totalParallelRelayDuration, individualRequestDurationsStr)
+	return rc.handleAllRequestsFailed(logger, metrics, responseTimings, lastErr)
+}
 
-	// Return the last error
+// handleSuccessfulResponse processes the first successful response
+func (rc *requestContext) handleSuccessfulResponse(
+	logger polylog.Logger,
+	result parallelRelayResult,
+	metrics *parallelRequestMetrics,
+) error {
+	metrics.numCompletedSuccessfully++
+	overallDuration := time.Since(metrics.overallStartTime)
+	endpointDomain := shannonmetrics.ExtractTLDFromEndpointAddr(string(result.response.EndpointAddr))
+
+	logger.Info().
+		Str("endpoint_domain", endpointDomain).
+		Msgf("Parallel request success: endpoint %d/%d responded in %dms",
+			result.index+1, metrics.numRequestsToAttempt, overallDuration.Milliseconds())
+
+	rc.qosCtx.UpdateWithResponse(result.response.EndpointAddr, result.response.Bytes)
+	return nil
+}
+
+// handleFailedResponse processes a failed response
+func (rc *requestContext) handleFailedResponse(
+	logger polylog.Logger,
+	result parallelRelayResult,
+	metrics *parallelRequestMetrics,
+	lastErr *error,
+) {
+	metrics.numFailedOrErrored++
+	logger.Warn().Err(result.err).
+		Msgf("Request to endpoint %d failed after %dms", result.index, result.duration.Milliseconds())
+	*lastErr = result.err
+}
+
+// handleContextDone processes context cancellation or timeout
+func (rc *requestContext) handleContextDone(
+	ctx context.Context,
+	logger polylog.Logger,
+	metrics *parallelRequestMetrics,
+	lastErr error,
+) error {
+	totalDuration := time.Since(metrics.overallStartTime).Milliseconds()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		logger.Error().Msgf("Parallel requests timed out after %dms and %d completed requests",
+			totalDuration, metrics.numCompletedSuccessfully)
+		return fmt.Errorf("parallel relay requests timed out after %dms and %d completed requests, last error: %w",
+			totalDuration, metrics.numCompletedSuccessfully, lastErr)
+	}
+
+	logger.Debug().Msg("Parallel requests canceled")
+	return fmt.Errorf("parallel relay requests canceled after %dms and %d completed requests, last error: %w",
+		totalDuration, metrics.numCompletedSuccessfully, lastErr)
+}
+
+// handleAllRequestsFailed processes the case where all requests failed
+func (rc *requestContext) handleAllRequestsFailed(
+	logger polylog.Logger,
+	metrics *parallelRequestMetrics,
+	responseTimings []string,
+	lastErr error,
+) error {
+	totalDuration := time.Since(metrics.overallStartTime).Milliseconds()
+	timingsStr := strings.Join(responseTimings, ", ")
+
+	logger.Error().Msgf("All %d parallel requests failed after %dms with individual request durations: %s",
+		metrics.numRequestsToAttempt, totalDuration, timingsStr)
+
 	return fmt.Errorf("all parallel relay requests failed, last error: %w", lastErr)
+}
+
+// formatTimingLog creates a timing log string for a relay result
+func (rc *requestContext) formatTimingLog(result parallelRelayResult) string {
+	return fmt.Sprintf("endpoint_%d=%dms", result.index, result.duration.Milliseconds())
 }

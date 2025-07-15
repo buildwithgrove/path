@@ -15,7 +15,6 @@ import (
 //
 // Construction methods:
 // - Parse an organic request from an end-user.
-// - Build from a desired endpoint check (e.g., an `eth_chainId` request on EVM).
 // - Rebuild from a shared context deserialized from another PATH instance.
 type RequestQoSContext interface {
 	// TODO_TECHDEBT: Should eventually return []Payload
@@ -102,7 +101,7 @@ type QoSService interface {
 
 	// ApplyObservations:
 	// - Applies QoS-related observations to the local QoS instance.
-	// - Observations can be:
+	// - TODO_FUTURE: Observations can be:
 	//   - "local": from requests sent to an endpoint by THIS PATH instance.
 	//   - "shared": from QoS observations shared by OTHER PATH instances.
 	ApplyObservations(*qos.Observations) error
