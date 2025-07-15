@@ -1,6 +1,7 @@
 package cometbft
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
@@ -8,9 +9,11 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-const defaultServiceRequestTimeoutMillisec = 10_000
+const defaultServiceRequestTimeoutMillisec = 15_000
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
@@ -19,8 +22,13 @@ var _ gateway.RequestQoSContext = &requestContext{}
 // response is an interface that represents the response received from an endpoint.
 type response interface {
 	GetObservation() qosobservations.CometBFTEndpointObservation
-	GetResponsePayload() []byte
-	GetResponseStatusCode() int
+
+	// TODO_TECHDEBT(@adshmh): Verify that a JSONRPC response covers all supported uses of CometBFT services.
+	// Reference:
+	// https://docs.cometbft.com/v1.0/rpc
+	//
+	// GetJSONRPCResponse Returns the JSONRPC response to be sent back to the client.
+	GetJSONRPCResponse() jsonrpc.Response
 }
 
 // endpointResponse stores the response received from an endpoint.
@@ -34,6 +42,21 @@ type endpointResponse struct {
 type requestContext struct {
 	logger        polylog.Logger
 	endpointStore *EndpointStore
+
+	// chainID is the chain identifier for CometBFT QoS implementation.
+	// Expected as the `Result` field in eth_chainId responses.
+	chainID string
+
+	// service_id is the identifier for the evm QoS implementation.
+	// It is the "alias" or human readable interpretation of the chain_id.
+	// Used in generating observations.
+	serviceID protocol.ServiceID
+
+	// The origin of the request handled by the context.
+	// Either:
+	// - Organic: user requests
+	// - Synthetic: requests built by the QoS service to get additional data points on endpoints.
+	requestOrigin qosobservations.RequestOrigin
 
 	// httpReq is the original HTTP request from the user
 	httpReq *http.Request
@@ -51,6 +74,8 @@ type requestContext struct {
 	// NOTE: Currently only supports responses associated with a single JSON-RPC request.
 	// TODO_FUTURE: Batch support will require modifying the field type.
 	endpointResponses []endpointResponse
+
+	// TODO_TECHDEBT(@adshmh): Add endpoint selection metadata, consistent with the `evm` package.
 }
 
 // GetServicePayload returns the payload for the service request.
@@ -105,43 +130,66 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 // Returns the last endpoint response if available, otherwise returns generic response.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetHTTPResponse() gateway.HTTPResponse {
-	// Ignore unmarshaling errors since the payload is empty for REST-like requests.
-	// By default, return a generic HTTP response if no endpoint responses
-	// have been reported to the request context.
-	response, _ := unmarshalResponse(rc.logger, rc.httpReq.URL.Path, []byte(""), rc.isJSONRPCRequest(), protocol.EndpointAddr(""))
-
-	// If at least one endpoint response exists, return the last one
-	if len(rc.endpointResponses) >= 1 {
-		response = rc.endpointResponses[len(rc.endpointResponses)-1]
+	// No responses received: this is an internal error:
+	// e.g. protocol-level errors like endpoint timing out.
+	if len(rc.endpointResponses) == 0 {
+		// TODO_TECHDEBT(@adshmh): Use request's ID once a request validator is implemented for CometBFT services.
+		// Build the JSONRPC response indicating a protocol-level error.
+		jsonrpcErrorResponse := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, errors.New("protocol-level error: no endpoint responses received"))
+		return qos.BuildHTTPResponseFromJSONRPCResponse(rc.logger, jsonrpcErrorResponse)
 	}
 
-	// Default to generic response if no endpoint responses exist
-	return httpResponse{
-		responsePayload: response.GetResponsePayload(),
-		responseStatus:  response.GetResponseStatusCode(),
-	}
+	// Use the most recent endpoint response.
+	// As of PR #253 there is no retry, meaning there is at most 1 endpoint response.
+	selectedResponse := rc.endpointResponses[len(rc.endpointResponses)-1].GetJSONRPCResponse()
+
+	// CometBFT response codes:
+	// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
+	// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
+	return qos.BuildHTTPResponseFromJSONRPCResponse(rc.logger, selectedResponse)
 }
 
 // GetObservations returns all endpoint observations from the request context.
 // Implements gateway.RequestQoSContext interface.
 func (rc requestContext) GetObservations() qosobservations.Observations {
-	observations := make([]*qosobservations.CometBFTEndpointObservation, len(rc.endpointResponses))
+	// Set the observation fields common for all requests: successful or failed.
+	observations := &qosobservations.CometBFTRequestObservations{
+		ChainId:       rc.chainID,
+		ServiceId:     string(rc.serviceID),
+		RequestOrigin: rc.requestOrigin,
+	}
+
+	// No endpoint responses received.
+	// Set request error.
+	if len(rc.endpointResponses) == 0 {
+		observations.RequestError = qos.GetRequestErrorForProtocolError()
+
+		return qosobservations.Observations{
+			ServiceObservations: &qosobservations.Observations_Cometbft{
+				Cometbft: observations,
+			},
+		}
+	}
+
+	// Build the endpoint(s) observations.
+	endpointObservations := make([]*qosobservations.CometBFTEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
 		obs := endpointResponse.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
-		observations[idx] = &obs
+		endpointObservations[idx] = &obs
 	}
+
+	// Set the endpoint observations fields.
+	observations.EndpointObservations = endpointObservations
 
 	return qosobservations.Observations{
 		ServiceObservations: &qosobservations.Observations_Cometbft{
-			Cometbft: &qosobservations.CometBFTRequestObservations{
-				// TODO_TECHDEBT(@adshmh): Set JSON-RPCRequest field.
-				// Requires utility function to convert between:
-				// - qos.jsonrpc.Request
-				// - observation.qos.JsonRpcRequest
-				// Needed for setting JSON-RPC fields in any QoS service's observations.
-				EndpointObservations: observations,
-			},
+			// TODO_TECHDEBT(@adshmh): Set JSON-RPCRequest field.
+			// Requires utility function to convert between:
+			// - qos.jsonrpc.Request
+			// - observation.qos.JsonRpcRequest
+			// Needed for setting JSON-RPC fields in any QoS service's observations.
+			Cometbft: observations,
 		},
 	}
 }
@@ -157,6 +205,14 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	// Select an endpoint from the available endpoints using the endpoint store.
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// TODO_NEXT(@commoddity): Ensure all changes to `qos/cometbft` package are captured and transferred to new `qos/cosmos` package that replaces comet bft in PR #345
+// SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
+// Implements the protocol.EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	// Select multiple endpoints from the available endpoints using the endpoint store.
+	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }
 
 // isJSONRPCRequest checks if the request context contains a serialized JSON-RPC request.

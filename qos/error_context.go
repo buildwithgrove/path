@@ -111,3 +111,12 @@ func (ets errorTrackingSelector) Select(endpoints protocol.EndpointAddrList) (pr
 
 	return protocol.EndpointAddr(""), errInvalidSelectorUsage
 }
+
+// SelectMultiple method of an errorTrackingSelector should never be called.
+// It logs a warning and returns an invalid usage error.
+// Implements the protocol.EndpointSelector interface.
+func (ets errorTrackingSelector) SelectMultiple(endpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	ets.logger.Warn().Msg("Invalid usage: errorTrackingSelector.SelectMultiple() should never be called.")
+
+	return nil, errInvalidSelectorUsage
+}

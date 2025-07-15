@@ -8,21 +8,25 @@ import (
 )
 
 var (
+	// Unsupported gateway mode
+	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
+
 	// ** Network errors **
 	// endpoint configuration error:
 	// - TLS certificate verification error.
 	// - DNS error on lookup of endpoint URL.
 	errRelayEndpointConfig = errors.New("endpoint configuration error")
+
 	// endpoint timeout
 	errRelayEndpointTimeout = errors.New("timeout waiting for endpoint response")
-	// Endpoint's backend service returned a non 2xx HTTP status code.
-	errRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
+	// PATH manually canceled the context for the request.
+	// E.g. Parallel requests were made and one succeeded so the other was canceled.
+	errContextCancelled = errors.New("context canceled manually")
 
 	// HTTP relay request failed - wraps net/http package errors
 	errSendHTTPRelay = errors.New("HTTP relay request failed")
-
-	// Unsupported gateway mode
-	errProtocolContextSetupUnsupportedGatewayMode = errors.New("unsupported gateway mode")
+	// Endpoint's backend service returned a non 2xx HTTP status code.
+	errRelayEndpointHTTPError = errors.New("endpoint returned non 2xx HTTP status code")
 
 	// ** Centralized gateway mode errors **
 
@@ -91,6 +95,10 @@ func extractErrFromRelayError(err error) error {
 	// Endpoint's backend service returned a non 2xx HTTP status code.
 	if strings.Contains(err.Error(), "non 2xx HTTP status code") {
 		return errRelayEndpointHTTPError
+	}
+	// context canceled manually
+	if strings.Contains(err.Error(), "context canceled") {
+		return errContextCancelled
 	}
 
 	// No known patterns matched.

@@ -10,20 +10,26 @@ import (
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 )
 
+// TODO_TECHDEBT: Replace 'endpoint_domain' in the metrics to align with 'endpoint_url'
+// used through the codebase or vice versa.
+
 const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
 
-	// The list of metrics being tracked for Shannon protocol
-	relaysTotalMetric           = "shannon_relays_total"
-	relaysErrorsTotalMetric     = "shannon_relay_errors_total"
-	sanctionsByDomainMetric     = "shannon_sanctions_by_domain"
+	// Relay metrics
+	relaysTotalMetric       = "shannon_relays_total"
+	relaysErrorsTotalMetric = "shannon_relay_errors_total"
+
+	// Sanctions metrics
+	sanctionsByDomainMetric = "shannon_sanctions_by_domain"
+
+	// Relay metrics
 	endpointLatencyMetric       = "shannon_endpoint_latency_seconds"
 	relayMinerErrorsTotalMetric = "shannon_relay_miner_errors_total"
 )
 
 var (
-	// defaultBuckets defines latency buckets optimized for Shannon endpoint responses
 	defaultBuckets = []float64{
 		// Sub-50ms (cache hits, internal optimization, fast responses, potential internal errors, etc.)
 		0.01, 0.025, 0.05,
@@ -35,9 +41,14 @@ var (
 )
 
 func init() {
+	// Relay metrics
 	prometheus.MustRegister(relaysTotal)
 	prometheus.MustRegister(relaysErrorsTotal)
+
+	// Sanctions metrics
 	prometheus.MustRegister(sanctionsByDomain)
+
+	// Latency metrics
 	prometheus.MustRegister(endpointLatency)
 	prometheus.MustRegister(endpointResponseSize)
 	prometheus.MustRegister(relayMinerErrorsTotal)
@@ -247,7 +258,7 @@ func recordRelayTotal(
 	// Skip if there are no endpoint observations
 	// This happens if endpoint selection logic failed to select an endpoint from the available endpoints list.
 	if len(endpointObservations) == 0 {
-		hydratedLogger.Info().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
+		hydratedLogger.Warn().Msg("Request has no errors and no endpoint observations: endpoint selection has failed.")
 		return
 	}
 
@@ -318,7 +329,7 @@ func processEndpointErrors(
 
 		// Extract effective TLD+1 from endpoint URL
 		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.EndpointUrl)
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.EndpointUrl,
@@ -350,7 +361,7 @@ func processEndpointErrors(
 		relaysErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"error_type":      errorType,
 				"sanction_type":   sanctionType,
 			},
@@ -370,9 +381,8 @@ func processSanctionsByDomain(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		// error extracting TLD+1, skip.
 		if err != nil {
 			logger.With(
@@ -393,7 +403,7 @@ func processSanctionsByDomain(
 		sanctionsByDomain.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"sanction_type":   endpointObs.GetRecommendedSanction().String(),
 				"sanction_reason": sanctionReason,
 			},
@@ -437,8 +447,8 @@ func processEndpointLatency(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),
@@ -451,7 +461,7 @@ func processEndpointLatency(
 		endpointLatency.With(
 			prometheus.Labels{
 				"service_id":      serviceID,
-				"endpoint_domain": endpointTLDPlusOne,
+				"endpoint_domain": endpointDomain,
 				"success":         fmt.Sprintf("%t", success),
 			}).Observe(latencySeconds)
 
@@ -478,9 +488,8 @@ func processRelayMinerErrors(
 			continue
 		}
 
-		// Extract effective TLD+1 from endpoint URL
-		// This function handles edge cases like IP addresses, localhost, invalid URLs
-		endpointTLDPlusOne, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
+		// Extract effective domain from endpoint URL
+		endpointDomain, err := ExtractDomainOrHost(endpointObs.GetEndpointUrl())
 		if err != nil {
 			logger.With(
 				"endpoint_url", endpointObs.GetEndpointUrl(),
@@ -504,7 +513,7 @@ func processRelayMinerErrors(
 		relayMinerErrorsTotal.With(
 			prometheus.Labels{
 				"service_id":            serviceID,
-				"endpoint_domain":       endpointTLDPlusOne,
+				"endpoint_domain":       endpointDomain,
 				"endpoint_error_type":   endpointErrorType,
 				"relay_miner_codespace": relayMinerCodespace,
 				"relay_miner_code":      relayMinerCode,

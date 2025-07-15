@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"fmt"
+
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -13,14 +15,16 @@ const (
 	pathProcess = "path"
 
 	// The list of metrics being tracked for gateway-level observations
-	requestsTotal        = "requests_total"
-	responseSizeBytes    = "response_size_bytes"
-	relayDurationSeconds = "relay_duration_seconds"
-	versionInfoMetric    = "version_info"
+	requestsTotalMetricName         = "requests_total" // TODO_TECHDEBT: Align the relays/requests terminology
+	parallelRequestsTotalMetricName = "parallel_requests_total"
+	responseSizeBytesMetricName     = "response_size_bytes"
+	relayDurationSecondsMetricName  = "relay_duration_seconds"
+	versionInfoMetricName           = "version_info"
 )
 
 func init() {
 	prometheus.MustRegister(relaysTotal)
+	prometheus.MustRegister(parallelRequestsTotal)
 	prometheus.MustRegister(relaysDurationSeconds)
 	prometheus.MustRegister(relayResponseSizeBytes)
 	prometheus.MustRegister(versionInfo)
@@ -39,7 +43,7 @@ var (
 	relaysTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
-			Name:      requestsTotal,
+			Name:      requestsTotalMetricName,
 			Help:      "Total number of requests processed, labeled by service ID.",
 		},
 		[]string{"service_id", "request_type", "request_error_kind"},
@@ -55,7 +59,7 @@ var (
 	relaysDurationSeconds = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
-			Name:      relayDurationSeconds,
+			Name:      relayDurationSecondsMetricName,
 			Help:      "Histogram of request processing time (duration) in seconds",
 			// Buckets are selected as: [0, 0.1), [0.1, 0.5), [0.5, 1), [1, 2), [2, 5), [5, 15)
 			// This is because the request processing time is expected to be normally distributed.
@@ -76,7 +80,7 @@ var (
 	relayResponseSizeBytes = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: pathProcess,
-			Name:      responseSizeBytes,
+			Name:      responseSizeBytesMetricName,
 			Help:      "Histogram of response sizes in bytes for performance analysis.",
 			// TODO_IMPROVE: Consider configuring bucket sizes externally for flexible adjustments
 			// in response to different data patterns or deployment scenarios.
@@ -107,10 +111,31 @@ var (
 	versionInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Subsystem: pathProcess,
-			Name:      versionInfoMetric,
+			Name:      versionInfoMetricName,
 			Help:      "Version information about the running PATH instance",
 		},
 		[]string{"version", "commit", "build_date"},
+	)
+
+	// parallelRequestsTotal tracks individual parallel requests within a batch.
+	// Increment for each parallel request made with labels:
+	//   - service_id: Identifies the service
+	//   - num_requests: Total number of parallel requests in the batch (1, 2, 3, etc.)
+	//   - num_successful: Number of successful parallel requests
+	//   - num_failed: Number of failed parallel requests
+	//   - num_canceled: Number of canceled parallel requests
+	//
+	// Usage:
+	// - Track how many parallel requests are made per incoming request
+	// - Monitor success/failure/cancellation rates within parallel batches
+	// - This is ONLY intended for very low cardinality (i.e. multiplicity <= 5)
+	parallelRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: pathProcess,
+			Name:      parallelRequestsTotalMetricName,
+			Help:      "Total parallel requests made, labeled by batch size and outcome.",
+		},
+		[]string{"service_id", "num_requests", "num_successful", "num_failed", "num_canceled"},
 	)
 )
 
@@ -122,52 +147,58 @@ func publishGatewayMetrics(
 	logger polylog.Logger,
 	gatewayObservations *observation.GatewayObservations,
 ) bool {
+	// Extract the service ID from the gateway observations
 	serviceID := gatewayObservations.GetServiceId()
 
+	// Extract the request type from the gateway observations
+	requestType := observation.RequestType_name[int32(gatewayObservations.GetRequestType())]
+
+	// Extract the request error kind from the gateway observations
 	var requestErrorKind string
 	requestErr := gatewayObservations.GetRequestError()
 	if requestErr != nil {
 		requestErrorKind = requestErr.GetErrorKind().String()
+		logger.With(
+			"service_id", serviceID,
+			"request_type", requestType,
+			"request_error_kind", requestErrorKind,
+			"request_error_details", requestErr.GetDetails(),
+		).Error().Msg("Invalid request: No Protocol or QoS observations were made.")
 	}
 
-	requestType := observation.RequestType_name[int32(gatewayObservations.GetRequestType())]
 	// Increment on each service request with labels:
 	//   - service_id: Identifies the service
 	//   - request_type: "organic" or "synthetic"
 	//   - request_error_kind: any gateway-level request errors: e.g. no service ID specified in request's HTTP headers.
-	relaysTotal.With(
-		prometheus.Labels{
+	relaysTotal.
+		With(prometheus.Labels{
 			"service_id":         serviceID,
 			"request_type":       requestType,
 			"request_error_kind": requestErrorKind,
-		},
-	).Inc()
+		}).
+		Inc()
 
-	// Publish request duration in seconds with the following labels
-	// 	- service_id
+	// Publish request duration in seconds
 	duration := gatewayObservations.GetCompletedTime().AsTime().Sub(gatewayObservations.GetReceivedTime().AsTime()).Seconds()
-	relaysDurationSeconds.With(
-		prometheus.Labels{
-			"service_id": serviceID,
-		},
-	).Observe(duration)
+	relaysDurationSeconds.
+		With(prometheus.Labels{"service_id": serviceID}).
+		Observe(duration)
 
-	// Publish response_size in bytes with the following labels
-	// 	- service_id
-	relayResponseSizeBytes.With(
-		prometheus.Labels{
-			"service_id": serviceID,
-		},
-	).Observe(float64(gatewayObservations.GetResponseSize()))
+	// Publish response_size in bytes
+	relayResponseSizeBytes.
+		With(prometheus.Labels{"service_id": serviceID}).
+		Observe(float64(gatewayObservations.GetResponseSize()))
 
-	// log a meessage if there were any request errors.
-	if requestErr != nil {
-		logger.With(
-			"service_id", serviceID,
-			"request_type", requestType,
-			"reques_error_kind", requestErrorKind,
-			"request_error_details", requestErr.GetDetails(),
-		).Error().Msg("Invalid request: No Protocol or QoS observations were made.")
+	// Record the outcome of parallel requests within a batch.
+	// Only record if parallel request observations are available
+	if parallelRequestsObs := gatewayObservations.GetGatewayParallelRequestObservations(); parallelRequestsObs != nil {
+		parallelRequestsTotal.With(prometheus.Labels{
+			"service_id":     serviceID,
+			"num_requests":   fmt.Sprintf("%d", parallelRequestsObs.GetNumRequests()),
+			"num_successful": fmt.Sprintf("%d", parallelRequestsObs.GetNumSuccessful()),
+			"num_failed":     fmt.Sprintf("%d", parallelRequestsObs.GetNumFailed()),
+			"num_canceled":   fmt.Sprintf("%d", parallelRequestsObs.GetNumCanceled()),
+		}).Inc()
 	}
 
 	// Return the validity status of the request.

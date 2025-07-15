@@ -92,6 +92,9 @@ enum ShannonEndpointErrorType {
   SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT = 30;
   SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION = 31;
   SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE = 32;
+
+  // RelayRequest was canceled by PATH intentionally.
+  SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 33;
 }
 
 // ShannonSanctionType specifies the duration type for endpoint sanctions
@@ -99,6 +102,7 @@ enum ShannonSanctionType {
   SHANNON_SANCTION_UNSPECIFIED = 0;
   SHANNON_SANCTION_SESSION = 1;  // Valid only for current session
   SHANNON_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+  SHANNON_SANCTION_DO_NOT_SANCTION = 3; // Do not sanction the endpoint based on this error
   // TODO_IMPROVE: Add a temporary sanction that lasts a few blocks.
 }
 

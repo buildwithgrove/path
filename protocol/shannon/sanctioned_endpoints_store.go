@@ -79,7 +79,7 @@ func (ses *sanctionedEndpointsStore) ApplyObservations(shannonObservations []*pr
 			endpoint := buildEndpointFromObservation(endpointObservation)
 
 			// Hydrate logger with endpoint context
-			logger := hydrateLoggerWithEndpoint(logger, endpoint)
+			logger := hydrateLoggerWithEndpoint(logger, endpoint).With("method", "ApplyObservations")
 			logger.Debug().Msg("processing endpoint observation.")
 
 			// Skip if no sanction is recommended

@@ -4,6 +4,7 @@ package qos
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/metrics/qos/cometbft"
 	"github.com/buildwithgrove/path/metrics/qos/evm"
 	"github.com/buildwithgrove/path/metrics/qos/solana"
 	"github.com/buildwithgrove/path/observation/qos"
@@ -28,6 +29,13 @@ func PublishQoSMetrics(
 		return
 	}
 
+	// Publish CometBFT metrics.
+	if cometbftObservations := qosObservations.GetCometbft(); cometbftObservations != nil {
+		cometbft.PublishMetrics(hydratedLogger, cometbftObservations)
+		hydratedLogger.Debug().Msg("published CometBFT metrics.")
+		return
+	}
+
 	// Publish Solana metrics.
 	if solanaObservations := qosObservations.GetSolana(); solanaObservations != nil {
 		solana.PublishMetrics(hydratedLogger, solanaObservations)
@@ -36,5 +44,5 @@ func PublishQoSMetrics(
 	}
 
 	// Log warning if no matching observation types were found
-	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: %+v", qosObservations)
+	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: '%+v'", qosObservations)
 }
