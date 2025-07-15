@@ -3,6 +3,7 @@ package selector
 import (
 	"fmt"
 	"math/rand"
+	"slices"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
@@ -26,14 +27,11 @@ func RandomSelectMultiple(
 ) protocol.EndpointAddrList {
 	if int(numEndpoints) >= len(endpoints) {
 		// Return a copy of all endpoints
-		result := make(protocol.EndpointAddrList, len(endpoints))
-		copy(result, endpoints)
-		return result
+		return slices.Clone(endpoints)
 	}
 
 	// Create a copy to avoid modifying the original slice
-	endpointsCopy := make(protocol.EndpointAddrList, len(endpoints))
-	copy(endpointsCopy, endpoints)
+	endpointsCopy := slices.Clone(endpoints)
 
 	// Fisher-Yates shuffle for random selection without replacement
 	selectedEndpoints := make(protocol.EndpointAddrList, 0, numEndpoints)
@@ -47,6 +45,11 @@ func RandomSelectMultiple(
 }
 
 // SelectEndpointsWithDiversity selects endpoints with TLD diversity preference.
+//
+// This helper is useful and necessary when used in conjunction with parallel requests.
+// When multiple parallel requests are fired off, it is wasteful to send them all to the same TLD.
+// Sending the request to different providers increases the likelihood of a successful request
+// being returned to the user.
 func SelectEndpointsWithDiversity(
 	logger polylog.Logger,
 	availableEndpoints protocol.EndpointAddrList,
@@ -56,10 +59,10 @@ func SelectEndpointsWithDiversity(
 	endpointTLDs := shannonmetrics.GetEndpointTLDs(availableEndpoints)
 
 	// Count unique TLDs for logging
-	uniqueTLDs := make(map[string]bool)
+	uniqueTLDs := make(map[string]struct{})
 	for _, tld := range endpointTLDs {
 		if tld != "" {
-			uniqueTLDs[tld] = true
+			uniqueTLDs[tld] = struct{}{}
 		}
 	}
 
@@ -67,9 +70,8 @@ func SelectEndpointsWithDiversity(
 		len(availableEndpoints), len(uniqueTLDs), numEndpoints)
 
 	var selectedEndpoints protocol.EndpointAddrList
-	usedTLDs := make(map[string]bool)
-	remainingEndpoints := make(protocol.EndpointAddrList, len(availableEndpoints))
-	copy(remainingEndpoints, availableEndpoints)
+	usedTLDs := make(map[string]struct{})
+	remainingEndpoints := slices.Clone(availableEndpoints)
 
 	// First pass: Try to select endpoints with different TLDs
 	for i := 0; i < int(numEndpoints) && len(remainingEndpoints) > 0; i++ {
@@ -98,7 +100,7 @@ func SelectEndpointsWithDiversity(
 
 		// Track the TLD of the selected endpoint
 		if tld, exists := endpointTLDs[selectedEndpoint]; exists {
-			usedTLDs[tld] = true
+			usedTLDs[tld] = struct{}{}
 			logger.Debug().Msgf("[Parallel Requests] Selected endpoint with TLD: %s (endpoint: %s)", tld, selectedEndpoint)
 		}
 
@@ -139,14 +141,14 @@ func SelectEndpointsWithDiversity(
 func selectEndpointWithDifferentTLD(
 	availableEndpoints protocol.EndpointAddrList,
 	endpointTLDs map[protocol.EndpointAddr]string,
-	usedTLDs map[string]bool,
+	usedTLDs map[string]struct{},
 ) (protocol.EndpointAddr, error) {
 	// Filter endpoints to only those with different TLDs
 	var endpointsWithDifferentTLDs protocol.EndpointAddrList
 
 	for _, endpoint := range availableEndpoints {
 		if tld, exists := endpointTLDs[endpoint]; exists {
-			if !usedTLDs[tld] {
+			if _, exists := usedTLDs[tld]; !exists {
 				endpointsWithDifferentTLDs = append(endpointsWithDifferentTLDs, endpoint)
 			}
 		} else {
