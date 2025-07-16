@@ -1,8 +1,10 @@
 package config
 
 import (
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/cometbft"
+	"github.com/buildwithgrove/path/qos/cosmos"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
 )
@@ -13,7 +15,7 @@ import (
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
 var _ ServiceQoSConfig = (evm.EVMServiceQoSConfig)(nil)
-var _ ServiceQoSConfig = (cometbft.CometBFTServiceQoSConfig)(nil)
+var _ ServiceQoSConfig = (cosmos.CosmosSDKServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (solana.SolanaServiceQoSConfig)(nil)
 
 type ServiceQoSConfig interface {
@@ -52,7 +54,7 @@ var QoSServiceConfigs = qosServiceConfigs{
 
 const (
 	defaultEVMChainID      = "0x1" // ETH Mainnet (1)
-	defaultCometBFTChainID = "cosmoshub-4"
+	defaultCosmosSDKChainID = "cosmoshub-4"
 )
 
 // shannonServices is the list of QoS service configs for the Shannon protocol.
@@ -338,15 +340,6 @@ var shannonServices = []ServiceQoSConfig{
 		// Contract start block
 		420_139,
 	)),
-
-	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrplevm-testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-		// Contract start block
-		368_266,
-	)),
-
 	// zkLink
 	evm.NewEVMServiceQoSConfig("zklink-nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
@@ -405,48 +398,70 @@ var shannonServices = []ServiceQoSConfig{
 
 	// *** Near EVM Services ***
 
-	// Near
 	// TODO_TECHDEBT: Add support for Near QoS
+	// Near
 	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
 
-	// *** CometBFT Services ***
+	// *** Cosmos SDK Services ***
 
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CometBFT config.
-
-	// Celestia Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da", "celestia-archival"),
-
-	// Celestia Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons", "celestia-consensus-archival"),
-
-	// Celestia Testnet DA Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da_test", "celestia-testnet-da-archival"),
-
-	// Celestia Testnet Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons_test", "celestia-testnet-consensus-archival"),
+	// the correct chain ID is being used for each service in the CosmosSDK config.
 
 	// Osmosis
-	cometbft.NewCometBFTServiceQoSConfig("osmosis", "osmosis"),
-
-	// *** Pocket Services ***
+	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Mainnet and Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket", "pocket"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Mainnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-alpha", "pocket-alpha"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta", "pocket-beta"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta1", "pocket-beta1"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta2", "pocket-beta2"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta3", "pocket-beta3"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta4", "pocket-beta4"),
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta5", "pocket-beta5"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Cosmos Hub
-	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
+	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// XRPL EVM Testnet
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
+	}),
+
+	// TODO_UPNEXT(@commoddity): XRPL EVM MainNet
+	// TODO_UPNEXT(@commoddity): XRPL EVM Devnet
 
 	// *** Solana Services ***
 
@@ -799,25 +814,6 @@ var morseServices = []ServiceQoSConfig{
 
 	// Sei
 	evm.NewEVMServiceQoSConfig("F034", "0x531", nil),
-
-	// *** CometBFT Services ***
-	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CometBFT config.
-
-	// Celestia Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CA", "celestia-archival"),
-
-	// Celestia Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CB", "celestia-consensus-archival"),
-
-	// Celestia Testnet DA Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CC", "celestia-testnet-da-archival"),
-
-	// Celestia Testnet Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("A0CD", "celestia-testnet-consensus-archival"),
-
-	// Osmosis
-	cometbft.NewCometBFTServiceQoSConfig("F020", "osmosis"),
 
 	// *** Solana Services ***
 

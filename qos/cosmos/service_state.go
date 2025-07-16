@@ -1,25 +1,25 @@
-package evm
+package cosmos
 
 import (
 	"errors"
+	"net/http"
 	"sync"
-	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 var (
-	errNilApplyObservations    = errors.New("ApplyObservations: received nil")
-	errNilApplyEVMObservations = errors.New("ApplyObservations: received nil EVM observation")
+	errNilApplyObservations          = errors.New("ApplyObservations: received nil")
+	errNilApplyCosmosSDKObservations = errors.New("ApplyObservations: received nil CosmosSDK observation")
 )
 
-// The serviceState struct maintains the expected current state of the EVM blockchain
+// The serviceState struct maintains the expected current state of the CosmosSDK blockchain
 // based on the endpoints' responses to different requests.
 //
 // It is responsible for the following:
@@ -34,22 +34,16 @@ type serviceState struct {
 	serviceStateLock sync.RWMutex
 
 	// serviceQoSConfig maintains the QoS configs for this service
-	serviceQoSConfig EVMServiceQoSConfig
+	serviceQoSConfig CosmosSDKServiceQoSConfig
 
 	// endpointStore maintains the set of available endpoints and their quality data
 	endpointStore *endpointStore
 
 	// perceivedBlockNumber is the perceived current block number
-	// based on endpoints' responses to `eth_blockNumber` requests.
+	// based on endpoints' responses to `/status` requests.
 	// It is calculated as the maximum of block height reported by
 	// any of the endpoints for the service.
-	//
-	// See the following link for more details:
-	// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 	perceivedBlockNumber uint64
-
-	// archivalState contains the current state of the EVM archival check for the service.
-	archivalState archivalState
 }
 
 /* -------------------- QoS Endpoint Check Generator -------------------- */
@@ -67,39 +61,59 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 
 	endpoint := ss.endpointStore.endpoints[endpointAddr]
 
-	var checks = []gateway.RequestQoSContext{
-		// Block number check should always run
-		ss.getEndpointCheck(endpoint.checkBlockNumber.getRequest()),
+	// Get the RPC types supported by the CosmosSDK service.
+	rpcTypes := ss.serviceQoSConfig.getRPCTypes()
+
+	// List of all checks required for the endpoint.
+	var checks []gateway.RequestQoSContext
+
+	// If the service supports CometBFT, add the CometBFT endpoint checks.
+	if _, ok := rpcTypes[sharedtypes.RPCType_COMET_BFT]; ok {
+		checks = append(checks, ss.getCometBFTEndpointChecks(&endpoint)...)
 	}
 
-	// Chain ID check runs infrequently as an endpoint's EVM chain ID is very unlikely to change regularly.
-	if ss.shouldChainIDCheckRun(endpoint.checkChainID) {
-		checks = append(checks, ss.getEndpointCheck(endpoint.checkChainID.getRequest()))
+	// TODO_NEXT(@commoddity): Add endpoint checks for the following:
+	//
+	//  1. CosmosSDK URL paths (sharedtypes.RPCType_REST):
+	//     - Node Info (/cosmos/base/tendermint/v1beta1/node_info)
+	//     https://docs.cosmos.network/api#tag/Service/operation/GetNodeInfo
+	//     - Syncing Status (/cosmos/base/tendermint/v1beta1/syncing)
+	//     https://docs.cosmos.network/api#tag/Service/operation/GetSyncing
+	//
+	//  2. JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
+	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
+	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
+
+	return checks
+}
+
+// getCometBFTEndpointChecks generates the endpoint checks for the CometBFT RPC type.
+// API reference: https://docs.cometbft.com/v1.0/rpc/
+func (ss *serviceState) getCometBFTEndpointChecks(endpoint *endpoint) []gateway.RequestQoSContext {
+	checks := []gateway.RequestQoSContext{}
+
+	// Health check should always run
+	if ss.shouldHealthCheckRun(endpoint.checkHealth) {
+		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkHealth.GetRequest()))
 	}
 
-	// Archival check runs infrequently as the result of a request for an archival block is not expected to change regularly.
-	// Additionally, this check will only run if the service is configured to perform archival checks.
-	if ss.archivalState.shouldArchivalCheckRun(endpoint.checkArchival) {
-		checks = append(
-			checks,
-			ss.getEndpointCheck(endpoint.checkArchival.getRequest(ss.archivalState)),
-		)
+	// Status check should always run
+	if ss.shouldStatusCheckRun(endpoint.checkStatus) {
+		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkStatus.GetRequest()))
 	}
 
 	return checks
 }
 
-// getEndpointCheck prepares a request context for a specific endpoint check.
-// The pre-selected endpoint address is assigned to the request context in the `endpoint.getChecks` method.
-// It is called in the individual `check_*.go` files to build the request context.
-// getEndpointCheck prepares a request context for a specific endpoint check.
-func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestContext {
+// getEndpointCheckFromHTTPRequest prepares a request context for a specific endpoint check using an HTTP request.
+func (ss *serviceState) getEndpointCheckFromHTTPRequest(httpReq *http.Request) *requestContext {
 	return &requestContext{
 		logger:       ss.logger,
 		serviceState: ss,
-		jsonrpcReq:   jsonrpcReq,
+		httpReq:      *httpReq,
+
 		// Set the chain and Service ID: this is required to generate observations with the correct chain ID.
-		chainID:   ss.serviceQoSConfig.getEVMChainID(),
+		chainID:   ss.serviceQoSConfig.getCosmosSDKChainID(),
 		serviceID: ss.serviceQoSConfig.GetServiceID(),
 		// Set the origin of the request as Synthetic.
 		// The request is generated by the QoS service to collect extra observations on endpoints.
@@ -107,9 +121,14 @@ func (ss *serviceState) getEndpointCheck(jsonrpcReq jsonrpc.Request) *requestCon
 	}
 }
 
-// shouldChainIDCheckRun returns true if the chain ID check is not yet initialized or has expired.
-func (ss *serviceState) shouldChainIDCheckRun(check endpointCheckChainID) bool {
-	return check.expiresAt.IsZero() || check.expiresAt.Before(time.Now())
+// shouldHealthCheckRun returns true if the health check is not yet initialized or has expired.
+func (ss *serviceState) shouldHealthCheckRun(check endpointCheckHealth) bool {
+	return check.expiresAt.IsZero() || check.IsExpired()
+}
+
+// shouldStatusCheckRun returns true if the status check is not yet initialized or has expired.
+func (ss *serviceState) shouldStatusCheckRun(check endpointCheckStatus) bool {
+	return check.expiresAt.IsZero() || check.IsExpired()
 }
 
 /* -------------------- QoS Endpoint State Updater -------------------- */
@@ -120,14 +139,13 @@ func (ss *serviceState) ApplyObservations(observations *qosobservations.Observat
 		return errNilApplyObservations
 	}
 
-	evmObservations := observations.GetEvm()
-	if evmObservations == nil {
-		return errNilApplyEVMObservations
+	cosmosSDKObservations := observations.GetCosmos()
+	if cosmosSDKObservations == nil {
+		return errNilApplyCosmosSDKObservations
 	}
 
 	updatedEndpoints := ss.endpointStore.updateEndpointsFromObservations(
-		evmObservations,
-		ss.archivalState.blockNumberHex,
+		cosmosSDKObservations,
 	)
 
 	return ss.updateFromEndpoints(updatedEndpoints)
@@ -147,15 +165,15 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		)
 
 		// Do not update the perceived block number if the chain ID is invalid.
-		if err := ss.isChainIDValid(endpoint.checkChainID); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid chain id: %s", endpointAddr)
+		if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid status", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
-		blockNumber, err := endpoint.checkBlockNumber.getBlockNumber()
+		blockNumber, err := endpoint.checkStatus.GetLatestBlockHeight()
 		if err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it has an invalid block number: %s", endpointAddr)
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid block height", endpointAddr)
 			continue
 		}
 
@@ -166,13 +184,6 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 			logger.Debug().Msgf("Updating perceived block number from %d to %d", ss.perceivedBlockNumber, blockNumber)
 			ss.perceivedBlockNumber = blockNumber
 		}
-	}
-
-	// If archival checks are enabled for the service, update the archival state.
-	if ss.archivalState.isEnabled() {
-		// Update the archival state based on the perceived block number.
-		// When the expected balance at the archival block number is known, this becomes a no-op.
-		ss.archivalState.updateArchivalState(ss.perceivedBlockNumber, updatedEndpoints)
 	}
 
 	return nil
@@ -197,24 +208,25 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 
 			// DEV_NOTE: if new checks are added to a service, we need to add them here.
 			switch {
-			// Endpoint is disqualified due to an empty qosLevelDataResponse.
+			// Endpoint is disqualified due to an empty response.
 			case errors.Is(err, errEmptyResponseObs):
 				qosLevelDataResponse.EmptyResponseCount++
 
-			// Endpoint is disqualified due to a missing or invalid block number.
-			case errors.Is(err, errNoBlockNumberObs),
-				errors.Is(err, errInvalidBlockNumberObs):
-				qosLevelDataResponse.BlockNumberCheckErrorsCount++
-
-			// Endpoint is disqualified due to a missing or invalid chain ID.
-			case errors.Is(err, errNoChainIDObs),
-				errors.Is(err, errInvalidChainIDObs):
+			// Endpoint is disqualified due to a missing or invalid chain ID (status check related).
+			case errors.Is(err, errInvalidChainIDObs):
 				qosLevelDataResponse.ChainIDCheckErrorsCount++
 
-			// Endpoint is disqualified due to a missing or invalid archival balance.
-			case errors.Is(err, errNoArchivalBalanceObs),
-				errors.Is(err, errInvalidArchivalBalanceObs):
-				qosLevelDataResponse.ArchivalCheckErrorsCount++
+			// Endpoint is disqualified due to block number issues (status check related).
+			case errors.Is(err, errOutsideSyncAllowanceBlockNumberObs):
+				qosLevelDataResponse.BlockNumberCheckErrorsCount++
+
+			// Other CosmosSDK-specific errors (health, status, catching up) - not tracked individually
+			case errors.Is(err, errNoHealthObs),
+				errors.Is(err, errInvalidHealthObs),
+				errors.Is(err, errNoStatusObs),
+				errors.Is(err, errInvalidStatusObs),
+				errors.Is(err, errCatchingUpObs):
+				// These are tracked in the DisqualifiedEndpoints map but not counted separately
 
 			default:
 				ss.logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: unknown error for endpoint: %s", endpointAddr)

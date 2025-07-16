@@ -4,18 +4,18 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// CometBFTObservationInterpreter extracts and interprets data from CometBFT request observations.
+// CosmosSDKObservationInterpreter extracts and interprets data from CosmosSDK request observations.
 // It provides methods to access metrics-relevant information for Prometheus reporting.
-type CometBFTObservationInterpreter struct {
+type CosmosSDKObservationInterpreter struct {
 	// Logger for reporting issues during interpretation
 	Logger polylog.Logger
 
-	// Observations contains the raw CometBFT request data
-	Observations *CometBFTRequestObservations
+	// Observations contains the raw CosmosSDK request data
+	Observations *CosmosSDKRequestObservations
 }
 
 // GetChainID returns the blockchain identifier from observations.
-func (i *CometBFTObservationInterpreter) GetChainID() string {
+func (i *CosmosSDKObservationInterpreter) GetChainID() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get chain ID: nil observations")
 		return ""
@@ -24,7 +24,7 @@ func (i *CometBFTObservationInterpreter) GetChainID() string {
 }
 
 // GetServiceID returns the service identifier from observations.
-func (i *CometBFTObservationInterpreter) GetServiceID() string {
+func (i *CosmosSDKObservationInterpreter) GetServiceID() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get service ID: nil observations")
 		return ""
@@ -32,8 +32,8 @@ func (i *CometBFTObservationInterpreter) GetServiceID() string {
 	return i.Observations.ServiceId
 }
 
-// GetRequestMethod returns the CometBFT RPC method name from the route request.
-func (i *CometBFTObservationInterpreter) GetRequestMethod() string {
+// GetRequestMethod returns the CosmosSDK RPC method name from the route request.
+func (i *CosmosSDKObservationInterpreter) GetRequestMethod() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get request method: nil observations")
 		return ""
@@ -51,7 +51,7 @@ func (i *CometBFTObservationInterpreter) GetRequestMethod() string {
 }
 
 // IsRequestSuccessful determines if the request completed without errors.
-func (i *CometBFTObservationInterpreter) IsRequestSuccessful() bool {
+func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot determine request success: nil observations")
 		return false
@@ -62,7 +62,7 @@ func (i *CometBFTObservationInterpreter) IsRequestSuccessful() bool {
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
-func (i *CometBFTObservationInterpreter) GetRequestErrorType() string {
+func (i *CosmosSDKObservationInterpreter) GetRequestErrorType() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get error type: nil observations")
 		return ""
@@ -78,7 +78,7 @@ func (i *CometBFTObservationInterpreter) GetRequestErrorType() string {
 
 // GetRequestHTTPStatus returns the HTTP status code from the request error.
 // Returns 200 if request was successful, 0 if observations are nil.
-func (i *CometBFTObservationInterpreter) GetRequestHTTPStatus() int32 {
+func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get HTTP status: nil observations")
 		return 0 // Return 0 to indicate observation issues to metrics

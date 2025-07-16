@@ -1,4 +1,4 @@
-package evm
+package cosmos
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 // QoS implements gateway.QoSService by providing:
-//  1. QoSRequestParser - Builds EVM-specific RequestQoSContext objects from HTTP requests
+//  1. QoSRequestParser - Builds CosmosSDK-specific RequestQoSContext objects from HTTP requests
 //  2. EndpointSelector - Selects endpoints for service requests
 var _ gateway.QoSService = &QoS{}
 
@@ -20,26 +20,26 @@ var _ gateway.QoSService = &QoS{}
 // This allows the QoS service to report its disqualified endpoints data to the devtools.DisqualifiedEndpointReporter.
 var _ devtools.QoSDisqualifiedEndpointsReporter = &QoS{}
 
-// QoS implements ServiceQoS for EVM-based chains.
+// QoS implements ServiceQoS for CosmosSDK-based chains.
 // It handles chain-specific:
-//   - Request parsing
+//   - Request parsing (both REST and JSON-RPC)
 //   - Response building
 //   - Endpoint validation and selection
 type QoS struct {
 	logger polylog.Logger
 	*serviceState
-	*evmRequestValidator
+	*cosmosSDKRequestValidator
 }
 
-// NewQoSInstance builds and returns an instance of the EVM QoS service.
-func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
-	evmChainID := config.getEVMChainID()
+// NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
+func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *QoS {
+	cosmosSDKChainID := config.getCosmosSDKChainID()
 	serviceId := config.GetServiceID()
 
 	logger = logger.With(
-		"qos_instance", "evm",
+		"qos_instance", "cosmossdk",
 		"service_id", serviceId,
-		"evm_chain_id", evmChainID,
+		"cosmossdk_chain_id", cosmosSDKChainID,
 	)
 
 	store := &endpointStore{
@@ -54,36 +54,25 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 		endpointStore:    store,
 	}
 
-	// TODO_CONSIDERATION(@olshansk): Archival checks are currently optional to enable iteration
-	// and optionality. In the future, evaluate whether it should be mandatory for all EVM services.
-	if config.archivalCheckEnabled() {
-		serviceState.archivalState = archivalState{
-			logger:              logger.With("state", "archival"),
-			archivalCheckConfig: config.getEVMArchivalCheckConfig(),
-			// Initialize the balance consensus map.
-			// It keeps track and maps a balance (at the configured address and contract)
-			// to the number of occurrences seen across all endpoints.
-			balanceConsensus: make(map[string]int),
-		}
-	}
-
-	evmRequestValidator := &evmRequestValidator{
+	cosmosSDKRequestValidator := &cosmosSDKRequestValidator{
 		logger:       logger,
 		serviceID:    serviceId,
-		chainID:      evmChainID,
+		chainID:      cosmosSDKChainID,
 		serviceState: serviceState,
 	}
 
 	return &QoS{
-		logger:              logger,
-		serviceState:        serviceState,
-		evmRequestValidator: evmRequestValidator,
+		logger:                    logger,
+		serviceState:              serviceState,
+		cosmosSDKRequestValidator: cosmosSDKRequestValidator,
 	}
 }
 
 // ParseHTTPRequest builds a request context from an HTTP request.
-// Returns (requestContext, true) if the request is valid JSONRPC
-// Returns (errorContext, false) if the request is not valid JSONRPC.
+// Returns (requestContext, true) if the request is valid
+// Returns (errorContext, false) if the request is not valid.
+//
+// Supports both REST endpoints (/health, /status) and JSON-RPC requests.
 //
 // Implements gateway.QoSService interface.
 func (qos *QoS) ParseHTTPRequest(_ context.Context, req *http.Request) (gateway.RequestQoSContext, bool) {

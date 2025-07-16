@@ -47,50 +47,8 @@ jobs:
           retention-days: 1
 
   # ------------------------------------ #
-  # Phase 2. E2E Tests - Morse & Shannon #
+  # Phase 2. E2E Tests
   # ------------------------------------ #
-
-  run-e2e-tests-morse:
-    name: Run E2E tests - Morse
-    runs-on: "ubuntu-22.04"
-    needs:
-      - build-and-test-docker-image
-    strategy:
-      matrix:
-        # DEV_NOTE: Add new services here if they should be tested as part of the Morse E2E CI suite
-        service_id: [F00C, F021, F01C, F036]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-
-      - name: Download Docker image artifact from previous job
-        uses: actions/download-artifact@v4
-        with:
-          name: path-image
-          path: ${{ runner.temp }}
-
-      - name: Load Docker image
-        run: |
-          docker load --input ${{ runner.temp }}/path-image.tar
-          docker image ls -a
-
-      - name: copy Morse E2E config
-        run: make morse_prepare_e2e_config
-
-      - name: update Morse E2E config from secrets
-        env:
-          MORSE_GATEWAY_SIGNING_KEY: ${{ secrets.MORSE_GATEWAY_SIGNING_KEY }}
-          MORSE_FULLNODE_URL: ${{ secrets.MORSE_FULLNODE_URL }}
-          MORSE_AATS: ${{ secrets.MORSE_AATS }}
-        run: ./e2e/scripts/update_morse_config_from_secrets.sh
-
-      - name: Run Morse E2E Tests with Service ID ${{ matrix.service_id }}
-        # eg. make test_e2e_evm_morse F00C
-        run: make test_e2e_evm_morse ${{ matrix.service_id }}
 
   run-e2e-tests-shannon:
     name: Run E2E tests - Shannon
@@ -129,6 +87,6 @@ jobs:
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
-      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}
+      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}å
         # eg. make test_e2e_evm_shannon eth
-        run: make test_e2e_evm_shannon ${{ matrix.service_id }}
+        run: make e2e_test ${{ matrix.service_id }}

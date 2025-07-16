@@ -4,7 +4,7 @@ package qos
 import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/metrics/qos/cometbft"
+	"github.com/buildwithgrove/path/metrics/qos/cosmos"
 	"github.com/buildwithgrove/path/metrics/qos/evm"
 	"github.com/buildwithgrove/path/metrics/qos/solana"
 	"github.com/buildwithgrove/path/observation/qos"
@@ -30,9 +30,9 @@ func PublishQoSMetrics(
 	}
 
 	// Publish CometBFT metrics.
-	if cometbftObservations := qosObservations.GetCometbft(); cometbftObservations != nil {
-		cometbft.PublishMetrics(hydratedLogger, cometbftObservations)
-		hydratedLogger.Debug().Msg("published CometBFT metrics.")
+	if cosmosObservations := qosObservations.GetCosmos(); cosmosObservations != nil {
+		cosmos.PublishMetrics(hydratedLogger, cosmosObservations)
+		hydratedLogger.Debug().Msg("published Cosmos SDK metrics.")
 		return
 	}
 

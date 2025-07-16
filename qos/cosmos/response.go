@@ -1,4 +1,4 @@
-package cometbft
+package cosmos
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	// CometBFT response IDs for different request types:
+	// CosmosSDK response IDs for different request types:
 	// - JSON-RPC success: 1
 	// - REST success: -1
 	// - Any error: 1
@@ -20,7 +20,7 @@ var (
 	errorID          = jsonrpc.IDFromInt(1)
 )
 
-// getExpectedResponseID returns the expected ID for a CometBFT response depending
+// getExpectedResponseID returns the expected ID for a CosmosSDK response depending
 // on the request type (REST/JSON-RPC) and the response result (error/success).
 func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
 	if response.IsError() {
@@ -55,7 +55,7 @@ var (
 	}
 )
 
-// unmarshalResponse parses the supplied raw byte slice from an endpoint into a JSON-RPC response.
+// unmarshalResponse parses the supplied raw byte slice from an endpoint into either a JSON-RPC or REST response.
 func unmarshalResponse(
 	logger polylog.Logger,
 	apiPath string,
@@ -63,22 +63,12 @@ func unmarshalResponse(
 	isJSONRPC bool,
 	endpointAddr protocol.EndpointAddr,
 ) (response, error) {
-	// Unmarshal the raw response payload into a JSON-RPC response.
+	// Try to unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
-		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
-		// Return a generic response to the user.
-		payloadStr := string(data)
-		logger.With(
-			"api_path", apiPath,
-			"unmarshal_err", err,
-			"raw_payload", log.Preview(payloadStr),
-			"endpoint_addr", endpointAddr,
-		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
-
-		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
-		// Return a generic response to the user.
-		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
+		// The response raw payload could not be unmarshalled as a JSON-RPC response.
+		// Treat it as a REST response and use the generic unmarshaller.
+		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
 	}
 
 	// Validate the JSON-RPC response.
