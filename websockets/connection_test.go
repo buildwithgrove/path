@@ -30,7 +30,8 @@ func Test_connectEndpoint(t *testing.T) {
 				u.Host = strings.TrimPrefix(testServerURL, "http://")
 				nodeURL := u.String()
 				return &selectedEndpoint{
-					url: nodeURL,
+					url:          nodeURL,
+					websocketUrl: nodeURL,
 					session: &sessiontypes.Session{
 						SessionId: "1",
 						Header: &sessiontypes.SessionHeader{
@@ -50,7 +51,8 @@ func Test_connectEndpoint(t *testing.T) {
 			name: "should fail to connect with invalid URL",
 			getSelectedEndpoint: func(testServerURL string) *selectedEndpoint {
 				return &selectedEndpoint{
-					url: "http://invalid-url",
+					url:          "http://invalid-url",
+					websocketUrl: "http://invalid-url",
 					session: &sessiontypes.Session{
 						SessionId: "1",
 						Header: &sessiontypes.SessionHeader{
