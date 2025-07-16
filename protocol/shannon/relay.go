@@ -17,7 +17,8 @@ func sendHttpRelay(
 	ctx context.Context,
 	supplierUrlStr string,
 	relayRequest *servicetypes.RelayRequest,
-) (httpRelayResponseBz []byte, err error) {
+	headers map[string]string,
+) (relayResponseBz []byte, err error) {
 	_, err = url.Parse(supplierUrlStr)
 	if err != nil {
 		return nil, err
@@ -39,6 +40,9 @@ func sendHttpRelay(
 	}
 
 	relayHTTPRequest.Header.Add("Content-Type", "application/json")
+	for key, value := range headers {
+		relayHTTPRequest.Header.Add(key, value)
+	}
 
 	var clientTimeout time.Duration
 	if deadline, hasDeadline := ctx.Deadline(); hasDeadline {

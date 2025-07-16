@@ -64,7 +64,7 @@ func Test_PATH_E2E(t *testing.T) {
 	}
 
 	// Log general test information
-	logTestStartInfo(gatewayURL, testServices)
+	logTestStartInfo(gatewayURL)
 
 	// Initialize service summaries map (will be logged out at the end of the test)
 	serviceSummaries := make(map[protocol.ServiceID]*serviceSummary)
@@ -133,9 +133,8 @@ func getGatewayURLForTestMode(t *testing.T, cfg *Config) (gatewayURL string, tea
 	switch cfg.getTestMode() {
 
 	case testModeE2E:
-		configFilePath := fmt.Sprintf("./config/.%s.config.yaml", cfg.getTestProtocol())
 		var port string
-		port, teardownFn = setupPathInstance(t, configFilePath, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
+		port, teardownFn = setupPathInstance(t, configFile, cfg.E2ELoadTestConfig.E2EConfig.DockerConfig)
 		gatewayURL = fmt.Sprintf("http://localhost:%s/v1", port)
 		waitForHydratorIfNeeded()
 		return gatewayURL, teardownFn
@@ -166,13 +165,12 @@ func setTestServiceConfigs(testServices []*TestService) map[protocol.ServiceID]S
 // -------------------- Log Functions --------------------
 
 // logTestStartInfo logs the test start information for the user.
-func logTestStartInfo(gatewayURL string, testServices []*TestService) {
+func logTestStartInfo(gatewayURL string) {
 	if cfg.getTestMode() == testModeLoad {
 		fmt.Println("\n🔥 Starting Vegeta Load test ...")
 	} else {
 		fmt.Println("\n🌿 Starting PATH E2E test ...")
 	}
-	fmt.Printf("  📡 Test protocol: %s%s%s\n", BOLD_CYAN, cfg.getTestProtocol(), RESET)
 	fmt.Printf("  🧬 Gateway URL: %s%s%s\n", BLUE, gatewayURL, RESET)
 
 	if cfg.E2ELoadTestConfig.LoadTestConfig != nil {

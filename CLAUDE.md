@@ -9,12 +9,14 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 ## Development Commands
 
 ### Building and Running
+
 - `make path_build` - Build the PATH binary locally
 - `make path_run` - Run PATH as a standalone binary (requires CONFIG_PATH)
 - `make path_up` - Start local Tilt development environment with dependencies
 - `make path_down` - Tear down local Tilt development environment
 
 ### Testing
+
 - `make test_unit` - Run all unit tests (`go test ./... -short -count=1`)
 - `make test_all` - Run unit tests plus E2E tests for key services
 - `make e2e_test SERVICE_IDS` - Run E2E tests for specific Shannon service IDs (e.g., `make e2e_test eth,poly`)
@@ -23,6 +25,7 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 - `make go_lint` - Run Go linters (`golangci-lint run --timeout 5m --build-tags test`)
 
 ### Configuration
+
 - `make shannon_prepare_e2e_config` - Prepare Shannon E2E configuration
 - `make morse_prepare_e2e_config` - Prepare Morse E2E configuration
 
@@ -31,24 +34,28 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 PATH operates as a multi-layered gateway system:
 
 ### Core Components
+
 - **Gateway** (`gateway/`) - Main entry point that handles HTTP requests and coordinates request processing
 - **Protocol** (`protocol/`) - Protocol implementations (Shannon and Morse) that manage endpoint communication
-- **QoS** (`qos/`) - Quality of Service implementations for different blockchain services (EVM, Solana, CometBFT)
+- **QoS** (`qos/`) - Quality of Service implementations for different blockchain services (EVM, Solana, CosmosSDK)
 - **Router** (`router/`) - HTTP routing and API endpoint management
 - **Config** (`config/`) - Configuration management for different protocol modes
 
 ### Protocol Implementations
+
 - **Shannon** (`protocol/shannon/`) - Main protocol implementation with gRPC communication
 - **Morse** (`protocol/morse/`) - Legacy protocol implementation (being phased out)
 
 ### QoS Services
+
 - **EVM** (`qos/evm/`) - Ethereum-compatible blockchain QoS with archival data checks
 - **Solana** (`qos/solana/`) - Solana blockchain QoS
-- **CometBFT** (`qos/cometbft/`) - Tendermint/CometBFT consensus QoS
+- **CosmosSDK** (`qos/cosmos/`) - Cosmos SDK blockchain QoS with support for REST, CometBFT, and JSON-RPC
 - **JSONRPC** (`qos/jsonrpc/`) - Generic JSON-RPC handling
 - **NoOp** (`qos/noop/`) - Pass-through QoS for unsupported services
 
 ### Data Flow
+
 1. HTTP requests arrive at the Gateway
 2. Request Parser maps requests to appropriate QoS services
 3. QoS services validate requests and select optimal endpoints
@@ -57,7 +64,9 @@ PATH operates as a multi-layered gateway system:
 6. Metrics and observations are collected throughout the pipeline
 
 ### Configuration
+
 PATH uses YAML configuration files that support both Shannon and Morse protocols. Configuration includes:
+
 - Protocol-specific settings (gRPC endpoints, signing keys)
 - Service definitions and endpoint mappings
 - QoS parameters and validation rules
@@ -79,6 +88,7 @@ PATH uses YAML configuration files that support both Shannon and Morse protocols
 ## Development Environment
 
 PATH uses Tilt for local development with Kubernetes (kind). The development stack includes:
+
 - PATH gateway
 - Envoy Proxy for load balancing
 - Prometheus for metrics

@@ -5,7 +5,7 @@ option go_package = "github.com/buildwithgrove/path/observation/qos";
 
 import "path/qos/evm.proto";
 import "path/qos/solana.proto";
-import "path/qos/cometbft.proto";
+import "path/qos/cosmos.proto";
 
 // Observations contains QoS measurements for a single service request.
 // Currently supports:
@@ -20,7 +20,7 @@ message Observations {
     // evm contains QoS measurements for a single EVM blockchain request
     EVMRequestObservations evm = 2;
 
-    // cometbft contains QoS measurements for a single CometBFT blockchain request
-    CometBFTRequestObservations cometbft = 3;
+    // cosmos contains QoS measurements for a single CosmosSDK blockchain request
+    CosmosSDKRequestObservations cosmos = 3;
   }
 }

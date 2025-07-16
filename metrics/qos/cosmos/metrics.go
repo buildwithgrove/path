@@ -1,4 +1,4 @@
-package cometbft
+package cosmos
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ const (
 	// The POSIX process that emits metrics
 	pathProcess = "path"
 
-	// The list of metrics being tracked for CometBFT QoS
-	requestsTotalMetric = "cometbft_requests_total"
+	// The list of metrics being tracked for Cosmos SDK QoS
+	requestsTotalMetric = "cosmos_sdk_requests_total"
 )
 
 func init() {
@@ -33,13 +33,13 @@ var (
 	// - Track endpoint responses separately from requests if/when retries are implemented
 	//   (A single request may generate multiple responses due to retries)
 	//
-	// requestsTotal tracks total CometBFT requests processed
+	// requestsTotal tracks total Cosmos SDK requests processed
 	//
 	// - Labels:
-	//   - chain_id: Target CometBFT chain identifier
-	//   - service_id: Service ID of the CometBFT QoS instance
+	//   - chain_id: Target Cosmos SDK chain identifier
+	//   - service_id: Service ID of the Cosmos SDK QoS instance
 	//   - request_origin: origin of the request: User or Hydrator.
-	//   - request_method: CometBFT RPC method name (e.g., health, status)
+	//   - request_method: Cosmos SDK RPC method name (e.g., health, status)
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (empty for success)
 	//   - http_status_code: HTTP status code returned to user
@@ -55,27 +55,27 @@ var (
 		prometheus.CounterOpts{
 			Subsystem: pathProcess,
 			Name:      requestsTotalMetric,
-			Help:      "Total number of requests processed by CometBFT QoS instance(s)",
+			Help:      "Total number of requests processed by Cosmos SDK QoS instance(s)",
 		},
 		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
 // PublishMetrics:
-// - Exports all CometBFT-related Prometheus metrics using observations from CometBFT QoS service
+// - Exports all Cosmos SDK-related Prometheus metrics using observations from Cosmos SDK QoS service
 // - Logs errors for unexpected (should-never-happen) conditions
-func PublishMetrics(logger polylog.Logger, observations *qos.CometBFTRequestObservations) {
-	logger = logger.With("method", "PublishMetricsCometBFT")
+func PublishMetrics(logger polylog.Logger, observations *qos.CosmosSDKRequestObservations) {
+	logger = logger.With("method", "PublishMetricsCosmosSDK")
 
 	// Skip if observations is nil.
 	// This should never happen as PublishQoSMetrics uses nil checks to identify which QoS service produced the observations.
 	if observations == nil {
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Unable to publish CometBFT metrics: received nil observations.")
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Unable to publish Cosmos SDK metrics: received nil observations.")
 		return
 	}
 
 	// Create an interpreter for the observations
-	interpreter := &qos.CometBFTObservationInterpreter{
+	interpreter := &qos.CosmosSDKObservationInterpreter{
 		Logger:       logger,
 		Observations: observations,
 	}
