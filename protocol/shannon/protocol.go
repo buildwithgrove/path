@@ -30,6 +30,30 @@ var (
 // This allows the protocol to report its sanctioned endpoints data to the devtools.DisqualifiedEndpointReporter.
 var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
+// Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
+type Protocol struct {
+	logger polylog.Logger
+	FullNode
+
+	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
+	// See protocol/shannon/gateway_mode.go for more details.
+	gatewayMode protocol.GatewayMode
+
+	// gatewayAddr is used by the SDK for selecting onchain applications which have delegated to the gateway.
+	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
+	gatewayAddr string
+
+	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon Gateway instance.
+	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
+	gatewayPrivateKeyHex string
+
+	// ownedApps is the list of apps owned by the gateway operator
+	ownedApps map[protocol.ServiceID][]string
+
+	// sanctionedEndpointsStore tracks sanctioned endpoints
+	sanctionedEndpointsStore *sanctionedEndpointsStore
+}
+
 // NewProtocol instantiates an instance of the Shannon protocol integration.
 func NewProtocol(
 	logger polylog.Logger,
@@ -38,8 +62,8 @@ func NewProtocol(
 ) (*Protocol, error) {
 	shannonLogger := logger.With("protocol", "shannon")
 
-	// Initialize the owned apps for the gateway mode. This value will be nil if gateway mode is not Centralized.
-	ownedApps, err := getOwnedApps(logger, config.OwnedAppsPrivateKeysHex, fullNode)
+	// Retrieve the list of apps owned by the gateway.
+	ownedApps, err := getOwnedApps(shannonLogger, config.OwnedAppsPrivateKeysHex, fullNode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
 	}
@@ -63,30 +87,6 @@ func NewProtocol(
 	}
 
 	return protocolInstance, nil
-}
-
-// Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
-type Protocol struct {
-	logger polylog.Logger
-	FullNode
-
-	// gatewayMode is the gateway mode in which the current instance of the Shannon protocol integration operates.
-	// See protocol/shannon/gateway_mode.go for more details.
-	gatewayMode protocol.GatewayMode
-
-	// gatewayAddr is used by the SDK for selecting onchain applications which have delegated to the gateway.
-	// The gateway can only sign relays on behalf of an application if the application has an active delegation to it.
-	gatewayAddr string
-
-	// gatewayPrivateKeyHex stores the private key of the gateway running this Shannon Gateway instance.
-	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
-	gatewayPrivateKeyHex string
-
-	// ownedApps is the list of apps owned by the gateway operator
-	ownedApps map[protocol.ServiceID][]string
-
-	// sanctionedEndpointsStore tracks sanctioned endpoints
-	sanctionedEndpointsStore *sanctionedEndpointsStore
 }
 
 // AvailableEndpoints returns the available endpoints for a given service ID.
@@ -213,6 +213,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
+		context:            ctx,
 		fullNode:           p.FullNode,
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,
@@ -243,18 +244,11 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
 
 	return nil
-
 }
 
-// ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
-// This is used by the hydrator to determine which service IDs to run QoS checks on.
+// ConfiguredServiceIDs returns the list of all all service IDs that are configured
+// to be supported by the Gateway.
 func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
-	// Currently hydrator is only enabled for Centralized gateway mode.
-	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	if p.gatewayMode != protocol.GatewayModeCentralized {
-		return nil
-	}
-
 	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
 	for serviceID := range p.ownedApps {
 		configuredServiceIDs[serviceID] = struct{}{}
@@ -303,7 +297,7 @@ func (p *Protocol) getSessionsUniqueEndpoints(
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
 		// Hydrate the logger with session details.
-		logger := logger.With("valid_app_address", app.Address)
+		logger := logger.With("valid_app_address", app.Address).With("method", "getSessionsUniqueEndpoints")
 		logger = hydrateLoggerWithSession(logger, &session)
 		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 

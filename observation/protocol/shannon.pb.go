@@ -158,6 +158,8 @@ const (
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT           ShannonEndpointErrorType = 30
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION           ShannonEndpointErrorType = 31
 	ShannonEndpointErrorType_SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE            ShannonEndpointErrorType = 32
+	// RelayRequest was canceled by PATH intentionally.
+	ShannonEndpointErrorType_SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH ShannonEndpointErrorType = 33
 )
 
 // Enum value maps for ShannonEndpointErrorType.
@@ -195,6 +197,7 @@ var (
 		30: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT",
 		31: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION",
 		32: "SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE",
+		33: "SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH",
 	}
 	ShannonEndpointErrorType_value = map[string]int32{
 		"SHANNON_ENDPOINT_ERROR_UNSPECIFIED":                          0,
@@ -229,6 +232,7 @@ var (
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT":           30,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION":           31,
 		"SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE":            32,
+		"SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH":                   33,
 	}
 )
 
@@ -263,9 +267,10 @@ func (ShannonEndpointErrorType) EnumDescriptor() ([]byte, []int) {
 type ShannonSanctionType int32
 
 const (
-	ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED ShannonSanctionType = 0
-	ShannonSanctionType_SHANNON_SANCTION_SESSION     ShannonSanctionType = 1 // Valid only for current session
-	ShannonSanctionType_SHANNON_SANCTION_PERMANENT   ShannonSanctionType = 2 // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	ShannonSanctionType_SHANNON_SANCTION_UNSPECIFIED     ShannonSanctionType = 0
+	ShannonSanctionType_SHANNON_SANCTION_SESSION         ShannonSanctionType = 1 // Valid only for current session
+	ShannonSanctionType_SHANNON_SANCTION_PERMANENT       ShannonSanctionType = 2 // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+	ShannonSanctionType_SHANNON_SANCTION_DO_NOT_SANCTION ShannonSanctionType = 3 // Do not sanction the endpoint based on this error
 )
 
 // Enum value maps for ShannonSanctionType.
@@ -274,11 +279,13 @@ var (
 		0: "SHANNON_SANCTION_UNSPECIFIED",
 		1: "SHANNON_SANCTION_SESSION",
 		2: "SHANNON_SANCTION_PERMANENT",
+		3: "SHANNON_SANCTION_DO_NOT_SANCTION",
 	}
 	ShannonSanctionType_value = map[string]int32{
-		"SHANNON_SANCTION_UNSPECIFIED": 0,
-		"SHANNON_SANCTION_SESSION":     1,
-		"SHANNON_SANCTION_PERMANENT":   2,
+		"SHANNON_SANCTION_UNSPECIFIED":     0,
+		"SHANNON_SANCTION_SESSION":         1,
+		"SHANNON_SANCTION_PERMANENT":       2,
+		"SHANNON_SANCTION_DO_NOT_SANCTION": 3,
 	}
 )
 
@@ -527,8 +534,12 @@ type ShannonEndpointObservation struct {
 	RecommendedSanction *ShannonSanctionType `protobuf:"varint,12,opt,name=recommended_sanction,json=recommendedSanction,proto3,enum=path.protocol.ShannonSanctionType,oneof" json:"recommended_sanction,omitempty"`
 	// RelayMiner error details if the endpoint returned a RelayMinerError
 	RelayMinerError *ShannonRelayMinerError `protobuf:"bytes,13,opt,name=relay_miner_error,json=relayMinerError,proto3,oneof" json:"relay_miner_error,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// HTTP status code of the endpoint response
+	EndpointBackendServiceHttpResponseStatusCode *int32 `protobuf:"varint,14,opt,name=endpoint_backend_service_http_response_status_code,json=endpointBackendServiceHttpResponseStatusCode,proto3,oneof" json:"endpoint_backend_service_http_response_status_code,omitempty"`
+	// HTTP Response payload size
+	EndpointBackendServiceHttpResponsePayloadSize *int64 `protobuf:"varint,15,opt,name=endpoint_backend_service_http_response_payload_size,json=endpointBackendServiceHttpResponsePayloadSize,proto3,oneof" json:"endpoint_backend_service_http_response_payload_size,omitempty"`
+	unknownFields                                 protoimpl.UnknownFields
+	sizeCache                                     protoimpl.SizeCache
 }
 
 func (x *ShannonEndpointObservation) Reset() {
@@ -652,6 +663,20 @@ func (x *ShannonEndpointObservation) GetRelayMinerError() *ShannonRelayMinerErro
 	return nil
 }
 
+func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponseStatusCode() int32 {
+	if x != nil && x.EndpointBackendServiceHttpResponseStatusCode != nil {
+		return *x.EndpointBackendServiceHttpResponseStatusCode
+	}
+	return 0
+}
+
+func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloadSize() int64 {
+	if x != nil && x.EndpointBackendServiceHttpResponsePayloadSize != nil {
+		return *x.EndpointBackendServiceHttpResponsePayloadSize
+	}
+	return 0
+}
+
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
@@ -716,7 +741,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12L\n" +
 	"\rrequest_error\x18\x02 \x01(\v2\".path.protocol.ShannonRequestErrorH\x00R\frequestError\x88\x01\x01\x12^\n" +
 	"\x15endpoint_observations\x18\x03 \x03(\v2).path.protocol.ShannonEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\x8c\a\n" +
+	"\x0e_request_error\"\xdb\t\n" +
 	"\x1aShannonEndpointObservation\x12\x1a\n" +
 	"\bsupplier\x18\x01 \x01(\tR\bsupplier\x12!\n" +
 	"\fendpoint_url\x18\x02 \x01(\tR\vendpointUrl\x120\n" +
@@ -733,12 +758,16 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	" \x01(\x0e2'.path.protocol.ShannonEndpointErrorTypeH\x01R\terrorType\x88\x01\x01\x12(\n" +
 	"\rerror_details\x18\v \x01(\tH\x02R\ferrorDetails\x88\x01\x01\x12Z\n" +
 	"\x14recommended_sanction\x18\f \x01(\x0e2\".path.protocol.ShannonSanctionTypeH\x03R\x13recommendedSanction\x88\x01\x01\x12V\n" +
-	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01B\x1e\n" +
+	"\x11relay_miner_error\x18\r \x01(\v2%.path.protocol.ShannonRelayMinerErrorH\x04R\x0frelayMinerError\x88\x01\x01\x12m\n" +
+	"2endpoint_backend_service_http_response_status_code\x18\x0e \x01(\x05H\x05R,endpointBackendServiceHttpResponseStatusCode\x88\x01\x01\x12o\n" +
+	"3endpoint_backend_service_http_response_payload_size\x18\x0f \x01(\x03H\x06R-endpointBackendServiceHttpResponsePayloadSize\x88\x01\x01B\x1e\n" +
 	"\x1c_endpoint_response_timestampB\r\n" +
 	"\v_error_typeB\x10\n" +
 	"\x0e_error_detailsB\x17\n" +
 	"\x15_recommended_sanctionB\x14\n" +
-	"\x12_relay_miner_error\"h\n" +
+	"\x12_relay_miner_errorB5\n" +
+	"3_endpoint_backend_service_http_response_status_codeB6\n" +
+	"4_endpoint_backend_service_http_response_payload_size\"h\n" +
 	"\x17ShannonObservationsList\x12M\n" +
 	"\fobservations\x18\x01 \x03(\v2).path.protocol.ShannonRequestObservationsR\fobservations*\x9e\x05\n" +
 	"\x17ShannonRequestErrorType\x12%\n" +
@@ -753,7 +782,7 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	"2SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP\x10\b\x12B\n" +
 	">SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE\x10\t\x125\n" +
 	"1SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR\x10\n" +
-	"*\x9d\r\n" +
+	"*\xcc\r\n" +
 	"\x18ShannonEndpointErrorType\x12&\n" +
 	"\"SHANNON_ENDPOINT_ERROR_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSHANNON_ENDPOINT_ERROR_INTERNAL\x10\x01\x12!\n" +
@@ -787,11 +816,13 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 	";SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION\x10\x1d\x125\n" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT\x10\x1e\x125\n" +
 	"1SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION\x10\x1f\x124\n" +
-	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 *u\n" +
+	"0SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE\x10 \x12-\n" +
+	")SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH\x10!*\x9b\x01\n" +
 	"\x13ShannonSanctionType\x12 \n" +
 	"\x1cSHANNON_SANCTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SHANNON_SANCTION_SESSION\x10\x01\x12\x1e\n" +
-	"\x1aSHANNON_SANCTION_PERMANENT\x10\x02B5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
+	"\x1aSHANNON_SANCTION_PERMANENT\x10\x02\x12$\n" +
+	" SHANNON_SANCTION_DO_NOT_SANCTION\x10\x03B5Z3github.com/buildwithgrove/path/observation/protocolb\x06proto3"
 
 var (
 	file_path_protocol_shannon_proto_rawDescOnce sync.Once

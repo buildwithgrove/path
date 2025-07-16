@@ -6,9 +6,21 @@ import (
 
 /* --------------------------------- Router Config Defaults -------------------------------- */
 
+// TODO_IMPROVE: Make all of these configurable for PATH users
 const (
-	defaultPort               = 3069
-	defaultMaxRequestBodySize = 1 << 20 // 1 MB
+	// default PATH port
+	defaultPort = 3069
+
+	// defaultMaxRequestHeaderBytes is the default maximum size of the HTTP request header.
+	defaultMaxRequestHeaderBytes = 2 * 1e6 // 2 MB
+
+	// HTTP server's default timeout values.
+	defaultHTTPServerReadTimeout = 10 * time.Second
+	defaultHTTPServerIdleTimeout = 120 * time.Second
+
+	// HTTP request handler's WriteTimeout.
+	// https://pkg.go.dev/net/http#Server
+	defaultHTTPServerWriteTimeout = 20 * time.Second
 )
 
 /* --------------------------------- Router Config Struct -------------------------------- */
@@ -16,11 +28,11 @@ const (
 // RouterConfig contains server configuration settings.
 // See default values above.
 type RouterConfig struct {
-	Port               int           `yaml:"port"`
-	MaxRequestBodySize int           `yaml:"max_request_body_size"`
-	ReadTimeout        time.Duration `yaml:"read_timeout"`
-	WriteTimeout       time.Duration `yaml:"write_timeout"`
-	IdleTimeout        time.Duration `yaml:"idle_timeout"`
+	Port                  int           `yaml:"port"`
+	MaxRequestHeaderBytes int           `yaml:"max_request_header_bytes"`
+	ReadTimeout           time.Duration `yaml:"read_timeout"`
+	WriteTimeout          time.Duration `yaml:"write_timeout"`
+	IdleTimeout           time.Duration `yaml:"idle_timeout"`
 }
 
 /* --------------------------------- Router Config Private Helpers -------------------------------- */
@@ -30,8 +42,8 @@ func (c *RouterConfig) hydrateRouterDefaults() {
 	if c.Port == 0 {
 		c.Port = defaultPort
 	}
-	if c.MaxRequestBodySize == 0 {
-		c.MaxRequestBodySize = defaultMaxRequestBodySize
+	if c.MaxRequestHeaderBytes == 0 {
+		c.MaxRequestHeaderBytes = defaultMaxRequestHeaderBytes
 	}
 	if c.ReadTimeout == 0 {
 		c.ReadTimeout = defaultHTTPServerReadTimeout

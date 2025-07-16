@@ -80,7 +80,6 @@ func setLegacyFieldsFromShannonProtocolObservations(
 
 	// Extract the endpoint's domain from its URL.
 	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.EndpointUrl)
-	// Error extracting the endpoint domain: log the error.
 	if err != nil {
 		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord

@@ -14,7 +14,7 @@ import (
 
 // TODO_MVP(@adshmh): Support individual configuration of timeout for every service that uses EVM QoS.
 // The default timeout when sending a request to an EVM blockchain endpoint.
-const defaultServiceRequestTimeoutMillisec = 10000
+const defaultServiceRequestTimeoutMillisec = 10_500
 
 // requestContext provides the support required by the gateway
 // package for handling service requests.
@@ -226,4 +226,10 @@ func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protoc
 	rc.endpointSelectionMetadata = selectionResult.Metadata
 
 	return selectionResult.SelectedEndpoint, nil
+}
+
+// SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
+// Implements the protocol.EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	return rc.serviceState.SelectMultiple(allEndpoints, numEndpoints)
 }

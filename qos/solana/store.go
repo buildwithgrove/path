@@ -8,6 +8,7 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 // EndpointStore provides the endpoint selection capability required
@@ -57,6 +58,39 @@ func (es *EndpointStore) Select(allAvailableEndpoints protocol.EndpointAddrList)
 	return filteredEndpointsAddr[rand.Intn(len(filteredEndpointsAddr))], nil
 }
 
+// SelectMultiple returns multiple endpoint addresses from the list of valid endpoints.
+// Valid endpoints are determined by filtering the available endpoints based on their
+// validity criteria. If numEndpoints is 0, it defaults to 1.
+func (es *EndpointStore) SelectMultiple(
+	allAvailableEndpoints protocol.EndpointAddrList,
+	numEndpoints uint,
+) (protocol.EndpointAddrList, error) {
+	logger := es.logger.With(
+		"qos", "Solana",
+		"method", "SelectMultiple",
+		"num_endpoints_available", len(allAvailableEndpoints),
+		"num_endpoints", numEndpoints,
+	)
+	logger.Debug().Msgf("filtering available endpoints to select up to %d.", numEndpoints)
+
+	// Filter valid endpoints
+	filteredEndpointsAddr, err := es.filterValidEndpoints(allAvailableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("error filtering endpoints: service request will fail.")
+		return nil, err
+	}
+
+	// Select random endpoints as fallback
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msg("SELECTING RANDOM ENDPOINTS because all endpoints failed validation.")
+		return selector.RandomSelectMultiple(allAvailableEndpoints, numEndpoints), nil
+	}
+
+	// Select up to numEndpoints endpoints from filtered list
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(allAvailableEndpoints))
+	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
+}
+
 // filterValidEndpoints returns the subset of available endpoints that are valid according to previously processed observations.
 func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddrList, error) {
 	es.endpointsMu.RLock()
@@ -84,17 +118,17 @@ func (es *EndpointStore) filterValidEndpoints(allAvailableEndpoints protocol.End
 
 		endpoint, found := es.endpoints[availableEndpointAddr]
 		if !found {
-			logger.Warn().Msgf("❓ Skipping endpoint %s because it was not found in PATH's endpoint store.", availableEndpointAddr)
+			logger.Warn().Msgf("❓ Skipping endpoint because it was not found in PATH's endpoint store: %s", availableEndpointAddr)
 			continue
 		}
 
 		if err := es.serviceState.ValidateEndpoint(endpoint); err != nil {
-			logger.Error().Err(err).Msgf("❌ Skipping endpoint %s because it failed validation due to: %v", availableEndpointAddr, err)
+			logger.Error().Err(err).Msgf("❌ Skipping endpoint because it failed validation: %s", availableEndpointAddr)
 			continue
 		}
 
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("✅ endpoint %s passed validation.", availableEndpointAddr)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("✅ endpoint passed validation: %s", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, nil

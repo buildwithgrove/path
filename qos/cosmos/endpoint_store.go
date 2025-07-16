@@ -64,7 +64,7 @@ func (es *endpointStore) updateEndpointsFromObservations(
 
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
 		if !endpointWasMutated {
-			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
+			logger.Info().Msg("endpoint was not mutated by observations. Skipping update of internal endpoint store.")
 			continue
 		}
 

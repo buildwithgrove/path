@@ -9,6 +9,7 @@ import (
 
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos/selector"
 )
 
 var (
@@ -18,8 +19,8 @@ var (
 )
 
 // TODO_UPNEXT(@adshmh): make the invalid response timeout duration configurable
-// It is set to 30 minutes because that is the session time as of #321.
-const invalidResponseTimeout = 30 * time.Minute
+// It is set to 5 minutes because that is the session time as of #321.
+const invalidResponseTimeout = 5 * time.Minute
 
 // EndpointSelectionResult contains endpoint selection results and metadata.
 type EndpointSelectionResult struct {
@@ -35,6 +36,35 @@ type EndpointSelectionMetadata struct {
 	RandomEndpointFallback bool
 	// ValidationResults contains detailed information about each validation attempt (both successful and failed)
 	ValidationResults []*qosobservations.EndpointValidationResult
+}
+
+// SelectMultiple returns multiple endpoint addresses from the list of available endpoints.
+// Available endpoints are filtered based on their validity first.
+// Endpoints are selected with TLD diversity preference when possible.
+// If numEndpoints is 0, it defaults to 1. If numEndpoints is greater than available endpoints, it returns all valid endpoints.
+func (ss *serviceState) SelectMultiple(availableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	logger := ss.logger.With("method", "SelectMultiple").
+		With("chain_id", ss.serviceQoSConfig.getEVMChainID()).
+		With("service_id", ss.serviceQoSConfig.GetServiceID()).
+		With("num_endpoints", numEndpoints)
+	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(availableEndpoints), numEndpoints)
+
+	// Filter valid endpoints
+	filteredEndpointsAddr, _, err := ss.filterValidEndpointsWithDetails(availableEndpoints)
+	if err != nil {
+		logger.Error().Err(err).Msg("error filtering endpoints")
+		return nil, err
+	}
+
+	// Select random endpoints as fallback
+	if len(filteredEndpointsAddr) == 0 {
+		logger.Warn().Msgf("SELECTING RANDOM ENDPOINTS because all endpoints failed validation from: %s", availableEndpoints.String())
+		return selector.RandomSelectMultiple(availableEndpoints, numEndpoints), nil
+	}
+
+	// Use the diversity-aware selection
+	logger.Info().Msgf("filtered %d endpoints from %d available endpoints", len(filteredEndpointsAddr), len(availableEndpoints))
+	return selector.SelectEndpointsWithDiversity(logger, filteredEndpointsAddr, numEndpoints), nil
 }
 
 // SelectWithMetadata returns endpoint address and selection metadata.
@@ -127,6 +157,7 @@ func (ss *serviceState) filterValidEndpointsWithDetails(availableEndpoints proto
 		}
 
 		if err := ss.basicEndpointValidation(endpoint); err != nil {
+
 			logger.Error().Err(err).Msgf("❌ SKIPPING %s endpoint because it failed basic validation: %v", availableEndpointAddr, err)
 
 			// Create validation result for validation failure
@@ -150,7 +181,7 @@ func (ss *serviceState) filterValidEndpointsWithDetails(availableEndpoints proto
 		}
 		validationResults = append(validationResults, result)
 		filteredEndpointsAddr = append(filteredEndpointsAddr, availableEndpointAddr)
-		logger.Info().Msgf("✅ endpoint %s passed validation", availableEndpointAddr)
+		logger.Info().Msgf("✅ endpoint passed validation: %s", availableEndpointAddr)
 	}
 
 	return filteredEndpointsAddr, validationResults, nil
@@ -209,8 +240,8 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	if endpoint.hasReturnedInvalidResponse && endpoint.invalidResponseLastObserved != nil {
 		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
 		if timeSinceInvalidResponse < invalidResponseTimeout {
-			return fmt.Errorf("recent response validation failed (%.0f minutes ago): %w",
-				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+			return fmt.Errorf("recent invalid response validation failed (%.0f minutes ago): %w. Empty response: %t. Response validation error: %s",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs, endpoint.hasReturnedEmptyResponse, endpoint.invalidResponseError)
 		}
 	}
 

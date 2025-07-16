@@ -44,5 +44,5 @@ func PublishQoSMetrics(
 	}
 
 	// Log warning if no matching observation types were found
-	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: %+v", qosObservations)
+	hydratedLogger.Warn().Msgf("SHOULD RARELY HAPPEN: supplied observations do not match any known QoS service: '%+v'", qosObservations)
 }

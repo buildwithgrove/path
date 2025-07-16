@@ -248,3 +248,10 @@ func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	return rc.serviceState.Select(allEndpoints)
 }
+
+// SelectMultiple returns multiple endpoint addresses using the request context's endpoint store.
+// Implements the protocol.EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	// Select multiple endpoints from the available endpoints using the endpoint store.
+	return rc.serviceState.SelectMultiple(allEndpoints, numEndpoints)
+}
