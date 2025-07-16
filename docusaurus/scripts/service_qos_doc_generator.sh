@@ -50,12 +50,12 @@ This means that PATH **automatically** performs QoS checks for all services the 
 
 In order to disable QoS checks for a specific service, the `service_id` field may be specified in the `.config.yaml` file's `qos_disabled_service_ids` field.
 
-For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
+For example, to disable QoS checks for the Ethereum service on a Shannon PATH instance, the following configuration would be added to the `.config.yaml` file:
 
 ```yaml
 hydrator_config:
   qos_disabled_service_ids:
-    - "F00C"
+    - "eth"
 ```
 
 See [PATH Configuration File](../../develop/path/5_configurations_path.md#hydrator_config-optional) for more details.
@@ -225,17 +225,3 @@ generate_static_content "$OUTPUT_FILE"
 
 # Process Shannon services
 process_services "shannonServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
-
-# Add Morse services section header
-{
-    echo ""
-    echo "## Morse Protocol Services"
-    echo ""
-    echo "| Service Name | Authoritative Service ID | Service QoS Type | Chain ID (if applicable) | Archival Check Configured |"
-    echo "|-------------|------------|-----------------|----------|---------------------------|"
-} >>"$OUTPUT_FILE"
-
-# Process Morse services
-process_services "morseServices" "$default_evm_chain_id" "$INPUT_FILE" "$OUTPUT_FILE"
-
-echo "Documentation successfully updated at $OUTPUT_FILE"

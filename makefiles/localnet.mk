@@ -46,6 +46,34 @@ path_down: ## Tears down local Tilt development environment in Docker
 .PHONY: localnet_exec
 localnet_exec: ## Opens a terminal inside the path-localnet container
 	@docker exec -it path-localnet /bin/bash
+.PHONY: k8s_prepare_local_env
+
+# Internal helper for path localnet: creates a kind cluster and namespaces if they don't already exist
+k8s_prepare_local_env: check_kind
+	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
+		echo "[INFO] Cluster 'path-localnet' not found. Creating it..."; \
+		kind create cluster --name path-localnet --config ./local/kind-config.yaml; \
+		kubectl create namespace path; \
+		kubectl create namespace monitoring; \
+		kubectl create namespace middleware; \
+		kubectl config set-context --current --namespace=path; \
+		kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
+	else \
+		echo "[DEBUG] Cluster 'path-localnet' already exists. Checking context..."; \
+		if ! kubectl config get-contexts | grep -q "^[* ]*kind-path-localnet"; then \
+			echo "[INFO] Context 'kind-path-localnet' not found. Setting up kubeconfig..."; \
+			kind export kubeconfig --name path-localnet; \
+		fi; \
+		if ! kubectl get namespace path >/dev/null 2>&1; then \
+			echo "[INFO] Creating missing namespaces..."; \
+			kubectl create namespace path; \
+			kubectl create namespace monitoring; \
+			kubectl create namespace middleware; \
+			kubectl config set-context --current --namespace=path; \
+			kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path; \
+		fi; \
+	fi; \
+	kubectl config use-context kind-path-localnet;
 
 .PHONY: path_help
 path_help: ## Prints help commands if you cannot start path

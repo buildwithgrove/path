@@ -20,20 +20,14 @@ guard:
   # 2. Each service can have a list of aliases that can be used to route requests to the service.
   # TODO_MIGRATION(@commoddity): once GUARD is updated, remove `shannonServiceId` and use `serviceId` instead.
   services:
-    - serviceId: F00C
-      shannonServiceId: eth
+    - serviceId: eth
       aliases:
-        - eth
-    - serviceId: F021
-      shannonServiceId: poly
+        - ethereum
+    - serviceId: anvil
+    - serviceId: pocket
+    - serviceId: poly
       aliases:
         - polygon
-    #- serviceId: F000
-    #  shannonServiceId: pocket
-    #  aliases:
-    #    - pocket
-    #    - mainnet
-    # etc...
 
   # The auth section allows configuring the API key authentication for the PATH service.
   auth:

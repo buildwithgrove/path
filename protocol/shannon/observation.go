@@ -107,18 +107,23 @@ func translateContextSetupErrorToRequestErrorType(err error) protocolobservation
 // builds a Shannon endpoint success observation to include:
 // - endpoint details: address, url, app
 // - endpoint query and response timestamps.
+// - relay miner error if present: for tracking/cross referencing against endpoint errors.
 func buildEndpointSuccessObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
 	endpointQueryTimestamp time.Time,
 	endpointResponseTimestamp time.Time,
+	endpointResponse *protocol.Response,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(logger, endpoint)
+	endpointObs := buildEndpointObservation(logger, endpoint, endpointResponse)
 
 	// Update the observation with endpoint query and response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
 	endpointObs.EndpointResponseTimestamp = timestamppb.New(endpointResponseTimestamp)
+	// Track RelayMiner error.
+	endpointObs.RelayMinerError = relayMinerError
 
 	return endpointObs
 }
@@ -127,6 +132,7 @@ func buildEndpointSuccessObservation(
 // - endpoint details
 // - the encountered error
 // - any sanctions resulting from the error.
+// - relay miner error if present: for tracking/cross referencing against endpoint errors.
 func buildEndpointErrorObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
@@ -135,9 +141,10 @@ func buildEndpointErrorObservation(
 	errorType protocolobservations.ShannonEndpointErrorType,
 	errorDetails string,
 	sanctionType protocolobservations.ShannonSanctionType,
+	relayMinerError *protocolobservations.ShannonRelayMinerError,
 ) *protocolobservations.ShannonEndpointObservation {
 	// initialize an observation with endpoint details: URL, app, etc.
-	endpointObs := buildEndpointObservation(logger, endpoint)
+	endpointObs := buildEndpointObservation(logger, endpoint, nil)
 
 	// Update the observation with endpoint query/response timestamps.
 	endpointObs.EndpointQueryTimestamp = timestamppb.New(endpointQueryTimestamp)
@@ -147,6 +154,8 @@ func buildEndpointErrorObservation(
 	endpointObs.ErrorType = &errorType
 	endpointObs.ErrorDetails = &errorDetails
 	endpointObs.RecommendedSanction = &sanctionType
+	// Track RelayMiner error
+	endpointObs.RelayMinerError = relayMinerError
 
 	return endpointObs
 }
@@ -157,6 +166,7 @@ func buildEndpointErrorObservation(
 func buildEndpointObservation(
 	logger polylog.Logger,
 	endpoint endpoint,
+	endpointResponse *protocol.Response,
 ) *protocolobservations.ShannonEndpointObservation {
 	// Add session fields to the observation:
 	// app, serviceID, session ID, session start and end heights
@@ -165,6 +175,14 @@ func buildEndpointObservation(
 	// Add endpoint-level details: supplier, URL.
 	observation.Supplier = endpoint.supplier
 	observation.EndpointUrl = endpoint.url
+
+	// Add endpoint response details if not nil (i.e. success)
+	if endpointResponse != nil {
+		statusCode := int32(endpointResponse.HTTPStatusCode)
+		payloadSize := int64(len(endpointResponse.Bytes))
+		observation.EndpointBackendServiceHttpResponseStatusCode = &statusCode
+		observation.EndpointBackendServiceHttpResponsePayloadSize = &payloadSize
+	}
 
 	return observation
 }
@@ -175,11 +193,18 @@ func buildEndpointObservationFromSession(
 	logger polylog.Logger,
 	session sessiontypes.Session,
 ) *protocolobservations.ShannonEndpointObservation {
+	defaultStatusCode := int32(0)
+	defaultPayloadSize := int64(0)
+
 	header := session.Header
 	// Nil session: skip.
 	if header == nil {
 		logger.With("method", "buildEndpointObservationFromSession").ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD NEVER HAPPEN: received nil session header. Skip session fields.")
-		return &protocolobservations.ShannonEndpointObservation{}
+		// Initialize with empty values and nil pointers properly initialized
+		return &protocolobservations.ShannonEndpointObservation{
+			EndpointBackendServiceHttpResponseStatusCode:  &defaultStatusCode,
+			EndpointBackendServiceHttpResponsePayloadSize: &defaultPayloadSize,
+		}
 	}
 
 	// Build an endpoint observation using session fields.
@@ -189,6 +214,8 @@ func buildEndpointObservationFromSession(
 		SessionId:          header.SessionId,
 		SessionStartHeight: header.SessionStartBlockHeight,
 		SessionEndHeight:   header.SessionEndBlockHeight,
+		EndpointBackendServiceHttpResponseStatusCode:  &defaultStatusCode,
+		EndpointBackendServiceHttpResponsePayloadSize: &defaultPayloadSize,
 	}
 }
 

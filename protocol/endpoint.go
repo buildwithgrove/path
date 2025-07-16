@@ -21,12 +21,17 @@ type Endpoint interface {
 
 	// PublicURL is the publically exposed/accessible URL to which relay requests can be sent.
 	PublicURL() string
+
+	// WebsocketURL is the URL of the endpoint for websocket RPC type requests.
+	// Returns an error if the endpoint does not support websocket RPC type requests.
+	WebsocketURL() (string, error)
 }
 
 // EndpointSelector defines the functionality that the user of a protocol needs to provide.
 // E.g. selecting an endpoint, from the list of available ones, to which the relay will be sent.
 type EndpointSelector interface {
 	Select(EndpointAddrList) (EndpointAddr, error)
+	SelectMultiple(EndpointAddrList, uint) (EndpointAddrList, error)
 }
 
 func (e EndpointAddr) String() string {

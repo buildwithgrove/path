@@ -9,103 +9,104 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-// RequestQoSContext represents the interactions of the gateway with the QoS instance
-// corresponding to the service specified by a service request.
+// RequestQoSContext
 //
-// A RequestQoSContext can be built in various ways such as:
-//   - 1. Building a new context by parsing an organic request from an end-user
-//   - 2. Building a new context based on a desired endpoint check, e.g. an `eth_chainId` request on an EVM blockchain.
-//   - 3. Rebuilding an existing context by deserializing a shared context from another PATH instance
+// Represents interactions between the gateway and the QoS instance for a given service request.
+//
+// Construction methods:
+// - Parse an organic request from an end-user.
+// - Rebuild from a shared context deserialized from another PATH instance.
 type RequestQoSContext interface {
-	// TODO_TECHDEBT: This should eventually return a []Payload
-	// to allow mapping a single RelayRequest into multiple ServiceRequests,
-	// e.g. A single batch relay request on a JSONRPC blockchain should be decomposable into
-	// multiple independent requests.
+	// TODO_TECHDEBT: Should eventually return []Payload
+	// - Allows mapping a single RelayRequest into multiple ServiceRequests.
+	// - Example: A batch relay request on JSONRPC should decompose into multiple independent requests.
 	GetServicePayload() protocol.Payload
 
-	// TODO_FUTURE: add retry-related return values to UpdateWithResponse,
-	// or add retry-related methods to the interface, e.g. Failed(), ShouldRetry().
-	// UpdateWithResponse is used to inform the request QoS context of the
-	// payload returned by a specific endpoint in response to the service
-	// payload produced (through the `GetServicePayload` method) by the
-	// request QoS context instance
+	// TODO_FUTURE:
+	// - Add retry-related return values to UpdateWithResponse,
+	//   or add retry-related methods (e.g., Failed(), ShouldRetry()).
+	//
+	// UpdateWithResponse:
+	// - Informs the request QoS context of the payload returned by a specific endpoint.
+	// - Response is for the service payload produced by GetServicePayload.
 	UpdateWithResponse(endpointAddr protocol.EndpointAddr, endpointSerializedResponse []byte)
 
-	// GetHTTPResponse returns the user-facing HTTP response.
-	// The received response will depend on the state of the service request context,
-	// which is set at the time of establishing the context,
-	// and updated using the UpdateWithResponse method above.
-	// e.g. Calling this on a ServiceRequestContext instance which has
-	// never been updated with a response could return an HTTP response
-	// with a 404 HTTP status code.
+	// GetHTTPResponse:
+	// - Returns the user-facing HTTP response.
+	// - Response depends on the current state of the service request context.
+	// - State is set at context creation and updated via UpdateWithResponse.
+	// - If never updated, may return 404 HTTP status.
 	GetHTTPResponse() HTTPResponse
 
-	// GetObservations returns the set of QoS-level observations contained in the context.
+	// GetObservations:
+	// - Returns QoS-level observations in the context.
 	//
-	// Hypothetical illustrative example.
-	//
-	// If the context is:
-	// 	- Service: Solana
-	// 	- SelectedEndpoint: `endpoint_101`
-	// 	- Request: `getHealth`
-	// 	- Endpoint response: an error
-	//
-	// Then the observation can be:
-	// 	- `endpoint_101` is unhealthy.
+	// Example:
+	//   Context:
+	//     - Service: Solana
+	//     - SelectedEndpoint: `endpoint_101`
+	//     - Request: `getHealth`
+	//     - Endpoint response: error
+	//   Observation:
+	//     - `endpoint_101` is unhealthy.
 	GetObservations() qos.Observations
 
-	// GetEndpointSelector is part of this interface to enable more specialized endpoint
-	// selection, e.g. method-based endpoint selection for an EVM blockchain service request.
+	// GetEndpointSelector:
+	// - Enables specialized endpoint selection (e.g., method-based selection for EVM requests).
 	GetEndpointSelector() protocol.EndpointSelector
 }
 
-// QoSContextBuilder builds the QoS context required for handling
-// all steps of a service request, e.g. generating a user-facing
-// HTTP response from an endpoint's response.
+// QoSContextBuilder
+//
+// Builds the QoS context required for all steps of a service request.
+// Example: Generate a user-facing HTTP response from an endpoint's response.
 type QoSContextBuilder interface {
-	// ParseHTTPRequest ensures that an HTTP request represents a valid request on the target service.
+	// ParseHTTPRequest:
+	// - Ensures the HTTP request is valid for the target service.
 	ParseHTTPRequest(context.Context, *http.Request) (RequestQoSContext, bool)
 
-	// ParseWebsocketRequest ensures that a WebSocket request represents a valid request on the target service.
-	// WebSocket connection requests do not have a body so there is no need to parse anything.
-	// As long as the service supports WebSocket connections, this method should return a valid RequestQoSContext.
+	// ParseWebsocketRequest:
+	// - Ensures a WebSocket request is valid for the target service.
+	// - WebSocket connection requests have no body, so no parsing needed.
+	// - If service supports WebSocket, returns a valid RequestQoSContext.
 	ParseWebsocketRequest(context.Context) (RequestQoSContext, bool)
 }
 
-// QoSEndpointCheckGenerator returns one or more service request contexts
-// that can provide data on the quality of an enpoint by sending it the
-// corresponding payloads and parsing its response.
-// These checks are service-specific, i.e. the QoS instance for a
-// service decides what checks should be done against an endpoint.
+// QoSEndpointCheckGenerator
+//
+// Returns one or more service request contexts that:
+// - Provide data on endpoint quality by sending payloads and parsing responses.
+// - Checks are service-specific; the QoS instance decides what checks to run.
 type QoSEndpointCheckGenerator interface {
-	// TODO_FUTURE: add a GetOptionalQualityChecks() method, e.g. to enable
-	// a higher level of quality of service by collecting endpoints' latency
-	// in responding to certain requests.
+	// TODO_FUTURE:
+	// - Add GetOptionalQualityChecks() to collect additional QoS data (e.g., endpoint latency).
 	//
-	// GetRequiredQualityChecks returns the set of quality checks required by
-	// the a QoS instance to assess the validity of an endpoint.
-	// e.g. An EVM-based blockchain service QoS may decide to skip querying an endpoint on
-	// its current block height if it has already failed the chain ID check.
+	// GetRequiredQualityChecks:
+	// - Returns required quality checks for a QoS instance to assess endpoint validity.
+	// - Example: EVM QoS may skip block height check if chain ID check already failed.
 	GetRequiredQualityChecks(protocol.EndpointAddr) []RequestQoSContext
 }
 
-// TODO_IMPLEMENT: Add one QoS instance per service that is to be supported by the gateway, implementing the QoSService interface below.
-// e.g. a QoSService implementation for Ethereum, another for Solana, and third one for a RESTful service.
+// TODO_IMPLEMENT:
+// - Add a QoS instance per service supported by the gateway (e.g., Ethereum, Solana, RESTful).
 //
-// QoSService represents the embedded definition of a service, e.g. a JSONRPC blockchain.
-// It is broken into several pieces to clarify its responsibilities:
-// 1. QoSRequestParser: Translates a service request from a supported format (currently only HTTP) into a service request context.
-// 2. EndpointSelector: chooses the best endpoint for performing a particular service request.
+// QoSService:
+// - Represents the embedded definition of a service (e.g., JSONRPC blockchain).
+// - Responsibilities:
+//  1. QoSRequestParser: Translates service requests (currently only HTTP) into service request contexts.
+//  2. EndpointSelector: Chooses the best endpoint for a specific service request.
 type QoSService interface {
 	QoSContextBuilder
 	QoSEndpointCheckGenerator
 
-	// ApplyObservations is used to apply QoS-related observations to the local QoS instance.
-	// The observations can be either of:
-	// 	- "local": from requests sent to an endpoint by **THIS** PATH instance
-	// 	- "shared": from QoS observations shared by **OTHER** PATH instances.
+	// ApplyObservations:
+	// - Applies QoS-related observations to the local QoS instance.
+	// - TODO_FUTURE: Observations can be:
+	//   - "local": from requests sent to an endpoint by THIS PATH instance.
+	//   - "shared": from QoS observations shared by OTHER PATH instances.
 	ApplyObservations(*qos.Observations) error
 
-	// HydrateDisqualifiedEndpointsResponse hydrates the disqualified endpoint response with the QoS-specific data.
+	// HydrateDisqualifiedEndpointsResponse:
+	// - Fills the disqualified endpoint response with QoS-specific data.
 	HydrateDisqualifiedEndpointsResponse(protocol.ServiceID, *devtools.DisqualifiedEndpointResponse)
 }

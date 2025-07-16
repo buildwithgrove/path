@@ -14,6 +14,9 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+const servicesFile = "config/services_shannon.yaml"
+const configFile = "config/.shannon.config.yaml"
+
 // -----------------------------------------------------------------------------
 // Environment Variables
 // -----------------------------------------------------------------------------
@@ -22,9 +25,6 @@ import (
 const (
 	// [REQUIRED] The test mode to run (e2e or load)
 	envTestMode = "TEST_MODE" // The test mode to run (e2e or load)
-
-	// [REQUIRED] The protocol to test (morse or shannon)
-	envTestProtocol = "TEST_PROTOCOL" // The protocol to test (morse or shannon)
 
 	// [OPTIONAL] Run the test only against the specified service IDs.
 	// If not set, all service IDs for the protocol will be used.
@@ -38,11 +38,6 @@ func getEnvConfig() (envConfig, error) {
 		return envConfig{}, err
 	}
 
-	testProtocol := testProtocol(os.Getenv(envTestProtocol))
-	if err := testProtocol.isValid(); err != nil {
-		return envConfig{}, err
-	}
-
 	var testServiceIDs []protocol.ServiceID
 	if testServiceIDsEnv := os.Getenv(envTestServiceIDs); testServiceIDsEnv != "" {
 		for _, serviceID := range strings.Split(testServiceIDsEnv, ",") {
@@ -52,7 +47,6 @@ func getEnvConfig() (envConfig, error) {
 
 	return envConfig{
 		testMode:       testMode,
-		testProtocol:   testProtocol,
 		testServiceIDs: testServiceIDs,
 	}, nil
 }
@@ -76,27 +70,6 @@ func (t testMode) isValid() error {
 	}
 	if t != testModeE2E && t != testModeLoad {
 		return fmt.Errorf("invalid test mode %s", t)
-	}
-	return nil
-}
-
-// TODO_TECHDEBT(@commoddity): Remove this enum after Shannon migration.
-// testProtocol determines whether to test PATH with Morse or Shannon
-// Valid values: "morse" or "shannon"
-type testProtocol string
-
-const (
-	protocolMorse   testProtocol = "morse"   // Run tests against Morse
-	protocolShannon testProtocol = "shannon" // Run tests against Shannon
-)
-
-// isValid checks if testProtocol is valid and set
-func (p testProtocol) isValid() error {
-	if p == "" {
-		return fmt.Errorf("[REQUIRED] %s environment variable is not set", envTestProtocol)
-	}
-	if p != protocolMorse && p != protocolShannon {
-		return fmt.Errorf("invalid protocol %s", p)
 	}
 	return nil
 }
@@ -151,10 +124,8 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	// Set the environment configuration
 	cfg.envConfig = envConfig
 
-	// Load test services from one of the following files:
-	//   - `config/services_morse.yaml`
-	//   - `config/services_shannon.yaml`
-	services, err := loadTestServices(cfg.getTestProtocol())
+	// Load test services from the file `config/services_shannon.yaml`
+	services, err := loadTestServices()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load test services: %w", err)
 	}
@@ -184,10 +155,7 @@ func loadConfig(filePath string) (*Config, error) {
 }
 
 // loadTestServices loads test services based on the protocol
-func loadTestServices(protocol testProtocol) (TestServices, error) {
-	// `config/services_morse.yaml` or `config/services_shannon.yaml`
-	servicesFile := fmt.Sprintf(servicesFileTemplate, protocol)
-
+func loadTestServices() (TestServices, error) {
 	data, err := os.ReadFile(servicesFile)
 	if err != nil {
 		return TestServices{}, fmt.Errorf("failed to read services file %s: %w", servicesFile, err)
@@ -238,7 +206,6 @@ type (
 	// envConfig for environment configuration (loaded from environment variables, not YAML)
 	envConfig struct {
 		testMode       testMode
-		testProtocol   testProtocol
 		testServiceIDs []protocol.ServiceID
 	}
 
@@ -281,8 +248,6 @@ type (
 
 // getTestServices returns test services filtered by protocol specified in environment
 func (c *Config) getTestServices() ([]*TestService, error) {
-	testProtocol := c.getTestProtocol()
-
 	// If no service IDs are specified, include all test cases
 	testServiceIds := c.getTestServiceIDs()
 
@@ -308,9 +273,8 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 		for id := range serviceIdsWithNoTestCases {
 			missingServiceIds = append(missingServiceIds, id)
 		}
-		servicesFile := fmt.Sprintf(servicesFileTemplate, testProtocol)
 		fmt.Printf("⚠️ The following service IDs have no E2E / Load test cases and will there be skipped: [%s] ⚠️\n", strings.Join(missingServiceIds, ", "))
-		fmt.Printf("⚠️ Please refer to the `e2e/%s` file to see which services are configured for the `%s` protocol ⚠️\n", servicesFile, testProtocol)
+		fmt.Printf("⚠️ Please refer to the `e2e/%s` file to see which services are configured ⚠️\n", servicesFile)
 	}
 
 	return filteredTestCases, nil
@@ -320,10 +284,6 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 // Separate out load tests and E2E tests into different files.
 func (c *Config) getTestMode() testMode {
 	return c.envConfig.testMode
-}
-
-func (c *Config) getTestProtocol() testProtocol {
-	return c.envConfig.testProtocol
 }
 
 func (c *Config) getTestServiceIDs() []protocol.ServiceID {
@@ -357,7 +317,6 @@ func (c *Config) validate() error {
 
 	// Validate e2e test mode
 	if mode == testModeE2E {
-		configFile := fmt.Sprintf("config/.%s.config.yaml", c.getTestProtocol())
 		if _, err := os.Stat(configFile); os.IsNotExist(err) {
 			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
 		}

@@ -21,7 +21,7 @@ e2e_load_test_config:
     # [Optional] Docker-related options
     docker_config:
       # [Optional] Log Docker container output to a file
-      log_to_file: false
+      log_to_file: true
       # [Optional] Force Docker image rebuild (useful after code changes)
       force_rebuild_image: false
 

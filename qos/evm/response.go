@@ -5,6 +5,8 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/log"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -44,6 +46,7 @@ func unmarshalResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
+	endpointAddr protocol.EndpointAddr,
 ) (response, error) {
 	// Create a specialized response for empty endpoint response.
 	if len(data) == 0 {
@@ -63,7 +66,8 @@ func unmarshalResponse(
 		logger.With(
 			"request", jsonrpcReq,
 			"unmarshal_err", err,
-			"raw_payload", payloadStr[:min(1000, len(payloadStr))],
+			"raw_payload", log.Preview(payloadStr),
+			"endpoint_addr", endpointAddr,
 		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
 
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
@@ -71,9 +75,12 @@ func unmarshalResponse(
 
 	// Validate the JSONRPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
+		payloadStr := string(data)
 		logger.With(
 			"request", jsonrpcReq,
 			"validation_err", err,
+			"raw_payload", log.Preview(payloadStr),
+			"endpoint_addr", endpointAddr,
 		).Debug().Msg("JSON-RPC response validation failed")
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), err
 	}
