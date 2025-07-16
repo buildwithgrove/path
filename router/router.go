@@ -159,17 +159,19 @@ func (r *router) removeGrovePortalPrefixMiddleware(next http.HandlerFunc) http.H
 		// Check if the portal app ID is present in the request header.
 		// In production, this should always be set by the PATH External Auth Server (PEAS).
 		if portalAppID := req.Header.Get(gateway.HttpHeaderPortalAppID); portalAppID != "" {
-			// Trim the portal app ID prefix from the request path.
-			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+portalAppID)
+			if strings.Contains(req.URL.Path, portalAppID) {
+				// Trim the portal app ID prefix from the request path.
+				req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+portalAppID)
 
-			// Remove the portal app ID header from the request headers.
-			req.Header.Del(gateway.HttpHeaderPortalAppID)
+				// Remove the portal app ID header from the request headers.
+				req.Header.Del(gateway.HttpHeaderPortalAppID)
 
-			r.logger.Debug().
-				Str("original_url_path", originalURLPath).
-				Str("new_url_path", req.URL.Path).
-				Str("portal_app_id", portalAppID).
-				Msg("✂️ Removed portal app ID from request path")
+				r.logger.Debug().
+					Str("original_url_path", originalURLPath).
+					Str("new_url_path", req.URL.Path).
+					Str("portal_app_id", portalAppID).
+					Msg("✂️ Removed portal app ID from request path")
+			}
 		}
 
 		next(w, req)
