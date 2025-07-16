@@ -17,9 +17,29 @@ const (
 
 	httpHeaderAuthRegion = "Auth-Region"
 
+	// APIVersionPrefix is the prefix for the API version and is used by
+	// the `removePrefixMiddleware` in `router.go` to remove the API version
+	// from the request path that is forwarded to the service endpoint.
+	//
+	// Example:
+	//
+	//  /v1/path/segment -> /path/segment
+	//  /v1/path -> /path
+	APIVersionPrefix = "/v1"
+
 	// Grove Portal credentials HTTP headers.
 	httpHeaderPortalAccountID = "Portal-Account-ID"
-	HttpHeaderPortalAppID     = "Portal-Application-ID"
+	// HttpHeaderPortalAppID is the header key for the portal app ID.
+	//
+	// It is also used by the `removePrefixMiddleware` in `router.go` to ensure
+	// the portal app ID is not present in the request path that is forwarded to
+	// the service endpoint.
+	//
+	// Example:
+	//
+	//  /1a2b3c4d/path/segment -> /path/segment
+	//  /1a2b3c4d/path -> /path
+	HttpHeaderPortalAppID = "Portal-Application-ID"
 
 	// Portal API Key HTTP header.
 	HttpHeaderAuthorization = "Authorization"

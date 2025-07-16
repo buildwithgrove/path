@@ -18,9 +18,9 @@ import (
 	"github.com/buildwithgrove/path/health"
 )
 
-func newTestRouter(t *testing.T) (*router, *Mockgateway, *httptest.Server) {
+func newTestRouter(t *testing.T) (*router, *MockgatewayHandler, *httptest.Server) {
 	ctrl := gomock.NewController(t)
-	mockGateway := NewMockgateway(ctrl)
+	mockGateway := NewMockgatewayHandler(ctrl)
 	mockDisqualifiedEndpointsReporter := NewMockdisqualifiedEndpointsReporter(ctrl)
 
 	r := NewRouter(
@@ -147,6 +147,154 @@ func Test_handleHTTPServiceRequest(t *testing.T) {
 			body, err := io.ReadAll(resp.Body)
 			c.NoError(err)
 			c.Equal(test.expectedBytes, body)
+		})
+	}
+}
+
+func Test_removePrefixMiddleware(t *testing.T) {
+	tests := []struct {
+		name                         string
+		inputPath                    string
+		inputHeaders                 map[string]string
+		expectedPath                 string
+		expectedPortalAppIDHeader    string
+		shouldPortalAppIDHeaderExist bool
+	}{
+		{
+			name:                         "should remove API version prefix only",
+			inputPath:                    "/v1/path/segment",
+			inputHeaders:                 map[string]string{},
+			expectedPath:                 "/path/segment",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:                         "should remove API version prefix from root path",
+			inputPath:                    "/v1",
+			inputHeaders:                 map[string]string{},
+			expectedPath:                 "",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:                         "should remove API version prefix with trailing slash",
+			inputPath:                    "/v1/",
+			inputHeaders:                 map[string]string{},
+			expectedPath:                 "/",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:      "should remove both API version prefix and endpoint ID when header is present",
+			inputPath: "/v1/1a2b3c4d/path/segment",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "1a2b3c4d",
+			},
+			expectedPath:                 "/path/segment",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:      "should remove both API version prefix and endpoint ID with trailing slash",
+			inputPath: "/v1/1a2b3c4d/",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "1a2b3c4d",
+			},
+			expectedPath:                 "/",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:                         "should not remove endpoint ID when header is missing",
+			inputPath:                    "/v1/1a2b3c4d/path/segment",
+			inputHeaders:                 map[string]string{},
+			expectedPath:                 "/1a2b3c4d/path/segment",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+		{
+			name:      "should not remove endpoint ID when it doesn't match header value",
+			inputPath: "/v1/different123/path/segment",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "1a2b3c4d",
+			},
+			expectedPath:                 "/different123/path/segment",
+			expectedPortalAppIDHeader:    "1a2b3c4d",
+			shouldPortalAppIDHeaderExist: true,
+		},
+		{
+			name:      "should not remove endpoint ID when it's not in the path",
+			inputPath: "/v1/path/segment",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "1a2b3c4d",
+			},
+			expectedPath:                 "/path/segment",
+			expectedPortalAppIDHeader:    "1a2b3c4d",
+			shouldPortalAppIDHeaderExist: true,
+		},
+		{
+			name:      "should handle empty endpoint ID header",
+			inputPath: "/v1/path/segment",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "",
+			},
+			expectedPath:                 "/path/segment",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: true,
+		},
+		{
+			name:      "should remove endpoint ID when it appears exactly in path",
+			inputPath: "/v1/abc123/endpoint/test",
+			inputHeaders: map[string]string{
+				"Portal-Application-ID": "abc123",
+			},
+			expectedPath:                 "/endpoint/test",
+			expectedPortalAppIDHeader:    "",
+			shouldPortalAppIDHeaderExist: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			c := require.New(t)
+
+			r, _, _ := newTestRouter(t)
+
+			// Create a mock next handler that captures the request
+			var capturedRequest *http.Request
+			nextHandler := func(w http.ResponseWriter, req *http.Request) {
+				capturedRequest = req
+				w.WriteHeader(http.StatusOK)
+			}
+
+			// Create the middleware
+			middleware := r.removePrefixMiddleware(nextHandler)
+
+			// Create request with test path and headers
+			req := httptest.NewRequest(http.MethodPost, test.inputPath, nil)
+			for key, value := range test.inputHeaders {
+				req.Header.Set(key, value)
+			}
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Execute the middleware
+			middleware(w, req)
+
+			// Verify the request was processed
+			c.NotNil(capturedRequest, "next handler should have been called")
+
+			// Check the modified path
+			c.Equal(test.expectedPath, capturedRequest.URL.Path, "URL path should be modified correctly")
+
+			// Check the Portal-Application-ID header
+			actualHeaderValue := capturedRequest.Header.Get("Portal-Application-ID")
+			if test.shouldPortalAppIDHeaderExist {
+				c.Equal(test.expectedPortalAppIDHeader, actualHeaderValue, "Portal-Application-ID header should match expected value")
+			} else {
+				c.Equal("", actualHeaderValue, "Portal-Application-ID header should be removed or empty")
+			}
 		})
 	}
 }

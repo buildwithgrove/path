@@ -12,39 +12,18 @@ import (
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/config"
+	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 )
 
-const (
-	// apiVersionPrefix is the prefix for the API version and is used by
-	// the `removePrefixMiddleware` to remove the API version from the
-	// request path that is forwarded to the service endpoint.
-	//
-	// Example:
-	//
-	//  /v1/path/segment -> /path/segment
-	//  /v1/path -> /path
-	apiVersionPrefix = "/v1"
-
-	// reqHeaderEndpointID is the header key for the endpoint ID, and is
-	// used by the `removePrefixMiddleware` to ensure the endpoint ID is
-	// not present in the request path that is forwarded to the endpoint.
-	//
-	// Example:
-	//
-	//  /1a2b3c4d/path/segment -> /path/segment
-	//  /1a2b3c4d/path -> /path
-	reqHeaderEndpointID = "endpoint-id"
-
-	// Reserve time for system overhead, i.e. time spent on non-business logic operations.
-	// Examples:
-	// - time required to read the HTTP request's body.
-	// - time required to write the prepared HTTP response.
-	systemOverheadAllowance = 5 * time.Second
-)
+// Reserve time for system overhead, i.e. time spent on non-business logic operations.
+// Examples:
+// - time required to read the HTTP request's body.
+// - time required to write the prepared HTTP response.
+const systemOverheadAllowance = 5 * time.Second
 
 type (
 	router struct {
@@ -53,11 +32,11 @@ type (
 		config config.RouterConfig
 
 		mux                           *http.ServeMux
-		gateway                       gateway
+		gateway                       gatewayHandler
 		disqualifiedEndpointsReporter disqualifiedEndpointsReporter
 		healthChecker                 *health.Checker
 	}
-	gateway interface {
+	gatewayHandler interface {
 		HandleServiceRequest(context.Context, *http.Request, http.ResponseWriter)
 	}
 	disqualifiedEndpointsReporter interface {
@@ -70,7 +49,7 @@ type (
 // NewRouter creates a new router instance
 func NewRouter(
 	logger polylog.Logger,
-	gateway gateway,
+	gateway gatewayHandler,
 	disqualifiedEndpointsReporter disqualifiedEndpointsReporter,
 	healthChecker *health.Checker,
 	config config.RouterConfig,
@@ -100,10 +79,10 @@ func (r *router) handleRoutes() {
 	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
 
 	// */v1/ - handles service requests with trailing slash, including REST services with additional path segments
-	r.mux.HandleFunc(apiVersionPrefix+"/", requestHandlerFn)
+	r.mux.HandleFunc(gateway.APIVersionPrefix+"/", requestHandlerFn)
 
 	// */v1 - handles service requests without trailing slash
-	r.mux.HandleFunc(apiVersionPrefix, requestHandlerFn)
+	r.mux.HandleFunc(gateway.APIVersionPrefix, requestHandlerFn)
 }
 
 // Start starts the API server on the specified port
@@ -162,15 +141,36 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 //
 //	Input:  /v1/endpoint/path/123
 //	Output: /path/123
+//
+// Reference: The `Portal-Application-ID` header is set by the PATH External Auth Server (PEAS):
+//   - https://github.com/buildwithgrove/path-external-auth-server/blob/main/auth/auth_handler.go#L173
 func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		// Remove API version prefix (e.g. /v1/path -> /path)
-		req.URL.Path = strings.TrimPrefix(req.URL.Path, apiVersionPrefix)
+		originalURLPath := req.URL.Path
 
-		// Remove endpoint ID prefix if present (e.g. /1a2b3c4d/path -> /path)
-		if endpointID := req.Header.Get(reqHeaderEndpointID); endpointID != "" {
-			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+endpointID)
-			delete(req.Header, reqHeaderEndpointID)
+		// Remove API version prefix (e.g. /v1/path -> /path)
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, gateway.APIVersionPrefix)
+
+		// Check if the portal app ID is present in the request header.
+		// In production, this should always be set by the PATH External Auth Server (PEAS).
+		portalAppID := req.Header.Get(gateway.HttpHeaderPortalAppID)
+
+		// If the following conditions are met:
+		//  - The portal app ID header is set in the headers
+		//  - The portal app ID is exactly present in the request path
+		// Then, remove the portal app ID prefix if present (e.g. /1a2b3c4d/path -> /path)
+		if portalAppID != "" && strings.Contains(req.URL.Path, portalAppID) {
+			// Trim the portal app ID prefix from the request path.
+			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+portalAppID)
+
+			// Remove the portal app ID header from the request headers.
+			req.Header.Del(gateway.HttpHeaderPortalAppID)
+
+			r.logger.Debug().
+				Str("original_url_path", originalURLPath).
+				Str("new_url_path", req.URL.Path).
+				Str("portal_app_id", portalAppID).
+				Msg("✂️  Removed portal app ID from request path")
 		}
 
 		next(w, req)
