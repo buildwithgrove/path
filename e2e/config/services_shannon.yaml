@@ -476,18 +476,17 @@ services:
       transaction_hash: "0x26f8e0bc913775116335b2b379c19e0a044acdbf5d42f149b7ddd288e273dd6d"
       call_data: "0x18160ddd"
 
-  # TODO TECHDEBT: Implement test for xrplevm (mainnet)
   # Shannon - XRPLEVM
-  #- name: "Shannon - xrplevm-testnet (XRPL EVM Testnet) Test"
-  #  service_id: "xrplevm-testnet"
-  #  service_type: "evm"
-  #  archival: true
-  #  service_params:
-  #    # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-  #    contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
-  #    contract_start_block: 368266
-  #    transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
-  #    call_data: "0x18160ddd"
+  - name: "Shannon - xrplevm (XRPL EVM Testnet) Test"
+    service_id: "xrplevm"
+    service_type: "evm"
+    archival: true
+    service_params:
+      # https://explorer.xrplevm.org/address/0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf
+      contract_address: "0x7C21a90E3eCD3215d16c3BBe76a491f8f792d4Bf"
+      contract_start_block: 1002479
+      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
+      call_data: "0x18160ddd"
 
   # Shannon - XRPLEVM Testnet (Archival)
   - name: "Shannon - xrplevm-testnet (XRPLEVM Testnet) Test"
@@ -498,7 +497,7 @@ services:
       # https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
       contract_address: "0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc"
       contract_start_block: 368266
-      transaction_hash: "0xa59fde70cac38068dfd87adb1d7eb40200421ebf7075911f83bcdde810e94058"
+      transaction_hash: "0x2267b3846dd8c4d97e3c9c6d2687647480beaf840e333744335d4ccfea1b935a"
       call_data: "0x18160ddd"
 
   # Shannon - zkLink (Archival)
@@ -621,9 +620,4 @@ services:
   # # Shannon - TRON
   # - name: "Shannon - tron (TRON) Test"
   #   service_id: "tron"
-  #   service_type: "evm"
-
-  # # Shannon - XRPL EVM Devnet
-  # - name: "Shannon - xrpl_evm_dev (XRPL EVM Devnet) Test"
-  #   service_id: "xrpl_evm_dev"
   #   service_type: "evm"

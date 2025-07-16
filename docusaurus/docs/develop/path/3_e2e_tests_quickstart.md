@@ -4,13 +4,19 @@ title: E2E Tests - Quickstart
 description: End-to-End Tests for PATH
 ---
 
+:::warning TODO
+
+Add a gif of load tests running locally.
+
+:::
+
 _tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
-- [Quick Start](#quick-start)
+- [Quickstart](#quickstart)
 - [E2E Test Config Files](#e2e-test-config-files)
 - [Supported Services in E2E Tests](#supported-services-in-e2e-tests)
 
-## Quick Start
+## Quickstart
 
 **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
 

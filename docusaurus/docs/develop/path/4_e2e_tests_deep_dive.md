@@ -89,8 +89,6 @@ To add new services or methods to the E2E tests, you will need to open a new PR 
 
 **Example new service configuration:**
 
-_`./config/services_shannon.yaml`_
-
 ```yaml
 services:
   - name: "New Chain E2E Test"
@@ -106,6 +104,12 @@ services:
 
 ## Test Metrics and Validation
 
+:::warning Threshold Validation
+
+Tests will **fail** if any configured thresholds are exceeded, ensuring consistent service quality and performance.
+
+:::
+
 The E2E tests collect and validate comprehensive metrics across multiple dimensions:
 
 | **Category**              | **Metrics Collected**                                                                                                                                        |
@@ -114,12 +118,6 @@ The E2E tests collect and validate comprehensive metrics across multiple dimensi
 | **Latency Metrics**       | - P50, P95, P99 latency percentiles <br/> - Average latency <br/> - Per-method latency analysis                                                              |
 | **JSON-RPC Validation**   | - Response unmarshaling success <br/> - JSON-RPC error field validation <br/> - Result field validation <br/> - Protocol-specific validation                 |
 | **Service-Level Metrics** | - Per-service success aggregation <br/> - Cross-method performance comparison <br/> - Service reliability scoring <br/> - Error categorization and reporting |
-
-:::important Threshold Validation
-
-Tests will **fail** if any configured thresholds are exceeded, ensuring consistent service quality and performance.
-
-:::
 
 ## Reviewing PATH Logs
 
@@ -142,8 +140,8 @@ You should see the following log line at the bottom of the test summary:
 
 ```
 
-## Debugging Anvil on Shannon Beta TestNet
-
-🌿 Grove Employees Only
+:::tip 🌿 Grove Employees Only 🌿
 
 Review the [Anvil Shannon Beta TestNet Debugging Playbook](https://www.notion.so/buildwithgrove/Playbook-Debugging-Anvil-E2E-on-Beta-TestNet-177a36edfff6809c9f24e865ec5adbf8?pvs=4) if you believe the Anvil Supplier is broken.
+
+:::
