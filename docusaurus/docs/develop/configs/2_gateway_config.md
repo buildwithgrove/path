@@ -1,32 +1,23 @@
 ---
 sidebar_position: 2
-title: PATH Service Config (`.config.yaml`)
-description: PATH Service Configurations
+title: Gateway Config (`.config.yaml`)
+description: PATH Gateway & Service Configurations
 ---
 
-:::info CONFIGURATION FILES
+_tl;dr Configurations for Gateway operation & services support._
 
-A `PATH` stack is configured via two files:
-
-| File           | Required | Description                                   |
-| -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
-
-:::
-
-## Table of Contents <!-- omit in toc -->
-
-- [Config File Validation](#config-file-validation)
+- [Example Configuration](#example-configuration)
 - [Config File Location (Local Development)](#config-file-location-local-development)
+- [Config File Validation](#config-file-validation)
 - [`shannon_config` (required)](#shannon_config-required)
 - [`hydrator_config` (optional)](#hydrator_config-optional)
-  - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
 - [`logger_config` (optional)](#logger_config-optional)
 - [`data_reporter_config` (optional)](#data_reporter_config-optional)
 
-All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
+## Example Configuration
+
+All configuration for the `PATH` gateway are defined in a single YAML file named `.config.yaml`.
 
 Exactly one `shannon_config` **MUST** be provided. This field determines the protocol that the gateway will use.
 
@@ -57,6 +48,14 @@ logger_config:
 
 </details>
 
+## Config File Location (Local Development)
+
+In local development mode, the config file must be located at:
+
+```bash
+./local/path/.config.yaml
+```
+
 ## Config File Validation
 
 :::tip VSCode Validation
@@ -69,31 +68,9 @@ If you are using VSCode, we recommend using the [YAML Language Support](https://
 
 :::
 
-## Config File Location (Local Development)
+## Protocol Configuration <!-- omit in toc -->
 
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.config.yaml
-```
-
-## Protocol Selection <!-- omit in toc -->
-
-The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
-
-- `shannon_config`
-
----
-
-<!--
-
-:::warning TODO_MVP(@commoddity): Auto-generate this file.
-
-Update this file so it is auto-generated based on config.schema.yaml
-
-:::
-
--->
+The config file **MUST contain EXACTLY one** top-level `shannon_config` section.
 
 ## `shannon_config` (required)
 
@@ -165,7 +142,13 @@ For a full list of supported QoS service implementations, refer to the [QoS Docu
 
 Configures the QoS hydrator. By default, all services configured in the `shannon_config` sections will have QoS checks run against them.
 
-### Manually Disable QoS Checks for a Service
+| Field                        | Type          | Required | Default   | Description                                                                                                                                                 |
+| ---------------------------- | ------------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                                                                                          |
+| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints                                                                        |
+| `qos_disabled_service_ids`   | array[string] | No       | -         | List of service IDs to exclude from QoS checks. Will throw an error on startup if a service ID is provided that the PATH instance is not configured to use. |
+
+### Manually Disable QoS Checks for a Service <!-- omit in toc -->
 
 To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
 
@@ -176,12 +159,6 @@ hydrator_config:
   qos_disabled_service_ids:
     - "eth"
 ```
-
-| Field                        | Type          | Required | Default   | Description                                                                                                                                                 |
-| ---------------------------- | ------------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                                                                                          |
-| `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints                                                                        |
-| `qos_disabled_service_ids`   | array[string] | No       | -         | List of service IDs to exclude from QoS checks. Will throw an error on startup if a service ID is provided that the PATH instance is not configured to use. |
 
 ---
 

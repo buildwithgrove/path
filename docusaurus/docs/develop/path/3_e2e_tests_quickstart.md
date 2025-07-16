@@ -36,8 +36,8 @@ make e2e_test_all
 
 | Configuration File                        | Required? |             Default available?              | Description                            | Helper Creation Command           |
 | ----------------------------------------- | :-------: | :-----------------------------------------: | :------------------------------------- | :-------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make shannon_populate_config`    |
-| `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make shannon_prepare_e2e_config` |
+| `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make config_shannon_populate`    |
+| `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e` |
 
 ## Supported Services in E2E Tests
 

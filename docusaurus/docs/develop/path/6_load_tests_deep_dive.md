@@ -55,7 +55,7 @@ You will need one of the following:
 2. **Custom Portal Access**
    - `gateway_url_override`: `https://rpc.grove.city/v1`
    - Get credentials from the [Grove Portal](https://www.portal.grove.city)
-   - Use `make copy_e2e_load_test_config` to set up
+   - Use `make config_copy_e2e_load_test` to set up
 
 ## Load Test Configuration
 
@@ -70,7 +70,7 @@ You will need one of the following:
 
 You can use the following command to copy example configs and follow the instructions in your CLI:
 
-- `make copy_e2e_load_test_config`
+- `make config_copy_e2e_load_test`
 
 :::
 

@@ -1,30 +1,58 @@
 ---
 sidebar_position: 3
-title: PATH Auth Config (`.values.yaml`)
-description: PATH Auth Configurations
+title: Auth Config (`.values.yaml`)
+description: PATH Auth, Helm & Deployment Configurations
 ---
 
-:::info CONFIGURATION FILES
+_tl;dr Configurations for request authorization and deployment._
 
-A `PATH` stack is configured via two files:
-
-| File           | Required | Description                                   |
-| -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
-
-:::
-
-## Table of Contents <!-- omit in toc -->
-
+- [Example Configuration](#example-configuration)
+- [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
 - [Default Values](#default-values)
 - [Customizing Default Values](#customizing-default-values)
-- [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
 - [GUARD Configuration](#guard-configuration)
   - [`auth.apiKey` Section](#authapikey-section)
     - [`services` Section](#services-section)
-    - [Example `.values.yaml` File](#example-valuesyaml-file)
   - [Example Requests](#example-requests)
+
+## Example Configuration
+
+<details>
+
+<summary>Example **Values YAML** Config (click to expand)</summary>
+
+```yaml
+guard:
+  auth:
+    apiKey:
+      enabled: true
+      apiKeys:
+        - test_api_key_1
+        - test_api_key_2
+        - test_api_key_3
+  services:
+    - serviceId: poly
+      aliases:
+        - polygon
+    - serviceId: eth
+      aliases:
+        - ethereum
+    - serviceId: pocket
+      aliases:
+        - pokt
+```
+
+</details>
+
+## Helm Values File Location (Local Development)
+
+In development mode, the config file must be located at:
+
+```bash
+./local/path/.values.yaml
+```
+
+Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
 
 ## Default Values
 
@@ -64,16 +92,6 @@ For the full list of configurable values in the PATH Helm Chart, see the [Helm V
 
 :::
 
-## Helm Values File Location (Local Development)
-
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.values.yaml
-```
-
-Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
-
 ## GUARD Configuration
 
 ### `auth.apiKey` Section
@@ -108,29 +126,6 @@ The service ID is specified per-request as the `Target-Service-Id` header; eithe
 | `services`             | array[object] | Yes      | -       | List of services                      |
 | `services[].serviceId` | string        | Yes      | -       | The unique identifier for the service |
 | `services[].aliases`   | array[string] | Yes      | -       | List of aliases for the service       |
-
-#### Example `.values.yaml` File
-
-```yaml
-guard:
-  auth:
-    apiKey:
-      enabled: true
-      apiKeys:
-        - test_api_key_1
-        - test_api_key_2
-        - test_api_key_3
-  services:
-    - serviceId: poly
-      aliases:
-        - polygon
-    - serviceId: eth
-      aliases:
-        - ethereum
-    - serviceId: pocket
-      aliases:
-        - pokt
-```
 
 ### Example Requests
 

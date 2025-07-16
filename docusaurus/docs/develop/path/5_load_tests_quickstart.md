@@ -52,7 +52,7 @@ You can obtain the required **Portal Application ID** and **API Key** from the [
 **First, setup your configs & credentials**:
 
 ```bash
-make copy_e2e_load_test_config
+make config_copy_e2e_load_test
 ```
 
 You will be prompted to enter your Grove Portal Application ID and API Key.

@@ -166,7 +166,7 @@ pocketd keys show -a application --keyring-backend=test
 Generate config at `local/path/.config.yaml`:
 
 ```bash
-make shannon_populate_config
+make config_shannon_populate
 ```
 
 :::important Environment variables

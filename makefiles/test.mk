@@ -53,11 +53,6 @@ load_test: ## Run a Shannon load test with specified service IDs (e.g. make load
 	fi
 	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
-
-.PHONY: copy_e2e_load_test_config
-copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials
-	@./e2e/scripts/copy_load_test_config.sh
-
 # In order to allow passing the service IDs to the load test targets, this target is needed to avoid printing an error.
 %:
 	@:
