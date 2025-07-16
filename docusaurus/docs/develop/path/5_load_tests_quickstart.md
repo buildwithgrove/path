@@ -1,8 +1,9 @@
 ---
-sidebar_position: 4
-title: Load Tests
+sidebar_position: 5
+title: Load Tests Quickstart
 description: Load Tests for PATH
 ---
+
 ## Load Testing Local PATH (Recommended for most users)
 
 **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
@@ -32,6 +33,7 @@ The remainder of this document is only relevant if you intend to load test the G
 <br/>
 
 ## Load Testing the Grove Portal
+
 :::warning **Prerequisites**: Complete the [Quick Start](1_quick_start.md) guide.
 :::
 

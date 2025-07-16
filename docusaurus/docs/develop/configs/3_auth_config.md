@@ -1,14 +1,8 @@
 ---
-sidebar_position: 9
-title: Reference - PATH Helm Config (`.values.yaml`)
-description: PATH Helm Configurations
+sidebar_position: 3
+title: PATH Auth Config (`.values.yaml`)
+description: PATH Auth Configurations
 ---
-
-:::danger 🚧 WORK IN PROGRESS 🚧
-
-This document is not ready for public consumption.
-
-:::
 
 :::info CONFIGURATION FILES
 
@@ -49,8 +43,8 @@ By default PATH is configured as follows:
 | Protocol  | Service ID | Aliases                      |
 | --------- | ---------- | ---------------------------- |
 | `shannon` | `anvil`    | -                            |
-| `morse`   | `F00C`     | `eth`, `eth-mainnet`         |
-| `morse`   | `F021`     | `polygon`, `polygon-mainnet` |
+| `shannon` | `eth`      | `eth`, `eth-mainnet`         |
+| `shannon` | `polygon`  | `polygon`, `polygon-mainnet` |
 
 **API Keys:**
 
@@ -127,15 +121,15 @@ guard:
         - test_api_key_2
         - test_api_key_3
   services:
-    - serviceId: F021
+    - serviceId: poly
       aliases:
         - polygon
-    - serviceId: F00C
+    - serviceId: eth
       aliases:
-        - eth
-    - serviceId: F000
+        - ethereum
+    - serviceId: pocket
       aliases:
-        - pocket
+        - pokt
 ```
 
 ### Example Requests
@@ -146,7 +140,7 @@ Request to the `polygon` service using the service ID using API key `test_api_ke
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: F021" \
+  -H "Target-Service-Id: polygon" \
   -H "Authorization: test_api_key_1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```

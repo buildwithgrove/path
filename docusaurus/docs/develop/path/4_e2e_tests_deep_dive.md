@@ -1,17 +1,16 @@
 ---
-sidebar_position: 5
-title: Deep Dive - E2E Tests
+sidebar_position: 4
+title: E2E Tests - Deep Dive
 description: Deep dive into End-to-End Tests for PATH
 ---
 
-# Deep Dive: E2E Tests
+:::tip Quickstart
 
-<!-- TODO_UPNEXT(@adshmh): 
-* Use Local Development Environment to run E2E tests
-* Update this doc accordingly: e.g. on accessing PATH logs.
--->
+Make sure to visit the [E2E Tests Quickstart](3_e2e_tests_quickstart.md) to get started quickly.
 
-## Overview
+:::
+
+## Introduction
 
 **The E2E tests verify:**
 
@@ -35,28 +34,16 @@ description: Deep dive into End-to-End Tests for PATH
 
 PATH E2E tests run in a single mode:
 
-| Mode          | Make Targets                | Purpose                                                                  | How it Works                                                                                                                                                                             | Use Cases                                                                          |
-| ------------- | --------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **E2E Test**  | `make e2e_test`             | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
+| Mode         | Make Targets    | Purpose                                                                  | How it Works                                                                                                                                                     | Use Cases                                                                          |
+| ------------ | --------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **E2E Test** | `make e2e_test` | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
 
 ## E2E Test Config Files
 
-E2E Test mode requires protocol-specific configuration because it spins up a local PATH instance.
-
-| Configuration File                                 | E2E Test (Required?) |             Default available?              |
-| -------------------------------------------------- | :------------------: | :-----------------------------------------: |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |                      ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
-
-:::tip Populate Configs
-
-You can use the following command to copy example configs and follow the instructions in your CLI:
-
-For E2E tests:
-
-- `make shannon_prepare_e2e_config`
-
-:::
+| Configuration File                        | Required? |             Default available?              | Description                            | Helper Creation Command           |
+| ----------------------------------------- | :-------: | :-----------------------------------------: | :------------------------------------- | :-------------------------------- |
+| `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make shannon_populate_config`    |
+| `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make shannon_prepare_e2e_config` |
 
 ## Schema and Validation
 
@@ -78,13 +65,7 @@ Enable it by ensuring the following annotation is present at the top of your con
 
 ## Supported Services in E2E Tests
 
-**All currently supported Grove Portal services are supported in the E2E tests.**
-
-:::tip
-
 To see the list of supported services for the tests, see the `test_cases` array in the [E2E Test Config](https://github.com/buildwithgrove/path/blob/main/e2e/config/e2e_load_test.config.tmpl.yaml) file.
-
-:::
 
 ## Environment Variables
 

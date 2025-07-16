@@ -71,7 +71,7 @@ Take note of the block number of the first transaction for that address.
 
 ### 4. Add the new archival check configuration
 
-In the [`path/config/service_qos_config.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos_config.go) file, add a new entry to the `shannonServices` and/or `morseServices` array.
+In the [`path/config/service_qos_config.go`](https://github.com/buildwithgrove/path/blob/main/config/service_qos_config.go) file, add a new entry to the `shannonServices` array.
 
 **The configuration MUST be entered in this exact format**:
 
@@ -86,23 +86,21 @@ evm.NewEVMServiceQoSConfig("F029", "0x44d", evm.NewEVMArchivalCheckConfig(
 ```
 
 It must contain the following elements in `evm.NewEVMArchivalCheckConfig`, exactly as shown above.
-| Line | Description | Example |
-|------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| 1 | A comment containing the URL for the contract address on the block explorer as a comment | `// https://zkevm.polygonscan.com/address/`<br/>`0xee1727f5074e747716637e1776b7f7c7133f16b1` |
-| 2 | The contract address as the first parameter | `"0xee1727f5074E747716637e1776B7F7C7133f16b1"` |
-| 3 | A comment containing `// Contract start block` | `// Contract start block` |
-| 4 | A block number just slightly higher than the first transaction for that address as the second parameter | `111` |
+
+| Line | Description                                                                                             | Example                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1    | A comment containing the URL for the contract address on the block explorer as a comment                | `// https://zkevm.polygonscan.com/address/`<br/>`0xee1727f5074e747716637e1776b7f7c7133f16b1` |
+| 2    | The contract address as the first parameter                                                             | `"0xee1727f5074E747716637e1776B7F7C7133f16b1"`                                               |
+| 3    | A comment containing `// Contract start block`                                                          | `// Contract start block`                                                                    |
+| 4    | A block number just slightly higher than the first transaction for that address as the second parameter | `111`                                                                                        |
 
 ### 5. Send a test request
 
 Configure PATH for the service you want to test, and run `make path_run` to start PATH from a local binary.
 
-:::tip
+:::tip Pocket Network Cheat Sheet
 
-For information on how to configure PATH for a service, see one of the PATH cheatsheets:
-
-- [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_shannon.md)
-- [Morse Cheat Sheet](../../develop/path/10_cheatsheet_morse.md)
+For information on how to configure PATH for a service, see the [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_shannon.md).
 
 :::
 
