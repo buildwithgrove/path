@@ -20,21 +20,22 @@ description: Quick intro and environment setup
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/buildwithgrove/path)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/buildwithgrove/path)
-![App Status](https://argocd.tooling.buildintheshade.com/api/badge?name=path-gateway&revision=true&showAppName=true)
 
-# Quick Start
+### Quick Start
 
 **1. Clone the repository**:
+
 ```bash
 git clone https://github.com/buildwithgrove/path.git
 cd ./path
 ```
 
 **2. Install all dependencies**:
+
 ```bash
 make install_tools
 ```
 
-# What's Next
+### What's Next?
 
 **[Shannon Cheat Sheet](2_cheatsheet_shannon.md)** - Configure PATH for the Shannon protocol

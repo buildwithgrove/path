@@ -53,6 +53,8 @@ const config = {
           sidebarPath: "./sidebars.js",
           sidebarCollapsible: false,
           docItemComponent: "@theme/ApiItem",
+          editUrl:
+            "https://github.com/buildwithgrove/path/edit/main/docusaurus",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -63,7 +65,7 @@ const config = {
 
   plugins: [
     [
-      'docusaurus-plugin-openapi-docs',
+      "docusaurus-plugin-openapi-docs",
       {
         id: "api",
         docsPluginId: "classic",

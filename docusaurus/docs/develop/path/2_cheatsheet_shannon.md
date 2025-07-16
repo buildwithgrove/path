@@ -4,21 +4,31 @@ title: Shannon Cheat Sheet (30-60 min)
 description: Introductory guide for setting up PATH w/ Shannon
 ---
 
-Set up `PATH` with Pocket Network's **Shannon** protocol.
+_tl;dr Set up `PATH` with Pocket Network's **Shannon** protocol_
 
-Shannon status: Beta TestNet (01/2025), Private MainNet (04/2025).
+:::tip TIP: Coming from `dev.poktroll.com`?
 
-## Grove Employees: Quick Config
+Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet)?
+
+Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
+
+:::
+
+:::note NOTE: Are you a Grove 🌿 employee?
+
+<details>
+
+<summary>Download your configs here</summary>
 
 1. Download the preferred config file from 1Password:
-   - **[Shannon MainNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=4ifsnkuifvaggwgptns6xyglsa&h=buildwithgrove.1password.com)** - For testing on MainNet
-   - **[Shannon Beta TestNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=3treknedz5q47rgwdbreluwffu&h=buildwithgrove.1password.com)** - For testing on Beta TestNet
+   - **[Shannon MainNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=4ifsnkuifvaggwgptns6xyglsa&h=buildwithgrove.1password.com)**
+   - **[Shannon Beta TestNet](https://start.1password.com/open/i?a=4PU7ZENUCRCRTNSQWQ7PWCV2RM&v=kudw25ob4zcynmzmv2gv4qpkuq&i=3treknedz5q47rgwdbreluwffu&h=buildwithgrove.1password.com)**
 2. Copy to `local/path/.config.yaml` **in your PATH repository**
-3. Skip to [section 3: Run PATH](#3-run-path-in-development-mode)
+3. Comment out the `data_reporter_config` section
+4. Comment out the `owned_apps_private_keys_hex` you're not using for testing
+5. Skip to [section 3: Run PATH](#3-run-path-in-development-mode)
 
-:::tip Skip to section 2.1
-
-Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet)? Start at [2.1 Generate Shannon Config](#21-generate-shannon-config).
+</details>
 
 :::
 
@@ -27,18 +37,16 @@ Coming from the [App & PATH Gateway Cheat Sheet](https://dev.poktroll.com/operat
 - [0. Prerequisites](#0-prerequisites)
 - [1. Setup Shannon Protocol Accounts (Gateway \& Application)](#1-setup-shannon-protocol-accounts-gateway--application)
   - [1.1 Gateway and Application Account Creation](#11-gateway-and-application-account-creation)
-  - [1.2 `Application` and `Gateway` Account Validation](#12-application-and-gateway-account-validation)
+  - [1.2 Account Validation](#12-account-validation)
 - [2. Configure PATH for Shannon](#2-configure-path-for-shannon)
   - [2.1 Generate Shannon Config](#21-generate-shannon-config)
   - [2.2 Manual Configuration Verification](#22-manual-configuration-verification)
   - [2.3 Ensure onchain configuration matches](#23-ensure-onchain-configuration-matches)
-  - [2.4 (Optional) Disable QoS Hydrator Checks](#24-optional-disable-qos-hydrator-checks)
-- [3. Run PATH in development mode](#3-run-path-in-development-mode)
-  - [3.1 Start PATH](#31-start-path)
-  - [3.2 Monitor PATH](#32-monitor-path)
+- [3. Run the full PATH stack locally](#3-run-the-full-path-stack-locally)
+  - [3.1 Run \& Monitor PATH](#31-run--monitor-path)
+  - [3.2 Check configured services](#32-check-configured-services)
 - [4. Test Relays](#4-test-relays)
   - [Test Relay with `curl`](#test-relay-with-curl)
-  - [Test Relay with `make`](#test-relay-with-make)
   - [Load Testing with `relay-util`](#load-testing-with-relay-util)
 - [5. Stop PATH](#5-stop-path)
 
@@ -48,102 +56,107 @@ Complete the [**Quick Start**](1_quick_start.md) guide.
 
 ## 1. Setup Shannon Protocol Accounts (Gateway & Application)
 
-You need:
+You will need:
+
 1. **[Gateway](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/gateways)**: Facilitates relays and ensures QoS
-2. **[Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications)**: Pays for relays (API key holder)
+2. **[Application](https://docs.pokt.network/pokt-protocol/the-shannon-upgrade/shannon-actors/sovereign-applications)**: Sends and pays for relays
 
 ### 1.1 Gateway and Application Account Creation
 
-**Recommended**: Follow the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for complete setup.
+Choose one of the following flows to setup your accounts:
 
-**Quick setup** (first-time users):
+1. **Recommended Setup**: Follow the [**App & PATH Gateway Cheat Sheet**](https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet) for complete setup.
+2. **Quick Setup** for first-time users:
 
-<details>
+     <details>
 
-<summary>Copy-pasta to stake onchain Application & Gateway</summary>
+     <summary>Copy-pasta to stake onchain Application & Gateway</summary>
 
-**Create gateway stake config:**
+   **Create gateway stake config:**
 
-```bash
-cat <<🚀 > /tmp/stake_gateway_config.yaml
-stake_amount: 1000000upokt
-🚀
-```
+   ```bash
+   cat <<EOF > /tmp/stake_gateway_config.yaml
+   stake_amount: 1000000upokt
+   EOF
+   ```
 
-**Create application stake config:**
+   **Create application stake config:**
 
-```bash
-cat <<🚀 > /tmp/stake_app_config.yaml
-stake_amount: 100000000upokt
-service_ids:
-  - "anvil"
-🚀
-```
+   ```bash
+   cat <<EOF > /tmp/stake_app_config.yaml
+   stake_amount: 100000000upokt
+   service_ids:
+     - "anvil"
+   EOF
+   ```
 
-**Create accounts:**
+   **Create accounts:**
 
-```bash
-pocketd keys add gateway
-pocketd keys add application
-```
+   ```bash
+   pocketd keys add gateway
+   pocketd keys add application
+   ```
 
-**Fund accounts**: Use faucet links [here](https://dev.poktroll.com/category/explorers-faucets-wallets-and-more).
+   **Fund accounts**: Use faucet links [here](https://dev.poktroll.com/category/explorers-faucets-wallets-and-more).
 
-:::tip Grove employees only
+   :::tip Grove employees only
 
-Fund using `pkd_beta_tx` helper ([instructions](https://www.notion.so/buildwithgrove/Shannon-Alpha-Beta-Environment-rc-helpers-152a36edfff680019314d468fad88864?pvs=4)):
+   Fund using `pkd_beta_tx` helper ([instructions](https://www.notion.so/buildwithgrove/Shannon-Alpha-Beta-Environment-rc-helpers-152a36edfff680019314d468fad88864?pvs=4)):
 
-```bash
-pkd_beta_tx bank send faucet_beta $(pkd keys show -a application) 6900000000042upokt
-pkd_beta_tx bank send faucet_beta $(pkd keys show -a gateway) 6900000000042upokt
-```
+   ```bash
+   pkd_beta_tx bank send faucet_beta $(pocketd keys show -a application --keyring-backend=test) 6900000000042upokt
+   pkd_beta_tx bank send faucet_beta $(pocketd keys show -a gateway --keyring-backend=test) 6900000000042upokt
+   ```
 
-:::
+   :::
 
-**Stake gateway:**
+   **Stake gateway:**
 
-```bash
-pocketd tx gateway stake-gateway \
- --config=/tmp/stake_gateway_config.yaml \
- --from=gateway --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
- --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
- --yes
-```
+   ```bash
+   pocketd tx gateway stake-gateway \
+   --config=/tmp/stake_gateway_config.yaml \
+   --from=gateway --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+   --node=https://shannon-grove-rpc.mainnet.poktroll.com \
+   --keyring-backend=test \
+   --yes
+   ```
 
-**Stake application:**
+   **Stake application:**
 
-```bash
-pocketd tx application stake-application \
- --config=/tmp/stake_app_config.yaml \
- --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
- --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
- --yes
-```
+   ```bash
+   pocketd tx application stake-application \
+   --config=/tmp/stake_app_config.yaml \
+   --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+   --node=https://shannon-grove-rpc.mainnet.poktroll.com \
+   --keyring-backend=test \
+   --yes
+   ```
 
-**Delegate application to gateway:**
+   **Delegate application to gateway:**
 
-```bash
-pocketd tx application delegate-to-gateway $(pocketd keys show -a gateway) \
- --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
- --node=https://shannon-testnet-grove-rpc.beta.poktroll.com \
- --yes
-```
+   ```bash
+   pocketd tx application delegate-to-gateway $(pocketd keys show -a gateway --keyring-backend=test) \
+   --from=application --gas=auto --gas-prices=200upokt --gas-adjustment=1.5 --chain-id=pocket-beta \
+   --node=https://shannon-grove-rpc.mainnet.poktroll.com \
+   --keyring-backend=test \
+   --yes
+   ```
 
-</details>
+     </details>
 
 ### 1.2 Account Validation
 
-Verify your keys:
+Verify the keys are in your keyring:
 
 ```bash
 # All accounts
-pocketd keys list
+pocketd keys list --keyring-backend=test
 
 # Gateway only
-pocketd keys show -a gateway
+pocketd keys show -a gateway --keyring-backend=test
 
 # Application only
-pocketd keys show -a application
+pocketd keys show -a application --keyring-backend=test
 ```
 
 ## 2. Configure PATH for Shannon
@@ -178,9 +191,9 @@ Expected format:
 ```yaml
 shannon_config:
   full_node_config:
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
     grpc_config:
-      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     lazy_mode: false
   gateway_config:
     gateway_mode: "centralized"
@@ -196,71 +209,55 @@ Verify service configuration for each application:
 
 ```bash
 pocketd query application show-application \
-     $(pkd keys show -a application) \
-     --node=https://shannon-testnet-grove-rpc.beta.poktroll.com
-```
-
-### 2.4 (Optional) Disable QoS Hydrator Checks
-
-QoS hydrator runs checks on all configured services by default.
-
-To disable for specific services, add `qos_disabled_service_ids` to `.config.yaml`.
-
-**Use cases**: Testing and development.
-
-**More info**:
-- [PATH Configuration File](./8_ref_configurations_path.md#hydrator_config-optional)
-- [Supported QoS Services](../../learn/qos/1_supported_services.md)
-
-:::tip
-
-Check configured services:
-
-```bash
-curl http://localhost:3069/healthz
+     $(pocketd keys show -a application --keyring-backend=test) \
+     --node=https://shannon-grove-rpc.mainnet.poktroll.com
 ```
 
 :::
 
-## 3. Run PATH in development mode
+## 3. Run the full PATH stack locally
 
-### 3.1 Start PATH
+### 3.1 Run & Monitor PATH
 
-Start PATH in Tilt:
+Run the following command and wait 1-2 minutes:
 
 ```bash
 make path_up
 ```
 
-### 3.2 Monitor PATH
+Your **terminal** should display the following:
 
-:::warning Grab a ☕
-First startup takes a few minutes for `path`, `guard` and `watch`.
-:::
+![Terminal](../../../static/img/path-in-tilt-console.png)
 
-**Console output** (~30 seconds):
+Visit the **Tilt dashboard** at [localhost:10350](<http://localhost:10350/r/(all)/overview>) and make sure everything is 🟢.
 
-![Tilt Output in Console](../../../static/img/path-in-tilt-console.png)
+![Tilt Dashboard](../../../static/img/path-in-tilt.png)
 
-**Tilt dashboard**: Visit [localhost:10350](<http://localhost:10350/r/(all)/overview>)
+### 3.2 Check configured services
 
-![Tilt Dashboard in Browser](../../../static/img/path-in-tilt.png)
+```bash
+curl http://localhost:3070/healthz | jq
+```
 
 ## 4. Test Relays
 
-:::warning Anvil Node & Request Retries
-
-Retry requests if first attempt fails. `anvil` node may not always be available.
-
-:::
-
 ### Test Relay with `curl`
 
-Test block height:
+Assuming you have an app staked for `eth`, you can query `eth_blockNumber`.
+
+By specifying the `Target-Service-Id` header:
 
 ```bash
 curl http://localhost:3070/v1 \
- -H "Target-Service-Id: anvil" \
+ -H "Target-Service-Id: eth" \
+ -H "Authorization: test_api_key" \
+ -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
+```
+
+Or by using the `eth` subdomain:
+
+```bash
+curl http://eth.localhost:3070/v1 \
  -H "Authorization: test_api_key" \
  -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```
@@ -268,21 +265,7 @@ curl http://localhost:3070/v1 \
 Expected response:
 
 ```json
-{"id":1,"jsonrpc":"2.0","result":"0x2f01a"}%
-```
-
-### Test Relay with `make`
-
-Use makefile helpers (see `makefiles/test_requests.mk`):
-
-```bash
-make test_request__shannon_service_id_header
-```
-
-View all helpers:
-
-```bash
-make help
+{ "id": 1, "jsonrpc": "2.0", "result": "0x2f01a" }
 ```
 
 ### Load Testing with `relay-util`
@@ -290,18 +273,12 @@ make help
 Send 100 requests with performance metrics:
 
 ```bash
-make test_request__shannon_relay_util_100
+SERVICE_ID=eth make test_request__shannon_relay_util_100
 ```
-
-:::note TODO: Screenshots
-
-Add screenshot of output.
-
-:::
 
 ## 5. Stop PATH
 
-When you're finished testing and want to stop PATH:
+When you're finished testing:
 
 ```bash
 make path_down

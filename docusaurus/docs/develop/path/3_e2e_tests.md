@@ -1,23 +1,35 @@
 ---
 sidebar_position: 3
-title: E2E Tests
+title: E2E PATH Tests
 description: End-to-End Tests for PATH
 ---
 
-**Goal of this document**: Fully featured E2E Tests to verify PATH works correctly.
+_tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
-<!-- TODO_UPNEXT(@adshmh): Add a screenshot/video of E2E tests running -->
+- [Quick Start](#quick-start)
+- [Overview](#overview)
+- [E2E Test Mode](#e2e-test-mode)
+  - [E2E Test Config Files](#e2e-test-config-files)
+  - [Schema and Validation](#schema-and-validation)
+  - [Supported Services in E2E Tests](#supported-services-in-e2e-tests)
+  - [Environment Variables](#environment-variables)
+  - [Extending/Updating/Adding EVM E2E Tests](#extendingupdatingadding-evm-e2e-tests)
+  - [Test Metrics and Validation](#test-metrics-and-validation)
 
-## E2E Tests
+## Quick Start
 
 **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
 
-```bash
-# Shannon E2E tests with all service IDs
-make e2e_test_all
+E2E tests for specific service IDs:
 
-# Shannon E2E tests with specified service IDs only
-make e2e_test eth,anvil
+```bash
+make e2e_test eth,xrplevm
+```
+
+E2E tests for all service IDs:
+
+```bash
+make e2e_test_all
 ```
 
 ## Overview
@@ -44,9 +56,9 @@ make e2e_test eth,anvil
 
 PATH E2E tests run in a single mode:
 
-| Mode          | Make Targets                | Purpose                                                                  | How it Works                                                                                                                                                                             | Use Cases                                                                          |
-| ------------- | --------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **E2E Test**  | `make e2e_test`             | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
+| Mode         | Make Targets    | Purpose                                                                  | How it Works                                                                                                                                                     | Use Cases                                                                          |
+| ------------ | --------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **E2E Test** | `make e2e_test` | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
 
 ### E2E Test Config Files
 
@@ -54,8 +66,8 @@ E2E Test mode requires protocol-specific configuration because it spins up a loc
 
 | Configuration File                                 | E2E Test (Required?) |             Default available?              |
 | -------------------------------------------------- | :------------------: | :-----------------------------------------: |
-| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅           |                      ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌           | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| `./e2e/config/.shannon.config.yaml` (for Shannon)  |          ✅          |                     ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml` (custom) |          ❌          | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
 :::tip Populate Configs
 
@@ -136,6 +148,6 @@ services:
 
 The E2E tests collect and validate comprehensive metrics across multiple dimensions:
 
-| **Category**              | **Metrics Collected**                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **HTTP Metrics**          | 
+| **Category**     | **Metrics Collected** |
+| ---------------- | --------------------- |
+| **HTTP Metrics** |

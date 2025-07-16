@@ -100,10 +100,10 @@ test_request__morse_service_id_header: check_path_up ## Test request with API ke
 ##################################
 
 .PHONY: test_request__shannon_relay_util_100
-test_request__shannon_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util
+test_request__shannon_relay_util_100: check_path_up check_relay_util debug_view_results_links  ## Test anvil PATH behind GUARD with 10 eth_blockNumber requests using relay-util. Override service by running: SERVICE_ID=eth make test_request__shannon_relay_util_100
 	relay-util \
 		-u http://localhost:3070/v1 \
-		-H "target-service-id: anvil" \
+		-H "target-service-id: $${SERVICE_ID:-anvil}" \
 		-H "authorization: test_api_key" \
 		-d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}' \
 		-x 100 \

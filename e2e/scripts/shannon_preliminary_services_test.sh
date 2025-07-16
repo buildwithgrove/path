@@ -339,7 +339,7 @@ get_service_identifier() {
 if [ "$NETWORK" = "alpha" ]; then
     NODE_FLAG="--node https://shannon-alpha-grove-rpc.alpha.poktroll.com"
 elif [ "$NETWORK" = "beta" ]; then
-    NODE_FLAG="--node https://shannon-testnet-grove-rpc.beta.poktroll.com"
+    NODE_FLAG="--node https://shannon-grove-rpc.mainnet.poktroll.com"
 elif [ "$NETWORK" = "main" ]; then
     NODE_FLAG="--node https://shannon-grove-rpc.mainnet.poktroll.com"
 fi

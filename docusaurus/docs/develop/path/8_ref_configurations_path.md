@@ -39,9 +39,9 @@ Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This fie
 # (Required) Shannon Protocol Configuration
 shannon_config:
   full_node_config:
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
     grpc_config:
-      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     lazy_mode: false
 
   gateway_config:
@@ -132,9 +132,9 @@ Configuration for the Shannon protocol gateway.
 shannon_config:
   full_node_config:
     lazy_mode: false
-    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+    rpc_url: "https://shannon-grove-rpc.mainnet.poktroll.com"
     grpc_config: # Required
-      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
+      host_port: "shannon-grove-grpc.mainnet.poktroll.com:443" # Required: gRPC host and port
 
       # Optional backoff and keepalive configs...
       insecure: false # Optional: whether to use insecure connection
