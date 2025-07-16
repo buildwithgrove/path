@@ -26,7 +26,7 @@ import (
 // Example:
 //
 //	{
-//	  "anvil": ["pokt1...", "pokt2..."],
+//	  "xrplevm": ["pokt1...", "pokt2..."],
 //	  "eth": ["pokt3...", "pokt4..."],
 //	}
 func getOwnedApps(

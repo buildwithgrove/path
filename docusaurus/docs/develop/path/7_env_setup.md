@@ -1,10 +1,8 @@
 ---
 sidebar_position: 7
-title: Deep Dive - Local Development Environment
+title: Local Development Environment Setup
 description: Technical details and background information
 ---
-
-# Developer Deep Dive
 
 Technical details for developers who want to understand PATH's development environment.
 

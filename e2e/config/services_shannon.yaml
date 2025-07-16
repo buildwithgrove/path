@@ -477,7 +477,7 @@ services:
       call_data: "0x18160ddd"
 
   # Shannon - XRPLEVM
-  - name: "Shannon - xrplevm (XRPL EVM Testnet) Test"
+  - name: "Shannon - xrplevm (XRPL EVM MainNet) Test"
     service_id: "xrplevm"
     service_type: "evm"
     archival: true

@@ -49,7 +49,7 @@ You can obtain the required **Portal Application ID** and **API Key** from the [
 
 :::
 
-1. **Setup credentials**
+**First, setup your configs & credentials**:
 
 ```bash
 make copy_e2e_load_test_config
@@ -57,11 +57,11 @@ make copy_e2e_load_test_config
 
 You will be prompted to enter your Grove Portal Application ID and API Key.
 
-2. **Run load tests against Grove Portal**
+**Next, run load tests against Grove Portal**:
 
 ```bash
 # Shannon load tests with specified service IDs only
-make load_test eth,anvil
+make load_test eth,xrplevm
 
 # Shannon load tests with all service IDs
 make load_test_all
