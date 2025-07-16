@@ -33,7 +33,7 @@ type Observations struct {
 	//
 	//	*Observations_Solana
 	//	*Observations_Evm
-	//	*Observations_Cometbft
+	//	*Observations_Cosmos
 	ServiceObservations isObservations_ServiceObservations `protobuf_oneof:"service_observations"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -94,10 +94,10 @@ func (x *Observations) GetEvm() *EVMRequestObservations {
 	return nil
 }
 
-func (x *Observations) GetCometbft() *CometBFTRequestObservations {
+func (x *Observations) GetCosmos() *CosmosSDKRequestObservations {
 	if x != nil {
-		if x, ok := x.ServiceObservations.(*Observations_Cometbft); ok {
-			return x.Cometbft
+		if x, ok := x.ServiceObservations.(*Observations_Cosmos); ok {
+			return x.Cosmos
 		}
 	}
 	return nil
@@ -117,26 +117,26 @@ type Observations_Evm struct {
 	Evm *EVMRequestObservations `protobuf:"bytes,2,opt,name=evm,proto3,oneof"`
 }
 
-type Observations_Cometbft struct {
-	// cometbft contains QoS measurements for a single CometBFT blockchain request
-	Cometbft *CometBFTRequestObservations `protobuf:"bytes,3,opt,name=cometbft,proto3,oneof"`
+type Observations_Cosmos struct {
+	// cosmos contains QoS measurements for a single CosmosSDK blockchain request
+	Cosmos *CosmosSDKRequestObservations `protobuf:"bytes,3,opt,name=cosmos,proto3,oneof"`
 }
 
 func (*Observations_Solana) isObservations_ServiceObservations() {}
 
 func (*Observations_Evm) isObservations_ServiceObservations() {}
 
-func (*Observations_Cometbft) isObservations_ServiceObservations() {}
+func (*Observations_Cosmos) isObservations_ServiceObservations() {}
 
 var File_path_qos_observations_proto protoreflect.FileDescriptor
 
 const file_path_qos_observations_proto_rawDesc = "" +
 	"\n" +
-	"\x1bpath/qos/observations.proto\x12\bpath.qos\x1a\x12path/qos/evm.proto\x1a\x15path/qos/solana.proto\x1a\x17path/qos/cometbft.proto\"\xe0\x01\n" +
+	"\x1bpath/qos/observations.proto\x12\bpath.qos\x1a\x12path/qos/evm.proto\x1a\x15path/qos/solana.proto\x1a\x15path/qos/cosmos.proto\"\xdd\x01\n" +
 	"\fObservations\x12=\n" +
 	"\x06solana\x18\x01 \x01(\v2#.path.qos.SolanaRequestObservationsH\x00R\x06solana\x124\n" +
-	"\x03evm\x18\x02 \x01(\v2 .path.qos.EVMRequestObservationsH\x00R\x03evm\x12C\n" +
-	"\bcometbft\x18\x03 \x01(\v2%.path.qos.CometBFTRequestObservationsH\x00R\bcometbftB\x16\n" +
+	"\x03evm\x18\x02 \x01(\v2 .path.qos.EVMRequestObservationsH\x00R\x03evm\x12@\n" +
+	"\x06cosmos\x18\x03 \x01(\v2&.path.qos.CosmosSDKRequestObservationsH\x00R\x06cosmosB\x16\n" +
 	"\x14service_observationsB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
@@ -153,15 +153,15 @@ func file_path_qos_observations_proto_rawDescGZIP() []byte {
 
 var file_path_qos_observations_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_path_qos_observations_proto_goTypes = []any{
-	(*Observations)(nil),                // 0: path.qos.Observations
-	(*SolanaRequestObservations)(nil),   // 1: path.qos.SolanaRequestObservations
-	(*EVMRequestObservations)(nil),      // 2: path.qos.EVMRequestObservations
-	(*CometBFTRequestObservations)(nil), // 3: path.qos.CometBFTRequestObservations
+	(*Observations)(nil),                 // 0: path.qos.Observations
+	(*SolanaRequestObservations)(nil),    // 1: path.qos.SolanaRequestObservations
+	(*EVMRequestObservations)(nil),       // 2: path.qos.EVMRequestObservations
+	(*CosmosSDKRequestObservations)(nil), // 3: path.qos.CosmosSDKRequestObservations
 }
 var file_path_qos_observations_proto_depIdxs = []int32{
 	1, // 0: path.qos.Observations.solana:type_name -> path.qos.SolanaRequestObservations
 	2, // 1: path.qos.Observations.evm:type_name -> path.qos.EVMRequestObservations
-	3, // 2: path.qos.Observations.cometbft:type_name -> path.qos.CometBFTRequestObservations
+	3, // 2: path.qos.Observations.cosmos:type_name -> path.qos.CosmosSDKRequestObservations
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -176,11 +176,11 @@ func file_path_qos_observations_proto_init() {
 	}
 	file_path_qos_evm_proto_init()
 	file_path_qos_solana_proto_init()
-	file_path_qos_cometbft_proto_init()
+	file_path_qos_cosmos_proto_init()
 	file_path_qos_observations_proto_msgTypes[0].OneofWrappers = []any{
 		(*Observations_Solana)(nil),
 		(*Observations_Evm)(nil),
-		(*Observations_Cometbft)(nil),
+		(*Observations_Cosmos)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

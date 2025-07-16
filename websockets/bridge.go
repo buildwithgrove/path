@@ -3,13 +3,21 @@ package websockets
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
+
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/request"
 )
 
 // FullNode represents a Shannon FullNode as only Shannon supports websocket connections.
@@ -28,7 +36,9 @@ type RelayRequestSigner interface {
 
 // SelectedEndpoint represents a Shannon Endpoint that has been selected to service a persistent websocket connection.
 type SelectedEndpoint interface {
+	Addr() protocol.EndpointAddr
 	PublicURL() string
+	WebsocketURL() (string, error)
 	Supplier() string
 	Session() *sessiontypes.Session
 }
@@ -45,9 +55,9 @@ type bridge struct {
 	logger polylog.Logger
 
 	// endpointConn is the connection to the WebSocket Endpoint
-	endpointConn *connection
+	endpointConn *websocketConnection
 	// clientConn is the connection to the Client
-	clientConn *connection
+	clientConn *websocketConnection
 
 	// msgChan receives messages from the Client and Endpoint and passes them to the other side of the bridge.
 	msgChan chan message
@@ -74,7 +84,7 @@ func NewBridge(
 	)
 
 	// Connect to the Endpoint
-	endpointWSSConn, err := connectEndpoint(selectedEndpoint)
+	endpointWSSConn, err := connectWebsocketEndpoint(logger, selectedEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("NewBridge: %s", err.Error())
 	}
@@ -114,6 +124,53 @@ func NewBridge(
 	)
 
 	return b, nil
+}
+
+// connectWebsocketEndpoint makes a websocket connection to the websocket Endpoint.
+func connectWebsocketEndpoint(logger polylog.Logger, selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
+	logger.Info().Msgf("🔗 Connecting to endpoint: %s", selectedEndpoint.PublicURL())
+
+	websocketURL, err := selectedEndpoint.WebsocketURL()
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Selected endpoint does not support websocket RPC type: %s", selectedEndpoint.Addr())
+		return nil, err
+	}
+
+	u, err := url.Parse(websocketURL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error parsing endpoint URL: %s", selectedEndpoint.PublicURL())
+		return nil, err
+	}
+
+	headers := getBridgeRequestHeaders(selectedEndpoint.Session())
+
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
+	if err != nil {
+		logger.Error().Err(err).Msgf("❌ Error connecting to endpoint: %s", u.String())
+		return nil, err
+	}
+
+	return conn, nil
+}
+
+// TODO_DOCUMENT(@commoddity): Document these headers and how bridge connections work in more detail.
+//
+// getBridgeRequestHeaders returns the headers that should be sent to the RelayMiner
+// when establishing a new websocket connection to the Endpoint.
+//
+// The headers are:
+//   - `Target-Service-Id`: The service ID of the target service.
+//   - `App-Address:` The address of the session's application.
+//   - `Rpc-Type`: The type of RPC request. Always "websocket" for websocket connection requests.
+func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
+	headers := http.Header{}
+	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
+	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
+
+	// Get the "WEBSOCKET" RPC type enum value and add it to the headers.
+	rpcTypeWebsocket := strconv.Itoa(int(sharedtypes.RPCType_WEBSOCKET))
+	headers.Add(proxy.RPCTypeHeader, rpcTypeWebsocket)
+	return headers
 }
 
 // Run starts the bridge and establishes a bidirectional communication

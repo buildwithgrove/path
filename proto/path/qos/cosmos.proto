@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+import "path/qos/request_origin.proto";
+import "path/qos/request_error.proto";
+
+// CosmosSDKResponseValidationError defines why an endpoint response was rejected.
+// Current invalid response types (as of PR #186):
+//   1. EmptyResponse - endpoint returned no data
+//   2. UnmarshalErr - response failed to parse into expected format
+//   3. NoResponse - no responses recorded by the QoS service: probably caused by protocol-level errors
+enum CosmosSDKResponseValidationError {
+	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
+	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // Response with no data.
+	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
+	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE = 3;  // No response received from any endpoint
+}
+
+// CosmosSDKRequestObservations captures all observations made while serving a single CosmosSDK blockchain service request.
+message CosmosSDKRequestObservations {
+    // The CosmosSDK blockchain service's route request, including all params
+    string route_request = 1;
+
+    // chain_id is the blockchain identifier for the QoS implementation.
+    // This is preset by the processor and not determined by the request.
+    // Used by metrics and data pipeline.
+    string chain_id = 2;
+
+    // service_id is the identifier for the QoS implementation.
+    // It is the "alias" or human readable interpretation of the chain_id.
+    string service_id = 3;
+
+    // The origin of the request: user vs. QoS service (requests built by QoS for collecting data on endpoints)
+    RequestOrigin request_origin = 4;
+
+    // Tracks request errors, if any.
+    optional RequestError request_error = 5;
+
+    // CosmosSDK-specific observations from endpoint(s) that responded to the service request.
+    // Multiple observations may occur when:
+    // - Original endpoint fails
+    // - Request is sent to additional endpoints for data collection
+    repeated CosmosSDKEndpointObservation endpoint_observations = 6;
+
+    // TODO_UPNEXT(@adshmh): Add endpoint selection metadata.
+}
+
+// CosmosSDKEndpointObservation stores a single observation from an endpoint servicing the protocol response.
+// Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
+message CosmosSDKEndpointObservation {
+    // Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
+    string endpoint_addr = 1;
+
+    // Details of the response received from the endpoint
+    oneof response_observation {
+        // Response to `/health` request
+        CosmosSDKHealthResponse health_response = 2;
+
+        // Response to `/status` request
+        CosmosSDKStatusResponse status_response = 3;
+
+        // Responses not used in endpoint validation
+        CosmosSDKUnrecognizedResponse unrecognized_response = 4;
+
+        // CosmosSDKEmptyResponse indicates an endpoint returned no data.
+        // Used to:
+        //   - Disqualify endpoints that return empty responses
+        //   - Track metrics for empty response patterns
+        CosmosSDKEmptyResponse empty_response = 5;
+    }
+
+    // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
+}
+
+// CosmosSDKHealthResponse stores the response to a `health` request
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
+message CosmosSDKHealthResponse {
+    bool health_status_response = 1;
+}
+
+// CosmosSDKStatusResponse stores the latest block number from a `/status` request
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+message CosmosSDKStatusResponse {
+    // Chain ID of the endpoint. Comes from the `NodeInfo.Network` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    string chain_id_response = 1;
+
+    // Indicates if the endpoint is catching up to the network.
+    // Comes from the `SyncInfo.CatchingUp` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    bool catching_up_response = 2;
+
+    // Latest block height of the endpoint.
+    // Comes from the `SyncInfo.LatestBlockHeight` field in the `/status` response.
+    // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
+    string latest_block_height_response = 3;
+}
+
+// CosmosSDKUnrecognizedResponse handles requests with methods ignored by state update
+// and endpoint validation
+message CosmosSDKUnrecognizedResponse {
+    JsonRpcResponse jsonrpc_response = 1;
+}
+
+// CosmosSDKEmptyResponse indicates an endpoint returned no data.
+// Used to:
+//   - Disqualify endpoints that return empty responses
+//   - Track metrics for empty response patterns
+message CosmosSDKEmptyResponse {
+    int32 http_status_code = 1;
+
+    // Always set to EMPTY for empty responses
+    CosmosSDKResponseValidationError response_validation_error = 2;
+}

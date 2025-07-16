@@ -49,9 +49,9 @@ func NewQoSInstance(logger polylog.Logger, config EVMServiceQoSConfig) *QoS {
 	}
 
 	serviceState := &serviceState{
-		logger:        logger,
-		serviceConfig: config,
-		endpointStore: store,
+		logger:           logger,
+		serviceQoSConfig: config,
+		endpointStore:    store,
 	}
 
 	// TODO_CONSIDERATION(@olshansk): Archival checks are currently optional to enable iteration

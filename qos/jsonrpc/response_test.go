@@ -61,6 +61,56 @@ func TestResponse_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:  "should validate successfully with null request ID and null response ID",
+			reqID: ID{}, // empty ID (will serialize as null)
+			response: Response{
+				ID:      ID{}, // empty ID (will serialize as null)
+				Version: Version2,
+				Result:  "success",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "should validate successfully with integer ID",
+			reqID: IDFromInt(42),
+			response: Response{
+				ID:      IDFromInt(42),
+				Version: Version2,
+				Result:  "success",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "should validate successfully with zero integer ID",
+			reqID: IDFromInt(0),
+			response: Response{
+				ID:      IDFromInt(0),
+				Version: Version2,
+				Result:  "success",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "should fail validation when request ID is null but response ID is not",
+			reqID: ID{}, // empty ID (null)
+			response: Response{
+				ID:      IDFromStr("1"),
+				Version: Version2,
+				Result:  "success",
+			},
+			wantErr: true,
+		},
+		{
+			name:  "should fail validation when request ID is set but response ID is null",
+			reqID: IDFromStr("1"),
+			response: Response{
+				ID:      ID{}, // empty ID (null)
+				Version: Version2,
+				Result:  "success",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {

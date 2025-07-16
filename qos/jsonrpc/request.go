@@ -13,43 +13,44 @@ type Version string
 
 const Version2 = Version("2.0")
 
-// Request represents a request as specificed
-// by the JSONRPC spec.
-// See the following link for more details:
-// https://www.jsonrpc.org/specification#request_object
+// Request represents a JSON-RPC 2.0 request.
+//
+// Specification requirements:
+//   - jsonrpc: must be "2.0"
+//   - method: string containing the method name
+//   - params: structured values (array or object), optional
+//   - id: identifier for correlation, always included (null if unset)
+//
+// Reference: https://www.jsonrpc.org/specification#request_object
 type Request struct {
-	ID      ID      `json:"id,omitempty"`
+	ID      ID      `json:"id"` // Always include in JSON
 	JSONRPC Version `json:"jsonrpc"`
 	Method  Method  `json:"method"`
 	Params  Params  `json:"params,omitempty"`
 }
 
-// MarshalJSON customizes the JSON serialization of a Request.
-// It returns a serialized version of the receiver with empty fields (e.g. ID, Params, etc) omitted
+// MarshalJSON implements json.Marshaler interface.
+// Always includes the ID field for JSON-RPC 2.0 compliance.
+// Unset IDs are automatically serialized as null.
 func (r Request) MarshalJSON() ([]byte, error) {
-	// Define a structure that makes ID and Params optional in the JSON output
+	// Use a simple struct for marshaling since ID is now always present
 	type requestAlias struct {
 		JSONRPC Version `json:"jsonrpc"`
 		Method  Method  `json:"method"`
-		Params  *Params `json:"params,omitempty"` // Optional in JSON output
-		ID      *ID     `json:"id,omitempty"`     // Optional in JSON output
+		Params  *Params `json:"params,omitempty"`
+		ID      ID      `json:"id"`
 	}
 
-	// Build the serializable version of the request
 	out := requestAlias{
 		JSONRPC: r.JSONRPC,
 		Method:  r.Method,
+		ID:      r.ID, // ID.MarshalJSON() handles null case automatically
 	}
 
-	// Only include non-empty fields
-	if !r.ID.IsEmpty() {
-		out.ID = &r.ID
-	}
 	if !r.Params.IsEmpty() {
 		out.Params = &r.Params
 	}
 
-	// Marshal and return the serializable version of the request
 	return json.Marshal(out)
 }
 

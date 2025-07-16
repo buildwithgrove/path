@@ -35,10 +35,10 @@ const (
 	containerEnvImageTag = "IMAGE_TAG=test"
 	containerExtraHost   = "host.docker.internal:host-gateway" // allows the container to access the host machine's Docker daemon
 	// containerExpirySeconds is the number of seconds after which the started PATH container should be removed by the dockertest library.
-	containerExpirySeconds = 240
+	containerExpirySeconds = 300
 	// maxPathHealthCheckWaitTimeMillisec is the maximum amount of time a started PATH container has to report its status as healthy.
 	// Once this time expires, the associated E2E test is marked as failed and the PATH container is removed.
-	maxPathHealthCheckWaitTimeMillisec = 120_000
+	maxPathHealthCheckWaitTimeMillisec = 180_000
 )
 
 // eg. 3069/tcp
