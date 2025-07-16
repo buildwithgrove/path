@@ -76,7 +76,7 @@ func (r *router) handleRoutes() {
 	r.mux.HandleFunc("GET /disqualified_endpoints", methodCheckMiddleware(r.handleDisqualifiedEndpoints))
 
 	// requestHandlerFn defines the middleware chain for all service requests
-	requestHandlerFn := r.corsMiddleware(r.removePrefixMiddleware(r.handleServiceRequest))
+	requestHandlerFn := r.corsMiddleware(r.removeGrovePortalPrefixMiddleware(r.handleServiceRequest))
 
 	// */v1/ - handles service requests with trailing slash, including REST services with additional path segments
 	r.mux.HandleFunc(gateway.APIVersionPrefix+"/", requestHandlerFn)
@@ -134,32 +134,31 @@ func (r *router) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// removePrefixMiddleware removes the API version and endpoint ID prefixes from the URL path
+// TODO_TECHDEBT: Rename removeGrovePortalPrefixMiddleware to removePrefixMiddleware
+// after removing all of Grove's portal specific logic from the router.
+//
+// removeGrovePortalPrefixMiddleware removes the API version and endpoint ID prefixes from the URL path
 // to allow REST-based services to pass the cleaned path to the selected endpoint.
 //
 // Example:
 //
-//	Input:  /v1/endpoint/path/123
-//	Output: /path/123
+//	Input:  /v1/{portal_app_id}/{rest_path_1}/{rest_path_2}/...
+//	Output: /{rest_path_1}/{rest_path_2}/...
 //
 // Reference: The `Portal-Application-ID` header is set by the PATH External Auth Server (PEAS):
 //   - https://github.com/buildwithgrove/path-external-auth-server/blob/main/auth/auth_handler.go#L173
-func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (r *router) removeGrovePortalPrefixMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		originalURLPath := req.URL.Path
 
-		// Remove API version prefix (e.g. /v1/path -> /path)
+		// Remove API version prefix (e.g. /v1/{request_path} -> /{request_path)
+		// TODO_TECHDEBT(@okdas): Move this logic into envoy and rewrite the URL via helm-charts.
+		// Ref: https://github.com/buildwithgrove/helm-charts/pull/96/files
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, gateway.APIVersionPrefix)
 
 		// Check if the portal app ID is present in the request header.
 		// In production, this should always be set by the PATH External Auth Server (PEAS).
-		portalAppID := req.Header.Get(gateway.HttpHeaderPortalAppID)
-
-		// If the following conditions are met:
-		//  - The portal app ID header is set in the headers
-		//  - The portal app ID is exactly present in the request path
-		// Then, remove the portal app ID prefix if present (e.g. /1a2b3c4d/path -> /path)
-		if portalAppID != "" && strings.Contains(req.URL.Path, portalAppID) {
+		if portalAppID := req.Header.Get(gateway.HttpHeaderPortalAppID); portalAppID != "" {
 			// Trim the portal app ID prefix from the request path.
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+portalAppID)
 
@@ -170,7 +169,7 @@ func (r *router) removePrefixMiddleware(next http.HandlerFunc) http.HandlerFunc 
 				Str("original_url_path", originalURLPath).
 				Str("new_url_path", req.URL.Path).
 				Str("portal_app_id", portalAppID).
-				Msg("✂️  Removed portal app ID from request path")
+				Msg("✂️ Removed portal app ID from request path")
 		}
 
 		next(w, req)

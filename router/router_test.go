@@ -268,7 +268,7 @@ func Test_removePrefixMiddleware(t *testing.T) {
 			}
 
 			// Create the middleware
-			middleware := r.removePrefixMiddleware(nextHandler)
+			middleware := r.removeGrovePortalPrefixMiddleware(nextHandler)
 
 			// Create request with test path and headers
 			req := httptest.NewRequest(http.MethodPost, test.inputPath, nil)
