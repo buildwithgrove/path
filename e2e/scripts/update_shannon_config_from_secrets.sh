@@ -21,8 +21,7 @@ update_shannon_config_from_env() {
     # Update the PATH Shannon config to reflect secrets on GitHub.
     yq -i '
 	.shannon_config.gateway_config.gateway_private_key_hex = env(SHANNON_GATEWAY_PRIVATE_KEY) |
-	.shannon_config.gateway_config.owned_apps_private_keys_hex = (env(SHANNON_OWNED_APPS_PRIVATE_KEYS) | split(",")) |
-    .shannon_config.full_node_config.lazy_mode = true
+	.shannon_config.gateway_config.owned_apps_private_keys_hex = (env(SHANNON_OWNED_APPS_PRIVATE_KEYS) | split(","))
     ' $CONFIG_FILE
 }
 
