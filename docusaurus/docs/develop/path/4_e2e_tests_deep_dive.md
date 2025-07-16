@@ -32,15 +32,21 @@ Make sure to visit the [E2E Tests Quickstart](3_e2e_tests_quickstart.md) to get 
 
 ## E2E Test Mode
 
-PATH E2E tests run in a single mode:
+| Mode                           | Make Targets                | Purpose                                                                  |
+| ------------------------------ | --------------------------- | ------------------------------------------------------------------------ |
+| **E2E Test All Services**      | `make e2e_test`             | Full end-to-end testing that starts PATH in an isolated Docker container |
+| **E2E Test Specific Services** | `make e2e_test eth,xrplevm` | Full end-to-end testing that starts PATH in an isolated Docker container |
 
-| Mode         | Make Targets    | Purpose                                                                  | How it Works                                                                                                                                                     | Use Cases                                                                          |
-| ------------ | --------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **E2E Test** | `make e2e_test` | Full end-to-end testing that starts PATH in an isolated Docker container | 1. Spins up PATH in a Docker container using Dockertest <br/> 2. Uses protocol config (`.shannon.config.yaml`) <br/> 3. Runs tests <br/> 4. Tears down container | - Full system validation <br/> - Continuous integration <br/> - Regression testing |
+What the above make target does:
+
+1. Spins up PATH in a Docker container using Dockertest
+2. Configures the gateway according to the `./e2e/config/.shannon.config.yaml` file
+3. Runs tests according to the `./e2e/config/.e2e_load_test.config.yaml` file
+4. Tears down container after the tests are done
 
 ## E2E Test Config Files
 
-| Configuration File                        | Required? |             Default available?              | Description                            | Helper Creation Command           |
+| Configuration File                        | Required? |             Default available?              | Description                            | Command to create or customize    |
 | ----------------------------------------- | :-------: | :-----------------------------------------: | :------------------------------------- | :-------------------------------- |
 | `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make shannon_populate_config`    |
 | `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make shannon_prepare_e2e_config` |
