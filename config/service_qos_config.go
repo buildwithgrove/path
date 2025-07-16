@@ -53,7 +53,7 @@ var QoSServiceConfigs = qosServiceConfigs{
 }
 
 const (
-	defaultEVMChainID      = "0x1" // ETH Mainnet (1)
+	defaultEVMChainID       = "0x1" // ETH Mainnet (1)
 	defaultCosmosSDKChainID = "cosmoshub-4"
 )
 
@@ -452,6 +452,15 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// XRPL EVM
+	// Reference: https://docs.xrplevm.org/pages/developers/developing-smart-contracts/deploy-the-smart-contract#1.-set-up-your-wallet
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm", "xrplevm_1440000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
+	}),
+
 	// XRPL EVM Testnet
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
@@ -459,9 +468,6 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
 	}),
-
-	// TODO_UPNEXT(@commoddity): XRPL EVM MainNet
-	// TODO_UPNEXT(@commoddity): XRPL EVM Devnet
 
 	// *** Solana Services ***
 
