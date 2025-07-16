@@ -453,6 +453,7 @@ var shannonServices = []ServiceQoSConfig{
 	}),
 
 	// XRPL EVM
+	// Reference: https://docs.xrplevm.org/pages/developers/developing-smart-contracts/deploy-the-smart-contract#1.-set-up-your-wallet
 	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm", "xrplevm_1440000-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
