@@ -17,6 +17,12 @@ const (
 	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSON-RPC response"
 
+	// errCodeEmptyResponse is the error code returned to the user if the endpoint returns an empty response.
+	errCodeEmptyResponse = -32000
+
+	// errMsgEmptyResponse is the message returned to the user if the endpoint returns an empty response.
+	errMsgEmptyResponse = "the response returned by the endpoint is empty"
+
 	// errDataFieldRawBytes is the key of the entry in the JSON-RPC error response's "data" map which holds the endpoint's original response.
 	errDataFieldRawBytes = "endpoint_response"
 
@@ -121,17 +127,24 @@ func responseUnmarshallerGeneric(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
 	data []byte,
+	isJSONRPC bool,
 ) (response, error) {
 	// If the jsonrpcResp is empty (indicating JSON-RPC unmarshaling failed),
-	// treat this as a REST response
-	if jsonrpcResp.ID.IsEmpty() && len(data) > 0 {
-		// Validate that the data is valid JSON for REST responses
-		var jsonData interface{}
-		if err := json.Unmarshal(data, &jsonData); err != nil {
-			// If it's not valid JSON, return an error response
-			return getGenericJSONRPCErrResponse(logger, jsonrpcResp, data, err), nil
+	// treat this as a response to a REST-like request
+	if jsonrpcResp.ID.IsEmpty() {
+		// If the data is empty, return an error response
+		if len(data) == 0 {
+			return getEmptyJSONRPCErrResponse(logger, jsonrpcResp, isJSONRPC), nil
 		}
 
+		// If the data is not empty, validate that it is valid JSON for REST responses
+		var jsonData any
+		if err := json.Unmarshal(data, &jsonData); err != nil {
+			// If it's not valid JSON, return an error response
+			return getGenericJSONRPCErrResponse(logger, jsonrpcResp, data, isJSONRPC, err), nil
+		}
+
+		// If the data is valid JSON, treat it as a REST response.
 		return responseGeneric{
 			logger:         logger,
 			rawData:        data,
@@ -143,8 +156,9 @@ func responseUnmarshallerGeneric(
 	if len(data) > 0 {
 		var response jsonrpc.Response
 		if err := json.Unmarshal(data, &response); err != nil {
-			return getGenericJSONRPCErrResponse(logger, response, data, err), nil
+			return getGenericJSONRPCErrResponse(logger, response, data, isJSONRPC, err), nil
 		}
+
 		return responseGeneric{
 			logger:          logger,
 			jsonRPCResponse: response,
@@ -168,6 +182,7 @@ func getGenericJSONRPCErrResponse(
 	_ polylog.Logger,
 	response jsonrpc.Response,
 	malformedResponsePayload []byte,
+	isJSONRPC bool,
 	err error,
 ) responseGeneric {
 	errData := map[string]string{
@@ -175,12 +190,30 @@ func getGenericJSONRPCErrResponse(
 		errDataFieldUnmarshalingErr: err.Error(),
 	}
 
-	// CometBFT always returns a "1" ID for error responses.
-	if response.ID.IsEmpty() {
-		response.ID = errorID
+	// If the response ID is empty and the request is not JSON-RPC, use the restLikeResponseID
+	if !isJSONRPC && response.ID.IsEmpty() {
+		response.ID = restLikeResponseID
 	}
 
 	return responseGeneric{
 		jsonRPCResponse: jsonrpc.GetErrorResponse(response.ID, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+	}
+}
+
+// getEmptyJSONRPCErrResponse creates a generic response containing:
+// - JSON-RPC error
+// - Empty response payload
+func getEmptyJSONRPCErrResponse(
+	_ polylog.Logger,
+	response jsonrpc.Response,
+	isJSONRPC bool,
+) responseGeneric {
+	// If the response ID is empty and the request is not JSON-RPC, use the restLikeResponseID
+	if !isJSONRPC && response.ID.IsEmpty() {
+		response.ID = restLikeResponseID
+	}
+
+	return responseGeneric{
+		jsonRPCResponse: jsonrpc.GetErrorResponse(response.ID, errCodeEmptyResponse, errMsgEmptyResponse, nil),
 	}
 }
