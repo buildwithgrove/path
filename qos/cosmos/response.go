@@ -72,7 +72,6 @@ func unmarshalResponse(
 		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
 	}
 
-	// Validate the JSON-RPC response.
 	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
 
 	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
