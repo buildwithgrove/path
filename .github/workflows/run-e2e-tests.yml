@@ -87,6 +87,6 @@ jobs:
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
-      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}å
+      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}
         # eg. make test_e2e_evm_shannon eth
         run: make e2e_test ${{ matrix.service_id }}
