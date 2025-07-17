@@ -328,11 +328,6 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 		// Check if Error field is nil (good)
 		if rpcResponse.Error != nil {
 			m.jsonRPCErrorField++
-			// Only track the error field message if there's no validation error
-			// (to avoid duplicate tracking when validation fails due to error field)
-			if validationErr == nil {
-				m.errors[rpcResponse.Error.Message]++
-			}
 		}
 
 		// Check if Result field is not nil (good)
@@ -340,7 +335,7 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 			m.jsonRPCNilResult++
 		}
 
-		// Process validation error
+		// Process validation error - this takes priority over error field messages
 		if validationErr != nil {
 			m.jsonRPCValidateErrors++
 
@@ -348,6 +343,13 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 			preview := createResponsePreview(result.Body, 100)
 			errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
 			m.jsonRPCValidationErrors[errorMsg]++
+			m.errors[errorMsg]++
+		} else if rpcResponse.Error != nil {
+			// Only track error field message if validation passed
+			// (meaning the response structure is valid but contains an API error)
+			// Add response preview to API errors too for consistency - use longer preview for API errors
+			preview := createResponsePreview(result.Body, 200)
+			errorMsg := fmt.Sprintf("API error: %s (response preview: %s)", rpcResponse.Error.Message, preview)
 			m.errors[errorMsg]++
 		}
 	}
@@ -705,6 +707,8 @@ func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetric
 			fmt.Printf("  ... and %s%d%s more error types\n", errorColor, len(sortedErrors)-5, RESET)
 		}
 	}
+
+	// TODO_TECHDEBT(@adshmh): Output the most frequently occurring malformed payloads.
 
 	// Collect assertion failures
 	failures = append(failures, collectHTTPSuccessRateFailures(m, serviceConfig.SuccessRate)...)
