@@ -29,9 +29,9 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						RpcURL: "https://shannon-grove-rpc-us-east.mainnet.poktroll.com",
 						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
+							HostPort: "shannon-grove-grpc-us-east.mainnet.poktroll.com:443",
 						},
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
