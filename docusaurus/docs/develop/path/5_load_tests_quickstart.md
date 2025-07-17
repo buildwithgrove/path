@@ -17,7 +17,13 @@ _tl;dr Fully featured Load Tests to verify PATH works correctly._
 
 ## Load Testing using Local PATH
 
-**Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+
+First, prepare the Shannon E2E test config file:
+
+```bash
+make config_copy_path_local_config_shannon_e2e
+```
 
 Then, run load tests for specific service IDs:
 

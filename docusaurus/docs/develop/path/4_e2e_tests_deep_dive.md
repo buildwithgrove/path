@@ -6,7 +6,7 @@ description: Deep dive into End-to-End Tests for PATH
 
 :::tip Quickstart
 
-Make sure to visit the [E2E Tests Quickstart](3_e2e_tests_quickstart.md) to get started quickly.
+⚠️ Make sure to visit the [E2E Tests Quickstart](3_e2e_tests_quickstart.md) to get started quickly.
 
 :::
 
@@ -46,10 +46,10 @@ What the above make target does:
 
 ## E2E Test Config Files
 
-| Configuration File                        | Required? |             Default available?              | Description                            | Command to create or customize    |
-| ----------------------------------------- | :-------: | :-----------------------------------------: | :------------------------------------- | :-------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make config_shannon_populate`    |
-| `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e` |
+| Configuration File                        | Custom Config Required? |             Default available?              | Description                            | Command to create or customize                                                     |
+| ----------------------------------------- | :---------------------: | :-----------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
+| `./e2e/config/.shannon.config.yaml`       |           ✅            |                     ❌                      | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
+| `./e2e/config/.e2e_load_test.config.yaml` |           ❌            | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
 
 ## Schema and Validation
 

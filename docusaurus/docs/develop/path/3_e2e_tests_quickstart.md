@@ -18,7 +18,13 @@ _tl;dr Fully featured E2E Tests to verify PATH works correctly._
 
 ## Quickstart
 
-**Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+⚠️ **Prerequisites**: Complete the [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) guides.
+
+First, prepare the Shannon E2E test config file:
+
+```bash
+make config_copy_path_local_config_shannon_e2e
+```
 
 Then, run E2E tests for specific service IDs:
 
@@ -34,10 +40,10 @@ make e2e_test_all
 
 ## E2E Test Config Files
 
-| Configuration File                        | Required? |             Default available?              | Description                            | Helper Creation Command           |
-| ----------------------------------------- | :-------: | :-----------------------------------------: | :------------------------------------- | :-------------------------------- |
-| `./e2e/config/.shannon.config.yaml`       |    ✅     |                     ❌                      | Gateway service configuration for PATH | `make config_shannon_populate`    |
-| `./e2e/config/.e2e_load_test.config.yaml` |    ❌     | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e` |
+| Configuration File                        | Custom Config Required? |             Default available?              | Description                            | Command to create or customize                                                     |
+| ----------------------------------------- | :---------------------: | :-----------------------------------------: | :------------------------------------- | :--------------------------------------------------------------------------------- |
+| `./e2e/config/.shannon.config.yaml`       |           ✅            |                     ❌                      | Gateway service configuration for PATH | `make config_copy_path_local_config_shannon_e2e` OR `make config_shannon_populate` |
+| `./e2e/config/.e2e_load_test.config.yaml` |           ❌            | `e2e/config/e2e_load_test.config.tmpl.yaml` | Custom configuration for E2E tests     | `make config_prepare_shannon_e2e`                                                  |
 
 ## Supported Services in E2E Tests
 

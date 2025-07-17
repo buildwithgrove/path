@@ -34,7 +34,7 @@ config_prepare_shannon_e2e: ## Setup Shannon E2E test config file from the examp
 		echo "  make test_e2e_evm_shannon"; \
 		echo ""; \
 		echo "🧑‍💻 For local dev:"; \
-		echo "  make config_shannon_populate OR make config_copy_shannon_e2e_config_to_path_local_config"; \
+		echo "  make config_shannon_populate"; \
 		echo "  make path_up"; \
 		echo "################################################################"; \
 	else \
@@ -46,13 +46,13 @@ config_prepare_shannon_e2e: ## Setup Shannon E2E test config file from the examp
 		echo "################################################################"; \
 	fi
 
-.PHONY: config_copy_shannon_e2e_config_to_path_local_config
-config_copy_shannon_e2e_config_to_path_local_config: ## Copy Shannon E2E config to local/path/ directory
-	$(call check_config_exists,./e2e/config/.shannon.config.yaml,config_prepare_shannon_e2e)
-	$(call warn_file_exists,./local/path/.config.yaml)
-	@cp ./e2e/config/.shannon.config.yaml ./local/path/.config.yaml
+.PHONY: config_copy_path_local_config_shannon_e2e
+config_copy_path_local_config_shannon_e2e: ## Copy local PATH config to Shannon E2E config
+	$(call check_config_exists,./local/path/.config.yaml,config_shannon_populate)
+	$(call warn_file_exists,./e2e/config/.shannon.config.yaml)
+	@cp ./local/path/.config.yaml ./e2e/config/.shannon.config.yaml
 	@echo "################################################################"
 	@echo "Successfully copied configuration:"
-	@echo "  From: ./e2e/config/.shannon.config.yaml"
-	@echo "  To:   ./local/path/.config.yaml"
+	@echo "  From: ./local/path/.config.yaml"
+	@echo "  To:   ./e2e/config/.shannon.config.yaml"
 	@echo "################################################################"

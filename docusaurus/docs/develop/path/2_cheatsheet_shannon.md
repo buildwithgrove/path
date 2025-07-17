@@ -26,7 +26,7 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 2. Copy to `local/path/.config.yaml` **in your PATH repository**
 3. Comment out the `data_reporter_config` section
 4. Comment out the `owned_apps_private_keys_hex` you're not using for testing
-5. Skip to [section 3: Run PATH](#3-run-path-in-development-mode)
+5. Skip to [section 3: Run PATH](#3-run-the-full-path-stack-locally)
 
 </details>
 
@@ -52,7 +52,7 @@ Skip to [2.1 Generate Shannon Config](#21-generate-shannon-config).
 
 ## 0. Prerequisites
 
-Complete the [**Quick Start**](1_quick_start.md) guide.
+⚠️ Complete the [**Quick Start**](1_quick_start.md) guide.
 
 ## 1. Setup Shannon Protocol Accounts (Gateway & Application)
 

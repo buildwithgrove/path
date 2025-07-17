@@ -4,6 +4,12 @@ title: Load Tests Deep Dive
 description: Deep dive into Load Tests for PATH
 ---
 
+:::tip Quickstart
+
+⚠️ Make sure to visit the [Load Tests Quickstart](5_load_tests_quickstart.md) to get started quickly.
+
+:::
+
 ## Overview
 
 **Goal of this document**: Load testing to verify PATH works and scales under load.
