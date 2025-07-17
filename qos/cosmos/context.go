@@ -147,12 +147,17 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
+	var requestID *jsonrpc.ID
+	if rc.jsonrpcReq != nil {
+		requestID = &rc.jsonrpcReq.ID
+	}
 	response, err := unmarshalResponse(
 		rc.logger,
 		rc.httpReq.URL.Path,
 		responseBz,
 		rc.isJsonRpcRequest(),
 		endpointAddr,
+		requestID,
 	)
 
 	// Multiple responses can be associated with a single request for multiple reasons, such as:

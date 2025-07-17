@@ -62,6 +62,7 @@ func unmarshalResponse(
 	data []byte,
 	isJSONRPC bool,
 	endpointAddr protocol.EndpointAddr,
+	requestID *jsonrpc.ID,
 ) (response, error) {
 	// Try to unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
@@ -72,7 +73,14 @@ func unmarshalResponse(
 	}
 
 	// Validate the JSON-RPC response.
-	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, isJSONRPC)); err != nil {
+	// Use the actual request ID if available, otherwise fall back to expected ID for backward compatibility
+	var expectedID jsonrpc.ID
+	if requestID != nil && !requestID.IsEmpty() {
+		expectedID = *requestID
+	} else {
+		expectedID = getExpectedResponseID(jsonrpcResponse, isJSONRPC)
+	}
+	if err := jsonrpcResponse.Validate(expectedID); err != nil {
 		payloadStr := string(data)
 		logger.With(
 			"api_path", apiPath,
