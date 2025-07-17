@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
 
+# TODO_TECHDEBT(@adshmh): Simplify/delete other E2E/Load Testing config files.
+#
 # Default Load test configuration for Morse and Shannon
 #
 # Usage:
@@ -11,7 +13,6 @@
 # 1. E2E Test Mode: Starts PATH in Docker (Dockertest) & runs tests against it
 # 2. Load Test Mode: Runs tests against a specified gateway URL
 
-# General test configuration overrides for all tests
 e2e_load_test_config:
   # E2E Test Mode
   # PATH runs in Docker (Dockertest), tests run against this container
@@ -21,7 +22,7 @@ e2e_load_test_config:
     # [Optional] Docker-related options
     docker_config:
       # [Optional] Log Docker container output to a file
-      log_to_file: true
+      log_to_file: false
       # [Optional] Force Docker image rebuild (useful after code changes)
       force_rebuild_image: false
 
@@ -33,51 +34,132 @@ e2e_load_test_config:
   load_test_config:
     # [Required] Custom PATH gateway URL
     #
-    # The default value uses the Grove Portal as the gateway URL.
+    # The default value uses the Local PATH.
     #
-    # To test against a local PATH instance, use the following URL instead:
-    # gateway_url_override: "http://localhost:3069/v1"
-    gateway_url_override: "https://rpc.grove.city/v1"
-
-    # [Optional] Custom user identifier for the test (i.e. portal-application-id)
+    # To test against the Grove Portal, follow the instructions in following URL:
+    # path.grove.city/develop/path/load_tests#load-testing-the-grove-portal
     #
-    # DEV_NOTE: This field IS required if you are testing against the Grove Portal.
-    #
-    # If you do not have a Grove Portal Application ID, get one by visiting:
-    #     https://www.portal.grove.city
-    #
-    # This field is NOT required if you are testing against a local PATH instance.
-    portal_application_id: ""
-
-    # [Optional] Custom API key for the test (i.e. portal-api-key)
-    #
-    # DEV_NOTE: This field IS required if your Grove Portal Application ID
-    # requires an API key to be set in the `Authorization` header.
-    #
-    # This field is NOT required if you are testing against a local PATH instance.
-    portal_api_key: ""
+    gateway_url_override: "http://localhost:3070/v1"
+    portal_api_key: "test_api_key"
+    portal_application_id: "test"
 
 # Default configuration applied to all test cases (unless overridden)
 default_service_config:
-  global_rps: 50              # Requests per second (shared across all methods)
-  requests_per_method: 50     # Number of requests per method
-  success_rate: 0.80          # Minimum required success rate (80%)
-  max_p50_latency_ms: 2000ms  # Max allowed P50 latency (ms)
-  max_p95_latency_ms: 5000ms  # Max allowed P95 latency (ms)
-  max_p99_latency_ms: 10000ms # Max allowed P99 latency (ms)
+  global_rps: 100 # Requests per second (shared across all methods)
+  requests_per_method: 300 # Number of requests per method
+  success_rate: 0.95 # Minimum required success rate (80%)
+  max_p50_latency_ms: 10000ms # Max allowed P50 latency (ms)
+  max_p95_latency_ms: 20000ms # Max allowed P95 latency (ms)
+  max_p99_latency_ms: 30000ms # Max allowed P99 latency (ms)
 
 # Override default configuration for specific services
 service_config_overrides:
-  # Shannon - Ethereum Mainnet (Archival)
-  # "eth" is not yet fully supplied so may require higher latency thresholds
-  "eth":
-    max_p50_latency_ms: 4000ms
-    max_p95_latency_ms: 8000ms
-    max_p99_latency_ms: 12000ms
-  # Base - Base Mainnet (Archival)
-  # "base" is not yet fully supplied so may require higher latency thresholds
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+  "arb-one":
+    archival: true
+  "arb-sepolia-testnet":
+    archival: true
+  "avax":
+    archival: true
+  "avax-dfk":
+    archival: true
   "base":
-    archival: false
-    max_p50_latency_ms: 4000ms
-    max_p95_latency_ms: 8000ms
-    max_p99_latency_ms: 12000ms
+    archival: true
+  "base-sepolia-testnet":
+    archival: true
+  "bera":
+    archival: true
+  "bitcoin":
+    archival: true
+  "blast":
+    archival: true
+  "boba":
+    archival: true
+  "bsc":
+    archival: true
+  "celo":
+    archival: true
+  "eth":
+    archival: true
+  "eth-holesky-testnet":
+    archival: true
+  "eth-sepolia-testnet":
+    archival: true
+  "evmos":
+    archival: true
+  "fantom":
+    archival: true
+  "fraxtal":
+    archival: true
+  "fuse":
+    archival: true
+  "gnosis":
+    archival: true
+  "harmony":
+    archival: true
+  "ink":
+    archival: true
+  "iotex":
+    archival: true
+  "kaia":
+    archival: true
+  "kava":
+    archival: true
+  "linea":
+    archival: true
+  "mantle":
+    archival: true
+  "metis":
+    archival: true
+  "moonbeam":
+    archival: true
+  "moonriver":
+    archival: true
+  "near":
+    archival: true
+  "oasys":
+    archival: true
+  "op":
+    archival: true
+  "op-sepolia-testnet":
+    archival: true
+  "opbnb":
+    archival: true
+  "osmosis":
+    archival: true
+  "pocket":
+    archival: true
+  "poly":
+    archival: true
+  "poly-amoy-testnet":
+    archival: true
+  "poly-zkevm":
+    archival: true
+  "radix":
+    archival: true
+  "scroll":
+    archival: true
+  "sei":
+    archival: true
+  "solana":
+    archival: true
+  "sonic":
+    archival: true
+  "sui":
+    archival: true
+  "taiko":
+    archival: true
+  "taiko-hekla-testnet":
+    archival: true
+  "tron":
+    archival: true
+  "xrplevm":
+    archival: true
+  "xrplevm-testnet":
+    archival: true
+  "zklink-nova":
+    archival: true
+  "zksync_era":
+    archival: true

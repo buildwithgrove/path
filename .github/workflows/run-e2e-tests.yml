@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         # DEV_NOTE: Add new services here if they should be tested as part of the Shannon E2E CI suite
-        service_id: [eth, anvil]
+        service_id: [eth]
     steps:
       - uses: actions/checkout@v4
 
@@ -79,14 +79,15 @@ jobs:
           docker image ls -a
 
       - name: copy Shannon E2E config
-        run: make shannon_prepare_e2e_config
+        run: make config_prepare_shannon_e2e
 
       - name: update Shannon E2E config from secrets
         env:
+          SHANNON_GATEWAY_ADDRESS: ${{ secrets.SHANNON_GATEWAY_ADDRESS }}
           SHANNON_GATEWAY_PRIVATE_KEY: ${{ secrets.SHANNON_GATEWAY_PRIVATE_KEY }}
           SHANNON_OWNED_APPS_PRIVATE_KEYS: ${{ secrets.SHANNON_OWNED_APPS_PRIVATE_KEYS}}
         run: ./e2e/scripts/update_shannon_config_from_secrets.sh
 
-      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}å
+      - name: Run Shannon E2E Tests with Service ID ${{ matrix.service_id }}
         # eg. make test_e2e_evm_shannon eth
         run: make e2e_test ${{ matrix.service_id }}

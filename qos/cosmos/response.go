@@ -5,32 +5,16 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/log"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 var (
 	// CosmosSDK response IDs for different request types:
-	// - JSON-RPC success: 1
-	// - REST success: -1
-	// - Any error: 1
-	jsonrpcSuccessID = jsonrpc.IDFromInt(1)
-	restSuccessID    = jsonrpc.IDFromInt(-1)
-	errorID          = jsonrpc.IDFromInt(1)
+	// - REST-like responses: -1
+	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
+	restLikeResponseID = jsonrpc.IDFromInt(-1)
 )
-
-// getExpectedResponseID returns the expected ID for a CosmosSDK response depending
-// on the request type (REST/JSON-RPC) and the response result (error/success).
-func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
-	if response.IsError() {
-		return errorID
-	}
-	if isJSONRPC {
-		return jsonrpcSuccessID
-	}
-	return restSuccessID
-}
 
 // responseUnmarshaller is the entrypoint for processing new supported response types.
 //
@@ -68,21 +52,11 @@ func unmarshalResponse(
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
 		// The response raw payload could not be unmarshalled as a JSON-RPC response.
 		// Treat it as a REST response and use the generic unmarshaller.
-		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
+		return responseUnmarshallerGeneric(logger, jsonrpcResponse, data, isJSONRPC)
 	}
 
 	// Validate the JSON-RPC response.
-	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, isJSONRPC)); err != nil {
-		payloadStr := string(data)
-		logger.With(
-			"api_path", apiPath,
-			"validation_err", err,
-			"raw_payload", log.Preview(payloadStr),
-			"endpoint_addr", endpointAddr,
-		).Debug().Msg("JSON-RPC response validation failed")
-
-		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
-	}
+	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
 
 	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
@@ -94,5 +68,5 @@ func unmarshalResponse(
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return responseUnmarshallerGeneric(logger, jsonrpcResponse, data)
+	return responseUnmarshallerGeneric(logger, jsonrpcResponse, data, isJSONRPC)
 }

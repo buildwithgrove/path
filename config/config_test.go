@@ -24,48 +24,14 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "should load valid morse config without error",
-			filePath: "./examples/config.morse_example.yaml",
-			want: GatewayConfig{
-				MorseConfig: &morse.MorseGatewayConfig{
-					FullNodeConfig: morseprotocol.FullNodeConfig{
-						URL:             "https://pocket-rpc.liquify.com",
-						RelaySigningKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
-						HttpConfig: morseprotocol.HttpConfig{
-							Retries: 3,
-							Timeout: 5000 * time.Millisecond,
-						},
-					},
-					SignedAATs: map[string]morse.SignedAAT{
-						"40af4e7e1b311c76a573610fe115cd2adf1eeade": {
-							ClientPublicKey:      "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
-							ApplicationPublicKey: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
-							ApplicationSignature: "40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d38840af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388",
-						},
-					},
-				},
-				Router: RouterConfig{
-					Port:                  defaultPort,
-					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
-					ReadTimeout:           defaultHTTPServerReadTimeout,
-					WriteTimeout:          defaultHTTPServerWriteTimeout,
-					IdleTimeout:           defaultHTTPServerIdleTimeout,
-				},
-				Logger: LoggerConfig{
-					Level: defaultLogLevel,
-				},
-			},
-			wantErr: false,
-		},
-		{
 			name:     "should load valid shannon config without error",
 			filePath: "./examples/config.shannon_example.yaml",
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						RpcURL: "https://shannon-grove-rpc.mainnet.poktroll.com",
 						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
+							HostPort: "shannon-grove-grpc.mainnet.poktroll.com:443",
 						},
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{

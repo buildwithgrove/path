@@ -44,8 +44,8 @@ localnet_config.yaml-e
 .config.shannon.yaml
 
 # Do NOT ignore these specific files
-!e2e/config/.grove.archival.e2e_load_test.config.yaml
-!e2e/config/.grove.e2e_load_test.config.yaml
+!e2e/config/e2e_load_test.archival.config.yaml
+!e2e/config/e2e_load_test.config.yaml
 
 # Env
 .env
