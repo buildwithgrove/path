@@ -14,22 +14,24 @@ var (
 	// - JSON-RPC success: 1
 	// - REST success: -1
 	// - Any error: 1
-	jsonrpcSuccessID = jsonrpc.IDFromInt(1)
-	restSuccessID    = jsonrpc.IDFromInt(-1)
-	errorID          = jsonrpc.IDFromInt(1)
+	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
+	// jsonrpcSuccessID = jsonrpc.IDFromInt(1)
+	// restSuccessID    = jsonrpc.IDFromInt(-1)
+	errorID = jsonrpc.IDFromInt(1)
 )
 
-// getExpectedResponseID returns the expected ID for a CosmosSDK response depending
-// on the request type (REST/JSON-RPC) and the response result (error/success).
-func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
-	if response.IsError() {
-		return errorID
-	}
-	if isJSONRPC {
-		return jsonrpcSuccessID
-	}
-	return restSuccessID
-}
+// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
+// // getExpectedResponseID returns the expected ID for a CosmosSDK response depending
+// // on the request type (REST/JSON-RPC) and the response result (error/success).
+// func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
+// 	if response.IsError() {
+// 		return errorID
+// 	}
+// 	if isJSONRPC {
+// 		return jsonrpcSuccessID
+// 	}
+// 	return restSuccessID
+// }
 
 // responseUnmarshaller is the entrypoint for processing new supported response types.
 //
