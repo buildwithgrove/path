@@ -1,0 +1,12 @@
+helm_chart_local_repo:
+  enabled: false
+  path: ../helm-charts
+hot-reloading: true
+observability:
+  enabled: true
+  grafana:
+    defaultDashboardsEnabled: false
+path:
+  count: 1
+  delve:
+    enabled: false
