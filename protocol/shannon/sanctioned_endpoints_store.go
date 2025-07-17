@@ -223,6 +223,8 @@ func newSanctionKey(endpoint *endpoint) sanctionKey {
 func sanctionKeyFromCacheKeyString(cacheKey string) sanctionKey {
 	// Only split for 4 parts, as final part is URL which contains a ":" character.
 	parts := strings.SplitN(cacheKey, ":", 4)
+	fmt.Println("🚀parts", parts)
+	fmt.Println("cacheKey", cacheKey)
 	return sanctionKey{
 		appAddr:     parts[0],
 		sessionID:   parts[1],
