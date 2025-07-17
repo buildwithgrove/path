@@ -18,7 +18,7 @@ const (
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSON-RPC response"
 
 	// errCodeEmptyResponse is the error code returned to the user if the endpoint returns an empty response.
-	errCodeEmptyResponse = -32001
+	errCodeEmptyResponse = -32000
 
 	// errMsgEmptyResponse is the message returned to the user if the endpoint returns an empty response.
 	errMsgEmptyResponse = "the response returned by the endpoint is empty"
