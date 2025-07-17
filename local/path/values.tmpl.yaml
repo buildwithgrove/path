@@ -23,6 +23,7 @@ guard:
       aliases:
         - ethereum
     - serviceId: anvil
+    - serviceId: xrplevm
     - serviceId: pocket
     - serviceId: poly
       aliases:

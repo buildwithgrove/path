@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 TEMPLATE_FILE="./e2e/config/e2e_load_test.config.tmpl.yaml"
 CONFIG_FILE="./e2e/config/.e2e_load_test.config.yaml"
 
-echo -e "${BLUE}🚀 Setting up E2E Load Test Configuration${NC}"
+echo -e "${BLUE}🚀 Setting up E2E Load Test Configuration for Grove Portal${NC}"
 echo ""
 
 # Check if config file already exists
@@ -50,7 +50,7 @@ fi
 echo -e "${BLUE}🔑 Portal Configuration Setup${NC}"
 echo ""
 echo -e "${BLUE}📝 Step 1: Portal Application ID${NC}"
-echo -e "${WHITE}   This is REQUIRED if you're testing against the Grove Portal.${NC}"
+echo -e "${WHITE}   This is REQUIRED for testing against the Grove Portal.${NC}"
 echo -e "${WHITE}   If you don't have one, get it at: https://www.portal.grove.city${NC}"
 echo ""
 read -p "🆔 Enter your Portal Application ID (or press Enter to skip): " PORTAL_APP_ID
@@ -74,6 +74,10 @@ echo -e "${GREEN}✅ Successfully copied template to config file${NC}"
 # Step 4: Update the config file with yq
 echo "⚙️  Updating configuration file..."
 
+# Update gateway_url_override to point to Grove Portal
+yq eval '.e2e_load_test_config.load_test_config.gateway_url_override = "https://rpc.grove.city/v1"' -i "$CONFIG_FILE"
+echo -e "${GREEN}✅ Gateway URL set to Grove Portal${NC}"
+
 if [ -n "$PORTAL_APP_ID" ]; then
     yq eval '.e2e_load_test_config.load_test_config.portal_application_id = "'"$PORTAL_APP_ID"'"' -i "$CONFIG_FILE"
     echo -e "${GREEN}✅ Portal Application ID set${NC}"
@@ -89,9 +93,9 @@ echo -e "${GREEN}🎉 Configuration setup complete!${NC}"
 echo ""
 echo -e "${WHITE}💡 To customize the load test config further, edit: $CONFIG_FILE${NC}"
 echo ""
-echo -e "${BLUE}🚀 You can now run load tests with:${NC}"
+echo -e "${BLUE}🚀 You can now run load tests against the Grove Portal with:${NC}"
 echo -e "${WHITE}   • make load_test${NC}"
-echo -e "${WHITE}   • make load_test eth,anvil${NC}"
+echo -e "${WHITE}   • make load_test eth,xrplevm${NC}"
 echo ""
 echo -e "${WHITE} For a full list of all available services to run load tests on, see: ./config/service_qos_config.go"
 echo ""

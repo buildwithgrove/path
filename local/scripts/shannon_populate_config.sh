@@ -12,7 +12,7 @@ RED='\033[1;31m'
 NC='\033[0m'
 
 echo -e "\n"
-echo -e "${GREEN}🌿  This script will populate the configuration file with the correct values  🌿${NC}"
+echo -e "${GREEN}🌿  This script will populate the configuration file using your pocketd keyring  🌿${NC}"
 echo -e ""
 echo -e "   Ensure you have completed the ${BLUE}App & PATH Gateway Cheat Sheet${NC} before running this script."
 echo -e "   ${BLUE}https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet${NC} (⏰ ~30 min to complete)"
