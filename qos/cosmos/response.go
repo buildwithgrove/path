@@ -14,10 +14,10 @@ var (
 	// CosmosSDK response IDs for different request types:
 	// - JSON-RPC success: 1
 	// - REST success: -1
-	// - Any error: 1
-	jsonrpcSuccessID = jsonrpc.IDFromInt(1)
-	restSuccessID    = jsonrpc.IDFromInt(-1)
-	errorID          = jsonrpc.IDFromInt(1)
+	// - Any error: 0
+	defaultJSONRPCSuccessID = jsonrpc.IDFromInt(1)
+	restSuccessID           = jsonrpc.IDFromInt(-1)
+	errorID                 = jsonrpc.IDFromInt(0)
 )
 
 // getExpectedResponseID returns the expected ID for a CosmosSDK response depending
@@ -27,7 +27,7 @@ func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID
 		return errorID
 	}
 	if isJSONRPC {
-		return jsonrpcSuccessID
+		return defaultJSONRPCSuccessID
 	}
 	return restSuccessID
 }
