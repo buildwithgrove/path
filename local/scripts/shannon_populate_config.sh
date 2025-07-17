@@ -113,9 +113,9 @@ application_private_key_hex=$(pocketd_with_env keys export ${APPLICATION_NAME} -
 cat >"$CONFIG_FILE" <<EOF
 shannon_config:
     full_node_config:
-        rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
+        rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
         grpc_config:
-            host_port: shannon-grove-grpc.mainnet.poktroll.com:443
+            host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
         lazy_mode: true
     gateway_config:
         gateway_mode: "centralized"
