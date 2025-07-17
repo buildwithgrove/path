@@ -5,7 +5,6 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/log"
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
@@ -72,17 +71,7 @@ func unmarshalResponse(
 	}
 
 	// Validate the JSON-RPC response.
-	if err := jsonrpcResponse.Validate(getExpectedResponseID(jsonrpcResponse, isJSONRPC)); err != nil {
-		payloadStr := string(data)
-		logger.With(
-			"api_path", apiPath,
-			"validation_err", err,
-			"raw_payload", log.Preview(payloadStr),
-			"endpoint_addr", endpointAddr,
-		).Debug().Msg("JSON-RPC response validation failed")
-
-		return getGenericJSONRPCErrResponse(logger, jsonrpcResponse, data, err), err
-	}
+	// TODO_NEXT(@adshmh): Use proper JSON-RPC ID response validation that works for all CosmosSDK chains.
 
 	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
 	// This allows the method-specific handler to determine how to respond to the user.
