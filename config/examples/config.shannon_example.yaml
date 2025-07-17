@@ -38,8 +38,7 @@ shannon_config:
     # Otherwise, replace with the correct gateway mode: centralized|delegated|permissionless
     gateway_mode: "centralized"
 
-    # If this config is used for Shannon E2E tests, do not change gateway_address.
-    # Otherwise, replace with the correct gateway address.
+    # README: gateway_address MUST BE replaced with the correct gateway address.
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
 
     # README: gateway_private_key_hex MUST BE replaced with the correct gateway private key secret
