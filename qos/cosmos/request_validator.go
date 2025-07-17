@@ -1,219 +1,239 @@
 package cosmos
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
+	"strings"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// TODO_TECHDEBT(@adshmh): Simplify the qos package by refactoring gateway.QoSContextBuilder.
-// Proposed change: Create a new ServiceRequest type containing raw payload data ([]byte)
-// Benefits: Decouples the qos package from HTTP-specific error handling.
-
-// maximum length of the error message stored in request validation failure observations and logs.
-// This is used to prevent overly verbose error messages from being stored in logs and metrics leading to excessive memory usage and cost.
-const maxErrMessageLen = 1000
-
-// TODO_TECHDEBT(@adshmh): Refactor the cosmosSDKRequestValidator struct to be more generic and reusable.
-//
-// cosmosSDKRequestValidator handles request validation for CosmosSDK chains, generating:
-//   - Error contexts when validation fails
-//   - Request contexts when validation succeeds
+// cosmosSDKRequestValidator handles request validation for CosmosSDK chains by:
+// 1. Detecting RPC type from request path
+// 2. Delegating to RPC type-specific validators
+// 3. Creating unified contexts with RPC type information
 type cosmosSDKRequestValidator struct {
-	logger       polylog.Logger
-	chainID      string
-	serviceID    protocol.ServiceID
-	serviceState *serviceState
+	logger        polylog.Logger
+	chainID       string
+	serviceID     protocol.ServiceID
+	serviceState  *serviceState
+	supportedAPIs map[sharedtypes.RPCType]struct{}
+
+	// RPC type-specific validators - focused on RPC type, not domain
+	restValidator    restRequestValidator
+	jsonrpcValidator jsonrpcRequestValidator
 }
 
-// validateHTTPRequest validates an HTTP request for CosmosSDK chains.
-//
-// CosmosSDK chains (like XRPL EVM) expose multiple API interfaces:
-//  1. REST API (port 1317): GET /cosmos/gov/v1/proposals, POST /cosmos/tx/v1beta1/txs
-//  2. CometBFT RPC (port 26657): JSON-RPC requests with {"jsonrpc":"2.0","method":"...","id":...}
-//  3. gRPC (port 9090): Binary protocol (handled elsewhere)
-//
-// This validator handles both REST and JSON-RPC requests:
-//   - REST: Any HTTP method (GET, POST, PUT, DELETE) to REST endpoints
-//   - JSON-RPC: POST requests with JSON-RPC payload structure
-//
-// If validation fails, an errorContext is returned along with false.
-// If validation succeeds, a fully initialized requestContext is returned along with true.
+// validateHTTPRequest validates an HTTP request by:
+// 1. Detecting the RPC type from the request path/method
+// 2. Checking if the detected RPC type is supported
+// 3. Delegating to the appropriate RPC type-specific validator
 func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
 	crv.logger = crv.logger.With(
 		"qos", "CosmosSDK",
 		"http_method", req.Method,
+		"path", req.URL.Path,
 	)
 
-	// For POST requests, we need to distinguish between:
-	// 	1. REST API calls: POST /cosmos/tx/v1beta1/txs with transaction data
-	// 	2. CometBFT RPC calls: POST with JSON-RPC payload like {"jsonrpc":"2.0","method":"abci_query",...}
-	if req.Method == http.MethodPost {
-		return crv.validatePOSTRequest(req)
+	// 1. Detect RPC type from request characteristics
+	rpcType := crv.detectRPCType(req)
+
+	crv.logger = crv.logger.With("detected_rpc_type", rpcType.String())
+
+	// 2. Check if this RPC type is supported by the service
+	if _, supported := crv.supportedAPIs[rpcType]; !supported {
+		crv.logger.Warn().Msg("Request uses unsupported RPC type")
+		return crv.createUnsupportedRPCTypeContext(rpcType), false
 	}
 
-	// All other HTTP methods (GET, PUT, DELETE, etc.) are REST API calls
-	// Examples: GET /cosmos/gov/v1/proposals, GET /health, GET /status
-	return crv.createRESTRequestContext(req, nil), true
+	// 3. Delegate to RPC type-specific validator
+	switch rpcType {
+	case sharedtypes.RPCType_REST:
+		return crv.restValidator.validateRESTRequest(req)
+	case sharedtypes.RPCType_JSONRPC:
+		// All JSON-RPC requests (EVM and CometBFT) handled by same validator
+		return crv.jsonrpcValidator.validateJSONRPCRequest(req, rpcType)
+	default:
+		crv.logger.Error().Msg("Unknown RPC type detected")
+		return crv.createUnknownRPCTypeContext(rpcType), false
+	}
 }
 
-// validatePOSTRequest handles POST request validation, distinguishing between REST and JSON-RPC.
+// detectRPCType determines the RPC type based on request path and HTTP method
+// Uses path-focused detection with explicit rules for different endpoints
+func (crv *cosmosSDKRequestValidator) detectRPCType(req *http.Request) sharedtypes.RPCType {
+	path := req.URL.Path
+	method := req.Method
+
+	// Priority 1: CosmosSDK REST API patterns (always REST)
+	// Examples: /cosmos/*, /ibc/*, /staking/*, /bank/*, etc.
+	if isCosmosRestAPI(path) {
+		return sharedtypes.RPCType_REST
+	}
+
+	// Priority 2: CometBFT endpoints (can be REST or JSON-RPC based on HTTP method)
+	// Examples: /health, /status, /genesis, /validators, /block, etc.
+	if isCometBftRpc(path) {
+		if method == http.MethodPost {
+			// POST to CometBFT endpoints can contain JSON-RPC payloads
+			return sharedtypes.RPCType_JSONRPC
+		}
+		// GET/other methods to CometBFT endpoints are REST-style
+		return sharedtypes.RPCType_REST
+	}
+
+	// Priority 3: Root path - determine based on HTTP method
+	if path == "/" || path == "" {
+		if method == http.MethodPost {
+			// POST to root is almost always JSON-RPC (EVM or CometBFT)
+			return sharedtypes.RPCType_JSONRPC
+		}
+		// GET to root is REST-style
+		return sharedtypes.RPCType_REST
+	}
+
+	// Default: treat unknown paths as REST
+	return sharedtypes.RPCType_REST
+}
+
+// Specific path mappings can be added here if needed:
 //
-// POST requests can be either:
-//  1. REST API: POST /cosmos/tx/v1beta1/txs (submitting transactions)
-//  2. CometBFT RPC: JSON-RPC calls to CometBFT interface
+// var cometBFTJSONRPCPaths = []string{
+//     // Paths that should always be JSON-RPC even with GET
+// }
 //
-// Strategy:
-//   - Read the request body
-//   - Attempt JSON-RPC parsing
-//   - If JSON-RPC parsing succeeds, treat as JSON-RPC
-//   - If JSON-RPC parsing fails for any reason, treat as REST (CosmosSDK supports POST for REST)
-func (crv *cosmosSDKRequestValidator) validatePOSTRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
-	logger := crv.logger.With("method", "validatePOSTRequest")
+// var cometBFTRESTPaths = []string{
+//     "/health", "/status", "/genesis", "/validators",
+//     // Paths that should always be REST even with POST
+// }
 
-	// Read the HTTP request body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		logger.Warn().Err(err).Msg("HTTP request body read failed - returning generic error response")
-		return crv.createHTTPBodyReadFailureContext(err), false
+// createUnsupportedRPCTypeContext creates an error context for unsupported RPC types
+func (crv *cosmosSDKRequestValidator) createUnsupportedRPCTypeContext(rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
+	observations := &qosobservations.Observations_Cosmos{
+		Cosmos: &qosobservations.CosmosSDKRequestObservations{
+			ChainId:       crv.chainID,
+			ServiceId:     string(crv.serviceID),
+			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+			RpcType:       convertToProtoRPCType(rpcType),
+			RequestError: &qosobservations.RequestError{
+				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
+				ErrorDetails:   "RPC type not supported by this service: " + rpcType.String(),
+				HttpStatusCode: httpStatusRequestValidationFailureUnsupportedRPCType,
+			},
+		},
 	}
 
-	// Empty body POST requests are treated as REST
-	// Example: POST /some/endpoint with no payload
-	if len(body) == 0 {
-		return crv.createRESTRequestContext(req, body), true
-	}
-
-	// Attempt to parse as JSON-RPC first
-	jsonrpcReq, err := parseJSONRPCFromRequestBody(logger, body)
-	if err != nil {
-		// JSON-RPC parsing failed - treat as REST API call
-		// Examples of valid REST POST requests:
-		// 	- POST /cosmos/tx/v1beta1/txs with {"tx_bytes":"...", "mode":"BROADCAST_MODE_SYNC"}
-		// 	- POST /cosmos/gov/v1/proposals with proposal JSON
-		// 	- Any malformed JSON that was intended for REST endpoints
-		logger.Debug().Msg("POST request failed JSON-RPC parsing, treating as REST request")
-		return crv.createRESTRequestContext(req, body), true
-	}
-
-	// Valid JSON-RPC request - create JSON-RPC request context
-	return &requestContext{
-		logger:               crv.logger,
-		httpReq:              *req,
-		chainID:              crv.chainID,
-		serviceID:            crv.serviceID,
-		requestPayloadLength: uint(len(body)),
-		jsonrpcReq:           &jsonrpcReq,
-		serviceState:         crv.serviceState,
-		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-	}, true
-}
-
-// createRESTRequestContext creates a request context for REST endpoint requests
-func (crv *cosmosSDKRequestValidator) createRESTRequestContext(req *http.Request, body []byte) *requestContext {
-	payloadLength := uint(0)
-	if body != nil {
-		payloadLength = uint(len(body))
-	}
-
-	return &requestContext{
-		logger:               crv.logger,
-		httpReq:              *req,
-		chainID:              crv.chainID,
-		serviceID:            crv.serviceID,
-		requestPayloadLength: payloadLength,
-		serviceState:         crv.serviceState,
-		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-	}
-}
-
-// createHTTPBodyReadFailureContext creates an error context for HTTP body read failures.
-func (crv *cosmosSDKRequestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
-	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(crv.serviceID, crv.chainID, err)
-
-	// TODO_IMPROVE(@adshmh): Propagate a request ID parameter on internal errors
-	// that occur after successful request parsing.
-	// There are no such cases as of PR #186.
-	//
-	// Create the JSON-RPC error response
-	response := newErrResponseInternalErr(jsonrpc.ID{}, err)
-
-	// Build and return the error context
 	return &errorContext{
 		logger:                 crv.logger,
-		response:               response,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureReadHTTPBodyFailure,
+		responseHTTPStatusCode: httpStatusRequestValidationFailureUnsupportedRPCType,
 		cosmosSDKObservations:  observations,
 	}
 }
 
-// createHTTPBodyReadFailureObservation creates an observation for cases where
-// reading the HTTP request body for a CosmosSDK service request has failed.
-//
-// This observation:
-// - Includes the chainID and detailed error information
-// - Is useful for diagnosing connectivity or HTTP parsing issues
-//
-// Parameters:
-// - chainID: The CosmosSDK chain identifier for which the request was intended
-// - err: The error that occurred during HTTP body reading
-//
-// Returns:
-// - qosobservations.Observations: A structured observation containing details about the HTTP read failure
-func createHTTPBodyReadFailureObservation(
-	serviceID protocol.ServiceID,
-	chainID string,
-	err error,
-) *qosobservations.Observations_Cosmos {
-	return &qosobservations.Observations_Cosmos{
+// createUnknownRPCTypeContext creates an error context for unknown RPC types
+func (crv *cosmosSDKRequestValidator) createUnknownRPCTypeContext(rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
+	observations := &qosobservations.Observations_Cosmos{
 		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			RouteRequest: "HTTP body read failed",
-			EndpointObservations: []*qosobservations.CosmosSDKEndpointObservation{
-				{
-					ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_UnrecognizedResponse{
-						UnrecognizedResponse: &qosobservations.CosmosSDKUnrecognizedResponse{
-							JsonrpcResponse: &qosobservations.JsonRpcResponse{
-								Id: "",
-							},
-						},
-					},
-				},
+			ChainId:       crv.chainID,
+			ServiceId:     string(crv.serviceID),
+			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+			RpcType:       convertToProtoRPCType(rpcType),
+			RequestError: &qosobservations.RequestError{
+				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR,
+				ErrorDetails:   "Unknown RPC type detected: " + rpcType.String(),
+				HttpStatusCode: httpStatusInternalError,
 			},
 		},
 	}
+
+	return &errorContext{
+		logger:                 crv.logger,
+		responseHTTPStatusCode: httpStatusInternalError,
+		cosmosSDKObservations:  observations,
+	}
 }
 
-// TODO_TECHDEBT(@adshmh): support Batch JSONRPC requests, as per the JSONRPC spec:
-// https://www.jsonrpc.org/specification#batch
-//
-// TODO_MVP(@adshmh): Add a JSON-RPC request validator to reject invalid/unsupported
-// method calls early in request flow.
-//
-// parseJSONRPCFromRequestBody attempts to unmarshal the HTTP request body into a JSONRPC
-// request structure.
-//
-// If parsing fails, it:
-// - Logs the first portion of the request body (truncated for security/performance)
-// - Includes the specific error information
-func parseJSONRPCFromRequestBody(
-	logger polylog.Logger,
-	requestBody []byte,
-) (jsonrpc.Request, error) {
-	var jsonrpcRequest jsonrpc.Request
-	err := json.Unmarshal(requestBody, &jsonrpcRequest)
-	if err != nil {
-		// Only log a preview of the request body (first 1000 bytes or less) to avoid excessive logging
-		requestPreview := string(requestBody[:min(maxErrMessageLen, len(requestBody))])
-		logger.Error().Err(err).Msgf("❌ Request failed JSON-RPC validation - returning generic error response. Request preview: %s", requestPreview)
+// convertToProtoRPCType converts sharedtypes.RPCType to proto RPCType
+func convertToProtoRPCType(rpcType sharedtypes.RPCType) qosobservations.RPCType {
+	switch rpcType {
+	case sharedtypes.RPCType_REST:
+		return qosobservations.RPCType_RPC_TYPE_REST
+	case sharedtypes.RPCType_JSONRPC:
+		return qosobservations.RPCType_RPC_TYPE_JSONRPC
+	default:
+		return qosobservations.RPCType_RPC_TYPE_UNSPECIFIED
+	}
+}
+
+// HTTP status codes for validation failures
+const (
+	httpStatusRequestValidationFailureUnsupportedRPCType = 400
+	httpStatusInternalError                              = 500
+)
+
+// ------------------------------------------------------------------------------------------------
+// Path Detection Functions
+// ------------------------------------------------------------------------------------------------
+
+// isCosmosRestAPI checks if the URL path corresponds to Cosmos SDK REST API endpoints
+// These typically run on port :1317 and include paths like:
+func isCosmosRestAPI(urlPath string) bool {
+	cosmosRestPrefixes := []string{
+		"/cosmos/",       // - /cosmos/* (Cosmos SDK modules)
+		"/ibc/",          // - /ibc/* (IBC protocol)
+		"/staking/",      // - /staking/* (staking module)
+		"/auth/",         // - /auth/* (auth module)
+		"/bank/",         // - /bank/* (bank module)
+		"/txs/",          // - /txs/* (transaction endpoints)
+		"/gov/",          // - /gov/* (governance module)
+		"/distribution/", // - /distribution/* (distribution module)
+		"/slashing/",     // - /slashing/* (slashing module)
+		"/mint/",         // - /mint/* (mint module)
+		"/upgrade/",      // - /upgrade/* (upgrade module)
+		"/evidence/",     // - /evidence/* (evidence module)
 	}
 
-	return jsonrpcRequest, err
+	for _, prefix := range cosmosRestPrefixes {
+		if strings.HasPrefix(urlPath, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// isCometBftRpc checks if the URL path corresponds to CometBFT RPC endpoints
+// These typically run on port :26657
+func isCometBftRpc(urlPath string) bool {
+	cometBftPaths := []string{
+		"/status",               // - /status (node status)
+		"/broadcast_tx_sync",    // - /broadcast_tx_sync (transaction broadcast)
+		"/broadcast_tx_async",   // - /broadcast_tx_async (transaction broadcast)
+		"/broadcast_tx_commit",  // - /broadcast_tx_commit (transaction broadcast)
+		"/block",                // - /block (block queries)
+		"/commit",               // - /commit (commit queries)
+		"/validators",           // - /validators (validator set queries)
+		"/genesis",              // - /genesis (genesis document)
+		"/health",               // - /health (health check)
+		"/abci_info",            // - /abci_info (ABCI info)
+		"/abci_query",           // - /abci_query (ABCI query)
+		"/consensus_state",      // - /consensus_state (consensus state)
+		"/dump_consensus_state", // - /dump_consensus_state (dump consensus state)
+		"/net_info",             // - /net_info (network information)
+		"/num_unconfirmed_txs",  // - /num_unconfirmed_txs (number of unconfirmed transactions)
+		"/tx",                   // - /tx (transaction information)
+		"/tx_search",            // - /tx_search (transaction search)
+		"/block_search",         // - /block_search (block search)
+		"/consensus_params",     // - /consensus_params (consensus parameters)
+	}
+
+	for _, path := range cometBftPaths {
+		if strings.HasPrefix(urlPath, path) {
+			return true
+		}
+	}
+	return false
 }
