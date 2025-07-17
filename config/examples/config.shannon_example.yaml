@@ -17,11 +17,11 @@ shannon_config:
   full_node_config:
     # If this config is used for Shannon E2E tests, do not change rpc_url
     # Otherwise, replace with the correct full node RPC url.
-    rpc_url: https://shannon-grove-rpc-us-east.mainnet.poktroll.com 
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
     grpc_config:
       # If this config is used for Shannon E2E tests, do not change host_port
       # Otherwise, replace with the correct full node GRPC host:port.
-      host_port: shannon-grove-grpc-us-east.mainnet.poktroll.com:443
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     # Setting this to true disables all caching of full node data.
     lazy_mode: false
     # If lazy_mode is true, the cache_config may not be set.
