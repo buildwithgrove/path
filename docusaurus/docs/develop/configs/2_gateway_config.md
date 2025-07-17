@@ -1,35 +1,25 @@
 ---
-sidebar_position: 5
-title: PATH Config File (`.config.yaml`)
-description: PATH Configurations
+sidebar_position: 2
+title: Gateway Config (`.config.yaml`)
+description: PATH Gateway & Service Configurations
 ---
 
-:::info CONFIGURATION FILES
+_tl;dr Configurations for Gateway operation & services support._
 
-A `PATH` stack is configured via two files:
-
-| File           | Required | Description                                   |
-| -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
-
-:::
-
-## Table of Contents <!-- omit in toc -->
-
-- [Config File Validation](#config-file-validation)
+- [Example Configuration](#example-configuration)
 - [Config File Location (Local Development)](#config-file-location-local-development)
+- [Config File Validation](#config-file-validation)
 - [`shannon_config` (required)](#shannon_config-required)
-- [`morse_config` (required)](#morse_config-required)
 - [`hydrator_config` (optional)](#hydrator_config-optional)
-  - [Manually Disable QoS Checks for a Service](#manually-disable-qos-checks-for-a-service)
 - [`router_config` (optional)](#router_config-optional)
 - [`logger_config` (optional)](#logger_config-optional)
 - [`data_reporter_config` (optional)](#data_reporter_config-optional)
 
-All configuration for the `PATH` gateway is defined in a single YAML file named `.config.yaml`.
+## Example Configuration
 
-Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This field determines the protocol that the gateway will use.
+All configuration for the `PATH` gateway are defined in a single YAML file named `.config.yaml`.
+
+Exactly one `shannon_config` **MUST** be provided. This field determines the protocol that the gateway will use.
 
 <details>
 
@@ -39,9 +29,9 @@ Exactly one of `shannon_config` or `morse_config` **MUST** be provided. This fie
 # (Required) Shannon Protocol Configuration
 shannon_config:
   full_node_config:
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
     grpc_config:
-      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     lazy_mode: false
 
   gateway_config:
@@ -58,32 +48,13 @@ logger_config:
 
 </details>
 
-<details>
+## Config File Location (Local Development)
 
-<summary>Example **Morse** Config (click to expand)</summary>
+In local development mode, the config file must be located at:
 
-```yaml
-# (Required) Morse Protocol Configuration
-morse_config:
-  full_node_config:
-    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
-    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
-    http_config: # Optional
-      retries: 3 # Default: 3
-      timeout: "5000ms" # Default: "5000ms"
-
-  signed_aats: # Required
-    "<40-char-app-address>": # Application address (hex)
-      client_public_key: "<64-char-hex>" # Client public key
-      application_public_key: "<64-char-hex>" # Application public key
-      application_signature: "<128-char-hex>" # Application signature
-
-# (Optional) Logger Configuration
-logger_config:
-  level: "info" # Valid values: debug, info, warn, error
+```bash
+./local/path/.config.yaml
 ```
-
-</details>
 
 ## Config File Validation
 
@@ -97,32 +68,9 @@ If you are using VSCode, we recommend using the [YAML Language Support](https://
 
 :::
 
-## Config File Location (Local Development)
+## Protocol Configuration <!-- omit in toc -->
 
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.config.yaml
-```
-
-## Protocol Selection <!-- omit in toc -->
-
-The config file **MUST contain EXACTLY one** of the following top-level protocol-specific sections:
-
-- `morse_config`
-- `shannon_config`
-
----
-
-<!--
-
-:::warning TODO_MVP(@commoddity): Auto-generate this file.
-
-Update this file so it is auto-generated based on config.schema.yaml
-
-:::
-
--->
+The config file **MUST contain EXACTLY one** top-level `shannon_config` section.
 
 ## `shannon_config` (required)
 
@@ -132,9 +80,9 @@ Configuration for the Shannon protocol gateway.
 shannon_config:
   full_node_config:
     lazy_mode: false
-    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+    rpc_url: "https://shannon-grove-rpc.mainnet.poktroll.com"
     grpc_config: # Required
-      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443" # Required: gRPC host and port
+      host_port: "shannon-grove-grpc.mainnet.poktroll.com:443" # Required: gRPC host and port
 
       # Optional backoff and keepalive configs...
       insecure: false # Optional: whether to use insecure connection
@@ -184,50 +132,6 @@ shannon_config:
 
 ---
 
-## `morse_config` (required)
-
-Configuration for the Morse protocol gateway.
-
-```yaml
-morse_config:
-  full_node_config:
-    url: "https://pocket-rpc.liquify.com" # Required: Pocket node URL
-    relay_signing_key: "<128-char-hex>" # Required: Relay signing private key
-    http_config: # Optional
-      retries: 3 # Default: 3
-      timeout: "5000ms" # Default: "5000ms"
-
-  signed_aats: # Required
-    "<40-char-app-address>": # Application address (hex)
-      client_public_key: "<64-char-hex>" # Client public key
-      application_public_key: "<64-char-hex>" # Application public key
-      application_signature: "<128-char-hex>" # Application signature
-```
-
-**`full_node_config`**
-
-| Field               | Type   | Required | Default | Description                                              |
-| ------------------- | ------ | -------- | ------- | -------------------------------------------------------- |
-| `url`               | string | Yes      | -       | URL of the full Pocket RPC node                          |
-| `relay_signing_key` | string | Yes      | -       | 128-character hex-encoded private key for signing relays |
-
-**`full_node_config.http_config`**
-
-| Field     | Type    | Required | Default  | Description                           |
-| --------- | ------- | -------- | -------- | ------------------------------------- |
-| `retries` | integer | No       | 3        | Number of HTTP request retry attempts |
-| `timeout` | string  | No       | "5000ms" | HTTP request timeout duration         |
-
-**`signed_aats`**
-
-| Field                    | Type   | Required | Default | Description                                     |
-| ------------------------ | ------ | -------- | ------- | ----------------------------------------------- |
-| `client_public_key`      | string | Yes      | -       | 64-character hex-encoded client public key      |
-| `application_public_key` | string | Yes      | -       | 64-character hex-encoded application public key |
-| `application_signature`  | string | Yes      | -       | 128-character hex-encoded signature             |
-
----
-
 ## `hydrator_config` (optional)
 
 :::info
@@ -236,25 +140,25 @@ For a full list of supported QoS service implementations, refer to the [QoS Docu
 
 :::
 
-Configures the QoS hydrator. By default, all services configured in the `shannon_config` or `morse_config` sections will have QoS checks run against them.
-
-### Manually Disable QoS Checks for a Service
-
-To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
-
-For example, to disable QoS checks for the Ethereum service on a Morse PATH instance, the following configuration would be added to the `.config.yaml` file:
-
-```yaml
-hydrator_config:
-  qos_disabled_service_ids:
-    - "F00C"
-```
+Configures the QoS hydrator. By default, all services configured in the `shannon_config` sections will have QoS checks run against them.
 
 | Field                        | Type          | Required | Default   | Description                                                                                                                                                 |
 | ---------------------------- | ------------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `run_interval_ms`            | string        | No       | "10000ms" | Interval at which the hydrator will run QoS checks                                                                                                          |
 | `max_endpoint_check_workers` | integer       | No       | 100       | Maximum number of workers to run concurrent QoS checks against a service's endpoints                                                                        |
 | `qos_disabled_service_ids`   | array[string] | No       | -         | List of service IDs to exclude from QoS checks. Will throw an error on startup if a service ID is provided that the PATH instance is not configured to use. |
+
+### Manually Disable QoS Checks for a Service <!-- omit in toc -->
+
+To manually disable QoS checks for a specific service, the `qos_disabled_service_ids` field may be specified in the `.config.yaml` file.
+
+For example, to disable QoS checks for the Ethereum service on a Shannon PATH instance, the following configuration would be added to the `.config.yaml` file:
+
+```yaml
+hydrator_config:
+  qos_disabled_service_ids:
+    - "eth"
+```
 
 ---
 
