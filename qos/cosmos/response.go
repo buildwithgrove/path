@@ -22,9 +22,20 @@ var (
 
 // getExpectedResponseID returns the expected ID for a CosmosSDK response depending
 // on the request type (REST/JSON-RPC) and the response result (error/success).
-func getExpectedResponseID(response jsonrpc.Response, isJSONRPC bool) jsonrpc.ID {
+// Use the actual request ID if available, otherwise fall back to expected ID for backward compatibility.
+func getExpectedResponseID(
+	response jsonrpc.Response,
+	requestID *jsonrpc.ID,
+	isJSONRPC bool,
+) jsonrpc.ID {
 	if response.IsError() {
 		return errorID
+	}
+	if requestID != nil && !requestID.IsEmpty() {
+		return *requestID
+	}
+	if requestID == nil && isJSONRPC {
+		return defaultJSONRPCSuccessID
 	}
 	if isJSONRPC {
 		return defaultJSONRPCSuccessID
@@ -73,13 +84,8 @@ func unmarshalResponse(
 	}
 
 	// Validate the JSON-RPC response.
-	// Use the actual request ID if available, otherwise fall back to expected ID for backward compatibility
-	var expectedID jsonrpc.ID
-	if requestID != nil && !requestID.IsEmpty() {
-		expectedID = *requestID
-	} else {
-		expectedID = getExpectedResponseID(jsonrpcResponse, isJSONRPC)
-	}
+
+	expectedID := getExpectedResponseID(jsonrpcResponse, requestID, isJSONRPC)
 	if err := jsonrpcResponse.Validate(expectedID); err != nil {
 		payloadStr := string(data)
 		logger.With(
