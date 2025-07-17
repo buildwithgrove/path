@@ -47,16 +47,16 @@ type cosmosSDKRequestValidator struct {
 // If validation fails, an errorContext is returned along with false.
 // If validation succeeds, a fully initialized requestContext is returned along with true.
 func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
-	logger := crv.logger.With(
+	crv.logger = crv.logger.With(
 		"qos", "CosmosSDK",
-		"method", "validateHTTPRequest",
+		"http_method", req.Method,
 	)
 
 	// For POST requests, we need to distinguish between:
 	// 	1. REST API calls: POST /cosmos/tx/v1beta1/txs with transaction data
 	// 	2. CometBFT RPC calls: POST with JSON-RPC payload like {"jsonrpc":"2.0","method":"abci_query",...}
 	if req.Method == http.MethodPost {
-		return crv.validatePOSTRequest(req, logger)
+		return crv.validatePOSTRequest(req)
 	}
 
 	// All other HTTP methods (GET, PUT, DELETE, etc.) are REST API calls
@@ -75,7 +75,9 @@ func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (ga
 //   - Attempt JSON-RPC parsing
 //   - If JSON-RPC parsing succeeds, treat as JSON-RPC
 //   - If JSON-RPC parsing fails for any reason, treat as REST (CosmosSDK supports POST for REST)
-func (crv *cosmosSDKRequestValidator) validatePOSTRequest(req *http.Request, logger polylog.Logger) (gateway.RequestQoSContext, bool) {
+func (crv *cosmosSDKRequestValidator) validatePOSTRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := crv.logger.With("method", "validatePOSTRequest")
+
 	// Read the HTTP request body
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
