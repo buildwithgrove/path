@@ -26,8 +26,7 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 
 ### Configuration
 
-- `make shannon_prepare_e2e_config` - Prepare Shannon E2E configuration
-- `make morse_prepare_e2e_config` - Prepare Morse E2E configuration
+- `make config_prepare_shannon_e2e` - Prepare Shannon E2E configuration
 
 ## Architecture Overview
 

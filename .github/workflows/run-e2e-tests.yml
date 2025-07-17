@@ -79,7 +79,7 @@ jobs:
           docker image ls -a
 
       - name: copy Shannon E2E config
-        run: make shannon_prepare_e2e_config
+        run: make config_prepare_shannon_e2e
 
       - name: update Shannon E2E config from secrets
         env:

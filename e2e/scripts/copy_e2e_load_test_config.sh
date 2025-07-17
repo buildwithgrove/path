@@ -95,7 +95,7 @@ echo -e "${WHITE}💡 To customize the load test config further, edit: $CONFIG_F
 echo ""
 echo -e "${BLUE}🚀 You can now run load tests against the Grove Portal with:${NC}"
 echo -e "${WHITE}   • make load_test${NC}"
-echo -e "${WHITE}   • make load_test eth,anvil${NC}"
+echo -e "${WHITE}   • make load_test eth,xrplevm${NC}"
 echo ""
 echo -e "${WHITE} For a full list of all available services to run load tests on, see: ./config/service_qos_config.go"
 echo ""

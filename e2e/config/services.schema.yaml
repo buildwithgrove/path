@@ -32,11 +32,11 @@ definitions:
       name:
         description: "Name of the service"
         type: string
-        examples: ["Morse - F00C (Ethereum) Test"]
+        examples: ["Shannon - eth (Ethereum) Test"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
-        examples: ["F00C", "anvil", "eth", "arb-one"]
+        examples: ["xrplevm", "ethereum", "arb-one"]
       service_type:
         description: "Type of service to test"
         type: string
@@ -55,16 +55,23 @@ definitions:
     description: "Service parameters for EVM test requests"
     type: object
     additionalProperties: false
-    required: ["contract_address", "contract_start_block", "transaction_hash", "call_data"]
+    required:
+      [
+        "contract_address",
+        "contract_start_block",
+        "transaction_hash",
+        "call_data",
+      ]
     properties:
       contract_address:
         description: "Contract/account address for blockchain calls (supports EVM and Harmony formats)"
         type: string
         pattern: "^(0x[a-fA-F0-9]{40}|one[a-z0-9]{39})$"
-        examples: [
-          "0x28C6c06298d514Db089934071355E5743bf21d60", 
-          "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a"
-        ]
+        examples:
+          [
+            "0x28C6c06298d514Db089934071355E5743bf21d60",
+            "one19senwle0ezp3he6ed9xkc7zeg5rs94r0ecpp0a",
+          ]
       call_data:
         description: "Call data for eth_call"
         type: string
@@ -78,7 +85,8 @@ definitions:
         description: "Transaction hash for receipt/transaction queries"
         type: string
         pattern: "^0x[a-fA-F0-9]{64}$"
-        examples: ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
+        examples:
+          ["0xfeccd627b5b391d04fe45055873de3b2c0b4302d52e96bd41d5f0019a704165f"]
 
   solana_service:
     description: "Solana service definition"
@@ -124,7 +132,10 @@ definitions:
         description: "Transaction signature for transaction queries"
         type: string
         pattern: "^[1-9A-HJ-NP-Za-km-z]{88}$"
-        examples: ["4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs"]
+        examples:
+          [
+            "4XqrV7zHtv8mHZqsPxueeYc1NodL9nxkdeZJYPtAuw67LszjdYxVgHwUJgBVubuE63ZCToBawe22c8DAAuRdipKs",
+          ]
 
   cometbft_service:
     description: "CometBFT service definition"

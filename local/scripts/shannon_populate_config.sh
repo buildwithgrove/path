@@ -12,7 +12,7 @@ RED='\033[1;31m'
 NC='\033[0m'
 
 echo -e "\n"
-echo -e "${GREEN}🌿  This script will populate the configuration file with the correct values  🌿${NC}"
+echo -e "${GREEN}🌿  This script will populate the configuration file using your pocketd keyring  🌿${NC}"
 echo -e ""
 echo -e "   Ensure you have completed the ${BLUE}App & PATH Gateway Cheat Sheet${NC} before running this script."
 echo -e "   ${BLUE}https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet${NC} (⏰ ~30 min to complete)"
@@ -113,9 +113,9 @@ application_private_key_hex=$(pocketd_with_env keys export ${APPLICATION_NAME} -
 cat >"$CONFIG_FILE" <<EOF
 shannon_config:
     full_node_config:
-        rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+        rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
         grpc_config:
-            host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
+            host_port: shannon-grove-grpc.mainnet.poktroll.com:443
         lazy_mode: true
     gateway_config:
         gateway_mode: "centralized"

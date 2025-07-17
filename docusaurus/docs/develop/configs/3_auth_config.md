@@ -1,36 +1,58 @@
 ---
-sidebar_position: 9
-title: Reference - PATH Helm Config (`.values.yaml`)
-description: PATH Helm Configurations
+sidebar_position: 3
+title: Auth Config (`.values.yaml`)
+description: PATH Auth, Helm & Deployment Configurations
 ---
 
-:::danger 🚧 WORK IN PROGRESS 🚧
+_tl;dr Configurations for request authorization and deployment._
 
-This document is not ready for public consumption.
-
-:::
-
-:::info CONFIGURATION FILES
-
-A `PATH` stack is configured via two files:
-
-| File           | Required | Description                                   |
-| -------------- | -------- | --------------------------------------------- |
-| `.config.yaml` | ✅       | PATH **gateway** configurations               |
-| `.values.yaml` | ❌       | PATH **Helm chart deployment** configurations |
-
-:::
-
-## Table of Contents <!-- omit in toc -->
-
+- [Example Configuration](#example-configuration)
+- [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
 - [Default Values](#default-values)
 - [Customizing Default Values](#customizing-default-values)
-- [Helm Values File Location (Local Development)](#helm-values-file-location-local-development)
 - [GUARD Configuration](#guard-configuration)
   - [`auth.apiKey` Section](#authapikey-section)
     - [`services` Section](#services-section)
-    - [Example `.values.yaml` File](#example-valuesyaml-file)
   - [Example Requests](#example-requests)
+
+## Example Configuration
+
+<details>
+
+<summary>Example **Values YAML** Config (click to expand)</summary>
+
+```yaml
+guard:
+  auth:
+    apiKey:
+      enabled: true
+      apiKeys:
+        - test_api_key_1
+        - test_api_key_2
+        - test_api_key_3
+  services:
+    - serviceId: poly
+      aliases:
+        - polygon
+    - serviceId: eth
+      aliases:
+        - ethereum
+    - serviceId: pocket
+      aliases:
+        - pokt
+```
+
+</details>
+
+## Helm Values File Location (Local Development)
+
+In development mode, the config file must be located at:
+
+```bash
+./local/path/.values.yaml
+```
+
+Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
 
 ## Default Values
 
@@ -49,8 +71,8 @@ By default PATH is configured as follows:
 | Protocol  | Service ID | Aliases                      |
 | --------- | ---------- | ---------------------------- |
 | `shannon` | `anvil`    | -                            |
-| `morse`   | `F00C`     | `eth`, `eth-mainnet`         |
-| `morse`   | `F021`     | `polygon`, `polygon-mainnet` |
+| `shannon` | `eth`      | `eth`, `eth-mainnet`         |
+| `shannon` | `polygon`  | `polygon`, `polygon-mainnet` |
 
 **API Keys:**
 
@@ -69,16 +91,6 @@ make configs_copy_values_yaml
 For the full list of configurable values in the PATH Helm Chart, see the [Helm Values Documentation](../../operate/helm/5_values.md).
 
 :::
-
-## Helm Values File Location (Local Development)
-
-In development mode, the config file must be located at:
-
-```bash
-./local/path/.values.yaml
-```
-
-Tilt's hot reload feature is enabled by default in the Helm chart. This means that when the `.values.yaml` file is updated, Tilt will automatically redeploy the PATH Gateway stack with the new values.
 
 ## GUARD Configuration
 
@@ -115,29 +127,6 @@ The service ID is specified per-request as the `Target-Service-Id` header; eithe
 | `services[].serviceId` | string        | Yes      | -       | The unique identifier for the service |
 | `services[].aliases`   | array[string] | Yes      | -       | List of aliases for the service       |
 
-#### Example `.values.yaml` File
-
-```yaml
-guard:
-  auth:
-    apiKey:
-      enabled: true
-      apiKeys:
-        - test_api_key_1
-        - test_api_key_2
-        - test_api_key_3
-  services:
-    - serviceId: F021
-      aliases:
-        - polygon
-    - serviceId: F00C
-      aliases:
-        - eth
-    - serviceId: F000
-      aliases:
-        - pocket
-```
-
 ### Example Requests
 
 The above `.values.yaml` files will allow the following requests to PATH.
@@ -146,7 +135,7 @@ Request to the `polygon` service using the service ID using API key `test_api_ke
 
 ```bash
 curl http://localhost:3070/v1 \
-  -H "Target-Service-Id: F021" \
+  -H "Target-Service-Id: polygon" \
   -H "Authorization: test_api_key_1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber" }'
 ```

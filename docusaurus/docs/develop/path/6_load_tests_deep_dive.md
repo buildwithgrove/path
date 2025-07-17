@@ -1,10 +1,14 @@
 ---
 sidebar_position: 6
-title: Deep Dive - Load Tests
+title: Load Tests Deep Dive
 description: Deep dive into Load Tests for PATH
 ---
 
-# Deep Dive: Load Tests
+:::tip Quickstart
+
+⚠️ Make sure to visit the [Load Tests Quickstart](5_load_tests_quickstart.md) to get started quickly.
+
+:::
 
 ## Overview
 
@@ -32,10 +36,10 @@ description: Deep dive into Load Tests for PATH
 
 PATH load tests support two distinct modes of operation:
 
-| Mode                    | Purpose                                                    | How it Works                                                                                                                        | Use Cases                                                                                |
-| ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Local PATH**          | Performance testing against local PATH instances          | 1. Requires completed [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration    |
-| **Grove Portal**        | Performance testing against Grove Portal                  | 1. Sends requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                    | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking |
+| Mode             | Purpose                                          | How it Works                                                                                                                                              | Use Cases                                                                                   |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Local PATH**   | Performance testing against local PATH instances | 1. Requires completed [Quick Start](1_quick_start.md) and [Shannon Cheat Sheet](2_cheatsheet_shannon.md) setup <br/> 2. Tests against local PATH instance | - Local development testing <br/> - Feature validation <br/> - Development iteration        |
+| **Grove Portal** | Performance testing against Grove Portal         | 1. Sends requests to Grove Portal gateway URL <br/> 2. Requires Grove Portal credentials or pre-configured files                                          | - Testing production gateway <br/> - Production performance validation <br/> - Benchmarking |
 
 ### Local PATH Mode
 
@@ -50,28 +54,29 @@ For local PATH load testing, you need:
 You will need one of the following:
 
 1. **Grove Employee Pre-configured Files**
+
    - Download from 1Password links above
    - Copy to `e2e/config/.grove.e2e_load_test.config.yaml`
 
 2. **Custom Portal Access**
    - `gateway_url_override`: `https://rpc.grove.city/v1`
    - Get credentials from the [Grove Portal](https://www.portal.grove.city)
-   - Use `make copy_e2e_load_test_config` to set up
+   - Use `make config_copy_e2e_load_test` to set up
 
 ## Load Test Configuration
 
 **Configuration files used:**
 
-| Configuration File                                 | Local PATH | Grove Portal | Default Available?                          |
-| -------------------------------------------------- | :--------: | :----------: | :-----------------------------------------: |
-| `./e2e/config/.grove.e2e_load_test.config.yaml`   |     ❌      |      ✅       |                     ❌                      |
-| `./e2e/config/.e2e_load_test.config.yaml`         |     ✅      |      ✅       | `e2e/config/e2e_load_test.config.tmpl.yaml` |
+| Configuration File                              | Local PATH | Grove Portal |             Default Available?              |
+| ----------------------------------------------- | :--------: | :----------: | :-----------------------------------------: |
+| `./e2e/config/.grove.e2e_load_test.config.yaml` |     ❌     |      ✅      |                     ❌                      |
+| `./e2e/config/.e2e_load_test.config.yaml`       |     ✅     |      ✅      | `e2e/config/e2e_load_test.config.tmpl.yaml` |
 
 :::tip Populate Configs
 
 You can use the following command to copy example configs and follow the instructions in your CLI:
 
-- `make copy_e2e_load_test_config`
+- `make config_copy_e2e_load_test`
 
 :::
 
