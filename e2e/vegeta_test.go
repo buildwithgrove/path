@@ -168,6 +168,9 @@ func initMethodMetrics(method string, totalRequests int) *methodMetrics {
 		statusCodes: make(map[int]int),
 		errors:      make(map[string]int),
 		results:     make([]*vegeta.Result, 0, totalRequests),
+		// Initialize the new error tracking fields
+		jsonRPCParseErrors:      make(map[string]int),
+		jsonRPCValidationErrors: make(map[string]int),
 	}
 }
 
@@ -261,6 +264,33 @@ attackLoop:
 	}
 }
 
+// createResponsePreview creates a sanitized preview of the response body for error logging
+func createResponsePreview(body []byte, maxLen int) string {
+	if len(body) == 0 {
+		return "(empty)"
+	}
+
+	// Convert to string and normalize whitespace using strings lib
+	bodyStr := string(body)
+
+	// Replace all whitespace characters with single spaces
+	bodyStr = strings.ReplaceAll(bodyStr, "\n", " ")
+	bodyStr = strings.ReplaceAll(bodyStr, "\r", " ")
+	bodyStr = strings.ReplaceAll(bodyStr, "\t", " ")
+
+	// Collapse multiple spaces into single spaces
+	bodyStr = strings.Join(strings.Fields(bodyStr), " ")
+
+	// Truncate if needed
+	if len(bodyStr) <= maxLen {
+		return bodyStr
+	}
+	if maxLen <= 3 {
+		return bodyStr[:maxLen]
+	}
+	return bodyStr[:maxLen-3] + "..."
+}
+
 // processResult
 // • Updates metrics based on a single result
 func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceType) {
@@ -278,24 +308,47 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 	}
 	// Update status code counts
 	m.statusCodes[int(result.Code)]++
+
 	// Process JSON-RPC validation if we have a successful HTTP response
 	var rpcResponse jsonrpc.Response
 	if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
 		m.jsonRPCUnmarshalErrors++
+
+		// Create response preview for parse errors
+		preview := createResponsePreview(result.Body, 100)
+		errorMsg := fmt.Sprintf("JSON parse error: %v (response preview: %s)", err, preview)
+		m.jsonRPCParseErrors[errorMsg]++
+		m.errors[errorMsg]++
 	} else {
 		m.jsonRPCResponses++
+
+		// Validate the response first
+		validationErr := rpcResponse.Validate(getExpectedID(serviceType))
+
 		// Check if Error field is nil (good)
 		if rpcResponse.Error != nil {
 			m.jsonRPCErrorField++
-			m.errors[rpcResponse.Error.Message]++
+			// Only track the error field message if there's no validation error
+			// (to avoid duplicate tracking when validation fails due to error field)
+			if validationErr == nil {
+				m.errors[rpcResponse.Error.Message]++
+			}
 		}
+
 		// Check if Result field is not nil (good)
 		if rpcResponse.Result == nil {
 			m.jsonRPCNilResult++
 		}
-		// Validate the response
-		if err := rpcResponse.Validate(getExpectedID(serviceType)); err != nil {
+
+		// Process validation error
+		if validationErr != nil {
 			m.jsonRPCValidateErrors++
+
+			// Create response preview for validation errors
+			preview := createResponsePreview(result.Body, 100)
+			errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
+			m.jsonRPCValidationErrors[errorMsg]++
+			m.errors[errorMsg]++
 		}
 	}
 }
@@ -327,6 +380,10 @@ type methodMetrics struct {
 	jsonRPCErrorField      int // Count of responses with non-nil Error field
 	jsonRPCNilResult       int // Count of responses with nil Result field
 	jsonRPCValidateErrors  int // Count of responses that fail validation
+
+	// New fields for detailed error tracking with response previews
+	jsonRPCParseErrors      map[string]int // Parse errors with response previews
+	jsonRPCValidationErrors map[string]int // Validation errors with response previews
 
 	// Success rates for specific checks
 	jsonRPCSuccessRate    float64 // Success rate for JSON-RPC unmarshaling
@@ -618,21 +675,34 @@ func validateResults(t *testing.T, serviceId protocol.ServiceID, m *methodMetric
 		errorColor = RED // Red for critical errors (test failed)
 	}
 
-	// Log top errors with appropriate color
+	// Log top errors with appropriate color and include detailed JSON-RPC errors
 	if len(m.errors) > 0 {
 		fmt.Println("") // Add a new line before logging errors
 		fmt.Printf("%sTop errors:%s\n", errorColor, RESET)
-		count := 0
-		num := 1
-		for err, errCount := range m.errors {
-			if count < 5 {
-				fmt.Printf("  %d. %s%s%s: %d\n", num, errorColor, err, RESET, errCount)
-				count++
-				num++
-			}
+
+		// Sort errors by count (descending) to show most frequent first
+		type errorEntry struct {
+			message string
+			count   int
 		}
-		if len(m.errors) > 5 {
-			fmt.Printf("  ... and %s%d%s more error types\n", errorColor, len(m.errors)-5, RESET)
+		var sortedErrors []errorEntry
+		for errMsg, count := range m.errors {
+			sortedErrors = append(sortedErrors, errorEntry{message: errMsg, count: count})
+		}
+		sort.Slice(sortedErrors, func(i, j int) bool {
+			return sortedErrors[i].count > sortedErrors[j].count
+		})
+
+		// Display top 5 errors
+		for i, err := range sortedErrors {
+			if i >= 5 {
+				break
+			}
+			fmt.Printf("  %d. %s%s%s: %d\n", i+1, errorColor, err.message, RESET, err.count)
+		}
+
+		if len(sortedErrors) > 5 {
+			fmt.Printf("  ... and %s%d%s more error types\n", errorColor, len(sortedErrors)-5, RESET)
 		}
 	}
 
