@@ -13,7 +13,6 @@ _tl;dr Configurations for request authorization and deployment._
 - [GUARD Configuration](#guard-configuration)
   - [`auth.apiKey` Section](#authapikey-section)
     - [`services` Section](#services-section)
-    - [Example `.values.yaml` File](#example-valuesyaml-file)
   - [Example Requests](#example-requests)
 
 ## Example Configuration
@@ -128,36 +127,6 @@ The service ID is specified per-request as the `Target-Service-Id` header; eithe
 | `services[].serviceId` | string        | Yes      | -       | The unique identifier for the service |
 | `services[].aliases`   | array[string] | Yes      | -       | List of aliases for the service       |
 
-<<<<<<< HEAD:docusaurus/docs/develop/path/6_configurations_helm.md
-#### Example `.values.yaml` File
-
-<!--TODO_MIGRATION(@commoddity): once GUARD is updated, remove `shannonServiceId` and use `serviceId` instead. -->
-```yaml
-guard:
-  auth:
-    apiKey:
-      enabled: true
-      apiKeys:
-        - test_api_key_1
-        - test_api_key_2
-        - test_api_key_3
-  services:
-    - serviceId: F021
-      shannonServiceId: poly
-      aliases:
-        - polygon
-    - serviceId: F00C
-      shannonServiceId: eth
-      aliases:
-        - eth
-    - serviceId: F000
-      shannonServiceId: pocket
-      aliases:
-        - pocket
-```
-
-=======
->>>>>>> origin/main:docusaurus/docs/develop/configs/3_auth_config.md
 ### Example Requests
 
 The above `.values.yaml` files will allow the following requests to PATH.
