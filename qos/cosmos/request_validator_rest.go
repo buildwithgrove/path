@@ -36,8 +36,8 @@ func (rv *restRequestValidator) validateRESTRequest(
 		return rv.createInvalidMethodContext(req.Method, logger, chainID, serviceID), false
 	}
 
-	// Determine the specific RPC type based on path patterns
-	rpcType := rv.determineRESTRPCType(req.URL.Path)
+	// Determine the specific RPC type based on path patterns - delegate to specialized detection
+	rpcType := determineRESTRPCType(req.URL.Path)
 	logger = logger.With("detected_rpc_type", rpcType.String())
 
 	// Check if this RPC type is supported by the service
@@ -46,8 +46,8 @@ func (rv *restRequestValidator) validateRESTRequest(
 		return rv.createUnsupportedRPCTypeContext(rpcType, logger, chainID, serviceID), false
 	}
 
-	// Validate the path is a recognized REST API pattern
-	if !rv.isValidRESTPath(req.URL.Path) {
+	// Validate the path is a recognized REST API pattern - delegate to specialized validation
+	if !isValidRESTPath(req.URL.Path) {
 		logger.Warn().Str("path", req.URL.Path).Msg("Invalid path for REST API")
 		return rv.createInvalidPathContext(req.URL.Path, logger, chainID, serviceID), false
 	}
@@ -76,17 +76,6 @@ func (rv *restRequestValidator) validateRESTRequest(
 	}, true
 }
 
-// determineRESTRPCType determines the specific RPC type for REST requests
-func (rv *restRequestValidator) determineRESTRPCType(path string) sharedtypes.RPCType {
-	// CometBFT REST-style endpoints should be tagged as COMET_BFT
-	if isCometBftRpc(path) {
-		return sharedtypes.RPCType_COMET_BFT
-	}
-
-	// Everything else is regular REST
-	return sharedtypes.RPCType_REST
-}
-
 // isValidRESTMethod checks if the HTTP method is valid for REST API requests
 func (rv *restRequestValidator) isValidRESTMethod(method string) bool {
 	validMethods := []string{
@@ -103,36 +92,6 @@ func (rv *restRequestValidator) isValidRESTMethod(method string) bool {
 			return true
 		}
 	}
-	return false
-}
-
-// isValidRESTPath validates that the path matches REST API patterns
-func (rv *restRequestValidator) isValidRESTPath(path string) bool {
-	// CosmosSDK REST API patterns
-	if isCosmosRestAPI(path) {
-		return true
-	}
-
-	// CometBFT REST-style endpoints
-	if isCometBftRpc(path) {
-		return true
-	}
-
-	// Allow some additional common REST patterns
-	additionalValidPaths := []string{
-		"/txs",          // Legacy transaction endpoint
-		"/tx",           // Transaction endpoints
-		"/node_info",    // Node information
-		"/syncing",      // Sync status
-		"/latest_block", // Latest block info
-	}
-
-	for _, validPath := range additionalValidPaths {
-		if path == validPath || (len(path) > len(validPath) && path[:len(validPath)+1] == validPath+"/") {
-			return true
-		}
-	}
-
 	return false
 }
 

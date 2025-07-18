@@ -9,6 +9,18 @@ import (
 // CometBFT RPC Type Detection
 // ------------------------------------------------------------------------------------------------
 
+// isCometBftJSONRPCMethod checks if the JSON-RPC method corresponds to CometBFT RPC
+// These are consensus layer methods typically exposed on port :26657
+func isCometBftJSONRPCMethod(method string) bool {
+	for _, prefix := range cometBftPrefixes {
+		if strings.HasPrefix(method, prefix) {
+			return true
+		}
+	}
+
+	return slices.Contains(cometBftMethods, method)
+}
+
 // CometBFT JSON-RPC prefixes
 // API reference: https://docs.cometbft.com/v1.0/rpc/
 var cometBftPrefixes = []string{
@@ -40,18 +52,6 @@ var cometBftMethods = []string{
 	"subscribe",            // Event subscription
 	"unsubscribe",          // Event unsubscription
 	"unsubscribe_all",      // Unsubscribe from all events
-}
-
-// isCometBftMethod checks if the JSON-RPC method corresponds to CometBFT RPC
-// These are consensus layer methods typically exposed on port :26657
-func isCometBftMethod(method string) bool {
-	for _, prefix := range cometBftPrefixes {
-		if strings.HasPrefix(method, prefix) {
-			return true
-		}
-	}
-
-	return slices.Contains(cometBftMethods, method)
 }
 
 // CometBFT RPC paths

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -112,42 +111,11 @@ func (jv *jsonrpcRequestValidator) parseJSONRPCAndDetectService(req *http.Reques
 		}
 	}
 
-	// Determine service type based on method
+	// Determine service type based on method - delegate to specialized detection
 	method := string(jsonrpcReq.Method)
-	rpcType := jv.detectJSONRPCServiceTypeFromMethod(method)
+	rpcType := detectJSONRPCServiceType(method)
 
 	return jsonrpcReq, rpcType, nil
-}
-
-// detectJSONRPCServiceTypeFromMethod determines service type based on JSONRPC method
-func (jv *jsonrpcRequestValidator) detectJSONRPCServiceTypeFromMethod(method string) sharedtypes.RPCType {
-	// Route based on method prefix/name
-	if isCometBftJSONRPCMethod(method) {
-		return sharedtypes.RPCType_COMET_BFT
-	}
-
-	if isEVMJSONRPCMethod(method) {
-		return sharedtypes.RPCType_JSON_RPC
-	}
-
-	// Unrecognized method → default to EVM JSONRPC
-	return sharedtypes.RPCType_JSON_RPC
-}
-
-// isEVMJSONRPCMethod checks if method is an EVM JSONRPC method
-func isEVMJSONRPCMethod(method string) bool {
-	// EVM methods typically use prefixes
-	evmPrefixes := []string{
-		"eth_", "net_", "web3_", "debug_", "txpool_", "admin_",
-		"miner_", "personal_", "clique_", "les_",
-	}
-
-	for _, prefix := range evmPrefixes {
-		if strings.HasPrefix(method, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 // Error context creation methods
