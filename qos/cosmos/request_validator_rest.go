@@ -33,7 +33,7 @@ func (rv *restRequestValidator) validateRESTRequest(
 	// Validate HTTP method is appropriate for REST
 	if !rv.isValidRESTMethod(req.Method) {
 		logger.Warn().Str("method", req.Method).Msg("Invalid HTTP method for REST API")
-		return rv.createInvalidMethodContext(req.Method, logger, chainID, serviceID), false
+		return createInvalidMethodError(req.Method, logger, chainID, serviceID, "REST"), false
 	}
 
 	// Determine the specific RPC type based on path patterns - delegate to specialized detection
@@ -43,36 +43,38 @@ func (rv *restRequestValidator) validateRESTRequest(
 	// Check if this RPC type is supported by the service
 	if _, supported := supportedAPIs[rpcType]; !supported {
 		logger.Warn().Msg("Request uses unsupported RPC type")
-		return rv.createUnsupportedRPCTypeContext(rpcType, logger, chainID, serviceID), false
+		return createUnsupportedRPCTypeError(rpcType, logger, chainID, serviceID), false
 	}
 
 	// Validate the path is a recognized REST API pattern - delegate to specialized validation
 	if !isValidRESTPath(req.URL.Path) {
 		logger.Warn().Str("path", req.URL.Path).Msg("Invalid path for REST API")
-		return rv.createInvalidPathContext(req.URL.Path, logger, chainID, serviceID), false
+		return createInvalidPathError(req.URL.Path, logger, chainID, serviceID), false
 	}
 
 	// Read request body if present (for POST/PUT requests)
 	body, err := rv.readRequestBody(req)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to read REST request body")
-		return rv.createBodyReadErrorContext(err, logger, chainID, serviceID), false
+		return createBodyReadError(err, logger, chainID, serviceID), false
 	}
 
 	logger.Debug().
 		Int("body_length", len(body)).
 		Msg("REST request validation successful")
 
-	// Create request context with detected RPC type
-	return &requestContext{
+	// Create specialized REST context
+	return &restContext{
 		logger:               logger,
-		httpReq:              *req,
 		chainID:              chainID,
 		serviceID:            serviceID,
+		httpMethod:           req.Method,
+		urlPath:              req.URL.Path,
+		requestBody:          body,
 		rpcType:              rpcType,
 		requestPayloadLength: uint(len(body)),
 		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		restBody:             body,
+		headers:              extractRelevantHeaders(req),
 	}, true
 }
 
@@ -109,91 +111,25 @@ func (rv *restRequestValidator) readRequestBody(req *http.Request) ([]byte, erro
 	return body, nil
 }
 
-// Error context creation methods
+// extractRelevantHeaders extracts headers that should be forwarded to endpoints
+func extractRelevantHeaders(req *http.Request) map[string]string {
+	headers := make(map[string]string)
 
-func (rv *restRequestValidator) createInvalidMethodContext(method string, logger polylog.Logger, chainID string, serviceID protocol.ServiceID) gateway.RequestQoSContext {
-	observations := &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			ChainId:       chainID,
-			ServiceId:     string(serviceID),
-			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-			RpcType:       qosobservations.RPCType_RPC_TYPE_REST,
-			RequestError: &qosobservations.RequestError{
-				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
-				ErrorDetails:   "Invalid HTTP method for REST API: " + method,
-				HttpStatusCode: http.StatusMethodNotAllowed,
-			},
-		},
+	// Forward common headers that might be relevant for REST API calls
+	relevantHeaders := []string{
+		"Accept",
+		"Accept-Encoding",
+		"Authorization",
+		"User-Agent",
+		"X-Forwarded-For",
+		"X-Real-IP",
 	}
 
-	return &errorContext{
-		logger:                 logger,
-		responseHTTPStatusCode: http.StatusMethodNotAllowed,
-		cosmosSDKObservations:  observations,
-	}
-}
-
-func (rv *restRequestValidator) createUnsupportedRPCTypeContext(rpcType sharedtypes.RPCType, logger polylog.Logger, chainID string, serviceID protocol.ServiceID) gateway.RequestQoSContext {
-	observations := &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			ChainId:       chainID,
-			ServiceId:     string(serviceID),
-			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-			RpcType:       convertToProtoRPCType(rpcType),
-			RequestError: &qosobservations.RequestError{
-				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
-				ErrorDetails:   "RPC type not supported by this service: " + rpcType.String(),
-				HttpStatusCode: httpStatusRequestValidationFailureUnsupportedRPCType,
-			},
-		},
-	}
-	return &errorContext{
-		logger:                 logger,
-		responseHTTPStatusCode: httpStatusRequestValidationFailureUnsupportedRPCType,
-		cosmosSDKObservations:  observations,
-	}
-}
-
-func (rv *restRequestValidator) createInvalidPathContext(path string, logger polylog.Logger, chainID string, serviceID protocol.ServiceID) gateway.RequestQoSContext {
-	observations := &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			ChainId:       chainID,
-			ServiceId:     string(serviceID),
-			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-			RpcType:       qosobservations.RPCType_RPC_TYPE_REST,
-			RequestError: &qosobservations.RequestError{
-				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
-				ErrorDetails:   "Invalid path for REST API: " + path,
-				HttpStatusCode: http.StatusNotFound,
-			},
-		},
+	for _, headerName := range relevantHeaders {
+		if value := req.Header.Get(headerName); value != "" {
+			headers[headerName] = value
+		}
 	}
 
-	return &errorContext{
-		logger:                 logger,
-		responseHTTPStatusCode: http.StatusNotFound,
-		cosmosSDKObservations:  observations,
-	}
-}
-
-func (rv *restRequestValidator) createBodyReadErrorContext(err error, logger polylog.Logger, chainID string, serviceID protocol.ServiceID) gateway.RequestQoSContext {
-	observations := &qosobservations.Observations_Cosmos{
-		Cosmos: &qosobservations.CosmosSDKRequestObservations{
-			ChainId:       chainID,
-			ServiceId:     string(serviceID),
-			RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-			RpcType:       qosobservations.RPCType_RPC_TYPE_REST,
-			RequestError: &qosobservations.RequestError{
-				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR,
-				ErrorDetails:   "Failed to read REST request body: " + err.Error(),
-				HttpStatusCode: http.StatusInternalServerError,
-			},
-		},
-	}
-
-	return &errorContext{
-		logger:                 logger,
-		responseHTTPStatusCode: http.StatusInternalServerError,
-		cosmosSDKObservations:  observations,
-	}
+	return headers
 }

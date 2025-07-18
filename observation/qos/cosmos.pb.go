@@ -21,36 +21,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// TODO_DOCUMENT(@adshmh): Create a design document for the feature described below.
-//
-// Purpose: Distinguish between endpoint technical failures and user input errors
-//
-// Background:
-// - Currently we only track endpoint/technical failures
-// - Need to identify when request seems valid but fails due to user input issues (e.g., non-existent hash)
-//
-// Implementation:
-// 1. Create new EVMUserErrorType enum with categories like RESOURCE_NOT_FOUND, INVALID_PARAMETER
-// 2. Add user_error field to appropriate response types
-// 3. Update HTTP status code selection logic to consider user errors
-//
-// Benefits:
-// - More accurate error reporting to clients
-// - Appropriate HTTP status codes (e.g., 404 vs 500)
-// - Better client debugging experience
-//
 // CosmosSDKResponseValidationError defines why an endpoint response was rejected.
 // Current invalid response types (as of PR #186):
 //  1. EmptyResponse - endpoint returned no data
 //  2. UnmarshalErr - response failed to parse into expected format
-//  3. NoResponse - no responses recorded by the QoS service: probably caused by protocol-level errors
 type CosmosSDKResponseValidationError int32
 
 const (
 	CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED CosmosSDKResponseValidationError = 0
 	CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY       CosmosSDKResponseValidationError = 1 // Response with no data.
 	CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL   CosmosSDKResponseValidationError = 2 // Response parsing failed
-	CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE CosmosSDKResponseValidationError = 3 // No response received from any endpoint
 )
 
 // Enum value maps for CosmosSDKResponseValidationError.
@@ -59,13 +39,11 @@ var (
 		0: "COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED",
 		1: "COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY",
 		2: "COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL",
-		3: "COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE",
 	}
 	CosmosSDKResponseValidationError_value = map[string]int32{
 		"COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED": 0,
 		"COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY":       1,
 		"COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL":   2,
-		"COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE": 3,
 	}
 )
 
@@ -96,6 +74,257 @@ func (CosmosSDKResponseValidationError) EnumDescriptor() ([]byte, []int) {
 	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{0}
 }
 
+// RpcValidationType determines the format/protocol used for endpoint observation validation
+type RpcValidationType int32
+
+const (
+	RpcValidationType_RPC_VALIDATION_TYPE_UNSPECIFIED RpcValidationType = 0
+	RpcValidationType_RPC_VALIDATION_TYPE_REST        RpcValidationType = 1 // Endpoint observation uses REST validation
+	RpcValidationType_RPC_VALIDATION_TYPE_JSONRPC     RpcValidationType = 2 // Endpoint observation uses JSON-RPC validation
+)
+
+// Enum value maps for RpcValidationType.
+var (
+	RpcValidationType_name = map[int32]string{
+		0: "RPC_VALIDATION_TYPE_UNSPECIFIED",
+		1: "RPC_VALIDATION_TYPE_REST",
+		2: "RPC_VALIDATION_TYPE_JSONRPC",
+	}
+	RpcValidationType_value = map[string]int32{
+		"RPC_VALIDATION_TYPE_UNSPECIFIED": 0,
+		"RPC_VALIDATION_TYPE_REST":        1,
+		"RPC_VALIDATION_TYPE_JSONRPC":     2,
+	}
+)
+
+func (x RpcValidationType) Enum() *RpcValidationType {
+	p := new(RpcValidationType)
+	*p = x
+	return p
+}
+
+func (x RpcValidationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RpcValidationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_path_qos_cosmos_proto_enumTypes[1].Descriptor()
+}
+
+func (RpcValidationType) Type() protoreflect.EnumType {
+	return &file_path_qos_cosmos_proto_enumTypes[1]
+}
+
+func (x RpcValidationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RpcValidationType.Descriptor instead.
+func (RpcValidationType) EnumDescriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{1}
+}
+
+// BackendServiceType enumerates the types of backend services that can handle requests
+type BackendServiceType int32
+
+const (
+	BackendServiceType_BACKEND_SERVICE_TYPE_UNSPECIFIED BackendServiceType = 0
+	BackendServiceType_BACKEND_SERVICE_TYPE_JSONRPC     BackendServiceType = 1 // Backend service using JSON-RPC protocol
+	BackendServiceType_BACKEND_SERVICE_TYPE_REST        BackendServiceType = 2 // Backend service using REST API
+	BackendServiceType_BACKEND_SERVICE_TYPE_COMETBFT    BackendServiceType = 3 // Backend service using CometBFT RPC
+)
+
+// Enum value maps for BackendServiceType.
+var (
+	BackendServiceType_name = map[int32]string{
+		0: "BACKEND_SERVICE_TYPE_UNSPECIFIED",
+		1: "BACKEND_SERVICE_TYPE_JSONRPC",
+		2: "BACKEND_SERVICE_TYPE_REST",
+		3: "BACKEND_SERVICE_TYPE_COMETBFT",
+	}
+	BackendServiceType_value = map[string]int32{
+		"BACKEND_SERVICE_TYPE_UNSPECIFIED": 0,
+		"BACKEND_SERVICE_TYPE_JSONRPC":     1,
+		"BACKEND_SERVICE_TYPE_REST":        2,
+		"BACKEND_SERVICE_TYPE_COMETBFT":    3,
+	}
+)
+
+func (x BackendServiceType) Enum() *BackendServiceType {
+	p := new(BackendServiceType)
+	*p = x
+	return p
+}
+
+func (x BackendServiceType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BackendServiceType) Descriptor() protoreflect.EnumDescriptor {
+	return file_path_qos_cosmos_proto_enumTypes[2].Descriptor()
+}
+
+func (BackendServiceType) Type() protoreflect.EnumType {
+	return &file_path_qos_cosmos_proto_enumTypes[2]
+}
+
+func (x BackendServiceType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BackendServiceType.Descriptor instead.
+func (BackendServiceType) EnumDescriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{2}
+}
+
+// BackendServiceDetails contains metadata about backend service selection
+type BackendServiceDetails struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of backend service used to handle this request
+	BackendServiceType BackendServiceType `protobuf:"varint,1,opt,name=backend_service_type,json=backendServiceType,proto3,enum=path.qos.BackendServiceType" json:"backend_service_type,omitempty"`
+	// Selection criteria or reason for choosing this backend service
+	// Examples: "primary_endpoint", "fallback_after_timeout", "load_balancing"
+	SelectionReason string `protobuf:"bytes,2,opt,name=selection_reason,json=selectionReason,proto3" json:"selection_reason,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *BackendServiceDetails) Reset() {
+	*x = BackendServiceDetails{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BackendServiceDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BackendServiceDetails) ProtoMessage() {}
+
+func (x *BackendServiceDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BackendServiceDetails.ProtoReflect.Descriptor instead.
+func (*BackendServiceDetails) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *BackendServiceDetails) GetBackendServiceType() BackendServiceType {
+	if x != nil {
+		return x.BackendServiceType
+	}
+	return BackendServiceType_BACKEND_SERVICE_TYPE_UNSPECIFIED
+}
+
+func (x *BackendServiceDetails) GetSelectionReason() string {
+	if x != nil {
+		return x.SelectionReason
+	}
+	return ""
+}
+
+// CosmosSDKRequestREST contains REST-specific request details
+type CosmosSDKRequestREST struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// REST endpoint path that was called (e.g., "/health", "/status")
+	EndpointPath  string `protobuf:"bytes,1,opt,name=endpoint_path,json=endpointPath,proto3" json:"endpoint_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CosmosSDKRequestREST) Reset() {
+	*x = CosmosSDKRequestREST{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosSDKRequestREST) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosSDKRequestREST) ProtoMessage() {}
+
+func (x *CosmosSDKRequestREST) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosSDKRequestREST.ProtoReflect.Descriptor instead.
+func (*CosmosSDKRequestREST) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CosmosSDKRequestREST) GetEndpointPath() string {
+	if x != nil {
+		return x.EndpointPath
+	}
+	return ""
+}
+
+// CosmosSDKRequestJSONRPC contains JSON-RPC-specific request details
+type CosmosSDKRequestJSONRPC struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// JSON-RPC method that was called (e.g., "health", "status")
+	Method        string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CosmosSDKRequestJSONRPC) Reset() {
+	*x = CosmosSDKRequestJSONRPC{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosSDKRequestJSONRPC) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosSDKRequestJSONRPC) ProtoMessage() {}
+
+func (x *CosmosSDKRequestJSONRPC) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosSDKRequestJSONRPC.ProtoReflect.Descriptor instead.
+func (*CosmosSDKRequestJSONRPC) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CosmosSDKRequestJSONRPC) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
 // CosmosSDKRequestObservations captures all observations made while serving a single CosmosSDK blockchain service request.
 type CosmosSDKRequestObservations struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -112,18 +341,27 @@ type CosmosSDKRequestObservations struct {
 	RequestOrigin RequestOrigin `protobuf:"varint,4,opt,name=request_origin,json=requestOrigin,proto3,enum=path.qos.RequestOrigin" json:"request_origin,omitempty"`
 	// Tracks request errors, if any.
 	RequestError *RequestError `protobuf:"bytes,5,opt,name=request_error,json=requestError,proto3,oneof" json:"request_error,omitempty"`
+	// Backend service configuration and selection details
+	BackendServiceDetails *BackendServiceDetails `protobuf:"bytes,6,opt,name=backend_service_details,json=backendServiceDetails,proto3" json:"backend_service_details,omitempty"`
+	// Request-specific details based on the RPC validation type
+	//
+	// Types that are valid to be assigned to RequestDetails:
+	//
+	//	*CosmosSDKRequestObservations_RestRequest
+	//	*CosmosSDKRequestObservations_JsonrpcRequest
+	RequestDetails isCosmosSDKRequestObservations_RequestDetails `protobuf_oneof:"request_details"`
 	// CosmosSDK-specific observations from endpoint(s) that responded to the service request.
 	// Multiple observations may occur when:
-	// * Original endpoint fails
-	// * Request is sent to additional endpoints for data collection
-	EndpointObservations []*CosmosSDKEndpointObservation `protobuf:"bytes,6,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	// - Original endpoint fails
+	// - Request is sent to additional endpoints for data collection
+	EndpointObservations []*CosmosSDKEndpointObservation `protobuf:"bytes,9,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CosmosSDKRequestObservations) Reset() {
 	*x = CosmosSDKRequestObservations{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[0]
+	mi := &file_path_qos_cosmos_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -135,7 +373,7 @@ func (x *CosmosSDKRequestObservations) String() string {
 func (*CosmosSDKRequestObservations) ProtoMessage() {}
 
 func (x *CosmosSDKRequestObservations) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[0]
+	mi := &file_path_qos_cosmos_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,7 +386,7 @@ func (x *CosmosSDKRequestObservations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CosmosSDKRequestObservations.ProtoReflect.Descriptor instead.
 func (*CosmosSDKRequestObservations) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{0}
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CosmosSDKRequestObservations) GetRouteRequest() string {
@@ -186,12 +424,60 @@ func (x *CosmosSDKRequestObservations) GetRequestError() *RequestError {
 	return nil
 }
 
+func (x *CosmosSDKRequestObservations) GetBackendServiceDetails() *BackendServiceDetails {
+	if x != nil {
+		return x.BackendServiceDetails
+	}
+	return nil
+}
+
+func (x *CosmosSDKRequestObservations) GetRequestDetails() isCosmosSDKRequestObservations_RequestDetails {
+	if x != nil {
+		return x.RequestDetails
+	}
+	return nil
+}
+
+func (x *CosmosSDKRequestObservations) GetRestRequest() *CosmosSDKRequestREST {
+	if x != nil {
+		if x, ok := x.RequestDetails.(*CosmosSDKRequestObservations_RestRequest); ok {
+			return x.RestRequest
+		}
+	}
+	return nil
+}
+
+func (x *CosmosSDKRequestObservations) GetJsonrpcRequest() *CosmosSDKRequestJSONRPC {
+	if x != nil {
+		if x, ok := x.RequestDetails.(*CosmosSDKRequestObservations_JsonrpcRequest); ok {
+			return x.JsonrpcRequest
+		}
+	}
+	return nil
+}
+
 func (x *CosmosSDKRequestObservations) GetEndpointObservations() []*CosmosSDKEndpointObservation {
 	if x != nil {
 		return x.EndpointObservations
 	}
 	return nil
 }
+
+type isCosmosSDKRequestObservations_RequestDetails interface {
+	isCosmosSDKRequestObservations_RequestDetails()
+}
+
+type CosmosSDKRequestObservations_RestRequest struct {
+	RestRequest *CosmosSDKRequestREST `protobuf:"bytes,7,opt,name=rest_request,json=restRequest,proto3,oneof"`
+}
+
+type CosmosSDKRequestObservations_JsonrpcRequest struct {
+	JsonrpcRequest *CosmosSDKRequestJSONRPC `protobuf:"bytes,8,opt,name=jsonrpc_request,json=jsonrpcRequest,proto3,oneof"`
+}
+
+func (*CosmosSDKRequestObservations_RestRequest) isCosmosSDKRequestObservations_RequestDetails() {}
+
+func (*CosmosSDKRequestObservations_JsonrpcRequest) isCosmosSDKRequestObservations_RequestDetails() {}
 
 // CosmosSDKEndpointObservation stores a single observation from an endpoint servicing the protocol response.
 // Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
@@ -200,13 +486,12 @@ type CosmosSDKEndpointObservation struct {
 	// Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
 	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
 	// Details of the response received from the endpoint
+	// The structure depends on the RPC validation type (REST vs JSONRPC)
 	//
 	// Types that are valid to be assigned to ResponseObservation:
 	//
-	//	*CosmosSDKEndpointObservation_HealthResponse
-	//	*CosmosSDKEndpointObservation_StatusResponse
-	//	*CosmosSDKEndpointObservation_UnrecognizedResponse
-	//	*CosmosSDKEndpointObservation_EmptyResponse
+	//	*CosmosSDKEndpointObservation_RestObservation
+	//	*CosmosSDKEndpointObservation_JsonrpcObservation
 	ResponseObservation isCosmosSDKEndpointObservation_ResponseObservation `protobuf_oneof:"response_observation"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -214,7 +499,7 @@ type CosmosSDKEndpointObservation struct {
 
 func (x *CosmosSDKEndpointObservation) Reset() {
 	*x = CosmosSDKEndpointObservation{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[1]
+	mi := &file_path_qos_cosmos_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +511,7 @@ func (x *CosmosSDKEndpointObservation) String() string {
 func (*CosmosSDKEndpointObservation) ProtoMessage() {}
 
 func (x *CosmosSDKEndpointObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[1]
+	mi := &file_path_qos_cosmos_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +524,7 @@ func (x *CosmosSDKEndpointObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CosmosSDKEndpointObservation.ProtoReflect.Descriptor instead.
 func (*CosmosSDKEndpointObservation) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{1}
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CosmosSDKEndpointObservation) GetEndpointAddr() string {
@@ -256,37 +541,19 @@ func (x *CosmosSDKEndpointObservation) GetResponseObservation() isCosmosSDKEndpo
 	return nil
 }
 
-func (x *CosmosSDKEndpointObservation) GetHealthResponse() *CosmosSDKHealthResponse {
+func (x *CosmosSDKEndpointObservation) GetRestObservation() *CosmosSDKEndpointRestObservation {
 	if x != nil {
-		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_HealthResponse); ok {
-			return x.HealthResponse
+		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_RestObservation); ok {
+			return x.RestObservation
 		}
 	}
 	return nil
 }
 
-func (x *CosmosSDKEndpointObservation) GetStatusResponse() *CosmosSDKStatusResponse {
+func (x *CosmosSDKEndpointObservation) GetJsonrpcObservation() *CosmosSDKEndpointJsonRpcObservation {
 	if x != nil {
-		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_StatusResponse); ok {
-			return x.StatusResponse
-		}
-	}
-	return nil
-}
-
-func (x *CosmosSDKEndpointObservation) GetUnrecognizedResponse() *CosmosSDKUnrecognizedResponse {
-	if x != nil {
-		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_UnrecognizedResponse); ok {
-			return x.UnrecognizedResponse
-		}
-	}
-	return nil
-}
-
-func (x *CosmosSDKEndpointObservation) GetEmptyResponse() *CosmosSDKEmptyResponse {
-	if x != nil {
-		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_EmptyResponse); ok {
-			return x.EmptyResponse
+		if x, ok := x.ResponseObservation.(*CosmosSDKEndpointObservation_JsonrpcObservation); ok {
+			return x.JsonrpcObservation
 		}
 	}
 	return nil
@@ -296,65 +563,56 @@ type isCosmosSDKEndpointObservation_ResponseObservation interface {
 	isCosmosSDKEndpointObservation_ResponseObservation()
 }
 
-type CosmosSDKEndpointObservation_HealthResponse struct {
-	// Response to `/health` request
-	HealthResponse *CosmosSDKHealthResponse `protobuf:"bytes,2,opt,name=health_response,json=healthResponse,proto3,oneof"`
+type CosmosSDKEndpointObservation_RestObservation struct {
+	// REST-based endpoint observations and validation
+	RestObservation *CosmosSDKEndpointRestObservation `protobuf:"bytes,2,opt,name=rest_observation,json=restObservation,proto3,oneof"`
 }
 
-type CosmosSDKEndpointObservation_StatusResponse struct {
-	// Response to `/status` request
-	StatusResponse *CosmosSDKStatusResponse `protobuf:"bytes,3,opt,name=status_response,json=statusResponse,proto3,oneof"`
+type CosmosSDKEndpointObservation_JsonrpcObservation struct {
+	// JSON-RPC-based endpoint observations and validation
+	JsonrpcObservation *CosmosSDKEndpointJsonRpcObservation `protobuf:"bytes,3,opt,name=jsonrpc_observation,json=jsonrpcObservation,proto3,oneof"`
 }
 
-type CosmosSDKEndpointObservation_UnrecognizedResponse struct {
-	// Responses not used in endpoint validation
-	UnrecognizedResponse *CosmosSDKUnrecognizedResponse `protobuf:"bytes,4,opt,name=unrecognized_response,json=unrecognizedResponse,proto3,oneof"`
+func (*CosmosSDKEndpointObservation_RestObservation) isCosmosSDKEndpointObservation_ResponseObservation() {
 }
 
-type CosmosSDKEndpointObservation_EmptyResponse struct {
-	// CosmosSDKEmptyResponse indicates an endpoint returned no data.
-	// Used to:
-	//   - Disqualify endpoints that return empty responses
-	//   - Track metrics for empty response patterns
-	EmptyResponse *CosmosSDKEmptyResponse `protobuf:"bytes,5,opt,name=empty_response,json=emptyResponse,proto3,oneof"`
+func (*CosmosSDKEndpointObservation_JsonrpcObservation) isCosmosSDKEndpointObservation_ResponseObservation() {
 }
 
-func (*CosmosSDKEndpointObservation_HealthResponse) isCosmosSDKEndpointObservation_ResponseObservation() {
+// CosmosSDKEndpointRestObservation handles REST-based endpoint observations
+type CosmosSDKEndpointRestObservation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// HTTP status code from the REST response
+	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
+	// Raw response body (JSON string typically)
+	ResponseBody string `protobuf:"bytes,2,opt,name=response_body,json=responseBody,proto3" json:"response_body,omitempty"`
+	// Parsed and validated response data for known REST endpoints
+	//
+	// Types that are valid to be assigned to ParsedResponse:
+	//
+	//	*CosmosSDKEndpointRestObservation_HealthResponse
+	//	*CosmosSDKEndpointRestObservation_StatusResponse
+	//	*CosmosSDKEndpointRestObservation_UnrecognizedResponse
+	ParsedResponse isCosmosSDKEndpointRestObservation_ParsedResponse `protobuf_oneof:"parsed_response"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
-func (*CosmosSDKEndpointObservation_StatusResponse) isCosmosSDKEndpointObservation_ResponseObservation() {
-}
-
-func (*CosmosSDKEndpointObservation_UnrecognizedResponse) isCosmosSDKEndpointObservation_ResponseObservation() {
-}
-
-func (*CosmosSDKEndpointObservation_EmptyResponse) isCosmosSDKEndpointObservation_ResponseObservation() {
-}
-
-// CosmosSDKHealthResponse stores the response to a `health` request
-// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-type CosmosSDKHealthResponse struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	HealthStatusResponse bool                   `protobuf:"varint,1,opt,name=health_status_response,json=healthStatusResponse,proto3" json:"health_status_response,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
-}
-
-func (x *CosmosSDKHealthResponse) Reset() {
-	*x = CosmosSDKHealthResponse{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[2]
+func (x *CosmosSDKEndpointRestObservation) Reset() {
+	*x = CosmosSDKEndpointRestObservation{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CosmosSDKHealthResponse) String() string {
+func (x *CosmosSDKEndpointRestObservation) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CosmosSDKHealthResponse) ProtoMessage() {}
+func (*CosmosSDKEndpointRestObservation) ProtoMessage() {}
 
-func (x *CosmosSDKHealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[2]
+func (x *CosmosSDKEndpointRestObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -365,21 +623,216 @@ func (x *CosmosSDKHealthResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CosmosSDKHealthResponse.ProtoReflect.Descriptor instead.
-func (*CosmosSDKHealthResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use CosmosSDKEndpointRestObservation.ProtoReflect.Descriptor instead.
+func (*CosmosSDKEndpointRestObservation) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *CosmosSDKHealthResponse) GetHealthStatusResponse() bool {
+func (x *CosmosSDKEndpointRestObservation) GetHttpStatusCode() int32 {
+	if x != nil {
+		return x.HttpStatusCode
+	}
+	return 0
+}
+
+func (x *CosmosSDKEndpointRestObservation) GetResponseBody() string {
+	if x != nil {
+		return x.ResponseBody
+	}
+	return ""
+}
+
+func (x *CosmosSDKEndpointRestObservation) GetParsedResponse() isCosmosSDKEndpointRestObservation_ParsedResponse {
+	if x != nil {
+		return x.ParsedResponse
+	}
+	return nil
+}
+
+func (x *CosmosSDKEndpointRestObservation) GetHealthResponse() *CosmosSDKRESTHealthResponse {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosSDKEndpointRestObservation_HealthResponse); ok {
+			return x.HealthResponse
+		}
+	}
+	return nil
+}
+
+func (x *CosmosSDKEndpointRestObservation) GetStatusResponse() *CosmosSDKRESTStatusResponse {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosSDKEndpointRestObservation_StatusResponse); ok {
+			return x.StatusResponse
+		}
+	}
+	return nil
+}
+
+func (x *CosmosSDKEndpointRestObservation) GetUnrecognizedResponse() *CosmosSDKRESTUnrecognizedResponse {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosSDKEndpointRestObservation_UnrecognizedResponse); ok {
+			return x.UnrecognizedResponse
+		}
+	}
+	return nil
+}
+
+type isCosmosSDKEndpointRestObservation_ParsedResponse interface {
+	isCosmosSDKEndpointRestObservation_ParsedResponse()
+}
+
+type CosmosSDKEndpointRestObservation_HealthResponse struct {
+	// Response to `/health` request
+	HealthResponse *CosmosSDKRESTHealthResponse `protobuf:"bytes,3,opt,name=health_response,json=healthResponse,proto3,oneof"`
+}
+
+type CosmosSDKEndpointRestObservation_StatusResponse struct {
+	// Response to `/status` request
+	StatusResponse *CosmosSDKRESTStatusResponse `protobuf:"bytes,4,opt,name=status_response,json=statusResponse,proto3,oneof"`
+}
+
+type CosmosSDKEndpointRestObservation_UnrecognizedResponse struct {
+	// Responses not used in endpoint validation
+	UnrecognizedResponse *CosmosSDKRESTUnrecognizedResponse `protobuf:"bytes,5,opt,name=unrecognized_response,json=unrecognizedResponse,proto3,oneof"`
+}
+
+func (*CosmosSDKEndpointRestObservation_HealthResponse) isCosmosSDKEndpointRestObservation_ParsedResponse() {
+}
+
+func (*CosmosSDKEndpointRestObservation_StatusResponse) isCosmosSDKEndpointRestObservation_ParsedResponse() {
+}
+
+func (*CosmosSDKEndpointRestObservation_UnrecognizedResponse) isCosmosSDKEndpointRestObservation_ParsedResponse() {
+}
+
+// CosmosSDKEndpointJsonRpcObservation handles JSON-RPC-based endpoint observations
+type CosmosSDKEndpointJsonRpcObservation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The underlying JSON-RPC response structure
+	JsonrpcResponse *JsonRpcResponse `protobuf:"bytes,1,opt,name=jsonrpc_response,json=jsonrpcResponse,proto3" json:"jsonrpc_response,omitempty"`
+	// Parsed and validated response data for known JSON-RPC methods
+	//
+	// Types that are valid to be assigned to ParsedResponse:
+	//
+	//	*CosmosSDKEndpointJsonRpcObservation_UnrecognizedResponse
+	ParsedResponse isCosmosSDKEndpointJsonRpcObservation_ParsedResponse `protobuf_oneof:"parsed_response"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) Reset() {
+	*x = CosmosSDKEndpointJsonRpcObservation{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosSDKEndpointJsonRpcObservation) ProtoMessage() {}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosSDKEndpointJsonRpcObservation.ProtoReflect.Descriptor instead.
+func (*CosmosSDKEndpointJsonRpcObservation) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) GetJsonrpcResponse() *JsonRpcResponse {
+	if x != nil {
+		return x.JsonrpcResponse
+	}
+	return nil
+}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) GetParsedResponse() isCosmosSDKEndpointJsonRpcObservation_ParsedResponse {
+	if x != nil {
+		return x.ParsedResponse
+	}
+	return nil
+}
+
+func (x *CosmosSDKEndpointJsonRpcObservation) GetUnrecognizedResponse() *CosmosSDKJSONRPCUnrecognizedResponse {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosSDKEndpointJsonRpcObservation_UnrecognizedResponse); ok {
+			return x.UnrecognizedResponse
+		}
+	}
+	return nil
+}
+
+type isCosmosSDKEndpointJsonRpcObservation_ParsedResponse interface {
+	isCosmosSDKEndpointJsonRpcObservation_ParsedResponse()
+}
+
+type CosmosSDKEndpointJsonRpcObservation_UnrecognizedResponse struct {
+	// Responses not used in endpoint validation
+	UnrecognizedResponse *CosmosSDKJSONRPCUnrecognizedResponse `protobuf:"bytes,2,opt,name=unrecognized_response,json=unrecognizedResponse,proto3,oneof"`
+}
+
+func (*CosmosSDKEndpointJsonRpcObservation_UnrecognizedResponse) isCosmosSDKEndpointJsonRpcObservation_ParsedResponse() {
+}
+
+// CosmosSDKRESTHealthResponse stores the response to a REST `/health` request
+// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
+type CosmosSDKRESTHealthResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	HealthStatusResponse bool                   `protobuf:"varint,1,opt,name=health_status_response,json=healthStatusResponse,proto3" json:"health_status_response,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *CosmosSDKRESTHealthResponse) Reset() {
+	*x = CosmosSDKRESTHealthResponse{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosSDKRESTHealthResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosSDKRESTHealthResponse) ProtoMessage() {}
+
+func (x *CosmosSDKRESTHealthResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosSDKRESTHealthResponse.ProtoReflect.Descriptor instead.
+func (*CosmosSDKRESTHealthResponse) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CosmosSDKRESTHealthResponse) GetHealthStatusResponse() bool {
 	if x != nil {
 		return x.HealthStatusResponse
 	}
 	return false
 }
 
-// CosmosSDKStatusResponse stores the latest block number from a `/status` request
+// CosmosSDKRESTStatusResponse stores the response to a REST `/status` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-type CosmosSDKStatusResponse struct {
+type CosmosSDKRESTStatusResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Chain ID of the endpoint. Comes from the `NodeInfo.Network` field in the `/status` response.
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
@@ -396,21 +849,21 @@ type CosmosSDKStatusResponse struct {
 	sizeCache                 protoimpl.SizeCache
 }
 
-func (x *CosmosSDKStatusResponse) Reset() {
-	*x = CosmosSDKStatusResponse{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[3]
+func (x *CosmosSDKRESTStatusResponse) Reset() {
+	*x = CosmosSDKRESTStatusResponse{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CosmosSDKStatusResponse) String() string {
+func (x *CosmosSDKRESTStatusResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CosmosSDKStatusResponse) ProtoMessage() {}
+func (*CosmosSDKRESTStatusResponse) ProtoMessage() {}
 
-func (x *CosmosSDKStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[3]
+func (x *CosmosSDKRESTStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -421,56 +874,57 @@ func (x *CosmosSDKStatusResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CosmosSDKStatusResponse.ProtoReflect.Descriptor instead.
-func (*CosmosSDKStatusResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use CosmosSDKRESTStatusResponse.ProtoReflect.Descriptor instead.
+func (*CosmosSDKRESTStatusResponse) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *CosmosSDKStatusResponse) GetChainIdResponse() string {
+func (x *CosmosSDKRESTStatusResponse) GetChainIdResponse() string {
 	if x != nil {
 		return x.ChainIdResponse
 	}
 	return ""
 }
 
-func (x *CosmosSDKStatusResponse) GetCatchingUpResponse() bool {
+func (x *CosmosSDKRESTStatusResponse) GetCatchingUpResponse() bool {
 	if x != nil {
 		return x.CatchingUpResponse
 	}
 	return false
 }
 
-func (x *CosmosSDKStatusResponse) GetLatestBlockHeightResponse() string {
+func (x *CosmosSDKRESTStatusResponse) GetLatestBlockHeightResponse() string {
 	if x != nil {
 		return x.LatestBlockHeightResponse
 	}
 	return ""
 }
 
-// CosmosSDKUnrecognizedResponse handles requests with methods ignored by state update
+// CosmosSDKRESTUnrecognizedResponse handles REST requests with endpoints ignored by state update
 // and endpoint validation
-type CosmosSDKUnrecognizedResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	JsonrpcResponse *JsonRpcResponse       `protobuf:"bytes,1,opt,name=jsonrpc_response,json=jsonrpcResponse,proto3" json:"jsonrpc_response,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+type CosmosSDKRESTUnrecognizedResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Raw response data
+	RawResponse   string `protobuf:"bytes,1,opt,name=raw_response,json=rawResponse,proto3" json:"raw_response,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CosmosSDKUnrecognizedResponse) Reset() {
-	*x = CosmosSDKUnrecognizedResponse{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[4]
+func (x *CosmosSDKRESTUnrecognizedResponse) Reset() {
+	*x = CosmosSDKRESTUnrecognizedResponse{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CosmosSDKUnrecognizedResponse) String() string {
+func (x *CosmosSDKRESTUnrecognizedResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CosmosSDKUnrecognizedResponse) ProtoMessage() {}
+func (*CosmosSDKRESTUnrecognizedResponse) ProtoMessage() {}
 
-func (x *CosmosSDKUnrecognizedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[4]
+func (x *CosmosSDKRESTUnrecognizedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,112 +935,129 @@ func (x *CosmosSDKUnrecognizedResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CosmosSDKUnrecognizedResponse.ProtoReflect.Descriptor instead.
-func (*CosmosSDKUnrecognizedResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use CosmosSDKRESTUnrecognizedResponse.ProtoReflect.Descriptor instead.
+func (*CosmosSDKRESTUnrecognizedResponse) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *CosmosSDKUnrecognizedResponse) GetJsonrpcResponse() *JsonRpcResponse {
+func (x *CosmosSDKRESTUnrecognizedResponse) GetRawResponse() string {
+	if x != nil {
+		return x.RawResponse
+	}
+	return ""
+}
+
+// CosmosSDKJSONRPCUnrecognizedResponse handles JSON-RPC requests with methods ignored by state update
+// and endpoint validation
+type CosmosSDKJSONRPCUnrecognizedResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The underlying JSON-RPC response structure
+	JsonrpcResponse *JsonRpcResponse `protobuf:"bytes,1,opt,name=jsonrpc_response,json=jsonrpcResponse,proto3" json:"jsonrpc_response,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CosmosSDKJSONRPCUnrecognizedResponse) Reset() {
+	*x = CosmosSDKJSONRPCUnrecognizedResponse{}
+	mi := &file_path_qos_cosmos_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosSDKJSONRPCUnrecognizedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosSDKJSONRPCUnrecognizedResponse) ProtoMessage() {}
+
+func (x *CosmosSDKJSONRPCUnrecognizedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosSDKJSONRPCUnrecognizedResponse.ProtoReflect.Descriptor instead.
+func (*CosmosSDKJSONRPCUnrecognizedResponse) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CosmosSDKJSONRPCUnrecognizedResponse) GetJsonrpcResponse() *JsonRpcResponse {
 	if x != nil {
 		return x.JsonrpcResponse
 	}
 	return nil
 }
 
-// CosmosSDKEmptyResponse indicates an endpoint returned no data.
-// Used to:
-//   - Disqualify endpoints that return empty responses
-//   - Track metrics for empty response patterns
-type CosmosSDKEmptyResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	HttpStatusCode int32                  `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
-	// Always set to EMPTY for empty responses
-	ResponseValidationError CosmosSDKResponseValidationError `protobuf:"varint,2,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.CosmosSDKResponseValidationError" json:"response_validation_error,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
-}
-
-func (x *CosmosSDKEmptyResponse) Reset() {
-	*x = CosmosSDKEmptyResponse{}
-	mi := &file_path_qos_cosmos_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CosmosSDKEmptyResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CosmosSDKEmptyResponse) ProtoMessage() {}
-
-func (x *CosmosSDKEmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CosmosSDKEmptyResponse.ProtoReflect.Descriptor instead.
-func (*CosmosSDKEmptyResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *CosmosSDKEmptyResponse) GetHttpStatusCode() int32 {
-	if x != nil {
-		return x.HttpStatusCode
-	}
-	return 0
-}
-
-func (x *CosmosSDKEmptyResponse) GetResponseValidationError() CosmosSDKResponseValidationError {
-	if x != nil {
-		return x.ResponseValidationError
-	}
-	return CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED
-}
-
 var File_path_qos_cosmos_proto protoreflect.FileDescriptor
 
 const file_path_qos_cosmos_proto_rawDesc = "" +
 	"\n" +
-	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\xee\x02\n" +
+	"\x15path/qos/cosmos.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\x1a\x1dpath/qos/request_origin.proto\x1a\x1cpath/qos/request_error.proto\"\x92\x01\n" +
+	"\x15BackendServiceDetails\x12N\n" +
+	"\x14backend_service_type\x18\x01 \x01(\x0e2\x1c.path.qos.BackendServiceTypeR\x12backendServiceType\x12)\n" +
+	"\x10selection_reason\x18\x02 \x01(\tR\x0fselectionReason\";\n" +
+	"\x14CosmosSDKRequestREST\x12#\n" +
+	"\rendpoint_path\x18\x01 \x01(\tR\fendpointPath\"1\n" +
+	"\x17CosmosSDKRequestJSONRPC\x12\x16\n" +
+	"\x06method\x18\x01 \x01(\tR\x06method\"\xed\x04\n" +
 	"\x1cCosmosSDKRequestObservations\x12#\n" +
 	"\rroute_request\x18\x01 \x01(\tR\frouteRequest\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x03 \x01(\tR\tserviceId\x12>\n" +
 	"\x0erequest_origin\x18\x04 \x01(\x0e2\x17.path.qos.RequestOriginR\rrequestOrigin\x12@\n" +
-	"\rrequest_error\x18\x05 \x01(\v2\x16.path.qos.RequestErrorH\x00R\frequestError\x88\x01\x01\x12[\n" +
-	"\x15endpoint_observations\x18\x06 \x03(\v2&.path.qos.CosmosSDKEndpointObservationR\x14endpointObservationsB\x10\n" +
-	"\x0e_request_error\"\xa2\x03\n" +
+	"\rrequest_error\x18\x05 \x01(\v2\x16.path.qos.RequestErrorH\x01R\frequestError\x88\x01\x01\x12W\n" +
+	"\x17backend_service_details\x18\x06 \x01(\v2\x1f.path.qos.BackendServiceDetailsR\x15backendServiceDetails\x12C\n" +
+	"\frest_request\x18\a \x01(\v2\x1e.path.qos.CosmosSDKRequestRESTH\x00R\vrestRequest\x12L\n" +
+	"\x0fjsonrpc_request\x18\b \x01(\v2!.path.qos.CosmosSDKRequestJSONRPCH\x00R\x0ejsonrpcRequest\x12[\n" +
+	"\x15endpoint_observations\x18\t \x03(\v2&.path.qos.CosmosSDKEndpointObservationR\x14endpointObservationsB\x11\n" +
+	"\x0frequest_detailsB\x10\n" +
+	"\x0e_request_error\"\x96\x02\n" +
 	"\x1cCosmosSDKEndpointObservation\x12#\n" +
-	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12L\n" +
-	"\x0fhealth_response\x18\x02 \x01(\v2!.path.qos.CosmosSDKHealthResponseH\x00R\x0ehealthResponse\x12L\n" +
-	"\x0fstatus_response\x18\x03 \x01(\v2!.path.qos.CosmosSDKStatusResponseH\x00R\x0estatusResponse\x12^\n" +
-	"\x15unrecognized_response\x18\x04 \x01(\v2'.path.qos.CosmosSDKUnrecognizedResponseH\x00R\x14unrecognizedResponse\x12I\n" +
-	"\x0eempty_response\x18\x05 \x01(\v2 .path.qos.CosmosSDKEmptyResponseH\x00R\remptyResponseB\x16\n" +
-	"\x14response_observation\"O\n" +
-	"\x17CosmosSDKHealthResponse\x124\n" +
-	"\x16health_status_response\x18\x01 \x01(\bR\x14healthStatusResponse\"\xb8\x01\n" +
-	"\x17CosmosSDKStatusResponse\x12*\n" +
+	"\rendpoint_addr\x18\x01 \x01(\tR\fendpointAddr\x12W\n" +
+	"\x10rest_observation\x18\x02 \x01(\v2*.path.qos.CosmosSDKEndpointRestObservationH\x00R\x0frestObservation\x12`\n" +
+	"\x13jsonrpc_observation\x18\x03 \x01(\v2-.path.qos.CosmosSDKEndpointJsonRpcObservationH\x00R\x12jsonrpcObservationB\x16\n" +
+	"\x14response_observation\"\x8c\x03\n" +
+	" CosmosSDKEndpointRestObservation\x12(\n" +
+	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12#\n" +
+	"\rresponse_body\x18\x02 \x01(\tR\fresponseBody\x12P\n" +
+	"\x0fhealth_response\x18\x03 \x01(\v2%.path.qos.CosmosSDKRESTHealthResponseH\x00R\x0ehealthResponse\x12P\n" +
+	"\x0fstatus_response\x18\x04 \x01(\v2%.path.qos.CosmosSDKRESTStatusResponseH\x00R\x0estatusResponse\x12b\n" +
+	"\x15unrecognized_response\x18\x05 \x01(\v2+.path.qos.CosmosSDKRESTUnrecognizedResponseH\x00R\x14unrecognizedResponseB\x11\n" +
+	"\x0fparsed_response\"\xe5\x01\n" +
+	"#CosmosSDKEndpointJsonRpcObservation\x12D\n" +
+	"\x10jsonrpc_response\x18\x01 \x01(\v2\x19.path.qos.JsonRpcResponseR\x0fjsonrpcResponse\x12e\n" +
+	"\x15unrecognized_response\x18\x02 \x01(\v2..path.qos.CosmosSDKJSONRPCUnrecognizedResponseH\x00R\x14unrecognizedResponseB\x11\n" +
+	"\x0fparsed_response\"S\n" +
+	"\x1bCosmosSDKRESTHealthResponse\x124\n" +
+	"\x16health_status_response\x18\x01 \x01(\bR\x14healthStatusResponse\"\xbc\x01\n" +
+	"\x1bCosmosSDKRESTStatusResponse\x12*\n" +
 	"\x11chain_id_response\x18\x01 \x01(\tR\x0fchainIdResponse\x120\n" +
 	"\x14catching_up_response\x18\x02 \x01(\bR\x12catchingUpResponse\x12?\n" +
-	"\x1clatest_block_height_response\x18\x03 \x01(\tR\x19latestBlockHeightResponse\"e\n" +
-	"\x1dCosmosSDKUnrecognizedResponse\x12D\n" +
-	"\x10jsonrpc_response\x18\x01 \x01(\v2\x19.path.qos.JsonRpcResponseR\x0fjsonrpcResponse\"\xaa\x01\n" +
-	"\x16CosmosSDKEmptyResponse\x12(\n" +
-	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12f\n" +
-	"\x19response_validation_error\x18\x02 \x01(\x0e2*.path.qos.CosmosSDKResponseValidationErrorR\x17responseValidationError*\xf2\x01\n" +
+	"\x1clatest_block_height_response\x18\x03 \x01(\tR\x19latestBlockHeightResponse\"F\n" +
+	"!CosmosSDKRESTUnrecognizedResponse\x12!\n" +
+	"\fraw_response\x18\x01 \x01(\tR\vrawResponse\"l\n" +
+	"$CosmosSDKJSONRPCUnrecognizedResponse\x12D\n" +
+	"\x10jsonrpc_response\x18\x01 \x01(\v2\x19.path.qos.JsonRpcResponseR\x0fjsonrpcResponse*\xbc\x01\n" +
 	" CosmosSDKResponseValidationError\x124\n" +
 	"0COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED\x10\x00\x12.\n" +
 	"*COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY\x10\x01\x122\n" +
-	".COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL\x10\x02\x124\n" +
-	"0COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE\x10\x03B0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	".COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL\x10\x02*w\n" +
+	"\x11RpcValidationType\x12#\n" +
+	"\x1fRPC_VALIDATION_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18RPC_VALIDATION_TYPE_REST\x10\x01\x12\x1f\n" +
+	"\x1bRPC_VALIDATION_TYPE_JSONRPC\x10\x02*\x9e\x01\n" +
+	"\x12BackendServiceType\x12$\n" +
+	" BACKEND_SERVICE_TYPE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cBACKEND_SERVICE_TYPE_JSONRPC\x10\x01\x12\x1d\n" +
+	"\x19BACKEND_SERVICE_TYPE_REST\x10\x02\x12!\n" +
+	"\x1dBACKEND_SERVICE_TYPE_COMETBFT\x10\x03B0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_cosmos_proto_rawDescOnce sync.Once
@@ -600,35 +1071,48 @@ func file_path_qos_cosmos_proto_rawDescGZIP() []byte {
 	return file_path_qos_cosmos_proto_rawDescData
 }
 
-var file_path_qos_cosmos_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_path_qos_cosmos_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_path_qos_cosmos_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_path_qos_cosmos_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_path_qos_cosmos_proto_goTypes = []any{
-	(CosmosSDKResponseValidationError)(0), // 0: path.qos.CosmosSDKResponseValidationError
-	(*CosmosSDKRequestObservations)(nil),  // 1: path.qos.CosmosSDKRequestObservations
-	(*CosmosSDKEndpointObservation)(nil),  // 2: path.qos.CosmosSDKEndpointObservation
-	(*CosmosSDKHealthResponse)(nil),       // 3: path.qos.CosmosSDKHealthResponse
-	(*CosmosSDKStatusResponse)(nil),       // 4: path.qos.CosmosSDKStatusResponse
-	(*CosmosSDKUnrecognizedResponse)(nil), // 5: path.qos.CosmosSDKUnrecognizedResponse
-	(*CosmosSDKEmptyResponse)(nil),        // 6: path.qos.CosmosSDKEmptyResponse
-	(RequestOrigin)(0),                    // 7: path.qos.RequestOrigin
-	(*RequestError)(nil),                  // 8: path.qos.RequestError
-	(*JsonRpcResponse)(nil),               // 9: path.qos.JsonRpcResponse
+	(CosmosSDKResponseValidationError)(0),        // 0: path.qos.CosmosSDKResponseValidationError
+	(RpcValidationType)(0),                       // 1: path.qos.RpcValidationType
+	(BackendServiceType)(0),                      // 2: path.qos.BackendServiceType
+	(*BackendServiceDetails)(nil),                // 3: path.qos.BackendServiceDetails
+	(*CosmosSDKRequestREST)(nil),                 // 4: path.qos.CosmosSDKRequestREST
+	(*CosmosSDKRequestJSONRPC)(nil),              // 5: path.qos.CosmosSDKRequestJSONRPC
+	(*CosmosSDKRequestObservations)(nil),         // 6: path.qos.CosmosSDKRequestObservations
+	(*CosmosSDKEndpointObservation)(nil),         // 7: path.qos.CosmosSDKEndpointObservation
+	(*CosmosSDKEndpointRestObservation)(nil),     // 8: path.qos.CosmosSDKEndpointRestObservation
+	(*CosmosSDKEndpointJsonRpcObservation)(nil),  // 9: path.qos.CosmosSDKEndpointJsonRpcObservation
+	(*CosmosSDKRESTHealthResponse)(nil),          // 10: path.qos.CosmosSDKRESTHealthResponse
+	(*CosmosSDKRESTStatusResponse)(nil),          // 11: path.qos.CosmosSDKRESTStatusResponse
+	(*CosmosSDKRESTUnrecognizedResponse)(nil),    // 12: path.qos.CosmosSDKRESTUnrecognizedResponse
+	(*CosmosSDKJSONRPCUnrecognizedResponse)(nil), // 13: path.qos.CosmosSDKJSONRPCUnrecognizedResponse
+	(RequestOrigin)(0),                           // 14: path.qos.RequestOrigin
+	(*RequestError)(nil),                         // 15: path.qos.RequestError
+	(*JsonRpcResponse)(nil),                      // 16: path.qos.JsonRpcResponse
 }
 var file_path_qos_cosmos_proto_depIdxs = []int32{
-	7, // 0: path.qos.CosmosSDKRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
-	8, // 1: path.qos.CosmosSDKRequestObservations.request_error:type_name -> path.qos.RequestError
-	2, // 2: path.qos.CosmosSDKRequestObservations.endpoint_observations:type_name -> path.qos.CosmosSDKEndpointObservation
-	3, // 3: path.qos.CosmosSDKEndpointObservation.health_response:type_name -> path.qos.CosmosSDKHealthResponse
-	4, // 4: path.qos.CosmosSDKEndpointObservation.status_response:type_name -> path.qos.CosmosSDKStatusResponse
-	5, // 5: path.qos.CosmosSDKEndpointObservation.unrecognized_response:type_name -> path.qos.CosmosSDKUnrecognizedResponse
-	6, // 6: path.qos.CosmosSDKEndpointObservation.empty_response:type_name -> path.qos.CosmosSDKEmptyResponse
-	9, // 7: path.qos.CosmosSDKUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
-	0, // 8: path.qos.CosmosSDKEmptyResponse.response_validation_error:type_name -> path.qos.CosmosSDKResponseValidationError
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	2,  // 0: path.qos.BackendServiceDetails.backend_service_type:type_name -> path.qos.BackendServiceType
+	14, // 1: path.qos.CosmosSDKRequestObservations.request_origin:type_name -> path.qos.RequestOrigin
+	15, // 2: path.qos.CosmosSDKRequestObservations.request_error:type_name -> path.qos.RequestError
+	3,  // 3: path.qos.CosmosSDKRequestObservations.backend_service_details:type_name -> path.qos.BackendServiceDetails
+	4,  // 4: path.qos.CosmosSDKRequestObservations.rest_request:type_name -> path.qos.CosmosSDKRequestREST
+	5,  // 5: path.qos.CosmosSDKRequestObservations.jsonrpc_request:type_name -> path.qos.CosmosSDKRequestJSONRPC
+	7,  // 6: path.qos.CosmosSDKRequestObservations.endpoint_observations:type_name -> path.qos.CosmosSDKEndpointObservation
+	8,  // 7: path.qos.CosmosSDKEndpointObservation.rest_observation:type_name -> path.qos.CosmosSDKEndpointRestObservation
+	9,  // 8: path.qos.CosmosSDKEndpointObservation.jsonrpc_observation:type_name -> path.qos.CosmosSDKEndpointJsonRpcObservation
+	10, // 9: path.qos.CosmosSDKEndpointRestObservation.health_response:type_name -> path.qos.CosmosSDKRESTHealthResponse
+	11, // 10: path.qos.CosmosSDKEndpointRestObservation.status_response:type_name -> path.qos.CosmosSDKRESTStatusResponse
+	12, // 11: path.qos.CosmosSDKEndpointRestObservation.unrecognized_response:type_name -> path.qos.CosmosSDKRESTUnrecognizedResponse
+	16, // 12: path.qos.CosmosSDKEndpointJsonRpcObservation.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	13, // 13: path.qos.CosmosSDKEndpointJsonRpcObservation.unrecognized_response:type_name -> path.qos.CosmosSDKJSONRPCUnrecognizedResponse
+	16, // 14: path.qos.CosmosSDKJSONRPCUnrecognizedResponse.jsonrpc_response:type_name -> path.qos.JsonRpcResponse
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_cosmos_proto_init() }
@@ -639,20 +1123,29 @@ func file_path_qos_cosmos_proto_init() {
 	file_path_qos_jsonrpc_proto_init()
 	file_path_qos_request_origin_proto_init()
 	file_path_qos_request_error_proto_init()
-	file_path_qos_cosmos_proto_msgTypes[0].OneofWrappers = []any{}
-	file_path_qos_cosmos_proto_msgTypes[1].OneofWrappers = []any{
-		(*CosmosSDKEndpointObservation_HealthResponse)(nil),
-		(*CosmosSDKEndpointObservation_StatusResponse)(nil),
-		(*CosmosSDKEndpointObservation_UnrecognizedResponse)(nil),
-		(*CosmosSDKEndpointObservation_EmptyResponse)(nil),
+	file_path_qos_cosmos_proto_msgTypes[3].OneofWrappers = []any{
+		(*CosmosSDKRequestObservations_RestRequest)(nil),
+		(*CosmosSDKRequestObservations_JsonrpcRequest)(nil),
+	}
+	file_path_qos_cosmos_proto_msgTypes[4].OneofWrappers = []any{
+		(*CosmosSDKEndpointObservation_RestObservation)(nil),
+		(*CosmosSDKEndpointObservation_JsonrpcObservation)(nil),
+	}
+	file_path_qos_cosmos_proto_msgTypes[5].OneofWrappers = []any{
+		(*CosmosSDKEndpointRestObservation_HealthResponse)(nil),
+		(*CosmosSDKEndpointRestObservation_StatusResponse)(nil),
+		(*CosmosSDKEndpointRestObservation_UnrecognizedResponse)(nil),
+	}
+	file_path_qos_cosmos_proto_msgTypes[6].OneofWrappers = []any{
+		(*CosmosSDKEndpointJsonRpcObservation_UnrecognizedResponse)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_cosmos_proto_rawDesc), len(file_path_qos_cosmos_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   6,
+			NumEnums:      3,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

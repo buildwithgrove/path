@@ -12,12 +12,47 @@ import "path/qos/request_error.proto";
 // Current invalid response types (as of PR #186):
 //   1. EmptyResponse - endpoint returned no data
 //   2. UnmarshalErr - response failed to parse into expected format
-//   3. NoResponse - no responses recorded by the QoS service: probably caused by protocol-level errors
 enum CosmosSDKResponseValidationError {
 	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
 	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // Response with no data.
 	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
-	COSMOS_SDK_RESPONSE_VALIDATION_ERROR_NO_RESPONSE = 3;  // No response received from any endpoint
+}
+
+// RpcValidationType determines the format/protocol used for endpoint observation validation
+enum RpcValidationType {
+	RPC_VALIDATION_TYPE_UNSPECIFIED = 0;
+	RPC_VALIDATION_TYPE_REST = 1;     // Endpoint observation uses REST validation
+	RPC_VALIDATION_TYPE_JSONRPC = 2;  // Endpoint observation uses JSON-RPC validation
+}
+
+// BackendServiceType enumerates the types of backend services that can handle requests
+enum BackendServiceType {
+	BACKEND_SERVICE_TYPE_UNSPECIFIED = 0;
+	BACKEND_SERVICE_TYPE_JSONRPC = 1;   // Backend service using JSON-RPC protocol
+	BACKEND_SERVICE_TYPE_REST = 2;      // Backend service using REST API
+	BACKEND_SERVICE_TYPE_COMETBFT = 3;  // Backend service using CometBFT RPC
+}
+
+// BackendServiceDetails contains metadata about backend service selection
+message BackendServiceDetails {
+	// The type of backend service used to handle this request
+	BackendServiceType backend_service_type = 1;
+	
+	// Selection criteria or reason for choosing this backend service
+	// Examples: "primary_endpoint", "fallback_after_timeout", "load_balancing"
+	string selection_reason = 2;
+}
+
+// CosmosSDKRequestREST contains REST-specific request details
+message CosmosSDKRequestREST {
+	// REST endpoint path that was called (e.g., "/health", "/status")
+	string endpoint_path = 1;
+}
+
+// CosmosSDKRequestJSONRPC contains JSON-RPC-specific request details
+message CosmosSDKRequestJSONRPC {
+	// JSON-RPC method that was called (e.g., "health", "status")
+	string method = 1;
 }
 
 // CosmosSDKRequestObservations captures all observations made while serving a single CosmosSDK blockchain service request.
@@ -40,11 +75,20 @@ message CosmosSDKRequestObservations {
     // Tracks request errors, if any.
     optional RequestError request_error = 5;
 
+    // Backend service configuration and selection details
+    BackendServiceDetails backend_service_details = 6;
+
+    // Request-specific details based on the RPC validation type
+    oneof request_details {
+        CosmosSDKRequestREST rest_request = 7;
+        CosmosSDKRequestJSONRPC jsonrpc_request = 8;
+    }
+
     // CosmosSDK-specific observations from endpoint(s) that responded to the service request.
     // Multiple observations may occur when:
     // - Original endpoint fails
     // - Request is sent to additional endpoints for data collection
-    repeated CosmosSDKEndpointObservation endpoint_observations = 6;
+    repeated CosmosSDKEndpointObservation endpoint_observations = 9;
 
     // TODO_UPNEXT(@adshmh): Add endpoint selection metadata.
 }
@@ -56,35 +100,60 @@ message CosmosSDKEndpointObservation {
     string endpoint_addr = 1;
 
     // Details of the response received from the endpoint
+    // The structure depends on the RPC validation type (REST vs JSONRPC)
     oneof response_observation {
-        // Response to `/health` request
-        CosmosSDKHealthResponse health_response = 2;
+        // REST-based endpoint observations and validation
+        CosmosSDKEndpointRestObservation rest_observation = 2;
 
-        // Response to `/status` request
-        CosmosSDKStatusResponse status_response = 3;
-
-        // Responses not used in endpoint validation
-        CosmosSDKUnrecognizedResponse unrecognized_response = 4;
-
-        // CosmosSDKEmptyResponse indicates an endpoint returned no data.
-        // Used to:
-        //   - Disqualify endpoints that return empty responses
-        //   - Track metrics for empty response patterns
-        CosmosSDKEmptyResponse empty_response = 5;
+        // JSON-RPC-based endpoint observations and validation
+        CosmosSDKEndpointJsonRpcObservation jsonrpc_observation = 3;
     }
 
     // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
 }
 
-// CosmosSDKHealthResponse stores the response to a `health` request
+// CosmosSDKEndpointRestObservation handles REST-based endpoint observations
+message CosmosSDKEndpointRestObservation {
+    // HTTP status code from the REST response
+    int32 http_status_code = 1;
+    
+    // Raw response body (JSON string typically)
+    string response_body = 2;
+    
+    // Parsed and validated response data for known REST endpoints
+    oneof parsed_response {
+        // Response to `/health` request
+        CosmosSDKRESTHealthResponse health_response = 3;
+
+        // Response to `/status` request  
+        CosmosSDKRESTStatusResponse status_response = 4;
+
+        // Responses not used in endpoint validation
+        CosmosSDKRESTUnrecognizedResponse unrecognized_response = 5;
+    }
+}
+
+// CosmosSDKEndpointJsonRpcObservation handles JSON-RPC-based endpoint observations
+message CosmosSDKEndpointJsonRpcObservation {
+    // The underlying JSON-RPC response structure
+    JsonRpcResponse jsonrpc_response = 1;
+    
+    // Parsed and validated response data for known JSON-RPC methods
+    oneof parsed_response {
+        // Responses not used in endpoint validation
+        CosmosSDKJSONRPCUnrecognizedResponse unrecognized_response = 2;
+    }
+}
+
+// CosmosSDKRESTHealthResponse stores the response to a REST `/health` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-message CosmosSDKHealthResponse {
+message CosmosSDKRESTHealthResponse {
     bool health_status_response = 1;
 }
 
-// CosmosSDKStatusResponse stores the latest block number from a `/status` request
+// CosmosSDKRESTStatusResponse stores the response to a REST `/status` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-message CosmosSDKStatusResponse {
+message CosmosSDKRESTStatusResponse {
     // Chain ID of the endpoint. Comes from the `NodeInfo.Network` field in the `/status` response.
     // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
     string chain_id_response = 1;
@@ -100,19 +169,16 @@ message CosmosSDKStatusResponse {
     string latest_block_height_response = 3;
 }
 
-// CosmosSDKUnrecognizedResponse handles requests with methods ignored by state update
+// CosmosSDKRESTUnrecognizedResponse handles REST requests with endpoints ignored by state update
 // and endpoint validation
-message CosmosSDKUnrecognizedResponse {
-    JsonRpcResponse jsonrpc_response = 1;
+message CosmosSDKRESTUnrecognizedResponse {
+    // Raw response data
+    string raw_response = 1;
 }
 
-// CosmosSDKEmptyResponse indicates an endpoint returned no data.
-// Used to:
-//   - Disqualify endpoints that return empty responses
-//   - Track metrics for empty response patterns
-message CosmosSDKEmptyResponse {
-    int32 http_status_code = 1;
-
-    // Always set to EMPTY for empty responses
-    CosmosSDKResponseValidationError response_validation_error = 2;
+// CosmosSDKJSONRPCUnrecognizedResponse handles JSON-RPC requests with methods ignored by state update
+// and endpoint validation
+message CosmosSDKJSONRPCUnrecognizedResponse {
+    // The underlying JSON-RPC response structure
+    JsonRpcResponse jsonrpc_response = 1;
 }

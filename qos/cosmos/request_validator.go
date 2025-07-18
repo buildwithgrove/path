@@ -9,41 +9,86 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
-// cosmosSDKRequestValidator handles request validation for CosmosSDK chains by:
-// 1. Detecting RPC type from request path
-// 2. Delegating to RPC type-specific validators
-// 3. Creating unified contexts with RPC type information
-type cosmosSDKRequestValidator struct {
+// requestValidator handles validation for all Cosmos service requests
+// Coordinates between different protocol validators (JSONRPC, REST)
+type requestValidator struct {
 	logger        polylog.Logger
 	chainID       string
 	serviceID     protocol.ServiceID
-	serviceState  *serviceState
 	supportedAPIs map[sharedtypes.RPCType]struct{}
-	// RPC type-specific validators - focused on RPC type, not domain
-	restValidator    restRequestValidator
-	jsonrpcValidator jsonrpcRequestValidator
+	serviceState  protocol.EndpointSelector
 }
 
-// validateHTTPRequest validates an HTTP request by:
-// 1. Determining the validation strategy (REST vs JSON-RPC)
-// 2. Delegating to the appropriate validator
-// 3. The validator determines RPC type and builds context with necessary info
-func (crv *cosmosSDKRequestValidator) validateHTTPRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
-	crv.logger = crv.logger.With(
-		"qos", "CosmosSDK",
-		"http_method", req.Method,
+// validateHTTPRequest validates an HTTP request and routes to appropriate sub-validator
+// Returns (context, true) on success or (errorContext, false) on failure
+func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.RequestQoSContext, bool) {
+	logger := rv.logger.With(
+		"qos", "Cosmos",
+		"method", "validateHTTPRequest",
 		"path", req.URL.Path,
+		"http_method", req.Method,
 	)
 
-	// 1. Determine validation strategy based on request characteristics
-	strategy := crv.determineRPCValidationStrategy(req)
-	crv.logger = crv.logger.With("validation_strategy", string(strategy))
+	// Determine request type and route to appropriate validator
+	if rv.isJSONRPCRequest(req) {
+		logger.Debug().Msg("Routing to JSONRPC validator")
 
-	// 2. Delegate to appropriate validator
-	// The validator will determine RPC type and check if supported
-	if strategy == rpcValidationStrategyREST {
-		return crv.restValidator.validateRESTRequest(req, crv.supportedAPIs, crv.logger, crv.chainID, crv.serviceID)
+		// Initialize JSONRPC validator with shared fields and validate
+		jsonrpcValidator := jsonrpcRequestValidator{}
+		return jsonrpcValidator.validateJSONRPCRequest(
+			req,
+			rv.supportedAPIs,
+			logger,
+			rv.chainID,
+			rv.serviceID,
+			rv.serviceState,
+		)
 	} else {
-		return crv.jsonrpcValidator.validateJSONRPCRequest(req, crv.supportedAPIs, crv.logger, crv.chainID, crv.serviceID)
+		logger.Debug().Msg("Routing to REST validator")
+
+		// Initialize REST validator with shared fields and validate
+		restValidator := restRequestValidator{}
+		return restValidator.validateRESTRequest(
+			req,
+			rv.supportedAPIs,
+			logger,
+			rv.chainID,
+			rv.serviceID,
+			rv.serviceState,
+		)
 	}
+}
+
+// isJSONRPCRequest determines if the incoming HTTP request is a JSONRPC request
+// Uses simple heuristics: POST method and specific content types or paths
+func (rv *requestValidator) isJSONRPCRequest(req *http.Request) bool {
+	// JSONRPC requests are typically POST with specific patterns
+	if req.Method != http.MethodPost {
+		return false
+	}
+
+	// Check content type if present
+	contentType := req.Header.Get("Content-Type")
+	if contentType == "application/json" || contentType == "application/json-rpc" {
+		return true
+	}
+
+	// Check for common JSONRPC paths (many services use root path)
+	path := req.URL.Path
+	jsonrpcPaths := []string{
+		"/",
+		"/rpc",
+		"/jsonrpc",
+		"/v1",
+		"/api/v1",
+	}
+
+	for _, jsonrpcPath := range jsonrpcPaths {
+		if path == jsonrpcPath {
+			return true
+		}
+	}
+
+	// Default to JSONRPC for POST requests without clear REST patterns
+	return true
 }
