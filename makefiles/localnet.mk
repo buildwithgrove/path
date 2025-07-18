@@ -1,23 +1,28 @@
-###############################
-###  Localnet check targets ###
-###############################
+#################################
+###  Local PATH make targets  ###
+#################################
 
-.PHONY: check_kind
-# Internal helper: Checks if Kind is installed locally
-check_kind:
-	@if ! command -v kind >/dev/null 2>&1; then \
-		echo "kind is not installed. Make sure you review README.md before continuing"; \
-		exit 1; \
-	fi
+# These targets are used to bring up the local Tilt environment in a 
+# dedicated Docker container that contains all dependencies for local
+# development (Tilt, Helm, etc).
+#
+# The localnet.sh script handles all the complexity of bringing up the PATH
+# services in the Docker container, including checking for the presence of
+# the config.yaml and .values.yaml files.
+#
+# For more information see the documentation at:
+# https://path.grove.city/develop/path/environment
 
-.PHONY: check_tilt
-# Internal helper: Checks if Tilt is installed locally
-check_tilt:
-	@if ! command -v tilt >/dev/null 2>&1; then \
-		echo "Tilt is not installed. Make sure you review README.md before continuing"; \
-		exit 1; \
-	fi
+# Brings up local Tilt environment with remote helm charts
+.PHONY: path_up
+path_up: check_docker ## Brings up local Tilt development environment in Docker 
+	@./local/scripts/localnet.sh up 
 
+# Brings up local Tilt environment with local helm charts
+.PHONY: path_up_local_helm
+path_up_local_helm: check_docker ## Brings up local Tilt environment with local helm charts
+	@./local/scripts/localnet.sh up --use-local-helm
+	
 .PHONY: check_docker
 # Internal helper: Check if Docker is installed locally
 check_docker:
@@ -34,11 +39,15 @@ check_docker:
 		exit 1; \
 	fi;
 
-###############################
-### Localnet config targets ###
-###############################
+.PHONY: path_down
+path_down: ## Tears down local Tilt development environment in Docker
+	@./local/scripts/localnet.sh down
 
+.PHONY: localnet_exec
+localnet_exec: ## Opens a terminal inside the path-localnet container
+	@docker exec -it path-localnet /bin/bash
 .PHONY: k8s_prepare_local_env
+
 # Internal helper for path localnet: creates a kind cluster and namespaces if they don't already exist
 k8s_prepare_local_env: check_kind
 	@if ! kind get clusters | grep -q "^path-localnet$$"; then \
@@ -66,12 +75,18 @@ k8s_prepare_local_env: check_kind
 	fi; \
 	kubectl config use-context kind-path-localnet;
 
-.PHONY: k8s_cleanup_local_env
-# Internal helper: Cleans up kind cluster and kubeconfig context for path-localnet
-k8s_cleanup_local_env:
-	@echo "[INFO] Cleaning up local k8s environment for 'path-localnet'..."
-	@kind delete cluster --name path-localnet || echo "[DEBUG] Cluster 'path-localnet' not found. Skipping deletion."
-	@kubectl config get-contexts kind-path-localnet > /dev/null 2>&1 && \
-		kubectl config delete-context kind-path-localnet || \
-		echo "[DEBUG] Context 'kind-path-localnet' not found. Skipping deletion."
-	@kubectl config get-contexts | grep -q 'kind-path-localnet' || echo "[INFO] Cleanup complete."
+.PHONY: path_help
+path_help: ## Prints help commands if you cannot start path
+	@echo "################################################################";
+	@echo "💡 If you're hitting issues running PATH, try running following commands:";
+	@echo "	make path_down";
+	@echo "	make path_up";
+	@echo "################################################################";
+
+.PHONY: build_and_push_localnet_image
+build_and_push_localnet_image: ## Builds and pushes the localnet Docker image for multi-architecture builds
+	@echo "🔨 Building and pushing multi-architecture localnet Docker image..."
+	@docker buildx build --no-cache --platform linux/amd64,linux/arm64 \
+	  -t ghcr.io/buildwithgrove/path-localnet-env:latest \
+	  -f ./local/Dockerfile.dev \
+	  --push .

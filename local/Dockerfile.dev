@@ -1,0 +1,134 @@
+FROM docker:dind
+
+# Set ARGs for multi-platform builds
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Install essential build tools
+RUN apk add --no-cache \
+    curl \
+    jq \
+    make \
+    bash \
+    git \
+    python3 \
+    libc6-compat \
+    libstdc++ \
+    libgcc \
+    nodejs \
+    npm \
+    yq 
+
+# Install ajv-cli (for validating config.yaml against config.schema.yaml)
+RUN npm install -g ajv-cli
+
+# Install Go 1.23
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
+    esac && \
+    FILENAME="go1.23.0.linux-${ARCH}.tar.gz" && \
+    curl -L -o ${FILENAME} https://go.dev/dl/${FILENAME} && \
+    rm -rf /usr/local/go && \
+    tar -C /usr/local -xzf ${FILENAME} && \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go && \
+    rm ${FILENAME}
+
+# Install Tilt with correct architecture naming
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="x86_64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    "linux/arm/v7") ARCH="arm" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
+    esac && \
+    VERSION="0.34.2" && \
+    echo "Installing Tilt ${VERSION} for ${ARCH}" && \
+    curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v${VERSION}/tilt.${VERSION}.linux.${ARCH}.tar.gz" | tar -xzv tilt && \
+    mv tilt /usr/local/bin/tilt && \
+    chmod +x /usr/local/bin/tilt
+
+# Install kubectl
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
+    esac && \
+    KUBECTL_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt) && \
+    curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
+# Install Kind
+RUN set -ex && \
+    case "${TARGETPLATFORM:-linux/$(uname -m)}" in \
+    "linux/amd64") ARCH="amd64" ;; \
+    "linux/arm64") ARCH="arm64" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM:-linux/$(uname -m)}" && exit 1 ;; \
+    esac && \
+    KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep tag_name | cut -d '"' -f4 || echo "v0.27.0") && \
+    BINARY_NAME="kind-linux-${ARCH}" && \
+    KIND_URL="https://kind.sigs.k8s.io/dl/${KIND_VERSION}/${BINARY_NAME}" && \
+    curl -Lo /usr/local/bin/kind ${KIND_URL} && \
+    chmod +x /usr/local/bin/kind
+
+# Install Helm
+RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+# Create an integrated startup script that includes both Docker daemon and the path/local/start.sh functionality
+# It also validates the config.yaml against the config.schema.yaml before starting anything else
+#
+# TODO_IMPROVE(@commoddity): Add a YAML schema for the `.values.yaml` file in the Helm Charts repo and validate it as part of the startup script.
+COPY <<EOF /integrated-start.sh
+#!/bin/bash
+set -e
+
+# Validate config YAML against schema before starting anything else
+yq -o=json ./config/config.schema.yaml > /tmp/config.schema.json
+if ! ajv validate -s /tmp/config.schema.json -d ./local/path/.config.yaml --strict=false; then
+    echo ""
+    echo "❌ Error: ./local/path/.config.yaml failed schema validation. Please fix the errors above before continuing."
+    echo ""
+    echo "  💡 For information about the PATH config YAML file and schema, see the documentation at: "
+    echo "       https://path.grove.city/develop/path/configurations_path "
+    echo ""
+    echo "  🌿 Grove employees: you may find a valid .config.yaml file on 1Password in the note called 'PATH Localnet Config' "
+    echo ""
+    # Exit with error code - this will terminate the container
+    exit 1
+else
+    echo "Config file is valid!"
+fi
+
+# Important: Only proceed with the rest if validation passes
+# Start Docker daemon (required for Kind)
+/usr/local/bin/dockerd-entrypoint.sh &
+echo "Waiting for Docker daemon to start..."
+sleep 3
+
+# Change to app directory
+cd /app
+
+# Create Kind cluster
+kind create cluster --name path-localnet --config ./local/kind-config.yaml
+kubectl config use-context kind-path-localnet
+kubectl create namespace path
+kubectl create namespace monitoring
+kubectl config set-context --current --namespace=path
+kubectl create secret generic path-config --from-file=./local/path/.config.yaml -n path
+
+# Start Tilt with host binding for external access and reduce log level to hide trace warnings
+tilt up --host=0.0.0.0 --log-level=error
+EOF
+
+RUN chmod +x /integrated-start.sh
+
+# Create working directory
+WORKDIR /app
+
+# Use the integrated startup script
+ENTRYPOINT []
+CMD ["/integrated-start.sh"]
