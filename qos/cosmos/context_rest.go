@@ -58,26 +58,12 @@ func (rc *restContext) GetServicePayload() protocol.Payload {
 }
 
 // UpdateWithResponse processes a REST response from an endpoint
-// Uses the existing response unmarshaling system for REST responses
+// Uses the REST response unmarshaling system
 // NOT safe for concurrent use
 func (rc *restContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, responseBz []byte) {
-	// Use the existing response unmarshaling system
-	// For REST requests, we pass the URL path as the apiPath and set isJSONRPC to false
-	resp, err := unmarshalResponse(rc.logger, rc.urlPath, responseBz, false, endpointAddr)
-	if err != nil {
-		rc.logger.Error().
-			Err(err).
-			Str("endpoint", string(endpointAddr)).
-			Str("path", rc.urlPath).
-			Msg("Failed to unmarshal REST response from endpoint")
-
-		// Create a generic error response for tracking
-		resp = responseGeneric{
-			logger:         rc.logger,
-			rawData:        responseBz,
-			isRestResponse: true,
-		}
-	}
+	// Use the REST response unmarshaling system with the mux
+	// The mux always returns a valid response interface, never an error
+	resp := responseUnmarshalerREST(rc.logger, rc.urlPath, responseBz)
 
 	rc.endpointResponses = append(rc.endpointResponses, endpointResponse{
 		endpointAddr: endpointAddr,
