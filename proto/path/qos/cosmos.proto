@@ -4,69 +4,10 @@ package path.qos;
 
 option go_package = "github.com/buildwithgrove/path/observation/qos";
 
-import "path/qos/jsonrpc.proto";
+import "path/qos/cosmos_request.proto";
+import "path/qos/cosmos_response.proto";
 import "path/qos/request_origin.proto";
 import "path/qos/request_error.proto";
-
-// CosmosResponseValidationError defines why an endpoint response was rejected.
-enum CosmosResponseValidationError {
-	COSMOS_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
-	COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // Response with no data.
-	COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
-	COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH = 3; // Expected JSON-RPC but got JSON, etc.
-}
-
-// CosmosResponseValidationType determines the format/protocol of the endpoint response
-enum CosmosResponseValidationType {
-	COSMOS_RESPONSE_VALIDATION_TYPE_UNSPECIFIED = 0;
-	COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC = 1;      // JSONRPC response
-	COSMOS_RESPONSE_VALIDATION_TYPE_JSON = 2;         // JSON response
-	COSMOS_RESPONSE_VALIDATION_TYPE_UNSTRUCTURED = 3; // Unrecognized response format: no validation is performed.
-}
-
-// BackendServiceType enumerates the types of backend services that can handle requests
-enum BackendServiceType {
-	BACKEND_SERVICE_TYPE_UNSPECIFIED = 0;
-	BACKEND_SERVICE_TYPE_JSONRPC = 1;   // Backend service using JSON-RPC protocol
-	BACKEND_SERVICE_TYPE_REST = 2;      // Backend service using REST API
-	BACKEND_SERVICE_TYPE_COMETBFT = 3;  // Backend service using CometBFT RPC
-}
-
-// BackendServiceDetails contains metadata about backend service selection
-message BackendServiceDetails {
-	BackendServiceType backend_service_type = 1;
-	string selection_reason = 2;
-}
-
-// CosmosRequestProfile contains:
-// - Target backend service selection
-// - Request format determination (JSONRPC vs REST)
-// - Parsed and validated request payload
-message CosmosRequestProfile {
-	// Backend service configuration and selection details
-	BackendServiceDetails backend_service_details = 1;
-	
-	// Parsed request payload by format type
-	oneof parsed_request {
-		RESTRequest rest_request = 2;
-		JsonRpcRequest jsonrpc_request = 3;
-	}
-}
-
-// RESTRequest contains details about a REST request
-message RESTRequest {
-	// API path that was called (e.g. "/", "/health", "/status")
-	string api_path = 1;
-	
-	// HTTP method used (GET, POST, etc.)
-	string http_method = 2;
-
-	// Tracks the value of HTTP request's Content-Type header.
-	string content_type = 3;
-
-	// Length of request payload: could be 0, e.g. for GET requests.
-	uint32 payload_length = 4;
-}
 
 // CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
 message CosmosRequestObservations {
@@ -102,59 +43,4 @@ message CosmosEndpointObservation {
     //   - invalid JSONRPC response
     //   - unexpected format of response to REST request.
     CosmosEndpointResponseValidationResult endpoint_response_validation_result = 2;
-}
-
-// CosmosEndpointResponseValidationResult contains the outcome of contacting an endpoint
-message CosmosEndpointResponseValidationResult {
-	// The type of response expected.
-	// Examples:
-	//   - JSONRPC
-        //   - JSON
-        //   - An integer
-	CosmosResponseValidationType response_validation_type = 1;
-	
-	// HTTP status code returned to the user.
-	// It is derived from the endpoint response payload and/or HTTP status code.
-	// e.g. for JSONRPC, it is based on the error code of the JSONRPC response.
-	int32 http_status_code = 2;
-	
-	// Validation error, if any.
-	// This is set if parsing the endpoint response fails.
-	optional CosmosResponseValidationError validation_error = 3;
-
-        // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
-        //
-	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
-	// Tracks details, including the reason for the returned HTTP status code.
-	oneof parsed_response {
-		JsonRpcResponse response_jsonrpc = 4;
-
-		// Response to Cosmos request against API path `/health`
-		CosmosResponseHealth response_health = 5;
-
-		// Response to Cosmos request against API path `/status`
-		CosmosResponseStatus response_status = 6;
-		
-		// For unrecognized responses.
-		// These are returned as-is to the user.
-		UnrecognizedResponse response_unrecognized = 7;
-	}
-}
-
-// CosmosResponseHealth stores the response to a `/health` request
-message CosmosResponseHealth {
-    bool health_status = 1;
-}
-
-// CosmosResponseStatus stores the response to a `/status` request
-message CosmosResponseStatus {
-    string chain_id = 1;
-    bool catching_up = 2;
-    string latest_block_height = 3;
-}
-
-// UnrecognizedResponse handles responses that are not validated before being returned to the user.
-message UnrecognizedResponse {
-	// Length of payload received from the endpoint.
-	uint32 endpoint_payload_length = 1;
 }
