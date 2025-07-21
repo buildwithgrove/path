@@ -45,32 +45,6 @@ check_path_config:
 path_run: path_build check_path_config ## Run the path binary as a standalone binary
 	(cd bin; ./path -config ../${CONFIG_PATH})
 
-#################################
-###  Local PATH make targets  ###
-#################################
-
-# tl;dr Mimic an E2E real environment.
-# This section is intended to spin up and develop a full modular stack that includes
-# PATH, Envoy Proxy, Rate Limiter, Auth Server, and any other dependencies.
-
-.PHONY: path_up
-path_up: check_docker check_path_config k8s_prepare_local_env ## Brings up local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	tilt up
-
-.PHONY: path_down
-path_down: ## Tears down local Tilt development environment which includes PATH and all related dependencies (using kind cluster)
-	tilt down
-
-.PHONY: path_help
-path_help: ## Prints help commands if you cannot start path
-	@echo "################################################################";
-	@echo "If you're hitting issues running PATH, try running following commands:";
-	@echo "	make path_down";
-	@echo "	make k8s_cleanup_local_env";
-	@echo "	make path_up";
-	@echo "################################################################";
-
-
 ###############################
 ###    Makefile imports     ###
 ###############################
