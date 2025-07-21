@@ -14,8 +14,13 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
-// maximum length of the error message stored in request validation failure observations and logs.
-const maxErrMessageLen = 1000
+const (
+	// maximum length of the error message stored in request validation failure observations and logs.
+	maxErrMessageLen = 1000
+
+	// Default timeout for JSONRPC requests to Cosmos endpoints
+	defaultJSONRPCRequestTimeoutMillisec = 10_000
+)
 
 // validateJSONRPCRequest validates a JSONRPC request by:
 // 1. Reading and parsing the JSONRPC request
