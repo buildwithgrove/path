@@ -12,6 +12,7 @@ type endpoint struct {
 	invalidResponseLastObserved *time.Time
 
 	// CosmosSDK-specific checks
-	checkStatus endpointCheckStatus // Checks chain ID, catching up status, and latest block height via /status
-	checkHealth endpointCheckHealth // Checks node health via /health
+	checkCometbftStatus endpointCheckStatus       // Checks chain ID, catching up status, and latest block height via /status
+	checkCometbftHealth endpointCheckHealth       // Checks node health via /health
+	checkCosmosStatus   endpointCheckCosmosStatus // Checks latest block height via /cosmos/base/node/v1beta1/status
 }

@@ -9,19 +9,20 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseToHealth provides the functionality required from a response by a requestContext instance.
-var _ response = responseToHealth{}
+// responseToCometbftHealth provides the functionality required from a response by a requestContext instance.
+var _ response = responseToCometbftHealth{}
 
-// responseUnmarshallerHealth deserializes the provided payload
-// into a responseToHealth struct, adding any encountered errors
+// responseUnmarshallerCometbftHealth deserializes the provided payload
+// into a responseToCometbftHealth struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerHealth(
+func responseUnmarshallerCometbftHealth(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
+	_ []byte,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-		return responseToHealth{
+		return responseToCometbftHealth{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 			healthy:         false,
@@ -30,16 +31,16 @@ func responseUnmarshallerHealth(
 
 	// `/health` endpoint returns an empty response on success,
 	// so any non-error response is considered healthy.
-	return responseToHealth{
+	return responseToCometbftHealth{
 		logger:          logger,
 		jsonRPCResponse: jsonrpcResp,
 		healthy:         true,
 	}, nil
 }
 
-// responseToHealth captures a CometBFT-based blockchain's /health endpoint response.
+// responseToCometbftHealth captures a CometBFT-based blockchain's /health endpoint response.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-type responseToHealth struct {
+type responseToCometbftHealth struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
@@ -51,10 +52,10 @@ type responseToHealth struct {
 
 // GetObservation returns a CosmosSDK-based /health observation
 // Implements the response interface.
-func (r responseToHealth) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+func (r responseToCometbftHealth) GetObservation() qosobservations.CosmosSDKEndpointObservation {
 	return qosobservations.CosmosSDKEndpointObservation{
-		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_HealthResponse{
-			HealthResponse: &qosobservations.CosmosSDKHealthResponse{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_CometbftHealthResponse{
+			CometbftHealthResponse: &qosobservations.CometBFTHealthResponse{
 				HealthStatusResponse: r.healthy,
 			},
 		},
@@ -63,7 +64,7 @@ func (r responseToHealth) GetObservation() qosobservations.CosmosSDKEndpointObse
 
 // GetResponsePayload returns the payload for the response to a `/health` request.
 // Implements the response interface.
-func (r responseToHealth) GetResponsePayload() []byte {
+func (r responseToCometbftHealth) GetResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
@@ -76,13 +77,13 @@ func (r responseToHealth) GetResponsePayload() []byte {
 // returns an HTTP status code corresponding to the underlying JSON-RPC response code.
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 // Implements the response interface.
-func (r responseToHealth) GetResponseStatusCode() int {
+func (r responseToCometbftHealth) GetResponseStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
-// GetHTTPResponse builds and returns the httpResponse matching the responseToHealth instance.
+// GetHTTPResponse builds and returns the httpResponse matching the responseToCometbftHealth instance.
 // Implements the response interface.
-func (r responseToHealth) GetHTTPResponse() httpResponse {
+func (r responseToCometbftHealth) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.GetResponsePayload(),
 		httpStatusCode:  r.GetResponseStatusCode(),

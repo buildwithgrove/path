@@ -151,23 +151,23 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 		}
 	}
 
-	// Check if the endpoint's health status is valid.
-	if err := ss.isHealthValid(endpoint.checkHealth); err != nil {
+	// Check if the endpoint's CometBFT health status is valid.
+	if err := ss.isCometbftHealthValid(endpoint.checkCometbftHealth); err != nil {
 		return fmt.Errorf("health validation failed: %w", err)
 	}
 
-	// Check if the endpoint's status information is valid.
-	if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
+	// Check if the endpoint's CometBFT status information is valid.
+	if err := ss.isCometbftStatusValid(endpoint.checkCometbftStatus); err != nil {
 		return fmt.Errorf("status validation failed: %w", err)
 	}
 
 	return nil
 }
 
-// isHealthValid returns an error if:
+// isCometbftHealthValid returns an error if:
 //   - The endpoint has not had an observation of its response to a `/health` request.
 //   - The endpoint's health check indicates it's unhealthy.
-func (ss *serviceState) isHealthValid(check endpointCheckHealth) error {
+func (ss *serviceState) isCometbftHealthValid(check endpointCheckHealth) error {
 	healthy, err := check.GetHealthy()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoHealthObs, err)
@@ -180,12 +180,12 @@ func (ss *serviceState) isHealthValid(check endpointCheckHealth) error {
 	return nil
 }
 
-// isStatusValid returns an error if:
+// isCometbftStatusValid returns an error if:
 //   - The endpoint has not had an observation of its response to a `/status` request.
 //   - The endpoint's chain ID does not match the expected chain ID.
 //   - The endpoint is catching up to the network.
 //   - The endpoint's block height is outside the sync allowance.
-func (ss *serviceState) isStatusValid(check endpointCheckStatus) error {
+func (ss *serviceState) isCometbftStatusValid(check endpointCheckStatus) error {
 	// Check chain ID
 	chainID, err := check.GetChainID()
 	if err != nil {

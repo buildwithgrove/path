@@ -3,7 +3,11 @@ package cosmos
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 // Get node health. Returns empty result (200 OK) on success, no response - in case of an error.
@@ -36,6 +40,7 @@ type endpointCheckHealth struct {
 // e.g. GET /health
 func (e *endpointCheckHealth) GetRequest() *http.Request {
 	req, _ := http.NewRequest(http.MethodGet, apiPathHealthCheck, nil)
+	req.Header.Set(proxy.RPCTypeHeader, strconv.Itoa(int(sharedtypes.RPCType_COMET_BFT)))
 	return req
 }
 

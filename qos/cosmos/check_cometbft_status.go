@@ -3,7 +3,11 @@ package cosmos
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 // GET CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
@@ -43,6 +47,7 @@ type endpointCheckStatus struct {
 // e.g. GET /status
 func (e *endpointCheckStatus) GetRequest() *http.Request {
 	req, _ := http.NewRequest(http.MethodGet, apiPathStatus, nil)
+	req.Header.Set(proxy.RPCTypeHeader, strconv.Itoa(int(sharedtypes.RPCType_COMET_BFT)))
 	return req
 }
 

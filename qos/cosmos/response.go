@@ -24,18 +24,21 @@ var (
 type responseUnmarshaller func(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
+	restResponse []byte,
 ) (response, error)
 
 var (
 	// All response types must implement the response interface.
-	_ response = &responseToHealth{}
-	_ response = &responseToStatus{}
+	_ response = &responseToCometbftHealth{}
+	_ response = &responseToCometbftStatus{}
+	_ response = &responseToCosmosStatus{}
 	_ response = &responseGeneric{}
 
 	// Maps API paths to their corresponding response unmarshallers
 	apiPathResponseMappings = map[string]responseUnmarshaller{
-		apiPathHealthCheck: responseUnmarshallerHealth,
-		apiPathStatus:      responseUnmarshallerStatus,
+		apiPathHealthCheck:  responseUnmarshallerCometbftHealth,
+		apiPathStatus:       responseUnmarshallerCometbftStatus,
+		apiPathCosmosStatus: responseUnmarshallerCosmosStatus,
 	}
 )
 
@@ -64,7 +67,7 @@ func unmarshalResponse(
 	// Unmarshal the JSON-RPC response into a method-specific response.
 	unmarshaller, found := apiPathResponseMappings[apiPath]
 	if found {
-		return unmarshaller(logger, jsonrpcResponse)
+		return unmarshaller(logger, jsonrpcResponse, data)
 	}
 
 	// Default to a generic response if no method-specific response is found.

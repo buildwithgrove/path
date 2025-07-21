@@ -10,8 +10,8 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// responseToStatus provides the functionality required from a response by a requestContext instance.
-var _ response = responseToStatus{}
+// responseToCometbftStatus provides the functionality required from a response by a requestContext instance.
+var _ response = responseToCometbftStatus{}
 
 // TODO_IMPROVE(@commoddity): The actual `coretypes.ResultStatus` struct causes
 // an unmarshalling error due to type mismatch in a number of fields:
@@ -49,16 +49,17 @@ type (
 	}
 )
 
-// responseUnmarshallerStatus deserializes the provided payloadxz
-// into a responseToStatus struct, adding any encountered errors
+// responseUnmarshallerCometbftStatus deserializes the provided payload
+// into a responseToCometbftStatus struct, adding any encountered errors
 // to the returned struct.
-func responseUnmarshallerStatus(
+func responseUnmarshallerCometbftStatus(
 	logger polylog.Logger,
 	jsonrpcResp jsonrpc.Response,
+	_ []byte,
 ) (response, error) {
 	// The endpoint returned an error: no need to do further processing of the response.
 	if jsonrpcResp.IsError() {
-		return responseToStatus{
+		return responseToCometbftStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, nil
@@ -66,7 +67,7 @@ func responseUnmarshallerStatus(
 
 	resultBytes, err := json.Marshal(jsonrpcResp.Result)
 	if err != nil {
-		return responseToStatus{
+		return responseToCometbftStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, fmt.Errorf("failed to marshal result: %w", err)
@@ -75,13 +76,13 @@ func responseUnmarshallerStatus(
 	// Then unmarshal the JSON bytes into the ResultStatus struct
 	var result ResultStatus
 	if err := json.Unmarshal(resultBytes, &result); err != nil {
-		return responseToStatus{
+		return responseToCometbftStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResp,
 		}, fmt.Errorf("failed to unmarshal result: %w", err)
 	}
 
-	here := responseToStatus{
+	here := responseToCometbftStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResp,
 		chainID:           result.NodeInfo.Network,
@@ -92,9 +93,9 @@ func responseUnmarshallerStatus(
 	return here, nil
 }
 
-// responseToStatus captures the fields expected in a
+// responseToCometbftStatus captures the fields expected in a
 // response to a block height request.
-type responseToStatus struct {
+type responseToCometbftStatus struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
@@ -119,10 +120,10 @@ type responseToStatus struct {
 
 // GetObservation returns an observation using a block height request's response.
 // Implements the response interface.
-func (r responseToStatus) GetObservation() qosobservations.CosmosSDKEndpointObservation {
+func (r responseToCometbftStatus) GetObservation() qosobservations.CosmosSDKEndpointObservation {
 	return qosobservations.CosmosSDKEndpointObservation{
-		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_StatusResponse{
-			StatusResponse: &qosobservations.CosmosSDKStatusResponse{
+		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_CometbftStatusResponse{
+			CometbftStatusResponse: &qosobservations.CometBFTStatusResponse{
 				ChainIdResponse:           r.chainID,
 				CatchingUpResponse:        r.catchingUp,
 				LatestBlockHeightResponse: r.latestBlockHeight,
@@ -133,7 +134,7 @@ func (r responseToStatus) GetObservation() qosobservations.CosmosSDKEndpointObse
 
 // GetResponsePayload returns the payload for the response to a `/status` request.
 // Implements the response interface.
-func (r responseToStatus) GetResponsePayload() []byte {
+func (r responseToCometbftStatus) GetResponsePayload() []byte {
 	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshaling failed.
 	bz, err := json.Marshal(r.jsonRPCResponse)
 	if err != nil {
@@ -146,13 +147,13 @@ func (r responseToStatus) GetResponsePayload() []byte {
 // returns an HTTP status code corresponding to the underlying JSON-RPC response code.
 // DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
 // Implements the response interface.
-func (r responseToStatus) GetResponseStatusCode() int {
+func (r responseToCometbftStatus) GetResponseStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
-// GetHTTPResponse builds and returns the httpResponse matching the responseToStatus instance.
+// GetHTTPResponse builds and returns the httpResponse matching the responseToCometbftStatus instance.
 // Implements the response interface.
-func (r responseToStatus) GetHTTPResponse() httpResponse {
+func (r responseToCometbftStatus) GetHTTPResponse() httpResponse {
 	return httpResponse{
 		responsePayload: r.GetResponsePayload(),
 		httpStatusCode:  r.GetResponseStatusCode(),

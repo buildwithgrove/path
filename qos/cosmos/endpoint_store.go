@@ -92,16 +92,23 @@ func applyObservation(
 		return
 	}
 
-	// If healthResponse is not nil, the observation is for a health check.
-	if observation.GetHealthResponse() != nil {
-		applyHealthObservation(endpoint, observation.GetHealthResponse())
+	// If cometbftHealthResponse is not nil, the observation is for a cometbft health check.
+	if observation.GetCometbftHealthResponse() != nil {
+		applyCometbftHealthObservation(endpoint, observation.GetCometbftHealthResponse())
 		endpointWasMutated = true
 		return
 	}
 
-	// If statusResponse is not nil, the observation is for a status check.
-	if observation.GetStatusResponse() != nil {
-		applyStatusObservation(endpoint, observation.GetStatusResponse())
+	// If cometbftStatusResponse is not nil, the observation is for a cometbft status check.
+	if observation.GetCometbftStatusResponse() != nil {
+		applyCometbftStatusObservation(endpoint, observation.GetCometbftStatusResponse())
+		endpointWasMutated = true
+		return
+	}
+
+	// If cosmosStatusResponse is not nil, the observation is for a cosmos status check.
+	if observation.GetCosmosStatusResponse() != nil {
+		applyCosmosStatusObservation(endpoint, observation.GetCosmosStatusResponse())
 		endpointWasMutated = true
 		return
 	}
@@ -123,26 +130,36 @@ func applyEmptyResponseObservation(endpoint *endpoint) {
 	endpoint.invalidResponseLastObserved = &now
 }
 
-// applyHealthObservation updates the health check if a valid observation is provided.
-func applyHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CosmosSDKHealthResponse) {
+// applyCometbftHealthObservation updates the health check if a valid observation is provided.
+func applyCometbftHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CometBFTHealthResponse) {
 	healthy := healthResponse.GetHealthStatusResponse()
-	endpoint.checkHealth = endpointCheckHealth{
+	endpoint.checkCometbftHealth = endpointCheckHealth{
 		healthy:   &healthy,
 		expiresAt: time.Now().Add(checkHealthInterval),
 	}
 }
 
-// applyStatusObservation updates the status check if a valid observation is provided.
-func applyStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosSDKStatusResponse) {
+// applyCometbftStatusObservation updates the status check if a valid observation is provided.
+func applyCometbftStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CometBFTStatusResponse) {
 	chainID := statusResponse.GetChainIdResponse()
 	catchingUp := statusResponse.GetCatchingUpResponse()
 	blockHeight := parseBlockHeightResponse(statusResponse.GetLatestBlockHeightResponse())
 
-	endpoint.checkStatus = endpointCheckStatus{
+	endpoint.checkCometbftStatus = endpointCheckStatus{
 		chainID:           &chainID,
 		catchingUp:        &catchingUp,
 		latestBlockHeight: &blockHeight,
 		expiresAt:         time.Now().Add(checkStatusInterval),
+	}
+}
+
+// applyCosmosStatusObservation updates the cosmos status check if a valid observation is provided.
+func applyCosmosStatusObservation(endpoint *endpoint, cosmosStatusResponse *qosobservations.CosmosSDKStatusResponse) {
+	blockHeight := cosmosStatusResponse.GetLatestBlockHeightResponse()
+
+	endpoint.checkCosmosStatus = endpointCheckCosmosStatus{
+		latestBlockHeight: &blockHeight,
+		expiresAt:         time.Now().Add(checkCosmosStatusInterval),
 	}
 }
 

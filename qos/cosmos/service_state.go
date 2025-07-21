@@ -84,6 +84,11 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
 	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 
+	// If the service supports CosmosSDK, add the CosmosSDK endpoint checks.
+	if _, ok := rpcTypes[sharedtypes.RPCType_REST]; ok {
+		checks = append(checks, ss.getCosmosEndpointChecks(&endpoint)...)
+	}
+
 	return checks
 }
 
@@ -93,13 +98,26 @@ func (ss *serviceState) getCometBFTEndpointChecks(endpoint *endpoint) []gateway.
 	checks := []gateway.RequestQoSContext{}
 
 	// Health check should always run
-	if ss.shouldHealthCheckRun(endpoint.checkHealth) {
-		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkHealth.GetRequest()))
+	if ss.shouldCometbftHealthCheckRun(endpoint.checkCometbftHealth) {
+		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkCometbftHealth.GetRequest()))
 	}
 
 	// Status check should always run
-	if ss.shouldStatusCheckRun(endpoint.checkStatus) {
-		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkStatus.GetRequest()))
+	if ss.shouldCometbftStatusCheckRun(endpoint.checkCometbftStatus) {
+		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkCometbftStatus.GetRequest()))
+	}
+
+	return checks
+}
+
+// getCosmosEndpointChecks generates the endpoint checks for the CosmosSDK RPC type.
+// API reference: https://docs.cosmos.network/api
+func (ss *serviceState) getCosmosEndpointChecks(endpoint *endpoint) []gateway.RequestQoSContext {
+	checks := []gateway.RequestQoSContext{}
+
+	// Status check should always run
+	if ss.shouldCosmosStatusCheckRun(endpoint.checkCosmosStatus) {
+		checks = append(checks, ss.getEndpointCheckFromHTTPRequest(endpoint.checkCosmosStatus.GetRequest()))
 	}
 
 	return checks
@@ -121,13 +139,18 @@ func (ss *serviceState) getEndpointCheckFromHTTPRequest(httpReq *http.Request) *
 	}
 }
 
-// shouldHealthCheckRun returns true if the health check is not yet initialized or has expired.
-func (ss *serviceState) shouldHealthCheckRun(check endpointCheckHealth) bool {
+// shouldCometbftHealthCheckRun returns true if the health check is not yet initialized or has expired.
+func (ss *serviceState) shouldCometbftHealthCheckRun(check endpointCheckHealth) bool {
 	return check.expiresAt.IsZero() || check.IsExpired()
 }
 
-// shouldStatusCheckRun returns true if the status check is not yet initialized or has expired.
-func (ss *serviceState) shouldStatusCheckRun(check endpointCheckStatus) bool {
+// shouldCometbftStatusCheckRun returns true if the status check is not yet initialized or has expired.
+func (ss *serviceState) shouldCometbftStatusCheckRun(check endpointCheckStatus) bool {
+	return check.expiresAt.IsZero() || check.IsExpired()
+}
+
+// shouldCosmosStatusCheckRun returns true if the status check is not yet initialized or has expired.
+func (ss *serviceState) shouldCosmosStatusCheckRun(check endpointCheckCosmosStatus) bool {
 	return check.expiresAt.IsZero() || check.IsExpired()
 }
 
@@ -165,13 +188,13 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		)
 
 		// Do not update the perceived block number if the chain ID is invalid.
-		if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
+		if err := ss.isCometbftStatusValid(endpoint.checkCometbftStatus); err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid status", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
-		blockNumber, err := endpoint.checkStatus.GetLatestBlockHeight()
+		blockNumber, err := endpoint.checkCometbftStatus.GetLatestBlockHeight()
 		if err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid block height", endpointAddr)
 			continue

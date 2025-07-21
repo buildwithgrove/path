@@ -58,33 +58,36 @@ message CosmosSDKEndpointObservation {
     // Details of the response received from the endpoint
     oneof response_observation {
         // Response to `/health` request
-        CosmosSDKHealthResponse health_response = 2;
+        CometBFTHealthResponse cometbft_health_response = 2;
 
         // Response to `/status` request
-        CosmosSDKStatusResponse status_response = 3;
+        CometBFTStatusResponse cometbft_status_response = 3;
+
+        // Response to `/cosmos/base/node/v1beta1/status` request
+        CosmosSDKStatusResponse cosmos_status_response = 4;
 
         // Responses not used in endpoint validation
-        CosmosSDKUnrecognizedResponse unrecognized_response = 4;
+        CosmosSDKUnrecognizedResponse unrecognized_response = 5;
 
         // CosmosSDKEmptyResponse indicates an endpoint returned no data.
         // Used to:
         //   - Disqualify endpoints that return empty responses
         //   - Track metrics for empty response patterns
-        CosmosSDKEmptyResponse empty_response = 5;
+        CosmosSDKEmptyResponse empty_response = 6;
     }
 
     // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
 }
 
-// CosmosSDKHealthResponse stores the response to a `health` request
+// CometBFTHealthResponse stores the response to a `health` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-message CosmosSDKHealthResponse {
+message CometBFTHealthResponse {
     bool health_status_response = 1;
 }
 
-// CosmosSDKStatusResponse stores the latest block number from a `/status` request
+// CometBFTStatusResponse stores the latest block number from a `/status` request
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-message CosmosSDKStatusResponse {
+message CometBFTStatusResponse {
     // Chain ID of the endpoint. Comes from the `NodeInfo.Network` field in the `/status` response.
     // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
     string chain_id_response = 1;
@@ -98,6 +101,15 @@ message CosmosSDKStatusResponse {
     // Comes from the `SyncInfo.LatestBlockHeight` field in the `/status` response.
     // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
     string latest_block_height_response = 3;
+}
+
+// CosmosSDKStatusResponse stores the latest block number from a `/cosmos/base/node/v1beta1/status` request
+// Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
+message CosmosSDKStatusResponse {
+    // Latest block height of the endpoint.
+    // Comes from the `Height` field in the `/cosmos/base/node/v1beta1/status` response.
+    // Reference: https://docs.cosmos.network/api#tag/Service/operation/Status
+    uint64 latest_block_height_response = 1;
 }
 
 // CosmosSDKUnrecognizedResponse handles requests with methods ignored by state update
