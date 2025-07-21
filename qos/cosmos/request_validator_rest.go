@@ -15,7 +15,7 @@ import (
 )
 
 // Default timeout for REST requests
-const defaultRESTRequestTimeoutMillisec = 10_000
+const defaultRESTRequestTimeoutMillisec = 30000
 
 // validateRESTRequest validates a REST request by:
 // 1. Validating HTTP method and path
@@ -29,15 +29,13 @@ func (rv *requestValidator) validateRESTRequest(
 ) (gateway.RequestQoSContext, bool) {
 	httpRequestPath := httpRequestURL.Path
 
-	logger := rv.logger.With(
-		"validator", "REST",
-		"http_path", httpRequestPath,
-	)
+	logger := rv.logger.With("validator", "REST")
 
-	// Determine the specific RPC type based on path patterns - delegate to specialized detection
-	rpcType, err := determineRESTRPCType(httpRequestPath)
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to identify the target backend service using the request path")
+	// Determine the specific RPC type based on path patterns - use existing function
+	rpcType := determineRESTRPCType(httpRequestPath)
+	if rpcType == sharedtypes.RPCType_UNSPECIFIED {
+		err := errors.New("unknown REST path: " + httpRequestPath)
+		logger.Error().Err(err).Msg("Failed to identify the target backend service using the request path")
 		// TODO_TECHDEBT(@adshmh): Review error context creation for REST requests.
 		return rv.createRESTServiceDetectionFailureContext(httpRequestURL, httpRequestMethod, httpRequestBody, err), false
 	}

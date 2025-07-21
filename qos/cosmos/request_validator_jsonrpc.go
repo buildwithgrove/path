@@ -14,13 +14,8 @@ import (
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
-const (
-	// maximum length of the error message stored in request validation failure observations and logs.
-	maxErrMessageLen = 1000
-
-	// Default timeout for JSONRPC requests to Cosmos endpoints
-	defaultJSONRPCRequestTimeoutMillisec = 10_000
-)
+// maximum length of the error message stored in request validation failure observations and logs.
+const maxErrMessageLen = 1000
 
 // validateJSONRPCRequest validates a JSONRPC request by:
 // 1. Reading and parsing the JSONRPC request
@@ -42,8 +37,9 @@ func (rv *requestValidator) validateJSONRPCRequest(
 
 	// Determine service type based on JSONRPC request's method
 	method := string(jsonrpcReq.Method)
-	rpcType, err := detectJSONRPCServiceType(method)
-	if err != nil {
+	rpcType := detectJSONRPCServiceType(method)
+	if rpcType == sharedtypes.RPCType_UNSPECIFIED {
+		err := errors.New("unknown JSONRPC method: " + method)
 		logger.Error().Err(err).Msg("Failed to identify the target backend service using the request")
 		return rv.createJSONRPCServiceDetectionFailureContext(jsonrpcReq, err), false
 	}
@@ -173,6 +169,18 @@ func buildProtocolErrorObservation() *qosobservations.RequestError {
 		ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_PROTOCOL_ERROR,
 		ErrorDetails:   "No endpoint responses received",
 		HttpStatusCode: int32(http.StatusInternalServerError),
+	}
+}
+
+// convertToProtoBackendServiceType converts sharedtypes.RPCType to proto BackendServiceType
+func convertToProtoBackendServiceType(rpcType sharedtypes.RPCType) qosobservations.BackendServiceType {
+	switch rpcType {
+	case sharedtypes.RPCType_JSON_RPC:
+		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_JSONRPC
+	case sharedtypes.RPCType_REST:
+		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_REST
+	default:
+		return qosobservations.BackendServiceType_BACKEND_SERVICE_TYPE_UNSPECIFIED
 	}
 }
 
