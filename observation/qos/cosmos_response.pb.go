@@ -147,6 +147,7 @@ type CosmosEndpointResponseValidationResult struct {
 	//
 	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
 	// Tracks details, including the reason for the returned HTTP status code.
+	// Only set if validation succeeded.
 	//
 	// Types that are valid to be assigned to ParsedResponse:
 	//

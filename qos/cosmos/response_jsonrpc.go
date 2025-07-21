@@ -31,15 +31,17 @@ var (
 	// All response types must implement the response interface.
 	_ jsonrpcResponseValidator = &responseToHealth{}
 	_ jsonrpcResponseValidator = &responseToStatus{}
-	_ jsonrpcResponseValidator = &responseGeneric{}
 
-	// Maps API paths to their corresponding response unmarshallers
-	jsponrpcRequestEndpointResponseValidators = map[string]responseVaidator {
-		apiPathHealthCheck: responseValidatorHealth,
-		apiPathStatus:      responseValidatorStatus,
+	// Maps JSONRPC requests to their corresponding response validators, based on the JSONRPC method.
+	jsponrpcRequestEndpointResponseValidators = map[string]jsonrpcResponseVaidator{
+		"health": responseValidatorHealth,
+		"status": responseValidatorStatus,
 	}
 )
 
+// A jsonrpcResponseValidator takes a parsed JSONRPC response and verifies its contents against the expected result.
+// e.g. The response validator for "status" method verifies the result field against the expected status info struct.
+type jsonrpcResponseValidator func(polylog.Logger, jsonrpc.Response) response
 
 // unmarshalJSONRPCRequestEndpointResponse parses the supplied raw byte slice from an endpoint.
 // The raw byte is returned by an endpoint in response to a JSONRPC request.
@@ -47,21 +49,21 @@ func unmarshalJSONRPCRequestEndpointResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
-) response
+) response {
 	// Parse and validate the raw payload as a JSONRPC response.
 	jsonrpcResponse, responseValidationErr := unmarshalAsJSONRPCResponse(logger, jsonrpcReq.ID, data)
 
+	// TODO_TECHDEBT(@adshmh): Separate User-response, which could be a generic response indicating an endpoint error, from the parsed response.
 	// Endpoint response failed validation.
 	// Return a generic response to the user.
 	if responseValidationErr != nil {
-		return jsonrpcErrorResponse {
+		return jsonrpcUnrecognizedResponse{
+			logger: logger,
+			// The generic user-facing response indicating an endpoint error.
 			jsonrpcResponse: jsonrpcResponse,
-			observation: responseValidationErr,
+			validationErr:   responseValidationErr,
 		}
 	}
-
-	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
-	// This allows the method-specific handler to determine how to respond to the user.
 
 	// Lookup the JSONRPC method-specific validator for the response.
 	jsonrpcRequestMethod := string(jsonrpcReq.Method)
@@ -71,7 +73,10 @@ func unmarshalJSONRPCRequestEndpointResponse(
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return jsonrpcResponseValidatorGeneric(logger, jsonrpcResponse)
+	return jsonrpcUnrecognizedResponse{
+		logger:          logger,
+		jsonrpcResponse: jsonrpcResponse,
+	}
 }
 
 // unmarshalAsJSONRPCResponse converts raw endpoint bytes into a JSONRPC response struct.

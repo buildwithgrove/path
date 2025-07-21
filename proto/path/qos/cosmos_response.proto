@@ -44,6 +44,7 @@ message CosmosEndpointResponseValidationResult {
         //
 	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
 	// Tracks details, including the reason for the returned HTTP status code.
+	// Only set if validation succeeded.
 	oneof parsed_response {
 		JsonRpcResponse response_jsonrpc = 4;
 
