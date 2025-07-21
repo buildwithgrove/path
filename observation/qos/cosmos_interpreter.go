@@ -11,7 +11,7 @@ type CosmosSDKObservationInterpreter struct {
 	Logger polylog.Logger
 
 	// Observations contains the raw CosmosSDK request data
-	Observations *CosmosSDKRequestObservations
+	Observations *CosmosRequestObservations
 }
 
 // GetChainID returns the blockchain identifier from observations.
@@ -32,22 +32,33 @@ func (i *CosmosSDKObservationInterpreter) GetServiceID() string {
 	return i.Observations.ServiceId
 }
 
-// GetRequestMethod returns the CosmosSDK RPC method name from the route request.
+// GetRequestMethod returns the CosmosSDK RPC method name from the request profile.
 func (i *CosmosSDKObservationInterpreter) GetRequestMethod() string {
 	if i.Observations == nil {
 		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get request method: nil observations")
 		return ""
 	}
 
-	// RouteRequest can be empty in case of internal errors or parsing errors - this is expected
-	if i.Observations.RouteRequest == "" {
+	// Check if request profile is available
+	if i.Observations.RequestProfile == nil {
 		return ""
 	}
 
-	// TODO_IMPROVE: Parse the route_request to extract the actual method name
-	// For now, return the full route request as the method
-	// Example: "/health" -> "health", "/status" -> "status"
-	return i.Observations.RouteRequest
+	// Handle different request types
+	switch req := i.Observations.RequestProfile.ParsedRequest.(type) {
+	case *CosmosRequestProfile_RestRequest:
+		if req.RestRequest != nil {
+			// For REST requests, use the API path as the method
+			return req.RestRequest.ApiPath
+		}
+	case *CosmosRequestProfile_JsonrpcRequest:
+		if req.JsonrpcRequest != nil {
+			// For JSON-RPC requests, use the method name
+			return req.JsonrpcRequest.Method
+		}
+	}
+
+	return ""
 }
 
 // IsRequestSuccessful determines if the request completed without errors.
@@ -57,8 +68,8 @@ func (i *CosmosSDKObservationInterpreter) IsRequestSuccessful() bool {
 		return false
 	}
 
-	// RequestError being nil is normal for successful requests
-	return i.Observations.RequestError == nil
+	// RequestLevelError being nil is normal for successful requests
+	return i.Observations.RequestLevelError == nil
 }
 
 // GetRequestErrorType returns the error type if request failed or empty string if successful.
@@ -68,15 +79,30 @@ func (i *CosmosSDKObservationInterpreter) GetRequestErrorType() string {
 		return ""
 	}
 
-	// RequestError being nil is normal for successful requests
-	if i.Observations.RequestError == nil {
+	// RequestLevelError being nil is normal for successful requests
+	if i.Observations.RequestLevelError == nil {
 		return ""
 	}
 
-	return i.Observations.RequestError.ErrorKind.String()
+	return i.Observations.RequestLevelError.ErrorKind.String()
 }
 
-// GetRequestHTTPStatus returns the HTTP status code from the request error.
+// GetRPCType returns the RPC type from the backend service details.
+func (i *CosmosSDKObservationInterpreter) GetRPCType() string {
+	if i.Observations == nil {
+		i.Logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Cannot get RPC type: nil observations")
+		return ""
+	}
+
+	// Check if request profile and backend service details are available
+	if i.Observations.RequestProfile == nil || i.Observations.RequestProfile.BackendServiceDetails == nil {
+		return ""
+	}
+
+	return i.Observations.RequestProfile.BackendServiceDetails.BackendServiceType.String()
+}
+
+// GetRequestHTTPStatus returns the HTTP status code from the request error or endpoint responses.
 // Returns 200 if request was successful, 0 if observations are nil.
 func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
 	if i.Observations == nil {
@@ -84,10 +110,18 @@ func (i *CosmosSDKObservationInterpreter) GetRequestHTTPStatus() int32 {
 		return 0 // Return 0 to indicate observation issues to metrics
 	}
 
-	// RequestError being nil is normal for successful requests
-	if i.Observations.RequestError == nil {
-		return 200 // OK status for successful requests
+	// If there's a request-level error, return its HTTP status
+	if i.Observations.RequestLevelError != nil {
+		return i.Observations.RequestLevelError.HttpStatusCode
 	}
 
-	return i.Observations.RequestError.HttpStatusCode
+	// If there are endpoint observations, return the HTTP status from the first endpoint response
+	if len(i.Observations.EndpointObservations) > 0 {
+		if i.Observations.EndpointObservations[0].EndpointResponseValidationResult != nil {
+			return i.Observations.EndpointObservations[0].EndpointResponseValidationResult.HttpStatusCode
+		}
+	}
+
+	// Default to 200 for successful requests with no specific status
+	return 200
 }
