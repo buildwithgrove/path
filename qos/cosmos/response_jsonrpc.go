@@ -2,11 +2,14 @@ package cosmos
 
 import (
 	"encoding/json"
-	"net/http"
+	"errors"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/gateway"
+	"github.com/buildwithgrove/path/log"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -27,21 +30,21 @@ const (
 	errDataFieldUnmarshalingErr = "unmarshaling_error"
 )
 
+// A jsonrpcResponseValidator takes a parsed JSONRPC response and verifies its contents against the expected result.
+// e.g. The response validator for "status" method verifies the result field against the expected status info struct.
+type jsonrpcResponseValidator func(polylog.Logger, jsonrpc.Response) response
+
 var (
 	// All response types must implement the response interface.
-	_ jsonrpcResponseValidator = &responseToHealth{}
-	_ jsonrpcResponseValidator = &responseToStatus{}
+	_ jsonrpcResponseValidator = responseValidatorHealth
+	_ jsonrpcResponseValidator = responseValidatorStatus
 
 	// Maps JSONRPC requests to their corresponding response validators, based on the JSONRPC method.
-	jsponrpcRequestEndpointResponseValidators = map[string]jsonrpcResponseVaidator{
+	jsonrpcRequestEndpointResponseValidators = map[string]jsonrpcResponseValidator{
 		"health": responseValidatorHealth,
 		"status": responseValidatorStatus,
 	}
 )
-
-// A jsonrpcResponseValidator takes a parsed JSONRPC response and verifies its contents against the expected result.
-// e.g. The response validator for "status" method verifies the result field against the expected status info struct.
-type jsonrpcResponseValidator func(polylog.Logger, jsonrpc.Response) response
 
 // unmarshalJSONRPCRequestEndpointResponse parses the supplied raw byte slice from an endpoint.
 // The raw byte is returned by an endpoint in response to a JSONRPC request.
@@ -57,25 +60,26 @@ func unmarshalJSONRPCRequestEndpointResponse(
 	// Endpoint response failed validation.
 	// Return a generic response to the user.
 	if responseValidationErr != nil {
-		return jsonrpcUnrecognizedResponse{
+		return &jsonrpcUnrecognizedResponse{
 			logger: logger,
 			// The generic user-facing response indicating an endpoint error.
 			jsonrpcResponse: jsonrpcResponse,
-			validationErr:   responseValidationErr,
+			validationErr:   *responseValidationErr,
 		}
 	}
 
 	// Lookup the JSONRPC method-specific validator for the response.
 	jsonrpcRequestMethod := string(jsonrpcReq.Method)
-	validator, found := jsponrpcRequestEndpointResponseValidators[jsonrpcRequestMethod]
+	validator, found := jsonrpcRequestEndpointResponseValidators[jsonrpcRequestMethod]
 	if found {
 		return validator(logger, jsonrpcResponse)
 	}
 
 	// Default to a generic response if no method-specific response is found.
-	return jsonrpcUnrecognizedResponse{
+	return &jsonrpcUnrecognizedResponse{
 		logger:          logger,
 		jsonrpcResponse: jsonrpcResponse,
+		validationErr:   qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNSPECIFIED,
 	}
 }
 
@@ -94,16 +98,16 @@ func unmarshalAsJSONRPCResponse(
 			"error_type", "empty_response",
 		).Debug().Msg(errEmptyPayload.Error())
 
-		// Create a geneirc JSONRPC response for the user.
-		validationErr := CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, "", errors.New(errMsg)), &validationErr
+		// Create a generic JSONRPC response for the user.
+		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, "", errEmptyPayload), &validationErr
 	}
 
 	// Unmarshal the raw response payload into a JSONRPC response.
 	var jsonrpcResponse jsonrpc.Response
 	err := json.Unmarshal(data, &jsonrpcResponse)
 	if err != nil {
-		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
+		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRPC response.
 		// Return a generic response to the user.
 		payloadStr := string(data)
 		logger.With(
@@ -113,8 +117,8 @@ func unmarshalAsJSONRPCResponse(
 		).Debug().Msg("Failed to unmarshal endpoint payload as JSONRPC.")
 
 		// Create a generic JSONRPC response for the user.
-		validationErr := CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), &validationErr
+		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, data, err), &validationErr
 	}
 
 	// Validate the JSONRPC response.
@@ -126,8 +130,8 @@ func unmarshalAsJSONRPCResponse(
 			"error_type", "validation_error",
 		).Debug().Msg("Failed to unmarshal endpoint payload as JSONRPC: JSONRPC response failed validation.")
 
-		validationErr := CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_JSONRPC
-		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err), &validationErr
+		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, data, err), &validationErr
 	}
 
 	// JSONRPC response successfully validated.
@@ -136,16 +140,15 @@ func unmarshalAsJSONRPCResponse(
 
 // getGenericJSONRPCErrResponse returns a generic response wrapped around a JSONRPC error response with the supplied ID, error, and the invalid payload in the "data" field.
 func getGenericJSONRPCErrResponse(
+	logger polylog.Logger,
 	id jsonrpc.ID,
 	malformedResponsePayload []byte,
 	err error,
-) responseGeneric {
+) jsonrpc.Response {
 	errData := map[string]string{
 		errDataFieldRawBytes:        string(malformedResponsePayload),
 		errDataFieldUnmarshalingErr: err.Error(),
 	}
 
-	return responseGeneric{
-		Response: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
-	}
+	return jsonrpc.NewErrResponseInternalErr(id, err)
 }

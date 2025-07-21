@@ -104,7 +104,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 		logger:                       logger,
 		servicePayload:               servicePayload,
 		observations:                 requestObservation,
-		endpointResponseValidator:    getRESTRequestEndpointResponseValidator(),
+		endpointResponseValidator:    getRESTRequestEndpointResponseValidator(httpRequestURL.Path),
 		protocolErrorResponseBuilder: buildRESTProtocolErrorResponse(),
 		// Protocol-level request error observation is the same for JSONRPC and REST.
 		protocolErrorObservationBuilder: buildProtocolErrorObservation,
@@ -133,10 +133,10 @@ func buildRESTServicePayload(
 	}
 }
 
-func getRESTRequestEndpointResponseValidator() func(polylog.Logger, []byte) response {
+func getRESTRequestEndpointResponseValidator(requestPath string) func(polylog.Logger, []byte) response {
 	// Delegate the unmarshaling/validation of endpoint response to the specialized REST unmarshaler.
 	return func(logger polylog.Logger, endpointResponseBz []byte) response {
-		return unmarshalRESTRequestEndpointResponse(logger, endpointResponseBz)
+		return unmarshalRESTRequestEndpointResponse(logger, requestPath, endpointResponseBz)
 	}
 }
 

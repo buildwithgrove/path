@@ -2,17 +2,13 @@ package cosmos
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
+	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 )
-
-// responseRESTStatus provides the functionality required from a response by a requestContext instance
-var _ response = responseRESTStatus{}
 
 // TODO_IMPROVE(@commoddity): The actual `coretypes.ResultStatus` struct causes
 // an unmarshalling error due to type mismatch in a number of fields:
@@ -50,34 +46,10 @@ type (
 	}
 )
 
-// responseUnmarshalerRESTStatus deserializes the provided payload
-// into a responseRESTStatus struct, handling JSON-RPC responses from /status endpoint
-// Always returns a valid response interface, never returns an error.
-func responseUnmarshalerRESTStatus(
-	logger polylog.Logger,
-	data []byte,
-) response {
-	logger = logger.With("response_processor", "status")
-
-	// Handle empty responses
-	if len(data) == 0 {
-		logger.Error().
-			Str("endpoint", "/status").
-			Msg("Received empty JSON-RPC response from /status endpoint")
-
-		return getRESTStatusEmptyErrorResponse(logger)
-	}
-
-	// Unmarshal as JSON-RPC response since /status returns JSON-RPC
-	var jsonrpcResponse jsonrpc.Response
-	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
-		logger.Error().
-			Err(err).
-			Str("raw_payload", string(data)).
-			Msg("Failed to unmarshal /status response as JSON-RPC")
-
-		return getRESTStatusUnmarshalErrorResponse(logger, err)
-	}
+// responseValidatorStatus implements jsonrpcResponseValidator for /status endpoint
+// Takes a parsed JSONRPC response and validates it as a status response
+func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
+	logger = logger.With("response_validator", "status")
 
 	// The endpoint returned an error: no need to do further processing of the response
 	if jsonrpcResponse.IsError() {
@@ -86,7 +58,7 @@ func responseUnmarshalerRESTStatus(
 			Int("jsonrpc_error_code", jsonrpcResponse.Error.Code).
 			Msg("Endpoint returned JSON-RPC error for /status request")
 
-		return responseRESTStatus{
+		return &responseStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -99,7 +71,11 @@ func responseUnmarshalerRESTStatus(
 			Err(err).
 			Msg("Failed to marshal JSON-RPC result for /status")
 
-		return getRESTStatusUnmarshalErrorResponse(logger, err)
+		// Return error response but still include the original JSONRPC response
+		return &responseStatus{
+			logger:          logger,
+			jsonRPCResponse: jsonrpcResponse,
+		}
 	}
 
 	// Then unmarshal the JSON bytes into the ResultStatus struct
@@ -110,7 +86,11 @@ func responseUnmarshalerRESTStatus(
 			Str("result_data", string(resultBytes)).
 			Msg("Failed to unmarshal JSON-RPC result into ResultStatus structure")
 
-		return getRESTStatusUnmarshalErrorResponse(logger, err)
+		// Return error response but still include the original JSONRPC response
+		return &responseStatus{
+			logger:          logger,
+			jsonRPCResponse: jsonrpcResponse,
+		}
 	}
 
 	logger.Debug().
@@ -119,19 +99,18 @@ func responseUnmarshalerRESTStatus(
 		Str("latest_block_height", result.SyncInfo.LatestBlockHeight).
 		Msg("Successfully parsed /status response")
 
-	return responseRESTStatus{
+	return &responseStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResponse,
 		chainID:           result.NodeInfo.Network,
 		catchingUp:        result.SyncInfo.CatchingUp,
 		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
-		validationError:   nil, // No validation error for successfully unmarshaled responses
 	}
 }
 
-// responseRESTStatus captures the fields expected in a
+// responseStatus captures the fields expected in a
 // response to a /status request (which returns JSON-RPC)
-type responseRESTStatus struct {
+type responseStatus struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes
@@ -152,103 +131,29 @@ type responseRESTStatus struct {
 	// Comes from the `SyncInfo.LatestBlockHeight` field in the `/status` response
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
 	latestBlockHeight string
-
-	// validationError tracks any validation issues with the response
-	validationError *qosobservations.CosmosSDKResponseValidationError
 }
 
 // GetObservation returns an observation using a /status request's response
 // Implements the response interface
-func (r responseRESTStatus) GetObservation() qosobservations.CosmosSDKEndpointObservation {
-	return qosobservations.CosmosSDKEndpointObservation{
-		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_RestObservation{
-			RestObservation: &qosobservations.CosmosSDKEndpointRestObservation{
-				ParsedResponse: &qosobservations.CosmosSDKEndpointRestObservation_StatusResponse{
-					StatusResponse: &qosobservations.CosmosSDKRESTStatusResponse{
-						HttpStatusCode:            int32(r.GetResponseStatusCode()),
-						ChainIdResponse:           r.chainID,
-						CatchingUpResponse:        r.catchingUp,
-						LatestBlockHeightResponse: r.latestBlockHeight,
-					},
+func (r *responseStatus) GetObservation() qosobservations.CosmosEndpointObservation {
+	return qosobservations.CosmosEndpointObservation{
+		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
+			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
+			HttpStatusCode:         int32(r.jsonRPCResponse.GetRecommendedHTTPStatusCode()),
+			ValidationError:        nil, // No validation error for successfully processed responses
+			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseStatus{
+				ResponseStatus: &qosobservations.CosmosResponseStatus{
+					ChainId:           r.chainID,
+					CatchingUp:        r.catchingUp,
+					LatestBlockHeight: r.latestBlockHeight,
 				},
 			},
 		},
 	}
 }
 
-// GetResponsePayload returns the payload for the response to a `/status` request
+// GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r responseRESTStatus) GetResponsePayload() []byte {
-	return r.getResponsePayload()
-}
-
-// getResponsePayload returns the JSON-RPC response as bytes
-func (r responseRESTStatus) getResponsePayload() []byte {
-	responseBytes, _ := json.Marshal(r.jsonRPCResponse)
-	return responseBytes
-}
-
-// GetResponseStatusCode returns an HTTP status code corresponding to the underlying JSON-RPC response code
-// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards
-// Implements the response interface
-func (r responseRESTStatus) GetResponseStatusCode() int {
-	// If we have a validation error, return 500
-	if r.validationError != nil {
-		return http.StatusInternalServerError
-	}
-
-	// Use JSON-RPC response's recommended status code
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
-}
-
-// GetHTTPResponse builds and returns the httpResponse matching the responseRESTStatus instance
-// Implements the response interface
-func (r responseRESTStatus) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.GetResponsePayload(),
-		httpStatusCode:  r.GetResponseStatusCode(),
-	}
-}
-
-// getRESTStatusEmptyErrorResponse creates an error response for empty /status responses
-func getRESTStatusEmptyErrorResponse(logger polylog.Logger) responseRESTStatus {
-	errorResp := jsonrpc.GetErrorResponse(
-		jsonrpc.IDFromInt(-1), // Use -1 for unknown ID
-		errCodeJSONRPCEmptyResponse,
-		"the /status endpoint returned an empty response",
-		nil,
-	)
-
-	validationError := qosobservations.CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_EMPTY
-
-	return responseRESTStatus{
-		logger:          logger,
-		jsonRPCResponse: errorResp,
-		validationError: &validationError,
-	}
-}
-
-// getRESTStatusUnmarshalErrorResponse creates an error response for /status unmarshaling failures
-func getRESTStatusUnmarshalErrorResponse(
-	logger polylog.Logger,
-	err error,
-) responseRESTStatus {
-	errData := map[string]string{
-		errDataFieldJSONRPCUnmarshalingErr: err.Error(),
-	}
-
-	errorResp := jsonrpc.GetErrorResponse(
-		jsonrpc.IDFromInt(-1), // Use -1 for unknown ID
-		errCodeJSONRPCUnmarshaling,
-		"Failed to parse /status response as JSON-RPC",
-		errData,
-	)
-
-	validationError := qosobservations.CosmosSDKResponseValidationError_COSMOS_SDK_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-
-	return responseRESTStatus{
-		logger:          logger,
-		jsonRPCResponse: errorResp,
-		validationError: &validationError,
-	}
+func (r *responseStatus) GetHTTPResponse() gateway.HTTPResponse {
+	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonRPCResponse)
 }
