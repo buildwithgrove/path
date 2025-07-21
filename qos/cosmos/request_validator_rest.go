@@ -3,6 +3,7 @@ package cosmos
 import (
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -21,115 +22,144 @@ type restRequestValidator struct{}
 // 3. Checking if the RPC type is supported
 // 4. Creating the request context with all necessary information
 func (rv *restRequestValidator) validateRESTRequest(
-	req *http.Request,
-	supportedAPIs map[sharedtypes.RPCType]struct{},
-	logger polylog.Logger,
-	chainID string,
-	serviceID protocol.ServiceID,
+	httpRequestURL *url.URL,
+	httpRequestMethod string,
+	httpRequestBody []byte,
 ) (gateway.RequestQoSContext, bool) {
-
-	logger = logger.With("validator", "REST")
-
-	// Validate HTTP method is appropriate for REST
-	if !rv.isValidRESTMethod(req.Method) {
-		logger.Warn().Str("method", req.Method).Msg("Invalid HTTP method for REST API")
-		return createInvalidMethodError(req.Method, logger, chainID, serviceID, "REST"), false
-	}
-
 	// Determine the specific RPC type based on path patterns - delegate to specialized detection
-	rpcType := determineRESTRPCType(req.URL.Path)
-	logger = logger.With("detected_rpc_type", rpcType.String())
+	rpcType := determineRESTRPCType(httpRequestPath)
+	logger = logger.With(
+		"validator", "REST",
+		"detected_rpc_type", rpcType.String(),
+	)
 
 	// Check if this RPC type is supported by the service
-	if _, supported := supportedAPIs[rpcType]; !supported {
+	if _, supported := rv.supportedAPIs[rpcType]; !supported {
 		logger.Warn().Msg("Request uses unsupported RPC type")
 		return createUnsupportedRPCTypeError(rpcType, logger, chainID, serviceID), false
 	}
 
-	// Validate the path is a recognized REST API pattern - delegate to specialized validation
-	if !isValidRESTPath(req.URL.Path) {
-		logger.Warn().Str("path", req.URL.Path).Msg("Invalid path for REST API")
-		return createInvalidPathError(req.URL.Path, logger, chainID, serviceID), false
-	}
-
-	// Read request body if present (for POST/PUT requests)
-	body, err := rv.readRequestBody(req)
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed to read REST request body")
-		return createBodyReadError(err, logger, chainID, serviceID), false
-	}
-
 	logger.Debug().
-		Int("body_length", len(body)).
+		Int("body_length", len(httpRequestBody)).
 		Msg("REST request validation successful")
 
+	// Build and return the request context
+	return rv.buildRESTRequestContext(
+		rpcType,
+		httpRequestURL,
+		httpRequestMethod,
+		httpRequestBody,
+	)
+}
+
+// TODO_TECHDEBT(@adshmh): Validate the REST payload based on HTTP request's path.
+//
+func (rv *requestValidator) buildRESTRequestContext(
+	rpcType sharedtypes.RPCType,
+	httpRequestURL *url.URL,
+	httpRequestMethod string,
+	httpRequestBody []byte,
+) (gateway.RequestQoSContext, bool) {
+	logger := rv.logger.With(
+		"method", "buildRESTRequestContext",
+	)
+
+	// Build service payload
+	servicePayload := buildRESTServicePayload(
+		rpcType,
+		httpRequestURL,
+		httpRequestMethod,
+		httpRequestBody,
+	)
+
+	// Generate the QoS observation for the request.
+	// requestContext will amend this with endpoint observation(s).
+	requestObservation := rv.buildRESTRequestObservations(rpcType, servicePayload)
+
+	logger.With(
+		"payload_length", len(servicePayload.Data),
+		"request_path", servicePayload.Path,
+	).Debug().Msg("REST request validation successful.")
+
 	// Create specialized REST context
-	return &restContext{
+	return &requestContext{
 		logger:               logger,
-		chainID:              chainID,
-		serviceID:            serviceID,
-		httpMethod:           req.Method,
-		urlPath:              req.URL.Path,
-		requestBody:          body,
-		rpcType:              rpcType,
-		requestPayloadLength: uint(len(body)),
-		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		headers:              extractRelevantHeaders(req),
+		servicePayload: servicePayload,
+		observations:   requestObservations,
+		endpointResponseValidator: getRESTRequestEndpointResponseValidator(jsonrpcReq),
+		protocolErrorResponseBuilder: buildRESTProtocolErrorResponse,
+		// Protocol-level request error observation is the same for JSONRPC and REST.
+		protocolErrorObservationBuilder: buildProtocolErrorObservation,
 	}, true
 }
 
-// isValidRESTMethod checks if the HTTP method is valid for REST API requests
-func (rv *restRequestValidator) isValidRESTMethod(method string) bool {
-	validMethods := []string{
-		http.MethodGet,     // Query data
-		http.MethodPost,    // Submit transactions, complex queries
-		http.MethodPut,     // Update operations (less common)
-		http.MethodDelete,  // Delete operations (less common)
-		http.MethodHead,    // Header-only requests
-		http.MethodOptions, // CORS preflight
+func buildRESTServicePayload(
+	rpcType sharedtypes.RpcType,
+	httpRequestURL *url.URL,
+	httpRequestMethod string,
+	httpRequestBody []byte
+) (protocol.Payload, error) {
+	path := httpRequestURL.Path
+	if httpRequestURL.RawQuery != "" {
+		path += "?" + httpRequestURL.RawQuery
 	}
 
-	for _, validMethod := range validMethods {
-		if method == validMethod {
-			return true
-		}
-	}
-	return false
+	return protocol.Payload{
+		Data:            string(reqBz),
+		Method:          httpRequestMethod,
+		TimeoutMillisec: defaultJSONRPCRequestTimeoutMillisec,
+		// Add the RPCType hint, so protocol sets correct HTTP headers for the endpoint.
+		RPCType:         rpcType,
+		// Set the request path, including raw query, if used.
+		Path:            path,
+	}, nil
 }
 
-// readRequestBody safely reads the HTTP request body
-func (rv *restRequestValidator) readRequestBody(req *http.Request) ([]byte, error) {
-	if req.Body == nil {
-		return nil, nil
-	}
+func getJSONRPCRequestEndpointResponseValidator(
+	jsonrpcReq jsonrpc.Request,
+) func(polylog.Logger, []byte) response {
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
+	// Delegate the unmarshaling/validation of endpoint response to the specialized JSONRPC unmarshaler.
+	return func(logger polylog.Logger, endpointResponseBz []byte) response {
+		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
 	}
-
-	return body, nil
 }
 
-// extractRelevantHeaders extracts headers that should be forwarded to endpoints
-func extractRelevantHeaders(req *http.Request) map[string]string {
-	headers := make(map[string]string)
+func (rv *requestValidator) buildRESTRequestObservations(
+	rpcType sharedtypes.RPCType,
+	servicePayload protocol.Payload,
+) *qosobservations.CosmosRequestObservations {
 
-	// Forward common headers that might be relevant for REST API calls
-	relevantHeaders := []string{
-		"Accept",
-		"Accept-Encoding",
-		"Authorization",
-		"User-Agent",
-		"X-Forwarded-For",
-		"X-Real-IP",
+	return &qosobservations.CosmosRequestObservations{
+		ChainId:              rv.chainID,
+		ServiceId:            string(rv.serviceID),
+		RequestPayloadLength: uint32(len(servicePayload.Data)),
+		requestOrigin:        qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RpcType:              convertToProtoRPCType(rpcType),
+		RestRequest:          ...
 	}
-
-	for _, headerName := range relevantHeaders {
-		if value := req.Header.Get(headerName); value != "" {
-			headers[headerName] = value
-		}
-	}
-
-	return headers
 }
+
+// TODO_TECHDEBT(@adshmh): Review the expected user experience on protocol errors in REST requests.
+//
+func buildRESTProtocolErrorResponse() func(logger polylog.Logger) gateway.HTTPResponse {
+	return func() response {
+		errorResp := jsonrpc.NewErrResponseInternalErr(
+			jsonrpc.ID{}, // use null as ID.
+			errors.New("protocol-level error: no endpoint responses received"),
+		)
+		return qos.BuildHTTPResponseFromJSONRPCResponse(logger, errorResp)
+	}
+}
+
+func buildRESTProtocolErrorResponse() func(logger polylog.Logger) gateway.HTTPResponse {
+	return func() response {
+		errorResp := jsonrpc.NewErrResponseInternalErr(
+			jsonrpc.ID{}, // use null as ID.
+			errors.New("protocol-level error: no endpoint responses received"),
+		)
+		return qos.BuildHTTPResponseFromJSONRPCResponse(logger, errorResp)
+	}
+}
+
+

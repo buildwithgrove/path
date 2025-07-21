@@ -29,66 +29,84 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 		"http_method", req.Method,
 	)
 
+	// Read the request body.
+	// This is necessary to distinguish REST vs. JSONRPC on request with POST HTTP method.
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to parse JSONRPC request")
+		// Return a context with a JSONRPC-formatted response, as we cannot detect the request type.
+		return createHTTPBodyReadFailureContext(err), false
+	}
+
 	// Determine request type and route to appropriate validator
-	if rv.isJSONRPCRequest(req) {
+	if isJSONRPCRequest(req.Method, body) {
 		logger.Debug().Msg("Routing to JSONRPC validator")
 
-		// Initialize JSONRPC validator with shared fields and validate
-		jsonrpcValidator := jsonrpcRequestValidator{}
-		return jsonrpcValidator.validateJSONRPCRequest(
-			req,
-			rv.supportedAPIs,
-			logger,
-			rv.chainID,
-			rv.serviceID,
-			rv.serviceState,
-		)
+		// Validate the JSONRPC request.
+		// Builds and returns a context to handle the request.
+		// Uses a specialized context for handling invalid requests.
+		return rv.validateJSONRPCRequest(body)
 	} else {
 		logger.Debug().Msg("Routing to REST validator")
 
-		// Initialize REST validator with shared fields and validate
-		restValidator := restRequestValidator{}
-		return restValidator.validateRESTRequest(
-			req,
-			rv.supportedAPIs,
-			logger,
-			rv.chainID,
-			rv.serviceID,
-			rv.serviceState,
-		)
+		// Build and returns a request context to handle the REST request.
+		// Uses a specialized context for handling invalid requests.
+		return rv.validateRESTRequest(req.URL, req.Method, body)
 	}
 }
 
 // isJSONRPCRequest determines if the incoming HTTP request is a JSONRPC request
-// Uses simple heuristics: POST method and specific content types or paths
-func (rv *requestValidator) isJSONRPCRequest(req *http.Request) bool {
-	// JSONRPC requests are typically POST with specific patterns
-	if req.Method != http.MethodPost {
+// Uses simple heuristics: POST method and specific content.
+func isJSONRPCRequest(httpMethod string, httpRequestBody []byte) bool {
+	// Stage 1: Non-POST requests are always REST
+	if httpMethod != http.MethodPost {
 		return false
 	}
 
-	// Check content type if present
-	contentType := req.Header.Get("Content-Type")
-	if contentType == "application/json" || contentType == "application/json-rpc" {
+	// Stage 2: POST requests - check for JSONRPC payload
+	if strings.Contains(string(httpRequestBody), "jsonrpc") {
 		return true
 	}
 
-	// Check for common JSONRPC paths (many services use root path)
-	path := req.URL.Path
-	jsonrpcPaths := []string{
-		"/",
-		"/rpc",
-		"/jsonrpc",
-		"/v1",
-		"/api/v1",
-	}
+	// Stage 3: POST without jsonrpc field is REST
+	return false
+}
 
-	for _, jsonrpcPath := range jsonrpcPaths {
-		if path == jsonrpcPath {
-			return true
-		}
-	}
+// createHTTPBodyReadFailureContext:
+// - Creates an error context for HTTP body read failures
+// - Used when the HTTP request body cannot be read
+func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.RequestQoSContext {
+	// Create the JSON-RPC error response
+	response := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
 
-	// Default to JSONRPC for POST requests without clear REST patterns
-	return true
+	// Create the observations object with the HTTP body read failure observation
+	observations := createHTTPBodyReadFailureObservation(rv.serviceID, rv.chainID, err, response)
+
+	// Build and return the error context
+	return &qos.RequestErrorContext{
+		Logger:   rv.logger,
+		Response: response,
+		Observations: &qosobservations.Observations{
+			ServiceObservations: observations,
+		},
+	}
+}
+
+func createHTTPBodyReadFailureObservation(
+	serviceID protocol.ServiceID,
+	chainID string,
+	err error,
+	jsonrpcResponse jsonrpc.Response,
+) *qosobservations.Observations_Cosmos {
+	return &qosobservations.Observations_Cosmos{
+		Cosmos: &qosobservations.CosmosRequestObservations{
+			ServiceId: string(serviceID),
+			ChainId:   chainID,
+			RequestError: &qosobservations.RequestError{
+				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR,
+				ErrorDetails:   err.Error(),
+				HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
+			},
+		},
+	}
 }

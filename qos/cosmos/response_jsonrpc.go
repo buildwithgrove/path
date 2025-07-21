@@ -27,6 +27,53 @@ const (
 	errDataFieldUnmarshalingErr = "unmarshaling_error"
 )
 
+var (
+	// All response types must implement the response interface.
+	_ jsonrpcResponseValidator = &responseToHealth{}
+	_ jsonrpcResponseValidator = &responseToStatus{}
+	_ jsonrpcResponseValidator = &responseGeneric{}
+
+	// Maps API paths to their corresponding response unmarshallers
+	jsponrpcRequestEndpointResponseValidators = map[string]responseVaidator {
+		apiPathHealthCheck: responseValidatorHealth,
+		apiPathStatus:      responseValidatorStatus,
+	}
+)
+
+
+// unmarshalJSONRPCRequestEndpointResponse parses the supplied raw byte slice from an endpoint.
+// The raw byte is returned by an endpoint in response to a JSONRPC request.
+func unmarshalJSONRPCRequestEndpointResponse(
+	logger polylog.Logger,
+	jsonrpcReq jsonrpc.Request,
+	data []byte,
+) response
+	// Parse and validate the raw payload as a JSONRPC response.
+	jsonrpcResponse, responseValidationErr := unmarshalAsJSONRPCResponse(logger, jsonrpcReq.ID, data)
+
+	// Endpoint response failed validation.
+	// Return a generic response to the user.
+	if responseValidationErr != nil {
+		return jsonrpcErrorResponse {
+			jsonrpcResponse: jsonrpcResponse,
+			observation: responseValidationErr,
+		}
+	}
+
+	// NOTE: We intentionally skip checking whether the JSON-RPC response indicates an error.
+	// This allows the method-specific handler to determine how to respond to the user.
+
+	// Lookup the JSONRPC method-specific validator for the response.
+	jsonrpcRequestMethod := string(jsonrpcReq.Method)
+	validator, found := jsponrpcRequestEndpointResponseValidators[jsonrpcRequestMethod]
+	if found {
+		return validator(logger, jsonrpcResponse)
+	}
+
+	// Default to a generic response if no method-specific response is found.
+	return jsonrpcResponseValidatorGeneric(logger, jsonrpcResponse)
+}
+
 // unmarshalAsJSONRPCResponse converts raw endpoint bytes into a JSONRPC response struct.
 // The second return value contains the validation failure, if any.
 func unmarshalAsJSONRPCResponse(
