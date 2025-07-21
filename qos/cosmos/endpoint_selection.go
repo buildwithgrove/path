@@ -128,6 +128,7 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 //
 // It returns an error if:
 // - The endpoint has returned an empty response in the past.
+// - The endpoint has returned an unmarshaling error within the last 30 minutes.
 // - The endpoint has returned an invalid response within the last 30 minutes.
 // - The endpoint's response to a `/status` request indicates an invalid chain ID.
 // - The endpoint's response to a `/status` request indicates it's catching up.
@@ -140,6 +141,15 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	// Check if the endpoint has returned an empty response.
 	if endpoint.hasReturnedEmptyResponse {
 		return fmt.Errorf("empty response validation failed: %w", errEmptyResponseObs)
+	}
+
+	// Check if the endpoint has returned an unmarshaling error within the last 30 minutes.
+	if endpoint.hasReturnedUnmarshalingError && endpoint.invalidResponseLastObserved != nil {
+		timeSinceInvalidResponse := time.Since(*endpoint.invalidResponseLastObserved)
+		if timeSinceInvalidResponse < invalidResponseTimeout {
+			return fmt.Errorf("recent unmarshaling error validation failed (%.0f minutes ago): %w",
+				timeSinceInvalidResponse.Minutes(), errRecentInvalidResponseObs)
+		}
 	}
 
 	// Check if the endpoint has returned an invalid response within the invalid response timeout period.

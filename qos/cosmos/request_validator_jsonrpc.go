@@ -1,21 +1,26 @@
 package cosmos
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
+	"errors"
 	"net/http"
+
+	"github.com/pokt-network/poktroll/pkg/polylog"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
-// maximum length of the error message stored in request validation failure observations and logs.
-const maxErrMessageLen = 1000
+const (
+	// maximum length of the error message stored in request validation failure observations and logs.
+	maxErrMessageLen = 1000
+
+	defaultJSONRPCRequestTimeoutMillisec = 10_000
+)
 
 // validateJSONRPCRequest validates a JSONRPC request by:
 // 1. Reading and parsing the JSONRPC request
@@ -38,11 +43,6 @@ func (rv *requestValidator) validateJSONRPCRequest(
 	// Determine service type based on JSONRPC request's method
 	method := string(jsonrpcReq.Method)
 	rpcType := detectJSONRPCServiceType(method)
-	if rpcType == sharedtypes.RPCType_UNSPECIFIED {
-		err := errors.New("unknown JSONRPC method: " + method)
-		logger.Error().Err(err).Msg("Failed to identify the target backend service using the request")
-		return rv.createJSONRPCServiceDetectionFailureContext(jsonrpcReq, err), false
-	}
 
 	// Hydrate the logger with data extracted from the request.
 	rv.logger = logger.With(
@@ -187,7 +187,7 @@ func convertToProtoBackendServiceType(rpcType sharedtypes.RPCType) qosobservatio
 // createJSONRPCParseFailureContext creates an error context for JSONRPC parsing failures
 func (rv *requestValidator) createJSONRPCParseFailureContext(err error) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response with empty ID since we couldn't parse the request
-	response := jsonrpc.NewErrResponseParseError(jsonrpc.ID{}, err)
+	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
 	// Create the observations object with the parse failure observation
 	observations := rv.createJSONRPCParseFailureObservation(err, response)
@@ -195,7 +195,7 @@ func (rv *requestValidator) createJSONRPCParseFailureContext(err error) gateway.
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,
@@ -223,7 +223,7 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 // createJSONRPCServiceDetectionFailureContext creates an error context for service detection failures
 func (rv *requestValidator) createJSONRPCServiceDetectionFailureContext(jsonrpcReq jsonrpc.Request, err error) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response
-	response := jsonrpc.NewErrResponseMethodNotFound(jsonrpcReq.ID, err)
+	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpcReq.ID, err)
 
 	// Create the observations object with the service detection failure observation
 	observations := rv.createJSONRPCServiceDetectionFailureObservation(jsonrpcReq, err, response)
@@ -231,7 +231,7 @@ func (rv *requestValidator) createJSONRPCServiceDetectionFailureContext(jsonrpcR
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,
@@ -266,7 +266,7 @@ func (rv *requestValidator) createJSONRPCServiceDetectionFailureObservation(
 func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq jsonrpc.Request, rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response
 	err := errors.New("unsupported RPC type: " + rpcType.String())
-	response := jsonrpc.NewErrResponseMethodNotFound(jsonrpcReq.ID, err)
+	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpcReq.ID, err)
 
 	// Create the observations object with the unsupported RPC type observation
 	observations := rv.createJSONRPCUnsupportedRPCTypeObservation(jsonrpcReq, rpcType, response)
@@ -274,7 +274,7 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq js
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,
@@ -320,7 +320,7 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureContext(jsonr
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,

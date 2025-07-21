@@ -1,8 +1,6 @@
 package cosmos
 
 import (
-	"encoding/json"
-
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/qos"

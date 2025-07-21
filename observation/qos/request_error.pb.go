@@ -32,6 +32,8 @@ const (
 	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR RequestErrorKind = 4 // User error: Failed to detect service type from JSONRPC method.
 	RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE    RequestErrorKind = 5 // User error: JSONRPC method maps to unsupported RPC type.
 	RequestErrorKind_REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR       RequestErrorKind = 6 // Internal error: Failed to build service payload from JSONRPC request.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR    RequestErrorKind = 7 // User error: Failed to detect service type from REST request.
+	RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE       RequestErrorKind = 8 // User error: unsupported service type in REST request.
 )
 
 // Enum value maps for RequestErrorKind.
@@ -44,6 +46,8 @@ var (
 		4: "REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR",
 		5: "REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE",
 		6: "REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR",
+		7: "REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR",
+		8: "REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE",
 	}
 	RequestErrorKind_value = map[string]int32{
 		"REQUEST_ERROR_UNSPECIFIED":                                0,
@@ -53,6 +57,8 @@ var (
 		"REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR": 4,
 		"REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE":    5,
 		"REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR":       6,
+		"REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR":    7,
+		"REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE":       8,
 	}
 )
 
@@ -158,7 +164,7 @@ const file_path_qos_request_error_proto_rawDesc = "" +
 	"\n" +
 	"error_kind\x18\x01 \x01(\x0e2\x1a.path.qos.RequestErrorKindR\terrorKind\x12#\n" +
 	"\rerror_details\x18\x02 \x01(\tR\ferrorDetails\x12(\n" +
-	"\x10http_status_code\x18\x03 \x01(\x05R\x0ehttpStatusCode*\xeb\x02\n" +
+	"\x10http_status_code\x18\x03 \x01(\x05R\x0ehttpStatusCode*\xde\x03\n" +
 	"\x10RequestErrorKind\x12\x1d\n" +
 	"\x19REQUEST_ERROR_UNSPECIFIED\x10\x00\x12*\n" +
 	"&REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR\x10\x01\x12)\n" +
@@ -166,7 +172,9 @@ const file_path_qos_request_error_proto_rawDesc = "" +
 	",REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR\x10\x03\x12<\n" +
 	"8REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR\x10\x04\x129\n" +
 	"5REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE\x10\x05\x126\n" +
-	"2REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR\x10\x06B0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
+	"2REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR\x10\x06\x129\n" +
+	"5REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR\x10\a\x126\n" +
+	"2REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE\x10\bB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
 	file_path_qos_request_error_proto_rawDescOnce sync.Once

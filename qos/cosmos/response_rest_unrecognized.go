@@ -18,10 +18,9 @@ type responseRESTUnrecognized struct {
 // Returns the endpoint response payload as-is with HTTP 200 status
 func (r responseRESTUnrecognized) GetHTTPResponse() gateway.HTTPResponse {
 	// TODO_UPNEXT(@adshmh): Propagate endpoint HTTP response code
-	return gateway.HTTPResponse{
-		StatusCode: 200,
-		Body:       r.endpointResponseBz,
-		Headers:    map[string]string{"Content-Type": "application/json"},
+	return httpResponse{
+		responsePayload: r.endpointResponseBz,
+		httpStatusCode:  200,
 	}
 }
 

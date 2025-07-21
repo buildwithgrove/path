@@ -1,12 +1,18 @@
 package cosmos
 
 import (
+	"io"
 	"net/http"
+	"strings"
 
-	"github.com/buildwithgrove/path/gateway"
-	"github.com/buildwithgrove/path/protocol"
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
+	"github.com/buildwithgrove/path/gateway"
+	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/protocol"
+	"github.com/buildwithgrove/path/qos"
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
 // requestValidator handles validation for all Cosmos service requests
@@ -35,7 +41,7 @@ func (rv *requestValidator) validateHTTPRequest(req *http.Request) (gateway.Requ
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to parse JSONRPC request")
 		// Return a context with a JSONRPC-formatted response, as we cannot detect the request type.
-		return createHTTPBodyReadFailureContext(err), false
+		return rv.createHTTPBodyReadFailureContext(err), false
 	}
 
 	// Determine request type and route to appropriate validator
@@ -102,7 +108,7 @@ func createHTTPBodyReadFailureObservation(
 		Cosmos: &qosobservations.CosmosRequestObservations{
 			ServiceId: string(serviceID),
 			ChainId:   chainID,
-			RequestError: &qosobservations.RequestError{
+			RequestLevelError: &qosobservations.RequestError{
 				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR,
 				ErrorDetails:   err.Error(),
 				HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),

@@ -28,7 +28,7 @@ var _ devtools.QoSDisqualifiedEndpointsReporter = &QoS{}
 type QoS struct {
 	logger polylog.Logger
 	*serviceState
-	*cosmosSDKRequestValidator
+	*requestValidator
 }
 
 // NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
@@ -54,7 +54,7 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 		endpointStore:    store,
 	}
 
-	cosmosSDKRequestValidator := &cosmosSDKRequestValidator{
+	requestValidator := &requestValidator{
 		logger:       logger,
 		serviceID:    serviceId,
 		chainID:      cosmosSDKChainID,
@@ -62,9 +62,9 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	}
 
 	return &QoS{
-		logger:                    logger,
-		serviceState:              serviceState,
-		cosmosSDKRequestValidator: cosmosSDKRequestValidator,
+		logger:           logger,
+		serviceState:     serviceState,
+		requestValidator: requestValidator,
 	}
 }
 

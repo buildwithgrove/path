@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -18,7 +19,6 @@ import (
 	"github.com/buildwithgrove/path/gateway"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/proxy"
 	"github.com/buildwithgrove/path/websockets"
 )
 

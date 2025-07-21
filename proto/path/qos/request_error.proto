@@ -12,6 +12,8 @@ enum RequestErrorKind {
   REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR = 4; // User error: Failed to detect service type from JSONRPC method.
   REQUEST_ERROR_USER_ERROR_JSONRPC_UNSUPPORTED_RPC_TYPE = 5; // User error: JSONRPC method maps to unsupported RPC type.
   REQUEST_ERROR_INTERNAL_JSONRPC_PAYLOAD_BUILD_ERROR = 6; // Internal error: Failed to build service payload from JSONRPC request.
+  REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR = 7; // User error: Failed to detect service type from REST request.
+  REQUEST_ERROR_USER_ERROR_REST_UNSUPPORTED_RPC_TYPE = 8; // User error: unsupported service type in REST request.
 }
 
 // RequestError tracks the details of a request error.

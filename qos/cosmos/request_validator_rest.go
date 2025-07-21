@@ -2,7 +2,6 @@ package cosmos
 
 import (
 	"errors"
-	"net/http"
 	"net/url"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -33,12 +32,6 @@ func (rv *requestValidator) validateRESTRequest(
 
 	// Determine the specific RPC type based on path patterns - use existing function
 	rpcType := determineRESTRPCType(httpRequestPath)
-	if rpcType == sharedtypes.RPCType_UNSPECIFIED {
-		err := errors.New("unknown REST path: " + httpRequestPath)
-		logger.Error().Err(err).Msg("Failed to identify the target backend service using the request path")
-		// TODO_TECHDEBT(@adshmh): Review error context creation for REST requests.
-		return rv.createRESTServiceDetectionFailureContext(httpRequestURL, httpRequestMethod, httpRequestBody, err), false
-	}
 
 	logger = logger.With(
 		"detected_rpc_type", rpcType.String(),
@@ -195,7 +188,7 @@ func (rv *requestValidator) createRESTServiceDetectionFailureContext(
 	err error,
 ) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response (reusing JSONRPC error format for now)
-	response := jsonrpc.NewErrResponseMethodNotFound(jsonrpc.ID{}, err)
+	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
 	// Create the observations object with the service detection failure observation
 	observations := rv.createRESTServiceDetectionFailureObservation(
@@ -209,7 +202,7 @@ func (rv *requestValidator) createRESTServiceDetectionFailureContext(
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,
@@ -257,7 +250,7 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeContext(
 ) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response (reusing JSONRPC error format for now)
 	err := errors.New("unsupported RPC type: " + rpcType.String())
-	response := jsonrpc.NewErrResponseMethodNotFound(jsonrpc.ID{}, err)
+	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
 
 	// Create the observations object with the unsupported RPC type observation
 	observations := rv.createRESTUnsupportedRPCTypeObservation(
@@ -271,7 +264,7 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeContext(
 	// Build and return the error context
 	return &qos.RequestErrorContext{
 		Logger:   rv.logger,
-		Response: qos.BuildHTTPResponseFromJSONRPCResponse(rv.logger, response),
+		Response: response,
 		Observations: &qosobservations.Observations{
 			ServiceObservations: &qosobservations.Observations_Cosmos{
 				Cosmos: observations,

@@ -1,17 +1,11 @@
 package cosmos
 
 import (
-	"encoding/json"
-	"errors"
-	"net/http"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 
 	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos"
-	"github.com/buildwithgrove/path/qos/jsonrpc"
-	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 // requestContext provides specialized context for both JSONRPC and REST requests

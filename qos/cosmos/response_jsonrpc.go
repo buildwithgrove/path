@@ -6,10 +6,8 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
-	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/log"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
-	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -22,9 +20,6 @@ const (
 	// Error messages for JSONRPC response validation failures
 	errMsgJSONRPCUnmarshaling  = "the JSONRPC response returned by the endpoint is not valid"
 	errMsgJSONRPCEmptyResponse = "the endpoint returned an empty JSON-RPC response"
-
-	// errDataFieldRawBytes is the key of the entry in the JSON-RPC error response's "data" map which holds the endpoint's original response.
-	errDataFieldRawBytes = "endpoint_response"
 
 	// errDataFieldUnmarshalingErr is the key of the entry in the JSON-RPC error response's "data" map which holds the unmarshaling error.
 	errDataFieldUnmarshalingErr = "unmarshaling_error"
@@ -100,7 +95,7 @@ func unmarshalAsJSONRPCResponse(
 
 		// Create a generic JSONRPC response for the user.
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, "", errEmptyPayload), &validationErr
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeEmptyResponse, errMsgJSONRPCEmptyResponse), &validationErr
 	}
 
 	// Unmarshal the raw response payload into a JSONRPC response.
@@ -118,7 +113,7 @@ func unmarshalAsJSONRPCResponse(
 
 		// Create a generic JSONRPC response for the user.
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, data, err), &validationErr
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeUnmarshaling, errMsgJSONRPCUnmarshaling), &validationErr
 	}
 
 	// Validate the JSONRPC response.
@@ -131,7 +126,7 @@ func unmarshalAsJSONRPCResponse(
 		).Debug().Msg("Failed to unmarshal endpoint payload as JSONRPC: JSONRPC response failed validation.")
 
 		validationErr := qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH
-		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, data, err), &validationErr
+		return getGenericJSONRPCErrResponse(logger, jsonrpcRequestID, errCodeUnmarshaling, errMsgJSONRPCUnmarshaling), &validationErr
 	}
 
 	// JSONRPC response successfully validated.
@@ -142,13 +137,12 @@ func unmarshalAsJSONRPCResponse(
 func getGenericJSONRPCErrResponse(
 	logger polylog.Logger,
 	id jsonrpc.ID,
-	malformedResponsePayload []byte,
-	err error,
+	errCode int,
+	errMsg string,
 ) jsonrpc.Response {
 	errData := map[string]string{
-		errDataFieldRawBytes:        string(malformedResponsePayload),
-		errDataFieldUnmarshalingErr: err.Error(),
+		errDataFieldUnmarshalingErr: errMsg,
 	}
 
-	return jsonrpc.NewErrResponseInternalErr(id, err)
+	return jsonrpc.GetErrorResponse(id, errCode, errMsg, errData)
 }
