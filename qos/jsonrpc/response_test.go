@@ -6,6 +6,12 @@ import (
 )
 
 func TestResponse_Validate(t *testing.T) {
+	// Helper function to create *json.RawMessage
+	rawMsg := func(s string) *json.RawMessage {
+		msg := json.RawMessage(s)
+		return &msg
+	}
+
 	tests := []struct {
 		name     string
 		reqID    ID
@@ -18,7 +24,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: false,
 		},
@@ -28,7 +34,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`null`),
+				Result:  rawMsg(`null`),
 			},
 			wantErr: false,
 		},
@@ -38,7 +44,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`{"blockHash":"0x1234","status":"0x1"}`),
+				Result:  rawMsg(`{"blockHash":"0x1234","status":"0x1"}`),
 			},
 			wantErr: false,
 		},
@@ -48,7 +54,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: "1.0",
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: true,
 		},
@@ -58,7 +64,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 				Error:   &ResponseError{Code: 1, Message: "error"},
 			},
 			wantErr: true,
@@ -69,7 +75,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`null`),
+				Result:  rawMsg(`null`),
 				Error:   &ResponseError{Code: 1, Message: "error"},
 			},
 			wantErr: true,
@@ -91,7 +97,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: true,
 		},
@@ -101,7 +107,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      ID{}, // empty ID (will serialize as null)
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: false,
 		},
@@ -111,7 +117,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromInt(42),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: false,
 		},
@@ -121,7 +127,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromInt(0),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: false,
 		},
@@ -131,7 +137,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: true,
 		},
@@ -141,7 +147,7 @@ func TestResponse_Validate(t *testing.T) {
 			response: Response{
 				ID:      ID{}, // empty ID (null)
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			wantErr: true,
 		},
@@ -169,6 +175,12 @@ func TestResponse_Validate(t *testing.T) {
 }
 
 func TestResponse_MarshalJSON(t *testing.T) {
+	// Helper function to create *json.RawMessage
+	rawMsg := func(s string) *json.RawMessage {
+		msg := json.RawMessage(s)
+		return &msg
+	}
+
 	tests := []struct {
 		name     string
 		response Response
@@ -179,7 +191,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`"success"`),
+				Result:  rawMsg(`"success"`),
 			},
 			expected: `{"id":"1","jsonrpc":"2.0","result":"success"}`,
 		},
@@ -188,7 +200,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`null`),
+				Result:  rawMsg(`null`),
 			},
 			expected: `{"id":"1","jsonrpc":"2.0","result":null}`,
 		},
@@ -197,7 +209,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromInt(42),
 				Version: Version2,
-				Result:  &json.RawMessage(`123`),
+				Result:  rawMsg(`123`),
 			},
 			expected: `{"id":42,"jsonrpc":"2.0","result":123}`,
 		},
@@ -216,7 +228,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`{"blockHash":"0x1234","status":"0x1"}`),
+				Result:  rawMsg(`{"blockHash":"0x1234","status":"0x1"}`),
 			},
 			expected: `{"id":"1","jsonrpc":"2.0","result":{"blockHash":"0x1234","status":"0x1"}}`,
 		},
@@ -225,7 +237,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`["item1","item2"]`),
+				Result:  rawMsg(`["item1","item2"]`),
 			},
 			expected: `{"id":"1","jsonrpc":"2.0","result":["item1","item2"]}`,
 		},
@@ -234,7 +246,7 @@ func TestResponse_MarshalJSON(t *testing.T) {
 			response: Response{
 				ID:      IDFromStr("1"),
 				Version: Version2,
-				Result:  &json.RawMessage(`true`),
+				Result:  rawMsg(`true`),
 			},
 			expected: `{"id":"1","jsonrpc":"2.0","result":true}`,
 		},
@@ -378,6 +390,12 @@ func TestResponse_UnmarshalJSON(t *testing.T) {
 }
 
 func TestResponse_GetResultAsBytes(t *testing.T) {
+	// Helper function to create *json.RawMessage
+	rawMsg := func(s string) *json.RawMessage {
+		msg := json.RawMessage(s)
+		return &msg
+	}
+
 	tests := []struct {
 		name     string
 		response Response
@@ -387,7 +405,7 @@ func TestResponse_GetResultAsBytes(t *testing.T) {
 		{
 			name: "should return result bytes for valid result",
 			response: Response{
-				Result: &json.RawMessage(`{"status":"0x1"}`),
+				Result: rawMsg(`{"status":"0x1"}`),
 			},
 			expected: []byte(`{"status":"0x1"}`),
 			wantErr:  false,
@@ -395,7 +413,7 @@ func TestResponse_GetResultAsBytes(t *testing.T) {
 		{
 			name: "should return null bytes for null result",
 			response: Response{
-				Result: &json.RawMessage(`null`),
+				Result: rawMsg(`null`),
 			},
 			expected: []byte(`null`),
 			wantErr:  false,
@@ -425,6 +443,12 @@ func TestResponse_GetResultAsBytes(t *testing.T) {
 }
 
 func TestResponse_UnmarshalResult(t *testing.T) {
+	// Helper function to create *json.RawMessage
+	rawMsg := func(s string) *json.RawMessage {
+		msg := json.RawMessage(s)
+		return &msg
+	}
+
 	tests := []struct {
 		name     string
 		response Response
@@ -435,7 +459,7 @@ func TestResponse_UnmarshalResult(t *testing.T) {
 		{
 			name: "should unmarshal string result",
 			response: Response{
-				Result: &json.RawMessage(`"hello"`),
+				Result: rawMsg(`"hello"`),
 			},
 			target:   new(string),
 			expected: "hello",
@@ -444,7 +468,7 @@ func TestResponse_UnmarshalResult(t *testing.T) {
 		{
 			name: "should unmarshal object result",
 			response: Response{
-				Result: &json.RawMessage(`{"status":"0x1","blockHash":"0x1234"}`),
+				Result: rawMsg(`{"status":"0x1","blockHash":"0x1234"}`),
 			},
 			target: new(map[string]string),
 			expected: map[string]string{
@@ -456,7 +480,7 @@ func TestResponse_UnmarshalResult(t *testing.T) {
 		{
 			name: "should unmarshal null result",
 			response: Response{
-				Result: &json.RawMessage(`null`),
+				Result: rawMsg(`null`),
 			},
 			target:   new(*string),
 			expected: (*string)(nil),
