@@ -89,7 +89,9 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 		Msg("JSONRPC request validation successful.")
 
 	// Hydrate the logger with JSONRPC method.
-	logger = logger.With("jsonrpc_method", jsonrpcReq.Method)
+	logger = logger.With(
+		"jsonrpc_request", jsonrpcReq,
+	)
 
 	// Create specialized JSONRPC context
 	return &requestContext{
