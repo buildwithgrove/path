@@ -270,10 +270,10 @@ func getCurrentBlockHeight(client *http.Client, gatewayURL string, headers http.
 		return 0, fmt.Errorf("Error getting current block height: %w", err)
 	}
 
-	// Process hex string result
-	hexString, ok := jsonRPC.Result.(string)
-	if !ok {
-		return 0, fmt.Errorf("Error getting current block height: %T", jsonRPC.Result)
+	// Unmarshal the result into a string
+	var hexString string
+	if err := jsonRPC.UnmarshalResult(&hexString); err != nil {
+		return 0, fmt.Errorf("Error unmarshaling block number result: %w", err)
 	}
 
 	// Parse hex (remove "0x" prefix if present)
