@@ -2,48 +2,56 @@ package cosmos
 
 import (
 	"fmt"
-	"net/http"
 	"time"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// GET CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
+/* -------------------- CometBFT Status Check -------------------- */
+
+const idStatusCheck = 1003
+
+// methodStatus is the CometBFT JSON-RPC method for getting the node status.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-const apiPathStatus = "/status"
+const methodStatusCheck = jsonrpc.Method("status")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the status and/or make it configurable.
 const checkStatusInterval = 10 * time.Second
 
 var (
-	errNoStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a %q request", apiPathStatus)
-	errInvalidStatusObs  = fmt.Errorf("endpoint returned an invalid response to a %q request", apiPathStatus)
-	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a %q request", apiPathStatus)
-	errCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a %q request", apiPathStatus)
+	errNoStatusObs       = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodStatusCheck)
+	errInvalidStatusObs  = fmt.Errorf("endpoint returned an invalid response to a %q request", methodStatusCheck)
+	errInvalidChainIDObs = fmt.Errorf("endpoint returned an invalid chain ID in its response to a %q request", methodStatusCheck)
+	errCatchingUpObs     = fmt.Errorf("endpoint is catching up to the network in its response to a %q request", methodStatusCheck)
 )
 
 // endpointCheckStatus is a check that ensures the endpoint's status information is valid.
 // It is used to verify the endpoint is on the correct chain and not catching up.
 type endpointCheckStatus struct {
-	// chainID stores the chain ID from the endpoint's response to a `/status` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `/status` request.
+	// chainID stores the chain ID from the endpoint's response to a `status` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
 	chainID *string
 
-	// catchingUp stores whether the endpoint is catching up from the endpoint's response to a `/status` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `/status` request.
+	// catchingUp stores whether the endpoint is catching up from the endpoint's response to a `status` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
 	catchingUp *bool
 
-	// latestBlockHeight stores the latest block height from the endpoint's response to a `/status` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `/status` request.
+	// latestBlockHeight stores the latest block height from the endpoint's response to a `status` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
 	latestBlockHeight *uint64
 
 	// expiresAt stores the time at which the last check expires.
 	expiresAt time.Time
 }
 
-// GetRequest returns an HTTP request to check the status.
-// e.g. GET /status
-func (e *endpointCheckStatus) GetRequest() *http.Request {
-	req, _ := http.NewRequest(http.MethodGet, apiPathStatus, nil)
-	return req
+// getRequest returns a JSONRPC request to check the status.
+// eg. '{"jsonrpc":"2.0","id":1003,"method":"status"}'
+func (e *endpointCheckStatus) getRequest() jsonrpc.Request {
+	return jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idStatusCheck),
+		Method:  jsonrpc.Method(methodStatusCheck),
+	}
 }
 
 // GetChainID returns the parsed chain ID value for the endpoint.

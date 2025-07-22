@@ -2,20 +2,25 @@ package cosmos
 
 import (
 	"fmt"
-	"net/http"
 	"time"
+
+	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
-// Get node health. Returns empty result (200 OK) on success, no response - in case of an error.
+/* -------------------- CometBFT Health Check -------------------- */
+
+const idHealthCheck = 1002
+
+// methodHealth is the CometBFT JSON-RPC method for getting the node health.
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-const apiPathHealthCheck = "/health"
+const methodHealth = jsonrpc.Method("health")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the health.
 const checkHealthInterval = 30 * time.Second
 
 var (
-	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", apiPathHealthCheck)
-	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a %q request", apiPathHealthCheck)
+	errNoHealthObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodHealth)
+	errInvalidHealthObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodHealth)
 )
 
 // endpointCheckHealth is a check that ensures the endpoint's health status is valid.
@@ -24,19 +29,22 @@ var (
 // Note that this check has an expiry as health checks should be performed periodically
 // to ensure the endpoint remains responsive.
 type endpointCheckHealth struct {
-	// healthy stores the health status from the endpoint's response to a `/health` request.
-	// It is nil if there has NOT been an observation of the endpoint's response to a `/health` request.
+	// healthy stores the health status from the endpoint's response to a `status` request.
+	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
 	healthy *bool
 
 	// expiresAt stores the time at which the last check expires.
 	expiresAt time.Time
 }
 
-// GetRequest returns an HTTP request to check the health.
-// e.g. GET /health
-func (e *endpointCheckHealth) GetRequest() *http.Request {
-	req, _ := http.NewRequest(http.MethodGet, apiPathHealthCheck, nil)
-	return req
+// getRequest returns a JSONRPC request to check the health/status.
+// eg. '{"jsonrpc":"2.0","id":1002,"method":"health"}'
+func (e *endpointCheckHealth) getRequest() jsonrpc.Request {
+	return jsonrpc.Request{
+		JSONRPC: jsonrpc.Version2,
+		ID:      jsonrpc.IDFromInt(idHealthCheck),
+		Method:  jsonrpc.Method(methodHealth),
+	}
 }
 
 // GetHealthy returns the parsed health status for the endpoint.

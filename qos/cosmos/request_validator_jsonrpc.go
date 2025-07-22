@@ -60,12 +60,14 @@ func (rv *requestValidator) validateJSONRPCRequest(
 	return rv.buildJSONRPCRequestContext(
 		rpcType,
 		jsonrpcReq,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
 func (rv *requestValidator) buildJSONRPCRequestContext(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildJSONRPCRequestContext",
@@ -81,7 +83,12 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 
 	// Generate the QoS observation for the request.
 	// requestContext will amend this with endpoint observation(s).
-	requestObservation := rv.buildJSONRPCRequestObservations(rpcType, jsonrpcReq, servicePayload)
+	requestObservation := rv.buildJSONRPCRequestObservations(
+		rpcType,
+		jsonrpcReq,
+		servicePayload,
+		requestOrigin,
+	)
 
 	logger.Debug().
 		Str("id", jsonrpcReq.ID.String()).
@@ -149,12 +156,13 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
 		ChainId:       rv.chainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),

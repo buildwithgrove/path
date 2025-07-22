@@ -24,6 +24,14 @@ type endpointStore struct {
 	endpoints   map[protocol.EndpointAddr]endpoint
 }
 
+// getEndpoint returns the endpoint for a given endpoint address.
+// Used by the request validator to get the endpoint's synthetic QoS checks.
+func (es *endpointStore) getEndpoint(endpointAddr protocol.EndpointAddr) endpoint {
+	es.endpointsMu.RLock()
+	defer es.endpointsMu.RUnlock()
+	return es.endpoints[endpointAddr]
+}
+
 // updateEndpointsFromObservations creates/updates endpoint entries in the store based
 // on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(
