@@ -14,7 +14,7 @@ import (
 // • Pointer nil = field omitted in JSON (invalid per spec)
 // • Pointer to null bytes = {"result":null} (valid for methods like eth_getTransactionReceipt)
 // • json.RawMessage avoids double marshaling and preserves original JSON structure
-// • omitempty ensures error-only responses exclude result field entirely
+// • Custom UnmarshalJSON handles the edge case where JSON null becomes Go nil
 type Response struct {
 	// ID member is required.
 	// It must be the same as the value of the id member in the Request Object.
@@ -75,6 +75,43 @@ func GetErrorResponse(id ID, errCode int, errMsg string, errData map[string]stri
 
 func (r *Response) IsError() bool {
 	return r.Error != nil
+}
+
+// UnmarshalJSON implements custom unmarshaling to handle the result field presence detection
+func (r *Response) UnmarshalJSON(data []byte) error {
+	// Use a temporary struct to unmarshal into, avoiding infinite recursion
+	type TempResponse struct {
+		ID      ID              `json:"id"`
+		Version Version         `json:"jsonrpc"`
+		Result  json.RawMessage `json:"result"` // Note: no pointer, no omitempty
+		Error   *ResponseError  `json:"error,omitempty"`
+	}
+
+	var temp TempResponse
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	// Copy fields
+	r.ID = temp.ID
+	r.Version = temp.Version
+	r.Error = temp.Error
+
+	// Check if result field was present in the original JSON
+	var rawMap map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return err
+	}
+
+	if resultValue, hasResult := rawMap["result"]; hasResult {
+		// Field was present, even if null
+		r.Result = &resultValue
+	} else {
+		// Field was absent
+		r.Result = nil
+	}
+
+	return nil
 }
 
 // UnmarshalResult unmarshals the result into the provided value
