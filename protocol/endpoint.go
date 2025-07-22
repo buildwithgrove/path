@@ -38,6 +38,13 @@ func (e EndpointAddr) String() string {
 	return string(e)
 }
 
+func (e EndpointAddr) Decompose() (supplierAddress string, endpointURL string) {
+	parts := strings.Split(string(e), "-")
+	supplierAddress = parts[0]
+	endpointURL = parts[1]
+	return
+}
+
 func (e EndpointAddrList) String() string {
 	// Converts each EndpointAddr to string and joins them with a comma
 	addrs := make([]string, len(e))
