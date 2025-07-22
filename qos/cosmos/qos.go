@@ -55,10 +55,11 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	}
 
 	requestValidator := &requestValidator{
-		logger:       logger,
-		serviceID:    serviceId,
-		chainID:      cosmosSDKChainID,
-		serviceState: serviceState,
+		logger:        logger,
+		serviceID:     serviceId,
+		chainID:       cosmosSDKChainID,
+		serviceState:  serviceState,
+		supportedAPIs: config.getSupportedAPIs(),
 	}
 
 	return &QoS{

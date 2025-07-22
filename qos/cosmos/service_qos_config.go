@@ -26,19 +26,19 @@ type CosmosSDKServiceQoSConfig interface {
 	ServiceQoSConfig // Using locally defined interface to avoid circular dependency
 	getCosmosSDKChainID() string
 	getSyncAllowance() uint64
-	getRPCTypes() map[sharedtypes.RPCType]struct{}
+	getSupportedAPIs() map[sharedtypes.RPCType]struct{}
 }
 
 // NewCosmosSDKServiceQoSConfig creates a new CosmosSDK service configuration.
 func NewCosmosSDKServiceQoSConfig(
 	serviceID protocol.ServiceID,
 	cosmosSDKChainID string,
-	rpcTypes map[sharedtypes.RPCType]struct{},
+	supportedAPIs map[sharedtypes.RPCType]struct{},
 ) CosmosSDKServiceQoSConfig {
 	return cosmosSDKServiceQoSConfig{
 		serviceID:        serviceID,
 		cosmosSDKChainID: cosmosSDKChainID,
-		rpcTypes:         rpcTypes,
+		supportedAPIs:    supportedAPIs,
 	}
 }
 
@@ -49,7 +49,7 @@ type cosmosSDKServiceQoSConfig struct {
 	serviceID        protocol.ServiceID
 	cosmosSDKChainID string
 	syncAllowance    uint64
-	rpcTypes         map[sharedtypes.RPCType]struct{}
+	supportedAPIs    map[sharedtypes.RPCType]struct{}
 }
 
 // GetServiceID returns the ID of the service.
@@ -79,7 +79,7 @@ func (c cosmosSDKServiceQoSConfig) getSyncAllowance() uint64 {
 	return c.syncAllowance
 }
 
-// getRPCTypes returns the RPC types supported by the service.
+// getSupportedAPIs returns the RPC types supported by the service.
 // For example, XRPLEVM supports the following RPC types:
 //   - JSON_RPC
 //   - REST
@@ -87,6 +87,6 @@ func (c cosmosSDKServiceQoSConfig) getSyncAllowance() uint64 {
 //   - WEBSOCKET (does not currently have a QoS quality check system in PATH)
 //
 // This is used to determine the appropriate QoS endpoint checks to run
-func (c cosmosSDKServiceQoSConfig) getRPCTypes() map[sharedtypes.RPCType]struct{} {
-	return c.rpcTypes
+func (c cosmosSDKServiceQoSConfig) getSupportedAPIs() map[sharedtypes.RPCType]struct{} {
+	return c.supportedAPIs
 }

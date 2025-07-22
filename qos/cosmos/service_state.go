@@ -62,13 +62,13 @@ func (ss *serviceState) GetRequiredQualityChecks(endpointAddr protocol.EndpointA
 	endpoint := ss.endpointStore.endpoints[endpointAddr]
 
 	// Get the RPC types supported by the CosmosSDK service.
-	rpcTypes := ss.serviceQoSConfig.getRPCTypes()
+	supportedAPIs := ss.serviceQoSConfig.getSupportedAPIs()
 
 	// List of all checks required for the endpoint.
 	var checks []gateway.RequestQoSContext
 
 	// If the service supports CometBFT, add the CometBFT endpoint checks.
-	if _, ok := rpcTypes[sharedtypes.RPCType_COMET_BFT]; ok {
+	if _, ok := supportedAPIs[sharedtypes.RPCType_COMET_BFT]; ok {
 		checks = append(checks, ss.getCometBFTEndpointChecks(&endpoint)...)
 	}
 
