@@ -45,14 +45,14 @@ func (rv *requestValidator) validateJSONRPCRequest(
 	rpcType := detectJSONRPCServiceType(method)
 
 	// Hydrate the logger with data extracted from the request.
-	rv.logger = logger.With(
+	logger = logger.With(
 		"detected_rpc_type", rpcType.String(),
 		"jsonrpc_method", method,
 	)
 
 	// Check if this RPC type is supported by the service
 	if _, supported := rv.supportedAPIs[rpcType]; !supported {
-		rv.logger.Warn().Msg("Request uses unsupported RPC type")
+		logger.Warn().Msg("Request uses unsupported RPC type")
 		return rv.createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq, rpcType), false
 	}
 
@@ -87,6 +87,9 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 		Str("id", jsonrpcReq.ID.String()).
 		Int("payload_length", len(servicePayload.Data)).
 		Msg("JSONRPC request validation successful.")
+
+	// Hydrate the logger with JSONRPC method.
+	logger = logger.With("jsonrpc_method", jsonrpcReq.Method)
 
 	// Create specialized JSONRPC context
 	return &requestContext{
