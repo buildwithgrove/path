@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/metrics/devtools"
@@ -56,17 +55,11 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	}
 
 	requestValidator := &requestValidator{
-		logger:       logger,
-		serviceID:    serviceId,
-		chainID:      cosmosSDKChainID,
-		serviceState: serviceState,
-
-		// TODO_UPNEXT(@adshmh): Make supported RPC types configurable.
-		supportedAPIs: map[sharedtypes.RPCType]struct{}{
-			sharedtypes.RPCType_REST:      {},
-			sharedtypes.RPCType_COMET_BFT: {},
-			sharedtypes.RPCType_JSON_RPC:  {},
-		},
+		logger:        logger,
+		serviceID:     serviceId,
+		chainID:       cosmosSDKChainID,
+		serviceState:  serviceState,
+		supportedAPIs: config.getSupportedAPIs(),
 	}
 
 	return &QoS{
