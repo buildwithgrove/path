@@ -21,6 +21,6 @@ message Observations {
     EVMRequestObservations evm = 2;
 
     // cosmos contains QoS measurements for a single CosmosSDK blockchain request
-    CosmosSDKRequestObservations cosmos = 3;
+    CosmosRequestObservations cosmos = 3;
   }
 }

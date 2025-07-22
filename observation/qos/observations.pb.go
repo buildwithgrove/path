@@ -94,7 +94,7 @@ func (x *Observations) GetEvm() *EVMRequestObservations {
 	return nil
 }
 
-func (x *Observations) GetCosmos() *CosmosSDKRequestObservations {
+func (x *Observations) GetCosmos() *CosmosRequestObservations {
 	if x != nil {
 		if x, ok := x.ServiceObservations.(*Observations_Cosmos); ok {
 			return x.Cosmos
@@ -119,7 +119,7 @@ type Observations_Evm struct {
 
 type Observations_Cosmos struct {
 	// cosmos contains QoS measurements for a single CosmosSDK blockchain request
-	Cosmos *CosmosSDKRequestObservations `protobuf:"bytes,3,opt,name=cosmos,proto3,oneof"`
+	Cosmos *CosmosRequestObservations `protobuf:"bytes,3,opt,name=cosmos,proto3,oneof"`
 }
 
 func (*Observations_Solana) isObservations_ServiceObservations() {}
@@ -132,11 +132,11 @@ var File_path_qos_observations_proto protoreflect.FileDescriptor
 
 const file_path_qos_observations_proto_rawDesc = "" +
 	"\n" +
-	"\x1bpath/qos/observations.proto\x12\bpath.qos\x1a\x12path/qos/evm.proto\x1a\x15path/qos/solana.proto\x1a\x15path/qos/cosmos.proto\"\xdd\x01\n" +
+	"\x1bpath/qos/observations.proto\x12\bpath.qos\x1a\x12path/qos/evm.proto\x1a\x15path/qos/solana.proto\x1a\x15path/qos/cosmos.proto\"\xda\x01\n" +
 	"\fObservations\x12=\n" +
 	"\x06solana\x18\x01 \x01(\v2#.path.qos.SolanaRequestObservationsH\x00R\x06solana\x124\n" +
-	"\x03evm\x18\x02 \x01(\v2 .path.qos.EVMRequestObservationsH\x00R\x03evm\x12@\n" +
-	"\x06cosmos\x18\x03 \x01(\v2&.path.qos.CosmosSDKRequestObservationsH\x00R\x06cosmosB\x16\n" +
+	"\x03evm\x18\x02 \x01(\v2 .path.qos.EVMRequestObservationsH\x00R\x03evm\x12=\n" +
+	"\x06cosmos\x18\x03 \x01(\v2#.path.qos.CosmosRequestObservationsH\x00R\x06cosmosB\x16\n" +
 	"\x14service_observationsB0Z.github.com/buildwithgrove/path/observation/qosb\x06proto3"
 
 var (
@@ -153,15 +153,15 @@ func file_path_qos_observations_proto_rawDescGZIP() []byte {
 
 var file_path_qos_observations_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_path_qos_observations_proto_goTypes = []any{
-	(*Observations)(nil),                 // 0: path.qos.Observations
-	(*SolanaRequestObservations)(nil),    // 1: path.qos.SolanaRequestObservations
-	(*EVMRequestObservations)(nil),       // 2: path.qos.EVMRequestObservations
-	(*CosmosSDKRequestObservations)(nil), // 3: path.qos.CosmosSDKRequestObservations
+	(*Observations)(nil),              // 0: path.qos.Observations
+	(*SolanaRequestObservations)(nil), // 1: path.qos.SolanaRequestObservations
+	(*EVMRequestObservations)(nil),    // 2: path.qos.EVMRequestObservations
+	(*CosmosRequestObservations)(nil), // 3: path.qos.CosmosRequestObservations
 }
 var file_path_qos_observations_proto_depIdxs = []int32{
 	1, // 0: path.qos.Observations.solana:type_name -> path.qos.SolanaRequestObservations
 	2, // 1: path.qos.Observations.evm:type_name -> path.qos.EVMRequestObservations
-	3, // 2: path.qos.Observations.cosmos:type_name -> path.qos.CosmosSDKRequestObservations
+	3, // 2: path.qos.Observations.cosmos:type_name -> path.qos.CosmosRequestObservations
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

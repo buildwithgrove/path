@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+// CosmosResponseValidationError defines why an endpoint response was rejected.
+enum CosmosResponseValidationError {
+	COSMOS_RESPONSE_VALIDATION_ERROR_UNSPECIFIED = 0;
+	COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY = 1;      // Response with no data.
+	COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL = 2;  // Response parsing failed
+	COSMOS_RESPONSE_VALIDATION_ERROR_FORMAT_MISMATCH = 3; // Expected JSON-RPC but got JSON, etc.
+}
+
+// CosmosResponseValidationType determines the format/protocol of the endpoint response
+enum CosmosResponseValidationType {
+	COSMOS_RESPONSE_VALIDATION_TYPE_UNSPECIFIED = 0;
+	COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC = 1;      // JSONRPC response
+	COSMOS_RESPONSE_VALIDATION_TYPE_JSON = 2;         // JSON response
+	COSMOS_RESPONSE_VALIDATION_TYPE_UNSTRUCTURED = 3; // Unrecognized response format: no validation is performed.
+}
+
+// CosmosEndpointResponseValidationResult contains the outcome of contacting an endpoint
+message CosmosEndpointResponseValidationResult {
+	// The type of response expected.
+	// Examples:
+	//   - JSONRPC
+        //   - JSON
+        //   - An integer
+	CosmosResponseValidationType response_validation_type = 1;
+	
+	// HTTP status code returned to the user.
+	// It is derived from the endpoint response payload and/or HTTP status code.
+	// e.g. for JSONRPC, it is based on the error code of the JSONRPC response.
+	int32 http_status_code = 2;
+	
+	// Validation error, if any.
+	// This is set if parsing the endpoint response fails.
+	optional CosmosResponseValidationError validation_error = 3;
+
+        // TODO_IMPROVE(@adshmh, @commoddity): Add other observations (archival, more endpoints, etc)
+        //
+	// The parsed response - JSON, JSONRPC, or any other format, including unstructured.
+	// Tracks details, including the reason for the returned HTTP status code.
+	// Only set if validation succeeded.
+	oneof parsed_response {
+		JsonRpcResponse response_jsonrpc = 4;
+
+		// Response to Cosmos request against API path `/health`
+		CosmosResponseHealth response_health = 5;
+
+		// Response to Cosmos request against API path `/status`
+		CosmosResponseStatus response_status = 6;
+		
+		// For unrecognized responses.
+		// These are returned as-is to the user.
+		UnrecognizedResponse response_unrecognized = 7;
+	}
+}
+
+// CosmosResponseHealth stores the response to a `/health` request
+message CosmosResponseHealth {
+    bool health_status = 1;
+}
+
+// CosmosResponseStatus stores the response to a `/status` request
+message CosmosResponseStatus {
+    string chain_id = 1;
+    bool catching_up = 2;
+    string latest_block_height = 3;
+}
+
+// UnrecognizedResponse handles responses that are not validated before being returned to the user.
+message UnrecognizedResponse {
+	// Length of payload received from the endpoint.
+	uint32 endpoint_payload_length = 1;
+}
