@@ -42,15 +42,7 @@ func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.Endpo
 		checks = append(checks, rv.getCosmosSDKEndpointChecks(endpoint)...)
 	}
 
-	// TODO_NEXT(@commoddity): Add endpoint checks for the following:
-	//
-	//  1. CosmosSDK URL paths (sharedtypes.RPCType_REST):
-	//     - Node Info (/cosmos/base/tendermint/v1beta1/node_info)
-	//     https://docs.cosmos.network/api#tag/Service/operation/GetNodeInfo
-	//     - Syncing Status (/cosmos/base/tendermint/v1beta1/syncing)
-	//     https://docs.cosmos.network/api#tag/Service/operation/GetSyncing
-	//
-	//  2. EVM JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
+	// TODO_NEXT(@commoddity): Add endpoint checks for EVM JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
 	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
 	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 
