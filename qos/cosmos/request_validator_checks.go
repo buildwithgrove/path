@@ -81,7 +81,7 @@ func (rv *requestValidator) shouldStatusCheckRun(check endpointCheckStatus) bool
 	return check.expiresAt.IsZero() || check.IsExpired()
 }
 
-// getJSONRPCRequestContextFromRequest prepares a request context for a specific endpoint check using an HTTP request.
+// getJSONRPCRequestContextFromRequest prepares a gateway request context for a JSONRPC QoS endpoint check.
 func (rv *requestValidator) getJSONRPCRequestContextFromRequest(
 	rpcType sharedtypes.RPCType,
 	jsonrpcReq jsonrpc.Request,
