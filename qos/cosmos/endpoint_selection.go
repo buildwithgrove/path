@@ -162,12 +162,12 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	}
 
 	// Check if the endpoint's health status is valid.
-	if err := ss.isHealthValid(endpoint.checkHealth); err != nil {
+	if err := ss.isCometBFTHealthValid(endpoint.checkCometBFTHealth); err != nil {
 		return fmt.Errorf("health validation failed: %w", err)
 	}
 
 	// Check if the endpoint's status information is valid.
-	if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
+	if err := ss.isCometBFTStatusValid(endpoint.checkCometBFTStatus); err != nil {
 		return fmt.Errorf("status validation failed: %w", err)
 	}
 
@@ -177,7 +177,7 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 // isHealthValid returns an error if:
 //   - The endpoint has not had an observation of its response to a `/health` request.
 //   - The endpoint's health check indicates it's unhealthy.
-func (ss *serviceState) isHealthValid(check endpointCheckHealth) error {
+func (ss *serviceState) isCometBFTHealthValid(check endpointCheckCometBFTHealth) error {
 	healthy, err := check.GetHealthy()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoHealthObs, err)
@@ -195,7 +195,7 @@ func (ss *serviceState) isHealthValid(check endpointCheckHealth) error {
 //   - The endpoint's chain ID does not match the expected chain ID.
 //   - The endpoint is catching up to the network.
 //   - The endpoint's block height is outside the sync allowance.
-func (ss *serviceState) isStatusValid(check endpointCheckStatus) error {
+func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus) error {
 	// Check chain ID
 	chainID, err := check.GetChainID()
 	if err != nil {

@@ -107,11 +107,11 @@ func applyObservation(
 
 	// Handle specific response types based on the parsed_response oneof field
 	switch response := validationResult.ParsedResponse.(type) {
-	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseHealth:
-		applyHealthObservation(endpoint, response.ResponseHealth)
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftHealth:
+		applyCometBFTHealthObservation(endpoint, response.ResponseCometBftHealth)
 		endpointWasMutated = true
-	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseStatus:
-		applyStatusObservation(endpoint, response.ResponseStatus)
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus:
+		applyCometBFTStatusObservation(endpoint, response.ResponseCometBftStatus)
 		endpointWasMutated = true
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
 		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
@@ -136,22 +136,22 @@ func applyValidationErrorObservation(endpoint *endpoint, validationError qosobse
 	}
 }
 
-// applyHealthObservation updates the health check if a valid observation is provided.
-func applyHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CosmosResponseHealth) {
+// applyCometBFTHealthObservation updates the health check if a valid observation is provided.
+func applyCometBFTHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CosmosResponseCometBFTHealth) {
 	healthy := healthResponse.HealthStatus
-	endpoint.checkHealth = endpointCheckHealth{
+	endpoint.checkCometBFTHealth = endpointCheckCometBFTHealth{
 		healthy:   &healthy,
 		expiresAt: time.Now().Add(checkHealthInterval),
 	}
 }
 
-// applyStatusObservation updates the status check if a valid observation is provided.
-func applyStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseStatus) {
+// applyCometBFTStatusObservation updates the status check if a valid observation is provided.
+func applyCometBFTStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseCometBFTStatus) {
 	chainID := statusResponse.ChainId
 	catchingUp := statusResponse.CatchingUp
 	blockHeight := parseBlockHeightResponse(statusResponse.LatestBlockHeight)
 
-	endpoint.checkStatus = endpointCheckStatus{
+	endpoint.checkCometBFTStatus = endpointCheckCometBFTStatus{
 		chainID:           &chainID,
 		catchingUp:        &catchingUp,
 		latestBlockHeight: &blockHeight,

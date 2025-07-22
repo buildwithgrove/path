@@ -45,6 +45,20 @@ func unmarshalRESTRequestEndpointResponse(
 			Method: "health",
 		}
 		return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+
+	// Cosmos SDK /cosmos/base/node/v1beta1/status endpoint returns a JSON response.
+	case apiPathCosmosStatus:
+		response, err := responseValidatorCosmosStatus(logger, endpointResponseBz)
+		if err != nil {
+			jsonrpcReq := jsonrpc.Request{
+				// Use nil ID for CosmosSDK JSONRPC responses.
+				ID:     jsonrpc.ID{},
+				Method: apiPathCosmosStatus,
+			}
+			return unmarshalJSONRPCRequestEndpointResponse(logger, jsonrpcReq, endpointResponseBz)
+		}
+		return response
+
 	default:
 		// For unrecognized endpoints, use the generic unmarshaler
 		return responseRESTUnrecognized{

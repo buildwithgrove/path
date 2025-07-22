@@ -28,7 +28,7 @@ var (
 //
 // Note that this check has an expiry as health checks should be performed periodically
 // to ensure the endpoint remains responsive.
-type endpointCheckHealth struct {
+type endpointCheckCometBFTHealth struct {
 	// healthy stores the health status from the endpoint's response to a `status` request.
 	// It is nil if there has NOT been an observation of the endpoint's response to a `status` request.
 	healthy *bool
@@ -39,7 +39,7 @@ type endpointCheckHealth struct {
 
 // getRequest returns a JSONRPC request to check the health/status.
 // eg. '{"jsonrpc":"2.0","id":1002,"method":"health"}'
-func (e *endpointCheckHealth) getRequest() jsonrpc.Request {
+func (e *endpointCheckCometBFTHealth) getRequest() jsonrpc.Request {
 	return jsonrpc.Request{
 		JSONRPC: jsonrpc.Version2,
 		ID:      jsonrpc.IDFromInt(idHealthCheck),
@@ -48,7 +48,7 @@ func (e *endpointCheckHealth) getRequest() jsonrpc.Request {
 }
 
 // GetHealthy returns the parsed health status for the endpoint.
-func (e *endpointCheckHealth) GetHealthy() (bool, error) {
+func (e *endpointCheckCometBFTHealth) GetHealthy() (bool, error) {
 	if e.healthy == nil {
 		return false, errNoHealthObs
 	}
@@ -56,6 +56,6 @@ func (e *endpointCheckHealth) GetHealthy() (bool, error) {
 }
 
 // IsExpired returns true if the check has expired and needs to be refreshed.
-func (e *endpointCheckHealth) IsExpired() bool {
+func (e *endpointCheckCometBFTHealth) IsExpired() bool {
 	return time.Now().After(e.expiresAt)
 }

@@ -79,13 +79,13 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 		)
 
 		// Do not update the perceived block number if the chain ID is invalid.
-		if err := ss.isStatusValid(endpoint.checkStatus); err != nil {
+		if err := ss.isCometBFTStatusValid(endpoint.checkCometBFTStatus); err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid status", endpointAddr)
 			continue
 		}
 
 		// Retrieve the block number from the endpoint.
-		blockNumber, err := endpoint.checkStatus.GetLatestBlockHeight()
+		blockNumber, err := endpoint.checkCometBFTStatus.GetLatestBlockHeight()
 		if err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid block height", endpointAddr)
 			continue

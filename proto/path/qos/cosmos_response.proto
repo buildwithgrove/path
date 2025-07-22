@@ -48,28 +48,36 @@ message CosmosEndpointResponseValidationResult {
 	oneof parsed_response {
 		JsonRpcResponse response_jsonrpc = 4;
 
-		// Response to Cosmos request against API path `/health`
-		CosmosResponseHealth response_health = 5;
+		// Response to CometBFT request using method `health`
+		CosmosResponseCometBFTHealth response_comet_bft_health = 5;
 
-		// Response to Cosmos request against API path `/status`
-		CosmosResponseStatus response_status = 6;
+		// Response to CometBFT request using method `status`
+		CosmosResponseCometBFTStatus response_comet_bft_status = 6;
+
+		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
+		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 7;
 		
 		// For unrecognized responses.
 		// These are returned as-is to the user.
-		UnrecognizedResponse response_unrecognized = 7;
+		UnrecognizedResponse response_unrecognized = 8;
 	}
 }
 
-// CosmosResponseHealth stores the response to a `/health` request
-message CosmosResponseHealth {
+// CosmosResponseCometBFTHealth stores the response to a CometBFT `/health` request
+message CosmosResponseCometBFTHealth {
     bool health_status = 1;
 }
 
-// CosmosResponseStatus stores the response to a `/status` request
-message CosmosResponseStatus {
+// CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
+message CosmosResponseCometBFTStatus {
     string chain_id = 1;
     bool catching_up = 2;
     string latest_block_height = 3;
+}
+
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+message CosmosResponseCosmosSDKStatus {
+    uint64 latest_block_height = 1;
 }
 
 // UnrecognizedResponse handles responses that are not validated before being returned to the user.
