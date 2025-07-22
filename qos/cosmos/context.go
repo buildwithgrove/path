@@ -76,7 +76,10 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 func (rc *requestContext) GetHTTPResponse() gateway.HTTPResponse {
 	// No responses received - this is a protocol-level error
 	if len(rc.endpointResponses) == 0 {
-		rc.logger.Error().Msg("No endpoint responses received for request")
+		rc.logger.With(
+			"method", "GetHTTPResponse",
+		).Error().Msg("No endpoint responses received for request")
+
 		return rc.protocolErrorResponseBuilder(rc.logger)
 	}
 

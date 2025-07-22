@@ -91,6 +91,7 @@ func (rv *requestValidator) buildJSONRPCRequestContext(
 	// Create specialized JSONRPC context
 	return &requestContext{
 		logger:                       logger,
+		serviceState:                 rv.serviceState,
 		servicePayload:               servicePayload,
 		observations:                 requestObservation,
 		endpointResponseValidator:    getJSONRPCRequestEndpointResponseValidator(jsonrpcReq),

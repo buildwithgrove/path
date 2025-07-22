@@ -95,6 +95,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 	// Create specialized REST context
 	return &requestContext{
 		logger:                       logger,
+		serviceState:                 rv.serviceState,
 		servicePayload:               servicePayload,
 		observations:                 requestObservation,
 		endpointResponseValidator:    getRESTRequestEndpointResponseValidator(httpRequestURL.Path),
