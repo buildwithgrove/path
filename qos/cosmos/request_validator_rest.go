@@ -180,67 +180,6 @@ func buildRESTProtocolErrorResponse() func(logger polylog.Logger) gateway.HTTPRe
 }
 
 // TODO_TECHDEBT(@adshmh): Review error context creation for REST requests.
-// createRESTServiceDetectionFailureContext creates an error context for REST service detection failures
-func (rv *requestValidator) createRESTServiceDetectionFailureContext(
-	httpRequestURL *url.URL,
-	httpRequestMethod string,
-	httpRequestBody []byte,
-	err error,
-) gateway.RequestQoSContext {
-	// Create the JSON-RPC error response (reusing JSONRPC error format for now)
-	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpc.ID{}, err)
-
-	// Create the observations object with the service detection failure observation
-	observations := rv.createRESTServiceDetectionFailureObservation(
-		httpRequestURL,
-		httpRequestMethod,
-		httpRequestBody,
-		err,
-		response,
-	)
-
-	// Build and return the error context
-	return &qos.RequestErrorContext{
-		Logger:   rv.logger,
-		Response: response,
-		Observations: &qosobservations.Observations{
-			ServiceObservations: &qosobservations.Observations_Cosmos{
-				Cosmos: observations,
-			},
-		},
-	}
-}
-
-func (rv *requestValidator) createRESTServiceDetectionFailureObservation(
-	httpRequestURL *url.URL,
-	httpRequestMethod string,
-	httpRequestBody []byte,
-	err error,
-	jsonrpcResponse jsonrpc.Response,
-) *qosobservations.CosmosRequestObservations {
-	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			ParsedRequest: &qosobservations.CosmosRequestProfile_RestRequest{
-				RestRequest: &qosobservations.RESTRequest{
-					ApiPath:       httpRequestURL.Path,
-					HttpMethod:    httpRequestMethod,
-					ContentType:   "", // Not available at this point
-					PayloadLength: uint32(len(httpRequestBody)),
-				},
-			},
-		},
-		RequestLevelError: &qosobservations.RequestError{
-			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_REST_SERVICE_DETECTION_ERROR,
-			ErrorDetails:   truncateErrorMessage(err.Error()),
-			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
-		},
-	}
-}
-
-// TODO_TECHDEBT(@adshmh): Review error context creation for REST requests.
 // createRESTUnsupportedRPCTypeContext creates an error context for unsupported RPC type in REST requests
 func (rv *requestValidator) createRESTUnsupportedRPCTypeContext(
 	httpRequestURL *url.URL,

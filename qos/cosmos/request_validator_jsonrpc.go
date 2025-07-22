@@ -220,48 +220,6 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 	}
 }
 
-// createJSONRPCServiceDetectionFailureContext creates an error context for service detection failures
-func (rv *requestValidator) createJSONRPCServiceDetectionFailureContext(jsonrpcReq jsonrpc.Request, err error) gateway.RequestQoSContext {
-	// Create the JSON-RPC error response
-	response := jsonrpc.NewErrResponseInvalidRequest(jsonrpcReq.ID, err)
-
-	// Create the observations object with the service detection failure observation
-	observations := rv.createJSONRPCServiceDetectionFailureObservation(jsonrpcReq, err, response)
-
-	// Build and return the error context
-	return &qos.RequestErrorContext{
-		Logger:   rv.logger,
-		Response: response,
-		Observations: &qosobservations.Observations{
-			ServiceObservations: &qosobservations.Observations_Cosmos{
-				Cosmos: observations,
-			},
-		},
-	}
-}
-
-func (rv *requestValidator) createJSONRPCServiceDetectionFailureObservation(
-	jsonrpcReq jsonrpc.Request,
-	err error,
-	jsonrpcResponse jsonrpc.Response,
-) *qosobservations.CosmosRequestObservations {
-	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
-		RequestProfile: &qosobservations.CosmosRequestProfile{
-			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
-				JsonrpcRequest: jsonrpcReq.GetObservation(),
-			},
-		},
-		RequestLevelError: &qosobservations.RequestError{
-			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_SERVICE_DETECTION_ERROR,
-			ErrorDetails:   truncateErrorMessage(err.Error()),
-			HttpStatusCode: int32(jsonrpcResponse.GetRecommendedHTTPStatusCode()),
-		},
-	}
-}
-
 // createJSONRPCUnsupportedRPCTypeContext creates an error context for unsupported RPC type
 func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeContext(jsonrpcReq jsonrpc.Request, rpcType sharedtypes.RPCType) gateway.RequestQoSContext {
 	// Create the JSON-RPC error response

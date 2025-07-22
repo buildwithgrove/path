@@ -87,7 +87,7 @@ func unmarshalAsJSONRPCResponse(
 ) (jsonrpc.Response, *qosobservations.CosmosResponseValidationError) {
 	// Empty payload is invalid.
 	if len(data) == 0 {
-		errEmptyPayload := errors.New("Failed to unmarshal endpoint payload as JSONRPC: endpoint returned an empty response.")
+		errEmptyPayload := errors.New("Failed to unmarshal endpoint payload as JSONRPC: endpoint returned an empty response")
 		logger.With(
 			"unmarshal_err", errEmptyPayload,
 			"error_type", "empty_response",
