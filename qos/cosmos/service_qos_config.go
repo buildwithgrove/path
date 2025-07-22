@@ -64,7 +64,7 @@ func (cosmosSDKServiceQoSConfig) GetServiceQoSType() string {
 	return QoSType
 }
 
-// getCosmosSDKChainID returns the chain ID.
+// getCosmosSDKChainID returns the chain ID.w
 // Implements the CosmosSDKServiceQoSConfig interface.
 func (c cosmosSDKServiceQoSConfig) getCosmosSDKChainID() string {
 	return c.cosmosSDKChainID
