@@ -71,6 +71,8 @@ func (rv *requestValidator) getCometBFTEndpointChecks(endpoint endpoint) []gatew
 	return checks
 }
 
+// getCosmosSDKEndpointChecks generates the endpoint checks for the CosmosSDK RPC type.
+// API reference: https://docs.cosmos.network/api
 func (rv *requestValidator) getCosmosSDKEndpointChecks(endpoint endpoint) []gateway.RequestQoSContext {
 	// Cosmos SDK status check should always be run.
 	checks := []gateway.RequestQoSContext{
