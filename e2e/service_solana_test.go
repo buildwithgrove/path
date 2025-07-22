@@ -241,15 +241,9 @@ func getCurrentSlotNumber(client *http.Client, gatewayURL string, headers http.H
 		return 0, err
 	}
 
-	// Marshal the result back to JSON so we can unmarshal it into our struct
-	resultBytes, err := json.Marshal(jsonRPC.Result)
-	if err != nil {
-		return 0, fmt.Errorf("failed to marshal result: %w", err)
-	}
-
-	// Unmarshal into getEpochInfoResponse
+	// Unmarshal the result into getEpochInfoResponse
 	var epochInfo getEpochInfoResponse
-	if err := json.Unmarshal(resultBytes, &epochInfo); err != nil {
+	if err := jsonRPC.UnmarshalResult(&epochInfo); err != nil {
 		return 0, fmt.Errorf("failed to unmarshal epoch info: %w", err)
 	}
 
