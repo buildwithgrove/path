@@ -36,7 +36,7 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	serviceId := config.GetServiceID()
 
 	cosmosSDKChainID := config.getCosmosSDKChainID()
-	// Some CosmosSDK services may have an EVM chain ID.
+	// Some CosmosSDK services may have an EVM chain ID. For example, XRPLEVM.
 	evmChainID := config.getEVMChainID()
 
 	logger = logger.With(
