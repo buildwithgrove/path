@@ -326,11 +326,10 @@ func (ss *serviceState) validateBlockHeightSyncAllowance(latestBlockHeight uint6
 
 // validateEndpointEVMChecks validates the endpoint's EVM checks.
 // Checks:
-//   - Health status
+//   - EVM Chain ID matches expected EVM Chain ID.
 func (ss *serviceState) validateEndpointEVMChecks(endpoint endpoint) error {
-	// Check if the endpoint's health status is valid.
 	if err := ss.isEVMChainIDValid(endpoint.checkEVMChainID); err != nil {
-		return fmt.Errorf("EVM health validation failed: %w", err)
+		return fmt.Errorf("EVM chain ID validation failed: %w", err)
 	}
 
 	return nil
