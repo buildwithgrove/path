@@ -128,13 +128,18 @@ func (ss *serviceState) filterValidEndpoints(availableEndpoints protocol.Endpoin
 // valid based on the perceived state of the CosmosSDK blockchain.
 //
 // It returns an error if:
-// - The endpoint has returned an empty response in the past.
-// - The endpoint has returned an unmarshaling error within the last 30 minutes.
-// - The endpoint has returned an invalid response within the last 30 minutes.
-// - The endpoint's response to a `/status` request indicates an invalid chain ID.
-// - The endpoint's response to a `/status` request indicates it's catching up.
-// - The endpoint's response to a `/status` request shows block height outside sync allowance.
-// - The endpoint's response to a `/health` request indicates it's unhealthy.
+//   - The endpoint has returned an empty response in the past.
+//   - The endpoint has returned an unmarshaling error within the last 30 minutes.
+//   - The endpoint has returned an invalid response within the last 30 minutes.
+//
+// CometBFT-specific checks:
+//   - The endpoint's response to a `status` method indicates an invalid chain ID.
+//   - The endpoint's response to a `status` method indicates it's catching up.
+//   - The endpoint's response to a `status` method shows block height outside sync allowance.
+//   - The endpoint's response to a `health` method indicates it's unhealthy.
+//
+// CosmosSDK-specific checks:
+//   - The endpoint's response to a `/cosmos/base/node/v1beta1/status` request shows block height outside sync allowance.
 func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 	ss.serviceStateLock.RLock()
 	defer ss.serviceStateLock.RUnlock()
