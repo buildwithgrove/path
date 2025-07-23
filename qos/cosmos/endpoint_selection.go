@@ -8,6 +8,7 @@ import (
 
 	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/selector"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 )
 
 var (
@@ -161,6 +162,31 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 		}
 	}
 
+	// Get the RPC types supported by the CosmosSDK service.
+	supportedAPIs := ss.serviceQoSConfig.getSupportedAPIs()
+
+	// If the service supports CometBFT, validate the endpoint's CometBFT checks.
+	if _, ok := supportedAPIs[sharedtypes.RPCType_COMET_BFT]; ok {
+		if err := ss.validateEndpointCometBFTChecks(endpoint); err != nil {
+			return fmt.Errorf("cometBFT validation failed: %w", err)
+		}
+	}
+
+	// If the service supports CosmosSDK, validate the endpoint's CosmosSDK checks.
+	if _, ok := supportedAPIs[sharedtypes.RPCType_REST]; ok {
+		if err := ss.validateEndpointCosmosSDKChecks(endpoint); err != nil {
+			return fmt.Errorf("cosmos SDK validation failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// validateEndpointCometBFTChecks validates the endpoint's CometBFT checks.
+// Checks:
+//   - Health status
+//   - Status information
+func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error {
 	// Check if the endpoint's health status is valid.
 	if err := ss.isCometBFTHealthValid(endpoint.checkCometBFTHealth); err != nil {
 		return fmt.Errorf("cometBFT health validation failed: %w", err)
@@ -171,15 +197,10 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 		return fmt.Errorf("cometBFT status validation failed: %w", err)
 	}
 
-	// Check if the endpoint's Cosmos SDK status information is valid.
-	if err := ss.isCosmosStatusValid(endpoint.checkCosmosStatus); err != nil {
-		return fmt.Errorf("cosmos SDK status validation failed: %w", err)
-	}
-
 	return nil
 }
 
-// isHealthValid returns an error if:
+// isCometBFTHealthValid returns an error if:
 //   - The endpoint has not had an observation of its response to a `/health` request.
 //   - The endpoint's health check indicates it's unhealthy.
 func (ss *serviceState) isCometBFTHealthValid(check endpointCheckCometBFTHealth) error {
@@ -195,7 +216,7 @@ func (ss *serviceState) isCometBFTHealthValid(check endpointCheckCometBFTHealth)
 	return nil
 }
 
-// isStatusValid returns an error if:
+// isCometBFTStatusValid returns an error if:
 //   - The endpoint has not had an observation of its response to a `/status` request.
 //   - The endpoint's chain ID does not match the expected chain ID.
 //   - The endpoint is catching up to the network.
@@ -213,7 +234,7 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 			errInvalidChainIDObs, chainID, expectedChainID)
 	}
 
-	// Check if catching up
+	// Check if the endpoint is catching up to the network.
 	catchingUp, err := check.GetCatchingUp()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoStatusObs, err)
@@ -223,19 +244,25 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 		return fmt.Errorf("%w: endpoint is catching up to the network", errCatchingUpObs)
 	}
 
-	// Check block height sync allowance
+	// Check if the endpoint's block height is within the sync allowance.
 	latestBlockHeight, err := check.GetLatestBlockHeight()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoStatusObs, err)
 	}
+	if err := ss.validateBlockHeightSyncAllowance(latestBlockHeight); err != nil {
+		return fmt.Errorf("cometBFT block height sync allowance validation failed: %w", err)
+	}
 
-	if ss.perceivedBlockNumber > 0 {
-		syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
-		minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
-		if latestBlockHeight < minAllowedBlockNumber {
-			return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
-				errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
-		}
+	return nil
+}
+
+// validateEndpointCosmosSDKChecks validates the endpoint's CosmosSDK checks.
+// Checks:
+//   - Status information (block height)
+func (ss *serviceState) validateEndpointCosmosSDKChecks(endpoint endpoint) error {
+	// Check if the endpoint's Cosmos SDK status information is valid.
+	if err := ss.isCosmosStatusValid(endpoint.checkCosmosStatus); err != nil {
+		return fmt.Errorf("cosmos SDK status validation failed: %w", err)
 	}
 
 	return nil
@@ -245,18 +272,26 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 //   - The endpoint has not had an observation of its response to a `/cosmos/base/node/v1beta1/status` request.
 //   - The endpoint's block height is outside the sync allowance.
 func (ss *serviceState) isCosmosStatusValid(check endpointCheckCosmosStatus) error {
+	// Check if the endpoint's block height is within the sync allowance.
 	latestBlockHeight, err := check.GetHeight()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoStatusObs, err)
 	}
+	if err := ss.validateBlockHeightSyncAllowance(latestBlockHeight); err != nil {
+		return fmt.Errorf("cosmos SDK block height sync allowance validation failed: %w", err)
+	}
 
-	if ss.perceivedBlockNumber > 0 {
-		syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
-		minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
-		if latestBlockHeight < minAllowedBlockNumber {
-			return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
-				errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
-		}
+	return nil
+}
+
+// validateBlockHeightSyncAllowance returns an error if:
+//   - The endpoint's block height is outside the latest block height minus the sync allowance.
+func (ss *serviceState) validateBlockHeightSyncAllowance(latestBlockHeight uint64) error {
+	syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
+	minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
+	if latestBlockHeight < minAllowedBlockNumber {
+		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
+			errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
 	}
 
 	return nil
