@@ -20,7 +20,7 @@ import (
 type requestValidator struct {
 	logger           polylog.Logger
 	cosmosSDKChainID string
-	evmChainID       string
+	evmChainID       string // EVM chain ID will be empty if the CosmosSDK service does not support EVM.
 	serviceID        protocol.ServiceID
 	supportedAPIs    map[sharedtypes.RPCType]struct{}
 	serviceState     *serviceState
