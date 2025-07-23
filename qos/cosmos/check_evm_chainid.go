@@ -14,7 +14,7 @@ const idEVMChainIDCheck = 1001
 const methodEVMChainID = jsonrpc.Method("eth_chainId")
 
 // TODO_IMPROVE(@commoddity): determine an appropriate interval for checking the chain ID.
-const checkChainIDInterval = 20 * time.Minute
+const checkEVMChainIDInterval = 20 * time.Minute
 
 var (
 	errNoEVMChainIDObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodEVMChainID)

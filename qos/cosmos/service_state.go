@@ -132,20 +132,20 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 				qosLevelDataResponse.EmptyResponseCount++
 
 			// Endpoint is disqualified due to a missing or invalid chain ID (status check related).
-			case errors.Is(err, errInvalidChainIDObs):
+			case errors.Is(err, errInvalidCometBFTChainIDObs),
+				errors.Is(err, errNoEVMChainIDObs),
+				errors.Is(err, errInvalidEVMChainIDObs):
 				qosLevelDataResponse.ChainIDCheckErrorsCount++
 
 			// Endpoint is disqualified due to block number issues (status check related).
-			case errors.Is(err, errOutsideSyncAllowanceBlockNumberObs):
+			case errors.Is(err, errOutsideSyncAllowanceBlockNumberObs),
+				errors.Is(err, errNoCometBFTStatusObs):
 				qosLevelDataResponse.BlockNumberCheckErrorsCount++
 
-			// Other CosmosSDK-specific errors (health, status, catching up) - not tracked individually
-			case errors.Is(err, errNoHealthObs),
-				errors.Is(err, errInvalidHealthObs),
-				errors.Is(err, errNoStatusObs),
-				errors.Is(err, errInvalidStatusObs),
-				errors.Is(err, errCatchingUpObs):
-				// These are tracked in the DisqualifiedEndpoints map but not counted separately
+			// TODO_TECHDEBT(@commoddity): Update QoSDisqualifiedEndpoint to
+			// track all CosmosSDK-specific errors in a dedicated struct.
+			//
+			// Other CosmosSDK-specific errors - not tracked individually
 
 			default:
 				ss.logger.Error().Err(err).Msgf("SHOULD NEVER HAPPEN: unknown error for endpoint: %s", endpointAddr)

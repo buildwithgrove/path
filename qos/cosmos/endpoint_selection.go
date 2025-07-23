@@ -242,23 +242,23 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 	// Check chain ID
 	chainID, err := check.GetChainID()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+		return fmt.Errorf("%w: %v", errNoCometBFTStatusObs, err)
 	}
 
 	expectedChainID := ss.serviceQoSConfig.getCosmosSDKChainID()
 	if chainID != expectedChainID {
 		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
-			errInvalidChainIDObs, chainID, expectedChainID)
+			errInvalidCometBFTChainIDObs, chainID, expectedChainID)
 	}
 
 	// Check if the endpoint is catching up to the network.
 	catchingUp, err := check.GetCatchingUp()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+		return fmt.Errorf("%w: %v", errNoCometBFTStatusObs, err)
 	}
 
 	if catchingUp {
-		return fmt.Errorf("%w: endpoint is catching up to the network", errCatchingUpObs)
+		return fmt.Errorf("%w: endpoint is catching up to the network", errCometBFTCatchingUpObs)
 	}
 
 	return nil
@@ -274,7 +274,7 @@ func (ss *serviceState) isCometBFTBlockHeightValid(check endpointCheckCometBFTSt
 	// Check if the endpoint's block height is within the sync allowance.
 	latestBlockHeight, err := check.GetLatestBlockHeight()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+		return fmt.Errorf("%w: %v", errNoCometBFTStatusObs, err)
 	}
 	if err := ss.validateBlockHeightSyncAllowance(latestBlockHeight); err != nil {
 		return fmt.Errorf("cometBFT block height sync allowance validation failed: %w", err)
@@ -302,7 +302,7 @@ func (ss *serviceState) isCosmosStatusValid(check endpointCheckCosmosStatus) err
 	// Check if the endpoint's block height is within the sync allowance.
 	latestBlockHeight, err := check.GetHeight()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+		return fmt.Errorf("%w: %v", errNoCosmosStatusObs, err)
 	}
 	if err := ss.validateBlockHeightSyncAllowance(latestBlockHeight); err != nil {
 		return fmt.Errorf("cosmos SDK block height sync allowance validation failed: %w", err)
@@ -342,13 +342,13 @@ func (ss *serviceState) validateEndpointEVMChecks(endpoint endpoint) error {
 func (ss *serviceState) isEVMChainIDValid(check endpointCheckEVMChainID) error {
 	evmChainID, err := check.GetChainID()
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+		return err
 	}
 
 	expectedEVMChainID := ss.serviceQoSConfig.getEVMChainID()
 	if evmChainID != expectedEVMChainID {
 		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
-			errInvalidChainIDObs, evmChainID, expectedEVMChainID)
+			errInvalidEVMChainIDObs, evmChainID, expectedEVMChainID)
 	}
 
 	return nil

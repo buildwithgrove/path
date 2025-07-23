@@ -119,6 +119,9 @@ func applyObservation(
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
 		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
 		endpointWasMutated = true
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId:
+		applyEVMChainIDObservation(endpoint, response.ResponseEvmJsonrpcChainId)
+		endpointWasMutated = true
 	}
 
 	return endpointWasMutated
@@ -167,6 +170,15 @@ func applyCosmosSDKStatusObservation(endpoint *endpoint, statusResponse *qosobse
 	latestBlockHeight := statusResponse.LatestBlockHeight
 	endpoint.checkCosmosStatus = endpointCheckCosmosStatus{
 		latestBlockHeight: &latestBlockHeight,
+	}
+}
+
+// applyEVMChainIDObservation updates the chain ID check if a valid observation is provided.
+func applyEVMChainIDObservation(endpoint *endpoint, chainIDResponse *qosobservations.CosmosResponseEVMJSONRPCChainID) {
+	evmChainID := chainIDResponse.EvmChainId
+	endpoint.checkEVMChainID = endpointCheckEVMChainID{
+		chainID:   &evmChainID,
+		expiresAt: time.Now().Add(checkEVMChainIDInterval),
 	}
 }
 
