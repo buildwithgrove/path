@@ -78,7 +78,9 @@ func (ss *serviceState) updateFromEndpoints(updatedEndpoints map[protocol.Endpoi
 			"perceived_block_number", ss.perceivedBlockNumber,
 		)
 
-		// Do not update the perceived block number if the chain ID is invalid.
+		// Do not update the perceived block number if the `status` check fails.
+		// Note that this does not check the block height sync allowance as the perceived block number
+		// may not yet be set, causing a scenario where the perceived block number is never set.
 		if err := ss.isCometBFTStatusValid(endpoint.checkCometBFTStatus); err != nil {
 			logger.Error().Err(err).Msgf("❌ Skipping endpoint '%s' with invalid status", endpointAddr)
 			continue
