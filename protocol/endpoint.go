@@ -46,7 +46,7 @@ func (e EndpointAddr) String() string {
 //   - supplierAddress: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8"
 //   - endpointURL: "https://im.oldgreg.org"
 func (e EndpointAddr) Decompose() (supplierAddress string, endpointURL string) {
-	parts := strings.Split(string(e), "-")
+	parts := strings.SplitN(string(e), "-", 2)
 	supplierAddress = parts[0]
 	endpointURL = parts[1]
 	return
