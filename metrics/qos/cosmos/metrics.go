@@ -39,6 +39,7 @@ var (
 	//   - chain_id: Target Cosmos SDK chain identifier
 	//   - service_id: Service ID of the Cosmos SDK QoS instance
 	//   - request_origin: origin of the request: User or Hydrator.
+	//   - rpc_type: Backend service type (JSONRPC, REST, COMETBFT)
 	//   - request_method: Cosmos SDK RPC method name (e.g., health, status)
 	//   - success: Whether a valid response was received
 	//   - error_type: Type of error if request failed (empty for success)
@@ -57,14 +58,14 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by Cosmos SDK QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"chain_id", "service_id", "request_origin", "rpc_type", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
 // PublishMetrics:
 // - Exports all Cosmos SDK-related Prometheus metrics using observations from Cosmos SDK QoS service
 // - Logs errors for unexpected (should-never-happen) conditions
-func PublishMetrics(logger polylog.Logger, observations *qos.CosmosSDKRequestObservations) {
+func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObservations) {
 	logger = logger.With("method", "PublishMetricsCosmosSDK")
 
 	// Skip if observations is nil.
@@ -86,6 +87,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosSDKRequestObs
 			"chain_id":         interpreter.GetChainID(),
 			"service_id":       interpreter.GetServiceID(),
 			"request_origin":   observations.GetRequestOrigin().String(),
+			"rpc_type":         interpreter.GetRPCType(),
 			"request_method":   interpreter.GetRequestMethod(),
 			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
 			"error_type":       interpreter.GetRequestErrorType(),

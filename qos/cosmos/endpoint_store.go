@@ -27,7 +27,7 @@ type endpointStore struct {
 // updateEndpointsFromObservations creates/updates endpoint entries in the store based
 // on the supplied observations. It returns the set of created/updated endpoints.
 func (es *endpointStore) updateEndpointsFromObservations(
-	cosmosObservations *qosobservations.CosmosSDKRequestObservations,
+	cosmosObservations *qosobservations.CosmosRequestObservations,
 ) map[protocol.EndpointAddr]endpoint {
 	es.endpointsMu.Lock()
 	defer es.endpointsMu.Unlock()
@@ -83,49 +83,54 @@ func (es *endpointStore) updateEndpointsFromObservations(
 //   - an endpoint with no/incomplete observations.
 func applyObservation(
 	endpoint *endpoint,
-	observation *qosobservations.CosmosSDKEndpointObservation,
+	observation *qosobservations.CosmosEndpointObservation,
 ) (endpointWasMutated bool) {
-	// If emptyResponse is not nil, the observation is for an empty response check.
-	if observation.GetEmptyResponse() != nil {
-		applyEmptyResponseObservation(endpoint)
+	validationResult := observation.EndpointResponseValidationResult
+	if validationResult == nil {
+		return false
+	}
+
+	// Check if there's a validation error
+	if validationResult.ValidationError != nil {
+		applyValidationErrorObservation(endpoint, *validationResult.ValidationError)
 		endpointWasMutated = true
 		return
 	}
 
-	// If healthResponse is not nil, the observation is for a health check.
-	if observation.GetHealthResponse() != nil {
-		applyHealthObservation(endpoint, observation.GetHealthResponse())
+	// Handle specific response types based on the parsed_response oneof field
+	switch response := validationResult.ParsedResponse.(type) {
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseHealth:
+		applyHealthObservation(endpoint, response.ResponseHealth)
 		endpointWasMutated = true
-		return
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseStatus:
+		applyStatusObservation(endpoint, response.ResponseStatus)
+		endpointWasMutated = true
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
+		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
+		endpointWasMutated = true
 	}
 
-	// If statusResponse is not nil, the observation is for a status check.
-	if observation.GetStatusResponse() != nil {
-		applyStatusObservation(endpoint, observation.GetStatusResponse())
-		endpointWasMutated = true
-		return
-	}
-
-	// If unrecognizedResponse is not nil, the observation is for an unrecognized response.
-	if unrecognizedResponse := observation.GetUnrecognizedResponse(); unrecognizedResponse != nil {
-		applyUnrecognizedResponseObservation(endpoint, unrecognizedResponse)
-		endpointWasMutated = true
-		return
-	}
-
-	return endpointWasMutated // endpoint was not mutated by the observation
+	return endpointWasMutated
 }
 
-// applyEmptyResponseObservation updates the empty response check if a valid observation is provided.
-func applyEmptyResponseObservation(endpoint *endpoint) {
-	endpoint.hasReturnedEmptyResponse = true
+// applyValidationErrorObservation updates the endpoint state when a validation error occurs.
+func applyValidationErrorObservation(endpoint *endpoint, validationError qosobservations.CosmosResponseValidationError) {
+	endpoint.hasReturnedInvalidResponse = true
 	now := time.Now()
 	endpoint.invalidResponseLastObserved = &now
+
+	// Set specific error flags based on validation error type
+	switch validationError {
+	case qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_EMPTY:
+		endpoint.hasReturnedEmptyResponse = true
+	case qosobservations.CosmosResponseValidationError_COSMOS_RESPONSE_VALIDATION_ERROR_UNMARSHAL:
+		endpoint.hasReturnedUnmarshalingError = true
+	}
 }
 
 // applyHealthObservation updates the health check if a valid observation is provided.
-func applyHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CosmosSDKHealthResponse) {
-	healthy := healthResponse.GetHealthStatusResponse()
+func applyHealthObservation(endpoint *endpoint, healthResponse *qosobservations.CosmosResponseHealth) {
+	healthy := healthResponse.HealthStatus
 	endpoint.checkHealth = endpointCheckHealth{
 		healthy:   &healthy,
 		expiresAt: time.Now().Add(checkHealthInterval),
@@ -133,10 +138,10 @@ func applyHealthObservation(endpoint *endpoint, healthResponse *qosobservations.
 }
 
 // applyStatusObservation updates the status check if a valid observation is provided.
-func applyStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosSDKStatusResponse) {
-	chainID := statusResponse.GetChainIdResponse()
-	catchingUp := statusResponse.GetCatchingUpResponse()
-	blockHeight := parseBlockHeightResponse(statusResponse.GetLatestBlockHeightResponse())
+func applyStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseStatus) {
+	chainID := statusResponse.ChainId
+	catchingUp := statusResponse.CatchingUp
+	blockHeight := parseBlockHeightResponse(statusResponse.LatestBlockHeight)
 
 	endpoint.checkStatus = endpointCheckStatus{
 		chainID:           &chainID,
@@ -161,11 +166,8 @@ func parseBlockHeightResponse(response string) uint64 {
 	return parsed
 }
 
-// applyUnrecognizedResponseObservation updates the invalid response check if a validation error is present.
-func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedResponse *qosobservations.CosmosSDKUnrecognizedResponse) {
-	// Check if the unrecognized response has a validation error set to something other than UNSPECIFIED
-	// Note: For CosmosSDK, we don't have a validation error field in the unrecognized response,
-	// so we'll just mark it as an invalid response
+// applyUnrecognizedResponseObservation updates the invalid response check for unrecognized responses.
+func applyUnrecognizedResponseObservation(endpoint *endpoint, unrecognizedResponse *qosobservations.UnrecognizedResponse) {
 	endpoint.hasReturnedInvalidResponse = true
 	now := time.Now()
 	endpoint.invalidResponseLastObserved = &now

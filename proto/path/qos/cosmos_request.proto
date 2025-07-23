@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/jsonrpc.proto";
+
+// CosmosRequestProfile contains:
+// - Target backend service selection
+// - Request format determination (JSONRPC vs REST)
+// - Parsed and validated request payload
+message CosmosRequestProfile {
+	// Backend service configuration and selection details
+	BackendServiceDetails backend_service_details = 1;
+	
+	// Parsed request payload by format type
+	oneof parsed_request {
+		RESTRequest rest_request = 2;
+		JsonRpcRequest jsonrpc_request = 3;
+	}
+}
+
+// BackendServiceType enumerates the types of backend services that can handle requests
+enum BackendServiceType {
+	BACKEND_SERVICE_TYPE_UNSPECIFIED = 0;
+	BACKEND_SERVICE_TYPE_JSONRPC = 1;   // Backend service using JSON-RPC protocol
+	BACKEND_SERVICE_TYPE_REST = 2;      // Backend service using REST API
+	BACKEND_SERVICE_TYPE_COMETBFT = 3;  // Backend service using CometBFT RPC
+}
+
+// BackendServiceDetails contains metadata about backend service selection
+message BackendServiceDetails {
+	BackendServiceType backend_service_type = 1;
+	string selection_reason = 2;
+}
+
+// RESTRequest contains details about a REST request
+message RESTRequest {
+	// API path that was called (e.g. "/", "/health", "/status")
+	string api_path = 1;
+	
+	// HTTP method used (GET, POST, etc.)
+	string http_method = 2;
+
+	// Tracks the value of HTTP request's Content-Type header.
+	string content_type = 3;
+
+	// Length of request payload: could be 0, e.g. for GET requests.
+	uint32 payload_length = 4;
+}
