@@ -1,90 +1,74 @@
 package cosmos
 
 import (
-	"encoding/json"
-
-	"github.com/pokt-network/poktroll/pkg/polylog"
-
+	"github.com/buildwithgrove/path/gateway"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
+	"github.com/buildwithgrove/path/qos"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
+	"github.com/pokt-network/poktroll/pkg/polylog"
 )
 
-// responseToHealth provides the functionality required from a response by a requestContext instance.
-var _ response = responseToHealth{}
+// responseValidatorHealth implements jsonrpcResponseValidator for /health endpoint
+// Takes a parsed JSONRPC response and validates it as a health response
+func responseValidatorHealth(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
+	logger = logger.With("response_validator", "health")
 
-// responseUnmarshallerHealth deserializes the provided payload
-// into a responseToHealth struct, adding any encountered errors
-// to the returned struct.
-func responseUnmarshallerHealth(
-	logger polylog.Logger,
-	jsonrpcResp jsonrpc.Response,
-) (response, error) {
-	// The endpoint returned an error: no need to do further processing of the response.
-	if jsonrpcResp.IsError() {
-		return responseToHealth{
-			logger:          logger,
-			jsonRPCResponse: jsonrpcResp,
-			healthy:         false,
-		}, nil
+	// The endpoint returned an error: no need to do further processing of the response
+	if jsonrpcResponse.IsError() {
+		logger.Warn().
+			Str("jsonrpc_error", jsonrpcResponse.Error.Message).
+			Int("jsonrpc_error_code", jsonrpcResponse.Error.Code).
+			Msg("Endpoint returned JSON-RPC error for /health request")
+
+		return &responseHealth{
+			logger:              logger,
+			userJSONRPCResponse: jsonrpcResponse,
+			healthy:             false, // Error means unhealthy
+		}
 	}
 
-	// `/health` endpoint returns an empty response on success,
-	// so any non-error response is considered healthy.
-	return responseToHealth{
-		logger:          logger,
-		jsonRPCResponse: jsonrpcResp,
-		healthy:         true,
-	}, nil
+	// Any valid, non-error JSONRPC response to `/health` is accepted as valid.
+	// Reference: https://docs.cometbft.com/main/spec/rpc/#health
+	logger.Debug().Msg("Successfully validated /health response")
+
+	return &responseHealth{
+		logger:              logger,
+		userJSONRPCResponse: jsonrpcResponse,
+		healthy:             true,
+	}
 }
 
-// responseToHealth captures a CometBFT-based blockchain's /health endpoint response.
+// responseHealth captures a Cosmos JSONRPC /health endpoint response
 // Reference: https://docs.cometbft.com/v1.0/spec/rpc/#health
-type responseToHealth struct {
+type responseHealth struct {
 	logger polylog.Logger
 
-	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes.
-	jsonRPCResponse jsonrpc.Response
-
-	// statusCode stores the status code of a response to a `/health` request.
+	// healthy indicates if the endpoint is healthy
 	healthy bool
+
+	// tracks the JSONRPC response to return to the user.
+	userJSONRPCResponse jsonrpc.Response
 }
 
-// GetObservation returns a CosmosSDK-based /health observation
-// Implements the response interface.
-func (r responseToHealth) GetObservation() qosobservations.CosmosSDKEndpointObservation {
-	return qosobservations.CosmosSDKEndpointObservation{
-		ResponseObservation: &qosobservations.CosmosSDKEndpointObservation_HealthResponse{
-			HealthResponse: &qosobservations.CosmosSDKHealthResponse{
-				HealthStatusResponse: r.healthy,
+// GetObservation returns a Cosmos-based /health observation
+// Implements the response interface
+func (r *responseHealth) GetObservation() qosobservations.CosmosEndpointObservation {
+	return qosobservations.CosmosEndpointObservation{
+		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
+			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
+			HttpStatusCode:         int32(r.userJSONRPCResponse.GetRecommendedHTTPStatusCode()),
+			ValidationError:        nil, // No validation error for successfully processed responses
+			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseHealth{
+				ResponseHealth: &qosobservations.CosmosResponseHealth{
+					HealthStatus: r.healthy,
+				},
 			},
 		},
 	}
 }
 
-// GetResponsePayload returns the payload for the response to a `/health` request.
-// Implements the response interface.
-func (r responseToHealth) GetResponsePayload() []byte {
-	// TODO_MVP(@adshmh): return a JSON-RPC response indicating the error if unmarshaling failed.
-	bz, err := json.Marshal(r.jsonRPCResponse)
-	if err != nil {
-		// This should never happen: log an entry but return the response anyway.
-		r.logger.Warn().Err(err).Msg("responseToGetHealth: Marshaling JSON-RPC response failed.")
-	}
-	return bz
-}
-
-// returns an HTTP status code corresponding to the underlying JSON-RPC response code.
-// DEV_NOTE: This is an opinionated mapping following best practice but not enforced by any specifications or standards.
-// Implements the response interface.
-func (r responseToHealth) GetResponseStatusCode() int {
-	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
-}
-
-// GetHTTPResponse builds and returns the httpResponse matching the responseToHealth instance.
-// Implements the response interface.
-func (r responseToHealth) GetHTTPResponse() httpResponse {
-	return httpResponse{
-		responsePayload: r.GetResponsePayload(),
-		httpStatusCode:  r.GetResponseStatusCode(),
-	}
+// GetHTTPResponse builds and returns the HTTP response
+// Implements the response interface
+func (r *responseHealth) GetHTTPResponse() gateway.HTTPResponse {
+	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.userJSONRPCResponse)
 }

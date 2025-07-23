@@ -1,35 +1,20 @@
 package cosmos
 
-import "strings"
+import (
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+)
 
 // ------------------------------------------------------------------------------------------------
-// Cosmos SDK RPC Type Detection
+// REST API Type Detection - Consolidated Logic
 // ------------------------------------------------------------------------------------------------
 
-// Cosmos REST API prefixes
-// API reference: https://docs.cosmos.network/api
-var cosmosRestPrefixes = []string{
-	"/cosmos/",       // - /cosmos/* (Cosmos SDK modules)
-	"/ibc/",          // - /ibc/* (IBC protocol)
-	"/staking/",      // - /staking/* (staking module)
-	"/auth/",         // - /auth/* (auth module)
-	"/bank/",         // - /bank/* (bank module)
-	"/txs/",          // - /txs/* (transaction endpoints)
-	"/gov/",          // - /gov/* (governance module)
-	"/distribution/", // - /distribution/* (distribution module)
-	"/slashing/",     // - /slashing/* (slashing module)
-	"/mint/",         // - /mint/* (mint module)
-	"/upgrade/",      // - /upgrade/* (upgrade module)
-	"/evidence/",     // - /evidence/* (evidence module)
-}
-
-// isCosmosRestAPI checks if the URL path corresponds to Cosmos SDK REST API endpoints
-// These typically run on port :1317 and include paths like:
-func isCosmosRestAPI(urlPath string) bool {
-	for _, prefix := range cosmosRestPrefixes {
-		if strings.HasPrefix(urlPath, prefix) {
-			return true
-		}
+// determineRESTRPCType determines the specific RPC type for REST requests
+func determineRESTRPCType(path string) sharedtypes.RPCType {
+	// CometBFT REST-style endpoints should be tagged as COMET_BFT
+	if isCometBftRpc(path) {
+		return sharedtypes.RPCType_COMET_BFT
 	}
-	return false
+
+	// Everything else is regular REST
+	return sharedtypes.RPCType_REST
 }

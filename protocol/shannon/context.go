@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	"github.com/pokt-network/poktroll/pkg/relayer/proxy"
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
@@ -178,6 +180,21 @@ func (rc *requestContext) GetObservations() protocolobservations.Observations {
 	}
 }
 
+// buildHeaders creates the headers map including the RPCType header
+func buildHeaders(payload protocol.Payload) map[string]string {
+	headers := make(map[string]string)
+
+	// Copy existing headers from payload
+	for key, value := range payload.Headers {
+		headers[key] = value
+	}
+
+	// Add RPCType header
+	headers[proxy.RPCTypeHeader] = strconv.Itoa(int(payload.RPCType))
+
+	return headers
+}
+
 // sendRelay:
 // - Sends the supplied payload as a relay request to the endpoint selected via SelectEndpoint.
 // - Enhanced error handling for more fine-grained endpoint error type classification.
@@ -219,8 +236,11 @@ func (rc *requestContext) sendRelay(payload protocol.Payload) (*servicetypes.Rel
 	ctxWithTimeout, cancelFn := context.WithTimeout(rc.context, timeout)
 	defer cancelFn()
 
+	// Build headers including RPCType header
+	headers := buildHeaders(payload)
+
 	// Send the HTTP relay request
-	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, payload.Headers)
+	httpRelayResponseBz, err := sendHttpRelay(ctxWithTimeout, rc.selectedEndpoint.url, signedRelayReq, headers)
 	if err != nil {
 		// Endpoint failed to respond before the timeout expires.
 		// Wrap the net/http error with our classification error
