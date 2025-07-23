@@ -14,8 +14,6 @@ type CosmosSDKObservationInterpreter struct {
 	Observations *CosmosRequestObservations
 }
 
-// TODO_IN_THIS_PR(@commoddity): Add EVM chain ID to interpreter.
-
 // GetChainID returns the blockchain identifier from observations.
 func (i *CosmosSDKObservationInterpreter) GetCosmosSdkChainID() string {
 	if i.Observations == nil {
