@@ -87,10 +87,15 @@ func (rv *requestValidator) buildRESTRequestContext(
 		servicePayload,
 	)
 
-	logger.With(
+	// Hydrate the logger with REST request details.
+	logger = logger.With(
+		"rest_backend_service", rpcType,
 		"payload_length", len(servicePayload.Data),
-		"request_path", servicePayload.Path,
-	).Debug().Msg("REST request validation successful.")
+		"rest_request_path", servicePayload.Path,
+		"rest_request_method", servicePayload.Method,
+	)
+
+	logger.Debug().Msg("REST request validation successful.")
 
 	// Create specialized REST context
 	return &requestContext{
