@@ -46,14 +46,12 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 func (s sanction) toSanctionDetails(
 	supplierAddress string,
 	endpointURL string,
-	appAddr string,
 	sessionID string,
 	sanctionType protocolobservations.MorseSanctionType,
 ) devtools.SanctionedEndpoint {
 	return devtools.SanctionedEndpoint{
 		SupplierAddress: supplierAddress,
 		EndpointURL:     endpointURL,
-		AppAddr:         appAddr,
 		SessionID:       sessionID,
 		ServiceID:       protocol.ServiceID(s.sessionServiceID),
 		Reason:          s.reason,

@@ -3,10 +3,12 @@ package protocol
 import "strings"
 
 // EndpointAddr is used as the unique identifier for a service endpoint.
-// Each protocol interface implementation needs to define an endpoint address which uniquely identifies a service endpoint.
-// As of writing this comment(#50):
-// - Morse (POKT): uses a node's public key as its endpoint address
-// - Shannon (POKT): appends the URL of each endpoint configured for a Shannon supplier to its operator address to form endpoint addresses.
+//
+// In Shannon, the endpoint address is the concatenation of the supplier's
+// operator address and the endpoint's URL, separated by a "-" character.
+//
+// For example:
+//   - "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
 type EndpointAddr string
 
 type EndpointAddrList []EndpointAddr
@@ -36,6 +38,18 @@ type EndpointSelector interface {
 
 func (e EndpointAddr) String() string {
 	return string(e)
+}
+
+// Decompose decomposes an EndpointAddr into its supplier address and endpoint URL.
+//
+// For example, given the EndpointAddr "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org",
+//   - supplierAddress: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8"
+//   - endpointURL: "https://im.oldgreg.org"
+func (e EndpointAddr) Decompose() (supplierAddress string, endpointURL string) {
+	parts := strings.Split(string(e), "-")
+	supplierAddress = parts[0]
+	endpointURL = parts[1]
+	return
 }
 
 func (e EndpointAddrList) String() string {
