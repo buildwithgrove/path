@@ -207,6 +207,11 @@ func (ss *serviceState) validateEndpointCometBFTChecks(endpoint endpoint) error 
 		return fmt.Errorf("cometBFT status validation failed: %w", err)
 	}
 
+	// Check if the endpoint's block height is valid.
+	if err := ss.isCometBFTBlockHeightValid(endpoint.checkCometBFTStatus); err != nil {
+		return fmt.Errorf("cometBFT block height validation failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -227,10 +232,12 @@ func (ss *serviceState) isCometBFTHealthValid(check endpointCheckCometBFTHealth)
 }
 
 // isCometBFTStatusValid returns an error if:
-//   - The endpoint has not had an observation of its response to a `/status` request.
+//   - The endpoint has not had an observation of its response to a `status` method request.
 //   - The endpoint's chain ID does not match the expected chain ID.
 //   - The endpoint is catching up to the network.
-//   - The endpoint's block height is outside the sync allowance.
+//
+// This method intentionally does not check the block height sync allowance
+// because it is checked separately in the `isCometBFTBlockHeightValid` method.
 func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus) error {
 	// Check chain ID
 	chainID, err := check.GetChainID()
@@ -254,6 +261,16 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 		return fmt.Errorf("%w: endpoint is catching up to the network", errCatchingUpObs)
 	}
 
+	return nil
+}
+
+// isCometBFTBlockHeightValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `status` methodrequest.
+//   - The endpoint's block height is outside the sync allowance.
+//
+// This method is intentionally kept separate from the other CometBFT `status` method checks
+// so that correct status can be checked without validating against the perceived block number.
+func (ss *serviceState) isCometBFTBlockHeightValid(check endpointCheckCometBFTStatus) error {
 	// Check if the endpoint's block height is within the sync allowance.
 	latestBlockHeight, err := check.GetLatestBlockHeight()
 	if err != nil {
