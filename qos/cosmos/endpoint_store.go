@@ -113,6 +113,9 @@ func applyObservation(
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus:
 		applyCometBFTStatusObservation(endpoint, response.ResponseCometBftStatus)
 		endpointWasMutated = true
+	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus:
+		applyCosmosSDKStatusObservation(endpoint, response.ResponseCosmosSdkStatus)
+		endpointWasMutated = true
 	case *qosobservations.CosmosEndpointResponseValidationResult_ResponseUnrecognized:
 		applyUnrecognizedResponseObservation(endpoint, response.ResponseUnrecognized)
 		endpointWasMutated = true
@@ -156,6 +159,14 @@ func applyCometBFTStatusObservation(endpoint *endpoint, statusResponse *qosobser
 		catchingUp:        &catchingUp,
 		latestBlockHeight: &blockHeight,
 		expiresAt:         time.Now().Add(checkStatusInterval),
+	}
+}
+
+// applyCosmosSDKStatusObservation updates the status check if a valid observation is provided.
+func applyCosmosSDKStatusObservation(endpoint *endpoint, statusResponse *qosobservations.CosmosResponseCosmosSDKStatus) {
+	latestBlockHeight := statusResponse.LatestBlockHeight
+	endpoint.checkCosmosStatus = endpointCheckCosmosStatus{
+		latestBlockHeight: &latestBlockHeight,
 	}
 }
 

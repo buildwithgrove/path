@@ -163,12 +163,17 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 
 	// Check if the endpoint's health status is valid.
 	if err := ss.isCometBFTHealthValid(endpoint.checkCometBFTHealth); err != nil {
-		return fmt.Errorf("health validation failed: %w", err)
+		return fmt.Errorf("cometBFT health validation failed: %w", err)
 	}
 
 	// Check if the endpoint's status information is valid.
 	if err := ss.isCometBFTStatusValid(endpoint.checkCometBFTStatus); err != nil {
-		return fmt.Errorf("status validation failed: %w", err)
+		return fmt.Errorf("cometBFT status validation failed: %w", err)
+	}
+
+	// Check if the endpoint's Cosmos SDK status information is valid.
+	if err := ss.isCosmosStatusValid(endpoint.checkCosmosStatus); err != nil {
+		return fmt.Errorf("cosmos SDK status validation failed: %w", err)
 	}
 
 	return nil
@@ -220,6 +225,27 @@ func (ss *serviceState) isCometBFTStatusValid(check endpointCheckCometBFTStatus)
 
 	// Check block height sync allowance
 	latestBlockHeight, err := check.GetLatestBlockHeight()
+	if err != nil {
+		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+	}
+
+	if ss.perceivedBlockNumber > 0 {
+		syncAllowance := ss.serviceQoSConfig.getSyncAllowance()
+		minAllowedBlockNumber := ss.perceivedBlockNumber - syncAllowance
+		if latestBlockHeight < minAllowedBlockNumber {
+			return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
+				errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
+		}
+	}
+
+	return nil
+}
+
+// isCosmosStatusValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `/cosmos/base/node/v1beta1/status` request.
+//   - The endpoint's block height is outside the sync allowance.
+func (ss *serviceState) isCosmosStatusValid(check endpointCheckCosmosStatus) error {
+	latestBlockHeight, err := check.GetHeight()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoStatusObs, err)
 	}
