@@ -46,7 +46,7 @@ type (
 	}
 )
 
-// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for /status endpoint
+// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for status method
 // Takes a parsed JSONRPC response and validates it as a status response
 func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "status")
@@ -102,7 +102,7 @@ func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse json
 	return &responseCometBFTStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResponse,
-		chainID:           result.NodeInfo.Network,
+		cosmosSDKChainID:  result.NodeInfo.Network,
 		catchingUp:        result.SyncInfo.CatchingUp,
 		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
 	}
@@ -116,10 +116,10 @@ type responseCometBFTStatus struct {
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes
 	jsonRPCResponse jsonrpc.Response
 
-	// chainID stores the chain ID of the endpoint
+	// cosmosSDKChainID stores the chain ID of the endpoint
 	// Comes from the `NodeInfo.Network` field in the `/status` response
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-	chainID string
+	cosmosSDKChainID string
 
 	// catchingUp indicates if the endpoint is catching up to the network
 	// Comes from the `SyncInfo.CatchingUp` field in the `/status` response
@@ -143,7 +143,7 @@ func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpoint
 			ValidationError:        nil, // No validation error for successfully processed responses
 			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
 				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
-					ChainId:           r.chainID,
+					CosmosSdkChainId:  r.cosmosSDKChainID,
 					CatchingUp:        r.catchingUp,
 					LatestBlockHeight: r.latestBlockHeight,
 				},

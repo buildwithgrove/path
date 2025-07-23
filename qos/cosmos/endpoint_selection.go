@@ -36,9 +36,7 @@ var _ protocol.EndpointSelector = &serviceState{}
 // available endpoints are filtered based on their validity first.
 // A random endpoint is then returned from the filtered list of valid endpoints.
 func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
-	logger := ss.logger.With("method", "Select").
-		With("chain_id", ss.serviceQoSConfig.getCosmosSDKChainID()).
-		With("service_id", ss.serviceQoSConfig.GetServiceID())
+	logger := ss.logger.With("method", "Select")
 
 	logger.Info().Msgf("filtering %d available endpoints.", len(availableEndpoints))
 
@@ -65,7 +63,7 @@ func (ss *serviceState) Select(availableEndpoints protocol.EndpointAddrList) (pr
 // Valid endpoints are determined by filtering the available endpoints based on their
 // validity criteria. If numEndpoints is 0, it defaults to 1.
 func (ss *serviceState) SelectMultiple(allAvailableEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
-	logger := ss.logger.With("method", "SelectMultiple").With("chain_id", ss.serviceQoSConfig.getCosmosSDKChainID()).With("num_endpoints", numEndpoints)
+	logger := ss.logger.With("method", "SelectMultiple").With("num_endpoints", numEndpoints)
 	logger.Info().Msgf("filtering %d available endpoints to select up to %d.", len(allAvailableEndpoints), numEndpoints)
 
 	filteredEndpointsAddr, err := ss.filterValidEndpoints(allAvailableEndpoints)
@@ -184,6 +182,13 @@ func (ss *serviceState) basicEndpointValidation(endpoint endpoint) error {
 		}
 	}
 
+	// If the service supports EVM, validate the endpoint's EVM checks.
+	if _, ok := supportedAPIs[sharedtypes.RPCType_JSON_RPC]; ok {
+		if err := ss.validateEndpointEVMChecks(endpoint); err != nil {
+			return fmt.Errorf("EVM validation failed: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -297,6 +302,36 @@ func (ss *serviceState) validateBlockHeightSyncAllowance(latestBlockHeight uint6
 	if latestBlockHeight < minAllowedBlockNumber {
 		return fmt.Errorf("%w: block number %d is outside the sync allowance relative to min allowed block number %d and sync allowance %d",
 			errOutsideSyncAllowanceBlockNumberObs, latestBlockHeight, minAllowedBlockNumber, syncAllowance)
+	}
+
+	return nil
+}
+
+// validateEndpointEVMChecks validates the endpoint's EVM checks.
+// Checks:
+//   - Health status
+func (ss *serviceState) validateEndpointEVMChecks(endpoint endpoint) error {
+	// Check if the endpoint's health status is valid.
+	if err := ss.isEVMChainIDValid(endpoint.checkEVMChainID); err != nil {
+		return fmt.Errorf("EVM health validation failed: %w", err)
+	}
+
+	return nil
+}
+
+// isEVMChainIDValid returns an error if:
+//   - The endpoint has not had an observation of its response to a `eth_chainId` request.
+//   - The endpoint's chain ID does not match the expected chain ID.
+func (ss *serviceState) isEVMChainIDValid(check endpointCheckEVMChainID) error {
+	evmChainID, err := check.GetChainID()
+	if err != nil {
+		return fmt.Errorf("%w: %v", errNoStatusObs, err)
+	}
+
+	expectedEVMChainID := ss.serviceQoSConfig.getEVMChainID()
+	if evmChainID != expectedEVMChainID {
+		return fmt.Errorf("%w: chain ID %s does not match expected chain ID %s",
+			errInvalidChainIDObs, evmChainID, expectedEVMChainID)
 	}
 
 	return nil

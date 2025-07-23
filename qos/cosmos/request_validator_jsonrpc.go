@@ -162,9 +162,9 @@ func (rv *requestValidator) buildJSONRPCRequestObservations(
 ) *qosobservations.CosmosRequestObservations {
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
-		ServiceId:     string(rv.serviceID),
-		RequestOrigin: requestOrigin,
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		ServiceId:        string(rv.serviceID),
+		RequestOrigin:    requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -223,9 +223,9 @@ func (rv *requestValidator) createJSONRPCParseFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		ServiceId:        string(rv.serviceID),
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestLevelError: &qosobservations.RequestError{
 			ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_USER_ERROR_JSONRPC_PARSE_ERROR,
 			ErrorDetails:   truncateErrorMessage(err.Error()),
@@ -261,9 +261,9 @@ func (rv *requestValidator) createJSONRPCUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		ServiceId:        string(rv.serviceID),
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -307,9 +307,9 @@ func (rv *requestValidator) createJSONRPCServicePayloadBuildFailureObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		ServiceId:        string(rv.serviceID),
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			ParsedRequest: &qosobservations.CosmosRequestProfile_JsonrpcRequest{
 				JsonrpcRequest: jsonrpcReq.GetObservation(),

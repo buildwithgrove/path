@@ -42,9 +42,10 @@ func (rv *requestValidator) GetRequiredQualityChecks(endpointAddr protocol.Endpo
 		checks = append(checks, rv.getCosmosSDKEndpointChecks(endpoint)...)
 	}
 
-	// TODO_NEXT(@commoddity): Add endpoint checks for EVM JSON-RPC methods (sharedtypes.RPCType_JSON_RPC):
-	//     - `{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}`
-	//     - `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
+	// If the service supports EVM JSON-RPC, add the EVM endpoint checks.
+	if _, ok := supportedAPIs[sharedtypes.RPCType_JSON_RPC]; ok {
+		checks = append(checks, rv.getEVMEndpointChecks(endpoint)...)
+	}
 
 	return checks
 }
@@ -85,6 +86,21 @@ func (rv *requestValidator) getCosmosSDKEndpointChecks(endpoint endpoint) []gate
 	return checks
 }
 
+// getEVMEndpointChecks generates the endpoint checks for the EVM JSON-RPC type.
+// API reference: https://ethereum.org/en/developers/docs/apis/json-rpc/
+func (rv *requestValidator) getEVMEndpointChecks(endpoint endpoint) []gateway.RequestQoSContext {
+	checks := []gateway.RequestQoSContext{}
+
+	if rv.shouldEVMChainIDCheckRun(endpoint.checkEVMChainID) {
+		checks = append(checks, rv.getJSONRPCRequestContextFromRequest(
+			sharedtypes.RPCType_JSON_RPC,
+			endpoint.checkEVMChainID.getRequest(),
+		))
+	}
+
+	return checks
+}
+
 // shouldCometBFTHealthCheckRun returns true if the health check is not yet initialized or has expired.
 func (rv *requestValidator) shouldCometBFTHealthCheckRun(check endpointCheckCometBFTHealth) bool {
 	return check.expiresAt.IsZero() || check.IsExpired()
@@ -92,6 +108,11 @@ func (rv *requestValidator) shouldCometBFTHealthCheckRun(check endpointCheckCome
 
 // shouldCometBFTStatusCheckRun returns true if the status check is not yet initialized or has expired.
 func (rv *requestValidator) shouldCometBFTStatusCheckRun(check endpointCheckCometBFTStatus) bool {
+	return check.expiresAt.IsZero() || check.IsExpired()
+}
+
+// shouldEVMChainIDCheckRun returns true if the chain ID check is not yet initialized or has expired.
+func (rv *requestValidator) shouldEVMChainIDCheckRun(check endpointCheckEVMChainID) bool {
 	return check.expiresAt.IsZero() || check.IsExpired()
 }
 
@@ -111,7 +132,6 @@ func (rv *requestValidator) getJSONRPCRequestContextFromRequest(
 	return context
 }
 
-// TODO_NEXT(@commoddity): Add getRESTRequestContextFromRequest method for generating Cosmos SDK quality checks.
 func (rv *requestValidator) getRESTRequestContextFromRequest(
 	rpcType sharedtypes.RPCType,
 	restReq *http.Request,

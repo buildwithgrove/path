@@ -36,8 +36,9 @@ var (
 
 	// Maps JSONRPC requests to their corresponding response validators, based on the JSONRPC method.
 	jsonrpcRequestEndpointResponseValidators = map[string]jsonrpcResponseValidator{
-		"health": responseValidatorCometBFTHealth,
-		"status": responseValidatorCometBFTStatus,
+		"health":      responseValidatorCometBFTHealth,
+		"status":      responseValidatorCometBFTStatus,
+		"eth_chainId": responseValidatorEVMChainID,
 	}
 )
 

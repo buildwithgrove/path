@@ -18,11 +18,12 @@ import (
 // requestValidator handles validation for all Cosmos service requests
 // Coordinates between different protocol validators (JSONRPC, REST)
 type requestValidator struct {
-	logger        polylog.Logger
-	chainID       string
-	serviceID     protocol.ServiceID
-	supportedAPIs map[sharedtypes.RPCType]struct{}
-	serviceState  *serviceState
+	logger           polylog.Logger
+	cosmosSDKChainID string
+	evmChainID       string
+	serviceID        protocol.ServiceID
+	supportedAPIs    map[sharedtypes.RPCType]struct{}
+	serviceState     *serviceState
 }
 
 // validateHTTPRequest validates an HTTP request and routes to appropriate sub-validator
@@ -86,7 +87,7 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 	response := jsonrpc.NewErrResponseInternalErr(jsonrpc.ID{}, err)
 
 	// Create the observations object with the HTTP body read failure observation
-	observations := createHTTPBodyReadFailureObservation(rv.serviceID, rv.chainID, err, response)
+	observations := createHTTPBodyReadFailureObservation(rv.serviceID, rv.cosmosSDKChainID, err, response)
 
 	// Build and return the error context
 	return &qos.RequestErrorContext{
@@ -100,14 +101,14 @@ func (rv *requestValidator) createHTTPBodyReadFailureContext(err error) gateway.
 
 func createHTTPBodyReadFailureObservation(
 	serviceID protocol.ServiceID,
-	chainID string,
+	cosmosSDKChainID string,
 	err error,
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.Observations_Cosmos {
 	return &qosobservations.Observations_Cosmos{
 		Cosmos: &qosobservations.CosmosRequestObservations{
-			ServiceId: string(serviceID),
-			ChainId:   chainID,
+			ServiceId:        string(serviceID),
+			CosmosSdkChainId: cosmosSDKChainID,
 			RequestLevelError: &qosobservations.RequestError{
 				ErrorKind:      qosobservations.RequestErrorKind_REQUEST_ERROR_INTERNAL_READ_HTTP_ERROR,
 				ErrorDetails:   err.Error(),

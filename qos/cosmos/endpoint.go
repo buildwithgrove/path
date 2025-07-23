@@ -16,4 +16,5 @@ type endpoint struct {
 	checkCometBFTStatus endpointCheckCometBFTStatus // Checks chain ID, catching up status, and latest block height via /status
 	checkCometBFTHealth endpointCheckCometBFTHealth // Checks node health via /health
 	checkCosmosStatus   endpointCheckCosmosStatus   // Checks Cosmos SDK status via /status
+	checkEVMChainID     endpointCheckEVMChainID     // Checks EVM chain ID via eth_chainId
 }
