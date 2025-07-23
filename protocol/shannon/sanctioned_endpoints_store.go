@@ -157,7 +157,7 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	endpoint *endpoint,
 	sanction sanction,
 ) {
-	sessionSanctionKey := newSanctionKey(endpoint)
+	sessionSanctionKey := newSessionSanctionKey(endpoint)
 
 	ses.sessionSanctionsCache.Set(sessionSanctionKey, sanction, defaultSessionSanctionExpiration)
 }
@@ -174,7 +174,7 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 	}
 
 	// Check session sanctions - these are specific to endpoint+session
-	sessionSanctionKey := newSanctionKey(endpoint)
+	sessionSanctionKey := newSessionSanctionKey(endpoint)
 
 	sessionSanctionObj, hasSessionSanction := ses.sessionSanctionsCache.Get(sessionSanctionKey)
 	if hasSessionSanction {
@@ -187,31 +187,29 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 
 // --------- Session Sanction Key ---------
 
-// newSanctionKey creates a key for a session-based sanction.
+// newSessionSanctionKey creates a key for a session-based sanction.
 // A sanction key is a string composed of the endpoint address and the session ID, separated by a hyphen.
+// The session ID is appended to ensure that session sanctions do not extend beyond the session duration.
 //
-// Example:
-// - Full Key: pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890
-//   - Endpoint address: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
-//   - Supplier address: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8"
-//   - Endpoint URL: "https://im.oldgreg.org"
+// Example for the key "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890":
+//   - Endpoint address (supplier address + endpoint URL): "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
 //   - Session ID: "1234567890"
 //
 // The key is used to store and retrieve session-based sanctions from the cache.
-func newSanctionKey(endpoint *endpoint) string {
+func newSessionSanctionKey(endpoint *endpoint) string {
 	endpointAddr := endpoint.Addr()
 	sessionID := endpoint.session.Header.SessionId
 	return fmt.Sprintf("%s-%s", endpointAddr, sessionID)
 }
 
-// decomposeSanctionKey decomposes a sanction key into its components.
+// decomposeSessionSanctionKey decomposes a sanction key into its components.
 // It returns the endpoint address and the session ID.
 //
 // Example:
 // - Full Key: pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890
 //   - Endpoint address: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
 //   - Session ID: "1234567890"
-func decomposeSanctionKey(key string) (protocol.EndpointAddr, string) {
+func decomposeSessionSanctionKey(key string) (protocol.EndpointAddr, string) {
 	// Find the last hyphen to split endpointAddr from sessionID
 	// This handles cases where the URL in endpointAddr contains hyphens
 	lastHyphenIndex := strings.LastIndex(key, "-")
@@ -259,7 +257,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		sanctionEndpointAddr, sessionID := decomposeSanctionKey(key)
+		sanctionEndpointAddr, sessionID := decomposeSessionSanctionKey(key)
 		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
 
 		// Only return sanctions for the provided service ID
