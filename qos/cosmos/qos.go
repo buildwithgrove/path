@@ -33,14 +33,20 @@ type QoS struct {
 
 // NewQoSInstance builds and returns an instance of the CosmosSDK QoS service.
 func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *QoS {
-	cosmosSDKChainID := config.getCosmosSDKChainID()
 	serviceId := config.GetServiceID()
+
+	cosmosSDKChainID := config.getCosmosSDKChainID()
+	// Some CosmosSDK services may have an EVM chain ID. For example, XRPLEVM.
+	evmChainID := config.getEVMChainID()
 
 	logger = logger.With(
 		"qos_instance", "cosmossdk",
 		"service_id", serviceId,
-		"cosmossdk_chain_id", cosmosSDKChainID,
+		"cosmos_sdk_chain_id", cosmosSDKChainID,
 	)
+	if evmChainID != "" {
+		logger = logger.With("evm_chain_id", evmChainID)
+	}
 
 	store := &endpointStore{
 		logger: logger,
@@ -55,11 +61,12 @@ func NewQoSInstance(logger polylog.Logger, config CosmosSDKServiceQoSConfig) *Qo
 	}
 
 	requestValidator := &requestValidator{
-		logger:        logger,
-		serviceID:     serviceId,
-		chainID:       cosmosSDKChainID,
-		serviceState:  serviceState,
-		supportedAPIs: config.getSupportedAPIs(),
+		logger:           logger,
+		serviceID:        serviceId,
+		cosmosSDKChainID: cosmosSDKChainID,
+		evmChainID:       evmChainID,
+		serviceState:     serviceState,
+		supportedAPIs:    config.getSupportedAPIs(),
 	}
 
 	return &QoS{

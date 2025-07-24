@@ -46,9 +46,9 @@ type (
 	}
 )
 
-// responseValidatorStatus implements jsonrpcResponseValidator for /status endpoint
+// responseValidatorCometBFTStatus implements jsonrpcResponseValidator for status method
 // Takes a parsed JSONRPC response and validates it as a status response
-func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
+func responseValidatorCometBFTStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Response) response {
 	logger = logger.With("response_validator", "status")
 
 	// The endpoint returned an error: no need to do further processing of the response
@@ -58,7 +58,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Int("jsonrpc_error_code", jsonrpcResponse.Error.Code).
 			Msg("Endpoint returned JSON-RPC error for /status request")
 
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -72,7 +72,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Msg("Failed to marshal JSON-RPC result for /status")
 
 		// Return error response but still include the original JSONRPC response
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -87,7 +87,7 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 			Msg("Failed to unmarshal JSON-RPC result into ResultStatus structure")
 
 		// Return error response but still include the original JSONRPC response
-		return &responseStatus{
+		return &responseCometBFTStatus{
 			logger:          logger,
 			jsonRPCResponse: jsonrpcResponse,
 		}
@@ -99,27 +99,27 @@ func responseValidatorStatus(logger polylog.Logger, jsonrpcResponse jsonrpc.Resp
 		Str("latest_block_height", result.SyncInfo.LatestBlockHeight).
 		Msg("Successfully parsed /status response")
 
-	return &responseStatus{
+	return &responseCometBFTStatus{
 		logger:            logger,
 		jsonRPCResponse:   jsonrpcResponse,
-		chainID:           result.NodeInfo.Network,
+		cosmosSDKChainID:  result.NodeInfo.Network,
 		catchingUp:        result.SyncInfo.CatchingUp,
 		latestBlockHeight: result.SyncInfo.LatestBlockHeight,
 	}
 }
 
-// responseStatus captures the fields expected in a
+// responseCometBFTStatus captures the fields expected in a
 // response to a /status request (which returns JSON-RPC)
-type responseStatus struct {
+type responseCometBFTStatus struct {
 	logger polylog.Logger
 
 	// jsonRPCResponse stores the JSON-RPC response parsed from an endpoint's response bytes
 	jsonRPCResponse jsonrpc.Response
 
-	// chainID stores the chain ID of the endpoint
+	// cosmosSDKChainID stores the chain ID of the endpoint
 	// Comes from the `NodeInfo.Network` field in the `/status` response
 	// Reference: https://docs.cometbft.com/v1.0/spec/rpc/#status
-	chainID string
+	cosmosSDKChainID string
 
 	// catchingUp indicates if the endpoint is catching up to the network
 	// Comes from the `SyncInfo.CatchingUp` field in the `/status` response
@@ -135,15 +135,15 @@ type responseStatus struct {
 
 // GetObservation returns an observation using a /status request's response
 // Implements the response interface
-func (r *responseStatus) GetObservation() qosobservations.CosmosEndpointObservation {
+func (r *responseCometBFTStatus) GetObservation() qosobservations.CosmosEndpointObservation {
 	return qosobservations.CosmosEndpointObservation{
 		EndpointResponseValidationResult: &qosobservations.CosmosEndpointResponseValidationResult{
 			ResponseValidationType: qosobservations.CosmosResponseValidationType_COSMOS_RESPONSE_VALIDATION_TYPE_JSONRPC,
 			HttpStatusCode:         int32(r.jsonRPCResponse.GetRecommendedHTTPStatusCode()),
 			ValidationError:        nil, // No validation error for successfully processed responses
-			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseStatus{
-				ResponseStatus: &qosobservations.CosmosResponseStatus{
-					ChainId:           r.chainID,
+			ParsedResponse: &qosobservations.CosmosEndpointResponseValidationResult_ResponseCometBftStatus{
+				ResponseCometBftStatus: &qosobservations.CosmosResponseCometBFTStatus{
+					CosmosSdkChainId:  r.cosmosSDKChainID,
 					CatchingUp:        r.catchingUp,
 					LatestBlockHeight: r.latestBlockHeight,
 				},
@@ -154,6 +154,6 @@ func (r *responseStatus) GetObservation() qosobservations.CosmosEndpointObservat
 
 // GetHTTPResponse builds and returns the HTTP response
 // Implements the response interface
-func (r *responseStatus) GetHTTPResponse() gateway.HTTPResponse {
+func (r *responseCometBFTStatus) GetHTTPResponse() gateway.HTTPResponse {
 	return qos.BuildHTTPResponseFromJSONRPCResponse(r.logger, r.jsonRPCResponse)
 }

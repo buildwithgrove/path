@@ -2,11 +2,9 @@ package data
 
 import (
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	"golang.org/x/net/publicsuffix"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
@@ -133,29 +131,6 @@ func setLegacyErrFieldsFromShannonEndpointError(
 	legacyRecord.ErrorMessage = errMsg
 
 	return legacyRecord
-}
-
-// extractEffectiveTLDPlusOne extracts the "effective TLD+1" (eTLD+1) from a given URL.
-// Example: "https://blog.example.co.uk" → "example.co.uk"
-// - Parses the URL and validates the host.
-// - Uses publicsuffix package to determine the registrable domain.
-// - Returns an error if input is malformed or domain is not derivable.
-func extractEffectiveTLDPlusOne(rawURL string) (string, error) {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return "", err // malformed URL
-	}
-
-	host := parsedURL.Hostname()
-	if host == "" {
-		return "", fmt.Errorf("empty host") // no host in URL
-	}
-
-	etld, err := publicsuffix.EffectiveTLDPlusOne(host)
-	if err != nil {
-		return "", err // domain may not be derivable (e.g., IP, localhost)
-	}
-	return etld, nil
 }
 
 // formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.

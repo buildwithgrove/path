@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pokt-network/poktroll v0.1.27-dev3
+	github.com/pokt-network/poktroll v0.1.27
 	github.com/pokt-network/shannon-sdk v0.0.0-20250711180840-8854f9d2cdcc
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0

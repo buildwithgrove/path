@@ -48,29 +48,50 @@ message CosmosEndpointResponseValidationResult {
 	oneof parsed_response {
 		JsonRpcResponse response_jsonrpc = 4;
 
-		// Response to Cosmos request against API path `/health`
-		CosmosResponseHealth response_health = 5;
+		// Response to CometBFT request using method `health`
+		CosmosResponseCometBFTHealth response_comet_bft_health = 5;
 
-		// Response to Cosmos request against API path `/status`
-		CosmosResponseStatus response_status = 6;
+		// Response to CometBFT request using method `status`
+		CosmosResponseCometBFTStatus response_comet_bft_status = 6;
+
+		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
+		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 7;
+
+		// Response to Ethereum JSONRPC request using method `eth_chainId`
+		CosmosResponseEVMJSONRPCChainID response_evm_jsonrpc_chain_id = 8;
 		
 		// For unrecognized responses.
 		// These are returned as-is to the user.
-		UnrecognizedResponse response_unrecognized = 7;
+		UnrecognizedResponse response_unrecognized = 9;
 	}
 }
 
-// CosmosResponseHealth stores the response to a `/health` request
-message CosmosResponseHealth {
+// CosmosResponseCometBFTHealth stores the response to a CometBFT `/health` request
+message CosmosResponseCometBFTHealth {
     bool health_status = 1;
 }
 
-// CosmosResponseStatus stores the response to a `/status` request
-message CosmosResponseStatus {
-    string chain_id = 1;
+// CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
+message CosmosResponseCometBFTStatus {
+    string cosmos_sdk_chain_id = 1;
     bool catching_up = 2;
     string latest_block_height = 3;
 }
+
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+message CosmosResponseCosmosSDKStatus {
+    uint64 latest_block_height = 1;
+}
+
+// CosmosResponseEVMJSONRPCChainID stores the response to an `eth_chainId` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+message CosmosResponseEVMJSONRPCChainID {
+	// The HTTP status code received from the endpoint
+	int32 http_status_code = 1;
+  
+	// The chain ID value returned in the response
+	string evm_chain_id = 2;
+  }
 
 // UnrecognizedResponse handles responses that are not validated before being returned to the user.
 message UnrecognizedResponse {

@@ -55,6 +55,7 @@ func (rv *requestValidator) validateRESTRequest(
 		httpRequestURL,
 		httpRequestMethod,
 		httpRequestBody,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
@@ -64,6 +65,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 	httpRequestURL *url.URL,
 	httpRequestMethod string,
 	httpRequestBody []byte,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildRESTRequestContext",
@@ -85,6 +87,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 		httpRequestMethod,
 		httpRequestBody,
 		servicePayload,
+		requestOrigin,
 	)
 
 	// Hydrate the logger with REST request details.
@@ -145,6 +148,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	httpRequestMethod string,
 	httpRequestBody []byte,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	// Determine content type from headers if available, otherwise empty
@@ -152,9 +156,9 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	// Note: We don't have access to headers here, but this would be where we'd extract it
 
 	return &qosobservations.CosmosRequestObservations{
-		ChainId:       rv.chainID,
-		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		ServiceId:        string(rv.serviceID),
+		RequestOrigin:    requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
@@ -226,9 +230,9 @@ func (rv *requestValidator) createRESTUnsupportedRPCTypeObservation(
 	jsonrpcResponse jsonrpc.Response,
 ) *qosobservations.CosmosRequestObservations {
 	return &qosobservations.CosmosRequestObservations{
-		ServiceId:     string(rv.serviceID),
-		ChainId:       rv.chainID,
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		ServiceId:        string(rv.serviceID),
+		CosmosSdkChainId: rv.cosmosSDKChainID,
+		RequestOrigin:    qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),

@@ -152,8 +152,10 @@ type CosmosEndpointResponseValidationResult struct {
 	// Types that are valid to be assigned to ParsedResponse:
 	//
 	//	*CosmosEndpointResponseValidationResult_ResponseJsonrpc
-	//	*CosmosEndpointResponseValidationResult_ResponseHealth
-	//	*CosmosEndpointResponseValidationResult_ResponseStatus
+	//	*CosmosEndpointResponseValidationResult_ResponseCometBftHealth
+	//	*CosmosEndpointResponseValidationResult_ResponseCometBftStatus
+	//	*CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus
+	//	*CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId
 	//	*CosmosEndpointResponseValidationResult_ResponseUnrecognized
 	ParsedResponse isCosmosEndpointResponseValidationResult_ParsedResponse `protobuf_oneof:"parsed_response"`
 	unknownFields  protoimpl.UnknownFields
@@ -227,19 +229,37 @@ func (x *CosmosEndpointResponseValidationResult) GetResponseJsonrpc() *JsonRpcRe
 	return nil
 }
 
-func (x *CosmosEndpointResponseValidationResult) GetResponseHealth() *CosmosResponseHealth {
+func (x *CosmosEndpointResponseValidationResult) GetResponseCometBftHealth() *CosmosResponseCometBFTHealth {
 	if x != nil {
-		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseHealth); ok {
-			return x.ResponseHealth
+		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseCometBftHealth); ok {
+			return x.ResponseCometBftHealth
 		}
 	}
 	return nil
 }
 
-func (x *CosmosEndpointResponseValidationResult) GetResponseStatus() *CosmosResponseStatus {
+func (x *CosmosEndpointResponseValidationResult) GetResponseCometBftStatus() *CosmosResponseCometBFTStatus {
 	if x != nil {
-		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseStatus); ok {
-			return x.ResponseStatus
+		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseCometBftStatus); ok {
+			return x.ResponseCometBftStatus
+		}
+	}
+	return nil
+}
+
+func (x *CosmosEndpointResponseValidationResult) GetResponseCosmosSdkStatus() *CosmosResponseCosmosSDKStatus {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus); ok {
+			return x.ResponseCosmosSdkStatus
+		}
+	}
+	return nil
+}
+
+func (x *CosmosEndpointResponseValidationResult) GetResponseEvmJsonrpcChainId() *CosmosResponseEVMJSONRPCChainID {
+	if x != nil {
+		if x, ok := x.ParsedResponse.(*CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId); ok {
+			return x.ResponseEvmJsonrpcChainId
 		}
 	}
 	return nil
@@ -262,56 +282,72 @@ type CosmosEndpointResponseValidationResult_ResponseJsonrpc struct {
 	ResponseJsonrpc *JsonRpcResponse `protobuf:"bytes,4,opt,name=response_jsonrpc,json=responseJsonrpc,proto3,oneof"`
 }
 
-type CosmosEndpointResponseValidationResult_ResponseHealth struct {
-	// Response to Cosmos request against API path `/health`
-	ResponseHealth *CosmosResponseHealth `protobuf:"bytes,5,opt,name=response_health,json=responseHealth,proto3,oneof"`
+type CosmosEndpointResponseValidationResult_ResponseCometBftHealth struct {
+	// Response to CometBFT request using method `health`
+	ResponseCometBftHealth *CosmosResponseCometBFTHealth `protobuf:"bytes,5,opt,name=response_comet_bft_health,json=responseCometBftHealth,proto3,oneof"`
 }
 
-type CosmosEndpointResponseValidationResult_ResponseStatus struct {
-	// Response to Cosmos request against API path `/status`
-	ResponseStatus *CosmosResponseStatus `protobuf:"bytes,6,opt,name=response_status,json=responseStatus,proto3,oneof"`
+type CosmosEndpointResponseValidationResult_ResponseCometBftStatus struct {
+	// Response to CometBFT request using method `status`
+	ResponseCometBftStatus *CosmosResponseCometBFTStatus `protobuf:"bytes,6,opt,name=response_comet_bft_status,json=responseCometBftStatus,proto3,oneof"`
+}
+
+type CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus struct {
+	// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
+	ResponseCosmosSdkStatus *CosmosResponseCosmosSDKStatus `protobuf:"bytes,7,opt,name=response_cosmos_sdk_status,json=responseCosmosSdkStatus,proto3,oneof"`
+}
+
+type CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId struct {
+	// Response to Ethereum JSONRPC request using method `eth_chainId`
+	ResponseEvmJsonrpcChainId *CosmosResponseEVMJSONRPCChainID `protobuf:"bytes,8,opt,name=response_evm_jsonrpc_chain_id,json=responseEvmJsonrpcChainId,proto3,oneof"`
 }
 
 type CosmosEndpointResponseValidationResult_ResponseUnrecognized struct {
 	// For unrecognized responses.
 	// These are returned as-is to the user.
-	ResponseUnrecognized *UnrecognizedResponse `protobuf:"bytes,7,opt,name=response_unrecognized,json=responseUnrecognized,proto3,oneof"`
+	ResponseUnrecognized *UnrecognizedResponse `protobuf:"bytes,9,opt,name=response_unrecognized,json=responseUnrecognized,proto3,oneof"`
 }
 
 func (*CosmosEndpointResponseValidationResult_ResponseJsonrpc) isCosmosEndpointResponseValidationResult_ParsedResponse() {
 }
 
-func (*CosmosEndpointResponseValidationResult_ResponseHealth) isCosmosEndpointResponseValidationResult_ParsedResponse() {
+func (*CosmosEndpointResponseValidationResult_ResponseCometBftHealth) isCosmosEndpointResponseValidationResult_ParsedResponse() {
 }
 
-func (*CosmosEndpointResponseValidationResult_ResponseStatus) isCosmosEndpointResponseValidationResult_ParsedResponse() {
+func (*CosmosEndpointResponseValidationResult_ResponseCometBftStatus) isCosmosEndpointResponseValidationResult_ParsedResponse() {
+}
+
+func (*CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus) isCosmosEndpointResponseValidationResult_ParsedResponse() {
+}
+
+func (*CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId) isCosmosEndpointResponseValidationResult_ParsedResponse() {
 }
 
 func (*CosmosEndpointResponseValidationResult_ResponseUnrecognized) isCosmosEndpointResponseValidationResult_ParsedResponse() {
 }
 
-// CosmosResponseHealth stores the response to a `/health` request
-type CosmosResponseHealth struct {
+// CosmosResponseCometBFTHealth stores the response to a CometBFT `/health` request
+type CosmosResponseCometBFTHealth struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HealthStatus  bool                   `protobuf:"varint,1,opt,name=health_status,json=healthStatus,proto3" json:"health_status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CosmosResponseHealth) Reset() {
-	*x = CosmosResponseHealth{}
+func (x *CosmosResponseCometBFTHealth) Reset() {
+	*x = CosmosResponseCometBFTHealth{}
 	mi := &file_path_qos_cosmos_response_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CosmosResponseHealth) String() string {
+func (x *CosmosResponseCometBFTHealth) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CosmosResponseHealth) ProtoMessage() {}
+func (*CosmosResponseCometBFTHealth) ProtoMessage() {}
 
-func (x *CosmosResponseHealth) ProtoReflect() protoreflect.Message {
+func (x *CosmosResponseCometBFTHealth) ProtoReflect() protoreflect.Message {
 	mi := &file_path_qos_cosmos_response_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -323,42 +359,42 @@ func (x *CosmosResponseHealth) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CosmosResponseHealth.ProtoReflect.Descriptor instead.
-func (*CosmosResponseHealth) Descriptor() ([]byte, []int) {
+// Deprecated: Use CosmosResponseCometBFTHealth.ProtoReflect.Descriptor instead.
+func (*CosmosResponseCometBFTHealth) Descriptor() ([]byte, []int) {
 	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *CosmosResponseHealth) GetHealthStatus() bool {
+func (x *CosmosResponseCometBFTHealth) GetHealthStatus() bool {
 	if x != nil {
 		return x.HealthStatus
 	}
 	return false
 }
 
-// CosmosResponseStatus stores the response to a `/status` request
-type CosmosResponseStatus struct {
+// CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
+type CosmosResponseCometBFTStatus struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	ChainId           string                 `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	CosmosSdkChainId  string                 `protobuf:"bytes,1,opt,name=cosmos_sdk_chain_id,json=cosmosSdkChainId,proto3" json:"cosmos_sdk_chain_id,omitempty"`
 	CatchingUp        bool                   `protobuf:"varint,2,opt,name=catching_up,json=catchingUp,proto3" json:"catching_up,omitempty"`
 	LatestBlockHeight string                 `protobuf:"bytes,3,opt,name=latest_block_height,json=latestBlockHeight,proto3" json:"latest_block_height,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *CosmosResponseStatus) Reset() {
-	*x = CosmosResponseStatus{}
+func (x *CosmosResponseCometBFTStatus) Reset() {
+	*x = CosmosResponseCometBFTStatus{}
 	mi := &file_path_qos_cosmos_response_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CosmosResponseStatus) String() string {
+func (x *CosmosResponseCometBFTStatus) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CosmosResponseStatus) ProtoMessage() {}
+func (*CosmosResponseCometBFTStatus) ProtoMessage() {}
 
-func (x *CosmosResponseStatus) ProtoReflect() protoreflect.Message {
+func (x *CosmosResponseCometBFTStatus) ProtoReflect() protoreflect.Message {
 	mi := &file_path_qos_cosmos_response_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -370,28 +406,129 @@ func (x *CosmosResponseStatus) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CosmosResponseStatus.ProtoReflect.Descriptor instead.
-func (*CosmosResponseStatus) Descriptor() ([]byte, []int) {
+// Deprecated: Use CosmosResponseCometBFTStatus.ProtoReflect.Descriptor instead.
+func (*CosmosResponseCometBFTStatus) Descriptor() ([]byte, []int) {
 	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CosmosResponseStatus) GetChainId() string {
+func (x *CosmosResponseCometBFTStatus) GetCosmosSdkChainId() string {
 	if x != nil {
-		return x.ChainId
+		return x.CosmosSdkChainId
 	}
 	return ""
 }
 
-func (x *CosmosResponseStatus) GetCatchingUp() bool {
+func (x *CosmosResponseCometBFTStatus) GetCatchingUp() bool {
 	if x != nil {
 		return x.CatchingUp
 	}
 	return false
 }
 
-func (x *CosmosResponseStatus) GetLatestBlockHeight() string {
+func (x *CosmosResponseCometBFTStatus) GetLatestBlockHeight() string {
 	if x != nil {
 		return x.LatestBlockHeight
+	}
+	return ""
+}
+
+// CosmosResponseCosmosSDKStatus stores the response to a CosmosSDK `/status` request
+type CosmosResponseCosmosSDKStatus struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	LatestBlockHeight uint64                 `protobuf:"varint,1,opt,name=latest_block_height,json=latestBlockHeight,proto3" json:"latest_block_height,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CosmosResponseCosmosSDKStatus) Reset() {
+	*x = CosmosResponseCosmosSDKStatus{}
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosResponseCosmosSDKStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosResponseCosmosSDKStatus) ProtoMessage() {}
+
+func (x *CosmosResponseCosmosSDKStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosResponseCosmosSDKStatus.ProtoReflect.Descriptor instead.
+func (*CosmosResponseCosmosSDKStatus) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CosmosResponseCosmosSDKStatus) GetLatestBlockHeight() uint64 {
+	if x != nil {
+		return x.LatestBlockHeight
+	}
+	return 0
+}
+
+// CosmosResponseEVMJSONRPCChainID stores the response to an `eth_chainId` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+type CosmosResponseEVMJSONRPCChainID struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The HTTP status code received from the endpoint
+	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
+	// The chain ID value returned in the response
+	EvmChainId    string `protobuf:"bytes,2,opt,name=evm_chain_id,json=evmChainId,proto3" json:"evm_chain_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CosmosResponseEVMJSONRPCChainID) Reset() {
+	*x = CosmosResponseEVMJSONRPCChainID{}
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmosResponseEVMJSONRPCChainID) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmosResponseEVMJSONRPCChainID) ProtoMessage() {}
+
+func (x *CosmosResponseEVMJSONRPCChainID) ProtoReflect() protoreflect.Message {
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmosResponseEVMJSONRPCChainID.ProtoReflect.Descriptor instead.
+func (*CosmosResponseEVMJSONRPCChainID) Descriptor() ([]byte, []int) {
+	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CosmosResponseEVMJSONRPCChainID) GetHttpStatusCode() int32 {
+	if x != nil {
+		return x.HttpStatusCode
+	}
+	return 0
+}
+
+func (x *CosmosResponseEVMJSONRPCChainID) GetEvmChainId() string {
+	if x != nil {
+		return x.EvmChainId
 	}
 	return ""
 }
@@ -407,7 +544,7 @@ type UnrecognizedResponse struct {
 
 func (x *UnrecognizedResponse) Reset() {
 	*x = UnrecognizedResponse{}
-	mi := &file_path_qos_cosmos_response_proto_msgTypes[3]
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -419,7 +556,7 @@ func (x *UnrecognizedResponse) String() string {
 func (*UnrecognizedResponse) ProtoMessage() {}
 
 func (x *UnrecognizedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_path_qos_cosmos_response_proto_msgTypes[3]
+	mi := &file_path_qos_cosmos_response_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -432,7 +569,7 @@ func (x *UnrecognizedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnrecognizedResponse.ProtoReflect.Descriptor instead.
 func (*UnrecognizedResponse) Descriptor() ([]byte, []int) {
-	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{3}
+	return file_path_qos_cosmos_response_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UnrecognizedResponse) GetEndpointPayloadLength() uint32 {
@@ -446,24 +583,32 @@ var File_path_qos_cosmos_response_proto protoreflect.FileDescriptor
 
 const file_path_qos_cosmos_response_proto_rawDesc = "" +
 	"\n" +
-	"\x1epath/qos/cosmos_response.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\xea\x04\n" +
+	"\x1epath/qos/cosmos_response.proto\x12\bpath.qos\x1a\x16path/qos/jsonrpc.proto\"\xf5\x06\n" +
 	"&CosmosEndpointResponseValidationResult\x12`\n" +
 	"\x18response_validation_type\x18\x01 \x01(\x0e2&.path.qos.CosmosResponseValidationTypeR\x16responseValidationType\x12(\n" +
 	"\x10http_status_code\x18\x02 \x01(\x05R\x0ehttpStatusCode\x12W\n" +
 	"\x10validation_error\x18\x03 \x01(\x0e2'.path.qos.CosmosResponseValidationErrorH\x01R\x0fvalidationError\x88\x01\x01\x12F\n" +
-	"\x10response_jsonrpc\x18\x04 \x01(\v2\x19.path.qos.JsonRpcResponseH\x00R\x0fresponseJsonrpc\x12I\n" +
-	"\x0fresponse_health\x18\x05 \x01(\v2\x1e.path.qos.CosmosResponseHealthH\x00R\x0eresponseHealth\x12I\n" +
-	"\x0fresponse_status\x18\x06 \x01(\v2\x1e.path.qos.CosmosResponseStatusH\x00R\x0eresponseStatus\x12U\n" +
-	"\x15response_unrecognized\x18\a \x01(\v2\x1e.path.qos.UnrecognizedResponseH\x00R\x14responseUnrecognizedB\x11\n" +
+	"\x10response_jsonrpc\x18\x04 \x01(\v2\x19.path.qos.JsonRpcResponseH\x00R\x0fresponseJsonrpc\x12c\n" +
+	"\x19response_comet_bft_health\x18\x05 \x01(\v2&.path.qos.CosmosResponseCometBFTHealthH\x00R\x16responseCometBftHealth\x12c\n" +
+	"\x19response_comet_bft_status\x18\x06 \x01(\v2&.path.qos.CosmosResponseCometBFTStatusH\x00R\x16responseCometBftStatus\x12f\n" +
+	"\x1aresponse_cosmos_sdk_status\x18\a \x01(\v2'.path.qos.CosmosResponseCosmosSDKStatusH\x00R\x17responseCosmosSdkStatus\x12m\n" +
+	"\x1dresponse_evm_jsonrpc_chain_id\x18\b \x01(\v2).path.qos.CosmosResponseEVMJSONRPCChainIDH\x00R\x19responseEvmJsonrpcChainId\x12U\n" +
+	"\x15response_unrecognized\x18\t \x01(\v2\x1e.path.qos.UnrecognizedResponseH\x00R\x14responseUnrecognizedB\x11\n" +
 	"\x0fparsed_responseB\x13\n" +
-	"\x11_validation_error\";\n" +
-	"\x14CosmosResponseHealth\x12#\n" +
-	"\rhealth_status\x18\x01 \x01(\bR\fhealthStatus\"\x82\x01\n" +
-	"\x14CosmosResponseStatus\x12\x19\n" +
-	"\bchain_id\x18\x01 \x01(\tR\achainId\x12\x1f\n" +
+	"\x11_validation_error\"C\n" +
+	"\x1cCosmosResponseCometBFTHealth\x12#\n" +
+	"\rhealth_status\x18\x01 \x01(\bR\fhealthStatus\"\x9e\x01\n" +
+	"\x1cCosmosResponseCometBFTStatus\x12-\n" +
+	"\x13cosmos_sdk_chain_id\x18\x01 \x01(\tR\x10cosmosSdkChainId\x12\x1f\n" +
 	"\vcatching_up\x18\x02 \x01(\bR\n" +
 	"catchingUp\x12.\n" +
-	"\x13latest_block_height\x18\x03 \x01(\tR\x11latestBlockHeight\"N\n" +
+	"\x13latest_block_height\x18\x03 \x01(\tR\x11latestBlockHeight\"O\n" +
+	"\x1dCosmosResponseCosmosSDKStatus\x12.\n" +
+	"\x13latest_block_height\x18\x01 \x01(\x04R\x11latestBlockHeight\"m\n" +
+	"\x1fCosmosResponseEVMJSONRPCChainID\x12(\n" +
+	"\x10http_status_code\x18\x01 \x01(\x05R\x0ehttpStatusCode\x12 \n" +
+	"\fevm_chain_id\x18\x02 \x01(\tR\n" +
+	"evmChainId\"N\n" +
 	"\x14UnrecognizedResponse\x126\n" +
 	"\x17endpoint_payload_length\x18\x01 \x01(\rR\x15endpointPayloadLength*\xe3\x01\n" +
 	"\x1dCosmosResponseValidationError\x120\n" +
@@ -490,28 +635,32 @@ func file_path_qos_cosmos_response_proto_rawDescGZIP() []byte {
 }
 
 var file_path_qos_cosmos_response_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_path_qos_cosmos_response_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_path_qos_cosmos_response_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_path_qos_cosmos_response_proto_goTypes = []any{
 	(CosmosResponseValidationError)(0),             // 0: path.qos.CosmosResponseValidationError
 	(CosmosResponseValidationType)(0),              // 1: path.qos.CosmosResponseValidationType
 	(*CosmosEndpointResponseValidationResult)(nil), // 2: path.qos.CosmosEndpointResponseValidationResult
-	(*CosmosResponseHealth)(nil),                   // 3: path.qos.CosmosResponseHealth
-	(*CosmosResponseStatus)(nil),                   // 4: path.qos.CosmosResponseStatus
-	(*UnrecognizedResponse)(nil),                   // 5: path.qos.UnrecognizedResponse
-	(*JsonRpcResponse)(nil),                        // 6: path.qos.JsonRpcResponse
+	(*CosmosResponseCometBFTHealth)(nil),           // 3: path.qos.CosmosResponseCometBFTHealth
+	(*CosmosResponseCometBFTStatus)(nil),           // 4: path.qos.CosmosResponseCometBFTStatus
+	(*CosmosResponseCosmosSDKStatus)(nil),          // 5: path.qos.CosmosResponseCosmosSDKStatus
+	(*CosmosResponseEVMJSONRPCChainID)(nil),        // 6: path.qos.CosmosResponseEVMJSONRPCChainID
+	(*UnrecognizedResponse)(nil),                   // 7: path.qos.UnrecognizedResponse
+	(*JsonRpcResponse)(nil),                        // 8: path.qos.JsonRpcResponse
 }
 var file_path_qos_cosmos_response_proto_depIdxs = []int32{
 	1, // 0: path.qos.CosmosEndpointResponseValidationResult.response_validation_type:type_name -> path.qos.CosmosResponseValidationType
 	0, // 1: path.qos.CosmosEndpointResponseValidationResult.validation_error:type_name -> path.qos.CosmosResponseValidationError
-	6, // 2: path.qos.CosmosEndpointResponseValidationResult.response_jsonrpc:type_name -> path.qos.JsonRpcResponse
-	3, // 3: path.qos.CosmosEndpointResponseValidationResult.response_health:type_name -> path.qos.CosmosResponseHealth
-	4, // 4: path.qos.CosmosEndpointResponseValidationResult.response_status:type_name -> path.qos.CosmosResponseStatus
-	5, // 5: path.qos.CosmosEndpointResponseValidationResult.response_unrecognized:type_name -> path.qos.UnrecognizedResponse
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	8, // 2: path.qos.CosmosEndpointResponseValidationResult.response_jsonrpc:type_name -> path.qos.JsonRpcResponse
+	3, // 3: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_health:type_name -> path.qos.CosmosResponseCometBFTHealth
+	4, // 4: path.qos.CosmosEndpointResponseValidationResult.response_comet_bft_status:type_name -> path.qos.CosmosResponseCometBFTStatus
+	5, // 5: path.qos.CosmosEndpointResponseValidationResult.response_cosmos_sdk_status:type_name -> path.qos.CosmosResponseCosmosSDKStatus
+	6, // 6: path.qos.CosmosEndpointResponseValidationResult.response_evm_jsonrpc_chain_id:type_name -> path.qos.CosmosResponseEVMJSONRPCChainID
+	7, // 7: path.qos.CosmosEndpointResponseValidationResult.response_unrecognized:type_name -> path.qos.UnrecognizedResponse
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_path_qos_cosmos_response_proto_init() }
@@ -522,8 +671,10 @@ func file_path_qos_cosmos_response_proto_init() {
 	file_path_qos_jsonrpc_proto_init()
 	file_path_qos_cosmos_response_proto_msgTypes[0].OneofWrappers = []any{
 		(*CosmosEndpointResponseValidationResult_ResponseJsonrpc)(nil),
-		(*CosmosEndpointResponseValidationResult_ResponseHealth)(nil),
-		(*CosmosEndpointResponseValidationResult_ResponseStatus)(nil),
+		(*CosmosEndpointResponseValidationResult_ResponseCometBftHealth)(nil),
+		(*CosmosEndpointResponseValidationResult_ResponseCometBftStatus)(nil),
+		(*CosmosEndpointResponseValidationResult_ResponseCosmosSdkStatus)(nil),
+		(*CosmosEndpointResponseValidationResult_ResponseEvmJsonrpcChainId)(nil),
 		(*CosmosEndpointResponseValidationResult_ResponseUnrecognized)(nil),
 	}
 	type x struct{}
@@ -532,7 +683,7 @@ func file_path_qos_cosmos_response_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_cosmos_response_proto_rawDesc), len(file_path_qos_cosmos_response_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
