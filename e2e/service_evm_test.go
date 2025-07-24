@@ -123,7 +123,7 @@ func getEVMVegetaTargets(
 
 	blockNumber, err := getEVMBlockNumber(ts, headers, gatewayURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get EVM block number: %w", err)
+		return nil, fmt.Errorf("failed to get EVM block number for service '%s': %w", ts.ServiceID, err)
 	}
 	ts.ServiceParams.blockNumber = blockNumber
 
@@ -140,7 +140,7 @@ func getEVMVegetaTargets(
 		// Marshal the request body
 		body, err := json.Marshal(jsonrpcReq)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal JSON-RPC request for method %s: %w", method, err)
+			return nil, fmt.Errorf("failed to marshal JSON-RPC request for method '%s' for service '%s': %w", method, ts.ServiceID, err)
 		}
 
 		// Create vegeta target
@@ -161,67 +161,93 @@ func getEVMVegetaTargets(
 // Get Test Block Number helpers - Used for EVM archival services
 // -----------------------------------------------------------------------------
 
-func getEVMBlockNumber(testService *TestService, headers http.Header, gatewayURL string) (string, error) {
+// getEVMBlockNumber returns the block number to use for testing.
+// - If non-archival, returns "latest"
+// - If archival, returns a random block number between the current block and the contract start block
+func getEVMBlockNumber(
+	testService *TestService,
+	headers http.Header,
+	gatewayURL string,
+) (string, error) {
 	if !testService.Archival {
 		return "latest", nil
 	} else {
-		blockNumber, err := setTestBlockNumber(
+		// randomBlockNumber is a block between the:
+		// - Start height: the start block height of the contract used for testing
+		// - End height: the current block height
+		randomBlockNumber, err := getTestBlockNumberForArchivalTest(
 			gatewayURL,
 			headers,
 			testService.ServiceParams.ContractStartBlock,
 		)
 		if err != nil {
-			return "", fmt.Errorf("Could not get archival block number: %v", err)
+			return "", fmt.Errorf("Could not get random block number for archival test: %w", err)
 		}
-		return blockNumber, nil
+		return randomBlockNumber, nil
 	}
 }
 
-// setTestBlockNumber gets an archival block number for testing or fails the test.
+// getTestBlockNumberForArchivalTest gets an archival block number for testing or fails the test.
 // Selected by picking a random block number between the current block and the contract start block.
-func setTestBlockNumber(
+func getTestBlockNumberForArchivalTest(
 	gatewayURL string,
 	headers http.Header,
 	contractStartBlock uint64,
 ) (string, error) {
 	// Get current block height - fail test if this doesn't work
-	currentBlock, err := getCurrentBlockNumber(gatewayURL, headers)
+	currentBlockHeight, err := getCurrentConsensusBlockHeight(gatewayURL, headers)
 	if err != nil {
-		return "", fmt.Errorf("Could not get current block height: %v", err)
+		return "", fmt.Errorf("Could not get current block height: %w", err)
 	}
 
 	// Get random historical block number
-	return calculateArchivalBlockNumber(currentBlock, contractStartBlock), nil
+	return calculateArchivalBlockNumber(currentBlockHeight, contractStartBlock), nil
 }
 
-// getCurrentBlockNumber gets current block height with consensus from multiple requests.
-func getCurrentBlockNumber(gatewayURL string, headers http.Header) (uint64, error) {
-	// Track frequency of each block height seen
+// getCurrentConsensusBlockHeight gets current block height with consensus from multiple requests.
+func getCurrentConsensusBlockHeight(gatewayURL string, headers http.Header) (uint64, error) {
 	blockHeights := make(map[uint64]int)
 	maxAttempts := 10
 	requiredAgreement := 3
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 2 * time.Second}
 
-	// Make multiple attempts to get consensus
+	// Make requests to get current block height rapidly in parallel
+	results := make(chan uint64, maxAttempts)
 	for range maxAttempts {
-		blockNum, err := fetchBlockNumber(client, gatewayURL, headers)
-		if err != nil {
-			continue
-		}
+		go func() {
+			if height, err := getCurrentBlockHeight(client, gatewayURL, headers); err == nil {
+				results <- height
+			}
+		}()
+	}
 
-		// Update consensus tracking
-		blockHeights[blockNum]++
-		if blockHeights[blockNum] >= requiredAgreement {
-			return blockNum, nil
+	// Collect results quickly
+	timeout := time.After(5 * time.Second)
+collect:
+	for range maxAttempts {
+		select {
+		case height := <-results:
+			blockHeights[height]++
+			if blockHeights[height] >= requiredAgreement {
+				return height, nil
+			}
+		case <-timeout:
+			break collect
 		}
 	}
 
-	// If we get here, we didn't reach consensus
-	return 0, fmt.Errorf("failed to reach consensus on block height after %d attempts", maxAttempts)
+	// Return the most recent height seen if no consensus
+	var maxHeight uint64
+	for height := range blockHeights {
+		if height > maxHeight {
+			maxHeight = height
+		}
+	}
+	return maxHeight, nil
 }
 
-// fetchBlockNumber makes a single request to get the current block number.
-func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
+// getCurrentBlockHeight makes a single request to get the current block number.
+func getCurrentBlockHeight(client *http.Client, gatewayURL string, headers http.Header) (uint64, error) {
 	// Build and send request
 	req, err := buildBlockNumberRequest(gatewayURL, headers)
 	if err != nil {
@@ -235,19 +261,19 @@ func fetchBlockNumber(client *http.Client, gatewayURL string, headers http.Heade
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("bad status code: %d", resp.StatusCode)
+		return 0, fmt.Errorf("Error getting current block height: %d", resp.StatusCode)
 	}
 
 	// Parse response
 	var jsonRPC jsonrpc.Response
 	if err := json.NewDecoder(resp.Body).Decode(&jsonRPC); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Error getting current block height: %w", err)
 	}
 
-	// Process hex string result
-	hexString, ok := jsonRPC.Result.(string)
-	if !ok {
-		return 0, fmt.Errorf("expected string result, got %T", jsonRPC.Result)
+	// Unmarshal the result into a string
+	var hexString string
+	if err := jsonRPC.UnmarshalResult(&hexString); err != nil {
+		return 0, fmt.Errorf("Error unmarshaling block number result: %w", err)
 	}
 
 	// Parse hex (remove "0x" prefix if present)

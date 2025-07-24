@@ -19,40 +19,40 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// Mockgateway is a mock of gateway interface.
-type Mockgateway struct {
+// MockgatewayHandler is a mock of gatewayHandler interface.
+type MockgatewayHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockgatewayMockRecorder
+	recorder *MockgatewayHandlerMockRecorder
 	isgomock struct{}
 }
 
-// MockgatewayMockRecorder is the mock recorder for Mockgateway.
-type MockgatewayMockRecorder struct {
-	mock *Mockgateway
+// MockgatewayHandlerMockRecorder is the mock recorder for MockgatewayHandler.
+type MockgatewayHandlerMockRecorder struct {
+	mock *MockgatewayHandler
 }
 
-// NewMockgateway creates a new mock instance.
-func NewMockgateway(ctrl *gomock.Controller) *Mockgateway {
-	mock := &Mockgateway{ctrl: ctrl}
-	mock.recorder = &MockgatewayMockRecorder{mock}
+// NewMockgatewayHandler creates a new mock instance.
+func NewMockgatewayHandler(ctrl *gomock.Controller) *MockgatewayHandler {
+	mock := &MockgatewayHandler{ctrl: ctrl}
+	mock.recorder = &MockgatewayHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockgateway) EXPECT() *MockgatewayMockRecorder {
+func (m *MockgatewayHandler) EXPECT() *MockgatewayHandlerMockRecorder {
 	return m.recorder
 }
 
 // HandleServiceRequest mocks base method.
-func (m *Mockgateway) HandleServiceRequest(arg0 context.Context, arg1 *http.Request, arg2 http.ResponseWriter) {
+func (m *MockgatewayHandler) HandleServiceRequest(arg0 context.Context, arg1 *http.Request, arg2 http.ResponseWriter) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "HandleServiceRequest", arg0, arg1, arg2)
 }
 
 // HandleServiceRequest indicates an expected call of HandleServiceRequest.
-func (mr *MockgatewayMockRecorder) HandleServiceRequest(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockgatewayHandlerMockRecorder) HandleServiceRequest(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*Mockgateway)(nil).HandleServiceRequest), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleServiceRequest", reflect.TypeOf((*MockgatewayHandler)(nil).HandleServiceRequest), arg0, arg1, arg2)
 }
 
 // MockdisqualifiedEndpointsReporter is a mock of disqualifiedEndpointsReporter interface.

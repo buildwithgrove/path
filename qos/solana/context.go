@@ -17,7 +17,7 @@ import (
 const (
 	// The default timeout when sending a request to
 	// a Solana blockchain endpoint.
-	defaultServiceRequestTimeoutMillisec = 5000
+	defaultServiceRequestTimeoutMillisec = 15_000
 )
 
 // requestContext provides the support required by the gateway
@@ -105,8 +105,7 @@ func (rc *requestContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr,
 	// TODO_IMPROVE: check whether the request was valid, and return an error if it was not.
 	// This would be an extra safety measure, as the caller should have checked the returned value
 	// indicating the validity of the request when calling on QoS instance's ParseHTTPRequest
-
-	response := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz)
+	response := unmarshalResponse(rc.logger, rc.JSONRPCReq, responseBz, endpointAddr)
 
 	// TODO_MVP(@adshmh): Drop the unmarshaling error: the returned response interface should provide methods to allow the caller to:
 	// 1. Check if the response from the endpoint was valid or malformed. This is needed to support retrying with a different endpoint if
@@ -165,7 +164,7 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	// Build the endpoint(s) observations.
 	endpointObservations := make([]*qosobservations.SolanaEndpointObservation, len(rc.endpointResponses))
 	for idx, endpointResponse := range rc.endpointResponses {
-		obs := endpointResponse.response.GetObservation()
+		obs := endpointResponse.GetObservation()
 		obs.EndpointAddr = string(endpointResponse.EndpointAddr)
 		endpointObservations[idx] = &obs
 	}
@@ -180,16 +179,24 @@ func (rc requestContext) GetObservations() qosobservations.Observations {
 	}
 }
 
-// GetEndpointSelector is required to satisfy the gateway package's ResquestQoSContext interface.
-// The request context is queried for the correct endpoint selector to use because this allows different
-// endpoint selectors based on the request's context.
+// GetEndpointSelector is required to satisfy the gateway package's RequestQoSContext interface.
+// The request context is queried for the correct endpoint selector.
+// This allows different endpoint selectors based on the request's context.
 // e.g. the request context for a particular request method can potentially rank endpoints based on their latency when responding to requests with matching method.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
 	return rc
 }
 
-// Select chooses an endpoint from the list of supplied endpoints, using the perceived (using endpoints' responses) state of the Solana chain.
+// Select chooses an endpoint from the list of supplied endpoints.
+// It uses the perceived state of the Solana chain using other endpoints' responses.
 // It is required to satisfy the protocol package's EndpointSelector interface.
 func (rc *requestContext) Select(allEndpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	return rc.endpointStore.Select(allEndpoints)
+}
+
+// SelectMultiple chooses multiple endpoints from the list of supplied endpoints.
+// It uses the perceived state of the Solana chain using other endpoints' responses.
+// It is required to satisfy the protocol package's EndpointSelector interface.
+func (rc *requestContext) SelectMultiple(allEndpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
+	return rc.endpointStore.SelectMultiple(allEndpoints, numEndpoints)
 }

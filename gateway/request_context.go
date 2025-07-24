@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	"github.com/buildwithgrove/path/observation"
 	protocolobservations "github.com/buildwithgrove/path/observation/protocol"
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
@@ -22,29 +24,40 @@ var (
 	errWebsocketRequestRejectedByQoS = errors.New("websocket request rejected by service QoS instance")
 )
 
-// Gateway requestContext is responsible for performing the steps necessary to complete a service request.
+const (
+	// As of PR #340, the goal was to get the large set of changes in and enable focused investigation on the impact of parallel requests.
+	// TODO_UPNEXT(@olshansk): Experiment and turn on this feature.
+	// - Experiment with this feature in a single gateway and evaluate the results.
+	// - Collect and analyze the metrics of this feature, ensuring it does not lead to excessive resource usage or token burn
+	// - If all endpoints are sanctioned, send parallel requests by default
+	// - Make this configurable at the gateway level yaml config
+	// - Enable parallel requests for gateways that maintain their own backend nodes as a special config
+	maxParallelRequests    = 1
+	parallelRequestTimeout = 30 * time.Second
+)
+
+// requestContext is responsible for performing the steps necessary to complete a service request.
 //
 // It contains two main contexts:
 //
 //  1. Protocol context
-//
-//     - Supplies the list of available endpoints for the requested service to the QoS ctx.
-//
-//     - Builds the Protocol ctx for the selected endpoint once it has been selected.
-//
-//     - Sends the relay request to the selected endpoint using the protocol-specific implementation.
+//     - Supplies the list of available endpoints for the requested service to the QoS ctx
+//     - Builds the Protocol ctx for the selected endpoint once it has been selected
+//     - Sends the relay request to the selected endpoint using the protocol-specific implementation
 //
 //  2. QoS context
-//
-//     - Receives the list of available endpoints for the requested service from the Protocol instance.
-//
-//     - Selects a valid endpoint from among them based on the service-specific QoS implementation.
-//
-//     - Updates its internal store based on observations made during the handling of the request.
+//     - Receives the list of available endpoints for the requested service from the Protocol instance
+//     - Selects a valid endpoint from among them based on the service-specific QoS implementation
+//     - Updates its internal store based on observations made during the handling of the request
 //
 // As of PR #72, it is limited in scope to HTTP service requests.
 type requestContext struct {
 	logger polylog.Logger
+
+	// Enforces request completion deadline.
+	// Passed to potentially long-running operations like protocol interactions.
+	// Prevents HTTP handler timeouts that would return empty responses to clients.
+	context context.Context
 
 	// httpRequestParser is used by the request context to interpret an HTTP request as a pair of:
 	// 	1. service ID
@@ -65,8 +78,9 @@ type requestContext struct {
 	qosCtx     RequestQoSContext
 
 	// Protocol related request context
-	protocol    Protocol
-	protocolCtx ProtocolRequestContext
+	protocol Protocol
+	// Multiplicity of protocol contexts to support parallel requests
+	protocolContexts []ProtocolRequestContext
 
 	// presetFailureHTTPResponse, if set, is used to return a preconstructed error response to the user.
 	// For example, this is used to return an error if the specified target service ID is invalid.
@@ -78,11 +92,6 @@ type requestContext struct {
 	gatewayObservations *observation.GatewayObservations
 	// Tracks protocol observations.
 	protocolObservations *protocolobservations.Observations
-
-	// Enforces request completion deadline.
-	// Passed to potentially long-running operations like protocol interactions.
-	// Prevents HTTP handler timeouts that would return empty responses to clients.
-	context context.Context
 
 	// TODO_TECHDEBT(@adshmh): refactor the interfaces and interactions with Protocol and QoS, to remove the need for this field.
 	// Tracks whether the request was rejected by the QoS.
@@ -110,7 +119,7 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 		rc.presetFailureHTTPResponse = rc.httpRequestParser.GetHTTPErrorResponse(rc.context, err)
 
 		// log the error
-		rc.logger.Info().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
+		rc.logger.Error().Err(err).Msg(errHTTPRequestRejectedByParser.Error())
 		return errHTTPRequestRejectedByParser
 	}
 
@@ -118,68 +127,14 @@ func (rc *requestContext) InitFromHTTPRequest(httpReq *http.Request) error {
 	return nil
 }
 
-// hydrateGatewayObservations
-// - updates the gateway-level observations in the request context with other metadata in the request context.
-// - sets the gateway observation error with the one provided, if not already set
-func (rc *requestContext) updateGatewayObservations(err error) {
-	// set the service ID on the gateway observations.
-	rc.gatewayObservations.ServiceId = string(rc.serviceID)
-
-	// Update the request completion time on the gateway observation
-	rc.gatewayObservations.CompletedTime = timestamppb.Now()
-
-	// No errors: skip.
-	if err == nil {
-		return
-	}
-
-	// Request error already set: skip.
-	if rc.gatewayObservations.GetRequestError() != nil {
-		return
-	}
-
-	switch {
-	// Service ID not specified
-	case errors.Is(err, GatewayErrNoServiceIDProvided):
-		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-
-	// Request was rejected by the QoS instance.
-	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
-	case errors.Is(err, GatewayErrRejectedByQoS):
-		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// Set the error kind
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-
-	default:
-		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
-		// Set a generic request error observation
-		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
-			// unspecified error kind: this should not happen
-			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
-			// Use the error message as error details.
-			Details: err.Error(),
-		}
-	}
-}
-
 // BuildQoSContextFromHTTP builds the QoS context instance using the supplied HTTP request's payload.
 func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 	// TODO_MVP(@adshmh): Add an HTTP request size metric/observation at the gateway/http (L7) level.
 	// Required steps:
-	//  	1. Update QoSService interface to parse custom struct with []byte payload
-	//  	2. Read HTTP request body in `request` package and return struct for QoS Service
-	//  	3. Export HTTP observations from `request` package when reading body
-	//
+	//	1. Update QoSService interface to parse custom struct with []byte payload
+	//	2. Read HTTP request body in `request` package and return struct for QoS Service
+	//	3. Export HTTP observations from `request` package when reading body
+
 	// Build the payload for the requested service using the incoming HTTP request.
 	// This payload will be sent to an endpoint matching the requested service.
 	qosCtx, isValid := rc.serviceQoS.ParseHTTPRequest(rc.context, httpReq)
@@ -190,7 +145,7 @@ func (rc *requestContext) BuildQoSContextFromHTTP(httpReq *http.Request) error {
 		rc.requestRejectedByQoS = true
 
 		// Update gateway observations
-		rc.updateGatewayObservations(GatewayErrRejectedByQoS)
+		rc.updateGatewayObservations(errGatewayRejectedByQoS)
 		rc.logger.Info().Msg(errHTTPRequestRejectedByQoS.Error())
 		return errHTTPRequestRejectedByQoS
 	}
@@ -217,100 +172,80 @@ func (rc *requestContext) BuildQoSContextFromWebsocket(wsReq *http.Request) erro
 	return nil
 }
 
-// BuildProtocolContextFromHTTP builds the Protocol context using the supplied HTTP request.
-// This includes:
-// 1. Getting this list of available endpoints for the requested service from the Protocol instance.
-// 1. Using the QoS ctx to select an endpoint based on the service-specific QoS implementation.
-// 2. Building the Protocol ctx for the selected endpoint.
+// BuildProtocolContextsFromHTTPRequest builds multiple Protocol contexts using the supplied HTTP request.
 //
-// The constructed Protocol instance will be used for:
-//   - Sending a relay to the selected endpoint
-//   - Getting the list of protocol-level observations.
-func (rc *requestContext) BuildProtocolContextFromHTTP(httpReq *http.Request) error {
+// Steps:
+//  1. Get available endpoints for the requested service from the Protocol instance
+//  2. Select multiple endpoints for parallel relay attempts
+//  3. Build Protocol contexts for each selected endpoint
+//
+// The constructed Protocol instances will be used for:
+//   - Sending parallel relay requests to multiple endpoints
+//   - Getting the list of protocol-level observations
+//
+// TODO_TECHDEBT: Either rename to `PrepareProtocol` or return the built protocol context.
+func (rc *requestContext) BuildProtocolContextsFromHTTPRequest(httpReq *http.Request) error {
+	logger := rc.logger.With("method", "BuildProtocolContextsFromHTTPRequest").With("service_id", rc.serviceID)
+
 	// Retrieve the list of available endpoints for the requested service.
 	availableEndpoints, endpointLookupObs, err := rc.protocol.AvailableEndpoints(rc.context, rc.serviceID, httpReq)
 	if err != nil {
 		// error encountered: use the supplied observations as protocol observations.
 		rc.updateProtocolObservations(&endpointLookupObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("error getting available endpoints for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextFromHTTP: error getting available endpoints for service %s: %w", rc.serviceID, err)
+		// log and return the error
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Err(err).Msg("no available endpoints could be found for the request")
+		return fmt.Errorf("%w: no available endpoints could be found for the request: %w", errBuildProtocolContextsFromHTTPRequest, err)
 	}
 
-	// Use the QoS context to select one endpoint to be used for relaying the request.
-	selectedEndpointAddr, err := rc.qosCtx.GetEndpointSelector().Select(availableEndpoints)
-	if err != nil {
+	// Select multiple endpoints for parallel relay attempts
+	selectedEndpoints, err := rc.qosCtx.GetEndpointSelector().SelectMultiple(availableEndpoints, maxParallelRequests)
+	if err != nil || len(selectedEndpoints) == 0 {
 		// no protocol context will be built: use the endpointLookup observation.
 		rc.updateProtocolObservations(&endpointLookupObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg("error selecting an endpoint for the service request. Request will fail.")
-		return fmt.Errorf("BuildProtocolContextFromHTTP: error selecting an endpoint: %w", err)
+		// log and return the error
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("no endpoints could be selected for the request from %d available endpoints", len(availableEndpoints))
+		return fmt.Errorf("%w: no endpoints could be selected from %d available endpoints", errBuildProtocolContextsFromHTTPRequest, len(availableEndpoints))
 	}
 
-	// Prepare the Protocol ctx for the selected endpoint.
-	protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, selectedEndpointAddr, httpReq)
-	if err != nil {
-		// TODO_MVP(@adshmh): Add a unique identifier to each request to be used in generic user-facing error responses.
-		// This will enable debugging of any potential issues (i.e. tracing)
-		//
+	// Log TLD diversity of selected endpoints
+	shannonmetrics.LogEndpointTLDDiversity(logger, selectedEndpoints)
+
+	// Prepare Protocol contexts for all selected endpoints
+	numSelectedEndpoints := len(selectedEndpoints)
+	rc.protocolContexts = make([]ProtocolRequestContext, 0, numSelectedEndpoints)
+	var lastProtocolCtxSetupErrObs *protocolobservations.Observations
+
+	for i, endpointAddr := range selectedEndpoints {
+		logger.Debug().Msgf("Building protocol context for endpoint %d/%d: %s", i+1, numSelectedEndpoints, endpointAddr)
+		protocolCtx, protocolCtxSetupErrObs, err := rc.protocol.BuildRequestContextForEndpoint(rc.context, rc.serviceID, endpointAddr, httpReq)
+		if err != nil {
+			lastProtocolCtxSetupErrObs = &protocolCtxSetupErrObs
+			logger.Warn().Err(err).Str("endpoint_addr", string(endpointAddr)).Msgf("Failed to build protocol context for endpoint %d/%d, skipping", i+1, numSelectedEndpoints)
+			// Continue with other endpoints rather than failing completely
+			continue
+		}
+		rc.protocolContexts = append(rc.protocolContexts, protocolCtx)
+		logger.Debug().Msgf("Successfully built protocol context for endpoint %d/%d: %s", i+1, numSelectedEndpoints, endpointAddr)
+	}
+
+	if len(rc.protocolContexts) == 0 {
+		logger.Error().Msgf("Zero protocol contexts were built for the request with %d selected endpoints", numSelectedEndpoints)
 		// error encountered: use the supplied observations as protocol observations.
-		rc.updateProtocolObservations(&protocolCtxSetupErrObs)
-		rc.logger.
-			With("service_id", rc.serviceID).
-			ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
-			Err(err).Msg(errHTTPRequestRejectedByProtocol.Error())
+		rc.updateProtocolObservations(lastProtocolCtxSetupErrObs)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg(errHTTPRequestRejectedByProtocol.Error())
 		return errHTTPRequestRejectedByProtocol
 	}
 
-	rc.protocolCtx = protocolCtx
-	return nil
-}
-
-// HandleRelayRequest sends a relay from the perspective of a gateway.
-// It performs the following steps:
-//  1. Selects an endpoint using the QoS context.
-//  2. Sends the relay to the selected endpoint, using the protocol context.
-//  3. Processes the endpoint's response using the QoS context.
-//
-// HandleRelayRequest is written as a template method to allow the customization of key steps,
-// e.g. endpoint selection and protocol-specific details of sending a relay.
-// See the following link for more details:
-// https://en.wikipedia.org/wiki/Template_method_pattern
-func (rc *requestContext) HandleRelayRequest() error {
-	// Send the service request payload, through the protocol context, to the selected endpoint.
-	endpointResponse, err := rc.protocolCtx.HandleServiceRequest(rc.qosCtx.GetServicePayload())
-	if err != nil {
-		rc.logger.Warn().Err(err).Msg("Failed to send a relay request.")
-		// TODO_TECHDEBT(@commoddity): the correct reaction to a failure in sending the relay to an endpoint and getting
-		// a response could be retrying with another endpoint, depending on the error.
-		// This should be revisited once a retry mechanism for failed relays is within scope.
-		//
-		// TODO_TECHDEBT(@adshmh): use the relay error in the response returned to the user.
-		return err
-	}
-
-	// TODO_TECHDEBT(@commoddity): implement a service-specific retry mechanism based on the protocol's response/error:
-	// This would need to distinguish between:
-	// 1) protocol errors, e.g. when an endpoint is maxed out for a service+app combination,
-	// 2) QoS errors, e.g.:
-	// 	A. The request is invalid: e.g. a JSONRPC request with no specified method.
-	//	B. An endpoint returns an invalid response.
-	//
-	// TODO_FUTURE: Support multiple concurrent relays to multiple endpoints for a single user request.
-	// e.g. for handling JSONRPC batch requests.
-	rc.qosCtx.UpdateWithResponse(endpointResponse.EndpointAddr, endpointResponse.Bytes)
+	logger.Info().Msgf("Successfully built %d protocol contexts for the request with %d selected endpoints", len(rc.protocolContexts), numSelectedEndpoints)
 
 	return nil
 }
 
 // HandleWebsocketRequest handles a websocket request.
-func (rc *requestContext) HandleWebsocketRequest(req *http.Request, w http.ResponseWriter) error {
+func (rc *requestContext) HandleWebsocketRequest(request *http.Request, responseWriter http.ResponseWriter) error {
 	// Establish a websocket connection with the selected endpoint and handle the request.
-	if err := rc.protocolCtx.HandleWebsocketRequest(rc.logger, req, w); err != nil {
+	// In this code path, we are always guaranteed to have exactly one protocol context.
+	if err := rc.protocolContexts[0].HandleWebsocketRequest(rc.logger, request, responseWriter); err != nil {
 		rc.logger.Warn().Err(err).Msg("Failed to establish a websocket connection.")
 		return err
 	}
@@ -330,15 +265,12 @@ func (rc *requestContext) WriteHTTPUserResponse(w http.ResponseWriter) {
 	// Processing a request only gets to this point if a QoS instance was matched to the request.
 	// Use the QoS context to obtain an HTTP response.
 	// There are 3 possible scenarios:
-	// 	1. The QoS instance rejected the request:
-	//		QoS returns a properly formatted error response.
-	//               e.g. a non-JSONRPC payload for an EVM service.
-	// 	2. Protocol relay failed for any reason:
-	//		QoS returns a generic, properly formatted response.
-	//.              e.g. a JSONRPC error response.
-	//	3. Protocol relay was sent successfully:
-	//		QoS returns the endpoint's response.
-	//               e.g. the chain ID for a `eth_chainId` request.
+	//   1. The QoS instance rejected the request: QoS returns a properly formatted error response.
+	//      E.g. a non-JSONRPC payload for an EVM service.
+	//   2. Protocol relay failed for any reason: QoS returns a generic, properly formatted response.
+	//      E.g. a JSONRPC error response.
+	//   3. Protocol relay was sent successfully: QoS returns the endpoint's response.
+	//      E.g. the chain ID for a `eth_chainId` request.
 	rc.writeHTTPResponse(rc.qosCtx.GetHTTPResponse(), w)
 }
 
@@ -372,7 +304,7 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 
 	numWrittenBz, writeErr := w.Write(responsePayload)
 	if writeErr != nil {
-		logger.With("http_response_bytes_writte", numWrittenBz).Warn().Err(writeErr).Msg("Error writing the HTTP response.")
+		logger.With("http_response_bytes_written", numWrittenBz).Warn().Err(writeErr).Msg("Error writing the HTTP response.")
 		return
 	}
 
@@ -389,16 +321,10 @@ func (rc *requestContext) writeHTTPResponse(response HTTPResponse, w http.Respon
 func (rc *requestContext) BroadcastAllObservations() {
 	// observation-related tasks are called in Goroutines to avoid potentially blocking the HTTP handler.
 	go func() {
-		var (
-			qosObservations qosobservations.Observations
-		)
-
 		// update gateway-level observations: no request error encountered.
 		rc.updateGatewayObservations(nil)
-
 		// update protocol-level observations: no errors encountered setting up the protocol context.
 		rc.updateProtocolObservations(nil)
-
 		if rc.protocolObservations != nil {
 			err := rc.protocol.ApplyObservations(rc.protocolObservations)
 			if err != nil {
@@ -410,6 +336,7 @@ func (rc *requestContext) BroadcastAllObservations() {
 		// the observation.QoSObservations struct.
 		// This ensures that separate PATH instances can communicate and share their QoS observations.
 		// The QoS context will be nil if the target service ID is not specified correctly by the request.
+		var qosObservations qosobservations.Observations
 		if rc.qosCtx != nil {
 			qosObservations = rc.qosCtx.GetObservations()
 			if err := rc.serviceQoS.ApplyObservations(&qosObservations); err != nil {
@@ -417,17 +344,16 @@ func (rc *requestContext) BroadcastAllObservations() {
 			}
 		}
 
+		// Prepare and publish observations to both the metrics and data reporters.
 		observations := &observation.RequestResponseObservations{
 			HttpRequest: &rc.httpObservations,
 			Gateway:     rc.gatewayObservations,
 			Protocol:    rc.protocolObservations,
 			Qos:         &qosObservations,
 		}
-
 		if rc.metricsReporter != nil {
 			rc.metricsReporter.Publish(observations)
 		}
-
 		if rc.dataReporter != nil {
 			rc.dataReporter.Publish(observations)
 		}
@@ -466,9 +392,12 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		return
 	}
 
-	// Protocol context is setup: fetch and use observations.
-	if rc.protocolCtx != nil {
-		observations := rc.protocolCtx.GetObservations()
+	// Check if we have multiple protocol contexts and use the first successful one
+	if len(rc.protocolContexts) > 0 {
+		// TODO_TECHDEBT: Aggregate observations from all protocol contexts for better insights.
+		// Currently using only the first context's observations for backward compatibility
+		rc.logger.Debug().Msgf("%d protocol contexts were built for the request, but only using the first one for observations", len(rc.protocolContexts))
+		observations := rc.protocolContexts[0].GetObservations()
 		rc.protocolObservations = &observations
 		return
 	}
@@ -483,4 +412,70 @@ func (rc *requestContext) updateProtocolObservations(protocolContextSetupErrorOb
 		With("service_id", rc.serviceID).
 		ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).
 		Msg("SHOULD NEVER HAPPEN: protocol context is nil, but no protocol setup observation have been reported.")
+}
+
+// updateGatewayObservations
+// - updates the gateway-level observations in the request context with other metadata in the request context.
+// - sets the gateway observation error with the one provided, if not already set
+func (rc *requestContext) updateGatewayObservations(err error) {
+	// set the service ID on the gateway observations.
+	rc.gatewayObservations.ServiceId = string(rc.serviceID)
+
+	// Update the request completion time on the gateway observation
+	rc.gatewayObservations.CompletedTime = timestamppb.Now()
+
+	// No errors: skip.
+	if err == nil {
+		return
+	}
+
+	// Request error already set: skip.
+	if rc.gatewayObservations.GetRequestError() != nil {
+		return
+	}
+
+	switch {
+	// Service ID not specified
+	case errors.Is(err, ErrGatewayNoServiceIDProvided):
+		rc.logger.Error().Err(err).Msg("No service ID specified in the HTTP headers. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	// Request was rejected by the QoS instance.
+	// e.g. HTTP payload could not be unmarshaled into a JSONRPC request.
+	case errors.Is(err, errGatewayRejectedByQoS):
+		rc.logger.Error().Err(err).Msg("QoS instance rejected the request. Request will fail.")
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// Set the error kind
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+
+	default:
+		rc.logger.Warn().Err(err).Msg("SHOULD NEVER HAPPEN: unrecognized gateway-level request error.")
+		// Set a generic request error observation
+		rc.gatewayObservations.RequestError = &observation.GatewayRequestError{
+			// unspecified error kind: this should not happen
+			ErrorKind: observation.GatewayRequestErrorKind_GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED,
+			// Use the error message as error details.
+			Details: err.Error(),
+		}
+	}
+}
+
+// updateGatewayObservationsWithParallelRequests updates the gateway observations with parallel request metrics.
+//
+// It is called when the gateway handles a parallel request and used for downstream metrics.
+func (rc *requestContext) updateGatewayObservationsWithParallelRequests(numRequests, numSuccessful, numFailed, numCanceled int) {
+	rc.gatewayObservations.GatewayParallelRequestObservations = &observation.GatewayParallelRequestObservations{
+		NumRequests:   int32(numRequests),
+		NumSuccessful: int32(numSuccessful),
+		NumFailed:     int32(numFailed),
+		NumCanceled:   int32(numCanceled),
+	}
 }

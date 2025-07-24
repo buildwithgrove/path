@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/protocol"
@@ -14,12 +15,14 @@ import (
 // that can serve relays.
 var _ protocol.Endpoint = endpoint{}
 
-// endpoint is used to fulfull a protocol package Endpoint using a Shannon SupplierEndpoint.
+// endpoint is used to fulfill a protocol package Endpoint using a Shannon SupplierEndpoint.
 // An endpoint is identified by combining its supplier address and its URL, because
 // in Shannon a supplier can have multiple endpoints for a service.
 type endpoint struct {
 	supplier string
 	url      string
+	// TODO_TECHDEBT(@commoddity): Investigate if we should allow supporting additional RPC type endpoints.
+	websocketUrl string
 
 	// TODO_IMPROVE: If the same endpoint is in the session of multiple apps at the same time,
 	// the first app will be chosen. A randomization among the apps in this (unlikely) scenario
@@ -40,6 +43,14 @@ func (e endpoint) PublicURL() string {
 	return e.url
 }
 
+// WebsocketURL returns the URL of the endpoint.
+func (e endpoint) WebsocketURL() (string, error) {
+	if e.websocketUrl == "" {
+		return "", fmt.Errorf("websocket URL is not set")
+	}
+	return e.websocketUrl, nil
+}
+
 // Session returns a pointer to the session associated with the endpoint.
 func (e endpoint) Session() *sessiontypes.Session {
 	return &e.session
@@ -58,6 +69,10 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 		Session: &session,
 	}
 
+	// AllEndpoints will return a map of supplier address to a list of supplier endpoints.
+	//
+	// Each supplier address will have one or more endpoints, one per RPC-type.
+	// For example, a supplier may have one endpoint for JSON-RPC and one for websocket.
 	allEndpoints, err := sf.AllEndpoints()
 	if err != nil {
 		return nil, err
@@ -65,15 +80,38 @@ func endpointsFromSession(session sessiontypes.Session) (map[protocol.EndpointAd
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, supplierEndpoints := range allEndpoints {
-		for _, supplierEndpoint := range supplierEndpoints {
-			endpoint := endpoint{
-				supplier: string(supplierEndpoint.Supplier()),
-				url:      supplierEndpoint.Endpoint().Url,
-				// Set the session field on the endpoint for efficient lookup when sending relays.
-				session: session,
-			}
-			endpoints[endpoint.Addr()] = endpoint
+		// All endpoints for a supplier will have the same supplier address & session,
+		// so we can use the first item to set the supplier address & session.
+		endpoint := endpoint{
+			supplier: string(supplierEndpoints[0].Supplier()),
+			// Set the session field on the endpoint for efficient lookup when sending relays.
+			session: session,
 		}
+
+		// Set the URL of the endpoint based on the RPC type.
+		// Each supplier endpoint may have multiple RPC types, so we need to set the URL for each.
+		//
+		// IMPORTANT: As of PATH PR #345 the only supported RPC types are:
+		// 	- `JSON_RPC`
+		// 	- `WEBSOCKET`
+		//
+		// References:
+		// 	- PATH PR #345 - https://github.com/buildwithgrove/path/pull/345
+		// 	- poktroll `RPCType` enum - https://github.com/pokt-network/poktroll/blob/main/x/shared/types/service.pb.go#L31
+		for _, supplierRPCTypeEndpoint := range supplierEndpoints {
+			switch supplierRPCTypeEndpoint.RPCType() {
+
+			// If the endpoint is a `WEBSOCKET` RPC type endpoint, set the websocket URL.
+			case sharedtypes.RPCType_WEBSOCKET:
+				endpoint.websocketUrl = supplierRPCTypeEndpoint.Endpoint().Url
+
+			// Currently only `WEBSOCKET` & `JSON_RPC` types are supported, so `JSON_RPC` is the default.
+			default:
+				endpoint.url = supplierRPCTypeEndpoint.Endpoint().Url
+			}
+		}
+
+		endpoints[endpoint.Addr()] = endpoint
 	}
 
 	return endpoints, nil

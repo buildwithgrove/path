@@ -70,7 +70,7 @@ func PublishMetrics(logger polylog.Logger, observations *qos.SolanaRequestObserv
 	// Skip if observations is nil.
 	// This should never happen as PublishQoSMetrics uses nil checks to identify which QoS service produced the observations.
 	if observations == nil {
-		logger.Error().Msg("SHOULD NEVER HAPPEN: Unable to publish Solana metrics: received nil observations.")
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: Unable to publish Solana metrics: received nil observations.")
 		return
 	}
 

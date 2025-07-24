@@ -42,8 +42,8 @@ Select one or more from the following:
 ### Observability
 
 - [ ] 1. `make path_up`
-- [ ] 2. Run `make test_request__shannon_relay_util_100`
-- [ ] 3. Visit [PATH Relay Grafana Dashboard](http://localhost:3003/d/relays/path-service-requests) to view results
+- [ ] 2. Run the following E2E test: `make test_request__shannon_relay_util_100`
+- [ ] 3. View results in LocalNet's [PATH Relay Grafana Dashboard](http://localhost:3003/d/relays/path-service-requests)
 
 ## Sanity Checklist
 

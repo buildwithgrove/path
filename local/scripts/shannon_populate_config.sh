@@ -12,7 +12,7 @@ RED='\033[1;31m'
 NC='\033[0m'
 
 echo -e "\n"
-echo -e "${GREEN}🌿  This script will populate the configuration file with the correct values  🌿${NC}"
+echo -e "${GREEN}🌿  This script will populate the configuration file using your pocketd keyring  🌿${NC}"
 echo -e ""
 echo -e "   Ensure you have completed the ${BLUE}App & PATH Gateway Cheat Sheet${NC} before running this script."
 echo -e "   ${BLUE}https://dev.poktroll.com/operate/cheat_sheets/gateway_cheatsheet${NC} (⏰ ~30 min to complete)"
@@ -21,7 +21,7 @@ echo -n "> "
 read -r response
 if [[ "$response" != "yes" && "$response" != "y" ]]; then
     echo -e ""
-    echo -e "${RED}❌  Operation cancelled  ❌${NC}"
+    echo -e "${RED}❌  Operation canceled  ❌${NC}"
     echo -e ""
     exit 0
 fi
@@ -32,14 +32,14 @@ if [[ -f "$CONFIG_FILE" ]]; then
     echo -n "> "
     read -r response
     if [[ "$response" != "yes" && "$response" != "y" ]]; then
-        echo "Operation cancelled."
+        echo "Operation canceled."
         exit 0
     fi
     echo -e "${RED}❗ Are you sure you want to overwrite the existing configuration file? (y/n)${NC}"
     echo -n "> "
     read -r response
     if [[ "$response" != "yes" && "$response" != "y" ]]; then
-        echo "Operation cancelled."
+        echo "Operation canceled."
         exit 0
     fi
 fi

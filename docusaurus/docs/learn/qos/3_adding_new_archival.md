@@ -31,7 +31,7 @@ QoS configurations are stored in [`path/config/service_qos_config.go`](https://g
 
 ## Adding an Archival Check By Example: `Polygon zkEVM`
 
-This example uses the `Polygon zkEVM` chain (`poly_zkevm`).
+This example uses the `Polygon zkEVM` chain (`F029`).
 
 ## 0. Find a Block Explorer
 
@@ -77,7 +77,7 @@ In the [`path/config/service_qos_config.go`](https://github.com/buildwithgrove/p
 
 ```go
 // Polygon zkEVM
-evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
+evm.NewEVMServiceQoSConfig("F029", "0x44d", evm.NewEVMArchivalCheckConfig(
    // https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
    "0xee1727f5074E747716637e1776B7F7C7133f16b1",
    // Contract start block
@@ -86,6 +86,7 @@ evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
 ```
 
 It must contain the following elements in `evm.NewEVMArchivalCheckConfig`, exactly as shown above.
+
 | Line | Description                                                                                             | Example                                                                                      |
 | ---- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | 1    | A comment containing the URL for the contract address on the block explorer as a comment                | `// https://zkevm.polygonscan.com/address/`<br/>`0xee1727f5074e747716637e1776b7f7c7133f16b1` |
@@ -97,9 +98,9 @@ It must contain the following elements in `evm.NewEVMArchivalCheckConfig`, exact
 
 Configure PATH for the service you want to test, and run `make path_run` to start PATH from a local binary.
 
-:::tip
+:::tip Pocket Network Cheat Sheet
 
-For information on how to configure PATH for a service, see the PATH [Shannon Cheat Sheet](../../develop/path/3_cheatsheet_shannon.md)
+For information on how to configure PATH for a service, see the [Shannon Cheat Sheet](../../develop/path/2_cheatsheet_shannon.md).
 
 :::
 
@@ -114,7 +115,7 @@ Then send a request to validate that data is returned correctly for the requeste
 
 ```bash
 curl http://localhost:3069/v1 \
-  -H "Target-Service-Id: poly_zkevm" \
+  -H "Target-Service-Id: F029" \
   -d '{
      "jsonrpc": "2.0",
      "method": "eth_getBalance",

@@ -37,43 +37,24 @@ def merge_dicts(base, updates):
             # Replace or set the value
             base[k] = v
 
-# Load the existing config file, if it exists, or use an empty dict as fallback
-local_config_path = "local_config.yaml"
-local_config_defaults = {
-    "hot-reloading": True,
-    "path": {
-        "count": 1,
-        "delve": {
-            "enabled": False
-        }
-    },
-    "observability": {
-        "enabled": True,
-        "grafana": {
-            "defaultDashboardsEnabled": False
-        }
-    },
-    # DEV_NOTE: to use a local copy of Helm charts, set BOTH of the following:
-    #   1. enabled: true
-    #   2. path: {PATH_TO_LOCAL_HELM_CHART}
-    "helm_chart_local_repo": {
-        "enabled": False,
-        "path": "../helm-charts"
-    }
-}
+# Get the helm charts path from environment variable if set
+helm_charts_path = os.getenv("LOCAL_HELM_CHARTS_PATH", "")
 
-# Initial empty config
-local_config = {}
-# Load the existing config file, if it exists, or use an empty dict as fallback
-local_config_file = read_yaml(local_config_path, default={})
-# Merge defaults into the local_config first
-merge_dicts(local_config, local_config_defaults)
-# Then merge file contents over defaults
-merge_dicts(local_config, local_config_file)
-# Check if there are differences or if the file doesn't exist
-if (local_config_file != local_config) or (not os.path.exists(local_config_path)):
-    print("Updating " + local_config_path + " with defaults")
-    local("cat - > " + local_config_path, stdin=encode_yaml(local_config))
+# Define configuration values directly
+hot_reloading_enabled = True
+path_count = 1
+delve_enabled = False
+observability_enabled = True
+grafana_default_dashboards_enabled = False
+
+# Determine whether to use local helm charts based on environment variable
+use_local_helm_charts = helm_charts_path and helm_charts_path != ""
+local_helm_charts_path = helm_charts_path if use_local_helm_charts else "../helm-charts"
+
+if use_local_helm_charts:
+    print("Using helm charts from environment variable: {}".format(helm_charts_path))
+else:
+    print("Not using local helm charts (env var empty)")
 
 # Configure helm chart reference.
 # If using a local repo, set the path to the local repo; otherwise, use our own helm repo.
@@ -83,24 +64,23 @@ helm_repo(
     labels=["configuration"],
 )
 chart_prefix = "buildwithgrove/"
-if local_config["helm_chart_local_repo"]["enabled"]:
-    helm_chart_local_repo = local_config["helm_chart_local_repo"]["path"]
-    chart_prefix = helm_chart_local_repo + "/charts/"
+if use_local_helm_charts:
+    chart_prefix = local_helm_charts_path + "/charts/"
     # TODO_TECHDEBT(@okdas): Find a way to make this cleaner & performant w/ selective builds.
     local("cd " + chart_prefix + "guard && helm dependency update")
     local("cd " + chart_prefix + "path && helm dependency update")
     local("cd " + chart_prefix + "watch && helm dependency update")
-    hot_reload_dirs.append(helm_chart_local_repo)
-    print("Using local helm chart repo " + helm_chart_local_repo)
+    hot_reload_dirs.append(local_helm_charts_path)
+    print("Using local helm chart repo {}".format(local_helm_charts_path))
 
 
 # The folder containing the local configuration files.
 LOCAL_DIR = "local"
 
 # The folder containing PATH's local configuration files.
-PATH_LOCAL_DIR = LOCAL_DIR + "/path"
+PATH_LOCAL_DIR = LOCAL_DIR + "/path" # ./local/path
 # The configuration file for PATH.
-PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml"
+PATH_LOCAL_CONFIG_FILE = PATH_LOCAL_DIR + "/.config.yaml" # ./local/path/.config.yaml
 
 # --------------------------------------------------------------------------- #
 #                              Configuration Resources                        #
@@ -155,47 +135,43 @@ local_resource(
 # 4. Use an init container to run the scripts for updating config from environment variables.
 # This can leverage the scripts under `e2e` package to be consistent with the CI workflow.
 
-# if local_config["hot-reloading"]:
-# Build the Go binary with proper settings for Alpine
+# Compile the binary inside the container
 local_resource(
     'path-binary',
     '''
     echo "Building Go binary..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/path ./cmd
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o bin/path ./cmd 
     ''',
     deps=hot_reload_dirs,
     ignore=['**/node_modules', '.git'],
     labels=["hot-reloading"],
 )
 
-# Make sure path-binary runs before the Docker build
-local_resource(
-    "path-trigger",
-    """
-    echo "Triggering Docker build after binary build"
-    touch .tilt-build-trigger
-    """,
-    resource_deps=["path-binary"],
-    auto_init=False,
-    trigger_mode=TRIGGER_MODE_MANUAL,
-    labels=["hot-reloading"],
-)
-
-# Build an image with the PATH binary
+# Build a minimal Docker image with just the binary
 docker_build_with_restart(
     "path-image",
     context=".",
-    dockerfile_contents="""FROM golang:1.24.3
-RUN apt-get -q update && apt-get install -qyy curl jq less
-RUN mkdir -p /app/config
+    dockerfile_contents="""FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
 COPY bin/path /app/path
 RUN chmod +x /app/path
-WORKDIR /app
 """,
-    # only=["/app/path"],
+    only=["bin/path"],
     entrypoint=["/app/path"],
-    live_update=[sync("bin/path", "/app/path")],
-    trigger='.tilt-build-trigger',  # Rebuild when this file changes
+    live_update=[
+        sync("bin/path", "/app/path"),
+    ],
+)
+
+# Ensure the binary is built before the image
+local_resource(
+    "path-trigger",
+    "touch bin/path",
+    resource_deps=["path-binary"],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_AUTO,
+    labels=["hot-reloading"],
 )
 
 # Tilt will run the Helm Chart with the following flags by default.
@@ -206,6 +182,11 @@ WORKDIR /app
 #    --set config.fromSecret.name=path-config \
 #    --set config.fromSecret.key=.config.yaml
 flags = [
+    # TODO_TECHDEBT: Look for a way to make helm secret size smaller for local development.
+    # Reduce Helm secret size for local development
+    # "--skip-crds",
+    # "--atomic=false",
+
     # Enable GUARD resources.
     "--set", "guard.enabled=true",
     # Enable PATH to load the config from a secret.
@@ -216,6 +197,10 @@ flags = [
     "--set", "config.fromSecret.key=.config.yaml",
     # Always use the local image.
     "--set", "global.imagePullPolicy=Never",
+
+    # TODO_TECHDEBT: Respect local_config["observability"]
+    # "--set", "observability.enabled=" + str(local_config["observability"]["enabled"]),
+    # "--set", "grafana.defaultDashboardsEnabled=" + str(local_config["observability"]["grafana"]["defaultDashboardsEnabled"]),
 ]
 
 # Optional: Use a local values.yaml file to override the default values.
@@ -303,24 +288,24 @@ local_resource(
     resource_deps=["path-stack"]
 )
 
-# 3. WATCH Logs - Waits for container readiness before following logs
-local_resource(
-    "watch-logs",
-    cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
-    serve_cmd='''
-    echo "Waiting for WATCH pods to be fully ready..."
-    until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
-          kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
-      sleep 5
-    done
-    echo "Checking other components..."
-    until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
-      sleep 5
-    done
-    echo "All pods ready, stabilizing..."; sleep 20
-    echo "Following WATCH logs..."
-    kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
-    ''',
-    labels=["k8s_logs"],
-    resource_deps=["path-stack"]
-)
+# # 3. WATCH Logs - Waits for container readiness before following logs
+# local_resource(
+#     "watch-logs",
+#     cmd="echo 'Preparing to follow WATCH logs when pods are ready...'",
+#     serve_cmd='''
+#     echo "Waiting for WATCH pods to be fully ready..."
+#     until kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running &&
+#           kubectl get pod -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null | grep -q true; do
+#       sleep 5
+#     done
+#     echo "Checking other components..."
+#     until kubectl get pods -l 'app.kubernetes.io/name in (kube-state-metrics,prometheus-node-exporter)' -o jsonpath='{.items[*].status.phase}' 2>/dev/null | tr ' ' '\n' | grep -v Running | wc -l | grep -q "^0$"; do
+#       sleep 5
+#     done
+#     echo "All pods ready, stabilizing..."; sleep 20
+#     echo "Following WATCH logs..."
+#     kubectl logs -l 'app.kubernetes.io/name in (grafana,kube-state-metrics,prometheus-node-exporter)' --follow
+#     ''',
+#     labels=["k8s_logs"],
+#     resource_deps=["path-stack"]
+# )

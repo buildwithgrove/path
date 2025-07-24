@@ -1,8 +1,10 @@
 package config
 
 import (
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
+
 	"github.com/buildwithgrove/path/protocol"
-	"github.com/buildwithgrove/path/qos/cometbft"
+	"github.com/buildwithgrove/path/qos/cosmos"
 	"github.com/buildwithgrove/path/qos/evm"
 	"github.com/buildwithgrove/path/qos/solana"
 )
@@ -13,7 +15,7 @@ import (
 // Unregistered services use NoOp QoS type with random endpoint selection and no monitoring.
 
 var _ ServiceQoSConfig = (evm.EVMServiceQoSConfig)(nil)
-var _ ServiceQoSConfig = (cometbft.CometBFTServiceQoSConfig)(nil)
+var _ ServiceQoSConfig = (cosmos.CosmosSDKServiceQoSConfig)(nil)
 var _ ServiceQoSConfig = (solana.SolanaServiceQoSConfig)(nil)
 
 type ServiceQoSConfig interface {
@@ -31,15 +33,15 @@ func (c qosServiceConfigs) GetServiceConfigs(config GatewayConfig) []ServiceQoSC
 	return shannonServices
 }
 
-// The ServiceConfigs map associates each supported service ID with a specific
+// The QoSServiceConfigs map associates each supported service ID with a specific
 // implementation of the gateway.QoSService interface.
-var ServiceConfigs = qosServiceConfigs{
+var QoSServiceConfigs = qosServiceConfigs{
 	shannonServices: shannonServices,
 }
 
 const (
-	defaultEVMChainID      = "0x1" // ETH Mainnet (1)
-	defaultCometBFTChainID = "cosmoshub-4"
+	defaultEVMChainID       = "0x1" // ETH Mainnet (1)
+	defaultCosmosSDKChainID = "cosmoshub-4"
 )
 
 // shannonServices is the list of QoS service configs for the Shannon protocol.
@@ -47,7 +49,7 @@ var shannonServices = []ServiceQoSConfig{
 	// *** EVM Services (Archival) ***
 
 	// Arbitrum One
-	evm.NewEVMServiceQoSConfig("arb_one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("arb-one", "0xa4b1", evm.NewEVMArchivalCheckConfig(
 		// https://arbiscan.io/address/0xb38e8c17e38363af6ebdcb3dae12e0243582891d
 		"0xb38e8c17e38363af6ebdcb3dae12e0243582891d",
 		// Contract start block
@@ -55,7 +57,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Arbitrum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("arb_sep_test", "0x66EEE", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("arb-sepolia-testnet", "0x66EEE", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.arbiscan.io/address/0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54
 		"0x22b65d0b9b59af4d3ed59f18b9ad53f5f4908b54",
 		// Contract start block
@@ -87,7 +89,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Base Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("base-test", "0x14a34", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("base-sepolia-testnet", "0x14a34", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.basescan.org/address/0xbab76e4365a2dff89ddb2d3fc9994103b48886c0
 		"0xbab76e4365a2dff89ddb2d3fc9994103b48886c0",
 		// Contract start block
@@ -143,7 +145,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Ethereum Holesky Testnet
-	evm.NewEVMServiceQoSConfig("eth_hol_test", "0x4268", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("eth-holesky-testnet", "0x4268", evm.NewEVMArchivalCheckConfig(
 		// https://holesky.etherscan.io/address/0xc6392ad8a14794ea57d237d12017e7295bea2363
 		"0xc6392ad8a14794ea57d237d12017e7295bea2363",
 		// Contract start block
@@ -151,7 +153,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Ethereum Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("eth_sep_test", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("eth-sepolia-testnet", "0xaa36a7", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia.etherscan.io/address/0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b
 		"0xc0f3833b7e7216eecd9f6bc2c7927a7aa36ab58b",
 		// Contract start block
@@ -263,7 +265,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Optimism Sepolia Testnet
-	evm.NewEVMServiceQoSConfig("op_sep_test", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("op-sepolia-testnet", "0xAA37DC", evm.NewEVMArchivalCheckConfig(
 		// https://sepolia-optimism.etherscan.io/address/0x734d539a7efee15714a2755caa4280e12ef3d7e4
 		"0x734d539a7efee15714a2755caa4280e12ef3d7e4",
 		// Contract start block
@@ -279,7 +281,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Polygon Amoy Testnet
-	evm.NewEVMServiceQoSConfig("poly_amoy_test", "0x13882", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("poly-amoy-testnet", "0x13882", evm.NewEVMArchivalCheckConfig(
 		// https://amoy.polygonscan.com/address/0x54d03ec0c462e9a01f77579c090cde0fc2617817
 		"0x54d03ec0c462e9a01f77579c090cde0fc2617817",
 		// Contract start block
@@ -287,7 +289,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Polygon zkEVM
-	evm.NewEVMServiceQoSConfig("poly_zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("poly-zkevm", "0x44d", evm.NewEVMArchivalCheckConfig(
 		// https://zkevm.polygonscan.com/address/0xee1727f5074e747716637e1776b7f7c7133f16b1
 		"0xee1727f5074E747716637e1776B7F7C7133f16b1",
 		// Contract start block
@@ -319,23 +321,14 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// Taiko Hekla Testnet
-	evm.NewEVMServiceQoSConfig("taiko_hek_test", "0x28c61", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("taiko-hekla-testnet", "0x28c61", evm.NewEVMArchivalCheckConfig(
 		// https://hekla.taikoscan.io/address/0x1670090000000000000000000000000000010001
 		"0x1670090000000000000000000000000000010001",
 		// Contract start block
 		420_139,
 	)),
-
-	// XRPL EVM Testnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_testnet", "0x161c28", evm.NewEVMArchivalCheckConfig(
-		// https://explorer.testnet.xrplevm.org/address/0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc
-		"0xc29e2583eD5C77df8792067989Baf9E4CCD4D7fc",
-		// Contract start block
-		368_266,
-	)),
-
 	// zkLink
-	evm.NewEVMServiceQoSConfig("zklink_nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("zklink-nova", "0xc5cc4", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zklink.io/address/0xa3cb8648d12bD36e713af27D92968B370D7A9546
 		"0xa3cb8648d12bD36e713af27D92968B370D7A9546",
 		// Contract start block
@@ -343,7 +336,7 @@ var shannonServices = []ServiceQoSConfig{
 	)),
 
 	// zkSync
-	evm.NewEVMServiceQoSConfig("zksync_era", "0x144", evm.NewEVMArchivalCheckConfig(
+	evm.NewEVMServiceQoSConfig("zksync-era", "0x144", evm.NewEVMArchivalCheckConfig(
 		// https://explorer.zksync.io/address/0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C
 		"0x03AC0b1b952C643d66A4Dc1fBc75118109cC074C",
 		// Contract start block
@@ -372,9 +365,6 @@ var shannonServices = []ServiceQoSConfig{
 	// Moonriver
 	evm.NewEVMServiceQoSConfig("moonriver", "0x505", nil),
 
-	// Near
-	evm.NewEVMServiceQoSConfig("near", "0x18d", nil),
-
 	// opBNB
 	evm.NewEVMServiceQoSConfig("opbnb", "0xcc", nil),
 
@@ -393,31 +383,78 @@ var shannonServices = []ServiceQoSConfig{
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
 
-	// *** CometBFT Services ***
+	// *** Near EVM Services ***
+
+	// TODO_TECHDEBT: Add support for Near QoS
+	// Near
+	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
+
+	// *** Cosmos SDK Services ***
 
 	// TODO_MVP(@commoddity): Ensure that QoS observations are being applied correctly and that
-	// the correct chain ID is being used for each service in the CometBFT config.
-
-	// Celestia Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da", "celestia-archival"),
-
-	// Celestia Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons", "celestia-consensus-archival"),
-
-	// Celestia Testnet DA Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_da_test", "celestia-testnet-da-archival"),
-
-	// Celestia Testnet Consensus Archival
-	cometbft.NewCometBFTServiceQoSConfig("tia_cons_test", "celestia-testnet-consensus-archival"),
+	// the correct chain ID is being used for each service in the CosmosSDK config.
 
 	// Osmosis
-	cometbft.NewCometBFTServiceQoSConfig("osmosis", "osmosis"),
+	cosmos.NewCosmosSDKServiceQoSConfig("osmosis", "osmosis", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Mainnet and Beta Testnet
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket", "pocket", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Mainnet
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Pocket Beta Testnet
-	cometbft.NewCometBFTServiceQoSConfig("pocket-beta-rpc", "pocket-beta"),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
 
 	// Cosmos Hub
-	cometbft.NewCometBFTServiceQoSConfig("cometbft", "cosmoshub-4"),
+	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// XRPL EVM
+	// Reference: https://docs.xrplevm.org/pages/developers/developing-smart-contracts/deploy-the-smart-contract#1.-set-up-your-wallet
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm", "xrplevm_1440000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
+	}),
+
+	// XRPL EVM Testnet
+	cosmos.NewCosmosSDKServiceQoSConfig("xrplevm-testnet", "xrplevm_1449000-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_JSON_RPC:  {}, // XRPLEVM supports the EVM API over JSON-RPC.
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_WEBSOCKET: {}, // XRPLEVM supports the EVM API over JSON-RPC WebSockets.
+	}),
 
 	// *** Solana Services ***
 

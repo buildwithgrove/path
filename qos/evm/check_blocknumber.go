@@ -13,8 +13,9 @@ const idBlockNumberCheck = 1002
 const methodBlockNumber = jsonrpc.Method("eth_blockNumber")
 
 var (
-	errNoBlockNumberObs      = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
-	errInvalidBlockNumberObs = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errNoBlockNumberObs                   = fmt.Errorf("endpoint has not had an observation of its response to a %q request", methodBlockNumber)
+	errInvalidBlockNumberObs              = fmt.Errorf("endpoint returned an invalid response to a %q request", methodBlockNumber)
+	errOutsideSyncAllowanceBlockNumberObs = fmt.Errorf("endpoint's block height is outside the sync allowance in response to a %q request", methodBlockNumber)
 )
 
 // endpointCheckBlockNumber is a check that ensures the endpoint's block height within the sync allowance.

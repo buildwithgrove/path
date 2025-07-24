@@ -35,14 +35,14 @@ type HTTPRequestParser interface {
 // service IDs to the embedded service QoS implementations.
 // e.g. the following YAML snippet:
 //
-//	ethereum: evm
-//	polygon: evm
+//	eth: evm
+//	poly: evm
 //	solana:  solana
 //
 // could be translated into:
 //
 //	map[protocol.ServiceID]QoSService{
-//	   "ethereum": qos.Evm{},
-//	   "polygon":  qos.Evm{},
+//	   "eth": qos.Evm{},
+//	   "poly":  qos.Evm{},
 //	   "solana":   qos.Solana{},
 //	}

@@ -30,7 +30,7 @@ A full PATH deployment is packaged as a single Helm chart, with 3 main component
 | **GUARD** (Gateway Utilities for Authentication, Routing & Defense)   | The authentication, routing and security layer built using Envoy Gateway  | [buildwithgrove/helm-charts/charts/guard](https://github.com/buildwithgrove/helm-charts/charts/guard) |
 | **WATCH** (Workload Analytics and Telemetry for Comprehensive Health) | The observability layer including Prometheus, Grafana, and Alertmanager   | [buildwithgrove/helm-charts/charts/watch](https://github.com/buildwithgrove/helm-charts/charts/watch) |
 
-These three components work together to provide a complete gateway solution for accessing decentralized services through protocols like Shannon.
+These three components work together to provide a complete gateway solution for accessing decentralized services through protocols like Pocket Network.
 
 ## Resource Requirements
 

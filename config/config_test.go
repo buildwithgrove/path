@@ -26,14 +26,13 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 			want: GatewayConfig{
 				ShannonConfig: &shannon.ShannonGatewayConfig{
 					FullNodeConfig: shannonprotocol.FullNodeConfig{
-						RpcURL: "https://shannon-testnet-grove-rpc.beta.poktroll.com",
+						RpcURL: "https://shannon-grove-rpc.mainnet.poktroll.com",
 						GRPCConfig: shannonprotocol.GRPCConfig{
-							HostPort: "shannon-testnet-grove-grpc.beta.poktroll.com:443",
+							HostPort: "shannon-grove-grpc.mainnet.poktroll.com:443",
 						},
 						LazyMode: false,
 						CacheConfig: shannonprotocol.CacheConfig{
-							AppTTL:     12 * time.Minute,
-							SessionTTL: 4 * time.Minute,
+							SessionTTL: 30 * time.Second,
 						},
 					},
 					GatewayConfig: shannonprotocol.GatewayConfig{
@@ -46,11 +45,11 @@ func Test_LoadGatewayConfigFromYAML(t *testing.T) {
 					},
 				},
 				Router: RouterConfig{
-					Port:               defaultPort,
-					MaxRequestBodySize: defaultMaxRequestBodySize,
-					ReadTimeout:        defaultHTTPServerReadTimeout,
-					WriteTimeout:       defaultHTTPServerWriteTimeout,
-					IdleTimeout:        defaultHTTPServerIdleTimeout,
+					Port:                  defaultPort,
+					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
+					ReadTimeout:           defaultHTTPServerReadTimeout,
+					WriteTimeout:          defaultHTTPServerWriteTimeout,
+					IdleTimeout:           defaultHTTPServerIdleTimeout,
 				},
 				Logger: LoggerConfig{
 					Level: defaultLogLevel,
@@ -132,11 +131,11 @@ logger_config:
 					},
 				},
 				Router: RouterConfig{
-					Port:               defaultPort,
-					MaxRequestBodySize: defaultMaxRequestBodySize,
-					ReadTimeout:        defaultHTTPServerReadTimeout,
-					WriteTimeout:       defaultHTTPServerWriteTimeout,
-					IdleTimeout:        defaultHTTPServerIdleTimeout,
+					Port:                  defaultPort,
+					MaxRequestHeaderBytes: defaultMaxRequestHeaderBytes,
+					ReadTimeout:           defaultHTTPServerReadTimeout,
+					WriteTimeout:          defaultHTTPServerWriteTimeout,
+					IdleTimeout:           defaultHTTPServerIdleTimeout,
 				},
 				Logger: LoggerConfig{
 					Level: "debug",

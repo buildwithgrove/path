@@ -3,15 +3,10 @@ package websockets
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
-
-	"github.com/buildwithgrove/path/request"
 )
 
 const (
@@ -26,7 +21,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-// messageSource is used to identify the source of a message in a bidrectional websocket connection.
+// messageSource is used to identify the source of a message in a bidirectional websocket connection.
 // Possible values are `client` and `endpoint`.
 //
 // Full data flow: Client <------> PATH <------> WebSocket Endpoint
@@ -52,45 +47,19 @@ type message struct {
 	messageType int
 }
 
-// connection represents a websocket connection between PATH and:
+// websocketConnection represents a websocket connection between PATH and:
 // - A client
 // - An endpoint
-type connection struct {
+type websocketConnection struct {
+	*websocket.Conn
+
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 
 	logger polylog.Logger
 
-	*websocket.Conn
-
 	source  messageSource
 	msgChan chan<- message
-}
-
-// connectEndpoint makes a websocket connection to the websocket Endpoint.
-func connectEndpoint(selectedEndpoint SelectedEndpoint) (*websocket.Conn, error) {
-	u, err := url.Parse(selectedEndpoint.PublicURL())
-	if err != nil {
-		return nil, err
-	}
-
-	headers := getBridgeRequestHeaders(selectedEndpoint.Session())
-
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
-}
-
-// getBridgeRequestHeaders returns the headers that should be sent to the RelayMiner
-// when establishing a new websocket connection to the Endpoint.
-func getBridgeRequestHeaders(session *sessiontypes.Session) http.Header {
-	headers := http.Header{}
-	headers.Add(request.HTTPHeaderTargetServiceID, session.Header.ServiceId)
-	headers.Add(request.HTTPHeaderAppAddress, session.Header.ApplicationAddress)
-	return headers
 }
 
 // connectClient initiates a websocket connection to the client.
@@ -101,8 +70,8 @@ func newConnection(
 	conn *websocket.Conn,
 	source messageSource,
 	msgChan chan message,
-) *connection {
-	c := &connection{
+) *websocketConnection {
+	c := &websocketConnection{
 		ctx:       ctx,
 		cancelCtx: cancelCtx,
 
@@ -121,7 +90,7 @@ func newConnection(
 }
 
 // connLoop reads messages from the websocket connection and sends them to the bridge's msgChan
-func (c *connection) connLoop() {
+func (c *websocketConnection) connLoop() {
 	for {
 		messageType, msg, err := c.ReadMessage()
 		if err != nil {
@@ -143,8 +112,8 @@ func (c *connection) connLoop() {
 // - Unexpected disconnections (e.g. when the connection is lost due to network issues)
 //
 // This function will cancel the context to signal the bridge to handle shutdown.
-func (c *connection) handleDisconnect(err error) {
-	c.logger.Info().Err(err).Msgf("handling error in websocket connection")
+func (c *websocketConnection) handleDisconnect(err error) {
+	c.logger.Warn().Err(err).Msgf("🔌 Handling websocket disconnection")
 	c.cancelCtx() // Cancel the context to signal the bridge to handle shutdown
 }
 
@@ -153,7 +122,7 @@ func (c *connection) handleDisconnect(err error) {
 // to the connection and waiting for a pong response. If a pong response is not received,
 // the connection is considered dead and the stopChan is closed.
 // See: https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
-func (c *connection) pingLoop() {
+func (c *websocketConnection) pingLoop() {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 

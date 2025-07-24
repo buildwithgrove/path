@@ -45,13 +45,6 @@ type (
 		CacheConfig CacheConfig `yaml:"cache_config"`
 	}
 
-	GatewayConfig struct {
-		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
-		GatewayAddress          string               `yaml:"gateway_address"`
-		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
-		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
-	}
-
 	// TODO_TECHDEBT(@adshmh): Move this and related helpers into a new `grpc` package.
 	GRPCConfig struct {
 		HostPort          string        `yaml:"host_port"`
@@ -64,8 +57,14 @@ type (
 	}
 
 	CacheConfig struct {
-		AppTTL     time.Duration `yaml:"app_ttl"`
 		SessionTTL time.Duration `yaml:"session_ttl"`
+	}
+
+	GatewayConfig struct {
+		GatewayMode             protocol.GatewayMode `yaml:"gateway_mode"`
+		GatewayAddress          string               `yaml:"gateway_address"`
+		GatewayPrivateKeyHex    string               `yaml:"gateway_private_key_hex"`
+		OwnedAppsPrivateKeysHex []string             `yaml:"owned_apps_private_keys_hex"`
 	}
 )
 
@@ -114,12 +113,13 @@ func (c FullNodeConfig) Validate() error {
 // The config package is not a good fit for this, because it is designed to build the configuration structs for other packages,
 // and so it has dependencies on all other packages, including `relayer/shannon`. Therefore, no packages except `cmd` can have a dependency
 // on the `config` package.
+// TODO_TECHDEBT: Make all of these configurable
 const (
 	defaultBackoffBaseDelay  = 1 * time.Second
-	defaultBackoffMaxDelay   = 120 * time.Second
-	defaultMinConnectTimeout = 20 * time.Second
-	defaultKeepAliveTime     = 20 * time.Second
-	defaultKeepAliveTimeout  = 20 * time.Second
+	defaultBackoffMaxDelay   = 60 * time.Second
+	defaultMinConnectTimeout = 10 * time.Second
+	defaultKeepAliveTime     = 30 * time.Second
+	defaultKeepAliveTimeout  = 30 * time.Second
 )
 
 func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
@@ -141,27 +141,26 @@ func (c *GRPCConfig) hydrateDefaults() GRPCConfig {
 	return *c
 }
 
-const (
-	// App do not expire, so we can cache them for a long time.
-	defaultAppCacheTTL = 12 * time.Minute
-	// Session TTL should match the protocol's session length.
-	defaultSessionCacheTTL = 4 * time.Minute
-)
+// Session TTL should match the protocol's session length.
+// TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+// The proposed change is to align session refreshes with actual session expiry time,
+// using the session expiry block and the Shannon SDK's block client.
+// When this is done, session cache TTL can be removed altogether.
+const defaultSessionCacheTTL = 20 * time.Second
 
 func (c *CacheConfig) validate(lazyMode bool) error {
-	if lazyMode && (c.AppTTL != 0 || c.SessionTTL != 0) {
+	// Cannot set both lazy mode and cache configuration.
+	if lazyMode && c.SessionTTL != 0 {
 		return ErrShannonCacheConfigSetForLazyMode
 	}
 	return nil
 }
 
-func (c *CacheConfig) hydrateDefaults() {
-	if c.AppTTL == 0 {
-		c.AppTTL = defaultAppCacheTTL
-	}
+func (c *CacheConfig) hydrateDefaults() CacheConfig {
 	if c.SessionTTL == 0 {
 		c.SessionTTL = defaultSessionCacheTTL
 	}
+	return *c
 }
 
 // isValidURL returns true if the supplied URL string can be parsed into a valid URL accepted by the Shannon SDK.
@@ -191,4 +190,10 @@ func isValidHostPort(hostPort string) bool {
 	}
 
 	return true
+}
+
+// hydrateDefaults applies default values to FullNodeConfig
+func (fnc *FullNodeConfig) hydrateDefaults() {
+	fnc.GRPCConfig = fnc.GRPCConfig.hydrateDefaults()
+	fnc.CacheConfig = fnc.CacheConfig.hydrateDefaults()
 }

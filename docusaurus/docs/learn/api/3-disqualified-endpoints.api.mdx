@@ -24,18 +24,13 @@ import Heading from "@theme/Heading";
   as={"h1"}
   className={"openapi__heading"}
   children={"Disqualified Endpoints"}
->
-</Heading>
+/>
 
 <MethodEndpoint
   method={"get"}
   path={"/disqualified_endpoints"}
   context={"endpoint"}
->
-  
-</MethodEndpoint>
-
-
+/>
 
 Returns a JSON list of disqualified endpoints for a given service ID.
 
@@ -44,29 +39,179 @@ Returns a JSON list of disqualified endpoints for a given service ID.
   as={"h2"}
   className={"openapi-tabs__heading"}
   children={"Request"}
->
-</Heading>
+/>
 
 <ParamsDetails
-  parameters={[{"name":"Target-Service-Id","in":"header","required":false,"description":"The service ID to route the request to (required for local PATH instance)\n\n**Required when using:**\n- `http://localhost:3069` (local PATH instance)\n\n**Not required when using:**\n- `https://{serviceId}.rpc.grove.city` (service-specific subdomain URLs)\n\nWhen using subdomain-based URLs, the service ID is automatically determined from the subdomain.\n","schema":{"type":"string"}}]}
->
-  
-</ParamsDetails>
+  parameters={[
+    {
+      name: "Target-Service-Id",
+      in: "header",
+      required: false,
+      description:
+        "The service ID to route the request to (required for local PATH instance)\n\n**Required when using:**\n- `http://localhost:3069` (local PATH instance)\n\n**Not required when using:**\n- `https://{serviceId}.rpc.grove.city` (service-specific subdomain URLs)\n\nWhen using subdomain-based URLs, the service ID is automatically determined from the subdomain.\n",
+      schema: { type: "string" },
+    },
+  ]}
+/>
 
-<RequestSchema
-  title={"Body"}
-  body={undefined}
->
-  
-</RequestSchema>
+<RequestSchema title={"Body"} body={undefined} />
 
 <StatusCodes
   id={undefined}
   label={undefined}
-  responses={{"200":{"description":"Successfully retrieved disqualified endpoints","content":{"application/json":{"schema":{"type":"object","properties":{"protocol_level_data_response":{"type":"object","properties":{"permanently_sanctioned_endpoints":{"type":"object"},"session_sanctioned_endpoints":{"type":"object","additionalProperties":{"type":"object","properties":{"endpoint_addr":{"type":"string"},"reason":{"type":"string"},"service_id":{"type":"string"},"sanction_type":{"type":"string"},"error_type":{"type":"string"},"session_height":{"type":"integer"},"created_at":{"type":"string","format":"date-time"}}}},"permanent_sanctioned_endpoints_count":{"type":"integer"},"session_sanctioned_endpoints_count":{"type":"integer"},"total_sanctioned_endpoints_count":{"type":"integer"}}},"qos_level_data_response":{"type":"object","properties":{"disqualified_endpoints":{"type":"object"},"empty_response_count":{"type":"integer"},"chain_id_check_errors_count":{"type":"integer"},"archival_check_errors_count":{"type":"integer"},"block_number_check_errors_count":{"type":"integer"}}},"total_service_endpoints_count":{"type":"integer"},"valid_service_endpoints_count":{"type":"integer"},"invalid_service_endpoints_count":{"type":"integer"}}},"examples":{"successResponse":{"summary":"Successful disqualified endpoints response","value":{"protocol_level_data_response":{"permanently_sanctioned_endpoints":{},"session_sanctioned_endpoints":{},"permanent_sanctioned_endpoints_count":0,"session_sanctioned_endpoints_count":0,"total_sanctioned_endpoints_count":0},"qos_level_data_response":{"disqualified_endpoints":{},"empty_response_count":0,"chain_id_check_errors_count":0,"archival_check_errors_count":0,"block_number_check_errors_count":0},"total_service_endpoints_count":5,"valid_service_endpoints_count":5,"invalid_service_endpoints_count":0}},"disqualifiedEndpointsExample":{"summary":"Response with disqualified endpoints","value":{"protocol_level_disqualified_endpoints":{"permanently_sanctioned_endpoints":{},"session_sanctioned_endpoints":{"pokt13771d0a403a599ee4a3812321e2fabc509e7f3-https://us-west-test-endpoint-1.demo":{"supplier_address":"pokt13771d0a403a599ee4a3812321e2fabc509e7f3","endpoint_url":"https://us-west-test-endpoint-1.demo","app_addr":"pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412","session_id":"5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8","service_id":"base","reason":"relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post \"https://us-west-test-endpoint-1.demo\": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host","sanction_type":"SHANNON_SANCTION_SESSION","error_type":"SHANNON_ENDPOINT_ERROR_TIMEOUT","session_height":23951,"created_at":"2025-05-31T14:57:41.484372+01:00"}},"permanent_sanctioned_endpoints_count":0,"session_sanctioned_endpoints_count":1,"total_sanctioned_endpoints_count":1},"qos_level_disqualified_endpoints":{"disqualified_endpoints":{"pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo":{"endpoint_addr":"pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo","reason":"endpoint has not returned an archival balance response to a \"eth_getBalance\" request","service_id":"base"}},"empty_response_count":0,"chain_id_check_errors_count":0,"archival_check_errors_count":1,"block_number_check_errors_count":0},"total_service_endpoints_count":11,"qualified_service_endpoints_count":9,"disqualified_service_endpoints_count":2}}}}}},"400":{"description":"Bad request - Target-Service-Id header is required or invalid","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"message":{"type":"string"}}},"examples":{"missingHeader":{"summary":"Missing Target-Service-Id header","value":{"error":"400 Bad Request","message":"Target-Service-Id header is required"}},"invalidServiceId":{"summary":"Invalid service ID","value":{"error":"400 Bad Request","message":"invalid service ID: no apps matched the request for service: earth"}}}}}}}}
->
-  
-</StatusCodes>
-
-
-      
+  responses={{
+    "200": {
+      description: "Successfully retrieved disqualified endpoints",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              protocol_level_data_response: {
+                type: "object",
+                properties: {
+                  permanently_sanctioned_endpoints: { type: "object" },
+                  session_sanctioned_endpoints: {
+                    type: "object",
+                    additionalProperties: {
+                      type: "object",
+                      properties: {
+                        endpoint_addr: { type: "string" },
+                        reason: { type: "string" },
+                        service_id: { type: "string" },
+                        sanction_type: { type: "string" },
+                        error_type: { type: "string" },
+                        session_height: { type: "integer" },
+                        created_at: { type: "string", format: "date-time" },
+                      },
+                    },
+                  },
+                  permanent_sanctioned_endpoints_count: { type: "integer" },
+                  session_sanctioned_endpoints_count: { type: "integer" },
+                  total_sanctioned_endpoints_count: { type: "integer" },
+                },
+              },
+              qos_level_data_response: {
+                type: "object",
+                properties: {
+                  disqualified_endpoints: { type: "object" },
+                  empty_response_count: { type: "integer" },
+                  chain_id_check_errors_count: { type: "integer" },
+                  archival_check_errors_count: { type: "integer" },
+                  block_number_check_errors_count: { type: "integer" },
+                },
+              },
+              total_service_endpoints_count: { type: "integer" },
+              valid_service_endpoints_count: { type: "integer" },
+              invalid_service_endpoints_count: { type: "integer" },
+            },
+          },
+          examples: {
+            successResponse: {
+              summary: "Successful disqualified endpoints response",
+              value: {
+                protocol_level_data_response: {
+                  permanently_sanctioned_endpoints: {},
+                  session_sanctioned_endpoints: {},
+                  permanent_sanctioned_endpoints_count: 0,
+                  session_sanctioned_endpoints_count: 0,
+                  total_sanctioned_endpoints_count: 0,
+                },
+                qos_level_data_response: {
+                  disqualified_endpoints: {},
+                  empty_response_count: 0,
+                  chain_id_check_errors_count: 0,
+                  archival_check_errors_count: 0,
+                  block_number_check_errors_count: 0,
+                },
+                total_service_endpoints_count: 5,
+                valid_service_endpoints_count: 5,
+                invalid_service_endpoints_count: 0,
+              },
+            },
+            disqualifiedEndpointsExample: {
+              summary: "Response with disqualified endpoints",
+              value: {
+                protocol_level_disqualified_endpoints: {
+                  permanently_sanctioned_endpoints: {},
+                  session_sanctioned_endpoints: {
+                    "pokt13771d0a403a599ee4a3812321e2fabc509e7f3-https://us-west-test-endpoint-1.demo":
+                      {
+                        supplier_address:
+                          "pokt13771d0a403a599ee4a3812321e2fabc509e7f3",
+                        endpoint_url: "https://us-west-test-endpoint-1.demo",
+                        app_addr: "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412",
+                        session_id:
+                          "5a496c9faaabbaa1d184cf89ddfeb603ff515b990c6f714701b71572ab750ae8",
+                        service_id: "base",
+                        reason:
+                          'relay error: relay: error sending request to endpoint https://us-west-test-endpoint-1.demo: Post "https://us-west-test-endpoint-1.demo": dial tcp: lookup us-west-demo1-base-json.demo.do: no such host',
+                        sanction_type: "SHANNON_SANCTION_SESSION",
+                        error_type: "SHANNON_ENDPOINT_ERROR_TIMEOUT",
+                        session_height: 23951,
+                        created_at: "2025-05-31T14:57:41.484372+01:00",
+                      },
+                  },
+                  permanent_sanctioned_endpoints_count: 0,
+                  session_sanctioned_endpoints_count: 1,
+                  total_sanctioned_endpoints_count: 1,
+                },
+                qos_level_disqualified_endpoints: {
+                  disqualified_endpoints: {
+                    "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo":
+                      {
+                        endpoint_addr:
+                          "pokt1ccae0ce5ef5b1bcd74f3794f5b717b98a86412-https://us-west-test-endpoint-1.demo",
+                        reason:
+                          'endpoint has not returned an archival balance response to a "eth_getBalance" request',
+                        service_id: "base",
+                      },
+                  },
+                  empty_response_count: 0,
+                  chain_id_check_errors_count: 0,
+                  archival_check_errors_count: 1,
+                  block_number_check_errors_count: 0,
+                },
+                total_service_endpoints_count: 11,
+                qualified_service_endpoints_count: 9,
+                disqualified_service_endpoints_count: 2,
+              },
+            },
+          },
+        },
+      },
+    },
+    "400": {
+      description:
+        "Bad request - Target-Service-Id header is required or invalid",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
+          examples: {
+            missingHeader: {
+              summary: "Missing Target-Service-Id header",
+              value: {
+                error: "400 Bad Request",
+                message: "Target-Service-Id header is required",
+              },
+            },
+            invalidServiceId: {
+              summary: "Invalid service ID",
+              value: {
+                error: "400 Bad Request",
+                message:
+                  "invalid service ID: no apps matched the request for service: earth",
+              },
+            },
+          },
+        },
+      },
+    },
+  }}
+/>

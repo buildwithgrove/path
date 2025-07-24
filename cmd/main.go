@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 	"github.com/pokt-network/poktroll/pkg/polylog/polyzero"
@@ -15,10 +18,18 @@ import (
 	configpkg "github.com/buildwithgrove/path/config"
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
+	"github.com/buildwithgrove/path/metrics"
 	"github.com/buildwithgrove/path/metrics/devtools"
 	protocolPkg "github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/request"
 	"github.com/buildwithgrove/path/router"
+)
+
+// Version information injected at build time via ldflags
+var (
+	Version   string
+	Commit    string
+	BuildDate string
 )
 
 // defaultConfigPath will be appended to the location of
@@ -28,24 +39,29 @@ const defaultConfigPath = "config/.config.yaml"
 func main() {
 	log.Printf("🌿 PATH gateway starting...")
 
+	// Initialize version metrics for Prometheus monitoring
+	metrics.SetVersionInfo(Version, Commit, BuildDate)
+
+	// Get the config path
 	configPath, err := getConfigPath(defaultConfigPath)
 	if err != nil {
 		log.Fatalf("failed to get config path: %v", err)
 	}
 
+	// Load the config
 	config, err := configpkg.LoadGatewayConfigFromYAML(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	// Initialize the logger
 	log.Printf("Initializing PATH logger with level: %s", config.Logger.Level)
-
 	loggerOpts := []polylog.LoggerOption{
 		polyzero.WithLevel(polyzero.ParseLevel(config.Logger.Level)),
 	}
-
 	logger := polyzero.NewLogger(loggerOpts...)
 
+	// Log the config path
 	logger.Info().Msgf("Starting PATH using config file: %s", configPath)
 
 	protocol, err := getShannonProtocol(logger, config.GetGatewayConfig())
@@ -53,20 +69,22 @@ func main() {
 		log.Fatalf("failed to create protocol: %v", err)
 	}
 
+	// Prepare the QoS instances
 	qosInstances, err := getServiceQoSInstances(logger, config, protocol)
 	if err != nil {
 		log.Fatalf("failed to setup QoS instances: %v", err)
 	}
 
-	// setup metrics reporter, to be used by Gateway and Hydrator.
+	// Setup metrics reporter, to be used by Gateway and Hydrator
 	metricsReporter, err := setupMetricsServer(logger, prometheusMetricsServerAddr)
 	if err != nil {
 		log.Fatalf("failed to start metrics server: %v", err)
 	}
 
+	// Setup the pprof server
 	setupPprofServer(context.TODO(), logger, pprofAddr)
 
-	// setup data reporter, to be used by Gateway and Hydrator.
+	// Setup the data reporter
 	dataReporter, err := setupHTTPDataReporter(logger, config.DataReporterConfig)
 	if err != nil {
 		log.Fatalf("failed to start the configured HTTP data reporter: %v", err)
@@ -87,10 +105,9 @@ func main() {
 		log.Fatalf("failed to setup endpoint hydrator: %v", err)
 	}
 
-	// setup the request parser which maps requests to the correct QoS instance.
+	// Setup the request parser which maps requests to the correct QoS instance.
 	requestParser := &request.Parser{
-		Logger: logger,
-
+		Logger:      logger,
 		QoSServices: qosInstances,
 	}
 
@@ -140,22 +157,39 @@ func main() {
 		config.GetRouterConfig(),
 	)
 
-	// -------------------- Start PATH API Router -------------------- */
+	// -------------------- Log PATH Startup Info --------------------
 
-	// Log out some basic info about the running PATH instance.
+	// Log out some basic info about the running PATH instance
 	configuredServiceIDs := make([]string, 0, len(protocol.ConfiguredServiceIDs()))
 	for serviceID := range protocol.ConfiguredServiceIDs() {
 		configuredServiceIDs = append(configuredServiceIDs, string(serviceID))
 	}
-	// log.Printf is used here to ensure this info is printed to the console regardless of the log level.
-	log.Printf("🌿 PATH gateway started.\n  Port: %d\n  Protocol: %s\n  Configured Service IDs: %s",
+	logger.Info().Msgf("🌿 PATH gateway starting on port %d for Protocol: %s with Configured Service IDs: %s",
 		config.GetRouterConfig().Port, protocol.Name(), strings.Join(configuredServiceIDs, ", "))
 
-	// Start the API router.
+	// -------------------- Start PATH API Router --------------------
+
 	// This will block until the router is stopped.
-	if err := apiRouter.Start(); err != nil {
-		log.Fatalf("failed to start API router: %v", err)
+	server, err := apiRouter.Start()
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to start PATH API router")
 	}
+
+	// -------------------- PATH Shutdown --------------------
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+
+	logger.Info().Msg("Shutting down PATH...")
+
+	// TODO_IMPROVE: Make shutdown timeout configurable and add graceful shutdown of dependencies
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error().Err(err).Msg("PATH forced to shutdown")
+	}
+
+	logger.Info().Msg("PATH exited properly")
 }
 
 /* -------------------- Gateway Init Helpers -------------------- */
@@ -183,7 +217,7 @@ func getConfigPath(defaultConfigPath string) (string, error) {
 	// Get executable directory for default path
 	exeDir, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("failed to get executable path: %v", err)
+		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
 
 	configPath = filepath.Join(filepath.Dir(exeDir), defaultConfigPath)

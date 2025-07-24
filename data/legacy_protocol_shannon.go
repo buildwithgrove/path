@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
+	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
 )
 
@@ -82,8 +83,7 @@ func setLegacyFieldsFromShannonProtocolObservations(
 	legacyRecord.NodeAddress = endpointObservation.GetEndpointUrl()
 
 	// Extract the endpoint's domain from its URL.
-	endpointDomain, err := extractEffectiveTLDPlusOne(endpointObservation.EndpointUrl)
-	// Error extracting the endpoint domain: log the error.
+	endpointDomain, err := shannonmetrics.ExtractDomainOrHost(endpointObservation.EndpointUrl)
 	if err != nil {
 		logger.With("endpoint_url", endpointObservation.EndpointUrl).Warn().Err(err).Msg("Could not extract domain from Shannon endpoint URL")
 		return legacyRecord

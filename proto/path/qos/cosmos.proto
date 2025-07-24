@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package path.qos;
+
+option go_package = "github.com/buildwithgrove/path/observation/qos";
+
+import "path/qos/cosmos_request.proto";
+import "path/qos/cosmos_response.proto";
+import "path/qos/request_origin.proto";
+import "path/qos/request_error.proto";
+
+// CosmosRequestObservations captures all observations made while serving a single Cosmos blockchain service request.
+message CosmosRequestObservations {
+    // chain_id is the blockchain identifier for the QoS implementation.
+    string chain_id = 1;
+
+    // service_id is the identifier for the QoS implementation.
+    string service_id = 2;
+
+    // The origin of the request
+    RequestOrigin request_origin = 3;
+
+    // Profile of the request: backend service selection and format determination
+    CosmosRequestProfile request_profile = 4;
+
+    // Request-level error, i.e. failed without any endpoint responses.
+    // Examples: 
+    //   - Failed to parse request
+    //   - No endpoint response received, i.e. any protocol-level error.
+    optional RequestError request_level_error = 5;
+
+    // Cosmos-specific observations from endpoint(s) that responded to the service request.
+    repeated CosmosEndpointObservation endpoint_observations = 6;
+}
+
+// CosmosEndpointObservation stores a single observation from an endpoint
+message CosmosEndpointObservation {
+    // Address of the endpoint handling the request
+    string endpoint_addr = 1;
+
+    // Result of validating the endpoint response.
+    // Examples:
+    //   - invalid JSONRPC response
+    //   - unexpected format of response to REST request.
+    CosmosEndpointResponseValidationResult endpoint_response_validation_result = 2;
+}

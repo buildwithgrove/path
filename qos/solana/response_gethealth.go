@@ -37,14 +37,14 @@ func responseUnmarshallerGetHealth(logger polylog.Logger, jsonrpcReq jsonrpc.Req
 	resultBz, err := jsonrpcResp.GetResultAsBytes()
 	// endpoint failed to provide a valid response to `getHealth` request.
 	if err != nil {
-		logger.Info().Err(err).Msg("JSONRPC response result field is not a byte slice: endpoint will fail QoS check.")
+		logger.Error().Err(err).Msg("❌ Solana endpoint will fail QoS check because JSONRPC response result field is not a byte slice.")
 		return getHealthResponse
 	}
 
 	var getHealthResult string
 	err = json.Unmarshal(resultBz, &getHealthResult)
 	if err != nil {
-		logger.Info().Err(err).Msg("JSONRPC response result could not be parsed as a string: endpoint will fail QoS check.")
+		logger.Error().Err(err).Msg("❌ Solana endpoint will fail QoS check because JSONRPC response result could not be parsed as a string.")
 	}
 
 	// Set the string response to `getHealth` request.

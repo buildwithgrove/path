@@ -132,8 +132,8 @@ properties:
       port:
         description: "Port number for the router."
         type: integer
-      max_request_body_size:
-        description: "Maximum size of the request body."
+      max_request_header_bytes:
+        description: "Maximum size of the request header."
         type: integer
       read_timeout:
         description: "Read timeout duration for the router."

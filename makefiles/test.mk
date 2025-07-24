@@ -7,11 +7,15 @@
 
 .PHONY: test_all ## Run all unit tests and E2E test a subset of key services.
 test_all: test_unit
-	@$(MAKE) e2e_test eth,poly,xrpl_evm_test,oasys
+	@$(MAKE) e2e_test eth,poly,xrplevm-testnet,oasys
 
 .PHONY: test_unit
 test_unit: ## Run all unit tests
 	go test ./... -short -count=1
+
+.PHONY: go_lint
+go_lint: ## Run all go linters
+	golangci-lint run --timeout 5m --build-tags test
 
 #################
 ### E2E Tests ###
@@ -22,10 +26,10 @@ e2e_test_all: shannon_e2e_config_warning ## Run an E2E Shannon relay test for al
 	(cd e2e && TEST_MODE=e2e TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: e2e_test
-e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,anvil)
+e2e_test: shannon_e2e_config_warning ## Run an E2E Shannon relay test with specified service IDs (e.g. make shannon_test_e2e eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
-		echo "  👀 Example: make test_e2e_evm_shannon eth,anvil"; \
+		echo "  👀 Example: make test_e2e_evm_shannon eth,xrplevm"; \
 		echo "  💡 To run with default service IDs, use: make test_e2e_evm_shannon_defaults"; \
 		exit 1; \
 	fi
@@ -40,18 +44,14 @@ load_test_all: ## Run a Shannon load test for all service IDs
 	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 .PHONY: load_test
-load_test: ## Run a Shannon load test with specified service IDs (e.g. make load_test eth,anvil)
+load_test: ## Run a Shannon load test with specified service IDs (e.g. make load_test eth,xrplevm)
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
 		echo "❌ Error: Service IDs are required (comma-separated list)"; \
-		echo "  👀 Example: make load_test eth,anvil"; \
+		echo "  👀 Example: make load_test eth,xrplevm"; \
 		echo "  💡 To run with default service IDs, use: make load_test_defaults"; \
 		exit 1; \
 	fi
-	(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
-
-.PHONY: copy_e2e_load_test_config
-copy_e2e_load_test_config: ## Copy the e2e_load_test.config.tmpl.yaml to e2e_load_test.config.yaml and configure Portal credentials
-	@./e2e/scripts/copy_load_test_config.sh
+	@(cd e2e && TEST_MODE=load TEST_PROTOCOL=shannon TEST_SERVICE_IDS=$(filter-out $@,$(MAKECMDGOALS)) go test -v -tags=e2e -count=1 -run Test_PATH_E2E)
 
 # In order to allow passing the service IDs to the load test targets, this target is needed to avoid printing an error.
 %:

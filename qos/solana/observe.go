@@ -3,8 +3,6 @@
 package solana
 
 import (
-	"fmt"
-
 	qosobservations "github.com/buildwithgrove/path/observation/qos"
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -27,7 +25,7 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		"qos_instance", "solana",
 		"method", "UpdateEndpointsFromObservations",
 	)
-	logger.Info().Msg(fmt.Sprintf("About to update endpoints from %d observations.", len(endpointObservations)))
+	logger.Info().Msgf("About to update endpoints from %d observations.", len(endpointObservations))
 
 	updatedEndpoints := make(map[protocol.EndpointAddr]endpoint)
 	for _, observation := range endpointObservations {
@@ -46,10 +44,10 @@ func (es *EndpointStore) UpdateEndpointsFromObservations(
 		endpoint := es.endpoints[endpointAddr]
 
 		// Apply the observation to the endpoint.
-		isMutated := endpoint.ApplyObservation(observation)
+		isEndpointMutatedByObservation := endpoint.applyObservation(observation)
 		// If the observation did not mutate the endpoint, there is no need to update the stored endpoint entry.
-		if !isMutated {
-			logger.Info().Msg("endpoint was not mutated by observations. Skipping.")
+		if !isEndpointMutatedByObservation {
+			logger.Info().Msg("endpoint was not mutated by observations. Skipping update of internal endpoint store.")
 			continue
 		}
 

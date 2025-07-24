@@ -17,28 +17,28 @@ shannon_config:
   full_node_config:
     # If this config is used for Shannon E2E tests, do not change rpc_url
     # Otherwise, replace with the correct full node RPC url.
-    rpc_url: https://shannon-testnet-grove-rpc.beta.poktroll.com
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
     grpc_config:
       # If this config is used for Shannon E2E tests, do not change host_port
       # Otherwise, replace with the correct full node GRPC host:port.
-      host_port: shannon-testnet-grove-grpc.beta.poktroll.com:443
-
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
     # Setting this to true disables all caching of full node data.
     lazy_mode: false
     # If lazy_mode is true, the cache_config may not be set.
-    cache_config: 
-      # The TTL for the app cache.
-      app_ttl: 12m
+    cache_config:
       # The TTL for the session cache.
-      session_ttl: 4m
+      #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+      # The proposed change is to align session refreshes with actual session expiry time,
+      # using the session expiry block and the Shannon SDK's block client.
+      # When this is done, session cache TTL can be removed altogether.
+      session_ttl: 30s
 
   gateway_config:
     # If this config is used for Shannon E2E tests, do not change gateway_mode
     # Otherwise, replace with the correct gateway mode: centralized|delegated|permissionless
     gateway_mode: "centralized"
 
-    # If this config is used for Shannon E2E tests, do not change gateway_address.
-    # Otherwise, replace with the correct gateway address.
+    # README: gateway_address MUST BE replaced with the correct gateway address.
     gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
 
     # README: gateway_private_key_hex MUST BE replaced with the correct gateway private key secret

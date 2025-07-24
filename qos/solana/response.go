@@ -5,6 +5,8 @@ import (
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
 
+	"github.com/buildwithgrove/path/log"
+	"github.com/buildwithgrove/path/protocol"
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
@@ -37,10 +39,21 @@ func unmarshalResponse(
 	logger polylog.Logger,
 	jsonrpcReq jsonrpc.Request,
 	data []byte,
+	endpointAddr protocol.EndpointAddr,
 ) response {
 	// Unmarshal the raw response payload into a JSON-RPC response.
 	var jsonrpcResponse jsonrpc.Response
 	if err := json.Unmarshal(data, &jsonrpcResponse); err != nil {
+		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSONRC response.
+		// Return a generic response to the user.
+		payloadStr := string(data)
+		logger.With(
+			"request", jsonrpcReq,
+			"unmarshal_err", err,
+			"raw_payload", log.Preview(payloadStr),
+			"endpoint_addr", endpointAddr,
+		).Debug().Msg("Failed to unmarshal response payload as JSON-RPC")
+
 		// The response raw payload (e.g. as received from an endpoint) could not be unmarshalled as a JSON-RPC response.
 		// Return a generic response to the user.
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
@@ -48,6 +61,14 @@ func unmarshalResponse(
 
 	// Validate the JSON-RPC response.
 	if err := jsonrpcResponse.Validate(jsonrpcReq.ID); err != nil {
+		payloadStr := string(data)
+		logger.With(
+			"request", jsonrpcReq,
+			"validation_err", err,
+			"raw_payload", log.Preview(payloadStr),
+			"endpoint_addr", endpointAddr,
+		).Debug().Msg("JSON-RPC response validation failed")
+
 		return getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
 	}
 

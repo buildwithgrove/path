@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	// errCodeUnmarshaling is set as the JSONRPC response's error code if the endpoint returns a malformed response
-	errCodeUnmarshaling = -32600
+	// errCodeUnmarshaling is set as the JSONRPC response's error code if the endpoint returns a malformed response.
+	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling = -32000
 
 	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSONRPC response"
@@ -45,8 +46,9 @@ type responseGeneric struct {
 	validationError *qosobservations.EVMResponseValidationError
 }
 
-// GetObservation returns an observation that is NOT used in validating endpoints.
-// This allows sharing data with other entities, e.g. a data pipeline.
+// GetObservation returns an observation that is used in validating endpoints.
+// This generates observations for unrecognized responses that can trigger endpoint
+// disqualification when validation errors are present.
 // Implements the response interface.
 func (r responseGeneric) GetObservation() qosobservations.EVMEndpointObservation {
 	return qosobservations.EVMEndpointObservation{
@@ -89,23 +91,21 @@ func (r responseGeneric) getHTTPStatusCode() int {
 	return r.jsonRPCResponse.GetRecommendedHTTPStatusCode()
 }
 
-// responseUnmarshallerGeneric processes raw response data into a responseGeneric struct.
-// It extracts and stores any data needed for generating a response payload.
-func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Request, data []byte) (response, error) {
-	var response jsonrpc.Response
-	err := json.Unmarshal(data, &response)
-	if err != nil {
-		errResponse := getGenericJSONRPCErrResponse(logger, jsonrpcReq.ID, data, err)
-		validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
-		errResponse.validationError = &validationError
-		return errResponse, err
-	}
+// responseUnmarshallerGenericFromResponse processes an already unmarshaled JSON-RPC response into a responseGeneric struct.
+// This avoids double unmarshaling when the response has already been parsed.
+func responseUnmarshallerGenericFromResponse(logger polylog.Logger, jsonrpcReq jsonrpc.Request, jsonrpcResponse jsonrpc.Response) (response, error) {
+	httpStatus := jsonrpcResponse.GetRecommendedHTTPStatusCode()
+	logger.With(
+		"jsonrpc_response", jsonrpcResponse,
+		"jsonrpc_request", jsonrpcReq,
+		"http_status", httpStatus,
+	).Debug().Msg("Processing EVM generic response")
 
 	// Response successfully parsed into JSONRPC format.
 	return responseGeneric{
 		logger:          logger,
-		jsonRPCResponse: response,
-		validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC error response.
+		jsonRPCResponse: jsonrpcResponse,
+		validationError: nil, // Intentionally set to nil to indicate a valid JSONRPC response.
 	}, nil
 }
 
@@ -113,14 +113,17 @@ func responseUnmarshallerGeneric(logger polylog.Logger, jsonrpcReq jsonrpc.Reque
 // - JSON-RPC error with supplied ID
 // - Error details
 // - Invalid payload in the "data" field
+// Sets validation error to UNMARSHAL to trigger endpoint disqualification.
 func getGenericJSONRPCErrResponse(_ polylog.Logger, id jsonrpc.ID, malformedResponsePayload []byte, err error) responseGeneric {
 	errData := map[string]string{
 		errDataFieldRawBytes:        string(malformedResponsePayload),
 		errDataFieldUnmarshalingErr: err.Error(),
 	}
 
+	validationError := qosobservations.EVMResponseValidationError_EVM_RESPONSE_VALIDATION_ERROR_UNMARSHAL
 	return responseGeneric{
 		jsonRPCResponse: jsonrpc.GetErrorResponse(id, errCodeUnmarshaling, errMsgUnmarshaling, errData),
+		validationError: &validationError, // Set validation error to trigger endpoint disqualification
 	}
 }
 

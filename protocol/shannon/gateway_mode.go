@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
+	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
 
 	"github.com/buildwithgrove/path/protocol"
 )
@@ -23,27 +24,33 @@ func (p *Protocol) SupportedGatewayModes() []protocol.GatewayMode {
 	return supportedGatewayModes()
 }
 
-// getGatewayModePermittedApps returns the apps permitted under the supplied gateway mode.
-// The permitted apps are determined as follows:
-//   - Centralized mode: the gateway address and owned apps addresses are used to determine the permitted apps (specified in configs).
-//   - Delegated mode: the gateway address and app address in the HTTP headers are used to determine the permitted apps.
-func (p *Protocol) getGatewayModePermittedApps(
+// TODO_TECHDEBT(@commoddity): Most of the functionality in this file should be moved to the Shannon SDK.
+// Evaluate the exact implementation of this as defined in issue:
+// https://github.com/buildwithgrove/path/issues/291
+
+// getActiveGatewaySessions returns the active sessions under the supplied gateway mode.
+// The active sessions are retrieved as follows:
+//   - Centralized mode: gateway address and owned apps addresses (specified in configs) are used to retrieve active sessions.
+//   - Delegated mode: gateway address and app address (specified in the HTTP header) are used to retrieve active sessions.
+func (p *Protocol) getActiveGatewaySessions(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
 	httpReq *http.Request,
-) ([]*apptypes.Application, error) {
+) ([]sessiontypes.Session, error) {
 	p.logger.With(
-		"service_ID", serviceID,
+		"service_id", serviceID,
 		"gateway_mode", p.gatewayMode,
-	).Debug().Msg("fetching permitted apps under the current gateway mode.")
+	).Debug().Msg("fetching active sessions using the current gateway mode and applicable applications.")
 
 	switch p.gatewayMode {
 
+	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
-		return p.getCentralizedGatewayModeApps(ctx, serviceID)
+		return p.getCentralizedGatewayModeActiveSessions(ctx, serviceID)
 
+	// Delegated gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeDelegated:
-		return p.getDelegatedGatewayModeApps(ctx, httpReq)
+		return p.getDelegatedGatewayModeActiveSession(ctx, serviceID, httpReq)
 
 	// TODO_MVP(@adshmh): Uncomment the following code section once support for Permissionless Gateway mode is added to the shannon package.
 	//case protocol.GatewayModePermissionless:
@@ -59,18 +66,23 @@ func (p *Protocol) getGatewayModePermittedRelaySigner(
 	gatewayMode protocol.GatewayMode,
 ) (RelayRequestSigner, error) {
 	switch gatewayMode {
+
+	// Centralized gateway mode uses the gateway's private key to sign the relay requests.
 	case protocol.GatewayModeCentralized:
 		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
+			accountClient: *p.GetAccountClient(),
 			//  Centralized gateway mode uses the gateway's private key to sign the relay requests.
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
+
+	// Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 	case protocol.GatewayModeDelegated:
 		return &signer{
-			accountClient: *p.FullNode.GetAccountClient(),
+			accountClient: *p.GetAccountClient(),
 			//  Delegated gateway mode uses the gateway's private key to sign the relay requests (i.e. the same as the Centralized gateway mode)
 			privateKeyHex: p.gatewayPrivateKeyHex,
 		}, nil
+
 	default:
 		return nil, fmt.Errorf("unsupported gateway mode: %s", gatewayMode)
 	}

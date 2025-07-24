@@ -136,7 +136,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 	// This implies there is no need to specify a specific app.
 	// TODO_TECHDEBT(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 	// TODO_FUTURE(@adshmh): consider publishing observations if endpoint lookup fails.
-	availableEndpoints, _, err := eph.Protocol.AvailableEndpoints(context.TODO(), serviceID, nil)
+	availableEndpoints, _, err := eph.AvailableEndpoints(context.TODO(), serviceID, nil)
 	if err != nil || len(availableEndpoints) == 0 {
 		// No session found or no endpoints available for service: skip.
 		logger.Warn().Msg("no session found or no endpoints available for service when running hydrator checks.")
@@ -178,7 +178,7 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 					// which means there is no need for specifying a specific app.
 					// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
 					// TODO_FUTURE(@adshmh): consider publishing observations here.
-					hydratorRequestCtx, _, err := eph.Protocol.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
+					hydratorRequestCtx, _, err := eph.BuildRequestContextForEndpoint(context.TODO(), serviceID, endpointAddr, nil)
 					if err != nil {
 						logger.Error().Err(err).Msg("Failed to build a protocol request context for the endpoint")
 						continue
@@ -186,7 +186,8 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 
 					// Prepare a request context to submit a synthetic relay request to the endpoint on behalf of the gateway for QoS purposes.
 					gatewayRequestCtx := requestContext{
-						logger: endpointLogger,
+						logger:  endpointLogger,
+						context: context.TODO(),
 						// TODO_MVP(@adshmh): populate the fields of gatewayObservations struct.
 						// Mark the request as Synthetic using the following steps:
 						// 	1. Define a `gatewayObserver` function as a field in the `requestContext` struct.
@@ -197,12 +198,11 @@ func (eph *EndpointHydrator) performChecks(serviceID protocol.ServiceID, service
 						serviceQoS:          serviceQoS,
 						qosCtx:              serviceRequestCtx,
 						protocol:            eph.Protocol,
-						protocolCtx:         hydratorRequestCtx,
+						protocolContexts:    []ProtocolRequestContext{hydratorRequestCtx},
 						// metrics reporter for exporting metrics on hydrator service requests.
 						metricsReporter: eph.MetricsReporter,
 						// data reporter for exporting data on hydrator service requests to the data pipeline.
 						dataReporter: eph.DataReporter,
-						context:      context.TODO(),
 					}
 
 					err = gatewayRequestCtx.HandleRelayRequest()

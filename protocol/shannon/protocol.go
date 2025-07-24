@@ -6,10 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
-	apptypes "github.com/pokt-network/poktroll/x/application/types"
-	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
-	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
 	"github.com/buildwithgrove/path/health"
@@ -33,69 +30,6 @@ var (
 // This allows the protocol to report its sanctioned endpoints data to the devtools.DisqualifiedEndpointReporter.
 var _ devtools.ProtocolDisqualifiedEndpointsReporter = &Protocol{}
 
-// FullNode defines the set of capabilities the Shannon protocol integration needs
-// from a fullnode for sending relays.
-//
-// A properly initialized fullNode struct can:
-// 1. Return the onchain apps matching a service ID.
-// 2. Fetch a session for a (service,app) combination.
-// 3. Validate a relay response.
-// 4. Etc...
-type FullNode interface {
-	// GetApp returns the onchain application matching the application address
-	GetApp(ctx context.Context, appAddr string) (*apptypes.Application, error)
-
-	// GetSession returns the latest session matching the supplied service+app combination.
-	// Sessions are solely used for sending relays, and therefore only the latest session for any service+app combination is needed.
-	// Note: Shannon returns the latest session for a service+app combination if no blockHeight is provided.
-	GetSession(ctx context.Context, serviceID protocol.ServiceID, appAddr string) (sessiontypes.Session, error)
-
-	// ValidateRelayResponse validates the raw bytes returned from an endpoint (in response to a relay request) and returns the parsed response.
-	ValidateRelayResponse(supplierAddr sdk.SupplierAddress, responseBz []byte) (*servicetypes.RelayResponse, error)
-
-	// IsHealthy returns true if the FullNode instance is healthy.
-	// A LazyFullNode will always return true.
-	// A CachingFullNode will return true if it has data in app and session caches.
-	IsHealthy() bool
-
-	// GetAccountClient returns the account client from the fullnode, to be used in building relay request signers.
-	GetAccountClient() *sdk.AccountClient
-}
-
-// NewProtocol instantiates an instance of the Shannon protocol integration.
-func NewProtocol(
-	logger polylog.Logger,
-	fullNode FullNode,
-	config GatewayConfig,
-) (*Protocol, error) {
-	shannonLogger := logger.With("protocol", "shannon")
-
-	protocolInstance := &Protocol{
-		logger: shannonLogger,
-
-		FullNode: fullNode,
-
-		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
-		// 1. Query onchain data for a gateway with the supplied address.
-		// 2. Query onchain data for app(s) matching the derived addresses.
-		gatewayAddr:          config.GatewayAddress,
-		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
-		gatewayMode:          config.GatewayMode,
-		// tracks sanctioned endpoints
-		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
-	}
-
-	if config.GatewayMode == protocol.GatewayModeCentralized {
-		ownedApps, err := protocolInstance.getCentralizedModeOwnedApps(config.OwnedAppsPrivateKeysHex)
-		if err != nil {
-			return nil, fmt.Errorf("NewProtocol: error getting the owned apps for Centralized gateway mode: %w", err)
-		}
-		protocolInstance.ownedApps = ownedApps
-	}
-
-	return protocolInstance, nil
-}
-
 // Protocol provides the functionality needed by the gateway package for sending a relay to a specific endpoint.
 type Protocol struct {
 	logger polylog.Logger
@@ -113,18 +47,61 @@ type Protocol struct {
 	// It is used for signing relay request in both Centralized and Delegated Gateway Modes.
 	gatewayPrivateKeyHex string
 
-	// ownedApps holds the addresses and staked service IDs of all apps owned by the gateway operator running
-	// PATH in Centralized mode. If PATH is not running in Centralized mode, this field is nil.
-	ownedApps []ownedApp
+	// ownedApps is the list of apps owned by the gateway operator
+	ownedApps map[protocol.ServiceID][]string
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
 }
 
-// AvailableEndpoints returns the list available endpoints for a given service ID.
-// Takes the HTTP request as an argument for Delegated mode to get permitted apps from the HTTP request's headers.
+// NewProtocol instantiates an instance of the Shannon protocol integration.
+func NewProtocol(
+	logger polylog.Logger,
+	config GatewayConfig,
+	fullNode FullNode,
+) (*Protocol, error) {
+	shannonLogger := logger.With("protocol", "shannon")
+
+	// Retrieve the list of apps owned by the gateway.
+	ownedApps, err := getOwnedApps(shannonLogger, config.OwnedAppsPrivateKeysHex, fullNode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app addresses from config: %w", err)
+	}
+
+	protocolInstance := &Protocol{
+		logger: shannonLogger,
+
+		FullNode: fullNode,
+
+		// TODO_MVP(@adshmh): verify the gateway address and private key are valid, by completing the following:
+		// 1. Query onchain data for a gateway with the supplied address.
+		// 2. Query onchain data for app(s) matching the derived addresses.
+		gatewayAddr:          config.GatewayAddress,
+		gatewayPrivateKeyHex: config.GatewayPrivateKeyHex,
+		gatewayMode:          config.GatewayMode,
+		// tracks sanctioned endpoints
+		sanctionedEndpointsStore: newSanctionedEndpointsStore(logger),
+
+		// ownedApps is the list of apps owned by the gateway operator
+		ownedApps: ownedApps,
+	}
+
+	return protocolInstance, nil
+}
+
+// AvailableEndpoints returns the available endpoints for a given service ID.
 //
-// Implements the gateway.Protocol interface.
+// - Provides the list of endpoints that can serve the specified service ID.
+// - Returns a list of valid endpoint addresses, protocol observations, and any error encountered.
+//
+// Usage:
+//   - In Delegated mode, httpReq must contain the appropriate headers for app selection.
+//   - In Centralized mode, httpReq may be nil.
+//
+// Returns:
+//   - protocol.EndpointAddrList: the discovered endpoints for the service.
+//   - protocolobservations.Observations: contextual observations (e.g., error context).
+//   - error: if any error occurs during endpoint discovery or validation.
 func (p *Protocol) AvailableEndpoints(
 	ctx context.Context,
 	serviceID protocol.ServiceID,
@@ -138,19 +115,19 @@ func (p *Protocol) AvailableEndpoints(
 	)
 
 	// TODO_TECHDEBT(@adshmh): validate "serviceID" is a valid onchain Shannon service.
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msg("Relay request will fail: error building the permitted apps list for service.")
+		logger.Error().Err(err).Msg("Relay request will fail: error building the active sessions for service.")
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
-	logger = logger.With("number_of_permitted_apps", len(permittedApps))
-	logger.Debug().Msg("fetched the set of permitted apps.")
+	logger = logger.With("number_of_valid_sessions", len(activeSessions))
+	logger.Debug().Msg("fetched the set of active sessions.")
 
 	// Retrieve a list of all unique endpoints for the given service ID filtered by the list of apps this gateway/application
 	// owns and can send relays on behalf of.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -168,12 +145,22 @@ func (p *Protocol) AvailableEndpoints(
 	return endpointAddrs, buildSuccessfulEndpointLookupObservation(serviceID), nil
 }
 
-// BuildRequestContextForEndpoint builds a new request context for a given service ID and endpoint address.
-// Takes the HTTP request as an argument for Delegate mode to get permitted apps from the HTTP request's headers.
-// Returns:
-// - An initialized request context.
-// - An observation to use if the context initialization failed.
-// - An error if the context initialization failed.
+// BuildRequestContextForEndpoint creates a new protocol request context for a specified service and endpoint.
+//
+// Parameters:
+//   - ctx: Context for cancellation, deadlines, and logging.
+//   - serviceID: The unique identifier of the target service.
+//   - selectedEndpointAddr: The address of the endpoint to use for the request.
+//   - httpReq: ONLY used in Delegated mode to extract the selected app from headers.
+//   - TODO_TECHDEBT: Decouple context building for different gateway modes.
+//
+// Behavior:
+//   - Retrieves active sessions for the given service ID from the full node.
+//   - Retrieves unique endpoints available across all active sessions
+//   - Filtering out sanctioned endpoints from list of unique endpoints.
+//   - Obtains the relay request signer appropriate for the current gateway mode.
+//   - Returns a fully initialized request context for use in downstream protocol operations.
+//   - On failure, logs the error, returns a context setup observation, and a non-nil error.
 //
 // Implements the gateway.Protocol interface.
 func (p *Protocol) BuildRequestContextForEndpoint(
@@ -188,16 +175,16 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		"endpoint_addr", selectedEndpointAddr,
 	)
 
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
-		logger.Error().Err(err).Msg("BuildRequestContextForEndpoint: error building the permitted apps list for service. Relay request will fail")
+		logger.Error().Err(err).Msgf("Relay request will fail due to error retrieving active sessions for service %s", serviceID)
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
 	}
 
 	// Retrieve the list of endpoints (i.e. backend service URLs by external operators)
 	// that can service RPC requests for the given service ID for the given apps.
 	// The final boolean parameter sets whether to filter out sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, true)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, true)
 	if err != nil {
 		logger.Error().Err(err).Msg(err.Error())
 		return nil, buildProtocolContextSetupErrorObservation(serviceID, err), err
@@ -226,6 +213,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 	// Return new request context for the pre-selected endpoint
 	return &requestContext{
 		logger:             p.logger,
+		context:            ctx,
 		fullNode:           p.FullNode,
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,
@@ -242,13 +230,13 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 func (p *Protocol) ApplyObservations(observations *protocolobservations.Observations) error {
 	// Sanity check the input
 	if observations == nil || observations.GetShannon() == nil {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil input or nil Shannon observation list.")
 		return nil
 	}
 
 	shannonObservations := observations.GetShannon().GetObservations()
 	if len(shannonObservations) == 0 {
-		p.logger.Warn().Msg("SHOULD NEVER HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
+		p.logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msg("SHOULD RARELY HAPPEN: ApplyObservations called with nil set of Shannon request observations.")
 		return nil
 	}
 
@@ -256,21 +244,14 @@ func (p *Protocol) ApplyObservations(observations *protocolobservations.Observat
 	p.sanctionedEndpointsStore.ApplyObservations(shannonObservations)
 
 	return nil
-
 }
 
-// ConfiguredServiceIDs returns the list of all all service IDs for all configured AATs.
-// This is used by the hydrator to determine which service IDs to run QoS checks on.
+// ConfiguredServiceIDs returns the list of all all service IDs that are configured
+// to be supported by the Gateway.
 func (p *Protocol) ConfiguredServiceIDs() map[protocol.ServiceID]struct{} {
-	// Currently hydrator is only enabled for Centralized gateway mode.
-	// TODO_FUTURE(@adshmh): support specifying the app(s) used for sending/signing synthetic relay requests by the hydrator.
-	if p.gatewayMode != protocol.GatewayModeCentralized {
-		return nil
-	}
-
 	configuredServiceIDs := make(map[protocol.ServiceID]struct{})
-	for _, ownedApp := range p.ownedApps {
-		configuredServiceIDs[ownedApp.stakedServiceID] = struct{}{}
+	for serviceID := range p.ownedApps {
+		configuredServiceIDs[serviceID] = struct{}{}
 	}
 
 	return configuredServiceIDs
@@ -283,7 +264,7 @@ func (p *Protocol) Name() string {
 
 // IsAlive satisfies the HealthCheck#IsAlive interface function
 func (p *Protocol) IsAlive() bool {
-	return p.FullNode.IsHealthy()
+	return p.IsHealthy()
 }
 
 // TODO_FUTURE(@adshmh): If multiple apps (across different sessions) are delegating
@@ -292,51 +273,56 @@ func (p *Protocol) IsAlive() bool {
 // getAppsUniqueEndpoints returns a map of all endpoints matching serviceID and passing appFilter.
 // If an endpoint matches a serviceID across multiple apps/sessions, only a single entry
 // matching one of the apps/sessions is returned.
-func (p *Protocol) getAppsUniqueEndpoints(
-	ctx context.Context,
+func (p *Protocol) getSessionsUniqueEndpoints(
+	_ context.Context,
 	serviceID protocol.ServiceID,
-	permittedApps []*apptypes.Application,
+	activeSessions []sessiontypes.Session,
 	filterSanctioned bool, // will be true for calls to getAppsUniqueEndpoints made by service request handling.
 ) (map[protocol.EndpointAddr]endpoint, error) {
 	logger := p.logger.With(
 		"method", "getAppsUniqueEndpoints",
 		"service", serviceID,
-		"num_permitted_apps", len(permittedApps),
+		"num_valid_sessions", len(activeSessions),
+	)
+	logger.Info().Msgf(
+		"About to fetch all unique endpoints for service %s given %d active sessions.",
+		serviceID, len(activeSessions),
 	)
 
 	endpoints := make(map[protocol.EndpointAddr]endpoint)
-	for _, app := range permittedApps {
+	// Iterate over all active sessions for the service ID.
+	for _, session := range activeSessions {
+		app := session.Application
+
 		// Using a single iteration scope for this logger.
 		// Avoids adding all apps in the loop to the logger's fields.
-		logger := logger.With("permitted_app_address", app.Address)
-		logger.Debug().Msg("processing app.")
+		// Hydrate the logger with session details.
+		logger := logger.With("valid_app_address", app.Address).With("method", "getSessionsUniqueEndpoints")
+		logger = hydrateLoggerWithSession(logger, &session)
+		logger.ProbabilisticDebugInfo(polylog.ProbabilisticDebugInfoProb).Msgf("Finding unique endpoints for session %s for app %s for service %s.", session.SessionId, app.Address, serviceID)
 
-		session, err := p.FullNode.GetSession(ctx, serviceID, app.Address)
-		// error fetching a session:
-		// Log an error
-		// skip current app.
-		if err != nil {
-			logger.Error().Err(err).Msgf("Internal error: error getting a session for service %s app %s: skipping the app.", serviceID, app.Address)
-			continue
-		}
-
-		appEndpoints, err := endpointsFromSession(session)
+		// Retrieve all endpoints for the session.
+		sessionEndpoints, err := endpointsFromSession(session)
 		if err != nil {
 			logger.Error().Err(err).Msgf("Internal error: error getting all endpoints for service %s app %s and session: skipping the app.", serviceID, app.Address)
 			continue
 		}
 
-		qualifiedEndpoints := appEndpoints
+		qualifiedEndpoints := sessionEndpoints
 		// In calls to getAppsUniqueEndpoints made by service request handling, we filter out sanctioned endpoints.
 		if filterSanctioned {
-			logger.Debug().Msgf("app %s has %d endpoints before filtering sanctioned endpoints.", app.Address, len(appEndpoints))
+			logger.Debug().Msgf(
+				"app %s has %d endpoints before filtering sanctioned endpoints.",
+				app.Address, len(sessionEndpoints),
+			)
 
 			// Filter out any sanctioned endpoints
 			filteredEndpoints := p.sanctionedEndpointsStore.FilterSanctionedEndpoints(qualifiedEndpoints)
 			// All endpoints are sanctioned: log a warning and skip this app.
 			if len(filteredEndpoints) == 0 {
-				logger.Error().Msgf("All %d app endpoints are sanctioned on service %s, app %s. Skipping the app.",
-					len(appEndpoints), serviceID, app.Address,
+				logger.Error().Msgf(
+					"All %d session endpoints are sanctioned for service %s, app %s. Skipping the app.",
+					len(sessionEndpoints), serviceID, app.Address,
 				)
 				continue
 			}
@@ -346,25 +332,27 @@ func (p *Protocol) getAppsUniqueEndpoints(
 		}
 
 		// Log the number of endpoints before and after filtering
-		logger.Info().Msgf("Filtered number of endpoints for app %s from %d to %d.", app.Address, len(appEndpoints), len(qualifiedEndpoints))
+		logger.Info().Msgf("Filtered session endpoints for app %s from %d to %d.", app.Address, len(sessionEndpoints), len(qualifiedEndpoints))
 
 		for endpointAddr, endpoint := range qualifiedEndpoints {
 			endpoints[endpointAddr] = endpoint
 		}
 
-		logger.Info().Msg("Successfully fetched session for application.")
+		logger.Info().Msgf(
+			"Successfully fetched %d endpoints for session %s for application %s for service %s.",
+			len(qualifiedEndpoints), session.SessionId, app.Address, serviceID,
+		)
 	}
 
 	// Ensure at least one endpoint is available for the requested service.
 	if len(endpoints) == 0 {
-		// Wrap the context setup error.
-		// Used for generating observations.
+		// Wrap the context setup error. Used for generating observations.
 		err := fmt.Errorf("%w: service %s", errProtocolContextSetupNoEndpoints, serviceID)
 		logger.Warn().Err(err).Msg("No endpoints available after filtering sanctioned endpoints: relay request will fail.")
 		return nil, err
 	}
 
-	logger.With("num_endpoints", len(endpoints)).Debug().Msg("Successfully fetched endpoints for permitted apps.")
+	logger.Info().Msgf("Successfully fetched %d endpoints for active sessions.", len(endpoints))
 
 	return endpoints, nil
 }
@@ -374,14 +362,14 @@ func (p *Protocol) getAppsUniqueEndpoints(
 func (p *Protocol) GetTotalServiceEndpointsCount(serviceID protocol.ServiceID, httpReq *http.Request) (int, error) {
 	ctx := context.Background()
 
-	// Get the list of permitted apps for the service ID.
-	permittedApps, err := p.getGatewayModePermittedApps(ctx, serviceID, httpReq)
+	// Get the list of active sessions for the service ID.
+	activeSessions, err := p.getActiveGatewaySessions(ctx, serviceID, httpReq)
 	if err != nil {
 		return 0, err
 	}
 
 	// Get all endpoints for the service ID without filtering sanctioned endpoints.
-	endpoints, err := p.getAppsUniqueEndpoints(ctx, serviceID, permittedApps, false)
+	endpoints, err := p.getSessionsUniqueEndpoints(ctx, serviceID, activeSessions, false)
 	if err != nil {
 		return 0, err
 	}

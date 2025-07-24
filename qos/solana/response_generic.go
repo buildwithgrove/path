@@ -9,9 +9,13 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// TODO_UPNEXT(@adshmh): Update solana and cometbft QoS to detect and sanction malformed endpoint responses to any request.
+// See evm implementation in #321 for reference.
+
 const (
 	// errCodeUnmarshaling is set as the JSON-RPC response's error code if the endpoint returns a malformed response.
-	errCodeUnmarshaling = -32600
+	// -32000 Error code will result in returning a 500 HTTP Status Code to the client.
+	errCodeUnmarshaling = -32000
 
 	// errMsgUnmarshaling is the generic message returned to the user if the endpoint returns a malformed response.
 	errMsgUnmarshaling = "the response returned by the endpoint is not a valid JSON-RPC response"
@@ -62,7 +66,7 @@ func (r responseGeneric) GetObservation() qosobservations.SolanaEndpointObservat
 		ResponseObservation: &qosobservations.SolanaEndpointObservation_UnrecognizedResponse{
 			UnrecognizedResponse: &qosobservations.SolanaUnrecognizedResponse{
 				JsonrpcResponse: &qosobservations.JsonRpcResponse{
-					Id: r.Response.ID.String(),
+					Id: r.ID.String(),
 				},
 			},
 		},

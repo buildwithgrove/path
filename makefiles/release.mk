@@ -108,3 +108,63 @@ release_tag_minor_release: ## Tag a new minor release (e.g. v1.0.0 -> v1.1.0)
 	echo "  git push origin --delete $$NEW_TAG"; \
 	echo ""; \
 	echo "########";
+
+#############################
+### Binary Build Targets  ###
+#############################
+
+# Define the release directory
+RELEASE_DIR ?= ./release
+
+# Define the architectures we want to build for
+RELEASE_PLATFORMS := linux/amd64 linux/arm64
+
+# Version information (can be overridden)
+VERSION ?= $(shell git describe --tags --always --dirty)
+COMMIT ?= $(shell git rev-parse HEAD)
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Go build flags
+LDFLAGS := -s -w \
+	-X main.Version=$(VERSION) \
+	-X main.Commit=$(COMMIT) \
+	-X main.BuildDate=$(BUILD_DATE)
+
+.PHONY: release_build_cross
+release_build_cross: ## Build binaries for multiple platforms
+	@echo "Building binaries for multiple platforms..."
+	@mkdir -p $(RELEASE_DIR)
+	@for platform in $(RELEASE_PLATFORMS); do \
+		GOOS=$$(echo $$platform | cut -d/ -f1); \
+		GOARCH=$$(echo $$platform | cut -d/ -f2); \
+		output=$(RELEASE_DIR)/path-$$GOOS-$$GOARCH; \
+		echo "Building for $$GOOS/$$GOARCH..."; \
+		CGO_ENABLED=0 GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags="$(LDFLAGS)" -o $$output ./cmd; \
+		if [ $$? -eq 0 ]; then \
+			echo "✓ Built $$output"; \
+		else \
+			echo "✗ Failed to build for $$GOOS/$$GOARCH"; \
+			exit 1; \
+		fi; \
+	done
+	@echo "All binaries built successfully!"
+
+.PHONY: release_clean
+release_clean: ## Clean up release artifacts
+	@echo "Cleaning release directory..."
+	@rm -rf $(RELEASE_DIR)
+
+.PHONY: release_build_local
+release_build_local: ## Build binary for current platform only
+	@echo "Building binary for current platform..."
+	@mkdir -p $(RELEASE_DIR)
+	@CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o $(RELEASE_DIR)/path-local ./cmd
+	@echo "✓ Built $(RELEASE_DIR)/path-local"
+
+.PHONY: build_ghcr_image_current_branch
+build_ghcr_image_current_branch: ## Trigger the main-build workflow using the current branch to push an image to ghcr.io/buildwithgrove/path
+	@echo "Triggering main-build workflow for current branch..."
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
+	gh workflow run main-build.yml --ref $$BRANCH
+	@echo "Workflow triggered for branch: $$(git rev-parse --abbrev-ref HEAD)"
+	@echo "Check the workflow status at: https://github.com/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^.]*\).*/\1/')/actions/workflows/main-build.yml"

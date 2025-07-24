@@ -14,6 +14,9 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
+const servicesFile = "config/services_shannon.yaml"
+const configFile = "config/.shannon.config.yaml"
+
 // -----------------------------------------------------------------------------
 // Environment Variables
 // -----------------------------------------------------------------------------
@@ -102,10 +105,10 @@ func loadE2ELoadTestConfig() (*Config, error) {
 	var cfgPath string
 	// Prefer custom config if present, otherwise fall back to default
 	if _, err := os.Stat(customConfigFile); err == nil {
-		fmt.Printf("💾 Using custom config file: e2e/%s\n", customConfigFile)
+		fmt.Printf("💽 Using CUSTOM config file: %se2e/%s%s\n\n", CYAN, customConfigFile, RESET)
 		cfgPath = customConfigFile
 	} else {
-		fmt.Printf("💾 Using default config file: e2e/%s\n", defaultConfigFile)
+		fmt.Printf("💾 Using DEFAULT config file: %se2e/%s%s\n\n", CYAN, defaultConfigFile, RESET)
 		cfgPath = defaultConfigFile
 	}
 
@@ -225,7 +228,6 @@ type (
 	// LoadTestConfig for load test mode configuration
 	LoadTestConfig struct {
 		GatewayURLOverride  string `yaml:"gateway_url_override"`  // [REQUIRED] Custom PATH gateway URL
-		UseServiceSubdomain bool   `yaml:"use_service_subdomain"` // [OPTIONAL] Whether to specify the service using the subdomain per-test case
 		PortalApplicationID string `yaml:"portal_application_id"` // [OPTIONAL] Grove Portal Application ID for the test. Required if using the Grove Portal.
 		PortalAPIKey        string `yaml:"portal_api_key"`        // [OPTIONAL] Grove Portal API key for the test. Required if Grove Portal Application requires API key.
 	}
@@ -244,21 +246,45 @@ type (
 
 // getTestServices returns test services filtered by protocol specified in environment
 func (c *Config) getTestServices() ([]*TestService, error) {
+<<<<<<< HEAD
+=======
+	// If no service IDs are specified, include all test cases
+	testServiceIds := c.getTestServiceIDs()
+
+	// Track which service IDs were provided but had no test cases
+	serviceIdsWithNoTestCases := make(map[string]struct{})
+	for _, id := range testServiceIds {
+		serviceIdsWithNoTestCases[string(id)] = struct{}{}
+	}
+
+	shouldIncludeAllServices := len(testServiceIds) == 0
+>>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 	var filteredTestCases []*TestService
 	for _, tc := range c.services.Services {
-		// If no service IDs are specified, include all test cases
-		// Otherwise, only include test cases for the specified service IDs
-		if ids := c.getTestServiceIDs(); len(ids) == 0 || slices.Contains(ids, tc.ServiceID) {
+		isServiceIdInTestServiceIds := slices.Contains(testServiceIds, tc.ServiceID)
+		if shouldIncludeAllServices || isServiceIdInTestServiceIds {
 			filteredTestCases = append(filteredTestCases, &tc)
+			// Remove from map if found
+			delete(serviceIdsWithNoTestCases, string(tc.ServiceID))
 		}
 	}
 
+<<<<<<< HEAD
 	if len(filteredTestCases) == 0 {
 		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
 			"\n"+
 			"Please refer to the `%s` file to see which services are configured for the Shannon protocol.",
 			envTestServiceIDs, servicesFile,
 		)
+=======
+	if len(filteredTestCases) == 0 || len(serviceIdsWithNoTestCases) > 0 {
+		var missingServiceIds []string
+		for id := range serviceIdsWithNoTestCases {
+			missingServiceIds = append(missingServiceIds, id)
+		}
+		fmt.Printf("⚠️ The following service IDs have no E2E / Load test cases and will there be skipped: [%s] ⚠️\n", strings.Join(missingServiceIds, ", "))
+		fmt.Printf("⚠️ Please refer to the `e2e/%s` file to see which services are configured ⚠️\n", servicesFile)
+>>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 	}
 
 	return filteredTestCases, nil
@@ -275,7 +301,7 @@ func (c *Config) getTestServiceIDs() []protocol.ServiceID {
 }
 
 func (c *Config) useServiceSubdomain() bool {
-	return c.E2ELoadTestConfig.LoadTestConfig.UseServiceSubdomain
+	return !strings.Contains(c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride, "localhost")
 }
 
 func (c *Config) getGatewayURLForLoadTest() string {
@@ -289,20 +315,25 @@ func (c *Config) validate() error {
 	// Validate load test mode
 	if mode == testModeLoad {
 		if c.E2ELoadTestConfig.LoadTestConfig == nil {
-			return fmt.Errorf("load test mode requires loadTestConfig to be set")
+			return fmt.Errorf("❌ load test mode requires loadTestConfig to be set")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.GatewayURLOverride == "" {
-			return fmt.Errorf("load test mode requires GatewayURLOverride to be set")
+			return fmt.Errorf("❌ load test mode requires GatewayURLOverride to be set")
 		}
 		if c.E2ELoadTestConfig.LoadTestConfig.PortalApplicationID == "" {
-			return fmt.Errorf("load test mode requires PortalApplicationID to be set")
+			return fmt.Errorf("❌ load test mode requires PortalApplicationID to be set")
 		}
 	}
 
 	// Validate e2e test mode
 	if mode == testModeE2E {
+<<<<<<< HEAD
 		if _, err := os.Stat(shannonConfigFile); os.IsNotExist(err) {
 			return fmt.Errorf("e2e test mode requires %s to exist", shannonConfigFile)
+=======
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
+>>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 		}
 	}
 
