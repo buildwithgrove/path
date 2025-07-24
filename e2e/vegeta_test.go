@@ -205,7 +205,7 @@ func startResultsCollector(
 				continue
 			}
 			if processedCount < methodConfig.serviceConfig.RequestsPerMethod {
-				processResult(metrics, res, ts.serviceType)
+				processResult(metrics, res, ts.serviceType, methodConfig.target.Body)
 				processedCount++
 				if progressBar != nil && progressBar.Current() < int64(methodConfig.serviceConfig.RequestsPerMethod) {
 					progressBar.Increment()
@@ -293,7 +293,12 @@ func createResponsePreview(body []byte, maxLen int) string {
 
 // processResult
 // • Updates metrics based on a single result
-func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceType) {
+func processResult(
+	m *methodMetrics,
+	result *vegeta.Result,
+	serviceType serviceType,
+	httpRequestBody []byte,
+) {
 	// Skip "no targets to attack" errors (not actual requests)
 	if result.Error == "no targets to attack" {
 		return
@@ -309,47 +314,52 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 	// Update status code counts
 	m.statusCodes[int(result.Code)]++
 
-	// Process JSON-RPC validation if we have a successful HTTP response
-	var rpcResponse jsonrpc.Response
-	if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
-		m.jsonRPCUnmarshalErrors++
+	// If the request body contains "jsonrpc", it's a JSON-RPC request,
+	// and we should process the result as a JSON-RPC response.
+	if strings.Contains(string(httpRequestBody), "jsonrpc") {
+		// Process JSON-RPC validation if we have a successful HTTP response
+		var rpcResponse jsonrpc.Response
+		if err := json.Unmarshal(result.Body, &rpcResponse); err != nil {
+			m.jsonRPCUnmarshalErrors++
 
-		// Create response preview for parse errors
-		preview := createResponsePreview(result.Body, 100)
-		errorMsg := fmt.Sprintf("JSON parse error: %v (response preview: %s)", err, preview)
-		m.jsonRPCParseErrors[errorMsg]++
-		m.errors[errorMsg]++
-	} else if !rpcResponse.ID.IsEmpty() {
-		// Only count responses with a non-empty ID
-		m.jsonRPCResponses++
-
-		// Validate the response first
-		validationErr := rpcResponse.Validate(getExpectedID(serviceType))
-
-		// Check if Error field is nil (good)
-		if rpcResponse.Error != nil {
-			m.jsonRPCErrorField++
-			// Only track the error field message if there's no validation error
-			// (to avoid duplicate tracking when validation fails due to error field)
-			if validationErr == nil {
-				m.errors[rpcResponse.Error.Message]++
-			}
-		}
-
-		// Check if Result field is not nil (good)
-		if rpcResponse.Result == nil {
-			m.jsonRPCNilResult++
-		}
-
-		// Process validation error
-		if validationErr != nil {
-			m.jsonRPCValidateErrors++
-
-			// Create response preview for validation errors
+			// Create response preview for parse errors
 			preview := createResponsePreview(result.Body, 100)
-			errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
-			m.jsonRPCValidationErrors[errorMsg]++
+			errorMsg := fmt.Sprintf("JSON parse error: %v (response preview: %s)", err, preview)
+			m.jsonRPCParseErrors[errorMsg]++
 			m.errors[errorMsg]++
+		} else {
+			if !rpcResponse.ID.IsEmpty() {
+				m.jsonRPCResponses++
+
+				// Validate the response first
+				validationErr := rpcResponse.Validate(getExpectedID(serviceType))
+
+				// Check if Error field is nil (good)
+				if rpcResponse.Error != nil {
+					m.jsonRPCErrorField++
+					// Only track the error field message if there's no validation error
+					// (to avoid duplicate tracking when validation fails due to error field)
+					if validationErr == nil {
+						m.errors[rpcResponse.Error.Message]++
+					}
+				}
+
+				// Check if Result field is not nil (good)
+				if rpcResponse.Result == nil {
+					m.jsonRPCNilResult++
+				}
+
+				// Process validation error
+				if validationErr != nil {
+					m.jsonRPCValidateErrors++
+
+					// Create response preview for validation errors
+					preview := createResponsePreview(result.Body, 100)
+					errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
+					m.jsonRPCValidationErrors[errorMsg]++
+					m.errors[errorMsg]++
+				}
+			}
 		}
 	}
 }
