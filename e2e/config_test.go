@@ -14,9 +14,6 @@ import (
 	"github.com/buildwithgrove/path/protocol"
 )
 
-const servicesFile = "config/services_shannon.yaml"
-const configFile = "config/.shannon.config.yaml"
-
 // -----------------------------------------------------------------------------
 // Environment Variables
 // -----------------------------------------------------------------------------
@@ -246,8 +243,6 @@ type (
 
 // getTestServices returns test services filtered by protocol specified in environment
 func (c *Config) getTestServices() ([]*TestService, error) {
-<<<<<<< HEAD
-=======
 	// If no service IDs are specified, include all test cases
 	testServiceIds := c.getTestServiceIDs()
 
@@ -258,7 +253,6 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 	}
 
 	shouldIncludeAllServices := len(testServiceIds) == 0
->>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 	var filteredTestCases []*TestService
 	for _, tc := range c.services.Services {
 		isServiceIdInTestServiceIds := slices.Contains(testServiceIds, tc.ServiceID)
@@ -269,14 +263,6 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 		}
 	}
 
-<<<<<<< HEAD
-	if len(filteredTestCases) == 0 {
-		return nil, fmt.Errorf("No test cases are configured for any of the service IDs in the `%s` environment variable:\n"+
-			"\n"+
-			"Please refer to the `%s` file to see which services are configured for the Shannon protocol.",
-			envTestServiceIDs, servicesFile,
-		)
-=======
 	if len(filteredTestCases) == 0 || len(serviceIdsWithNoTestCases) > 0 {
 		var missingServiceIds []string
 		for id := range serviceIdsWithNoTestCases {
@@ -284,7 +270,6 @@ func (c *Config) getTestServices() ([]*TestService, error) {
 		}
 		fmt.Printf("⚠️ The following service IDs have no E2E / Load test cases and will there be skipped: [%s] ⚠️\n", strings.Join(missingServiceIds, ", "))
 		fmt.Printf("⚠️ Please refer to the `e2e/%s` file to see which services are configured ⚠️\n", servicesFile)
->>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 	}
 
 	return filteredTestCases, nil
@@ -327,13 +312,8 @@ func (c *Config) validate() error {
 
 	// Validate e2e test mode
 	if mode == testModeE2E {
-<<<<<<< HEAD
 		if _, err := os.Stat(shannonConfigFile); os.IsNotExist(err) {
 			return fmt.Errorf("e2e test mode requires %s to exist", shannonConfigFile)
-=======
-		if _, err := os.Stat(configFile); os.IsNotExist(err) {
-			return fmt.Errorf("e2e test mode requires %s to exist", configFile)
->>>>>>> 471d760c1437c0ebc881f7f630b74d47b1f172c4
 		}
 	}
 

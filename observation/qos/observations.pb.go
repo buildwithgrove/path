@@ -7,11 +7,11 @@
 package qos
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -26,18 +26,17 @@ const (
 // - Solana blockchain service
 // - EVM blockchains service
 type Observations struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// service_observations contains QoS measurements specific to the service type
 	//
-	// Types that are assignable to ServiceObservations:
+	// Types that are valid to be assigned to ServiceObservations:
 	//
 	//	*Observations_Solana
 	//	*Observations_Evm
 	//	*Observations_Cosmos
 	ServiceObservations isObservations_ServiceObservations `protobuf_oneof:"service_observations"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Observations) Reset() {
@@ -70,23 +69,27 @@ func (*Observations) Descriptor() ([]byte, []int) {
 	return file_path_qos_observations_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *Observations) GetServiceObservations() isObservations_ServiceObservations {
-	if m != nil {
-		return m.ServiceObservations
+func (x *Observations) GetServiceObservations() isObservations_ServiceObservations {
+	if x != nil {
+		return x.ServiceObservations
 	}
 	return nil
 }
 
 func (x *Observations) GetSolana() *SolanaRequestObservations {
-	if x, ok := x.GetServiceObservations().(*Observations_Solana); ok {
-		return x.Solana
+	if x != nil {
+		if x, ok := x.ServiceObservations.(*Observations_Solana); ok {
+			return x.Solana
+		}
 	}
 	return nil
 }
 
 func (x *Observations) GetEvm() *EVMRequestObservations {
-	if x, ok := x.GetServiceObservations().(*Observations_Evm); ok {
-		return x.Evm
+	if x != nil {
+		if x, ok := x.ServiceObservations.(*Observations_Evm); ok {
+			return x.Evm
+		}
 	}
 	return nil
 }
@@ -138,12 +141,12 @@ const file_path_qos_observations_proto_rawDesc = "" +
 
 var (
 	file_path_qos_observations_proto_rawDescOnce sync.Once
-	file_path_qos_observations_proto_rawDescData = file_path_qos_observations_proto_rawDesc
+	file_path_qos_observations_proto_rawDescData []byte
 )
 
 func file_path_qos_observations_proto_rawDescGZIP() []byte {
 	file_path_qos_observations_proto_rawDescOnce.Do(func() {
-		file_path_qos_observations_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_qos_observations_proto_rawDescData)
+		file_path_qos_observations_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_qos_observations_proto_rawDesc), len(file_path_qos_observations_proto_rawDesc)))
 	})
 	return file_path_qos_observations_proto_rawDescData
 }
@@ -183,7 +186,7 @@ func file_path_qos_observations_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_qos_observations_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_observations_proto_rawDesc), len(file_path_qos_observations_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
@@ -194,7 +197,6 @@ func file_path_qos_observations_proto_init() {
 		MessageInfos:      file_path_qos_observations_proto_msgTypes,
 	}.Build()
 	File_path_qos_observations_proto = out.File
-	file_path_qos_observations_proto_rawDesc = nil
 	file_path_qos_observations_proto_goTypes = nil
 	file_path_qos_observations_proto_depIdxs = nil
 }

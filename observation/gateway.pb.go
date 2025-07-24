@@ -12,6 +12,7 @@ package observation
 import (
 	reflect "reflect"
 	sync "sync"
+	unsafe "unsafe"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -135,10 +136,7 @@ func (GatewayRequestErrorKind) EnumDescriptor() ([]byte, []int) {
 // GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
 // Examples include the geographic region of the request, the request type, etc.
 type GatewayObservations struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// request_auth stores any fields related to the identification/authentication of the request.
 	RequestAuth *RequestAuth `protobuf:"bytes,1,opt,name=request_auth,json=requestAuth,proto3" json:"request_auth,omitempty"`
 	// Specifies the request origin.
@@ -251,14 +249,13 @@ func (x *GatewayObservations) GetGatewayParallelRequestObservations() *GatewayPa
 // Tracks any errors encountered at the gateway level.
 // e.g.: No Service ID specified by the request's HTTP headers.
 type GatewayRequestError struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Categorizes the error
 	ErrorKind GatewayRequestErrorKind `protobuf:"varint,1,opt,name=error_kind,json=errorKind,proto3,enum=path.GatewayRequestErrorKind" json:"error_kind,omitempty"`
 	// Detailed reason
-	Details string `protobuf:"bytes,2,opt,name=details,proto3" json:"details,omitempty"`
+	Details       string `protobuf:"bytes,2,opt,name=details,proto3" json:"details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GatewayRequestError) Reset() {
@@ -416,12 +413,12 @@ const file_path_gateway_proto_rawDesc = "" +
 
 var (
 	file_path_gateway_proto_rawDescOnce sync.Once
-	file_path_gateway_proto_rawDescData = file_path_gateway_proto_rawDesc
+	file_path_gateway_proto_rawDescData []byte
 )
 
 func file_path_gateway_proto_rawDescGZIP() []byte {
 	file_path_gateway_proto_rawDescOnce.Do(func() {
-		file_path_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_gateway_proto_rawDescData)
+		file_path_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_gateway_proto_rawDesc), len(file_path_gateway_proto_rawDesc)))
 	})
 	return file_path_gateway_proto_rawDescData
 }
@@ -463,7 +460,7 @@ func file_path_gateway_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_gateway_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_gateway_proto_rawDesc), len(file_path_gateway_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   3,
 			NumExtensions: 0,
@@ -475,7 +472,6 @@ func file_path_gateway_proto_init() {
 		MessageInfos:      file_path_gateway_proto_msgTypes,
 	}.Build()
 	File_path_gateway_proto = out.File
-	file_path_gateway_proto_rawDesc = nil
 	file_path_gateway_proto_goTypes = nil
 	file_path_gateway_proto_depIdxs = nil
 }

@@ -7,12 +7,12 @@
 package protocol
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -318,14 +318,13 @@ func (ShannonSanctionType) EnumDescriptor() ([]byte, []int) {
 
 // ShannonRequestError stores details of any errors encountered processing the request.
 type ShannonRequestError struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Type of request error, e.g. internal
 	ErrorType ShannonRequestErrorType `protobuf:"varint,1,opt,name=error_type,json=errorType,proto3,enum=path.protocol.ShannonRequestErrorType" json:"error_type,omitempty"`
 	// Details of the request error.
-	ErrorDetails string `protobuf:"bytes,2,opt,name=error_details,json=errorDetails,proto3" json:"error_details,omitempty"`
+	ErrorDetails  string `protobuf:"bytes,2,opt,name=error_details,json=errorDetails,proto3" json:"error_details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShannonRequestError) Reset() {
@@ -439,10 +438,7 @@ func (x *ShannonRelayMinerError) GetMessage() string {
 // ShannonRequestObservations represents observations collected during the processing
 // of a single Shannon protocol relay request.
 type ShannonRequestObservations struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Service ID (i.e. chain ID) for which the observation was made
 	ServiceId string `protobuf:"bytes,1,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	// Error encountered processing the request, if any.
@@ -453,6 +449,8 @@ type ShannonRequestObservations struct {
 	// - Original endpoint returns invalid response
 	// - Retry mechanism activates
 	EndpointObservations []*ShannonEndpointObservation `protobuf:"bytes,3,rep,name=endpoint_observations,json=endpointObservations,proto3" json:"endpoint_observations,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ShannonRequestObservations) Reset() {
@@ -508,10 +506,7 @@ func (x *ShannonRequestObservations) GetEndpointObservations() []*ShannonEndpoin
 
 // ShannonEndpointObservation stores a single observation from an endpoint
 type ShannonEndpointObservation struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Supplier of the endpoint handling the request
 	Supplier string `protobuf:"bytes,1,opt,name=supplier,proto3" json:"supplier,omitempty"`
 	// URL of the endpoint handling the request
@@ -685,11 +680,10 @@ func (x *ShannonEndpointObservation) GetEndpointBackendServiceHttpResponsePayloa
 // ShannonObservationsList provides a container for multiple ShannonRequestObservations,
 // allowing them to be embedded in other protocol buffers.
 type ShannonObservationsList struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Observations  []*ShannonRequestObservations `protobuf:"bytes,1,rep,name=observations,proto3" json:"observations,omitempty"`
 	unknownFields protoimpl.UnknownFields
-
-	Observations []*ShannonRequestObservations `protobuf:"bytes,1,rep,name=observations,proto3" json:"observations,omitempty"`
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShannonObservationsList) Reset() {
@@ -832,12 +826,12 @@ const file_path_protocol_shannon_proto_rawDesc = "" +
 
 var (
 	file_path_protocol_shannon_proto_rawDescOnce sync.Once
-	file_path_protocol_shannon_proto_rawDescData = file_path_protocol_shannon_proto_rawDesc
+	file_path_protocol_shannon_proto_rawDescData []byte
 )
 
 func file_path_protocol_shannon_proto_rawDescGZIP() []byte {
 	file_path_protocol_shannon_proto_rawDescOnce.Do(func() {
-		file_path_protocol_shannon_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_protocol_shannon_proto_rawDescData)
+		file_path_protocol_shannon_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_protocol_shannon_proto_rawDesc), len(file_path_protocol_shannon_proto_rawDesc)))
 	})
 	return file_path_protocol_shannon_proto_rawDescData
 }
@@ -883,7 +877,7 @@ func file_path_protocol_shannon_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_protocol_shannon_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_protocol_shannon_proto_rawDesc), len(file_path_protocol_shannon_proto_rawDesc)),
 			NumEnums:      3,
 			NumMessages:   5,
 			NumExtensions: 0,
@@ -895,7 +889,6 @@ func file_path_protocol_shannon_proto_init() {
 		MessageInfos:      file_path_protocol_shannon_proto_msgTypes,
 	}.Build()
 	File_path_protocol_shannon_proto = out.File
-	file_path_protocol_shannon_proto_rawDesc = nil
 	file_path_protocol_shannon_proto_goTypes = nil
 	file_path_protocol_shannon_proto_depIdxs = nil
 }

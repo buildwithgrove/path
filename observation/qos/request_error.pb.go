@@ -7,11 +7,11 @@
 package qos
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -91,10 +91,7 @@ func (RequestErrorKind) EnumDescriptor() ([]byte, []int) {
 
 // RequestError tracks the details of a request error.
 type RequestError struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Tracks the kind of error: e.g. internal.
 	ErrorKind RequestErrorKind `protobuf:"varint,1,opt,name=error_kind,json=errorKind,proto3,enum=path.qos.RequestErrorKind" json:"error_kind,omitempty"`
 	// Tracks details of the error.
@@ -103,6 +100,8 @@ type RequestError struct {
 	// store the JSONRPC Response's details (specifically the `code` field).
 	// The HTTP status can be derived from the JSONRPC response.
 	HttpStatusCode int32 `protobuf:"varint,3,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RequestError) Reset() {
@@ -179,12 +178,12 @@ const file_path_qos_request_error_proto_rawDesc = "" +
 
 var (
 	file_path_qos_request_error_proto_rawDescOnce sync.Once
-	file_path_qos_request_error_proto_rawDescData = file_path_qos_request_error_proto_rawDesc
+	file_path_qos_request_error_proto_rawDescData []byte
 )
 
 func file_path_qos_request_error_proto_rawDescGZIP() []byte {
 	file_path_qos_request_error_proto_rawDescOnce.Do(func() {
-		file_path_qos_request_error_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_qos_request_error_proto_rawDescData)
+		file_path_qos_request_error_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_qos_request_error_proto_rawDesc), len(file_path_qos_request_error_proto_rawDesc)))
 	})
 	return file_path_qos_request_error_proto_rawDescData
 }
@@ -213,7 +212,7 @@ func file_path_qos_request_error_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_qos_request_error_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_request_error_proto_rawDesc), len(file_path_qos_request_error_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   1,
 			NumExtensions: 0,
@@ -225,7 +224,6 @@ func file_path_qos_request_error_proto_init() {
 		MessageInfos:      file_path_qos_request_error_proto_msgTypes,
 	}.Build()
 	File_path_qos_request_error_proto = out.File
-	file_path_qos_request_error_proto_rawDesc = nil
 	file_path_qos_request_error_proto_goTypes = nil
 	file_path_qos_request_error_proto_depIdxs = nil
 }

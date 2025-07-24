@@ -7,11 +7,11 @@
 package observation
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -23,12 +23,11 @@ const (
 
 // HTTPRequestObservations captures all the observations regarding an HTTP service request.
 type HTTPRequestObservations struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// host stores the Host part of the HTTP request's URL.
-	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Host          string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HTTPRequestObservations) Reset() {
@@ -70,25 +69,20 @@ func (x *HTTPRequestObservations) GetHost() string {
 
 var File_path_http_proto protoreflect.FileDescriptor
 
-var file_path_http_proto_rawDesc = []byte{
-	0x0a, 0x0f, 0x70, 0x61, 0x74, 0x68, 0x2f, 0x68, 0x74, 0x74, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x12, 0x04, 0x70, 0x61, 0x74, 0x68, 0x22, 0x2d, 0x0a, 0x17, 0x48, 0x54, 0x54, 0x50, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x42, 0x2c, 0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x77, 0x69, 0x74, 0x68, 0x67, 0x72,
-	0x6f, 0x76, 0x65, 0x2f, 0x70, 0x61, 0x74, 0x68, 0x2f, 0x6f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
-}
+const file_path_http_proto_rawDesc = "" +
+	"\n" +
+	"\x0fpath/http.proto\x12\x04path\"-\n" +
+	"\x17HTTPRequestObservations\x12\x12\n" +
+	"\x04host\x18\x01 \x01(\tR\x04hostB,Z*github.com/buildwithgrove/path/observationb\x06proto3"
 
 var (
 	file_path_http_proto_rawDescOnce sync.Once
-	file_path_http_proto_rawDescData = file_path_http_proto_rawDesc
+	file_path_http_proto_rawDescData []byte
 )
 
 func file_path_http_proto_rawDescGZIP() []byte {
 	file_path_http_proto_rawDescOnce.Do(func() {
-		file_path_http_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_http_proto_rawDescData)
+		file_path_http_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_http_proto_rawDesc), len(file_path_http_proto_rawDesc)))
 	})
 	return file_path_http_proto_rawDescData
 }
@@ -114,7 +108,7 @@ func file_path_http_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_http_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_http_proto_rawDesc), len(file_path_http_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
@@ -125,7 +119,6 @@ func file_path_http_proto_init() {
 		MessageInfos:      file_path_http_proto_msgTypes,
 	}.Build()
 	File_path_http_proto = out.File
-	file_path_http_proto_rawDesc = nil
 	file_path_http_proto_goTypes = nil
 	file_path_http_proto_depIdxs = nil
 }

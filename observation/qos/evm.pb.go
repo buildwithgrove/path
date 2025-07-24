@@ -13,12 +13,12 @@
 package qos
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/buildwithgrove/path/observation/metadata"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -159,10 +159,7 @@ func (EVMResponseValidationError) EnumDescriptor() ([]byte, []int) {
 
 // EVMRequestObservations captures all observations made while serving a single EVM blockchain service request.
 type EVMRequestObservations struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// chain_id is the blockchain identifier for the evm QoS implementation.
 	// This is preset by the processor and not determined by the request.
 	// Expected as the `Result` field in eth_chainId responses.
@@ -186,7 +183,7 @@ type EVMRequestObservations struct {
 	//   - The request passed validation
 	//   - The HTTP status code from the most recent endpoint observation should be used instead
 	//
-	// Types that are assignable to RequestValidationFailure:
+	// Types that are valid to be assigned to RequestValidationFailure:
 	//
 	//	*EVMRequestObservations_EvmHttpBodyReadFailure
 	//	*EVMRequestObservations_EvmRequestUnmarshalingFailure
@@ -266,23 +263,27 @@ func (x *EVMRequestObservations) GetRequestPayloadLength() uint32 {
 	return 0
 }
 
-func (m *EVMRequestObservations) GetRequestValidationFailure() isEVMRequestObservations_RequestValidationFailure {
-	if m != nil {
-		return m.RequestValidationFailure
+func (x *EVMRequestObservations) GetRequestValidationFailure() isEVMRequestObservations_RequestValidationFailure {
+	if x != nil {
+		return x.RequestValidationFailure
 	}
 	return nil
 }
 
 func (x *EVMRequestObservations) GetEvmHttpBodyReadFailure() *EVMHTTPBodyReadFailure {
-	if x, ok := x.GetRequestValidationFailure().(*EVMRequestObservations_EvmHttpBodyReadFailure); ok {
-		return x.EvmHttpBodyReadFailure
+	if x != nil {
+		if x, ok := x.RequestValidationFailure.(*EVMRequestObservations_EvmHttpBodyReadFailure); ok {
+			return x.EvmHttpBodyReadFailure
+		}
 	}
 	return nil
 }
 
 func (x *EVMRequestObservations) GetEvmRequestUnmarshalingFailure() *EVMRequestUnmarshalingFailure {
-	if x, ok := x.GetRequestValidationFailure().(*EVMRequestObservations_EvmRequestUnmarshalingFailure); ok {
-		return x.EvmRequestUnmarshalingFailure
+	if x != nil {
+		if x, ok := x.RequestValidationFailure.(*EVMRequestObservations_EvmRequestUnmarshalingFailure); ok {
+			return x.EvmRequestUnmarshalingFailure
+		}
 	}
 	return nil
 }
@@ -334,16 +335,15 @@ func (*EVMRequestObservations_EvmRequestUnmarshalingFailure) isEVMRequestObserva
 // EVMHTTPBodyReadFailure represents a validation failure due to internal server error
 // while attempting to read the HTTP request body.
 type EVMHTTPBodyReadFailure struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code to return to the client - typically 500 Internal Server Error
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The specific type of request validation error
 	ValidationError EVMRequestValidationError `protobuf:"varint,2,opt,name=validation_error,json=validationError,proto3,enum=path.qos.EVMRequestValidationError" json:"validation_error,omitempty"`
 	// Additional error details if available
-	ErrorDetails *string `protobuf:"bytes,3,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	ErrorDetails  *string `protobuf:"bytes,3,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EVMHTTPBodyReadFailure) Reset() {
@@ -400,16 +400,15 @@ func (x *EVMHTTPBodyReadFailure) GetErrorDetails() string {
 // EVMRequestUnmarshalingFailure represents a validation failure due to being unable
 // to parse the incoming request into the expected format.
 type EVMRequestUnmarshalingFailure struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code to return to the client - typically 400 Bad Request
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The specific type of request validation error
 	ValidationError EVMRequestValidationError `protobuf:"varint,2,opt,name=validation_error,json=validationError,proto3,enum=path.qos.EVMRequestValidationError" json:"validation_error,omitempty"`
 	// Additional error details if available
-	ErrorDetails *string `protobuf:"bytes,3,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	ErrorDetails  *string `protobuf:"bytes,3,opt,name=error_details,json=errorDetails,proto3,oneof" json:"error_details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EVMRequestUnmarshalingFailure) Reset() {
@@ -466,15 +465,12 @@ func (x *EVMRequestUnmarshalingFailure) GetErrorDetails() string {
 // EVMEndpointObservation stores a single observation from an endpoint servicing the protocol response.
 // Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
 type EVMEndpointObservation struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Address of the endpoint handling the request (e.g., onchain address of a Pocket Shannon node)
 	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
 	// Details of the response received from the endpoint
 	//
-	// Types that are assignable to ResponseObservation:
+	// Types that are valid to be assigned to ResponseObservation:
 	//
 	//	*EVMEndpointObservation_ChainIdResponse
 	//	*EVMEndpointObservation_BlockNumberResponse
@@ -483,6 +479,8 @@ type EVMEndpointObservation struct {
 	//	*EVMEndpointObservation_EmptyResponse
 	//	*EVMEndpointObservation_NoResponse
 	ResponseObservation isEVMEndpointObservation_ResponseObservation `protobuf_oneof:"response_observation"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *EVMEndpointObservation) Reset() {
@@ -522,51 +520,63 @@ func (x *EVMEndpointObservation) GetEndpointAddr() string {
 	return ""
 }
 
-func (m *EVMEndpointObservation) GetResponseObservation() isEVMEndpointObservation_ResponseObservation {
-	if m != nil {
-		return m.ResponseObservation
+func (x *EVMEndpointObservation) GetResponseObservation() isEVMEndpointObservation_ResponseObservation {
+	if x != nil {
+		return x.ResponseObservation
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetChainIdResponse() *EVMChainIDResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_ChainIdResponse); ok {
-		return x.ChainIdResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_ChainIdResponse); ok {
+			return x.ChainIdResponse
+		}
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetBlockNumberResponse() *EVMBlockNumberResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_BlockNumberResponse); ok {
-		return x.BlockNumberResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_BlockNumberResponse); ok {
+			return x.BlockNumberResponse
+		}
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetGetBalanceResponse() *EVMGetBalanceResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_GetBalanceResponse); ok {
-		return x.GetBalanceResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_GetBalanceResponse); ok {
+			return x.GetBalanceResponse
+		}
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetUnrecognizedResponse() *EVMUnrecognizedResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_UnrecognizedResponse); ok {
-		return x.UnrecognizedResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_UnrecognizedResponse); ok {
+			return x.UnrecognizedResponse
+		}
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetEmptyResponse() *EVMEmptyResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_EmptyResponse); ok {
-		return x.EmptyResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_EmptyResponse); ok {
+			return x.EmptyResponse
+		}
 	}
 	return nil
 }
 
 func (x *EVMEndpointObservation) GetNoResponse() *EVMNoResponse {
-	if x, ok := x.GetResponseObservation().(*EVMEndpointObservation_NoResponse); ok {
-		return x.NoResponse
+	if x != nil {
+		if x, ok := x.ResponseObservation.(*EVMEndpointObservation_NoResponse); ok {
+			return x.NoResponse
+		}
 	}
 	return nil
 }
@@ -637,10 +647,7 @@ func (*EVMEndpointObservation_NoResponse) isEVMEndpointObservation_ResponseObser
 // EVMChainIDResponse stores the response to an `eth_chainId` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 type EVMChainIDResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The chain ID value returned in the response
@@ -648,6 +655,8 @@ type EVMChainIDResponse struct {
 	// Why the response failed QoS validation
 	// If not set, the response is considered valid
 	ResponseValidationError *EVMResponseValidationError `protobuf:"varint,3,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError,oneof" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMChainIDResponse) Reset() {
@@ -704,10 +713,7 @@ func (x *EVMChainIDResponse) GetResponseValidationError() EVMResponseValidationE
 // EVMBlockNumberResponse stores the response to an `eth_getBlockNumber` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 type EVMBlockNumberResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The block number value returned in the response
@@ -715,6 +721,8 @@ type EVMBlockNumberResponse struct {
 	// Why the response failed QoS validation
 	// If not set, the response is considered valid
 	ResponseValidationError *EVMResponseValidationError `protobuf:"varint,3,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError,oneof" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMBlockNumberResponse) Reset() {
@@ -771,10 +779,7 @@ func (x *EVMBlockNumberResponse) GetResponseValidationError() EVMResponseValidat
 // EVMGetBalanceResponse stores the response to an `eth_getBalance` request.
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 type EVMGetBalanceResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The contract address for which the the balance is checked.
@@ -786,6 +791,8 @@ type EVMGetBalanceResponse struct {
 	// Why the response failed QoS validation
 	// If not set, the response is considered valid
 	ResponseValidationError *EVMResponseValidationError `protobuf:"varint,5,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError,oneof" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMGetBalanceResponse) Reset() {
@@ -857,10 +864,7 @@ func (x *EVMGetBalanceResponse) GetResponseValidationError() EVMResponseValidati
 // - Example: eth_call response contents used for endpoint validation (as of PR #72)
 // - Sanctions still apply to endpoints returning invalid responses (e.g. unparsable JSONRPC)
 type EVMUnrecognizedResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code received from the endpoint
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// The JSON-RPC response received
@@ -868,6 +872,8 @@ type EVMUnrecognizedResponse struct {
 	// Why the response failed QoS validation
 	// If not set, the response is considered valid
 	ResponseValidationError *EVMResponseValidationError `protobuf:"varint,3,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError,oneof" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMUnrecognizedResponse) Reset() {
@@ -924,14 +930,13 @@ func (x *EVMUnrecognizedResponse) GetResponseValidationError() EVMResponseValida
 // EVMEmptyResponse represents an endpoint's empty response, which triggers
 // automatic endpoint disqualification by EVM QoS processors.
 type EVMEmptyResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code represents the status code sent to the client when the chosen endpoint returns an empty response.
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// Always set to EMPTY for empty responses
 	ResponseValidationError EVMResponseValidationError `protobuf:"varint,2,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMEmptyResponse) Reset() {
@@ -981,14 +986,13 @@ func (x *EVMEmptyResponse) GetResponseValidationError() EVMResponseValidationErr
 // EVMNoResponse represents a situation where no responses were reported to QoS by the protocol.
 // This is due to protocol failures, e.g. if the selected endpoint was maxed out.
 type EVMNoResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTP status code to return, typically 503 Service Unavailable
 	HttpStatusCode int32 `protobuf:"varint,1,opt,name=http_status_code,json=httpStatusCode,proto3" json:"http_status_code,omitempty"`
 	// Always set to NO_RESPONSE for this scenario
 	ResponseValidationError EVMResponseValidationError `protobuf:"varint,2,opt,name=response_validation_error,json=responseValidationError,proto3,enum=path.qos.EVMResponseValidationError" json:"response_validation_error,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *EVMNoResponse) Reset() {
@@ -1112,12 +1116,12 @@ const file_path_qos_evm_proto_rawDesc = "" +
 
 var (
 	file_path_qos_evm_proto_rawDescOnce sync.Once
-	file_path_qos_evm_proto_rawDescData = file_path_qos_evm_proto_rawDesc
+	file_path_qos_evm_proto_rawDescData []byte
 )
 
 func file_path_qos_evm_proto_rawDescGZIP() []byte {
 	file_path_qos_evm_proto_rawDescOnce.Do(func() {
-		file_path_qos_evm_proto_rawDescData = protoimpl.X.CompressGZIP(file_path_qos_evm_proto_rawDescData)
+		file_path_qos_evm_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_path_qos_evm_proto_rawDesc), len(file_path_qos_evm_proto_rawDesc)))
 	})
 	return file_path_qos_evm_proto_rawDescData
 }
@@ -1201,7 +1205,7 @@ func file_path_qos_evm_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_path_qos_evm_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_path_qos_evm_proto_rawDesc), len(file_path_qos_evm_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   10,
 			NumExtensions: 0,
@@ -1213,7 +1217,6 @@ func file_path_qos_evm_proto_init() {
 		MessageInfos:      file_path_qos_evm_proto_msgTypes,
 	}.Build()
 	File_path_qos_evm_proto = out.File
-	file_path_qos_evm_proto_rawDesc = nil
 	file_path_qos_evm_proto_goTypes = nil
 	file_path_qos_evm_proto_depIdxs = nil
 }
