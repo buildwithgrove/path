@@ -328,37 +328,35 @@ func processResult(
 			m.jsonRPCParseErrors[errorMsg]++
 			m.errors[errorMsg]++
 		} else {
-			if !rpcResponse.ID.IsEmpty() {
-				m.jsonRPCResponses++
+			m.jsonRPCResponses++
 
-				// Validate the response first
-				validationErr := rpcResponse.Validate(getExpectedID(serviceType))
+			// Validate the response first
+			validationErr := rpcResponse.Validate(getExpectedID(serviceType))
 
-				// Check if Error field is nil (good)
-				if rpcResponse.Error != nil {
-					m.jsonRPCErrorField++
-					// Only track the error field message if there's no validation error
-					// (to avoid duplicate tracking when validation fails due to error field)
-					if validationErr == nil {
-						m.errors[rpcResponse.Error.Message]++
-					}
+			// Check if Error field is nil (good)
+			if rpcResponse.Error != nil {
+				m.jsonRPCErrorField++
+				// Only track the error field message if there's no validation error
+				// (to avoid duplicate tracking when validation fails due to error field)
+				if validationErr == nil {
+					m.errors[rpcResponse.Error.Message]++
 				}
+			}
 
-				// Check if Result field is not nil (good)
-				if rpcResponse.Result == nil {
-					m.jsonRPCNilResult++
-				}
+			// Check if Result field is not nil (good)
+			if rpcResponse.Result == nil {
+				m.jsonRPCNilResult++
+			}
 
-				// Process validation error
-				if validationErr != nil {
-					m.jsonRPCValidateErrors++
+			// Process validation error
+			if validationErr != nil {
+				m.jsonRPCValidateErrors++
 
-					// Create response preview for validation errors
-					preview := createResponsePreview(result.Body, 100)
-					errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
-					m.jsonRPCValidationErrors[errorMsg]++
-					m.errors[errorMsg]++
-				}
+				// Create response preview for validation errors
+				preview := createResponsePreview(result.Body, 100)
+				errorMsg := fmt.Sprintf("JSON-RPC validation error: %v (response preview: %s)", validationErr, preview)
+				m.jsonRPCValidationErrors[errorMsg]++
+				m.errors[errorMsg]++
 			}
 		}
 	}
