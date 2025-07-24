@@ -319,7 +319,8 @@ func processResult(m *methodMetrics, result *vegeta.Result, serviceType serviceT
 		errorMsg := fmt.Sprintf("JSON parse error: %v (response preview: %s)", err, preview)
 		m.jsonRPCParseErrors[errorMsg]++
 		m.errors[errorMsg]++
-	} else {
+	} else if !rpcResponse.ID.IsEmpty() {
+		// Only count responses with a non-empty ID
 		m.jsonRPCResponses++
 
 		// Validate the response first
@@ -408,19 +409,17 @@ type serviceSummary struct {
 	totalFailure  int
 
 	serviceConfig ServiceConfig
-	methodsToTest []string
 	methodErrors  map[string]map[string]int
 	methodCount   int
 	totalErrors   int
 }
 
-func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, methodsToTest []string) *serviceSummary {
+func newServiceSummary(serviceID protocol.ServiceID, serviceConfig ServiceConfig, testMethodsMap map[string]testMethodConfig) *serviceSummary {
 	return &serviceSummary{
 		serviceID:     serviceID,
 		serviceConfig: serviceConfig,
-		methodsToTest: methodsToTest,
 		methodErrors:  make(map[string]map[string]int),
-		methodCount:   len(methodsToTest),
+		methodCount:   len(testMethodsMap),
 	}
 }
 

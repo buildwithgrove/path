@@ -19,10 +19,10 @@ import (
 type serviceType string
 
 const (
-	serviceTypeEVM      serviceType = "evm"
-	serviceTypeCometBFT serviceType = "cometbft"
-	serviceTypeSolana   serviceType = "solana"
-	serviceTypeAnvil    serviceType = "anvil"
+	serviceTypeEVM       serviceType = "evm"
+	serviceTypeCosmosSDK serviceType = "cosmos_sdk"
+	serviceTypeSolana    serviceType = "solana"
+	serviceTypeAnvil     serviceType = "anvil"
 )
 
 // -----------------------------------------------------------------------------
@@ -44,6 +44,7 @@ type (
 		Alias         string             `yaml:"alias,omitempty"`    // Alias for the service
 		Archival      bool               `yaml:"archival,omitempty"` // Whether this is an archival test (historical data access)
 		ServiceParams ServiceParams      `yaml:"service_params"`     // Service-specific parameters for test requests
+		SupportedAPIs []string           `yaml:"supported_apis"`     // List of APIs supported by the service
 		// Not marshaled from YAML; set in test case.
 		serviceType    serviceType
 		testMethodsMap map[string]testMethodConfig
@@ -81,31 +82,16 @@ func (ts *TestService) hydrate(serviceConfig ServiceConfig, serviceType serviceT
 	ts.testMethodsMap = testMethodsMap
 }
 
-func (ts *TestService) getTestMethods() []string {
+func (ts *TestService) getVegetaTargets(gatewayURL string) (map[string]vegeta.Target, error) {
 	switch ts.ServiceType {
 	case serviceTypeEVM:
-		return getEVMTestMethods()
+		return getEVMVegetaTargets(ts, gatewayURL)
 	case serviceTypeSolana:
-		return getSolanaTestMethods()
-	case serviceTypeCometBFT:
-		// CometBFT uses REST-like URL paths, not JSON-RPC methods
-		return getCometBFTTestURLPaths()
+		return getSolanaVegetaTargets(ts, gatewayURL)
+	case serviceTypeCosmosSDK:
+		return getCosmosSDKVegetaTargets(ts, gatewayURL)
 	case serviceTypeAnvil:
-		return getAnvilTestMethods()
-	}
-	return nil
-}
-
-func (ts *TestService) getVegetaTargets(methods []string, gatewayURL string) (map[string]vegeta.Target, error) {
-	switch ts.ServiceType {
-	case serviceTypeEVM:
-		return getEVMVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeSolana:
-		return getSolanaVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeCometBFT:
-		return getCometBFTVegetaTargets(ts, methods, gatewayURL)
-	case serviceTypeAnvil:
-		return getAnvilVegetaTargets(ts, methods, gatewayURL)
+		return getAnvilVegetaTargets(ts, gatewayURL)
 	}
 	return nil, fmt.Errorf("unsupported service type: %s", ts.ServiceType)
 }
@@ -116,8 +102,8 @@ func getExpectedID(serviceType serviceType) jsonrpc.ID {
 		return evmExpectedID
 	case serviceTypeSolana:
 		return solanaExpectedID
-	case serviceTypeCometBFT:
-		return cometbftExpectedID
+	case serviceTypeCosmosSDK:
+		return cosmosSDKExpectedID
 	case serviceTypeAnvil:
 		return anvilExpectedID
 	default:
@@ -228,8 +214,8 @@ func (ts *TestServices) validateTestService(tc TestService, index int) error {
 		if tc.ServiceParams.TransactionHash == "" {
 			return fmt.Errorf("test service #%d: TransactionHash is required for Solana services", index)
 		}
-	case serviceTypeCometBFT:
-		// No specific validation for CometBFT yet
+	case serviceTypeCosmosSDK:
+		// No specific validation for Cosmos SDK yet
 	case serviceTypeAnvil:
 		// Anvil services require no specific parameters since all test methods use empty params
 		// This is intentionally minimal - just verify the service can respond to basic JSON-RPC calls

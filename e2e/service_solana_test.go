@@ -108,7 +108,6 @@ func createSolanaJsonRPCParams(method jsonrpc.Method, sp ServiceParams) jsonrpc.
 
 func getSolanaVegetaTargets(
 	ts *TestService,
-	methods []string,
 	gatewayURL string,
 ) (map[string]vegeta.Target, error) {
 	headers := getRequestHeaders(ts.ServiceID)
@@ -121,7 +120,7 @@ func getSolanaVegetaTargets(
 	ts.ServiceParams.blockNumber = blockNumber
 
 	targets := make(map[string]vegeta.Target)
-	for _, method := range methods {
+	for _, method := range getSolanaTestMethods() {
 		// Create JSON-RPC request with appropriate parameters
 		jsonrpcReq := jsonrpc.Request{
 			JSONRPC: jsonrpc.Version2,
