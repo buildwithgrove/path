@@ -42,8 +42,26 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 	}
 }
 
-// toSanctionDetails converts a sanction to a devtools.SanctionedEndpoint struct.
-func (s sanction) toSanctionDetails(
+// permanentSanctionToDetails converts a permanent sanction to a devtools.SanctionedEndpoint struct.
+// It does not include the session ID as permanent sanction is not associated with a specific session.
+func (s sanction) permanentSanctionToDetails(
+	endpointAddr protocol.EndpointAddr,
+	sanctionType protocolobservations.MorseSanctionType,
+) devtools.SanctionedEndpoint {
+	return devtools.SanctionedEndpoint{
+		EndpointAddr:  endpointAddr,
+		ServiceID:     protocol.ServiceID(s.sessionServiceID),
+		Reason:        s.reason,
+		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
+		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
+		SessionHeight: s.sessionStartHeight,
+		CreatedAt:     s.createdAt,
+	}
+}
+
+// sessionSanctionToDetails converts a session sanction to a devtools.SanctionedEndpoint struct.
+// It includes the session ID as session sanction is associated with a specific session.
+func (s sanction) sessionSanctionToDetails(
 	endpointAddr protocol.EndpointAddr,
 	sessionID string,
 	sanctionType protocolobservations.MorseSanctionType,

@@ -264,7 +264,10 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		}
 
 		// Permanent sanctions are not associated with a session ID.
-		ses.processSanctionIntoDetailsMap(endpointAddr, "", sanction, permanentSanctionDetails)
+		permanentSanctionDetails[endpointAddr] = sanction.permanentSanctionToDetails(
+			endpointAddr,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
+		)
 	}
 
 	// Then get session sanctions
@@ -290,7 +293,11 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		ses.processSanctionIntoDetailsMap(sanctionEndpointAddr, sanctionKey.sessionID, sanction, sessionSanctionDetails)
+		sessionSanctionDetails[sanctionEndpointAddr] = sanction.sessionSanctionToDetails(
+			sanctionEndpointAddr,
+			sanctionKey.sessionID,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+		)
 	}
 
 	permanentSanctionedEndpointsCount := len(permanentSanctionDetails)
@@ -304,19 +311,4 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
 		TotalSanctionedEndpointsCount:     totalSanctionedEndpointsCount,
 	}
-}
-
-// processSanctionIntoDetailsMap decomposes the sanction key into its components
-// in order to populate the details map with the data required for the devtools.ProtocolLevelDataResponse.
-func (ses *sanctionedEndpointsStore) processSanctionIntoDetailsMap(
-	endpointAddr protocol.EndpointAddr,
-	sessionID string,
-	sanction sanction,
-	detailsMap map[protocol.EndpointAddr]devtools.SanctionedEndpoint,
-) {
-	detailsMap[endpointAddr] = sanction.toSanctionDetails(
-		endpointAddr,
-		sessionID,
-		protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
-	)
 }
