@@ -25,9 +25,6 @@ debug_view_results_links:
 	@echo "2. Path Gateway Metrics:"
 	@echo "   http://localhost:3003/d/gateway/path-path-gateway?orgId=1&from=now-1h&to=now&timezone=browser&var-path=path-metrics&refresh=5s"
 	@echo ""
-	@echo "3. Morse Relay Requests:"
-	@echo "   http://localhost:3003/d/morse/morse-relay-requests?orgId=1&from=now-3h&to=now&timezone=browser&refresh=10s"
-	@echo ""
 	@echo "Login with: admin / admin (for now)"
 	@echo "##########################################################################################################"
 	@echo ""
@@ -62,14 +59,10 @@ check_relay_util:
 # For all of the below requests:
 # - The full PATH stack (including GUARD) must be running
 
-# For all Shannon requests:
+# For all requests:
 # - The 'anvil' service must be configured in the '.config.yaml' file.
 # - The application must be configured to serve requests for `anvil` (Eth MainNet on Shannon)
 # - It is assumed that the network has suppliers running that service `anvil` requests
-
-# For all Morse requests:
-# - The application must be configured to serve requests for `F00C` (Eth MainNet on Morse)
-# - It is assumed that the network has suppliers running that service `F00C` requests
 
 # The following are the various ways to make requests to PATH with Envoy running:
 # - Auth: static API key, passed in the 'Authorization' header

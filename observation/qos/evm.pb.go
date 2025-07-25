@@ -466,7 +466,7 @@ func (x *EVMRequestUnmarshalingFailure) GetErrorDetails() string {
 // Example: A Pocket node on Shannon backed by an Ethereum data node servicing an `eth_getBlockNumber` request.
 type EVMEndpointObservation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Address of the endpoint handling the request (e.g., onchain address of a Pocket Morse/Shannon node)
+	// Address of the endpoint handling the request (e.g., onchain address of a Pocket Shannon node)
 	EndpointAddr string `protobuf:"bytes,1,opt,name=endpoint_addr,json=endpointAddr,proto3" json:"endpoint_addr,omitempty"`
 	// Details of the response received from the endpoint
 	//
@@ -642,8 +642,7 @@ func (*EVMEndpointObservation_NoResponse) isEVMEndpointObservation_ResponseObser
 //  1. Contains both SanctionType enum and RecommendedSanction field
 //  2. Can be embedded as a single field within all qos/Response.proto messages
 //  3. Ensures sanction policies are explicitly documented within message definitions
-//  4. Maintains alignment with the Morse protocol sanction specifications
-//  5. Search for all instances of RecommendedSanction in the codebase and use this new structure instead
+//  4. Search for all instances of RecommendedSanction in the codebase and use this new structure instead
 //
 // EVMChainIDResponse stores the response to an `eth_chainId` request
 // https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid

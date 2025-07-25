@@ -1,12 +1,11 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/buildwithgrove/path/config/morse"
 	"github.com/buildwithgrove/path/config/shannon"
 )
 
@@ -16,15 +15,12 @@ import (
 // that which are parsed from a YAML config file. It contains all the various
 // configuration details that are needed to operate a gateway.
 type GatewayConfig struct {
-	// Only one of the following configs may be set
-	MorseConfig   *morse.MorseGatewayConfig     `yaml:"morse_config"`
-	ShannonConfig *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
-
-	Router             RouterConfig           `yaml:"router_config"`
-	Logger             LoggerConfig           `yaml:"logger_config"`
-	HydratorConfig     EndpointHydratorConfig `yaml:"hydrator_config"`
-	MessagingConfig    MessagingConfig        `yaml:"messaging_config"`
-	DataReporterConfig HTTPDataReporterConfig `yaml:"data_reporter_config"`
+	ShannonConfig      *shannon.ShannonGatewayConfig `yaml:"shannon_config"`
+	Router             RouterConfig                  `yaml:"router_config"`
+	Logger             LoggerConfig                  `yaml:"logger_config"`
+	HydratorConfig     EndpointHydratorConfig        `yaml:"hydrator_config"`
+	MessagingConfig    MessagingConfig               `yaml:"messaging_config"`
+	DataReporterConfig HTTPDataReporterConfig        `yaml:"data_reporter_config"`
 }
 
 // LoadGatewayConfigFromYAML reads a YAML configuration file from the specified path
@@ -47,12 +43,8 @@ func LoadGatewayConfigFromYAML(path string) (GatewayConfig, error) {
 
 /* --------------------------------- Gateway Config Methods -------------------------------- */
 
-func (c GatewayConfig) GetShannonConfig() *shannon.ShannonGatewayConfig {
+func (c GatewayConfig) GetGatewayConfig() *shannon.ShannonGatewayConfig {
 	return c.ShannonConfig
-}
-
-func (c GatewayConfig) GetMorseConfig() *morse.MorseGatewayConfig {
-	return c.MorseConfig
 }
 
 func (c GatewayConfig) GetRouterConfig() RouterConfig {
@@ -82,14 +74,8 @@ func (c GatewayConfig) validate() error {
 // validateProtocolConfig checks if the protocol configuration is valid, by both performing validation on the
 // protocol specific config and ensuring that the correct protocol specific config is set.
 func (c GatewayConfig) validateProtocolConfig() error {
-	switch {
-	case c.MorseConfig != nil && c.ShannonConfig != nil:
-		return errors.New("only one of morse or shannon config may be set")
-	case c.MorseConfig != nil:
-		return c.MorseConfig.Validate()
-	case c.ShannonConfig != nil:
-		return c.ShannonConfig.Validate()
-	default:
-		return errors.New("no protocol configured")
+	if c.ShannonConfig == nil {
+		return fmt.Errorf("protocol configuration is required")
 	}
+	return c.ShannonConfig.Validate()
 }

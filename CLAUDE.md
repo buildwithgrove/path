@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling access to a decentralized supply network. It serves as a gateway that handles service requests and relays them through different protocols (Shannon and Morse) to blockchain endpoints.
+PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling access to a decentralized supply network. It serves as a gateway that handles service requests and relays them through the Shannon protocol to blockchain endpoints.
 
 ## Development Commands
 
@@ -20,7 +20,6 @@ PATH (Path API & Toolkit Harness) is an open-source Go framework for enabling ac
 - `make test_unit` - Run all unit tests (`go test ./... -short -count=1`)
 - `make test_all` - Run unit tests plus E2E tests for key services
 - `make e2e_test SERVICE_IDS` - Run E2E tests for specific Shannon service IDs (e.g., `make e2e_test eth,poly`)
-- `make morse_e2e_test SERVICE_IDS` - Run E2E tests for specific Morse service IDs (e.g., `make morse_e2e_test F00C,F021`)
 - `make load_test SERVICE_IDS` - Run Shannon load tests
 - `make go_lint` - Run Go linters (`golangci-lint run --timeout 5m --build-tags test`)
 
@@ -35,7 +34,7 @@ PATH operates as a multi-layered gateway system:
 ### Core Components
 
 - **Gateway** (`gateway/`) - Main entry point that handles HTTP requests and coordinates request processing
-- **Protocol** (`protocol/`) - Protocol implementations (Shannon and Morse) that manage endpoint communication
+- **Protocol** (`protocol/`) - Protocol implementations (currently only Shannon) that manage endpoint communication
 - **QoS** (`qos/`) - Quality of Service implementations for different blockchain services (EVM, Solana, CosmosSDK)
 - **Router** (`router/`) - HTTP routing and API endpoint management
 - **Config** (`config/`) - Configuration management for different protocol modes
@@ -43,7 +42,6 @@ PATH operates as a multi-layered gateway system:
 ### Protocol Implementations
 
 - **Shannon** (`protocol/shannon/`) - Main protocol implementation with gRPC communication
-- **Morse** (`protocol/morse/`) - Legacy protocol implementation (being phased out)
 
 ### QoS Services
 
@@ -64,7 +62,7 @@ PATH operates as a multi-layered gateway system:
 
 ### Configuration
 
-PATH uses YAML configuration files that support both Shannon and Morse protocols. Configuration includes:
+PATH uses YAML configuration files that support the Shannon protocol. Configuration includes:
 
 - Protocol-specific settings (gRPC endpoints, signing keys)
 - Service definitions and endpoint mappings
@@ -99,4 +97,4 @@ PATH uses Tilt for local development with Kubernetes (kind). The development sta
 - **Unit Tests** - Standard Go tests with `-short` flag
 - **E2E Tests** - Full integration tests against live blockchain endpoints
 - **Load Tests** - Performance testing using Vegeta load testing tool
-- **Protocol Tests** - Separate test suites for Shannon and Morse protocols
+- **Protocol Tests** - test suites for Shannon protocol

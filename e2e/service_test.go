@@ -28,9 +28,7 @@ const (
 // -----------------------------------------------------------------------------
 // TestServices Struct - Configures the services to test against.
 //
-// Unmarshalled from the YAML files:
-//   - `config/services_morse.yaml`
-//   - `config/services_shannon.yaml`
+// Unmarshalled from the YAML file `config/services_shannon.yaml`
 // -----------------------------------------------------------------------------
 
 // DEV_NOTE: All structs and `yaml:` tagged fields must be public to allow for unmarshalling using `gopkg.in/yaml`

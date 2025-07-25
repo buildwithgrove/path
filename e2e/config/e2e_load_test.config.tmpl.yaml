@@ -1,8 +1,6 @@
 # yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
 
-# TODO_TECHDEBT(@adshmh): Simplify/delete other E2E/Load Testing config files.
-#
-# Default Load test configuration for Morse and Shannon
+# Default Load test configuration for Shannon
 #
 # Usage:
 # - Expected config location: `.e2e_load_test.config.yaml`

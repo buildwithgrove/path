@@ -36,7 +36,7 @@ definitions:
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
-        examples: ["xrplevm", "ethereum", "arb-one"]
+        examples: ["xrplevm", "eth", "arb-one"]
       service_type:
         description: "Type of service to test"
         type: string
@@ -101,11 +101,11 @@ definitions:
       name:
         description: "Name of the service"
         type: string
-        examples: ["Morse - F025 (Solana) Test"]
+        examples: ["Shannon - solana (Solana) Test"]
       service_id:
         description: "Service ID to test - identifies the specific blockchain service"
         type: string
-        examples: ["F025"]
+        examples: ["solana"]
       service_type:
         description: "Type of service to test"
         type: string

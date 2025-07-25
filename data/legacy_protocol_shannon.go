@@ -2,8 +2,10 @@ package data
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pokt-network/poktroll/pkg/polylog"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	shannonmetrics "github.com/buildwithgrove/path/metrics/protocol/shannon"
 	protocolobservation "github.com/buildwithgrove/path/observation/protocol"
@@ -129,4 +131,14 @@ func setLegacyErrFieldsFromShannonEndpointError(
 	legacyRecord.ErrorMessage = errMsg
 
 	return legacyRecord
+}
+
+// formatTimestampPbForBigQueryJSON formats a protobuf Timestamp for BigQuery JSON inserts.
+// BigQuery expects timestamps in RFC 3339 format: YYYY-MM-DDTHH:MM:SS[.SSSSSS]Z
+func formatTimestampPbForBigQueryJSON(pbTimestamp *timestamppb.Timestamp) string {
+	// Convert the protobuf timestamp to Go time.Time
+	goTime := pbTimestamp.AsTime()
+
+	// Format in RFC 3339 format which BigQuery expects
+	return goTime.Format(time.RFC3339Nano)
 }
