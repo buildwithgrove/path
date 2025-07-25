@@ -52,8 +52,8 @@ func (s sanction) permanentSanctionToDetails(
 		EndpointAddr:  endpointAddr,
 		ServiceID:     protocol.ServiceID(s.sessionServiceID),
 		Reason:        s.reason,
-		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
-		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
+		SanctionType:  protocolobservations.ShannonSanctionType_name[int32(sanctionType)],
+		ErrorType:     protocolobservations.ShannonEndpointErrorType_name[int32(s.errorType)],
 		SessionHeight: s.sessionStartHeight,
 		CreatedAt:     s.createdAt,
 	}
@@ -71,8 +71,8 @@ func (s sanction) sessionSanctionToDetails(
 		SessionID:     sessionID,
 		ServiceID:     protocol.ServiceID(s.sessionServiceID),
 		Reason:        s.reason,
-		SanctionType:  protocolobservations.MorseSanctionType_name[int32(sanctionType)],
-		ErrorType:     protocolobservations.MorseEndpointErrorType_name[int32(s.errorType)],
+		SanctionType:  protocolobservations.ShannonSanctionType_name[int32(sanctionType)],
+		ErrorType:     protocolobservations.ShannonEndpointErrorType_name[int32(s.errorType)],
 		SessionHeight: s.sessionStartHeight,
 		CreatedAt:     s.createdAt,
 	}
