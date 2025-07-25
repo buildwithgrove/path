@@ -40,18 +40,6 @@ func (e EndpointAddr) String() string {
 	return string(e)
 }
 
-// Decompose decomposes an EndpointAddr into its supplier address and endpoint URL.
-//
-// For example, given the EndpointAddr "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org",
-//   - supplierAddress: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8"
-//   - endpointURL: "https://im.oldgreg.org"
-func (e EndpointAddr) Decompose() (supplierAddress string, endpointURL string) {
-	parts := strings.SplitN(string(e), "-", 2)
-	supplierAddress = parts[0]
-	endpointURL = parts[1]
-	return
-}
-
 func (e EndpointAddrList) String() string {
 	// Converts each EndpointAddr to string and joins them with a comma
 	addrs := make([]string, len(e))
