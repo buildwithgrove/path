@@ -46,7 +46,7 @@ func buildSanctionFromObservation(observation *protocolobservations.ShannonEndpo
 // It does not include the session ID as permanent sanction is not associated with a specific session.
 func (s sanction) permanentSanctionToDetails(
 	endpointAddr protocol.EndpointAddr,
-	sanctionType protocolobservations.MorseSanctionType,
+	sanctionType protocolobservations.ShannonSanctionType,
 ) devtools.SanctionedEndpoint {
 	return devtools.SanctionedEndpoint{
 		EndpointAddr:  endpointAddr,
