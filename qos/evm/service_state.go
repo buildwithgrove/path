@@ -189,13 +189,10 @@ func (ss *serviceState) getDisqualifiedEndpointsResponse(serviceID protocol.Serv
 	// Populate the data response object using the endpoints in the endpoint store.
 	for endpointAddr, endpoint := range ss.endpointStore.endpoints {
 		if err := ss.basicEndpointValidation(endpoint); err != nil {
-			supplierAddress, endpointURL := endpointAddr.Decompose()
-
 			qosLevelDataResponse.DisqualifiedEndpoints[endpointAddr] = devtools.QoSDisqualifiedEndpoint{
-				SupplierAddress: supplierAddress,
-				EndpointURL:     endpointURL,
-				Reason:          err.Error(),
-				ServiceID:       serviceID,
+				EndpointAddr: endpointAddr,
+				Reason:       err.Error(),
+				ServiceID:    serviceID,
 			}
 
 			// DEV_NOTE: if new checks are added to a service, we need to add them here.

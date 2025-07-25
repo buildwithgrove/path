@@ -157,9 +157,9 @@ func (ses *sanctionedEndpointsStore) addSessionSanction(
 	endpoint *endpoint,
 	sanction sanction,
 ) {
-	sessionSanctionKey := newSessionSanctionKey(endpoint)
+	sessionSanctionKey := buildSessionSanctionKey(endpoint)
 
-	ses.sessionSanctionsCache.Set(sessionSanctionKey, sanction, defaultSessionSanctionExpiration)
+	ses.sessionSanctionsCache.Set(sessionSanctionKey.string(), sanction, defaultSessionSanctionExpiration)
 }
 
 // isSanctioned checks if an endpoint has any active sanction (permanent or session-based)
@@ -174,9 +174,9 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 	}
 
 	// Check session sanctions - these are specific to endpoint+session
-	sessionSanctionKey := newSessionSanctionKey(endpoint)
+	sessionSanctionKey := buildSessionSanctionKey(endpoint)
 
-	sessionSanctionObj, hasSessionSanction := ses.sessionSanctionsCache.Get(sessionSanctionKey)
+	sessionSanctionObj, hasSessionSanction := ses.sessionSanctionsCache.Get(sessionSanctionKey.string())
 	if hasSessionSanction {
 		sanctionRecord := sessionSanctionObj.(sanction)
 		return true, fmt.Sprintf("session sanction: %s", sanctionRecord.reason)
@@ -187,8 +187,19 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 
 // --------- Session Sanction Key ---------
 
-// newSessionSanctionKey creates a key for a session-based sanction.
-// A sanction key is a string composed of the endpoint address and the session ID, separated by a hyphen.
+type sessionSanctionKey struct {
+	endpointAddr protocol.EndpointAddr
+	sessionID    string
+}
+
+// string returns the string representation of the sessionSanctionKey.
+// For example, the string representation is:
+//   - "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890".
+func (s sessionSanctionKey) string() string {
+	return fmt.Sprintf("%s-%s", s.endpointAddr, s.sessionID)
+}
+
+// buildSessionSanctionKey creates a key for a session-based sanction.
 // The session ID is appended to ensure that session sanctions do not extend beyond the session duration.
 //
 // Example for the key "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890":
@@ -196,31 +207,38 @@ func (ses *sanctionedEndpointsStore) isSanctioned(endpoint *endpoint) (bool, str
 //   - Session ID: "1234567890"
 //
 // The key is used to store and retrieve session-based sanctions from the cache.
-func newSessionSanctionKey(endpoint *endpoint) string {
+func buildSessionSanctionKey(endpoint *endpoint) sessionSanctionKey {
 	endpointAddr := endpoint.Addr()
 	sessionID := endpoint.session.Header.SessionId
-	return fmt.Sprintf("%s-%s", endpointAddr, sessionID)
+	return sessionSanctionKey{
+		endpointAddr: endpointAddr,
+		sessionID:    sessionID,
+	}
 }
 
-// decomposeSessionSanctionKey decomposes a sanction key into its components.
-// It returns the endpoint address and the session ID.
+// newSessionSanctionKeyFromKey creates a sessionSanctionKey from a string.
+// It returns the sessionSanctionKey and an error if the key is invalid.
 //
 // Example:
 // - Full Key: pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org-1234567890
 //   - Endpoint address: "pokt1ggdpwj5stslx2e567qcm50wyntlym5c4n0dst8-https://im.oldgreg.org"
 //   - Session ID: "1234567890"
-func decomposeSessionSanctionKey(key string) (protocol.EndpointAddr, string) {
+func newSessionSanctionKeyFromKey(key string) (sessionSanctionKey, error) {
 	// Find the last hyphen to split endpointAddr from sessionID
 	// This handles cases where the URL in endpointAddr contains hyphens
 	lastHyphenIndex := strings.LastIndex(key, "-")
 	if lastHyphenIndex == -1 {
 		// If no hyphen found, return the entire key as endpointAddr and empty sessionID
-		return protocol.EndpointAddr(key), ""
+		return sessionSanctionKey{}, fmt.Errorf("no hyphen found in key: %s", key)
 	}
 
 	endpointAddr := key[:lastHyphenIndex]
 	sessionID := key[lastHyphenIndex+1:]
-	return protocol.EndpointAddr(endpointAddr), sessionID
+
+	return sessionSanctionKey{
+		endpointAddr: protocol.EndpointAddr(endpointAddr),
+		sessionID:    sessionID,
+	}, nil
 }
 
 // --------- Sanction Details ---------
@@ -246,7 +264,10 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		}
 
 		// Permanent sanctions are not associated with a session ID.
-		ses.processSanctionIntoDetailsMap(endpointAddr, "", sanction, permanentSanctionDetails)
+		permanentSanctionDetails[endpointAddr] = sanction.permanentSanctionToDetails(
+			endpointAddr,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
+		)
 	}
 
 	// Then get session sanctions
@@ -257,7 +278,13 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		sanctionEndpointAddr, sessionID := decomposeSessionSanctionKey(key)
+		sanctionKey, err := newSessionSanctionKeyFromKey(key)
+		if err != nil {
+			ses.logger.Error().Msgf("SHOULD NEVER HAPPEN: failed to parse session sanction key: %s", err)
+			continue
+		}
+
+		sanctionEndpointAddr := sanctionKey.endpointAddr
 		sanctionServiceID := protocol.ServiceID(sanction.sessionServiceID)
 
 		// Only return sanctions for the provided service ID
@@ -266,7 +293,11 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 			continue
 		}
 
-		ses.processSanctionIntoDetailsMap(sanctionEndpointAddr, sessionID, sanction, sessionSanctionDetails)
+		sessionSanctionDetails[sanctionEndpointAddr] = sanction.sessionSanctionToDetails(
+			sanctionEndpointAddr,
+			sanctionKey.sessionID,
+			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+		)
 	}
 
 	permanentSanctionedEndpointsCount := len(permanentSanctionDetails)
@@ -280,22 +311,4 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		SessionSanctionedEndpointsCount:   sessionSanctionedEndpointsCount,
 		TotalSanctionedEndpointsCount:     totalSanctionedEndpointsCount,
 	}
-}
-
-// processSanctionIntoDetailsMap decomposes the sanction key into its components
-// in order to populate the details map with the data required for the devtools.ProtocolLevelDataResponse.
-func (ses *sanctionedEndpointsStore) processSanctionIntoDetailsMap(
-	endpointAddr protocol.EndpointAddr,
-	sessionID string,
-	sanction sanction,
-	detailsMap map[protocol.EndpointAddr]devtools.SanctionedEndpoint,
-) {
-	supplierAddress, endpointURL := endpointAddr.Decompose()
-
-	detailsMap[endpointAddr] = sanction.toSanctionDetails(
-		supplierAddress,
-		endpointURL,
-		sessionID,
-		protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION,
-	)
 }
