@@ -11,6 +11,9 @@ import (
 	"github.com/buildwithgrove/path/qos/jsonrpc"
 )
 
+// TODO_UPNEXT(@commoddity): Add the ability to perform QoS checks to
+// determine if an endpoint supports WebSocket connections.
+
 // validateWebsocketRequest validates a WebSocket request by:
 // 1. Checking if it's a valid WebSocket upgrade request
 // 2. Checking if the WebSocket RPC type is supported
