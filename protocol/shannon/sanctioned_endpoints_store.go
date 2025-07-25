@@ -266,7 +266,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		// Permanent sanctions are not associated with a session ID.
 		permanentSanctionDetails[endpointAddr] = sanction.permanentSanctionToDetails(
 			endpointAddr,
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_PERMANENT,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_PERMANENT,
 		)
 	}
 
@@ -296,7 +296,7 @@ func (ses *sanctionedEndpointsStore) getSanctionDetails(serviceID protocol.Servi
 		sessionSanctionDetails[sanctionEndpointAddr] = sanction.sessionSanctionToDetails(
 			sanctionEndpointAddr,
 			sanctionKey.sessionID,
-			protocolobservations.MorseSanctionType_MORSE_SANCTION_SESSION,
+			protocolobservations.ShannonSanctionType_SHANNON_SANCTION_SESSION,
 		)
 	}
 
