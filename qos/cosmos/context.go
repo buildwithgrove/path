@@ -123,7 +123,7 @@ func (rc *requestContext) GetObservations() qosobservations.Observations {
 // GetEndpointSelector returns the endpoint selector for the request context.
 // Implements the gateway.RequestQoSContext interface.
 func (rc *requestContext) GetEndpointSelector() protocol.EndpointSelector {
-	return rc
+	return rc.serviceState
 }
 
 // Select returns the address of an endpoint using the request context's service state.

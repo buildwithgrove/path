@@ -88,7 +88,7 @@ func (c cosmosSDKServiceQoSConfig) getSyncAllowance() uint64 {
 //
 // This is used:
 // 1. to validate the request and whether this service supports the request's RPC type
-// 2. to determine the appropriate syntheticQoS endpoint checks to run
+// 2. to determine the appropriate synthetic QoS endpoint checks to run
 func (c cosmosSDKServiceQoSConfig) getSupportedAPIs() map[sharedtypes.RPCType]struct{} {
 	return c.supportedAPIs
 }

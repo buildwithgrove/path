@@ -22,7 +22,7 @@ type requestValidator struct {
 	chainID       string
 	serviceID     protocol.ServiceID
 	supportedAPIs map[sharedtypes.RPCType]struct{}
-	serviceState  protocol.EndpointSelector
+	serviceState  *serviceState
 }
 
 // validateHTTPRequest validates an HTTP request and routes to appropriate sub-validator

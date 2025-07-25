@@ -55,6 +55,7 @@ func (rv *requestValidator) validateRESTRequest(
 		httpRequestURL,
 		httpRequestMethod,
 		httpRequestBody,
+		qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
 	)
 }
 
@@ -64,6 +65,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 	httpRequestURL *url.URL,
 	httpRequestMethod string,
 	httpRequestBody []byte,
+	requestOrigin qosobservations.RequestOrigin,
 ) (gateway.RequestQoSContext, bool) {
 	logger := rv.logger.With(
 		"method", "buildRESTRequestContext",
@@ -85,6 +87,7 @@ func (rv *requestValidator) buildRESTRequestContext(
 		httpRequestMethod,
 		httpRequestBody,
 		servicePayload,
+		requestOrigin,
 	)
 
 	// Hydrate the logger with REST request details.
@@ -145,6 +148,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	httpRequestMethod string,
 	httpRequestBody []byte,
 	servicePayload protocol.Payload,
+	requestOrigin qosobservations.RequestOrigin,
 ) *qosobservations.CosmosRequestObservations {
 
 	// Determine content type from headers if available, otherwise empty
@@ -154,7 +158,7 @@ func (rv *requestValidator) buildRESTRequestObservations(
 	return &qosobservations.CosmosRequestObservations{
 		ChainId:       rv.chainID,
 		ServiceId:     string(rv.serviceID),
-		RequestOrigin: qosobservations.RequestOrigin_REQUEST_ORIGIN_ORGANIC,
+		RequestOrigin: requestOrigin,
 		RequestProfile: &qosobservations.CosmosRequestProfile{
 			BackendServiceDetails: &qosobservations.BackendServiceDetails{
 				BackendServiceType: convertToProtoBackendServiceType(rpcType),
