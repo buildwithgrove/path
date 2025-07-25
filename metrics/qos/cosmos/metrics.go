@@ -36,7 +36,8 @@ var (
 	// requestsTotal tracks total Cosmos SDK requests processed
 	//
 	// - Labels:
-	//   - chain_id: Target Cosmos SDK chain identifier
+	//   - cosmos_sdk_chain_id: Target Cosmos SDK chain identifier
+	//   - evm_chain_id: Target EVM chain identifier
 	//   - service_id: Service ID of the Cosmos SDK QoS instance
 	//   - request_origin: origin of the request: User or Hydrator.
 	//   - rpc_type: Backend service type (JSONRPC, REST, COMETBFT)
@@ -58,7 +59,7 @@ var (
 			Name:      requestsTotalMetric,
 			Help:      "Total number of requests processed by Cosmos SDK QoS instance(s)",
 		},
-		[]string{"chain_id", "service_id", "request_origin", "rpc_type", "request_method", "success", "error_type", "http_status_code"},
+		[]string{"cosmos_sdk_chain_id", "evm_chain_id", "service_id", "request_origin", "rpc_type", "request_method", "success", "error_type", "http_status_code"},
 	)
 )
 
@@ -84,14 +85,15 @@ func PublishMetrics(logger polylog.Logger, observations *qos.CosmosRequestObserv
 	// Increment request counters with all corresponding labels
 	requestsTotal.With(
 		prometheus.Labels{
-			"chain_id":         interpreter.GetChainID(),
-			"service_id":       interpreter.GetServiceID(),
-			"request_origin":   observations.GetRequestOrigin().String(),
-			"rpc_type":         interpreter.GetRPCType(),
-			"request_method":   interpreter.GetRequestMethod(),
-			"success":          fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
-			"error_type":       interpreter.GetRequestErrorType(),
-			"http_status_code": fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
+			"cosmos_sdk_chain_id": interpreter.GetCosmosSdkChainID(),
+			"evm_chain_id":        interpreter.GetEVMChainID(),
+			"service_id":          interpreter.GetServiceID(),
+			"request_origin":      observations.GetRequestOrigin().String(),
+			"rpc_type":            interpreter.GetRPCType(),
+			"request_method":      interpreter.GetRequestMethod(),
+			"success":             fmt.Sprintf("%t", interpreter.IsRequestSuccessful()),
+			"error_type":          interpreter.GetRequestErrorType(),
+			"http_status_code":    fmt.Sprintf("%d", interpreter.GetRequestHTTPStatus()),
 		},
 	).Inc()
 }

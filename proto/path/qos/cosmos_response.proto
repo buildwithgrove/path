@@ -56,10 +56,13 @@ message CosmosEndpointResponseValidationResult {
 
 		// Response to CosmosSDK request against API path `/cosmos/base/node/v1beta1/status`
 		CosmosResponseCosmosSDKStatus response_cosmos_sdk_status = 7;
+
+		// Response to Ethereum JSONRPC request using method `eth_chainId`
+		CosmosResponseEVMJSONRPCChainID response_evm_jsonrpc_chain_id = 8;
 		
 		// For unrecognized responses.
 		// These are returned as-is to the user.
-		UnrecognizedResponse response_unrecognized = 8;
+		UnrecognizedResponse response_unrecognized = 9;
 	}
 }
 
@@ -70,7 +73,7 @@ message CosmosResponseCometBFTHealth {
 
 // CosmosResponseCometBFTStatus stores the response to a CometBFT `/status` request
 message CosmosResponseCometBFTStatus {
-    string chain_id = 1;
+    string cosmos_sdk_chain_id = 1;
     bool catching_up = 2;
     string latest_block_height = 3;
 }
@@ -79,6 +82,16 @@ message CosmosResponseCometBFTStatus {
 message CosmosResponseCosmosSDKStatus {
     uint64 latest_block_height = 1;
 }
+
+// CosmosResponseEVMJSONRPCChainID stores the response to an `eth_chainId` request
+// https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
+message CosmosResponseEVMJSONRPCChainID {
+	// The HTTP status code received from the endpoint
+	int32 http_status_code = 1;
+  
+	// The chain ID value returned in the response
+	string evm_chain_id = 2;
+  }
 
 // UnrecognizedResponse handles responses that are not validated before being returned to the user.
 message UnrecognizedResponse {
