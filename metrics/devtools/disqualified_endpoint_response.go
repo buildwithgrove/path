@@ -58,8 +58,7 @@ type (
 
 	// SanctionedEndpoint represents an endpoint sanctioned at the protocol level.
 	SanctionedEndpoint struct {
-		SupplierAddress string `json:"supplier_address"`
-		EndpointURL     string `json:"endpoint_url"`
+		EndpointAddr protocol.EndpointAddr `json:"endpoint_addr"`
 		// SessionID is only set for session-based sanctions.
 		SessionID     string             `json:"session_id,omitempty"`
 		ServiceID     protocol.ServiceID `json:"service_id"`
@@ -72,9 +71,8 @@ type (
 
 	// QoSDisqualifiedEndpoint represents an endpoint disqualified at the QoS level.
 	QoSDisqualifiedEndpoint struct {
-		SupplierAddress string             `json:"supplier_address"`
-		EndpointURL     string             `json:"endpoint_url"`
-		Reason          string             `json:"reason"`
-		ServiceID       protocol.ServiceID `json:"service_id"`
+		EndpointAddr protocol.EndpointAddr `json:"endpoint_addr"`
+		Reason       string                `json:"reason"`
+		ServiceID    protocol.ServiceID    `json:"service_id"`
 	}
 )
