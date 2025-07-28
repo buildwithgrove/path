@@ -98,18 +98,26 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | TRON                                                       | tron                     | EVM              | 728126428                |                           |
 | Sei                                                        | sei                      | EVM              | 1329                     |                           |
 | Akash                                                      | akash                    | Cosmos SDK       | akashnet-2               |                           |
+| Arkeo                                                      | arkeo                    | Cosmos SDK       | arkeo-main-v1            |                           |
 | Babylon                                                    | babylon                  | Cosmos SDK       | bbn-1                    |                           |
+| Celestia                                                   | celestia                 | Cosmos SDK       | celestia                 |                           |
 | Chihuahua                                                  | chihuahua                | Cosmos SDK       | chihuahua-1              |                           |
-| Cosmos Hub                                                 | cometbft                 | Cosmos SDK       | cosmoshub-4              |                           |
+| Cosmos Hub                                                 | cosmoshub                | Cosmos SDK       | cosmoshub-4              |                           |
 | Elys Network                                               | elys-network             | Cosmos SDK       | elys-1                   |                           |
+| Fetch                                                      | fetch                    | Cosmos SDK       | fetchhub-4               |                           |
 | Juno                                                       | juno                     | Cosmos SDK       | juno-1                   |                           |
+| KYVE                                                       | kyve                     | Cosmos SDK       | kyve-1                   |                           |
 | Neutron                                                    | neutron                  | Cosmos SDK       | neutron-1                |                           |
+| Nillion                                                    | nillion                  | Cosmos SDK       | nillion-1                |                           |
 | Osmosis                                                    | osmosis                  | Cosmos SDK       | osmosis-1                |                           |
 | Passage                                                    | passage                  | Cosmos SDK       | passage-2                |                           |
+| Persistence                                                | persistence              | Cosmos SDK       | core-1                   |                           |
 | Pocket Mainnet                                             | pocket                   | Cosmos SDK       | pocket                   |                           |
 | Pocket Beta Testnet                                        | pocket-beta              | Cosmos SDK       | pocket-beta              |                           |
 | Quicksilver                                                | quicksilver              | Cosmos SDK       | quicksilver-2            |                           |
+| Router                                                     | router                   | Cosmos SDK       | router_9600-1            |                           |
 | Shentu                                                     | shentu                   | Cosmos SDK       | shentu-2.2               |                           |
+| Side Protocol                                              | side-protocol            | Cosmos SDK       | sidechain-1              |                           |
 | Stride                                                     | stride                   | Cosmos SDK       | stride-1                 |                           |
 | XRPLEVM                                                    | xrplevm                  | Cosmos SDK       | xrplevm_1440000-1        |                           |
 | XRPLEVM Testnet                                            | xrplevm-testnet          | Cosmos SDK       | xrplevm_1449000-1        |                           |
