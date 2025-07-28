@@ -537,8 +537,38 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Pocket Alpha Testnet - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Pocket Beta Testnet - https://github.com/cosmos/chain-registry/blob/master/testnets/pockettestnet/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Beta Testnet 1 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Beta Testnet 2 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Beta Testnet 3 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Pocket Beta Testnet 4 - (Not in the chain registry - present here for onchain load testing)
+	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
