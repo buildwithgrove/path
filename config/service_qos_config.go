@@ -488,11 +488,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Namada - https://github.com/cosmos/chain-registry/blob/master/namada/chain.json#L9
-	cosmos.NewCosmosSDKServiceQoSConfig("namada", "namada-1", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
+	// Namada TODO_TECHDEBT(@commoddity): Namada is not a conventional Cosmos SDK chain and likely requires a custom implementation.
+	// Reference: https://github.com/buildwithgrove/path/issues/376#issuecomment-3127611273
+	// cosmos.NewCosmosSDKServiceQoSConfig("namada", "", map[sharedtypes.RPCType]struct{}{
+	// 	sharedtypes.RPCType_REST:      {}, // CosmosSDK
+	// 	sharedtypes.RPCType_COMET_BFT: {},
+	// }),
 
 	// Neutron - https://github.com/cosmos/chain-registry/blob/master/neutron/chain.json#L8
 	cosmos.NewCosmosSDKServiceQoSConfig("neutron", "neutron-1", map[sharedtypes.RPCType]struct{}{
