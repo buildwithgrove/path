@@ -410,8 +410,20 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Arkeo - https://github.com/cosmos/chain-registry/blob/master/arkeo/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("arkeo", "arkeo-main-v1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Babylon - https://github.com/cosmos/chain-registry/blob/master/babylon/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("babylon", "bbn-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Celestia - https://github.com/cosmos/chain-registry/blob/master/celestia/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("celestia", "celestia", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -433,14 +445,32 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Fetch - https://github.com/cosmos/chain-registry/blob/master/fetchhub/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("fetch", "fetchhub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Juno - https://github.com/cosmos/chain-registry/blob/master/juno/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("juno", "juno-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// KYVE - https://github.com/cosmos/chain-registry/blob/master/kyve/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("kyve", "kyve-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Neutron - https://github.com/cosmos/chain-registry/blob/master/neutron/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("neutron", "neutron-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Nillion - https://github.com/cosmos/chain-registry/blob/master/nillion/chain.json#L8
+	cosmos.NewCosmosSDKServiceQoSConfig("nillion", "nillion-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -453,6 +483,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Passage - https://github.com/cosmos/chain-registry/blob/master/passage/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("passage", "passage-2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Persistence - https://github.com/cosmos/chain-registry/blob/master/persistence/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("persistence", "core-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -497,8 +533,20 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Router - https://github.com/cosmos/chain-registry/blob/master/routerchain/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("router", "router_9600-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Shentu - https://github.com/cosmos/chain-registry/blob/master/shentu/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("shentu", "shentu-2.2", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("side-protocol", "sidechain-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),

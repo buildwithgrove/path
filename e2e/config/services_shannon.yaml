@@ -550,9 +550,19 @@ services:
     service_id: "akash"
     service_type: "cometbft"
 
+  # Arkeo
+  - name: "Shannon - arkeo (Arkeo) Test"
+    service_id: "arkeo"
+    service_type: "cometbft"
+
   # Babylon
   - name: "Shannon - babylon (Babylon) Test"
     service_id: "babylon"
+    service_type: "cometbft"
+
+  # Celestia
+  - name: "Shannon - celestia (Celestia) Test"
+    service_id: "celestia"
     service_type: "cometbft"
 
   # Chihuahua
@@ -565,14 +575,29 @@ services:
     service_id: "elys-network"
     service_type: "cometbft"
 
+  # Fetch
+  - name: "Shannon - fetch (Fetch) Test"
+    service_id: "fetch"
+    service_type: "cometbft"
+
   # Juno
   - name: "Shannon - juno (Juno) Test"
     service_id: "juno"
     service_type: "cometbft"
 
+  # KYVE
+  - name: "Shannon - kyve (KYVE) Test"
+    service_id: "kyve"
+    service_type: "cometbft"
+
   # Neutron
   - name: "Shannon - neutron (Neutron) Test"
     service_id: "neutron"
+    service_type: "cometbft"
+
+  # Nillion
+  - name: "Shannon - nillion (Nillion) Test"
+    service_id: "nillion"
     service_type: "cometbft"
 
   # Osmosis
@@ -583,6 +608,11 @@ services:
   # Passage
   - name: "Shannon - passage (Passage) Test"
     service_id: "passage"
+    service_type: "cometbft"
+
+  # Persistence
+  - name: "Shannon - persistence (Persistence) Test"
+    service_id: "persistence"
     service_type: "cometbft"
 
   # pocket-beta1
@@ -615,9 +645,19 @@ services:
     service_id: "quicksilver"
     service_type: "cometbft"
 
+  # Router
+  - name: "Shannon - router (Router) Test"
+    service_id: "router"
+    service_type: "cometbft"
+
   # Shentu
   - name: "Shannon - shentu (Shentu) Test"
     service_id: "shentu"
+    service_type: "cometbft"
+
+  # Side Protocol
+  - name: "Shannon - side-protocol (Side Protocol) Test"
+    service_id: "side-protocol"
     service_type: "cometbft"
 
   # Stride
