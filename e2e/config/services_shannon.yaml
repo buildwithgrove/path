@@ -545,9 +545,44 @@ services:
 
   # ------------- CometBFT Services -------------
 
+  # Akash
+  - name: "Shannon - akash (Akash) Test"
+    service_id: "akash"
+    service_type: "cometbft"
+
+  # Babylon
+  - name: "Shannon - babylon (Babylon) Test"
+    service_id: "babylon"
+    service_type: "cometbft"
+
+  # Chihuahua
+  - name: "Shannon - chihuahua (Chihuahua) Test"
+    service_id: "chihuahua"
+    service_type: "cometbft"
+
+  # Elys Network
+  - name: "Shannon - elys-network (Elys Network) Test"
+    service_id: "elys-network"
+    service_type: "cometbft"
+
+  # Juno
+  - name: "Shannon - juno (Juno) Test"
+    service_id: "juno"
+    service_type: "cometbft"
+
+  # Neutron
+  - name: "Shannon - neutron (Neutron) Test"
+    service_id: "neutron"
+    service_type: "cometbft"
+
   # Osmosis
   - name: "Shannon - osmosis (Osmosis) Test"
     service_id: "osmosis"
+    service_type: "cometbft"
+
+  # Passage
+  - name: "Shannon - passage (Passage) Test"
+    service_id: "passage"
     service_type: "cometbft"
 
   # pocket-beta1
@@ -573,6 +608,21 @@ services:
   # pocket-beta5
   - name: "Shannon - pocket-beta5"
     service_id: "pocket-beta5"
+    service_type: "cometbft"
+
+  # Quicksilver
+  - name: "Shannon - quicksilver (Quicksilver) Test"
+    service_id: "quicksilver"
+    service_type: "cometbft"
+
+  # Shentu
+  - name: "Shannon - shentu (Shentu) Test"
+    service_id: "shentu"
+    service_type: "cometbft"
+
+  # Stride
+  - name: "Shannon - stride (Stride) Test"
+    service_id: "stride"
     service_type: "cometbft"
 
   # TODO_NEXT(@commoddity): Add `service_params` for the below services
