@@ -434,8 +434,9 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Cosmos Hub
-	cosmos.NewCosmosSDKServiceQoSConfig("cometbft", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+	// Cosmos Hub - https://github.com/cosmos/chain-registry/blob/master/cosmoshub/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("cosmoshub", "cosmoshub-4", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
