@@ -555,6 +555,11 @@ services:
     service_id: "arkeo"
     service_type: "cometbft"
 
+  # AtomOne
+  - name: "Shannon - atomone (AtomOne) Test"
+    service_id: "atomone"
+    service_type: "cometbft"
+
   # Babylon
   - name: "Shannon - babylon (Babylon) Test"
     service_id: "babylon"
@@ -565,9 +570,19 @@ services:
     service_id: "celestia"
     service_type: "cometbft"
 
+  # Cheqd
+  - name: "Shannon - cheqd (Cheqd) Test"
+    service_id: "cheqd"
+    service_type: "cometbft"
+
   # Chihuahua
   - name: "Shannon - chihuahua (Chihuahua) Test"
     service_id: "chihuahua"
+    service_type: "cometbft"
+
+  # Dungeon Chain
+  - name: "Shannon - dungeon-chain (Dungeon Chain) Test"
+    service_id: "dungeon-chain"
     service_type: "cometbft"
 
   # Elys Network
@@ -580,6 +595,11 @@ services:
     service_id: "fetch"
     service_type: "cometbft"
 
+  # Jackal
+  - name: "Shannon - jackal (Jackal) Test"
+    service_id: "jackal"
+    service_type: "cometbft"
+
   # Juno
   - name: "Shannon - juno (Juno) Test"
     service_id: "juno"
@@ -588,6 +608,11 @@ services:
   # KYVE
   - name: "Shannon - kyve (KYVE) Test"
     service_id: "kyve"
+    service_type: "cometbft"
+
+  # Namada
+  - name: "Shannon - namada (Namada) Test"
+    service_id: "namada"
     service_type: "cometbft"
 
   # Neutron
@@ -613,6 +638,11 @@ services:
   # Persistence
   - name: "Shannon - persistence (Persistence) Test"
     service_id: "persistence"
+    service_type: "cometbft"
+
+  # Provenance
+  - name: "Shannon - provenance (Provenance) Test"
+    service_id: "provenance"
     service_type: "cometbft"
 
   # pocket-beta1
@@ -650,6 +680,11 @@ services:
     service_id: "router"
     service_type: "cometbft"
 
+  # Seda
+  - name: "Shannon - seda (Seda) Test"
+    service_id: "seda"
+    service_type: "cometbft"
+
   # Shentu
   - name: "Shannon - shentu (Shentu) Test"
     service_id: "shentu"
@@ -658,6 +693,11 @@ services:
   # Side Protocol
   - name: "Shannon - side-protocol (Side Protocol) Test"
     service_id: "side-protocol"
+    service_type: "cometbft"
+
+  # Stargaze
+  - name: "Shannon - stargaze (Stargaze) Test"
+    service_id: "stargaze"
     service_type: "cometbft"
 
   # Stride

@@ -416,6 +416,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// AtomOne - https://github.com/cosmos/chain-registry/blob/master/atomone/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("atomone", "atomone-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Babylon - https://github.com/cosmos/chain-registry/blob/master/babylon/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("babylon", "bbn-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
@@ -424,6 +430,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Celestia - https://github.com/cosmos/chain-registry/blob/master/celestia/chain.json#L5
 	cosmos.NewCosmosSDKServiceQoSConfig("celestia", "celestia", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Cheqd - https://github.com/cosmos/chain-registry/blob/master/cheqd/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("cheqd", "cheqd-mainnet-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -440,6 +452,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Dungeon Chain - https://github.com/cosmos/chain-registry/blob/master/dungeon1/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("dungeon-chain", "dungeon-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Elys Network - https://github.com/cosmos/chain-registry/blob/master/elys/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("elys-network", "elys-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
@@ -452,6 +470,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Jackal - https://github.com/cosmos/chain-registry/blob/master/jackal/chain.json#L5
+	cosmos.NewCosmosSDKServiceQoSConfig("jackal", "jackal-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Juno - https://github.com/cosmos/chain-registry/blob/master/juno/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("juno", "juno-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
@@ -460,6 +484,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// KYVE - https://github.com/cosmos/chain-registry/blob/master/kyve/chain.json#L5
 	cosmos.NewCosmosSDKServiceQoSConfig("kyve", "kyve-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Namada - https://github.com/cosmos/chain-registry/blob/master/namada/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("namada", "namada-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -490,6 +520,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Persistence - https://github.com/cosmos/chain-registry/blob/master/persistence/chain.json#L5
 	cosmos.NewCosmosSDKServiceQoSConfig("persistence", "core-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Provenance - https://github.com/cosmos/chain-registry/blob/master/provenance/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("provenance", "pio-mainnet-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
@@ -540,6 +576,12 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
+	// Seda - https://github.com/cosmos/chain-registry/blob/master/seda/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("seda", "seda-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
 	// Shentu - https://github.com/cosmos/chain-registry/blob/master/shentu/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("shentu", "shentu-2.2", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
@@ -548,6 +590,12 @@ var shannonServices = []ServiceQoSConfig{
 
 	// Side Protocol - https://github.com/cosmos/chain-registry/blob/master/sidechain/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("side-protocol", "sidechain-1", map[sharedtypes.RPCType]struct{}{
+		sharedtypes.RPCType_REST:      {}, // CosmosSDK
+		sharedtypes.RPCType_COMET_BFT: {},
+	}),
+
+	// Stargaze - https://github.com/cosmos/chain-registry/blob/master/stargaze/chain.json#L9
+	cosmos.NewCosmosSDKServiceQoSConfig("stargaze", "stargaze-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
