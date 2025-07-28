@@ -133,8 +133,14 @@ process_services() {
                 continue
             fi
 
-            # Store comment for service name
-            comment_buffer="$comment_text"
+            # Extract just the service name (part before " - " if present)
+            if [[ "$comment_text" == *" - https"* ]]; then
+                # Extract service name before the " - " and trim whitespace
+                comment_buffer="$(echo "$comment_text" | sed 's/ - https.*//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            else
+                # No URL pattern found, use the whole comment
+                comment_buffer="$comment_text"
+            fi
             continue
         fi
 
@@ -174,15 +180,15 @@ process_services() {
 
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"
 
-        # Process CometBFT configurations
-        elif [[ "$line" =~ cometbft\.NewCometBFTServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
+        # Process Cosmos SDK configurations
+        elif [[ "$line" =~ cosmos\.NewCosmosSDKServiceQoSConfig\([[:space:]]*\"([^\"]+)\",[[:space:]]*\"([^\"]+)\" ]]; then
             service_id="${BASH_REMATCH[1]}"
             chain_id="${BASH_REMATCH[2]}"
-            service_type="CometBFT"
+            service_type="Cosmos SDK"
             archival_check=""
 
             # Use the most recent comment as the service name
-            service_name="${comment_buffer:-Unknown CometBFT Service}"
+            service_name="${comment_buffer:-Unknown Cosmos SDK Service}"
             comment_buffer=""
 
             echo "| $service_name | $service_id | $service_type | $chain_id | $archival_check |" >>"$output_file"

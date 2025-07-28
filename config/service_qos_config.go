@@ -427,7 +427,7 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Elys Network - https://github.com/cosmos/chain-registry/blob/master/elys/chain.json#L9
+	// Elys Network - https://github.com/cosmos/chain-registry/blob/master/elys/chain.json#L8
 	cosmos.NewCosmosSDKServiceQoSConfig("elys-network", "elys-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
@@ -439,7 +439,7 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Neutron - https://github.com/cosmos/chain-registry/blob/master/neutron/chain.json#L9
+	// Neutron - https://github.com/cosmos/chain-registry/blob/master/neutron/chain.json#L8
 	cosmos.NewCosmosSDKServiceQoSConfig("neutron", "neutron-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
@@ -451,7 +451,7 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Passage - https://github.com/cosmos/chain-registry/blob/master/passage/chain.json#L9
+	// Passage - https://github.com/cosmos/chain-registry/blob/master/passage/chain.json#L5
 	cosmos.NewCosmosSDKServiceQoSConfig("passage", "passage-2", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
@@ -463,30 +463,8 @@ var shannonServices = []ServiceQoSConfig{
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
 
-	// Pocket Mainnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-alpha", "pocket-alpha", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
+	// Pocket Beta Testnet - https://github.com/cosmos/chain-registry/blob/master/testnets/pockettestnet/chain.json#L9
 	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta", "pocket-beta", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-
-	// Pocket Beta Testnet
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta1", "pocket-beta1", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta2", "pocket-beta2", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta3", "pocket-beta3", map[sharedtypes.RPCType]struct{}{
-		sharedtypes.RPCType_REST:      {}, // CosmosSDK
-		sharedtypes.RPCType_COMET_BFT: {},
-	}),
-	cosmos.NewCosmosSDKServiceQoSConfig("pocket-beta4", "pocket-beta4", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
 	}),
