@@ -552,6 +552,7 @@ var shannonServices = []ServiceQoSConfig{
 	cosmos.NewCosmosSDKServiceQoSConfig("router", "router_9600-1", map[sharedtypes.RPCType]struct{}{
 		sharedtypes.RPCType_REST:      {}, // CosmosSDK
 		sharedtypes.RPCType_COMET_BFT: {},
+		sharedtypes.RPCType_JSON_RPC:  {},
 	}),
 
 	// Seda - https://github.com/cosmos/chain-registry/blob/master/seda/chain.json#L9
