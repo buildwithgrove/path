@@ -58,7 +58,7 @@ hydrator_config:
     - "eth"
 ```
 
-See [PATH Configuration File](../../develop/path/5_configurations_path.md#hydrator_config-optional) for more details.
+See [PATH Configuration File](../../develop/configs/2_gateway_config.md#hydrator_config-optional) for more details.
 
 ## ⛓️ Supported QoS Services
 
