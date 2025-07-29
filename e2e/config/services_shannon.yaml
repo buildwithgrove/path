@@ -545,34 +545,154 @@ services:
 
   # ------------- CometBFT Services -------------
 
+  # Akash
+  - name: "Shannon - akash (Akash) Test"
+    service_id: "akash"
+    service_type: "cometbft"
+
+  # Arkeo
+  - name: "Shannon - arkeo (Arkeo) Test"
+    service_id: "arkeo"
+    service_type: "cometbft"
+
+  # AtomOne
+  - name: "Shannon - atomone (AtomOne) Test"
+    service_id: "atomone"
+    service_type: "cometbft"
+
+  # Babylon
+  - name: "Shannon - babylon (Babylon) Test"
+    service_id: "babylon"
+    service_type: "cometbft"
+
+  # Celestia
+  - name: "Shannon - celestia (Celestia) Test"
+    service_id: "celestia"
+    service_type: "cometbft"
+
+  # Cheqd
+  - name: "Shannon - cheqd (Cheqd) Test"
+    service_id: "cheqd"
+    service_type: "cometbft"
+
+  # Chihuahua
+  - name: "Shannon - chihuahua (Chihuahua) Test"
+    service_id: "chihuahua"
+    service_type: "cometbft"
+
+  # Dungeon Chain
+  - name: "Shannon - dungeon-chain (Dungeon Chain) Test"
+    service_id: "dungeon-chain"
+    service_type: "cometbft"
+
+  # Elys Network
+  - name: "Shannon - elys-network (Elys Network) Test"
+    service_id: "elys-network"
+    service_type: "cometbft"
+
+  # Fetch
+  - name: "Shannon - fetch (Fetch) Test"
+    service_id: "fetch"
+    service_type: "cometbft"
+
+  # Jackal
+  - name: "Shannon - jackal (Jackal) Test"
+    service_id: "jackal"
+    service_type: "cometbft"
+
+  # Juno
+  - name: "Shannon - juno (Juno) Test"
+    service_id: "juno"
+    service_type: "cometbft"
+
+  # KYVE
+  - name: "Shannon - kyve (KYVE) Test"
+    service_id: "kyve"
+    service_type: "cometbft"
+
+  # Namada
+  - name: "Shannon - namada (Namada) Test"
+    service_id: "namada"
+    service_type: "cometbft"
+
+  # Neutron
+  - name: "Shannon - neutron (Neutron) Test"
+    service_id: "neutron"
+    service_type: "cometbft"
+
+  # Nillion
+  - name: "Shannon - nillion (Nillion) Test"
+    service_id: "nillion"
+    service_type: "cometbft"
+
   # Osmosis
   - name: "Shannon - osmosis (Osmosis) Test"
     service_id: "osmosis"
     service_type: "cometbft"
 
-  # pocket-beta1
-  - name: "Shannon - pocket"
+  # Passage
+  - name: "Shannon - passage (Passage) Test"
+    service_id: "passage"
+    service_type: "cometbft"
+
+  # Persistence
+  - name: "Shannon - persistence (Persistence) Test"
+    service_id: "persistence"
+    service_type: "cometbft"
+
+  # Provenance
+  - name: "Shannon - provenance (Provenance) Test"
+    service_id: "provenance"
+    service_type: "cometbft"
+
+  # Pocket Mainnet
+  - name: "Shannon - pocket (Pocket Mainnet) Test"
     service_id: "pocket"
     service_type: "cometbft"
-  # pocket-beta1
-  - name: "Shannon - pocket-beta1"
-    service_id: "pocket-beta1"
+
+  # Pocket Alpha Testnet
+  - name: "Shannon - pocket-alpha (Pocket Alpha Testnet) Test"
+    service_id: "pocket-alpha"
     service_type: "cometbft"
-  # pocket-beta2
-  - name: "Shannon - pocket-beta2"
-    service_id: "pocket-beta2"
+
+  # Pocket Beta Testnet
+  - name: "Shannon - pocket-beta (Pocket Beta Testnet) Test"
+    service_id: "pocket-beta"
     service_type: "cometbft"
-  # pocket-beta3
-  - name: "Shannon - pocket-beta3"
-    service_id: "pocket-beta3"
+
+  # Quicksilver
+  - name: "Shannon - quicksilver (Quicksilver) Test"
+    service_id: "quicksilver"
     service_type: "cometbft"
-  # pocket-beta4
-  - name: "Shannon - pocket-beta4"
-    service_id: "pocket-beta4"
+
+  # Router
+  - name: "Shannon - router (Router) Test"
+    service_id: "router"
     service_type: "cometbft"
-  # pocket-beta5
-  - name: "Shannon - pocket-beta5"
-    service_id: "pocket-beta5"
+
+  # Seda
+  - name: "Shannon - seda (Seda) Test"
+    service_id: "seda"
+    service_type: "cometbft"
+
+  # Shentu
+  - name: "Shannon - shentu (Shentu) Test"
+    service_id: "shentu"
+    service_type: "cometbft"
+
+  # Side Protocol
+  - name: "Shannon - side-protocol (Side Protocol) Test"
+    service_id: "side-protocol"
+    service_type: "cometbft"
+
+  # Stargaze
+  - name: "Shannon - stargaze (Stargaze) Test"
+    service_id: "stargaze"
+    service_type: "cometbft"
+
+  # Stride
+  - name: "Shannon - stride (Stride) Test"
+    service_id: "stride"
     service_type: "cometbft"
 
   # TODO_NEXT(@commoddity): Add `service_params` for the below services
