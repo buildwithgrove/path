@@ -285,19 +285,6 @@ func (b *bridge) handleEndpointMessage(msg message) {
 		return
 	}
 
-	// TODO: Find another endpoint and auto-connect
-	// For now, shut down connection and expect the user to start a new one.
-	b.Shutdown(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
-	// return
-	observation = messageToObservation(msg)
-
-	// err := validateWebSocketResponse(relayResponse)
-	// if err != nil {
-
-	// 	b.endpointConn.handleDisconnect(fmt.Errorf("handleEndpointMessage: error validating relay response: %w", err))
-	// 	return
-	// }
-
 	// Send the relay response or subscription push event to the Client
 	if err := b.clientConn.WriteMessage(msg.messageType, relayResponse.Payload); err != nil {
 		// NOTE: On session rollover, the RelayMiner will disconnect the Endpoint connection, which will trigger this
@@ -306,7 +293,3 @@ func (b *bridge) handleEndpointMessage(msg message) {
 		return
 	}
 }
-
-// func validateWebSocketResponse() error{
-
-// }
