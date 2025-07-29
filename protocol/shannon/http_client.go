@@ -18,6 +18,9 @@ import (
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 )
 
+// Maximum length of an HTTP response's body.
+const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
+
 // httpClientWithDebugMetrics provides HTTP client functionality with debugging functionality.
 // It includes things like:
 // - Built-in request debugging
@@ -131,7 +134,7 @@ func (h *httpClientWithDebugMetrics) SendHTTPRelay(
 		return nil, requestErr
 	}
 
-	// TOCO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
+	// TODO_TECHDEBT(@adshmh): Content-Type HTTP header should be set by the QoS.
 	//
 	// Set HTTP headers.
 	req.Header.Set("Content-Type", "application/json")
@@ -213,7 +216,6 @@ func (h *httpClientWithDebugMetrics) categorizeError(ctx context.Context, err er
 // readAndValidateResponse reads the response body and validates the HTTP status code
 func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response) ([]byte, error) {
 	// Read response body with size protection
-	const maxResponseSize = 100 * 1024 * 1024 // 100MB limit
 	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
 	responseBody, err := io.ReadAll(limitedReader)
 	if err != nil {
@@ -228,8 +230,9 @@ func (h *httpClientWithDebugMetrics) readAndValidateResponse(resp *http.Response
 	return responseBody, nil
 }
 
-// createHTTPTrace creates an HTTP trace that captures timing metrics
-// for each phase of the HTTP request lifecycle.
+// createHTTPTrace creates an HTTP trace using the httptrace library:
+// https://pkg.go.dev/net/http/httptrace
+// The HTTP trace captures timing metrics for each phase of the HTTP request lifecycle.
 func createHTTPTrace(metrics *requestMetrics) *httptrace.ClientTrace {
 	var dnsStart, connectStart, tlsStart time.Time
 
@@ -284,5 +287,3 @@ func (h *httpClientWithDebugMetrics) logRequestMetrics(logger polylog.Logger, me
 		"http_client_debug_connection_errors", h.connectionErrors.Load(),
 	).Error().Err(metrics.error).Msg("HTTP request failed - detailed timing breakdown")
 }
-
-// TODO_TECHDEBT(@adshmh): Add graceful shutdown support.
