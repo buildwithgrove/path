@@ -280,6 +280,8 @@ func (h *httpClientWithTracing) logRequestMetrics(logger polylog.Logger, metrics
 	).Error().Err(metrics.Error).Msg("HTTP request failed - detailed timing breakdown")
 }
 
+// TODO_TECHDEBT(@adshmh): Call this method as part of PATH signal handling.
+//
 // Close gracefully shuts down the HTTP client and logs final statistics
 func (h *httpClientWithTracing) Close() {
 	// Log basic shutdown info
