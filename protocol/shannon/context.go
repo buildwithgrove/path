@@ -14,6 +14,7 @@ import (
 	apptypes "github.com/pokt-network/poktroll/x/application/types"
 	servicetypes "github.com/pokt-network/poktroll/x/service/types"
 	sessiontypes "github.com/pokt-network/poktroll/x/session/types"
+	sharedtypes "github.com/pokt-network/poktroll/x/shared/types"
 	sdk "github.com/pokt-network/shannon-sdk"
 
 	"github.com/buildwithgrove/path/gateway"
@@ -192,8 +193,11 @@ func buildHeaders(payload protocol.Payload) map[string]string {
 		headers[key] = value
 	}
 
-	// Add RPCType header
-	headers[proxy.RPCTypeHeader] = strconv.Itoa(int(payload.RPCType))
+	// Set the RPCType HTTP header, if set on the payload.
+	// Used by endpoint/relay miner to determine correct backend service.
+	if payload.RPCType != sharedtypes.RPCType_UNKNOWN_RPC {
+		headers[proxy.RPCTypeHeader] = strconv.Itoa(int(payload.RPCType))
+	}
 
 	return headers
 }
