@@ -80,11 +80,8 @@ func (ec *errorContext) GetObservations() qosobservations.Observations {
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
 func (ec *errorContext) GetServicePayload() protocol.Payload {
-	ec.logger.Warn().Msg("Invalid usage: errorContext.GetServicePayload() should never be called.")
-	// POTENTIAL NULL ISSUE: Returning empty Payload{} here could lead to "null" being sent
-	// as request body if this error context is used in request processing pipeline.
-	// This may be related to RelayMiner receiving "null" (base64: bnVsbA==) as request body.
-	return protocol.Payload{}
+	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetServicePayload() should never be called.")
+	return protocol.EmptyErrorPayload()
 }
 
 // UpdateWithResponse should never be called.
@@ -94,14 +91,14 @@ func (ec *errorContext) UpdateWithResponse(endpointAddr protocol.EndpointAddr, e
 	ec.logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),
-	).Warn().Msg("Invalid usage: errorContext.UpdateWithResponse() should never be called.")
+	).Warn().Msg("SHOULD NEVER HAPPEN: errorContext.UpdateWithResponse() should never be called.")
 }
 
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.
 func (ec *errorContext) GetEndpointSelector() protocol.EndpointSelector {
-	ec.logger.Warn().Msg("Invalid usage: errorContext.GetEndpointSelector() should never be called.")
+	ec.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorContext.GetEndpointSelector() should never be called.")
 
 	return errorTrackingSelector{
 		logger: ec.logger,
@@ -122,7 +119,7 @@ type errorTrackingSelector struct {
 func (ets errorTrackingSelector) Select(endpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	ets.logger.With(
 		"num_endpoints", len(endpoints),
-	).Warn().Msg("Invalid usage: errorTrackingSelector.Select() should never be called.")
+	).Warn().Msg("SHOULD NEVER HAPPEN: errorTrackingSelector.Select() should never be called.")
 
 	return protocol.EndpointAddr(""), errInvalidSelectorUsage
 }

@@ -68,11 +68,8 @@ func (rec *RequestErrorContext) GetObservations() qosobservations.Observations {
 // It logs a warning and returns nil.
 // Implements the gateway.RequestQoSContext interface.
 func (rec *RequestErrorContext) GetServicePayload() protocol.Payload {
-	rec.Logger.Warn().Msg("Invalid usage: RequestErrorContext.GetServicePayload() should never be called.")
-	// POTENTIAL NULL ISSUE: Returning empty Payload{} here could lead to "null" being sent
-	// as request body if this error context is used in request processing pipeline.
-	// This may be related to RelayMiner receiving "null" (base64: bnVsbA==) as request body.
-	return protocol.Payload{}
+	rec.Logger.Warn().Msg("SHOULD NEVER HAPPEN: RequestErrorContext.GetServicePayload() should never be called.")
+	return protocol.EmptyErrorPayload()
 }
 
 // UpdateWithResponse should never be called.
@@ -82,14 +79,14 @@ func (rec *RequestErrorContext) UpdateWithResponse(endpointAddr protocol.Endpoin
 	rec.Logger.With(
 		"endpoint_addr", endpointAddr,
 		"endpoint_response_len", len(endpointSerializedResponse),
-	).Warn().Msg("Invalid usage: RequestErrorContext.UpdateWithResponse() should never be called.")
+	).Warn().Msg("SHOULD NEVER HAPPEN: RequestErrorContext.UpdateWithResponse() should never be called.")
 }
 
 // UpdateWithResponse should never be called.
 // It logs a warning and returns a failing selector that logs a warning on all selection attempts.
 // Implements the gateway.RequestQoSContext interface.
 func (rec *RequestErrorContext) GetEndpointSelector() protocol.EndpointSelector {
-	rec.Logger.Warn().Msg("Invalid usage: RequestErrorContext.GetEndpointSelector() should never be called.")
+	rec.Logger.Warn().Msg("SHOULD NEVER HAPPEN: RequestErrorContext.GetEndpointSelector() should never be called.")
 
 	return errorTrackingSelector{
 		logger: rec.Logger,
@@ -110,7 +107,7 @@ type errorTrackingSelector struct {
 func (ets errorTrackingSelector) Select(endpoints protocol.EndpointAddrList) (protocol.EndpointAddr, error) {
 	ets.logger.With(
 		"num_endpoints", len(endpoints),
-	).Warn().Msg("Invalid usage: errorTrackingSelector.Select() should never be called.")
+	).Warn().Msg("SHOULD NEVER HAPPEN: errorTrackingSelector.Select() should never be called.")
 
 	return protocol.EndpointAddr(""), errInvalidSelectorUsage
 }
@@ -119,7 +116,7 @@ func (ets errorTrackingSelector) Select(endpoints protocol.EndpointAddrList) (pr
 // It logs a warning and returns an invalid usage error.
 // Implements the protocol.EndpointSelector interface.
 func (ets errorTrackingSelector) SelectMultiple(endpoints protocol.EndpointAddrList, numEndpoints uint) (protocol.EndpointAddrList, error) {
-	ets.logger.Warn().Msg("Invalid usage: errorTrackingSelector.SelectMultiple() should never be called.")
+	ets.logger.Warn().Msg("SHOULD NEVER HAPPEN: errorTrackingSelector.SelectMultiple() should never be called.")
 
 	return nil, errInvalidSelectorUsage
 }
