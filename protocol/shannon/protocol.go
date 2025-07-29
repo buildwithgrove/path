@@ -52,6 +52,9 @@ type Protocol struct {
 
 	// sanctionedEndpointsStore tracks sanctioned endpoints
 	sanctionedEndpointsStore *sanctionedEndpointsStore
+
+	// HTTP client used for sending relay requests to endpoints.
+	httpClient *httpClientWithTracing
 }
 
 // NewProtocol instantiates an instance of the Shannon protocol integration.
@@ -84,6 +87,10 @@ func NewProtocol(
 
 		// ownedApps is the list of apps owned by the gateway operator
 		ownedApps: ownedApps,
+
+		// HTTP client with HTTP tracing.
+		// Used to track any timeout/endpoint connectivity errors.
+		httpClient: newHTTPClientWithDefaultTracing(),
 	}
 
 	return protocolInstance, nil
@@ -218,6 +225,7 @@ func (p *Protocol) BuildRequestContextForEndpoint(
 		selectedEndpoint:   &selectedEndpoint,
 		serviceID:          serviceID,
 		relayRequestSigner: permittedSigner,
+		httpClient:         p.httpClient,
 	}, protocolobservations.Observations{}, nil
 }
 
