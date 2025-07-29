@@ -381,14 +381,8 @@ var shannonServices = []ServiceQoSConfig{
 	// opBNB
 	evm.NewEVMServiceQoSConfig("opbnb", "0xcc", nil),
 
-	// Radix
-	evm.NewEVMServiceQoSConfig("radix", "0x1337", nil),
-
 	// Sui
 	evm.NewEVMServiceQoSConfig("sui", "0x101", nil),
-
-	// XRPL EVM Devnet
-	evm.NewEVMServiceQoSConfig("xrpl_evm_dev", "0x15f902", nil),
 
 	// TRON
 	evm.NewEVMServiceQoSConfig("tron", "0x2b6653dc", nil),
@@ -396,11 +390,13 @@ var shannonServices = []ServiceQoSConfig{
 	// Sei
 	evm.NewEVMServiceQoSConfig("sei", "0x531", nil),
 
-	// *** Near EVM Services ***
+	// TODO_TECHDEBT: Add support for Radix QoS
+	// Radix
+	// radix.NewRadixServiceQoSConfig("radix", "", nil),
 
 	// TODO_TECHDEBT: Add support for Near QoS
 	// Near
-	// near.NewNearServiceQoSConfig("near", "0x18d", nil),
+	// near.NewNearServiceQoSConfig("near", "", nil),
 
 	// *** Cosmos SDK Services ***
 

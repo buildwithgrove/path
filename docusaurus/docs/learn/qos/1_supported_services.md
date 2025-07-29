@@ -42,7 +42,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 
 ## 🌿 Current PATH QoS Support
 
-**🗓️ Document Last Updated: 2025-07-28**
+**🗓️ Document Last Updated: 2025-07-29**
 
 ## Shannon Protocol Services
 
@@ -92,9 +92,7 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Kava                                                       | kava                     | EVM              | 2222                     |                           |
 | Moonriver                                                  | moonriver                | EVM              | 1285                     |                           |
 | opBNB                                                      | opbnb                    | EVM              | 204                      |                           |
-| Radix                                                      | radix                    | EVM              | 4919                     |                           |
 | Sui                                                        | sui                      | EVM              | 257                      |                           |
-| XRPL EVM Devnet                                            | xrpl_evm_dev             | EVM              | 1440002                  |                           |
 | TRON                                                       | tron                     | EVM              | 728126428                |                           |
 | Sei                                                        | sei                      | EVM              | 1329                     |                           |
 | Akash                                                      | akash                    | Cosmos SDK       | akashnet-2               |                           |
@@ -111,7 +109,6 @@ If a Service ID is not specified in the tables below, it does not have a QoS imp
 | Jackal                                                     | jackal                   | Cosmos SDK       | jackal-1                 |                           |
 | Juno                                                       | juno                     | Cosmos SDK       | juno-1                   |                           |
 | KYVE                                                       | kyve                     | Cosmos SDK       | kyve-1                   |                           |
-| Namada                                                     | namada                   | Cosmos SDK       | namada-1                 |                           |
 | Neutron                                                    | neutron                  | Cosmos SDK       | neutron-1                |                           |
 | Nillion                                                    | nillion                  | Cosmos SDK       | nillion-1                |                           |
 | Osmosis                                                    | osmosis                  | Cosmos SDK       | osmosis-1                |                           |
