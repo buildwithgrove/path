@@ -163,9 +163,6 @@ func (r *router) removeGrovePortalPrefixMiddleware(next http.HandlerFunc) http.H
 				// Trim the portal app ID prefix from the request path.
 				req.URL.Path = strings.TrimPrefix(req.URL.Path, "/"+portalAppID)
 
-				// Remove the portal app ID header from the request headers.
-				req.Header.Del(gateway.HttpHeaderPortalAppID)
-
 				r.logger.Debug().
 					Str("original_url_path", originalURLPath).
 					Str("new_url_path", req.URL.Path).
